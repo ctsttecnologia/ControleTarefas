@@ -1,0 +1,46 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gerenciando Tarefas{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'csshome/styles.css' %}">
+</head>
+<body>
+    <div class="logo">
+        <img src="{% static 'images/logo.png' %}"  height="40px"; width="100px"; name="logocetest">
+    </div>
+    <div class="header">
+        <header>
+            
+            <nav>
+                <ul>
+                    <!--<li><a href="{% url 'home' %}">Home</a></li>-->
+                    <li><a href="{% url 'usuario:login' %}">Usuário</a></li>
+                    <li><a href="{% url 'cliente' %}">Cliente</a></li>
+                    <li><a href="{% url 'seguranca_trabalho' %}">Segurança do Trabalho</a></li>
+                    <li><a href="{% url 'departamento_pessoal' %}">Departamento Pessoal</a></li>
+                    <li><a href="{% url 'tarefas' %}">Tarefas</a></li>
+                </ul>
+            </nav>
+            <!-- Botão "Voltar para Home" -->
+            <!--<a href="{% url 'home' %}" class="btn-home">Home</a>-->
+        </header>
+    </div>
+    
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>     
+<img src="{% static 'images/painel.png' %}" class="imagempainel">
+<p>Corpo </p>
+    <div class="rodape">
+        <footer>
+            <p>&copy; 2025 Gerenciando Tarefas. Todos os direitos reservados. Cetest Minas</p>
+        </footer>
+    </div>
+
+</body>
+</html>

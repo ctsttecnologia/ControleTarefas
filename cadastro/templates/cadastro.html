@@ -1,0 +1,29 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cadastro</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Cadastro Geral</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+             
+        <div class="painel">  
+         <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'formulario' %}" class="btn_formulario">Cadastro de Clientes</a>
+            {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            {% endif %}
+        </div>
+        <div class="painel1">
+            <h2>Texto</h2>
+        </div>                       
+        
+    </div>
+</body> 
+</html>

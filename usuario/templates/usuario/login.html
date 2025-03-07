@@ -1,0 +1,30 @@
+
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <!-- Link para o arquivo CSS -->
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}"> 
+</head>
+<body>
+    <div class="painel3">
+        <div class="painel1">
+            <h1 class="titulo">Login</h1>
+        </div>
+        <div class="painel2">
+            <form method="post" class="form-login">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn-login">Login</button>
+            </form>
+            <p class="registro">Não tem uma conta? <a href="{% url 'usuario:register' %}" class="link-registro">Registre-se</a></p>
+            <a href="{% url 'home' %}" class="link-home">Home</a>
+        </div>
+    </div>
+</body>
+</html>

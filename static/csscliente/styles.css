@@ -1,0 +1,104 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.painel, .painel1 {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.painel1 h2 {
+    margin-bottom: 10px;
+    color: #555;
+}
+
+/* Estilo dos botões */
+.btn-home, .btn_logout, .btn_cadastro {
+    display: inline-block;
+    padding: 7px 20px;
+    margin: 5px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover {
+    background-color: #0056b3;
+}
+
+.btn_logout {
+    background-color: #ff0400;
+}
+
+.btn_logout:hover {
+    background-color: #8d0101;
+}
+
+.btn_cadastro {
+    background-color: #007bff;
+}
+
+.btn_cadastro:hover {
+    background-color: #0056b3;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .btn-home, .btn_logout, .btn_cadastro {
+        display: block;
+        width: 100%;
+        margin: 5px 0;
+    }
+
+    .painel, .painel1 {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 5px;
+    }
+
+    .btn-home, .btn_logout, .btn_cadastro {
+        padding: 6px 12px;
+    }
+}

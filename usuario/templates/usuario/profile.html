@@ -1,0 +1,46 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil</title>
+    <!-- Link para o arquivo CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}"> 
+</head>
+<body class="container">
+    <div class="painel">
+        <div class="painel1">
+            <p class="mensagem">Bem-vindo, {{ user.username }}!</p>    
+        </div>
+        <div class="painel2">
+            <div class="logout">
+                <a href="{% url 'usuario:logout' %}" class="link">Logout</a>
+            </div>
+            <div class="home">
+                <a href="{% url 'home' %}" class="link">Home</a>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card card1">Tarefas
+                <h2><a href="{% url 'tarefas' %}" class="link-home">link para tarefa</a></h2> 
+            </div>
+            <div class="card card2">cliente
+                <h2><a href="{% url 'cliente' %}" class="link-home">link para clientes</a></h2>
+            </div>
+            <div class="card card3">Departamento Pessoal
+                <h2><a href="{% url 'departamento_pessoal' %}" class="link-home">link para DP</a></h2>
+            </div>
+            <div class="card card4">Segurança do Trabalho
+                <h2><a href="{% url 'seguranca_trabalho' %}" class="link-home">link para TST</a></h2>
+            </div>
+            <div class="card card5">Cadastro
+                <h2><a href="{% url 'cadastro_cliente' %}" class="link-cadastro">link para cadastro</a></h2>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

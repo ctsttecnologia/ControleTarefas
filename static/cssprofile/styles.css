@@ -1,0 +1,170 @@
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh; /* Garante que o body ocupe pelo menos a altura da tela */
+    background-color: #f4f4f9; /* Fundo suave para a página */
+    padding: 20px; /* Espaçamento para evitar que o conteúdo encoste nas bordas */
+}
+
+/* Container principal */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items:flex-end;
+    background-color: #ffffffa4;
+    border-radius: 0px;
+    width: 100%; /*200vh;*/
+    max-width: 1300px; /* Largura máxima para o container */
+    padding: 0px;
+    margin: 0px 0;
+}
+
+/* Painel do título */
+.painel1 {
+    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    color: #333333;
+    text-align: center;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+}
+
+.painel1 .titulo {
+    font-size: 2rem; /* Unidade relativa para o tamanho da fonte */
+    color: #333333;
+    margin-bottom: 20px;  
+}
+
+/* Painel da mensagem */
+.painel2 {
+    display: flex;
+    justify-content:space-between;
+    height: 100px;
+    max-height: 400px;
+}
+.painel2 .mensagem {
+    font-size: 1.2rem; /* Unidade relativa para o tamanho da fonte */
+    color: #555555  
+}
+.logout {
+    align-items:center;
+    height: 100px;
+    max-height: 30px;
+}
+.home {
+    align-items:center;
+    height: 100px;
+    max-height: 30px;
+} 
+
+/* Estilo base para os cards */
+.card {
+    display: flex;
+    justify-content:center;
+    background-color: #ffffff;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    height: 50vh;
+    width: 600vh;
+    max-width: 1200px; /* Largura máxima para o container */
+    flex: 1 1 calc(25% - 20px); /* Flexível e responsivo */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 20px; /* Espaçamento entre os cards */
+}
+
+.card:hover {
+    transform: translateY(-5px); /* Efeito de levantar ao passar o mouse */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Cores específicas para cada card */
+.card1 {
+    display: flex;
+    background-color: #ff6b6b;
+    align-items:left;
+    padding: 20px;
+    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    color: #000000;
+    margin-bottom: 20px;
+
+}
+
+.card2 {
+    background-color: #4ecdc4;
+    display: flex;
+    align-items:left;
+    padding: 20px;
+    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    color: #000000;
+    margin-bottom: 20px;
+}
+
+.card3 {
+    background-color: #ffe66d;
+    display: flex;
+    align-items:left;
+    padding: 20px;
+    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    color: #000000;
+    margin-bottom: 20px;
+}
+
+.card4 {
+    background-color: #6b5b95;
+    display: flex;
+    align-items:left;
+    padding: 20px;
+    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    color: #000000;
+    margin-bottom: 20px;
+}
+
+.card5 {
+    background-color: #00aeff;
+    display: flex;
+    align-items:left;
+    padding: 20px;
+    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    color: #000000;
+    margin-bottom: 20px;
+}
+
+/* Media Queries para responsividade */
+@media (max-width: 768px) {
+    .cards-container {
+        gap: 15px; /* Reduz o espaçamento entre os cards */
+    }
+
+    .card {
+        flex: 1 1 calc(50% - 15px); /* 2 cards por linha em telas menores */
+    }
+
+    .painel1 .titulo {
+        font-size: 1.8rem; /* Reduz o tamanho da fonte do título */
+    }
+
+    .painel2 .mensagem {
+        font-size: 1rem; /* Reduz o tamanho da fonte da mensagem */
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        flex: 1 1 100%; /* 1 card por linha em telas muito pequenas */
+    }
+
+    .painel1 .titulo {
+        font-size: 1.5rem; /* Reduz ainda mais o tamanho da fonte do título */
+    }
+
+    .painel2 .mensagem {
+        font-size: 0.9rem; /* Reduz ainda mais o tamanho da fonte da mensagem */
+    }
+}
