@@ -1,3 +1,4 @@
+
 {% load static %}
 
 <!DOCTYPE html>
@@ -18,34 +19,11 @@
         </div>
     </div>
     <div class="container">
-        <h2>Cadastro de Cliente</h2>
         <form method="post" action="{% url 'salvar_cliente' %}">
             {% csrf_token %}
-            <label for="logradouro">Logradouro:</label>
-            <select id="logradouro" name="logradouro" required>
-                <option value="">Selecione um logradouro</option>
-                {% for logradouro in logradouros %}
-                    <option value="{{ logradouro.id }}"> - {{ logradouro.endereco }} - {{ logradouro.cep }}</option>
-                {% endfor %}
-            </select>
-            <!-- Outros campos do formulário -->
+            {{ form.as_p }}  <!-- Renderiza o formulário -->
             <button type="submit">Salvar</button>
         </form>
     </div>
 </body>
 </html>
-
-<!--Explicação do Formulário
-Campos do Logradouro:
-Um campo <select> é usado para selecionar um Logradouro existente. A lista de logradouros é populada dinamicamente usando um loop {% for %} no template Django.
-Campos do Cliente:
-Campos para contrato, razao_social, unidade, cnpj, telefone, data_de_inicio e estatus são fornecidos.
-O campo cnpj é obrigatório e tem um limite de 18 caracteres.
-O campo telefone tem um limite de 11 caracteres.
-Campos do ClienteCliente:
-Um campo para nome_cliente é fornecido para associar um nome ao cliente.
-Estilo CSS:
-O formulário é estilizado para ser responsivo e fácil de usar em dispositivos móveis e desktops.
-Segurança:
-O token {% csrf_token %} é incluído para proteção contra ataques CSRF.
-

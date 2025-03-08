@@ -1,4 +1,3 @@
-
 * {
     margin: 0;
     padding: 0;
@@ -64,6 +63,7 @@ main {
     max-width: 1200px;
     margin: 0 auto;
     flex: 1; /* Faz o main ocupar o espaço restante */
+    width: 100%; /* Garante que o main não ultrapasse a largura da tela */
 }
 
 main h1 {
@@ -74,7 +74,7 @@ main h1 {
 .painel {
     height: 570px; 
     width: 100%;
-    position:relative;
+    position: relative;
     background-color: #0fff7f;
     text-align: center;
     padding: 10px 0;
@@ -142,6 +142,12 @@ footer {
     footer {
         position: static;
     }
+
+    .btn-home {
+        top: 5px;
+        right: 10px;
+        padding: 5px 10px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -158,4 +164,22 @@ footer {
         right: 10px;
         padding: 5px 10px;
     }
+
+    .painel {
+        padding: 10px;
+    }
 }
+
+
+
+
+
+/*Largura do main: Adicionei width: 100%; ao main para garantir que ele não ultrapasse a largura da tela em dispositivos menores.
+
+Ajustes no painel: No painel, adicionei padding: 10px; para dispositivos muito pequenos (480px) para garantir que o conteúdo não fique muito próximo das bordas.
+
+Posicionamento do btn-home: Ajustei o posicionamento do botão "Voltar para Home" para que ele fique mais compacto em telas menores.
+
+Rodapé Fixo: Em telas menores, o rodapé foi ajustado para position: static; para que ele não fique fixo e não sobreponha o conteúdo.
+
+Flexibilidade no painel: O painel agora tem height: auto; em telas menores para que ele se ajuste ao conteúdo.
