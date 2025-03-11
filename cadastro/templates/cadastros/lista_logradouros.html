@@ -1,0 +1,7 @@
+<h1>Lista de Logradouros</h1>
+<a href="{% url 'cadastros/novo_logradouro' %}">Novo Logradouro</a>
+<ul>
+{% for logradouro in logradouros %}
+    <li>{{ logradouro.endereco }} - {{ logradouro.numero }} <a href="{% url 'editar_logradouro' logradouro.pk %}">Editar</a> <a href="{% url 'deletar_logradouro' logradouro.pk %}">Deletar</a></li>
+{% endfor %}
+</ul>

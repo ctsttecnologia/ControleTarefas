@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h2>Resultados da Pesquisa</h2>
+        {% if clientes %}
+            <table class="tabela-resultados">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>CNPJ</th>
+                        <th>Razão Social</th>
+                        <th>Telefone</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                        <tr>
+                            <td>{{ cliente.nome }}</td>
+                            <td>{{ cliente.cnpj }}</td>
+                            <td>{{ cliente.razao_social }}</td>
+                            <td>{{ cliente.telefone }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Nenhum cliente encontrado.</p>
+        {% endif %}
+    </div>
+{% endblock %}

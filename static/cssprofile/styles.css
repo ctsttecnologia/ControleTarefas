@@ -82,7 +82,33 @@ body {
 .card:hover {
     transform: translateY(-5px); /* Efeito de levantar ao passar o mouse */
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+} 
+
+
+.link, .link-home, .link-cadastro_cliente, .link-cadastro {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: bold;
 }
+
+.link:hover, .link-home:hover, .link-cadastro_cliente:hover, .link-cadastro:hover {
+    text-decoration: underline;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .card > div {
+        flex: 1 1 calc(50% - 20px);
+    }
+}
+
+@media (max-width: 480px) {
+    .card > div {
+        flex: 1 1 100%;
+    }
+}
+
+
 
 /* Cores específicas para cada card */
 .card1 {
@@ -135,6 +161,25 @@ body {
     color: #000000;
     margin-bottom: 20px;
 }
+/* Estilos para os links */
+.card5 a {
+    align-items: flex-start;
+    text-decoration: none; /* Remove o sublinhado dos links */
+    color: #007bff; /* Cor azul padrão para links */
+    font-size: 16px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+/* Efeito hover nos links */
+.card5 a:hover {
+    background-color: #007bff; /* Fundo azul ao passar o mouse */
+    color: #fff; /* Texto branco ao passar o mouse */
+}
+
+
+
 
 /* Media Queries para responsividade */
 @media (max-width: 768px) {

@@ -5,14 +5,28 @@ from django.contrib.auth.decorators import login_required
 from .forms import ClienteForm
 
 
+
+
 @login_required
 def cliente(request):
     return render(request, 'cliente/cliente.html')
 
 @login_required
 def lista_clientes(request):
-   return render(request, 'cliente/lista_clientes.html')
+    nome = request.GET.get('nome')
+    cnpj = request.GET.get('cnpj')
+    razao_social = request.GET.get('razao_social')
 
+    clientes = Cliente.objects.all()
+
+    if nome:
+        clientes = clientes.filter(nome__icontains=nome)
+    if cnpj:
+        clientes = clientes.filter(cnpj__icontains=cnpj)
+    if razao_social:
+        clientes = clientes.filter(razao_social__icontains=razao_social)
+
+    return render(request, 'cliente/resultadopesquisa.html', {'clientes': clientes})
 
 @login_required
 def cadastro_cliente(request):
@@ -20,12 +34,13 @@ def cadastro_cliente(request):
         form = ClienteForm(request.POST)
         if form.is_valid():
             form.save()  # Salva os dados no banco de dados
-            return redirect('lista_clientes')  # Redireciona para uma página de sucesso
+            return redirect('cadastro_cliente.html')  # Redireciona para uma página de sucesso
     else:
         form = ClienteForm()  # Cria um formulário vazio para GET requests
 
-    return render(request, 'cliente/cadastro_cliente.html', {'form': form})
+    return render(request, 'clientes/cadastro_cliente.html', {'form': form})
 
+@login_required
 def salvar_cliente(request):
     if request.method == 'POST':
         form = ClienteForm(request.POST)
@@ -36,3 +51,7 @@ def salvar_cliente(request):
         form = ClienteForm()  # Cria um formulário vazio para GET requests
 
     return render(request, 'cliente/cadastro_cliente.html', {'form': form}) 
+
+@login_required  # Garante que apenas usuários logados acessem o perfil
+def profile_view(request):
+    return render(request, 'usuario/profile.html')  # Renderiza o template do perfil
