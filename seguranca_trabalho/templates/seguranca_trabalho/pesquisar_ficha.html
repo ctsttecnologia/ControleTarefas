@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Pesquisar Ficha</title>
+</head>
+<body>
+    <h1>Pesquisar Ficha</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Nome do Colaborador</th>
+                <th>Equipamento</th>
+                <th>CA do Equipamento</th>
+                <th>Data de Entrega</th>
+                <th>Data de Devolução</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ficha in fichas %}
+            <tr>
+                <td>{{ ficha.nome_colaborador }}</td>
+                <td>{{ ficha.equipamento }}</td>
+                <td>{{ ficha.ca_equipamento }}</td>
+                <td>{{ ficha.data_entrega }}</td>
+                <td>{{ ficha.data_devolucao }}</td>
+                <td>
+                    <a href="{% url 'editar_ficha_epi' ficha.id %}">Editar</a>
+                    <a href="{% url 'deletar_ficha_epi' ficha.id %}">Deletar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'cadastrar_ficha_epi' %}">Cadastrar Nova Ficha</a>
+</body>
+</html>

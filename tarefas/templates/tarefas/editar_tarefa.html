@@ -1,0 +1,32 @@
+<!--{% extends 'base.html' %}-->
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+{% block content %}
+</head>
+
+<body>
+    <div class="container">
+    
+        <h1>Editar Tarefa</h1>
+        <div>
+            <a href="{% url 'tarefas:consultar_tarefa' %}" class="btn-secondary">Voltar</a>
+            <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
+        </div>
+        <div>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn-primary">Salvar</button>
+            </form>
+            
+            {% endblock %}
+        </div>
+    </div
+
+</body>
+</html>

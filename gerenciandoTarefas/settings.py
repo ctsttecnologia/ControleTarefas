@@ -122,8 +122,10 @@ LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
+# Ativar suporte a time zones
 USE_TZ = True
+# Definir o fuso horário padrão (por exemplo, 'America/Sao_Paulo' para o horário de Brasília)
+TIME_ZONE = 'America/Sao_Paulo'
 
 
 # Static files (CSS, JavaScript, Images)

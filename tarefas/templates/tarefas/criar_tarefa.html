@@ -1,0 +1,34 @@
+<!--{% extends 'base.html' %}-->
+
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Criar Tarefas{% endblock %}</title>
+   
+</head>
+<body>
+    <div class="container">
+        {% block content %}
+        <h1>Criar Tarefa</h1>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn-primary">Salvar</button>
+        </form>
+        <a href="{% url 'tarefas:criar_tarefa' %}" class="btn-secondary">Voltar</a>
+        <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
+        {% endblock %}
+        
+    </div>
+    <div class="header">
+        <header>
+            <nav>
+              
+            </nav>  
+        </header>
+    </div>    
+</body>
+</html>

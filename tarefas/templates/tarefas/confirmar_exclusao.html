@@ -1,0 +1,37 @@
+<!--{% extends 'base.html' %}-->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Excluir Tarefa{% endblock %}</title>
+   
+</head>
+<body>
+   
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Confirmar Exclusão</button>
+            <a href="{% url 'tarefas:consultar_tarefa' %}" class="btn-secondary">Cancelar</a>
+            <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
+        </form>
+        {% endblock %}
+        
+    </div>
+    <div class="header">
+        <header>
+            <nav>
+                {% block content %}
+                <h1>Excluir Tarefa</h1>
+                <p>Tem certeza que deseja excluir a tarefa "{{ tarefa.titulo }}"?</p>
+   
+            </nav>  
+        </header>
+    </div>
+       
+</body>
+</html>
+
+

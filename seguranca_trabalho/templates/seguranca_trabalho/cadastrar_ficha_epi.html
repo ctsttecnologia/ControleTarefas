@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Cadastrar Ficha EPI</title>
+</head>
+<body>
+    <h1>Cadastrar Ficha EPI</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Salvar</button>
+    </form>
+    <a href="{% url 'pesquisar_ficha' %}">Voltar</a>
+</body>
+</html>

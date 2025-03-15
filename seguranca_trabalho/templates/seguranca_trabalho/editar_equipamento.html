@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Editar Equipamento</title>
+</head>
+<body>
+    <h1>Editar Equipamento</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Salvar Alterações</button>
+    </form>
+    <a href="{% url 'listar_equipamentos' %}">Voltar</a>
+</body>
+</html>

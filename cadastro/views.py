@@ -9,12 +9,12 @@ from .forms import Estado, Logradouro
 def cadastro(request):
     return render(request, 'cadastros/cadastro.html')
 
-
 # Views para Estados
+@login_required
 def lista_estados(request):
     estados = Estados.objects.all()
     return render(request, 'cadastros/lista_estados.html', {'estados': estados})
-
+@login_required
 def novo_estado(request):
     if request.method == "POST":
         form = Estado(request.POST)
@@ -24,7 +24,7 @@ def novo_estado(request):
     else:
         form = Estado()
     return render(request, 'cadastros/editar_estado.html', {'form': form})
-
+@login_required
 def editar_estado(request, pk):
     estado = get_object_or_404(Estados, pk=pk)
     if request.method == "POST":
@@ -35,17 +35,17 @@ def editar_estado(request, pk):
     else:
         form = Estado(instance=estado)
     return render(request, 'cadastros/editar_estado.html', {'form': form})
-
+@login_required
 def deletar_estado(request, pk):
     estado = get_object_or_404(Estados, pk=pk)
     estado.delete()
     return redirect('lista_estados')
-
+@login_required
 # Views para Logradouro
 def lista_logradouros(request):
     logradouros = Logradouro.objects.all()
     return render(request, 'cadastros/lista_logradouros.html', {'logradouros': logradouros})
-
+@login_required
 def novo_logradouro(request):
     if request.method == "POST":
         form = Logradouro(request.POST)
@@ -55,7 +55,7 @@ def novo_logradouro(request):
     else:
         form = Logradouro()
     return render(request, 'cadastros/editar_logradouro.html', {'form': form})
-
+@login_required
 def editar_logradouro(request, pk):
     logradouro = get_object_or_404(Logradouro, pk=pk)
     if request.method == "POST":
@@ -66,7 +66,7 @@ def editar_logradouro(request, pk):
     else:
         form = Logradouro(instance=logradouro)
     return render(request, 'cadastros/editar_logradouro.html', {'form': form})
-
+@login_required
 def deletar_logradouro(request, pk):
     logradouro = get_object_or_404(Logradouro, pk=pk)
     logradouro.delete()

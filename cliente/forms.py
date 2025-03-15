@@ -25,4 +25,19 @@ class ClienteForm(forms.ModelForm):
                   'cnpj', 
                   'telefone', 
                   'data_de_inicio', 
-                  'estatus']
+                  'estatus'
+        ]
+        widgets = {
+            'telefone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Digite seu telefone',
+                'type': 'tel',
+            }),
+            'data_de_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'estatus': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+        }

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Exclusão</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Confirmar Exclusão</h1>
+        <p>Tem certeza que deseja excluir o funcionário <strong>{{ funcionario.nome }}</strong>?</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Excluir</button>
+            <a href="{% url 'lista_funcionarios' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</body>
+</html>

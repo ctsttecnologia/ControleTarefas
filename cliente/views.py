@@ -1,10 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Logradouro, Cliente, ClienteCliente
-from django.contrib.auth.decorators import login_required
 from .forms import ClienteForm
-
-
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from .models import Cliente
 
 
 @login_required
@@ -38,7 +37,7 @@ def cadastro_cliente(request):
     else:
         form = ClienteForm()  # Cria um formulário vazio para GET requests
 
-    return render(request, 'clientes/cadastro_cliente.html', {'form': form})
+    return render(request, 'cliente/cadastro_cliente.html', {'form': form})
 
 @login_required
 def salvar_cliente(request):
@@ -55,3 +54,11 @@ def salvar_cliente(request):
 @login_required  # Garante que apenas usuários logados acessem o perfil
 def profile_view(request):
     return render(request, 'usuario/profile.html')  # Renderiza o template do perfil
+
+
+def excluir_cliente(request, id):
+    cliente = get_object_or_404(Cliente, id=id)  # Busca o cliente pelo ID
+    if request.method == 'POST':
+        cliente.delete()  # Exclui o cliente
+        return redirect(reverse('lista_clientes'))  # Redireciona para a lista de clientes
+    return redirect(reverse('cliente/cadastro_cliente.html'))  # Redireciona se não for POST

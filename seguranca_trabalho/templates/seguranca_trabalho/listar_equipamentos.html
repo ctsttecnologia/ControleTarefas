@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Listar Equipamentos</title>
+</head>
+<body>
+    <h1>Lista de Equipamentos de Segurança</h1>
+    <a href="{% url 'cadastrar_equipamento' %}">Cadastrar Novo Equipamento</a>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Nome do Equipamento</th>
+                <th>Tipo</th>
+                <th>Código CA</th>
+                <th>Descrição</th>
+                <th>Quantidade em Estoque</th>
+                <th>Data de Validade</th>
+                <th>Ativo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for equipamento in equipamentos %}
+            <tr>
+                <td>{{ equipamento.nome_equioamento }}</td>
+                <td>{{ equipamento.tipo }}</td>
+                <td>{{ equipamento.codigo_ca }}</td>
+                <td>{{ equipamento.descricao }}</td>
+                <td>{{ equipamento.quantidade_estoque }}</td>
+                <td>{{ equipamento.data_validade }}</td>
+                <td>{{ equipamento.ativo }}</td>
+                <td>
+                    <a href="{% url 'editar_equipamento' equipamento.id %}">Editar</a>
+                    <a href="{% url 'excluir_equipamento' equipamento.id %}">Excluir</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

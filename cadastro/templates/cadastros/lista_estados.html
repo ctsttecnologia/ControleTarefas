@@ -1,7 +1,30 @@
-<h1>Lista de Estados</h1>
-<a href="{% url 'cadastros/novo_estado' %}">Novo Estado</a>
-<ul>
-{% for estado in estados %}
-    <li>{{ estado.uf }} <a href="{% url 'editar_estado' estado.pk %}">Editar</a> <a href="{% url 'deletar_estado' estado.pk %}">Deletar</a></li>
-{% endfor %}
-</ul>
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estados</title>
+</head>
+<body>
+    <header>
+        <h1>Cadastro novo Estado</h1>
+        <nav>
+            <ul>
+                <a href="{% url 'cadastros/novo_estado' %}">Novo Estado</a>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+       <ul>
+            {% for estado in estados %}
+               <li>{{ estado.uf }} <a href="{% url 'editar_estado' estado.pk %}">Editar</a> <a href="{% url 'deletar_estado' estado.pk %}">Deletar</a></li>
+            {% endfor %}
+        </ul>
+       
+    </main>
+
+    
+</body>
+</html>

@@ -19,7 +19,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items:flex-end;
-    background-color: #ffffffa4;
+    background-color: #fffdfd;
     border-radius: 0px;
     width: 100%; /*200vh;*/
     max-width: 1300px; /* Largura máxima para o container */
@@ -33,7 +33,7 @@ body {
     color: #333333;
     text-align: center;
     margin-bottom: 10px;
-    background-color: #ffffff;
+    background-color: #b9bab9d0;
 }
 
 .painel1 .titulo {
