@@ -1,12 +1,18 @@
+
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <title>Listar Equipamentos</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/lt_equipamento_styles.css' %}">
+   
 </head>
 <body>
     <h1>Lista de Equipamentos de Segurança</h1>
-    <a href="{% url 'cadastrar_equipamento' %}">Cadastrar Novo Equipamento</a>
+    <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}">Cadastrar Novo Equipamento</a>
+    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Início</a>
     <table border="1">
         <thead>
             <tr>
@@ -21,7 +27,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for equipamento in equipamentos %}
+            {% for elistar_equipamentos in elistar_equipamentos %}
             <tr>
                 <td>{{ equipamento.nome_equioamento }}</td>
                 <td>{{ equipamento.tipo }}</td>

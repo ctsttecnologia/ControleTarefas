@@ -88,8 +88,8 @@
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Telefone</th>
-                                <th>Data de Início</th>
+                                <th>CM</th>
+                                <th>Endereço</th>
                                 <th>Estatus</th>
                                 <th>Ações</th>
                             </tr>
@@ -98,8 +98,8 @@
                             {% for cliente in clientes %}
                             <tr>
                                 <td>{{ cliente.nome }}</td>
-                                <td>{{ cliente.telefone }}</td>
-                                <td>{{ cliente.data_de_inicio }}</td>
+                                <td>{{ cliente.contrato }}</td>
+                                <td>{{ cliente.logradouro }}</td>
                                 <td>{{ cliente.estatus|yesno:"Ativo,Inativo" }}</td>
                                 <td>
                                     <!-- Botão para abrir o modal de confirmação -->

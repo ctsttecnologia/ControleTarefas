@@ -14,7 +14,7 @@ class Logradouro(models.Model):
 class Cliente(models.Model):
     nome = models.CharField(max_length=100)  # Campo nome
     logradouro = models.ForeignKey(Logradouro, on_delete=models.CASCADE, related_name='clientes')  # related_name alterado para 'clientes'
-    contrato = models.CharField(max_length=4, null=False)  # NOT NULL
+    contrato = models.CharField(max_length=4, default='0000')  # NOT NULL
     razao_social = models.CharField(max_length=100, null=False)  # NOT NULL
     unidade = models.IntegerField(null=True, blank=True)  
     cnpj = models.CharField(max_length=14, default='00000000000000')

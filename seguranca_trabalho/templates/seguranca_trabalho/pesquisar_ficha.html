@@ -1,12 +1,19 @@
+
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Pesquisar Ficha</title>
+    <title>Listar de Fichas</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/lt_equipamento_styles.css' %}">
+   
 </head>
 <body>
-    <h1>Pesquisar Ficha</h1>
-    <table>
+    <h1>Fichas de EPI</h1>
+    <a href="{% url 'seguranca_trabalho:cadastrar_ficha_epi' %}">Cadastrar</a>
+    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Início</a>
+    <table border="1">
         <thead>
             <tr>
                 <th>Nome do Colaborador</th>
@@ -18,7 +25,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for ficha in fichas %}
+            {% for pesquisar_ficha in pesquisar_ficha %}
             <tr>
                 <td>{{ ficha.nome_colaborador }}</td>
                 <td>{{ ficha.equipamento }}</td>
@@ -26,13 +33,12 @@
                 <td>{{ ficha.data_entrega }}</td>
                 <td>{{ ficha.data_devolucao }}</td>
                 <td>
-                    <a href="{% url 'editar_ficha_epi' ficha.id %}">Editar</a>
-                    <a href="{% url 'deletar_ficha_epi' ficha.id %}">Deletar</a>
+                    <a href="{% url 'seguranca_trabalho:cadastrar_ficha_epi' %}">Nova Ficha</a>
+                    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Voltar</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-    <a href="{% url 'cadastrar_ficha_epi' %}">Cadastrar Nova Ficha</a>
 </body>
 </html>

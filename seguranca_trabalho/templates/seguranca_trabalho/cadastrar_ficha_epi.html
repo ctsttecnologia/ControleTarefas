@@ -1,16 +1,127 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    
     <meta charset="UTF-8">
-    <title>Cadastrar Ficha EPI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cadastro de ficha de EPI{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/ficha_styles.css' %}">
+        
 </head>
 <body>
-    <h1>Cadastrar Ficha EPI</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Salvar</button>
-    </form>
-    <a href="{% url 'pesquisar_ficha' %}">Voltar</a>
-</body>
+    <div class="container">
+        <h2>SEGURANÇA DO TRABALHO</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+            
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'seguranca_trabalho:pesquisar_ficha' %}" class="btn_cadastro">Voltar</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+        
+        </div>
+        <div class="painel1">
+            
+            <h2>Cadastrar Ficha EPI</h2>
+                
+                <form method="post" action="{% url 'seguranca_trabalho:cadastrar_ficha_epi' %}" class="form-cadastro">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        {{ form.nome_colaborador.label_tag }}
+                        {{ form.nome_colaborador }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.equipamento.label_tag }}
+                        {{ form.equipamento }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.ca_equipamento.label_tag }}
+                        {{ form.ca_equipamento }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.data_entrega.label_tag }}
+                        {{ form.data_entrega }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.data_devolucao.label_tag }}
+                        {{ form.data_devolucao }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.contrato_id.label_tag }}
+                        {{ form.contrato_id }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.quantidade.label_tag }}
+                        {{ form.quantidade }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.descricao.label_tag }}
+                        {{ form.descricao }}
+                    </div>
+                        
+                    <div class="form-group">
+                        <label for="assinatura">Assinatura do Colaborador:</label>
+                        <div class="signature-pad">
+                        <canvas id="signature-pad"></canvas>
+                        </div>
+                        <div class="signature-actions">
+                        <button type="button" id="clear-signature">Limpar</button>
+                        </div>
+                        {{ form.assinatura_colaborador }}  <!-- Campo oculto para armazenar a assinatura -->
+                    </div>
+                    <div class="form-group">
+                        <input type="submit" value="Salvar">
+                    </div>
+                </form>
+        
+                <!-- Scripts -->
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/signature_pad/1.5.3/signature_pad.min.js"></script>
+                <script>
+                // Inicializa o Signature Pad
+                const canvas = document.getElementById('signature-pad');
+                const signaturePad = new SignaturePad(canvas);
+
+                // Limpa a assinatura
+                document.getElementById('clear-signature').addEventListener('click', () => {
+                    signaturePad.clear();
+                });
+
+                // Converte a assinatura para uma imagem e define o valor do campo oculto
+                document.querySelector('form').addEventListener('submit', (e) => {
+                    if (signaturePad.isEmpty()) {
+                        alert('Por favor, forneça uma assinatura.');
+                        e.preventDefault();
+                    } else {
+                        const signatureInput = document.querySelector('#id_assinatura_colaborador');
+                        signatureInput.value = signaturePad.toDataURL();  // Converte a assinatura para base64
+                    }
+                });
+                </script>            
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <!-- Campos do formulário (mantenha os campos anteriores) -->
+                        <div class="form-group">
+                            <button type="button" onclick="gerarPDF()">Gerar PDF</button>
+                            <button type="button" onclick="gerarExcel()">Gerar Excel</button>
+                            <button type="button" onclick="window.print()">Imprimir</button>
+                        </div>
+                    </form>
+                <script>
+                function gerarPDF() {
+                    window.location.href = "{% url 'seguranca_trabalho:gerar_pdf' %}";
+                }
+
+                function gerarExcel() {
+                    window.location.href = "{% url 'seguranca_trabalho:gerar_excel' %}";
+                }
+            </script>
+    </div>      
+</body> 
 </html>

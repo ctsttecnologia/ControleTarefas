@@ -1,16 +1,73 @@
+
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    
     <meta charset="UTF-8">
-    <title>Cadastrar Equipamento</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cadastro de Equipamentos{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/styles.css' %}">
+        
 </head>
 <body>
-    <h1>Cadastrar Novo Equipamento</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Salvar</button>
-    </form>
-    <a href="{% url 'listar_equipamentos' %}">Voltar</a>
-</body>
+    <div class="container">
+        <h2>SEGURANÇA DO TRABALHO</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'seguranca_trabalho:listar_equipamentos' %}" class="btn_cadastro">Pesquisa</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+        
+        </div>
+        <div class="painel1">
+            
+            <h2>Cadastrar Equipamentos EPI, EPC</h2>
+            <!--{{ form.as_p }}--> 
+                
+                <form method="post" action="{% url 'seguranca_trabalho:listar_equipamentos' %}" class="form-cadastro">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            {{ form.nome_equioamento.label_tag }}
+                            {{ form.nome_equioamento }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.tipo.label_tag }}
+                            {{ form.tipo }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.codigo_ca.label_tag }}
+                            {{ form.codigo_ca }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.descricao.label_tag }}
+                            {{ form.descricao }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.quantidade_estoque.label_tag }}
+                            {{ form.quantidade_estoque }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.data_validade.label_tag }}
+                            {{ form.data_validade }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.ativo.label_tag }}
+                            {{ form.ativo }}
+                        </div>
+                        <div class="form-group">
+                            <input type="submit" value="Cadastrar">
+                        </div>
+                    </form>
+</body> 
 </html>
+

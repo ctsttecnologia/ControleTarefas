@@ -9,13 +9,9 @@
     <link rel="stylesheet" href="{% static 'csshome/styles.css' %}">
 </head>
 <body>
-    
-    <main>
-        {% block content %}
-        {% endblock %}
-    </main> 
+   
     <div class="logo">
-        <!--<img src="{% static 'images/logo.png' %}"  height="40px"; width="100px"; name="logocetest">-->
+       <img src="{% static 'images/logo.png' %}"  height="40px"; width="100px"; name="logocetest">
       
     </div>
     <div class="header">
@@ -25,7 +21,7 @@
                     <!--<li><a href="{% url 'home' %}">Home</a></li>-->
                     <li><a href="{% url 'usuario:login' %}">Usuário</a></li>
                     <li><a href="{% url 'cliente' %}">Cliente</a></li>
-                    <li><a href="{% url 'seguranca_trabalho' %}">Segurança do Trabalho</a></li>
+                    <li><a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Segurança do Trabalho</a></li>
                     <li><a href="{% url 'departamento_pessoal' %}">Departamento Pessoal</a></li>
                     <li><a href="{% url 'tarefas:tarefas' %}">Tarefas</a></li>
                 </ul>
@@ -33,7 +29,7 @@
         </header>
     </div>
         
-    <!--<img src="{% static 'images/painel.png' %}" class="imagempainel">-->
+<img src="{% static 'images/painel.png' %}" class="imagempainel">
 <p>Corpo </p>
     <div class="rodape">
         <footer>

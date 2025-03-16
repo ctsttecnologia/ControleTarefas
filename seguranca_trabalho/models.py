@@ -12,6 +12,8 @@ class FichaEPI(models.Model):
     contrato_id = models.IntegerField()
     quantidade = models.IntegerField()
     descricao = models.TextField(blank=True, null=True)
+    assinatura_colaborador = models.ImageField(upload_to='assinaturas/', null=False, blank=False)  # Novo campo
+
 
     def __str__(self):
         return f"{self.nome_colaborador} - {self.equipamento}"
