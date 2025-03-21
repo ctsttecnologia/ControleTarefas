@@ -1,36 +1,46 @@
 {% load static %}
 
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <title>Cadastro</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
 </head>
 <body>
     <div class="container">
-        <h2>Cadastro Geral</h2>
+        <h2>CADASTRO DE ENDEREÇOS</h2>
         {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-             
-        <div class="painel">  
-         <!-- Botão "Voltar para Home" -->
+            <p>Olá, {{ user.username }}!</p>
+            <div class="painel">
+                <a href="{% url 'home' %}" class="btn-home">Home</a>
+                <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+                <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+            </div>
+        {% else %}
             <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Profile</a>
-            {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-            {% endif %}
-        </div>
+        {% endif %}
+        <h2>Cadastrados</h2>    
         <div class="painel1">
-            <h1>CADASTRO</h1>
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit">Cadastrar</button>
+                <button type="submit">Salvar</button>
             </form>
-        </div>                       
-        
+        </div>
+        <div class="painel1">
+            <ul>
+                {% for logradouro in logradouros %}
+                    <li>
+                        {{ logradouro.endereco }} - {{ logradouro.cep }} - {{ logradouro.cidade }}
+                        <a href="{% url 'editar_logradouro' logradouro.pk %}">Editar</a>
+                        <a href="{% url 'excluir_logradouro' logradouro.pk %}">Excluir</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
     </div>
-</body> 
+</body>
 </html>

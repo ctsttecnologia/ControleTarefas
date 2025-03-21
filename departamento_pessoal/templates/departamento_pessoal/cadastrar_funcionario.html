@@ -7,8 +7,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Departamento Pessoal{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">   
     
 </head>
 <body>
@@ -18,7 +18,6 @@
         <p>Olá, {{ user.username }}!</p>
         {% else %}
             <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'profile' %}" class="btn_profile">MenuL</a>
         {% endif %}
                 
         <div class="painel">
@@ -26,31 +25,170 @@
             <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'departamento_pessoal' %}" class="btn_cadastro">Separtamento Pessoal</a>
+            <a href="{% url 'departamento_pessoal' %}" class="btn_cadastro">Departamento Pessoal</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
         <div class="painel1">
             {% csrf_token %}
-            <h1 class="mb-4">Cadastrar Funcionário</h1>
+            <h1>Cadastro de Funcionários</h1>
             <form method="post" action="{% url 'lista_funcionarios' %}" class="form-cadastro">
-                {% csrf_token %}
-                <div class="mb-3">
+            {% csrf_token %}
+                <div class="form-group">
                     <label for="id_admissao" class="form-label">Admissão</label>
                     {{ form.admissao }}
                 </div>
-                <div class="mb-3">
+              
+                <h2> Logradouro***************************</h2>
+
+                <div class="form-group">
+                    <label for="logradouro">Endereço:</label>
+                    <input type="text" id="logradouro" name="logradouro" required>
+                </div>
+
+                <h2> Documentoso***************************************</h2>
+              
+                <div class="form-group">
+                    <label for="cpf">CPF:</label>
+                    <input type="text" id="cpf" name="cpf" maxlength="11" required>
+                </div>
+                <div class="form-group">
+                    <label for="pis">PIS:</label>
+                    <input type="text" id="pis" name="pis" maxlength="12" required>
+                </div>
+                <div class="form-group">
+                    <label for="ctps">CTPS:</label>
+                    <input type="text" id="ctps" name="ctps" maxlength="10" required>
+                </div>
+                <div class="form-group">
+                    <label for="serie">Série:</label>
+                    <input type="text" id="serie" name="serie" maxlength="10" required>
+                </div>
+                <div class="form-group">
+                    <label for="uf">UF:</label>
+                    <input type="text" id="uf" name="uf" maxlength="3">
+                </div>
+                <div class="form-group">
+                    <label for="rg">RG:</label>
+                    <input type="text" id="rg" name="rg" maxlength="10" required>
+                </div>
+                <div class="form-group">
+                    <label for="emissor">Emissor:</label>
+                    <input type="text" id="emissor" name="emissor" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label for="reservista">Reservista:</label>
+                    <input type="number" id="reservista" name="reservista">
+                </div>
+                <div class="form-group">
+                    <label for="titulo_eleitor">Título de Eleitor:</label>
+                    <input type="number" id="titulo_eleitor" name="titulo_eleitor">
+                </div>
+
+               
+               <h2>Admissão****************************************</h2>
+                <div class="form-group">
                     <label for="id_cargo" class="form-label">Cargo</label>
                     {{ form.cargo }}
                 </div>
+               
                 <div class="mb-3">
                     <label for="id_departamento" class="form-label">Departamento</label>
                     {{ form.departamento }}
                 </div>
-                <button type="submit" class="btn btn-success">Salvar</button>
+                <div class="form-group">
+                    <label for="data_admissao">Data de Admissão:</label>
+                    <input type="date" id="data_admissao" name="data_admissao">
+                </div>
+                <div class="form-group">
+                    <label for="matricula">Matrícula:</label>
+                    <input type="text" id="matricula" name="matricula" maxlength="10" required>
+                </div>
+                <div class="form-group">
+                    <label for="salario">Salário:</label>
+                    <input type="number" id="salario" name="salario" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_cadastro">Data de Cadastro:</label>
+                    <input type="datetime-local" id="data_cadastro" name="data_cadastro">
+                </div>
+
+               
+                <h2> Dados Pessoais*************************************</h2>
+                <div class="form-group">
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" name="nome" maxlength="40" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_nascimento">Data de Nascimento:</label>
+                    <input type="date" id="data_nascimento" name="data_nascimento">
+                </div>
+                <div class="form-group">
+                    <label for="naturalidade">Naturalidade:</label>
+                    <input type="text" id="naturalidade" name="naturalidade" maxlength="30">
+                </div>
+                <div class="form-group">
+                    <label for="telefone">Telefone:</label>
+                    <input type="text" id="telefone" name="telefone" maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label for="email">E-mail:</label>
+                    <input type="email" id="email" name="email" maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label for="pai">Nome do Pai:</label>
+                    <input type="text" id="pai" name="pai" maxlength="40">
+                </div>
+                <div class="form-group">
+                    <label for="mae">Nome da Mãe:</label>
+                    <input type="text" id="mae" name="mae" maxlength="40">
+                </div>
+                <div class="form-group">
+                    <label for="filhos_qtda">Quantidade de Filhos:</label>
+                    <input type="number" id="filhos_qtda" name="filhos_qtda">
+                </div>
+                <div class="form-group">
+                    <label for="pne">PNE:</label>
+                    <select id="pne" name="pne">
+                        <option value="S">Sim</option>
+                        <option value="N">Não</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="pne">Descrição da mobilidade:</label>
+                    <textarea id="observacoes" name="observacoes" rows="4" placeholder="Digite suas observações aqui...">
+                     
+                    </textarea>
+                </div>
+                <div class="form-group">
+                    <label for="sexo">Sexo:</label>
+                    <select id="sexo" name="sexo">
+                        <option value="M">Masculino</option>
+                        <option value="F">Feminino</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="peso">Peso (kg):</label>
+                    <input type="number" id="peso" name="peso" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="altura">Altura (m):</label>
+                    <input type="number" id="altura" name="altura" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="estatus">Estatus:</label>
+                    <select id="estatus" name="estatus">
+                        <option value="Ativo">Ativo</option>
+                        <option value="Inativo">Inativo</option>
+                    </select>
+                </div>
+
+                <!-- Botão de Envio -->
+                <div class="form-group">
+                    <input type="submit" value="Cadastrar">
+                </div>
             </form>
         </div>                       
-        
     </div>
 </body> 
 </html>

@@ -1,20 +1,17 @@
 from django import forms
-from .models import Estados, Logradouro
+from .models import Logradouro
 
-class Estado(forms.ModelForm):
-    class Meta:
-        model = Estados
-        fields = ['uf']
 
-class Logradouro(forms.ModelForm):
+class LogradouroForm(forms.ModelForm):
     class Meta:
         model = Logradouro
-        fields = ['estados', 
-                    'endereco', 
-                    'numero', 
+        fields = [  'endereco', 
+                    'numero',
+                    'cep',  
                     'complemento', 
                     'bairro', 
-                    'cidade', 
-                    'cep', 
+                    'cidade',
+                    'estados', 
                     'pais'
                 ]
+

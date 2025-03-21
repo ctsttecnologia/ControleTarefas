@@ -1,13 +1,13 @@
 {% load static %}
 
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR"
 <head>
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Cliente{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
     
 </head>
 <body>
@@ -24,7 +24,7 @@
             <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'cadastro_cliente' %}" class="btn_cadastro">Formulario</a>
+            <a href="{% url 'cadastro_cliente' %}" class="btn_cadastro">Cadastrar</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>

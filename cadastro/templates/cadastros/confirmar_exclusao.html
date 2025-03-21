@@ -1,23 +1,23 @@
 {% load static %}
 
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <title>Confirmar Exclusão</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirmar Exclusão</title>
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
-
 </head>
 <body>
     <div class="container">
         <h1>Confirmar Exclusão</h1>
-        <p>Tem certeza que deseja excluir o funcionário <strong>{{ funcionario.nome }}</strong>?</p>
+        <p>Tem certeza que deseja excluir o logradouro "{{ logradouro.endereco }}"?</p>
         <form method="post">
             {% csrf_token %}
-            <button type="submit" class="btn_excluir">Excluir</button>
-            <a href="{% url 'lista_funcionarios' %}" class="btn_cancelar">Cancelar</a>
+            <button type="submit">Sim, excluir</button>
         </form>
+        <a href="{% url 'cadastro' %}">Cancelar</a>
     </div>
 </body>
 </html>

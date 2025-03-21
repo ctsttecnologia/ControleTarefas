@@ -1,36 +1,18 @@
 
-body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-}
-.form-group {
-    margin-bottom: 15px;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-.form-group input, .form-group select, .form-group textarea {
-    width: 100%;
-    padding: 8px;
+* {
+    margin: 0;
+    padding: 0;
     box-sizing: border-box;
 }
-.form-group input[type="submit"] {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-.form-group input[type="submit"]:hover {
-    background-color: #45a049;
-}
 
-.form-group textarea {
-    resize: vertical; /* Permite redimensionar verticalmente */
-    min-height: 100px; /* Altura mínima */
+/* Estilo body cliente */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
 }
-
 
 .container {
     max-width: 1200px;
@@ -61,7 +43,7 @@ h2 {
 }
 
 /* Estilo dos botões */
-.btn-home, .btn_logout, .btn_profile {
+.btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
     display: inline-block;
     padding: 7px 20px;
     margin: 5px;
@@ -75,7 +57,7 @@ h2 {
     transition: background-color 0.3s ease;
 }
 
-.btn-home:hover, .btn_logout:hover, .btn_profile:hover {
+.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile, .btn_tarefa:hover {
     background-color: #0056b3;
 }
 
@@ -85,6 +67,10 @@ h2 {
 
 .btn_logout:hover {
     background-color: #373737;
+}
+
+.btn_cadastro {
+    background-color: #007bff;
 }
 
 .btn_cadastro:hover {
@@ -99,13 +85,17 @@ h2 {
     background-color: #0056b3;
 }
 
+.btn_tarefa:hover {
+    background-color: #0056b3;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .container {
         padding: 10px;
     }
 
-    .btn-home, .btn_logout, .btn_profile {
+    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
         display: block;
         width: 100%;
         margin: 5px 0;
@@ -121,7 +111,7 @@ h2 {
         padding: 5px;
     }
 
-    .btn-home, .btn_logout, .btn_profile {
+    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
         padding: 6px 12px;
     }
 }

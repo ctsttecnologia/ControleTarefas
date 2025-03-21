@@ -16,12 +16,6 @@ def tarefas(request):
 def tarefas(request):
     return render(request, 'tarefas/tarefas.html')
 
-
-@login_required  # Garante que apenas usuários logados acessem o perfil
-def profile_view(request):
-    return render(request, 'usuario/profile.html')  # Renderiza o template do perfil
-
-
 @login_required  # Garante que apenas usuários logados acessem o perfil
 def criar_tarefa(request):
     if request.method == 'POST':
@@ -32,8 +26,6 @@ def criar_tarefa(request):
     else:
         form = TarefaForm()
     return render(request, 'criar_tarefa.html', {'form': form})
-
-    
 
 @login_required  # Garante que apenas usuários logados acessem o perfil
 def editar_tarefa(request, id):
@@ -54,3 +46,7 @@ def excluir_tarefa(request, id):
         tarefa.delete()
         return redirect('consultar_tarefa')
     return render(request, 'confirmar_exclusao.html', {'tarefa': tarefas})
+
+@login_required  # Garante que apenas usuários logados acessem o perfil
+def profile_view(request):
+    return render(request, 'usuario/profile.html')  # Renderiza o template do perfil

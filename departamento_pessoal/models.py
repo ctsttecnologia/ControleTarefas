@@ -34,6 +34,7 @@ class Cbos(models.Model):
 class Cargos(models.Model):
     nome = models.CharField(unique=True, max_length=50)
     cbo = models.ForeignKey('Cbos', models.DO_NOTHING)
+    descricao = models.CharField(max_length=45, null=True)
 
     class Meta:
         managed = False
@@ -49,7 +50,7 @@ class Departamentos(models.Model):
 class Admissao(models.Model):
     cargo = models.ForeignKey('Cargos', models.DO_NOTHING)
     departamento = models.ForeignKey('Departamentos', models.DO_NOTHING)
-    data_admissao = models.DateField(db_column='data_Admissao', blank=True, null=True)  # Field name made lowercase.
+    data_admissao = models.DateField(db_column='data_Admissao', blank=True, null=True)
     matricula = models.CharField(unique=True, max_length=10)
     salario = models.DecimalField(max_digits=10, decimal_places=2)
     data_cadastro = models.DateTimeField(blank=True, null=True)
@@ -73,6 +74,7 @@ class Funcionarios(models.Model):
     filhos_qtda = models.PositiveIntegerField(db_column='filhos_Qtda', blank=True, null=True)  # Field name made lowercase.
     data_admissao = models.DateField(db_column='data_Admissao', blank=True, null=True)  # Field name made lowercase.
     pne = models.CharField(max_length=1, blank=True, null=True)
+    descricao = models.CharField(max_length=250, blank=True, null=True)
     sexo = models.CharField(max_length=1, blank=True, null=True)
     peso = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     altura = models.DecimalField(max_digits=3, decimal_places=2, blank=True, null=True)

@@ -1,49 +1,62 @@
-{% extends 'base.html' %}
+{% load static %}
 
 
 <!DOCTYPE html>
 <html lang="pt-BR">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}Excluir Tarefa{% endblock %}</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>{% block title %}Tarefas{% endblock %}</title>
+            <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">
+
+            <h2>TAREFAS</h2>
+        
+    </head>
+<body>
+
+    <div class="container">
+        <h2>Consultar Tarefas</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn-tarefa">Nova Tarefa</a> 
+        
+        </div>
+            
         <tr>
             <th>Título</th>
             <th>Descrição</th>
             <th>Status</th>
             <th>Ações</th>
         </tr>
+      
+       
+        {% block content %}
+        {% for tarefa in tarefas %}
+        <tr>
+            <td>{{ tarefa.titulo }}</td>
+            <td>{{ tarefa.descricao }}</td>
+            <td>{{ tarefa.get_status_display }}</td>
+            <td>
+                <a href="{% url 'tarefas:editar_tarefa' tarefa.id %}" class="btn-warning">Editar</a>
+                <a href="{% url 'tarefas:excluir_tarefa' tarefa.id %}" class="btn-danger">Excluir</a>
+                <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
+            </td>
+        </tr>
+        {% endfor %}
 
-    <h2>Consultar Tarefas</h2>
-    {% if user.is_authenticated %}
-    <p>Olá, {{ user.username }}!</p>
-    {% else %}
-        <a href="{% url 'home' %}" class="btn-home">Home</a>
-    {% endif %}
-
-</head>
-
+        {% endblock %}
+    <div>    
 <body>
-                     
-    <a href="{% url 'home' %}" class="btn-home">Home</a>
-    <a href="{% url 'profile' %}" class="btn_profile">PERFIL</a>
-    {% block content %}
-    {% for tarefa in tarefas %}
-    <tr>
-        <td>{{ tarefa.titulo }}</td>
-        <td>{{ tarefa.descricao }}</td>
-        <td>{{ tarefa.get_status_display }}</td>
-        <td>
-            <a href="{% url 'tarefas:editar_tarefa' tarefa.id %}" class="btn-warning">Editar</a>
-            <a href="{% url 'tarefas:excluir_tarefa' tarefa.id %}" class="btn-danger">Excluir</a>
-            <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
-        </td>
-    </tr>
-    {% endfor %}
-    <a href="{% url 'tarefas:criar_tarefa' %}" class="btn-success">Nova Tarefa</a>
-    {% endblock %}
-<body>
-</table>
 </html>
 
 

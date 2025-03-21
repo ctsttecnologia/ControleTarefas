@@ -76,12 +76,12 @@ body {
     max-width: 1200px; /* Largura máxima para o container */
     flex: 1 1 calc(25% - 20px); /* Flexível e responsivo */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    margin-bottom: 20px; /* Espaçamento entre os cards */
+    margin-bottom: 40px; /* Espaçamento entre os cards */
 }
 
 .card:hover {
-    transform: translateY(-5px); /* Efeito de levantar ao passar o mouse */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transform: translateY(-10px); /* Efeito de levantar ao passar o mouse */
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
 } 
 
 
