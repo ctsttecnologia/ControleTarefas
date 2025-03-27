@@ -1,5 +1,7 @@
 from django import forms
 from .models import Funcionarios, Admissao, Documentos, Cargos, Departamentos, Cbos
+from .choices import CBO_CHOICES
+
 
 class FuncionarioForm(forms.ModelForm):
     class Meta:
@@ -15,9 +17,13 @@ class FuncionarioForm(forms.ModelForm):
             'peso': forms.NumberInput(attrs={'class': 'form-control'}),
             'altura': forms.NumberInput(attrs={'class': 'form-control'}),
             'estatus': forms.Select(choices=[(1, 'Ativo'), (0, 'Inativo')], attrs={'class': 'form-control'}),
-            'logradouro': forms.Select(attrs={'class': 'form-control'}),
+            'endereço': forms.Select(attrs={'class': 'form-control'}),
             'documentos': forms.Select(attrs={'class': 'form-control'}),
             'admissao': forms.Select(attrs={'class': 'form-control'}),
+            'camisa': forms.TextInput(attrs={'class': 'form-control'}),
+            'calça': forms.NumberInput(attrs={'class': 'form-control'}),
+            'bota': forms.NumberInput(attrs={'class': 'form-control'}),
+        
         }
 
 class AdmissaoForm(forms.ModelForm):
@@ -44,7 +50,7 @@ class DocumentosForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control'}),
             'rg': forms.TextInput(attrs={'class': 'form-control'}),
             'emissor': forms.TextInput(attrs={'class': 'form-control'}),
-            'reservista': forms.NumberInput(attrs={'class': 'form-control'}),
+            'reservista': forms.TextInput(attrs={'class': 'form-control'}),
             'titulo_eleitor': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
@@ -68,6 +74,7 @@ class DepartamentosForm(forms.ModelForm):
 class CbosForm(forms.ModelForm):
     class Meta:
         model = Cbos
+        cbo = forms.ChoiceField(choices=CBO_CHOICES, label="Selecione um CBO")
         fields = '__all__'
         widgets = {
             'codigo': forms.TextInput(attrs={'class': 'form-control'}),

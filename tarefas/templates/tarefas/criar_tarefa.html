@@ -7,46 +7,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Criar Tarefas{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
    
 </head>
 <body>
     <div class="container">
-            <h2>CRIAR TAREFAS</h2>
-            {% if user.is_authenticated %}
-            <p>Olá, {{ user.username }}!</p>
-            {% else %}
-                <a href="{% url 'home' %}" class="btn-home">Home</a>
-            {% endif %}
+        <h2>CRIAR TAREFAS</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
                     
             <div class="painel">
-                
                 <!-- Botão "Voltar para Home" -->
                 <a href="{% url 'home' %}" class="btn-home">Home</a>
                 <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+                <a href="{% url 'tarefas:tarefas' %}" class="btn_profile">Tarefas</a>
                 <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
-                
-            
+
             </div>
-        <div class="container">
-            {% block content %}
-            <h1>Criar Tarefa</h1>
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn-primary">Salvar</button>
-            </form>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn-secondary">Voltar</a>
-            <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
-            {% endblock %}
-            
-        </div>
-        <div class="header">
-            <header>
-                <nav>
+            <div class="container">
+                {% block content %}
+                <br><p>Dados das tarefas</p></br>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <button type="submit" class="btn_profile">Salvar</button>
+                </form>           
+                {% endblock %}
                 
-                </nav>  
-            </header>
-        </div>    
+            </div>
+            <div class="container">
+                <header>
+                    <nav>
+                    TAREFAS
+                    </nav>  
+                </header>
+            </div>    
     </div>    
 </body>
 </html>

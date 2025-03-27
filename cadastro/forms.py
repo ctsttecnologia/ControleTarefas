@@ -2,6 +2,7 @@ from django import forms
 from .models import Logradouro
 
 
+
 class LogradouroForm(forms.ModelForm):
     class Meta:
         model = Logradouro

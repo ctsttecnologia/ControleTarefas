@@ -3,14 +3,18 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Tarefas
 from .forms import TarefaForm  # Criaremos o formulário depois
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
 
 
+@csrf_exempt
+@csrf_protect
+@requires_csrf_token
 
 
 @login_required # retrição de autenticação
 def tarefas(request):
     tarefas = Tarefas.objects.all().order_by('-data_criacao')
-    return render(request, 'tarefas.html', {'tarefas': tarefas})
+    return render(request, 'tarefas/tarefas.html', {'tarefas': tarefas})
 
 @login_required # retrição de autenticação
 def tarefas(request):
@@ -25,7 +29,7 @@ def criar_tarefa(request):
             return redirect('consultar_tarefa')
     else:
         form = TarefaForm()
-    return render(request, 'criar_tarefa.html', {'form': form})
+    return render(request, 'tarefas/criar_tarefa.html', {'form': form})
 
 @login_required  # Garante que apenas usuários logados acessem o perfil
 def editar_tarefa(request, id):
@@ -37,7 +41,7 @@ def editar_tarefa(request, id):
             return redirect('consultar_tarefa')
     else:
         form = TarefaForm(instance=tarefas)
-    return render(request, 'editar_tarefa.html', {'form': form})
+    return render(request, 'tarefas/editar_tarefa.html', {'form': form})
 
 @login_required  # Garante que apenas usuários logados acessem o perfil
 def excluir_tarefa(request, id):
@@ -45,7 +49,7 @@ def excluir_tarefa(request, id):
     if request.method == 'POST':
         tarefa.delete()
         return redirect('consultar_tarefa')
-    return render(request, 'confirmar_exclusao.html', {'tarefa': tarefas})
+    return render(request, 'tarefas/confirmar_exclusao.html', {'tarefa': tarefas})
 
 @login_required  # Garante que apenas usuários logados acessem o perfil
 def profile_view(request):

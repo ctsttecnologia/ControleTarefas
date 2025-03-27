@@ -40,18 +40,27 @@
                             <thead>
                                 <tr>
                                     <th>Nome</th>
+                                    <th>Endereço</th>
+                                    <th>CM</th>
+                                    <th>Razão social</th>
+                                    <th>Unidade</th>
                                     <th>CNPJ</th>
-                                    <th>Razão Social</th>
                                     <th>Telefone</th>
+                                    <th>Data de Início</th>
+                                    <th>Estatus</th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for cliente in cliente %}
                                     <tr>
                                         <td>{{ cliente.nome }}</td>
-                                        <td>{{ cliente.cnpj }}</td>
+                                        <td>{{ cliente.logradouro }}</td>
+                                        <td>{{ cliente.contrato }}</td>
                                         <td>{{ cliente.razao_social }}</td>
+                                        <td>{{ cliente.cnpj }}</td>
                                         <td>{{ cliente.telefone }}</td>
+                                        <td>{{ cliente.estatus|yesno:"Ativo,Inativo" }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>

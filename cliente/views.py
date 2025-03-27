@@ -4,8 +4,12 @@ from .forms import ClienteForm
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from .models import Cliente
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
 
 
+@csrf_exempt
+@csrf_protect
+@requires_csrf_token
 @login_required
 def cliente(request):
     return render(request, 'cliente/cliente.html')

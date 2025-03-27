@@ -11,8 +11,6 @@ class Tarefas(models.Model):
             ('em_andamento', 'Em Andamento'),
             ('concluida', 'Concluída'),
         ]
-
-    
     titulo = models.CharField(max_length=100, blank=True, null=True, verbose_name="Titulo")
     nome = models.CharField(max_length=40, verbose_name="Nome")
     descricao = models.TextField(verbose_name="Descrição", blank=True, null=True)

@@ -7,7 +7,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Cliente{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">   
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">      
     
 </head>
 <body>
@@ -28,19 +29,21 @@
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
-        <div class="painel1">
+        <div class="painel2">
             {% csrf_token %}
             <h2>Cadastro de Clientes</h2>
                 <form method="post" action="{% url 'lista_clientes' %}" class="form-cadastro">
-                
+                    {% csrf_token %}
                     <div class="form-group">
                         <label for="nome">Nome:</label>
                         <input type="text" id="nome" name="nome" placeholder="Digite o nome do cliente">
                     </div>
 
                     <div class="form-group">
-                        <label for="logradouro">Endereço:</label>
-                        <input type="text" id="logradouro" name="logradouro" placeholder="Digite o endereço do cliente">
+                        <label for="endereco_id">Endereço:</label>
+                        <select id="endereco_id" name="endereco_id" class="form-control">
+                            <option value="">Selecione um endereço</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="contrato">CM:</label>
@@ -62,80 +65,25 @@
                         <input type="text" id="cnpj" name="cnpj" placeholder="Digite o CNPJ do cliente">
                     </div>
                     
-                    <div class="mb-3">
+                    <div class="Form-group">
                         <label for="id_telefone" class="form-label">Telefone</label>
                         {{ form.telefone }}
                         <small class="form-text text-muted">Digite o telefone com DDD.</small>
                     </div>
                     
-                    <div class="mb-3">
+                    <div class="Form-group">
                         <label for="id_data_de_inicio" class="form-label">Data de Início</label>
                         {{ form.data_de_inicio }}
                     </div>
 
-                    <div class="mb-3 form-check">
+                    <div class="Form-group">
                         {{ form.estatus }}
                         <label class="form-check-label" for="id_estatus">Ativo</label>
                     </div>
                                         
                     <button type="submit" class="btn-pesquisar">Salvar</button>
                 </form>
-                <div class="container mt-5">
-                    <h1 class="mb-4">Lista de Clientes</h1>
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>CM</th>
-                                <th>Endereço</th>
-                                <th>Estatus</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cliente in clientes %}
-                            <tr>
-                                <td>{{ cliente.nome }}</td>
-                                <td>{{ cliente.contrato }}</td>
-                                <td>{{ cliente.logradouro }}</td>
-                                <td>{{ cliente.estatus|yesno:"Ativo,Inativo" }}</td>
-                                <td>
-                                    <!-- Botão para abrir o modal de confirmação -->
-                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalExcluir{{ cliente.id }}">
-                                        Excluir
-                                    </button>
-                                </td>
-                            </tr>
-            
-                            <!-- Modal de Confirmação -->
-                            <div class="modal fade" id="modalExcluir{{ cliente.id }}" tabindex="-1" aria-labelledby="modalExcluirLabel{{ cliente.id }}" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalExcluirLabel{{ cliente.id }}">Confirmar Exclusão</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Tem certeza que deseja excluir o cliente <strong>{{ cliente.nome }}</strong>?</p>
-                                            <p class="text-danger">Todos os registros relacionados serão perdidos.</p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                            <form action="{% url 'excluir_cliente' cliente.id %}" method="post" style="display: inline;">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-danger">Excluir</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            
-                <!-- Bootstrap JS -->
-                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                
         </div>                       
     </div>
     

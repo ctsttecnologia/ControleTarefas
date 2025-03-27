@@ -4,32 +4,34 @@
     padding: 0;
     box-sizing: border-box;
 }
+
+/* Estilos gerais */
 body {
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 80vh; /* Garante que o body ocupe pelo menos a altura da tela */
-    background-color: #f4f4f9; /* Fundo suave para a página */
-    padding: 20px; /* Espaçamento para evitar que o conteúdo encoste nas bordas */
+    min-height: 80vh;
+    background-color: #cacaca;
+    padding: 20px;
 }
 
 /* Container principal */
 .container {
     display: flex;
     flex-direction: column;
-    align-items:flex-end;
-    background-color: #fffdfd;
+    align-items: flex-end;
+    background-color: #ffffff;
     border-radius: 0px;
-    width: 100%; /*200vh;*/
-    max-width: 1300px; /* Largura máxima para o container */
+    width: 100%;
+    max-width: 1400px;
     padding: 0px;
     margin: 0px 0;
 }
 
-/* Painel do título */
+/* Painéis superiores */
 .painel1 {
-    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
+    font-size: 1rem;
     color: #333333;
     text-align: center;
     margin-bottom: 10px;
@@ -37,179 +39,173 @@ body {
 }
 
 .painel1 .titulo {
-    font-size: 2rem; /* Unidade relativa para o tamanho da fonte */
+    font-size: 2rem;
     color: #333333;
     margin-bottom: 20px;  
 }
 
-/* Painel da mensagem */
 .painel2 {
     display: flex;
-    justify-content:space-between;
+    justify-content: space-between;
     height: 100px;
     max-height: 400px;
 }
+
 .painel2 .mensagem {
-    font-size: 1.2rem; /* Unidade relativa para o tamanho da fonte */
-    color: #555555  
+    font-size: 1.2rem;
+    color: #555555;
 }
+
 .logout {
-    align-items:center;
+    font-size: 2rem;
+    align-items: center;
     height: 100px;
     max-height: 30px;
 }
+
 .home {
-    align-items:center;
+    font-size: 2rem;
+    align-items: center;
     height: 100px;
     max-height: 30px;
 } 
+
+/* Container de cards */
+.card_principal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    font-size: 0.9rem;
+}
 
 /* Estilo base para os cards */
 .card {
-    display: flex;
-    justify-content:center;
     background-color: #ffffff;
-    border-radius: 5px;
+    border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    height: 50vh;
-    width: 600vh;
-    max-width: 1200px; /* Largura máxima para o container */
-    flex: 1 1 calc(25% - 20px); /* Flexível e responsivo */
+    height: 250px;
+    width: 250px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    margin-bottom: 40px; /* Espaçamento entre os cards */
+    border: 1px solid #def3ff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
 }
 
 .card:hover {
-    transform: translateY(-10px); /* Efeito de levantar ao passar o mouse */
+    transform: translateY(-10px);
     box-shadow: 0 10px 26px rgba(0, 0, 0, 0.2);
-} 
-
-
-.link, .link-home, .link-cadastro_cliente, .link-cadastro {
-    text-decoration: none;
-    color: #007bff;
-    font-weight: bold;
 }
 
-.link:hover, .link-home:hover, .link-cadastro_cliente:hover, .link-cadastro:hover {
+/* Links */
+.link, .link-card {
+    font-size: 1rem;
+    text-decoration: none;
+    color: #03009f;
+    font-weight: none;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.link:hover, .link-card:hover {
     text-decoration: underline;
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-    .card > div {
-        flex: 1 1 calc(50% - 20px);
-    }
+/* Container de conteúdo do card */
+.card1-1 {
+    margin-bottom: 10px;
 }
 
-@media (max-width: 480px) {
-    .card > div {
-        flex: 1 1 100%;
-    }
+/* Ícones dentro dos cards */
+.icone {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    text-align: right;
 }
 
-
+.icone {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
 
 /* Cores específicas para cada card */
 .card1 {
-    display: flex;
     background-color: #ff6b6b;
-    align-items:left;
-    padding: 20px;
-    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
     color: #000000;
-    margin-bottom: 20px;
+}
 
+.card1 a:hover {
+    color: #fff;
 }
 
 .card2 {
     background-color: #4ecdc4;
-    display: flex;
-    align-items:left;
-    padding: 20px;
-    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
     color: #000000;
-    margin-bottom: 20px;
+}
+
+.card2 a:hover {
+    color: #fff;
 }
 
 .card3 {
     background-color: #ffe66d;
-    display: flex;
-    align-items:left;
-    padding: 20px;
-    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
     color: #000000;
-    margin-bottom: 20px;
+}
+
+.card3 a:hover {
+    color: #fff;
 }
 
 .card4 {
     background-color: #6b5b95;
-    display: flex;
-    align-items:left;
-    padding: 20px;
-    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
     color: #000000;
-    margin-bottom: 20px;
+}
+
+.card4 a:hover {
+    color: #fff;
 }
 
 .card5 {
     background-color: #00aeff;
-    display: flex;
-    align-items:left;
-    padding: 20px;
-    font-size: 1rem; /* Unidade relativa para o tamanho da fonte */
     color: #000000;
-    margin-bottom: 20px;
-}
-/* Estilos para os links */
-.card5 a {
-    align-items: flex-start;
-    text-decoration: none; /* Remove o sublinhado dos links */
-    color: #007bff; /* Cor azul padrão para links */
-    font-size: 16px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
 }
 
-/* Efeito hover nos links */
 .card5 a:hover {
-    background-color: #007bff; /* Fundo azul ao passar o mouse */
-    color: #fff; /* Texto branco ao passar o mouse */
+    color: #fff;
 }
-
-
-
 
 /* Media Queries para responsividade */
 @media (max-width: 768px) {
-    .cards-container {
-        gap: 15px; /* Reduz o espaçamento entre os cards */
-    }
-
     .card {
-        flex: 1 1 calc(50% - 15px); /* 2 cards por linha em telas menores */
+        width: calc(50% - 20px);
     }
 
     .painel1 .titulo {
-        font-size: 1.8rem; /* Reduz o tamanho da fonte do título */
+        font-size: 1.8rem;
     }
 
     .painel2 .mensagem {
-        font-size: 1rem; /* Reduz o tamanho da fonte da mensagem */
+        font-size: 1rem;
     }
 }
 
 @media (max-width: 480px) {
     .card {
-        flex: 1 1 100%; /* 1 card por linha em telas muito pequenas */
+        width: 100%;
     }
 
     .painel1 .titulo {
-        font-size: 1.5rem; /* Reduz ainda mais o tamanho da fonte do título */
+        font-size: 1.5rem;
     }
 
     .painel2 .mensagem {
-        font-size: 0.9rem; /* Reduz ainda mais o tamanho da fonte da mensagem */
+        font-size: 0.9rem;
     }
 }
+
+   

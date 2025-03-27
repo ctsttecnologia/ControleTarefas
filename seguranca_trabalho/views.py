@@ -13,8 +13,12 @@ from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from openpyxl import Workbook
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
 
 
+@csrf_exempt
+@csrf_protect
+@requires_csrf_token
 
 @login_required
 def seguranca_trabalho(request):

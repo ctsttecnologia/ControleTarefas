@@ -1,0 +1,99 @@
+
+
+<!--Para inserir imagens em um projeto Django online (em produção), você precisa garantir que:
+
+As imagens estejam sendo servidas corretamente
+
+O caminho das imagens esteja configurado para funcionar em produção
+
+O servidor web (como Nginx ou Apache) esteja configurado para servir arquivos estáticos
+
+Solução para imagens em produção:
+1. Usando "{% static %}" (Recomendado)
+Modifique seus templates para usar o template tag static:
+
+html
+Copy
+
+"Substitua todos os caminhos de imagem como abaixo" 
+
+<img src="{% static 'imagens/tarefa.gif' %}" class="icone">
+Run HTML
+2. Configuração do Django (settings.py)
+Certifique-se de que seu settings.py tenha:
+
+python
+Copy
+# Configurações para arquivos estáticos
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),  # Pasta local dos estáticos
+]
+3. Configuração do Servidor Web (Nginx/Apache)
+Para que as imagens sejam servidas corretamente em produção, você precisa configurar seu servidor:
+
+Exemplo para Nginx:
+
+nginx
+Copy
+server {
+    listen 80;
+    server_name seu-site.com;
+
+    location /static/ {
+        alias /caminho/para/seu/projeto/staticfiles/;
+    }
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+Exemplo para Apache:
+
+apache
+Copy
+Alias /static /caminho/para/seu/projeto/staticfiles
+<Directory /caminho/para/seu/projeto/staticfiles>
+    Require all granted
+</Directory>
+4. Coletar Arquivos Estáticos
+Antes de subir para produção, execute:
+
+bash
+Copy
+python manage.py collectstatic
+Isso copiará todos os arquivos estáticos (incluindo imagens) para STATIC_ROOT.
+
+Se estiver usando serviços de hospedagem (Heroku, PythonAnywhere, etc.)
+Heroku: Ele não armazena arquivos estáticos permanentemente. Use Amazon S3, Whitenoise ou outro CDN.
+
+PythonAnywhere: Siga a documentação deles para configurar arquivos estáticos.
+
+AWS/GCP: Configure um bucket no S3 ou Google Cloud Storage e use django-storages.
+
+Alternativa: Usando CDN (Amazon S3, Cloudinary, etc.)
+Se seu projeto estiver em um serviço que não armazena arquivos estáticos (como Heroku), use um CDN:
+
+Instale django-storages e boto3 (para S3):
+
+bash
+Copy
+pip install django-storages boto3
+Configure settings.py:
+
+python
+Copy
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+AWS_ACCESS_KEY_ID = 'SUA_CHAVE_AWS'
+AWS_SECRET_ACCESS_KEY = 'SUA_SECRET_AWS'
+AWS_STORAGE_BUCKET_NAME = 'nome-do-seu-bucket'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_FILE_OVERWRITE = False
+No template, continue usando {% static %} e o Django cuidará do resto.
+
+-->

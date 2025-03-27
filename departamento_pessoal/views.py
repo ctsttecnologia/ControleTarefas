@@ -4,6 +4,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from . import views
 from .forms import FuncionarioForm
 from .models import Funcionarios, Admissao, Documentos, Cargos, Departamentos, Cbos
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
+
+
+@csrf_exempt
+@csrf_protect
+@requires_csrf_token
 
 
 @login_required # retrição de autenticação
@@ -42,4 +48,10 @@ def excluir_funcionario(request, id):
         funcionario.delete()
         return redirect('lista_funcionarios')
     return render(request, 'departamento_pessoal/confirmar_exclusao.html', {'funcionario': funcionario})
+
+@login_required # retrição de autenticação
+def admissao(request):
+    return render(request, 'departamento_pessoal/admissao.html')
+
+
 
