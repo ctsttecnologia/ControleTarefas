@@ -1,63 +1,98 @@
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Estilo body cliente */
 body {
     font-family: Arial, sans-serif;
-    background-color: #ffffff;
+    background-color: #cacaca;
+    margin: 0;
+    padding: 0;
     color: #333;
-    line-height: 1.6;
-    padding: 20px;
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #fff;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+h2 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+
+/* Estilos para o painel de cadastro */
+.painel2 {
+    background-color: #ecf0f1;
+    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-h2 {
-    text-align: center;
-    margin-bottom: 10px;
-    color: #333;
+.form-cadastro {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.painel, .painel1 {
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.painel1 h2 {
-    margin-bottom: 10px;
-    color: #555;
+.form-group label {
+    font-weight: bold;
+    color: #2c3e50;
 }
 
-/* Estilo dos botões */
-.btn-home, .btn_logout, .btn_cadastro, .btn_profile {
-    display: inline-block;
-    padding: 7px 20px;
-    margin: 5px;
+.form-group input,
+.form-group select {
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
     font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+/* Estilos para o botão de salvar */
+.btn-pesquisar {
+    background-color: #27ae60;
     color: #fff;
-    background-color: #007bff;
+    padding: 10px 20px;
     border: none;
     border-radius: 5px;
-    text-decoration: none;
-    text-align: center;
+    font-size: 16px;
+    cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
-.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile:hover {
+.btn-pesquisar:hover {
+    background-color: #219653;
+}
+
+/* Estilos para mensagens de ajuda */
+.form-text {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+/* Estilos para o checkbox */
+.form-check-label {
+    margin-left: 10px;
+    font-weight: normal;
+}
+
+/* Estilos para o botão de logout */
+/*Painel menu*/
+.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile, .btn_tarefa:hover {
     background-color: #0056b3;
 }
 
@@ -85,13 +120,17 @@ h2 {
     background-color: #0056b3;
 }
 
+.btn_tarefa:hover {
+    background-color: #0056b3;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .container {
         padding: 10px;
     }
 
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile {
+    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
         display: block;
         width: 100%;
         margin: 5px 0;
@@ -107,67 +146,7 @@ h2 {
         padding: 5px;
     }
 
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile {
+    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
         padding: 6px 12px;
-    }
-}
-
-/* Estilos do formulário de pesquisa */
-.form-pesquisa {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
-}
-
-.form-group input {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-.btn-pesquisar {
-    padding: 10px 20px;
-    background-color: #626262;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-}
-
-.btn-pesquisar:hover {
-    background-color: #303030;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .painel {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .form-pesquisa {
-        gap: 10px;
-    }
-
-    .form-group input {
-        font-size: 14px;
-    }
-
-    .btn-pesquisar {
-        font-size: 14px;
     }
 }

@@ -1,45 +1,62 @@
+
 {% load static %}
 
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <title>Cadastro</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
+    <title>Cadastro de Logradouro</title>
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscadastro/styles.css' %}">   
 </head>
 <body>
     <div class="container">
-        <h2>CADASTRO DE ENDEREÇOS</h2>
+        <h2>CADASTRO</h2>
         {% if user.is_authenticated %}
             <p>Olá, {{ user.username }}!</p>
             <div class="painel">
                 <a href="{% url 'home' %}" class="btn-home">Home</a>
                 <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+                <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+                <a href="{% url 'cadastrar_logradouro' %}" class="btn_cadastro">Cadastrar Endereços</a>
                 <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
             </div>
         {% else %}
             <a href="{% url 'home' %}" class="btn-home">Home</a>
         {% endif %}
-        <h2>Cadastrados</h2>    
-        <div class="painel1">
-            <form method="post">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit">Salvar</button>
-            </form>
-        </div>
-        <div class="painel1">
-            <ul>
-                {% for logradouro in logradouros %}
-                    <li>
-                        {{ logradouro.endereco }} - {{ logradouro.cep }} - {{ logradouro.cidade }}
-                        <a href="{% url 'editar_logradouro' logradouro.pk %}">Editar</a>
-                        <a href="{% url 'excluir_logradouro' logradouro.pk %}">Excluir</a>
-                    </li>
-                {% endfor %}
-            </ul>
+
+        <div class="painel">
+            <!-- Tabela de Logradouros Cadastrados -->
+            <h2>Endereços Cadastrados</h2>
+            <table class="tabela-logradouros">
+                <thead>
+                    <tr>
+                        <th>Endereço</th>
+                        <th>Número</th>
+                        <th>CEP</th>
+                        <th>Complemento</th>
+                        <th>Bairro</th>
+                        <th>Cidade</th>
+                        <th>Estado</th>
+                        <th>País</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for logradouro in logradouros %}
+                        <tr>
+                            <td>{{ logradouro.endereco }}</td>
+                            <td>{{ logradouro.numero }}</td>
+                            <td>{{ logradouro.cep }}</td>
+                            <td>{{ logradouro.complemento }}</td>
+                            <td>{{ logradouro.bairro }}</td>
+                            <td>{{ logradouro.cidade }}</td>
+                            <td>{{ logradouro.get_estados_display }}</td>
+                            <td>{{ logradouro.pais }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </body>

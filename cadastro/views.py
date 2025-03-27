@@ -4,10 +4,16 @@ from django.core.exceptions import PermissionDenied
 from .models import Logradouro
 from .forms import LogradouroForm
 from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
+
+
+@csrf_exempt
+@csrf_protect
+@requires_csrf_token
 
 @login_required
 def cadastro(request):
-    # Listar e cadastrar logradouros
+    # Listar logradouros
     if request.method == 'POST':
         form = LogradouroForm(request.POST)
         if form.is_valid():
@@ -18,6 +24,21 @@ def cadastro(request):
 
     logradouros = Logradouro.objects.all()  # Lista todos os logradouros
     return render(request, 'cadastros/cadastro.html', {'form': form, 'logradouros': logradouros})
+
+@login_required
+def cadastrar_logradouro(request):
+    # Cadastrar logradouros
+    if request.method == 'POST':
+        form = LogradouroForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('cadastro')  # Redireciona para a mesma página após salvar
+    else:
+        form = LogradouroForm()
+
+    logradouros = Logradouro.objects.all()  # Lista todos os logradouros
+    return render(request, 'cadastros/cadastrar_logradouro.html', {'form': form, 'logradouros': logradouros})
+
 
 @login_required
 def editar_logradouro(request, pk):

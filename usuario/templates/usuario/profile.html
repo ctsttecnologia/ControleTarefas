@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil</title>
     <!-- Link para o arquivo CSS -->
-    <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}"> 
+    <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
 </head>
 <body class="container">
     <div class="painel">
@@ -18,52 +18,70 @@
         </div>
         <div class="painel2">
             <div class="logout">
-                <a href="{% url 'usuario:logout' %}" class="link">Logout</a>
+                <ul><a href="{% url 'usuario:logout' %}" class="link">Logout</a></ul>
             </div>
             <div class="home">
-                <a href="{% url 'home' %}" class="link">Home</a>
+                <ul><a href="{% url 'home' %}" class="link">Home</a></ul>
             </div>
         </div>
-        <div class="card">
-            <div class="card card1">Tarefas
-                
-                <div class="card1.1">
-                    <a href="{% url 'tarefas:tarefas' %}" class="link-home">link para tarefa</a>
+        <div class="card_principal">
+            <div class="card card1">TAREFAS
+                <div class="card1-1">
+                    <br></br>
+                    <a href="{% url 'tarefas:tarefas' %}" class="link-card">Tarefas</a>
+                    
                 </div>
-                      
+                <div class="icone_tarefa">
+                    <img src="/midia/imagens/tarefa.gif" class="icone">
+                    <img src="{% static 'imagens/tarefa.gif' %}" class="icone"> <!--Imagem no Django em produção-->
+                </div>      
             </div>
-            <div class="card card2">cliente
-                
-                <div class="card2.1">
-                    <a href="{% url 'cliente' %}" class="link-home">link para clientes</a>
+            <div class="card card2">CLIENTES
+                <div class="card1-1">
+                    <br></br>
+                    <a href="{% url 'cliente' %}" class="link-card">Cliente</a>
+                    <a href="{% url 'lista_clientes' %}" class="link-card">Lista de Clientes</a>
+                    
                 </div>
-                
+                <div class="icone_tarefa">
+                    <img src="/midia/imagens/cliente.gif" class="icone">
+                    <img src="{% static 'imagens/cliente.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+                </div>
             </div>
-            <div class="card card3">Departamento Pessoal
-                
-                <div class="card3.1">
-                    <a href="{% url 'departamento_pessoal' %}" class="link-home">link para DP</a>
+            <div class="card card3">DEPARTAMENTO PESSOAL
+                <div class="card1-1">
+                    <br></br>
+                    <a href="{% url 'departamento_pessoal' %}" class="link-card">Departamento Pessoal</a>
                 </div>
-             
+                <div class="icone_tarefa">
+                    <img src="/midia/imagens/dp.gif" class="icone">
+                    <img src="{% static 'imagens/dp.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+                </div>
             </div>
-            <div class="card card4">Segurança do Trabalho
-                
-                <div class="card4.1">
-                    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="link-home">link para TST</a>
+            <div class="card card4">SEGURANÇA DO TRABALHO
+                <div class="card1-1">
+                    <br></br>
+                    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="link-card">Segurançada do Trabalho</a>
                 </div>
-                            
+                <div class="icone_tarefa">
+                    <img src="/midia/imagens/tst.gif" class="icone">
+                    <img src="{% static 'imagens/tst.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+                </div>          
             </div>
-            <div class="card card5">Cadastro
-                <div class="card5.1">
-                    <ul><a href="{% url 'cadastro_cliente' %}" class="link-cadastro_cliente">Cadastro de Cliente</a></ul>
+            <div class="card card5">CADASTRO
+                <div class="card1-1">
+                    <br></br>
+                    <a href="{% url 'cadastro_cliente' %}" class="link-card">Cliente</a>
+                    <a href="{% url 'cadastrar_logradouro' %}" class="link-card">Endereço</a>
                 </div>
-                <div class="card5.2"> 
-                    <ul><a href="{% url 'cadastro' %}" class="link-cadastro">Cadastro de Endereço</a></ul>
+                <div class="icone_tarefa">
+                    <img src="/midia/imagens/cadastro.gif" class="icone" >
+                    <img src="{% static 'imagens/cadastro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
                 </div>
-             
-                </div>    
-            </div>
+            </div>    
         </div>
     </div>
+    
 </body>
 </html>
+

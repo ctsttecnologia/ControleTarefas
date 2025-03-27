@@ -8,7 +8,7 @@
 /* Estilo body cliente */
 body {
     font-family: Arial, sans-serif;
-    background-color: #ffffff;
+    background-color: #cacaca;
     color: #333;
     line-height: 1.6;
     padding: 20px;
@@ -18,7 +18,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #fff;
+    background-color: #ffffff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }

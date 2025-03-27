@@ -4,8 +4,13 @@ from django.shortcuts import redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
+from django.urls import reverse
 
 
+@csrf_exempt
+@csrf_protect
+@requires_csrf_token
 
 def user_login(request):
     if request.method == 'POST':
@@ -39,4 +44,6 @@ def user_profile(request):
 def user_logout(request):
     logout(request)
     return redirect('home')
+
+
 

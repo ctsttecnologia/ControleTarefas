@@ -7,15 +7,16 @@
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>{% block title %}Tarefas{% endblock %}</title>
-            <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">
+            <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+            <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
 
-            <h2>TAREFAS</h2>
+            <h1>TAREFAS</h1>
         
     </head>
 <body>
 
     <div class="container">
-        <h2>Consultar Tarefas</h2>
+        <h1>Consultar Tarefas</h1>
         {% if user.is_authenticated %}
         <p>Olá, {{ user.username }}!</p>
         {% else %}
@@ -27,8 +28,8 @@
             <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn-tarefa">Nova Tarefa</a> 
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn_profile">Nova Tarefa</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
             
@@ -36,12 +37,12 @@
             <th>Título</th>
             <th>Descrição</th>
             <th>Status</th>
-            <th>Ações</th>
+  
         </tr>
       
        
         {% block content %}
-        {% for tarefa in tarefas %}
+        {% for tarefas in tarefas %}
         <tr>
             <td>{{ tarefa.titulo }}</td>
             <td>{{ tarefa.descricao }}</td>
