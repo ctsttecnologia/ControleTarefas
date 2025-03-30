@@ -1,0 +1,79 @@
+
+{% block content %}
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ficha de epi{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">      
+    
+</head>
+<body>
+    <div class="container">
+        <h2>FICHA DE EPI</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'criar_ficha' %}" class="btn_cadastro">Cadastrar Ficha</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+          
+        <div class="painel2">
+            {% csrf_token %}
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2>Minhas Fichas de EPI</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Empregado</th>
+                                    <th>Cargo</th>
+                                    <th>Admissão</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ficha in fichas %}
+                                <tr>
+                                    <td>{{ ficha.empregado.get_full_name }}</td>
+                                    <td>{{ ficha.cargo }}</td>
+                                    <td>{{ ficha.admissao|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'visualizar_ficha' ficha.id %}" class="btn_cadastro">Visualizar</a>
+                                        <a href="{% url 'gerar_pdf' ficha.id %}" class="btn_cadastro">PDF</a>
+                                        <a href="{% url 'gerar_pdf' ficha_id=ficha.id %}" class="btn_cadastro">PDF</a>
+                                        <a href="{% url 'gerar_word' ficha_id=ficha.id %}" class="btn_cadastro">Word</a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4">Nenhuma ficha cadastrada</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="{% url 'criar_ficha' %}" class="btn_cadastro">Nova Ficha</a>
+                </div>
+            </div>                       
+    </div>
+    {% endblock %}  
+</body> 
+</html>
+

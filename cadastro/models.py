@@ -16,3 +16,5 @@ class Logradouro(models.Model):
     def __str__(self):
         return f"{self.endereco}, {self.numero}, {self.bairro}, {self.cidade}/{self.estado}"
     
+    class Meta:
+        db_table = 'logradouro'  # opcional - define o nome exato da tabela

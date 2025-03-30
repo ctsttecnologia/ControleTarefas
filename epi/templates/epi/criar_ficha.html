@@ -1,0 +1,125 @@
+
+{% load widget_tweaks %}
+{% block content %}
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ficha de epi{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">      
+    
+</head>
+<body>
+    <div class="container">
+        <h2>FICHA DE EPI</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'listar_fichas' %}" class="btn_cadastro">Minhas Fichas de EPI</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+        
+        </div>
+        <div class="painel2">
+            {% csrf_token %}
+            <h2>Cadastro</h2>
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <h3 class="mb-3">Dados de Identificação</h3>
+                <div class="row g-3 mb-4">
+                    <div class="form-group">
+                        {{ form_ficha.empregado.label_tag }}
+                        {% render_field form_ficha.empregado class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_ficha.cargo.label_tag }}
+                        {% render_field form_ficha.cargo class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_ficha.registro.label_tag }}
+                        {% render_field form_ficha.registro class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_ficha.admissao.label_tag }}
+                        {% render_field form_ficha.admissao class="form-control" %}
+                    </div>
+                    <div class="cform-group">
+                        {{ form_ficha.demissao.label_tag }}
+                        {% render_field form_ficha.demissao class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_ficha.contrato.label_tag }}
+                        {% render_field form_ficha.contrato class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_ficha.local_data.label_tag }}
+                        {% render_field form_ficha.local_data class="form-control" %}
+                    </div>
+                </div>
+    
+                <div class="termo mb-4">
+                    <h3 class="mb-3">TERMO DE COMPROMISSO</h3>
+                    
+                    <p>Eu, ______________________________________________________, </p>
+                    <p>Declaro, que recebi de CETEST MINAS ENGENHARIA E SERVIÇOS S/A, os Equipamentos de Proteção 
+                    Individual - EPI's - abaixo relacionados, comprometendo-me a:</p>
+                    <ol>
+                        <li>Usá-los em trabalho, zelando pela sua guarda e conservação, devolvendo-os quando se tornarem 
+                        impróprios para o uso e/ou meu desligamento da CETEST MINAS ou do seu respectivo contrato;</li>
+                        <li>Em caso de perda, mau uso, extravio ou inutilização proposital do EPI recebido, assumo a 
+                        responsabilidade Quanto à restituição do seu valor atualizado, conforme autorização de débito por mim assinada.</li>
+                    </ol>
+                    <p>Declaro ainda ter recebido no ato de minha admissão e no ato do recebimento:</p>
+                    <ol>
+                        <li>Treinamento básico e instruções prévias sobre a forma de utilização e guarda dos EPI's recebido;</li>
+                        <li>Instruções sobre os riscos a que estou exposto em minha área de trabalho, bem como sua prevenção.</li>
+                        <li>Estou ciente de que o não uso dos EPI's, constitui ato faltoso conforme artigo 158 da CLT.</li>
+                    </ol>
+                    
+                    <div class="row mt-3">
+                        <div class="cform-group">
+                            <label>Assinatura Digital</label>
+                            {% render_field form_ficha.assinatura class="form-control" %}
+                        </div>
+                    </div>
+                </div>
+    
+                <h3 class="mb-3">Itens de EPI</h3>
+                <div class="row g-3 mb-4">
+                    <div class="form-group">
+                        {{ form_item.epi.label_tag }}
+                        {% render_field form_item.epi class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_item.quantidade.label_tag }}
+                        {% render_field form_item.quantidade class="form-control" %}
+                    </div>
+                    <div class="form-group">
+                        {{ form_item.data_recebimento.label_tag }}
+                        {% render_field form_item.data_recebimento class="form-control" %}
+                    </div>
+                </div>
+    
+                <button type="submit" class="btn_cadastro">Salvar Ficha</button>
+            </form>
+                
+        </div>                       
+    </div>
+    {% endblock %}  
+</body> 
+</html>
+

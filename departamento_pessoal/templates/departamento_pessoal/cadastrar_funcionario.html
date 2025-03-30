@@ -36,7 +36,7 @@
             {% csrf_token %}
                 <div class="painel">
                     <a href="{% url 'admissao' %}" class="btn_cadastro">Cadastrar Admissão</a>
-                    <a href="{% url 'cadastro' %}" class="btn_cadastro">Cadastrar Endereço</a>
+                    <a href="{% url 'cadastro:logradouro' %}" class="btn_cadastro">Cadastrar Endereço</a>
                 </div>
                 <div class="form-group">
                     <label for="id_admissao" class="form-label">Admissão</label>
@@ -46,6 +46,11 @@
                 <div class="form-group">
                     <label for="logradouro_id" class="form-label">Endereço</label>
                     {{ form.logradouro }}
+                </div>
+
+                <div class="form-group">
+                    <label for="matricula_id" class="form-label">Matrícula</label>
+                    {{ form.matricula }}
                 </div>
 
                 <h3>Documentos Pessoal</h3>

@@ -45,8 +45,9 @@ INSTALLED_APPS = [
     'departamento_pessoal',
     'tarefas',
     'cadastro',
-    
-    
+    'epi',
+    'widget_tweaks',
+ 
 ]
 
 MIDDLEWARE = [

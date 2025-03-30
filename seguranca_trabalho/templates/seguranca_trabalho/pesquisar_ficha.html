@@ -11,7 +11,7 @@
 </head>
 <body>
     <h1>Fichas de EPI</h1>
-    <a href="{% url 'seguranca_trabalho:cadastrar_ficha_epi' %}">Cadastrar</a>
+    <a href="{% url 'criar_ficha' %}">Cadastrar Ficha</a>
     <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Início</a>
     <table border="1">
         <thead>
@@ -33,7 +33,7 @@
                 <td>{{ ficha.data_entrega }}</td>
                 <td>{{ ficha.data_devolucao }}</td>
                 <td>
-                    <a href="{% url 'seguranca_trabalho:cadastrar_ficha_epi' %}">Nova Ficha</a>
+                    <a href="{% url 'criar_ficha' %}">Nova Ficha</a>
                     <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Voltar</a>
                 </td>
             </tr>

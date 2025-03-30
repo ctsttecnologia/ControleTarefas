@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>Detalhes da Ficha de EPI</h2>
+    
+    <div class="painel">
+        <a href="{% url 'listar_fichas' %}" class="btn btn-secondary">Voltar</a>
+        <a href="{% url 'gerar_pdf' ficha.id %}" class="btn btn-danger">PDF</a>
+        <a href="{% url 'gerar_word' ficha.id %}" class="btn btn-primary">Word</a>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h3>Dados do Empregado</h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Nome:</strong> {{ ficha.empregado.get_full_name }}</p>
+                    <p><strong>Cargo:</strong> {{ ficha.cargo }}</p>
+                    <p><strong>Registro:</strong> {{ ficha.registro }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Admissão:</strong> {{ ficha.admissao|date:"d/m/Y" }}</p>
+                    <p><strong>Demissão:</strong> {% if ficha.demissao %}{{ ficha.demissao|date:"d/m/Y" }}{% else %}N/A{% endif %}</p>
+                    <p><strong>Contrato:</strong> {{ ficha.contrato }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h3>Termo de Compromisso</h3>
+        </div>
+        <div class="card-body">
+            <p>Eu, {{ ficha.empregado.get_full_name }},</p>
+            <p>Declaro, que recebi de CETEST MINAS ENGENHARIA E SERVIÇOS S/A, os Equipamentos de Proteção Individual - EPI's - abaixo relacionados, comprometendo-me a:</p>
+            <ol>
+                <li>Usá-los em trabalho, zelando pela sua guarda e conservação, devolvendo-os quando se tornarem impróprios para o uso e/ou meu desligamento da CETEST MINAS ou do seu respectivo contrato;</li>
+                <li>Em caso de perda, mau uso, extravio ou inutilização proposital do EPI recebido, assumo a responsabilidade Quanto à restituição do seu valor atualizado, conforme autorização de débito por mim assinada.</li>
+            </ol>
+            <p>Declaro ainda ter recebido no ato de minha admissão e no ato do recebimento:</p>
+            <ol>
+                <li>Treinamento básico e instruções prévias sobre a forma de utilização e guarda dos EPI's recebido;</li>
+                <li>Instruções sobre os riscos a que estou exposto em minha área de trabalho, bem como sua prevenção.</li>
+                <li>Estou ciente de que o não uso dos EPI's, constitui ato faltoso conforme artigo 158 da CLT.</li>
+            </ol>
+            <p><strong>Local e Data:</strong> {{ ficha.local_data }}</p>
+            {% if ficha.assinatura %}
+                <p><strong>Assinatura Digital:</strong></p>
+                <img src="{{ ficha.assinatura.url }}" alt="Assinatura" class="img-fluid" style="max-height: 100px;">
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header bg-primary text-white">
+            <h3>Itens de EPI Recebidos</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Quantidade</th>
+                            <th>Unidade</th>
+                            <th>Descrição</th>
+                            <th>Certificado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>{{ item.data_recebimento|date:"d/m/Y" }}</td>
+                            <td>{{ item.quantidade }}</td>
+                            <td>{{ item.epi.unidade }}</td>
+                            <td>{{ item.epi.nome }}</td>
+                            <td>{{ item.epi.certificado }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

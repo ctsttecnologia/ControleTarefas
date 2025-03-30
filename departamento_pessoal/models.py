@@ -2,11 +2,13 @@ from django.db import models
 from django.utils import timezone
 
 
+
 class Logradouro(models.Model):
     # Campos do logradouro
     class Meta:
         managed = False
         db_table = 'logradouro'
+
 
 class Documentos(models.Model):
     cpf = models.CharField(unique=True, max_length=11)
@@ -51,7 +53,7 @@ class Admissao(models.Model):
     cargo = models.ForeignKey(Cargos, models.DO_NOTHING, related_name='admissao')
     departamento = models.ForeignKey(Departamentos, models.DO_NOTHING, related_name='admissao')
     data_admissao = models.DateField(db_column='data_Admissao', blank=True, null=True)
-    matricula = models.CharField(unique=True, max_length=10)
+    matricula = models.CharField(max_length=10, blank=True, null=True)
     salario = models.DecimalField(max_digits=10, decimal_places=2)
     data_cadastro = models.DateTimeField(blank=True, null=True)
 
@@ -61,6 +63,7 @@ class Admissao(models.Model):
 
 
 class Funcionarios(models.Model):
+  
     logradouro = models.ForeignKey(Logradouro, models.DO_NOTHING, null=True, related_name='funcionarios')
     documentos = models.ForeignKey(Documentos, models.DO_NOTHING, null=True, related_name='funcionarios')
     admissao = models.ForeignKey(Admissao, models.DO_NOTHING, null=True, related_name='funcionarios')
@@ -90,6 +93,7 @@ class Funcionarios(models.Model):
 
     def __str__(self):
         return self.nome
+
 
 
 
