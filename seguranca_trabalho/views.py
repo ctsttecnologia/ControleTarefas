@@ -46,37 +46,7 @@ def pesquisar_ficha(request):
         if ca_equipamento:
             fichas = fichas.filter(ca_equipamento__icontains=ca_equipamento)
 
-    return render(request, 'seguranca_trabalho/pesquisar_ficha.html', {'form': form, 'fichas': fichas})
-
-@login_required
-def cadastrar_ficha_epi(request):
-    if request.method == 'POST':
-        form = FichaEPIForm(request.POST, request.FILES)  # Inclui request.FILES para processar a assinatura
-        if form.is_valid():
-            form.save()
-            return redirect('listar_fichas_epi')  # Redireciona para a lista de fichas EPI após o cadastro
-    else:
-        form = FichaEPIForm()
-    
-    return render(request, 'seguranca_trabalho/cadastrar_ficha_epi.html', {'form': form})
-
-@login_required
-def editar_ficha_epi(request, id):
-    ficha = get_object_or_404(FichaEPI, id=id)
-    if request.method == 'POST':
-        form = FichaEPIForm(request.POST, instance=ficha)
-        if form.is_valid():
-            form.save()
-            return redirect('pesquisar_ficha')
-    else:
-        form = FichaEPIForm(instance=ficha)
-    return render(request, 'seguranca_trabalho/cadastrar_ficha_epi.html', {'form': form})
-
-@login_required
-def deletar_ficha_epi(request, id):
-    ficha = get_object_or_404(FichaEPI, id=id)
-    ficha.delete()
-    return redirect('pesquisar_ficha')
+    return render(request, 'seguranca_trabalho/listar_fichas.html', {'form': form, 'fichas': fichas})
 
 #Equipamento EPI
 # Listar todos os equipamentos

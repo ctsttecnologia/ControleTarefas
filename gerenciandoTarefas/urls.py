@@ -18,14 +18,14 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(template_name='logout.html'), name='logout'),
     path('profile/', views.profile_view, name='profile'),  # URL para a página de perfil
    
-    
+    path('', include('epi.urls')),  # Certifique-se que está incluindo as URLs do app epi
     path('usuario/', include('usuario.urls')),
     path('cliente/', include('cliente.urls')),
     path('seguranca_trabalho/', include('seguranca_trabalho.urls')),
     path('departamento_pessoal', include('departamento_pessoal.urls')),
     path('tarefas/', include('tarefas.urls')),
     path('cadastro/', include('cadastro.urls')),
-    #path('pesquisar_ficha/', include('pesquisar_ficha.urls')), 
+  
 
 ]
 

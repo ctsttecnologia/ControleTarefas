@@ -24,31 +24,52 @@
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}" class="btn_cadastro">Cadastrar Equipamento</a>
-            <a href="{% url 'seguranca_trabalho:cadastrar_ficha_epi' %}" class="btn_cadastro">Cadastrar Ficha</a>
+            <a href="{% url 'criar_ficha' %}" class="btn_cadastro">Cadastrar Ficha</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
-        <div class="painel1">
-            {% csrf_token %}
-            <h2>Pesquisar Ficha de EPI</h2>
-                <form method="get" action="{% url 'seguranca_trabalho:pesquisar_ficha' %}" class="form-pesquisa">
-                
-                    <div class="form-group">
-                        <label for="nome">Nome:</label>
-                        <input type="text" id="nome" name="nome" placeholder="Digite o nome do colaborador">
+            <div class="painel2">
+                {% csrf_token %}
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h2>Minhas Fichas de EPI</h2>
                     </div>
-                    <div class="form-group">
-                        <label for="matricula">Matrícula:</label>
-                        <input type="text" id="cmatricula" name="matricula" placeholder="Digite a matrícula do colaborador">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Empregado</th>
+                                        <th>Cargo</th>
+                                        <th>Admissão</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ficha in fichas %}
+                                    <tr>
+                                        <td>{{ ficha.empregado.get_full_name }}</td>
+                                        <td>{{ ficha.cargo }}</td>
+                                        <td>{{ ficha.admissao|date:"d/m/Y" }}</td>
+                                        <td>
+                                            <a href="{% url 'visualizar_ficha' ficha.id %}" class="btn_cadastro">Visualizar</a>
+                                            <a href="{% url 'gerar_pdf' ficha.id %}" class="btn_cadastro">PDF</a>
+                                            <a href="{% url 'gerar_pdf' ficha_id=ficha.id %}" class="btn_cadastro">PDF</a>
+                                            <a href="{% url 'gerar_word' ficha_id=ficha.id %}" class="btn_cadastro">Word</a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4">Nenhuma ficha cadastrada</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <a href="{% url 'criar_ficha' %}" class="btn_cadastro">Nova Ficha</a>
                     </div>
-                    <div class="form-group">
-                        <label for="cpf">CPF:</label>
-                        <input type="text" id="cpf" name="cpf" placeholder="Digite o cpf do colaborador">
-                    </div>
-                    <button type="submit" class="btn-pesquisar">Pesquisar</button>
-                </form>
-        </div>                       
-        
+                </div>                       
+            </div> 
     </div>
 </body> 
 </html>

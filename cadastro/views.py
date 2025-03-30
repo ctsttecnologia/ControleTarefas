@@ -26,7 +26,7 @@ def cadastro(request):
     return render(request, 'cadastros/cadastro.html', {'form': form, 'logradouros': logradouros})
 
 @login_required
-def cadastrar_logradouro(request):
+def logradouro(request):
     # Cadastrar logradouros
     if request.method == 'POST':
         form = LogradouroForm(request.POST)
@@ -37,7 +37,7 @@ def cadastrar_logradouro(request):
         form = LogradouroForm()
 
     logradouros = Logradouro.objects.all()  # Lista todos os logradouros
-    return render(request, 'cadastros/cadastrar_logradouro.html', {'form': form, 'logradouros': logradouros})
+    return render(request, 'cadastros/logradouro.html', {'form': form, 'logradouros': logradouros})
 
 
 @login_required
