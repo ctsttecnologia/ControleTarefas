@@ -10,6 +10,7 @@ class FichaEPIForm(forms.ModelForm):
         model = FichaEPI
         fields = ['cargo', 'registro', 'admissao', 'demissao', 'contrato', 'local_data', 'assinatura']
         widgets = {
+            'empregado': forms.TextInput(attrs={'class': 'form-control-termo', 'placeholder': 'Digite seu nome completo'}),
             'admissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'demissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'cargo': forms.TextInput(attrs={'class': 'form-control'}),

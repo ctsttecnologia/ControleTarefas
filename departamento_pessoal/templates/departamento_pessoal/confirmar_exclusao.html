@@ -11,7 +11,22 @@
 </head>
 <body>
     <div class="container">
-        <h1>Confirmar Exclusão</h1>
+        <h2>Confirmar Exclusão</h2>
+
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+   
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+        
+        </div>
+
         <p>Tem certeza que deseja excluir o funcionário <strong>{{ funcionario.nome }}</strong>?</p>
         <form method="post">
             {% csrf_token %}

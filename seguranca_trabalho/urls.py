@@ -4,7 +4,7 @@ from . import views
 app_name = 'seguranca_trabalho'
 
 urlpatterns = [
-    path('seguranca_trabalho/', views.seguranca_trabalho, name='seguranca_trabalho'),
+    path('', views.seguranca_trabalho, name='seguranca_trabalho'),
     path('pesquisar_ficha/', views.pesquisar_ficha, name='pesquisar_ficha'),
 
     path('listar_equipamentos/', views.listar_equipamentos, name='listar_equipamentos'),

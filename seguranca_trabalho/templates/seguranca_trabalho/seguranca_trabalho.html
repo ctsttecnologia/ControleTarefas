@@ -15,16 +15,16 @@
         {% if user.is_authenticated %}
         <p>Olá, {{ user.username }}!</p>
         {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
         {% endif %}
                 
         <div class="painel">
             
             <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}" class="btn_cadastro">Cadastrar Equipamento</a>
-            <a href="{% url 'criar_ficha' %}" class="btn_cadastro">Cadastrar Ficha</a>
+            <a href="{% url 'epi:criar_ficha' %}" class="btn_cadastro">Cadastrar Ficha</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
@@ -66,7 +66,7 @@
                                 </tbody>
                             </table>
                         </div>
-                        <a href="{% url 'criar_ficha' %}" class="btn_cadastro">Nova Ficha</a>
+                        <a href="{% url 'epi:criar_ficha' %}" class="btn_cadastro">Nova Ficha</a>
                     </div>
                 </div>                       
             </div> 

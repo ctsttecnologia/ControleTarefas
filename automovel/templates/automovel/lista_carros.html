@@ -1,0 +1,84 @@
+{% extends "automovel/base.html" %}
+
+{% block title %}Lista de Carros{% endblock %}
+{% block content %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">      
+    
+</head>
+<body>
+    <div class="container">
+        
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+        {% endif %}
+
+        
+        <h1>Lista de Carros</h1>
+        <a href="{% url 'automovel:adicionar_carro' %}" class="btn_logout">Adicionar Carro</a>
+
+        <h2>Ativos</h2>        
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+          
+        <div class="painel2">
+            {% csrf_token %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Placa</th>
+                        <th>Modelo</th>
+                        <th>Marca</th>
+                        <th>Cor</th>
+                        <th>Ano</th>
+                        <th>Renavan</th>
+                        <th>Última Manutenção</th>
+                        <th>Próxima Manutenção</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for carro in carros %}
+                    <tr>
+                        <td>{{ carro.placa }}</td>
+                        <td>{{ carro.modelo }}</td>
+                        <td>{{ carro.marca }}</td>
+                        <td>{{ carro.cor }}</td>
+                        <td>{{ carro.ano }}</td>
+                        <td>{{ carro.renavan }}</td>
+                        <td>{{ carro.data_ultima_manutencao }}</td>
+                        <td>{{ carro.data_proxima_manutencao }}</td>
+                        <td>
+                            <a href="{% url 'automovel:editar_carro' carro.renavan %}" class="btn btn-sm btn-warning">Editar</a>
+                            <a href="{% url 'aautomovel:excluir_carro' carro.renavan %}" class="btn btn-sm btn-danger">Excluir</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9">Nenhum carro cadastrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            
+        </div>                       
+    </div>
+    {% endblock %}  
+</body> 
+</html>
+

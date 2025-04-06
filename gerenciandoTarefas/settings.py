@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',  # Para formatação de dados
     'home',
     'usuario',
     'cliente.apps.ClienteConfig',
@@ -47,6 +48,9 @@ INSTALLED_APPS = [
     'cadastro',
     'epi',
     'widget_tweaks',
+    'automovel.apps.AutomovelConfig',
+    'treinamentos.apps.TreinamentosConfig',
+    
  
 ]
 
@@ -122,9 +126,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'pt-br'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
+USE_L10N = True
 # Ativar suporte a time zones
 USE_TZ = True
 # Definir o fuso horário padrão (por exemplo, 'America/Sao_Paulo' para o horário de Brasília)
@@ -141,6 +144,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),  # Pasta local dos estáticos
+    
 ]
 
 MEDIA_URL = '/midia/'

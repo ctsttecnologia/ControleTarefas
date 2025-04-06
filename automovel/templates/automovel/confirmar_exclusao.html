@@ -1,0 +1,14 @@
+{% extends "automovel/base.html" %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<h1>Confirmar Exclusão</h1>
+<p>Você tem certeza que deseja excluir "{{ obj }}"?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+    <a href="{% if obj.pk %}{% url 'automovel:lista_agendamentos' %}{% else %}{% url 'automovel:lista_carros' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

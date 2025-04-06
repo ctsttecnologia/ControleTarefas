@@ -1,0 +1,54 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Treinamento</title>
+    <link rel="stylesheet" href="{% static 'treinamentos/styles.css' %}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-title">Gerenciamento de Treinamentos</h1>
+            {% if user.is_authenticated %}
+                <div class="user-info">
+                    <span>Olá, {{ user.username }}!</span>
+                    <nav class="app-nav">
+                        <a href="{% url 'home' %}" class="nav-btn">Início</a>
+                        <a href="{% url 'usuario:logout' %}" class="nav-btn logout">Sair</a>
+                        <a href="{% url 'treinamentos:listar_treinamentos' %}" class="nav-btn">Treinamentos</a>
+                        <a href="{% url 'treinamentos:listar_tipos_treinamento' %}" class="nav-btn">Tipos</a>
+                    </nav>
+                </div>
+            {% endif %}
+        </header>
+
+        <main class="form-container">
+            <h2 class="form-title">Cadastrar Treinamento</h2>
+            <form method="post" class="custom-form">
+                {% csrf_token %}
+                
+                <div class="form-grid">
+                    {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="form-error">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn primary">Salvar</button>
+                    <a href="{% url 'treinamentos:listar_treinamentos' %}" class="btn secondary">Cancelar</a>
+                </div>
+            </form>
+        </main>
+    </div>
+</body>
+</html>
+

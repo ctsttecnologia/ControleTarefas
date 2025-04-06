@@ -1,0 +1,211 @@
+/* Estilos Gerais */
+:root {
+    --primary-color: #3498db;
+    --primary-light: #e1f0fa;
+    --secondary-color: #2980b9;
+    --text-color: #2c3e50;
+    --light-gray: #f5f7fa;
+    --white: #ffffff;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+  }
+  
+  body {
+    background-color: #e6f2ff; 
+    font-family: 'Segoe UI', Arial, sans-serif;;
+    line-height: 1.6;
+    color: var(--text-color);
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Container Principal */
+  .form-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--white);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    background-color: var(--primary-light);
+    border: 1px solid rgba(52, 152, 219, 0.2);
+  }
+  
+  .form-title {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+  
+  /* Campos do Formulário */
+  .form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 2px solid #d1e3f6;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: var(--transition);
+    background-color: var(--white);
+  }
+  
+  .form-control:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  }
+  
+  /* Campos de Data/Hora */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"] {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232980b9'%3e%3cpath d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.2rem;
+    padding-right: 2.5rem;
+  }
+  
+  /* Mensagens de Erro */
+  .errorlist {
+    color: #e74c3c;
+    margin-top: 0.5rem;
+    padding-left: 0;
+    font-size: 0.85rem;
+  }
+  
+  .errorlist li {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .errorlist li::before {
+    content: "⚠";
+  }
+  
+  /* Botões */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: var(--transition);
+    text-decoration: none;
+    gap: 0.5rem;
+  }
+  
+  .btn:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .btn-submit {
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+  
+  /* Layout Responsivo - Mobile First */
+  .datetime-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  /* Tablet (768px+) */
+  @media (min-width: 768px) {
+    .form-container {
+      padding: 2.5rem;
+      margin: 3rem auto;
+    }
+  
+    .datetime-group {
+      flex-direction: row;
+      gap: 1rem;
+    }
+  
+    .datetime-group .form-group {
+      flex: 1;
+    }
+  }
+  
+  /* Desktop (1024px+) */
+  @media (min-width: 1024px) {
+    .form-container {
+      max-width: 900px;
+    }
+  
+    .form-title {
+      font-size: 2rem;
+    }
+  }
+  
+  /* Efeitos Especiais */
+  .form-control:hover {
+    border-color: var(--primary-color);
+  }
+  
+  /* Ícones e Elementos Visuais */
+  .icon {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+  
+  /* Campo de Assinatura Oculto */
+  .hidden-field {
+    display: none;
+  }
+  
+  /* Feedback Visual para Validação */
+  .field-valid {
+    border-color: #2ecc71 !important;
+  }
+  
+  .field-invalid {
+    border-color: #e74c3c !important;
+  }
+  
+  .validation-message {
+    font-size: 0.85rem;
+    margin-top: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  
+  .validation-message.valid {
+    color: #2ecc71;
+  }
+  
+  .validation-message.invalid {
+    color: #e74c3c;
+  }

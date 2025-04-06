@@ -15,19 +15,14 @@
     <div class="painel">
         <div class="painel1">
             <p class="mensagem">Bem-vindo, {{ user.username }}!</p>    
-        </div>
-        <div class="painel2">
             <div class="logout">
-                <ul><a href="{% url 'usuario:logout' %}" class="link">Logout</a></ul>
-            </div>
-            <div class="home">
-                <ul><a href="{% url 'home' %}" class="link">Home</a></ul>
+                <ul><a href="{% url 'usuario_login:logout' %}" class="link">Logout</a></ul>
             </div>
         </div>
         <div class="card_principal">
             <div class="card card1">TAREFAS
                 <div class="card1-1">
-                    <br></br>
+                    <br><br>
                     <a href="{% url 'tarefas:tarefas' %}" class="link-card">Tarefas</a>
                     
                 </div>
@@ -38,7 +33,7 @@
             </div>
             <div class="card card2">CLIENTES
                 <div class="card1-1">
-                    <br></br>
+                    <br><br>
                     <a href="{% url 'cliente' %}" class="link-card">Cliente</a>
                     <a href="{% url 'lista_clientes' %}" class="link-card">Lista de Clientes</a>
                     
@@ -50,8 +45,9 @@
             </div>
             <div class="card card3">DEPARTAMENTO PESSOAL
                 <div class="card1-1">
-                    <br></br>
+                    <br><br>
                     <a href="{% url 'departamento_pessoal' %}" class="link-card">Departamento Pessoal</a>
+                    <a href="{% url 'treinamentos:cadastrar_treinamento' %}" class="link-card">Treinamentos</a> 
                 </div>
                 <div class="icone_tarefa">
                     <img src="/midia/imagens/dp.gif" class="icone">
@@ -60,24 +56,38 @@
             </div>
             <div class="card card4">SEGURANÇA DO TRABALHO
                 <div class="card1-1">
-                    <br></br>
-                    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="link-card">Segurançada do Trabalho</a>
+                    <br><br>  <!-- Corrigido a tag br -->
+                    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="link-card">Segurança do Trabalho</a>
+                    <a href="{% url 'epi:criar_ficha' %}" class="link-card">Cadastrar Ficha de EPI</a>
                 </div>
                 <div class="icone_tarefa">
-                    <img src="/midia/imagens/tst.gif" class="icone">
-                    <img src="{% static 'imagens/tst.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+                    <img src="/midia/imagens/tst.gif" class="icone" >
+                    <img src="{% static 'imagens/tst.gif' %}" class="icone">
                 </div>          
             </div>
             <div class="card card5">CADASTRO
                 <div class="card1-1">
-                    <br></br>
+                    <br><br>
                     <a href="{% url 'cadastro:logradouro' %}" class="link-card">Endereço</a>
                 </div>
                 <div class="icone_tarefa">
                     <img src="/midia/imagens/cadastro.gif" class="icone" >
                     <img src="{% static 'imagens/cadastro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
                 </div>
-            </div>    
+            </div>
+            <div class="card card6">VEÍCULO
+                <div class="card1-1">
+                    <br><br>
+                    <a href="{% url 'automovel:adicionar_carro' %}" class="link-card">Cadastrar Carro</a>
+                    <a href="{% url 'automovel:adicionar_agendamento' %}" class="link-card">Agendar Carro</a>
+                    <a href="{% url 'automovel:lista_carros' %}" class="btn_cadastro">Relação de Carros</a>
+                    
+                </div>
+                <div class="icone_tarefa">
+                    <img src="/midia/imagens/carro.gif" class="icone" >
+                    <img src="{% static 'imagens/carro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+                </div>
+            </div>      
         </div>
     </div>
     
