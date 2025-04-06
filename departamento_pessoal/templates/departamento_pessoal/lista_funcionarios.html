@@ -11,9 +11,25 @@
 </head>
 <body>
     <div class="container">
-        <h1">Lista de Funcionários</h1>
-        <a href="{% url 'cadastrar_funcionario' %}" class="btn-funcionario">Cadastrar Funcionário</a>
-        <table class="table table-striped">
+        <h2>Lista de Funcionários</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+     
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'departamento_pessoal' %}" class="btn_cadastro">Departamento Pessoal</a>
+            <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+        
+        </div>
+    </div>    
+    <div class="container">
+        <table class="container">
             <thead>
                 <tr>
                     <th>Nome</th>
@@ -29,8 +45,8 @@
                     <td>{{ funcionario.telefone }}</td>
                     <td>{{ funcionario.email }}</td>
                     <td>
-                        <a href="{% url 'detalhes_funcionario' funcionario.id %}" class="btn-info">Detalhes</a>
-                        <a href="{% url 'excluir_funcionario' funcionario.id %}" class="btn-excluir">Excluir</a>
+                        <a href="{% url 'detalhes_funcionario' funcionario.id %}" class="btn_cadastro">Detalhes</a>
+                        <a href="{% url 'excluir_funcionario' funcionario.id %}" class="btn_cadastro">Excluir</a>
                     </td>
                 </tr>
                 {% endfor %}

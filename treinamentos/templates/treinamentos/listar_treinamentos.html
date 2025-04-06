@@ -1,0 +1,92 @@
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Treinamentos</title>
+    <link rel="stylesheet" href="{% static 'treinamento/styles.css' %}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-title">Treinamentos Cadastrados</h1>
+            {% if user.is_authenticated %}
+                <div class="user-info">
+                    <span>Olá, {{ user.username }}!</span>
+                    <nav class="app-nav">
+                        <a href="{% url 'home' %}" class="nav-btn">Início</a>
+                        <a href="{% url 'usuario:logout' %}" class="nav-btn logout">Sair</a>
+                        <a href="{% url 'treinamentos:cadastrar_treinamento' %}" class="nav-btn">Novo</a>
+                    </nav>
+                </div>
+            {% endif %}
+        </header>
+
+        <main class="data-container">
+            <div class="search-bar">
+                <form method="get" action="{% url 'treinamentos:buscar_treinamentos' %}" class="search-form">
+                    <input type="text" name="q" placeholder="Buscar treinamentos..." class="search-input">
+                    <button type="submit" class="search-btn">Buscar</button>
+                </form>
+            </div>
+            
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Início</th>
+                            <th>Vencimento</th>
+                            <th>Duração</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for treinamento in treinamentos %}
+                        <tr>
+                            <td>{{ treinamento.nome }}</td>
+                            <td>{{ treinamento.tipo_treinamento }}</td>
+                            <td>{{ treinamento.data_inicio|date:"d/m/Y" }}</td>
+                            <td>{{ treinamento.data_vencimento|date:"d/m/Y" }}</td>
+                            <td>{{ treinamento.duracao }}h</td>
+                            <td class="actions-cell">
+                                <a href="{% url 'treinamentos:detalhes_treinamento' treinamento.pk %}" class="action-btn view">Ver</a>
+                                <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="action-btn edit">Editar</a>
+                                <a href="{% url 'treinamentos:excluir_treinamento' treinamento.pk %}" class="action-btn delete">Excluir</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="no-data">Nenhum treinamento cadastrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if is_paginated %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="page-link">‹ Anterior</a>
+                {% endif %}
+                
+                <span class="page-current">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="page-link">Próxima ›</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>
+
+
+

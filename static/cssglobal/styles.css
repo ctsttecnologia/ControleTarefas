@@ -43,7 +43,7 @@ h2 {
 }
 
 /* Estilo dos botões */
-.btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
+.btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa, .btn_cancelar {
     display: inline-block;
     padding: 7px 20px;
     margin: 5px;
@@ -57,8 +57,23 @@ h2 {
     transition: background-color 0.3s ease;
 }
 
+/* Estilo dos botões */
+.btn_cancelar {
+    display: inline-block;
+    padding: 7px 20px;
+    margin: 5px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #08a700;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
 /*Painel menu*/
-.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile, .btn_tarefa:hover {
+.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile:hover, .btn_tarefa:hover, .btn_cancelar:hover {
     background-color: #0056b3;
 }
 
@@ -85,8 +100,19 @@ h2 {
 .btn_profile:hover {
     background-color: #0056b3;
 }
+.btn_tarefa {
+    background-color: #007bff;
+}
 
 .btn_tarefa:hover {
+    background-color: #0056b3;
+}
+
+.btn_cancelar {
+    background-color: #007bff;
+}
+
+.btn_cancelar:hover {
     background-color: #0056b3;
 }
 
@@ -96,7 +122,7 @@ h2 {
         padding: 10px;
     }
 
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
+    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa, .btn_cancelar {
         display: block;
         width: 100%;
         margin: 5px 0;
@@ -112,7 +138,7 @@ h2 {
         padding: 5px;
     }
 
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
+    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa, .btn_cancelar {
         padding: 6px 12px;
     }
 }

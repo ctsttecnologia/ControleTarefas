@@ -8,10 +8,10 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csr
 from django.urls import reverse
 
 
+
 @csrf_exempt
 @csrf_protect
 @requires_csrf_token
-
 def user_login(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -22,23 +22,26 @@ def user_login(request):
             if user is not None:
                 login(request, user)
                 return redirect('usuario:profile')
-    else:
+    else:  # Este else estava indentado errado no seu código original
         form = AuthenticationForm()
+    
+    # Mostra erros de formulário inválido (tanto para POST inválido quanto GET)
     return render(request, 'usuario/login.html', {'form': form})
 
 def user_register(request):
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect('usuario:login')
+            user = form.save()
+            login(request, user)  # Faz login automaticamente
+            return redirect('usuario:profile')
     else:
         form = UserCreationForm()
     return render(request, 'usuario/register.html', {'form': form})
 
 def user_profile(request):
     if not request.user.is_authenticated:
-        return redirect('usuario:login')
+        return redirect('usuario:register')  # Alterado de 'login' para 'register'
     return render(request, 'usuario/profile.html')
 
 def user_logout(request):

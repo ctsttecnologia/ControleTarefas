@@ -1,0 +1,51 @@
+
+{% extends "automovel/base.html" %}
+{% block title %}{% if form.instance.renavan %}Editar{% else %}Adicionar{% endif %} Carro{% endblock %}
+<h1>{% if form.instance.renavan %}Editar{% else %}Adicionar{% endif %} Carro</h1>
+{% block content %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">      
+    
+</head>
+<body>
+    
+    <div class="container">
+        
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+        {% endif %}
+
+        <h3>Cadastro de Veículo</h3>        
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+          
+        <div class="painel2">
+            {% csrf_token %}
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a href="{% url 'automovel:lista_carros' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+            
+        </div>                       
+    </div>
+    {% endblock %}  
+</body> 
+</html>
+

@@ -13,8 +13,9 @@ class FichaEPIAdmin(admin.ModelAdmin):
     list_display = ('empregado', 'cargo', 'admissao', 'contrato', 'assinatura_preview')
     list_filter = ('admissao', 'cargo')
     search_fields = ('empregado__username', 'contrato')
-    raw_id_fields = ('empregado',)
     date_hierarchy = 'admissao'
+
+   
 
     def assinatura_preview(self, obj):
         if obj.assinatura:

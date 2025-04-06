@@ -6,7 +6,7 @@
     <h2>Detalhes da Ficha de EPI</h2>
     
     <div class="painel">
-        <a href="{% url 'listar_fichas' %}" class="btn btn-secondary">Voltar</a>
+        <a href="{% url 'epi:listar_fichas' %}" class="btn btn-secondary">Voltar</a>
         <a href="{% url 'gerar_pdf' ficha.id %}" class="btn btn-danger">PDF</a>
         <a href="{% url 'gerar_word' ficha.id %}" class="btn btn-primary">Word</a>
     </div>

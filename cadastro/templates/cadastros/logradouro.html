@@ -15,14 +15,14 @@
         {% if user.is_authenticated %}
             <p>Olá, {{ user.username }}!</p>
             <div class="painel">
-                <a href="{% url 'home' %}" class="btn-home">Home</a>
+                <a href="{% url 'home' %}" class="btn-home">Início</a>
                 <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
                 <a href="{% url 'cadastro:cadastro' %}" class="btn_cadastro">Cadastro</a>
                 <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
                 <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
             </div>
         {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
         {% endif %}
             
         <!-- Formulário de Cadastro -->
@@ -81,8 +81,8 @@
                 {% for logradouro in logradouros %}
                     <li>
                         {{ logradouro.endereco }} - {{ logradouro.cep }} - {{ logradouro.cidade }}
-                        <a href="{% url 'editar_logradouro' logradouro.pk %}">Editar</a>
-                        <a href="{% url 'excluir_logradouro' logradouro.pk %}">Excluir</a>
+                        <a href="{% url 'cadastro:editar_logradouro' logradouro.pk %}">Editar</a>
+                        <a href="{% url 'cadastro:excluir_logradouro' logradouro.pk %}">Excluir</a>
                     </li>
                 {% endfor %}
             </ul>

@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
+
 User = get_user_model()
 
 class EPI(models.Model):
@@ -20,7 +21,7 @@ class EPI(models.Model):
         ordering = ['nome']
 
 class FichaEPI(models.Model):
-    empregado = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Empregado")
+    empregado = models.CharField(max_length=100, verbose_name="Nome do Empregado", help_text="Nome completo do empregado")
     cargo = models.CharField(max_length=100, verbose_name="Cargo")
     registro = models.CharField(max_length=50, verbose_name="Registro")
     admissao = models.DateField(verbose_name="Data de Admissão")

@@ -1,0 +1,18 @@
+
+
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>Editar Treinamento</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <a href="{% url 'treinamentos:listar_treinamentos' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}
+
+
+

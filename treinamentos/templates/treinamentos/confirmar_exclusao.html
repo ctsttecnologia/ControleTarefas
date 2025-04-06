@@ -1,0 +1,42 @@
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmar Exclusão</title>
+    <link rel="stylesheet" href="{% static 'treinamentos/styles.css' %}">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1 class="app-title">Confirmar Exclusão</h1>
+            <nav class="app-nav">
+                <a href="{% url 'home' %}" class="nav-btn">Início</a>
+                <a href="{% url 'treinamentos:listar_treinamentos' %}" class="nav-btn">Voltar</a>
+            </nav>
+        </header>
+
+        <main class="confirmation-container">
+            <div class="confirmation-box">
+                <h2 class="confirmation-title">Tem certeza que deseja excluir?</h2>
+                <p class="confirmation-message">Você está prestes a excluir o treinamento <strong>"{{ treinamento.nome }}"</strong>.</p>
+                
+                <form method="post" class="confirmation-form">
+                    {% csrf_token %}
+                    <div class="confirmation-actions">
+                        <button type="submit" class="btn danger">Confirmar Exclusão</button>
+                        <a href="{% url 'treinamentos:listar_treinamentos' %}" class="btn secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
+
+
+

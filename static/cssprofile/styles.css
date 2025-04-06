@@ -1,20 +1,3 @@
-/* Reset básico */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Estilos gerais */
-body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 80vh;
-    background-color: #cacaca;
-    padding: 20px;
-}
 
 /* Container principal */
 .container {
@@ -35,7 +18,7 @@ body {
     color: #333333;
     text-align: center;
     margin-bottom: 10px;
-    background-color: #b9bab9d0;
+    background-color: #ffffffd0;
 }
 
 .painel1 .titulo {
@@ -53,7 +36,7 @@ body {
 
 .painel2 .mensagem {
     font-size: 1.2rem;
-    color: #555555;
+    color: #ffffff;
 }
 
 .logout {
@@ -176,6 +159,15 @@ body {
 }
 
 .card5 a:hover {
+    color: #fff;
+}
+
+.card6 {
+    background-color: #0055ff;
+    color: #000000;
+}
+
+.card6 a:hover {
     color: #fff;
 }
 
