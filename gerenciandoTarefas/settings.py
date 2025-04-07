@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'cliente.apps.ClienteConfig',
     'seguranca_trabalho',
     'departamento_pessoal',
-    'tarefas',
+    'tarefas.apps.TarefasConfig',
     'cadastro',
     'epi',
     'widget_tweaks',

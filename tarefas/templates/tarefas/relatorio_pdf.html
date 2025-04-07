@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Relatório de Tarefas - PDF</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        .resumo { margin-bottom: 20px; }
+        .badge {
+            padding: 3px 6px; border-radius: 3px; color: white; font-size: 0.8em;
+        }
+        .resolvida { background: #4CAF50; }
+        .pendente { background: #FFC107; }
+        .andamento { background: #2196F3; }
+    </style>
+</head>
+<body>
+    <h1>Relatório de Tarefas</h1>
+    <p>Gerado em: {% now "d/m/Y H:i" %}</p>
+    
+    <div class="resumo">
+        <h3>Resumo</h3>
+        <p>Total de Tarefas: {{ contagens.total }}</p>
+        <p>Tarefas Resolvidas: {{ contagens.resolvidas }}</p>
+        <p>Tarefas Pendentes: {{ contagens.pendentes }}</p>
+        <p>Tarefas em Andamento: {{ contagens.em_andamento }}</p>
+    </div>
+
+    <h3>Detalhes das Tarefas</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Título</th>
+                <th>Responsável</th>
+                <th>Status</th>
+                <th>Criação</th>
+                <th>Prazo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tarefa in tarefas %}
+            <tr>
+                <td>{{ tarefa.titulo }}</td>
+                <td>{{ tarefa.nome }}</td>
+                <td>
+                    <span class="badge {{ tarefa.status }}">
+                        {{ tarefa.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

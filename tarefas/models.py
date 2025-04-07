@@ -1,5 +1,4 @@
 from django.db import models
-from django.db import models
 from django.utils import timezone
 
 
@@ -14,6 +13,8 @@ class Tarefas(models.Model):
     titulo = models.CharField(max_length=100, blank=True, null=True, verbose_name="Titulo")
     nome = models.CharField(max_length=40, verbose_name="Nome")
     descricao = models.TextField(verbose_name="Descrição", blank=True, null=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
     data_inicio = models.DateTimeField(default=timezone.now, verbose_name="Data de Inícil")
     prazo = models.IntegerField(blank=True, null=True, verbose_name="Prazo")
     final = models.DateTimeField(default=timezone.now, verbose_name="Final")
@@ -21,7 +22,11 @@ class Tarefas(models.Model):
     responsavel = models.CharField(max_length=40, null=True, verbose_name="Responsável")
     participantes = models.CharField(max_length=50, blank=True, null=True, verbose_name="Participantes")
     observadores = models.CharField(max_length=50, blank=True, null=True, verbose_name="Observadores")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente', verbose_name="Status")
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pendente', verbose_name="Status"
+    )
     projeto = models.CharField(max_length=40, verbose_name="Projeto")
     data_inicio = models.DateTimeField(default=timezone.now, verbose_name="Data de Inícil")
     modificada_em = models.DateTimeField(default=timezone.now, verbose_name="Modificado em")
