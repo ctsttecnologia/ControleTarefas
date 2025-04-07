@@ -1,0 +1,30 @@
+
+
+#Funcionalidades implementadas:
+#Sistema completo de status com as opções: Pendente, Em Andamento e Resolvida
+
+#Filtros avançados por status e intervalo de datas
+
+#Gráfico interativo usando Chart.js para visualização dos dados
+
+#Exportação para PDF e CSV
+
+#Painel administrativo com filtros e exibição personalizada
+
+#Design responsivo que se adapta a diferentes tamanhos de tela
+
+#Visualização detalhada de todas as tarefas com seus status
+
+
+#Melhorias adicionais que podem ser implementadas:
+#Sistema de prioridade (alta, média, baixa)
+
+#Atribuição de tarefas a usuários específicos (integrando com o sistema de autenticação)
+
+#Comentários e histórico de alterações para cada tarefa
+
+#Notificações quando o status de uma tarefa é alterado
+
+#Dashboard administrativo com mais métricas e KPI's
+
+#Integração com calendário para visualização dos prazos

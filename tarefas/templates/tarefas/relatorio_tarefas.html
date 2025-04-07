@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="{% static 'csstarefas/relatorioStyles.css' %}">
+</head>
+<body>
+    <div class="relatorio">
+        <h1>Relatório de Tarefas</h1>
+        
+        <div class="card">
+            <h3>Total de Tarefas: {{ total_tarefas }}</h3>
+        </div>
+        
+        <div class="card resolvida">
+            <h3>Tarefas Resolvidas: {{ resolvidas }}</h3>
+        </div>
+        
+        <div class="card pendente">
+            <h3>Tarefas Pendentes: {{ pendentes }}</h3>
+        </div>
+        
+        <div class="card andamento">
+            <h3>Tarefas em Andamento: {{ em_andamento }}</h3>
+        </div>
+    </div>
+</body>
+</html>

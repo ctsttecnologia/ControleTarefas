@@ -63,10 +63,12 @@
                         <td>{{ carro.renavan }}</td>
                         <td>{{ carro.data_ultima_manutencao }}</td>
                         <td>{{ carro.data_proxima_manutencao }}</td>
-                        <td>
-                            <a href="{% url 'automovel:editar_carro' carro.renavan %}" class="btn btn-sm btn-warning">Editar</a>
-                            <a href="{% url 'aautomovel:excluir_carro' carro.renavan %}" class="btn btn-sm btn-danger">Excluir</a>
-                        </td>
+                        <div class="paine2">
+                            <td>
+                                <a href="{% url 'automovel:editar_carro' carro.renavan %}" class="btn btn-sm btn-warning">Editar</a>
+                                <a href="{% url 'automovel:excluir_carro' carro.renavan %}" class="btn btn-sm btn-danger">Excluir</a>
+                            </td>
+                        </div>
                     </tr>
                     {% empty %}
                     <tr>

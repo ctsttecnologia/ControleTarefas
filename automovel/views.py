@@ -16,7 +16,6 @@ def adicionar_carro(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Carro adicionado com sucesso!')
-            return redirect('lista_carros')
             return redirect('automovel:lista_carros')
     else:
         form = CarroForm()
@@ -30,7 +29,6 @@ def editar_carro(request, renavan):
         if form.is_valid():
             form.save()
             messages.success(request, 'Carro atualizado com sucesso!')
-            return redirect('lista_carros')
             return redirect('automovel:lista_carros')
     else:
         form = CarroForm(instance=carro)
@@ -42,7 +40,6 @@ def excluir_carro(request, renavan):
     if request.method == 'POST':
         carro.delete()
         messages.success(request, 'Carro excluído com sucesso!')
-        return redirect('lista_carros')
         return redirect('automovel:lista_carros')
     return render(request, 'automovel/confirmar_exclusao.html', {'obj': carro})
 
@@ -58,7 +55,6 @@ def adicionar_agendamento(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Agendamento criado com sucesso!')
-            return redirect('lista_agendamentos')
             return redirect('automovel:lista_agendamentos')
     else:
         form = AgendamentoForm()
@@ -72,7 +68,6 @@ def editar_agendamento(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Agendamento atualizado com sucesso!')
-            return redirect('lista_agendamentos')
             return redirect('automovel:lista_agendamentos')
     else:
         form = AgendamentoForm(instance=agendamento)
@@ -84,7 +79,6 @@ def excluir_agendamento(request, pk):
     if request.method == 'POST':
         agendamento.delete()
         messages.success(request, 'Agendamento excluído com sucesso!')
-        return redirect('lista_agendamentos')
         return redirect('automovel:lista_agendamentos')
     return render(request, 'automovel/confirmar_exclusao.html', {'obj': agendamento})
 
@@ -97,7 +91,6 @@ def assinar_agendamento(request, pk):
             agendamento.assinatura = assinatura
             agendamento.save()
             messages.success(request, 'Assinatura registrada com sucesso!')
-            return redirect('lista_agendamentos')
             return redirect('automovel:lista_agendamentos')
     return render(request, 'automovel/assinar.html', {'agendamento': agendamento})
 
