@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class MinhaImagem(models.Model):
@@ -7,3 +8,4 @@ class MinhaImagem(models.Model):
 
     def __str__(self):
         return self.titulo
+

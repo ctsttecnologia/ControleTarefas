@@ -9,8 +9,7 @@ from django.urls import reverse
 
 
 
-@csrf_exempt
-@csrf_protect
+
 @requires_csrf_token
 def user_login(request):
     if request.method == 'POST':
