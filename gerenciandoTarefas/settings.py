@@ -45,12 +45,12 @@ INSTALLED_APPS = [
     'seguranca_trabalho',
     'departamento_pessoal',
     'tarefas.apps.TarefasConfig',
-    'cadastro',
+    'logradouro',
     'epi',
     'widget_tweaks',
     'automovel.apps.AutomovelConfig',
     'treinamentos.apps.TreinamentosConfig',
-    
+
  
 ]
 
@@ -158,3 +158,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # settings.py
 LOGOUT_REDIRECT_URL = 'home.html'  # url pós logaout
 LOGIN_URL = '/accounts/login/'  # URL para a página de login
+
+# Configurações de email (ajuste conforme seu servidor de email)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.seu-servidor.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'seu-email@dominio.com'
+EMAIL_HOST_PASSWORD = 'sua-senha'
+DEFAULT_FROM_EMAIL = 'seu-email@dominio.com'

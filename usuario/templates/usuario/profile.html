@@ -9,14 +9,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil</title>
     <!-- Link para o arquivo CSS -->
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
 </head>
-<body class="container">
+<body class="container1">
     <div class="painel">
         <div class="painel1">
             <p class="mensagem">Bem-vindo, {{ user.username }}!</p>    
-            <div class="logout">
-                <ul><a href="{% url 'usuario_login:logout' %}" class="link">Logout</a></ul>
+            <div class="painel">
+                <ul><a href="{% url 'usuario_login:logout' %}" class="btn_tarefas">Logout</a></ul>
+                <ul><a href="{% url 'home' %}" class="btn_tarefas">Home</a></ul>
             </div>
         </div>
         <div class="card_principal">
@@ -24,6 +26,8 @@
                 <div class="card1-1">
                     <br><br>
                     <a href="{% url 'tarefas:tarefas' %}" class="link-card">Tarefas</a>
+                    <a href="{% url 'tarefas:dashboard' %}" class="link-card">Dashboard</a>
+                    <a href="{% url 'tarefas:calendario-tarefas' %}" class="btn_tarefas">Agenda</a>
                     
                 </div>
                 <div class="icone_tarefa">
@@ -36,6 +40,7 @@
                     <br><br>
                     <a href="{% url 'cliente' %}" class="link-card">Cliente</a>
                     <a href="{% url 'lista_clientes' %}" class="link-card">Lista de Clientes</a>
+                    
                     
                 </div>
                 <div class="icone_tarefa">
@@ -65,10 +70,10 @@
                     <img src="{% static 'imagens/tst.gif' %}" class="icone">
                 </div>          
             </div>
-            <div class="card card5">CADASTRO
+            <div class="card card5">ENDEREÇOS
                 <div class="card1-1">
                     <br><br>
-                    <a href="{% url 'cadastro:logradouro' %}" class="link-card">Endereço</a>
+                    <a href="{% url 'logradouro:logradouro' %}" class="link-card">Endereço</a>
                 </div>
                 <div class="icone_tarefa">
                     <img src="/midia/imagens/cadastro.gif" class="icone" >
@@ -80,7 +85,7 @@
                     <br><br>
                     <a href="{% url 'automovel:adicionar_carro' %}" class="link-card">Cadastrar Carro</a>
                     <a href="{% url 'automovel:adicionar_agendamento' %}" class="link-card">Agendar Carro</a>
-                    <a href="{% url 'automovel:lista_carros' %}" class="btn_cadastro">Relação de Carros</a>
+                    <a href="{% url 'automovel:lista_carros' %}" class="link-card">Relação de Carros</a>
                     
                 </div>
                 <div class="icone_tarefa">

@@ -29,6 +29,7 @@
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn_profile">Nova Tarefa</a>
+            
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
@@ -51,6 +52,7 @@
                 <a href="{% url 'tarefas:editar_tarefa' tarefa.id %}" class="btn-warning">Editar</a>
                 <a href="{% url 'tarefas:excluir_tarefa' tarefa.id %}" class="btn-danger">Excluir</a>
                 <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
+                <a href="{% url 'tarefas:relatorio_tarefa' %}" class="btn_profile">Relatório</a> 
             </td>
         </tr>
         {% endfor %}

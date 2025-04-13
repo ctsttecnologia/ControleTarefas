@@ -10,7 +10,6 @@ class FichaEPIForm(forms.ModelForm):
         model = FichaEPI
         fields = ['cargo', 'registro', 'admissao', 'demissao', 'contrato', 'local_data', 'assinatura']
         widgets = {
-            'empregado': forms.TextInput(attrs={'class': 'form-control-termo', 'placeholder': 'Digite seu nome completo'}),
             'admissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'demissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'cargo': forms.TextInput(attrs={'class': 'form-control'}),
@@ -19,30 +18,21 @@ class FichaEPIForm(forms.ModelForm):
             'local_data': forms.TextInput(attrs={'class': 'form-control'}),
             'assinatura': forms.FileInput(attrs={'class': 'form-control'}),
         }
-        labels = {
-            'cargo': 'Cargo/Função',
-            'registro': 'Número de Registro',
-            'admissao': 'Data de Admissão',
-            'demissao': 'Data de Demissão (se aplicável)',
-            'contrato': 'Número do Contrato',
-            'local_data': 'Local e Data',
-            'assinatura': 'Assinatura Digital',
-        }
 
 class ItemEPIForm(forms.ModelForm):
     class Meta:
         model = ItemEPI
         fields = ['epi', 'quantidade', 'data_recebimento']
         widgets = {
-            'data_recebimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'epi': forms.Select(attrs={'class': 'form-control'}),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
+            'data_recebimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
-        labels = {
-            'epi': 'Equipamento de Proteção Individual',
-            'quantidade': 'Quantidade',
-            'data_recebimento': 'Data de Recebimento',
-        }
+    def clean_quantidade(self):
+        quantidade = self.cleaned_data.get('quantidade')
+        if quantidade <= 0:
+            raise forms.ValidationError("A quantidade deve ser maior que zero")
+        return quantidade
 
 class EPIForm(forms.ModelForm):
     class Meta:
@@ -54,3 +44,6 @@ class EPIForm(forms.ModelForm):
             'certificado': forms.TextInput(attrs={'class': 'form-control'}),
             'unidade': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+
+

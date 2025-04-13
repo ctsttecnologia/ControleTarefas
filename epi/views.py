@@ -18,10 +18,6 @@ from django.contrib.auth.decorators import login_required
 from .forms import FichaEPIForm, ItemEPIForm
 
 
-#Falta de retorno para requisições GET: Sua view não tinha um retorno para quando o método é GET (acesso normal à página).
-#Falta de retorno para formulários inválidos: Quando os formulários não são válidos, a view também precisa retornar uma resposta.
-#Redirecionamento melhorado: Mudei para redirecionar para listar_fichas após criação, que faz mais sentido lógico.
-
 
 @login_required
 def criar_ficha(request):
@@ -37,19 +33,17 @@ def criar_ficha(request):
             item = form_item.save(commit=False)
             item.ficha = ficha
             item.save()
-            return redirect('epi:listar_fichas')  # Redireciona para lista após criação
-        
-        # Se os formulários não forem válidos, continua para mostrar erros
+            
+            messages.success(request, 'Ficha de EPI criada com sucesso!')
+            return redirect('epi:listar_fichas')
     else:
         form_ficha = FichaEPIForm()
         form_item = ItemEPIForm()
     
-    # Renderiza o template com os formulários (tanto para GET quanto POST com erros)
     return render(request, 'epi/criar_ficha.html', {
         'form_ficha': form_ficha,
         'form_item': form_item
     })
-    
 
 @login_required
 def listar_fichas(request):

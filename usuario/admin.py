@@ -1,63 +1,62 @@
 from django.contrib import admin
-from .models import TipoTreinamento, Treinamento
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group, Permission
+from .models import Usuario, UsuarioCustomuser, CustomUserGroup, CustomUserPermission
 
-@admin.register(TipoTreinamento)
-class TipoTreinamentoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'modalidade', 'descricao_curta')
-    list_filter = ('modalidade',)
-    search_fields = ('nome', 'descricao')
-    list_per_page = 20
+# Configuração para o modelo Usuario
+@admin.register(Usuario)
+class UsuarioAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'sobrenome', 'email')
+    search_fields = ('nome', 'sobrenome', 'email')
+    list_filter = ('nome', 'email')
+    ordering = ('nome',)
+
+# Configuração personalizada para UsuarioCustomuser (extendendo UserAdmin)
+class CustomUserAdmin(UserAdmin):
+    model = UsuarioCustomuser
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'matricula')
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
+    search_fields = ('username', 'first_name', 'last_name', 'email', 'matricula')
+    ordering = ('username',)
     
-    def descricao_curta(self, obj):
-        return obj.descricao[:50] + '...' if obj.descricao else '-'
-    descricao_curta.short_description = 'Descrição (resumo)'
-
-@admin.register(Treinamento)
-class TreinamentoAdmin(admin.ModelAdmin):
-    list_display = (
-        'nome', 
-        'tipo_treinamento', 
-        'data_inicio_formatada', 
-        'data_vencimento_formatada',
-        'duracao',
-        'funcionario'
-    )
-    list_filter = ('tipo_treinamento', 'data_inicio')
-    search_fields = ('nome', 'funcionario', 'cm', 'palestrante')
-    raw_id_fields = ('tipo_treinamento',)
-    date_hierarchy = 'data_inicio'
-    list_per_page = 30
     fieldsets = (
-        ('Informações Básicas', {
-            'fields': ('tipo_treinamento', 'nome', 'descricao')
+        (None, {'fields': ('username', 'password')}),
+        ('Informações Pessoais', {'fields': ('first_name', 'last_name', 'email', 'matricula')}),
+        ('Permissões', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
-        ('Datas e Duração', {
-            'fields': ('data_inicio', 'data_vencimento', 'duracao', 'hxh')
-        }),
-        ('Responsáveis', {
-            'fields': ('funcionario', 'cm', 'palestrante')
-        }),
-        ('Detalhes Adicionais', {
-            'fields': ('atividade',)
+        ('Datas Importantes', {'fields': ('last_login', 'date_joined')}),
+    )
+    
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'password1', 'password2', 'email', 'first_name', 'last_name', 'matricula', 'is_staff', 'is_active'),
         }),
     )
 
-    def data_inicio_formatada(self, obj):
-        return obj.data_inicio.strftime('%d/%m/%Y')
-    data_inicio_formatada.short_description = 'Data Início'
-    data_inicio_formatada.admin_order_field = 'data_inicio'
+# Registrando o modelo customizado
+admin.site.register(UsuarioCustomuser, CustomUserAdmin)
 
-    def data_vencimento_formatada(self, obj):
-        return obj.data_vencimento.strftime('%d/%m/%Y')
-    data_vencimento_formatada.short_description = 'Data Vencimento'
-    data_vencimento_formatada.admin_order_field = 'data_vencimento'
+# Configuração para as tabelas de relacionamento
+@admin.register(CustomUserGroup)
+class UsuarioCustomuserGroupsAdmin(admin.ModelAdmin):
+    list_display = ('customuser', 'group')
+    list_filter = ('group',)
+    search_fields = ('customuser__username', 'group__name')
 
-    actions = ['marcar_como_concluido']
+@admin.register(CustomUserPermission)
+class UsuarioCustomuserUserPermissionsAdmin(admin.ModelAdmin):
+    list_display = ('customuser', 'permission')
+    list_filter = ('permission__content_type',)
+    search_fields = ('customuser__username', 'permission__name')
 
-    def marcar_como_concluido(self, request, queryset):
-        queryset.update(status='C')
-    marcar_como_concluido.short_description = "Marcar como concluído"
+# Melhorando a exibição padrão do Group
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
+    filter_horizontal = ('permissions',)
 
-    def dias_restantes(self, obj):
-        return (obj.data_vencimento - date.today()).days
-    dias_restantes.short_description = 'Dias Restantes'
+# Re-registrando Group com a configuração personalizada
+admin.site.unregister(Group)
+admin.site.register(Group, GroupAdmin)

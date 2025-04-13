@@ -14,4 +14,8 @@ urlpatterns = [
 
     path('relatorio/', relatorio_tarefas, name='relatorio_tarefas'),
     
+    path('', views.dashboard, name='dashboard'),
+    path('tarefa/<int:pk>/', views.tarefa_detail, name='tarefa-detail'),
+    path('tarefa/<int:pk>/atualizar-status/', views.atualizar_status, name='atualizar-status'),
+    path('calendario/', views.calendario_tarefas, name='calendario-tarefas'),
 ]
