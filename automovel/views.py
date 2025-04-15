@@ -53,12 +53,33 @@ def adicionar_agendamento(request):
     if request.method == 'POST':
         form = AgendamentoForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Agendamento criado com sucesso!')
-            return redirect('automovel:lista_agendamentos')
+            try:
+                agendamento = form.save(commit=False)
+                # Adiciona o usuário atual como responsável se não estiver preenchido
+                if not agendamento.responsavel:
+                    agendamento.responsavel = request.user.get_full_name() or request.user.username
+                agendamento.save()
+                messages.success(request, 'Agendamento criado com sucesso!')
+                return redirect('automovel:lista_agendamentos')
+            except Exception as e:
+                messages.error(request, f'Erro ao salvar agendamento: {str(e)}')
+        else:
+            messages.error(request, 'Por favor, corrija os erros abaixo.')
     else:
-        form = AgendamentoForm()
-    return render(request, 'automovel/agendamento_form.html', {'form': form})
+        form = AgendamentoForm(initial={
+            'pedagio': 'N',
+            'abastecimento': 'N',
+            'cancelar_agenda': 'N',
+            'status': 'agendado'
+        })
+    
+    context = {
+        'form': form,
+        'title': 'Novo Agendamento',
+        'current_page': 'agendamento'
+    }
+    return render(request, 'automovel/agendamento_form.html', context)
+
 
 @login_required
 def editar_agendamento(request, pk):
@@ -66,12 +87,24 @@ def editar_agendamento(request, pk):
     if request.method == 'POST':
         form = AgendamentoForm(request.POST, request.FILES, instance=agendamento)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Agendamento atualizado com sucesso!')
-            return redirect('automovel:lista_agendamentos')
+            try:
+                form.save()
+                messages.success(request, 'Agendamento atualizado com sucesso!')
+                return redirect('automovel:lista_agendamentos')
+            except Exception as e:
+                messages.error(request, f'Erro ao atualizar agendamento: {str(e)}')
+        else:
+            messages.error(request, 'Por favor, corrija os erros abaixo.')
     else:
         form = AgendamentoForm(instance=agendamento)
-    return render(request, 'automovel/agendamento_form.html', {'form': form})
+    
+    context = {
+        'form': form,
+        'title': 'Editar Agendamento',
+        'current_page': 'agendamento'
+    }
+    return render(request, 'automovel/agendamento_form.html', context)
+
 
 @login_required
 def excluir_agendamento(request, pk):

@@ -13,7 +13,7 @@ urlpatterns = [
     # Agendamentos
     path('agendamentos/', views.lista_agendamentos, name='lista_agendamentos'),
     path('agendamentos/adicionar/', views.adicionar_agendamento, name='adicionar_agendamento'),
-    path('agendamentos/editar/<int:pk>/', views.editar_agendamento, name='editar_agendamento'),
-    path('agendamentos/excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
-    path('agendamentos/assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
+    path('editar/<int:pk>/', views.editar_agendamento, name='editar_agendamento'),
+    path('excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
+    path('assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
 ]

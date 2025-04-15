@@ -155,3 +155,4 @@ class Logradouro(models.Model):
                 name='unique_endereco_completo'
             ),
         ]
+

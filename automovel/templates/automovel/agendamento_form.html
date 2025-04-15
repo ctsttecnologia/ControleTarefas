@@ -1,21 +1,17 @@
-{% extends "automovel/base.html" %}
-{% block title %}{% if form.instance.pk %}Editar{% else %}Adicionar{% endif %} Agendamento{% endblock %}
-{% block content %}
-<h1>{% if form.instance.pk %}Editar{% else %}Adicionar{% endif %} Agendamento</h1>
 
 {% load static %}
 
+{% block content %}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">      
-    
+    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">  
 </head>
-<body>
+<body>  
+    
     <div class="container">
         
         {% if user.is_authenticated %}
@@ -24,53 +20,282 @@
             <a href="{% url 'home' %}" class="btn-home">Início</a>
         {% endif %}
 
-        <h2>Agendamento</h2>        
+        <h3>Cadastro de Veículo</h3>        
         <div class="painel">
+            
             <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Início</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
-        </div>  
-        <div class="painel2">
-            {% csrf_token %}
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                {{ form.as_p }}
-            </form>
-               
-            <form method="post" novalidate>
-                {% csrf_token %}
-                
-                <div class="form-group">
-                {{ form.carro.label_tag }}
-                {{ form.carro }}
-                {{ form.carro.errors }}
-                </div>
-                
-                <!--<div class="datetime-group">
-                <div class="form-group">
-                    {{ form.data_hora_agenda.label_tag }}
-                    {{ form.data_hora_agenda }}
-                    {{ form.data_hora_agenda.errors }}
-                </div>-->
-                
-                <!--<div class="form-group">
-                    {{ form.data_hora_devolucao.label_tag }}
-                    {{ form.data_hora_devolucao }}
-                    {{ form.data_hora_devolucao.errors }}
-                </div>-->
-                               
-                <!--{{ form.assinatura }}-->
-                
-                <button type="submit" class="btn btn-submit">
-                <i class="fas fa-calendar-check icon"></i> Confirmar Agendamento
-                </button>
-            </form>
-            
-        </div>                       
-    </div>
-    {% endblock %}  
-</body> 
+        </div> 
+            <div class="painel2">
+                <form method="post" enctype="multipart/form-data" id="agendamento-form">
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Veículo -->
+                            <div class="form-group">
+                                <label for="{{ form.carro.id_for_label }}">{{ form.carro.label }} *</label>
+                                {{ form.carro }}
+                                {% if form.carro.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.carro.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Funcionário Responsável -->
+                            <div class="form-group">
+                                <label for="{{ form.funcionario.id_for_label }}">{{ form.funcionario.label }} *</label>
+                                {{ form.funcionario }}
+                                {% if form.funcionario.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.funcionario.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Data/Hora do Agendamento -->
+                            <div class="form-group">
+                                <label for="{{ form.data_hora_agenda.id_for_label }}">{{ form.data_hora_agenda.label }} *</label>
+                                {{ form.data_hora_agenda }}
+                                {% if form.data_hora_agenda.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.data_hora_agenda.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Data/Hora da Devolução -->
+                            <div class="form-group">
+                                <label for="{{ form.data_hora_devolucao.id_for_label }}">{{ form.data_hora_devolucao.label }}</label>
+                                {{ form.data_hora_devolucao }}
+                                {% if form.data_hora_devolucao.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.data_hora_devolucao.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <!-- Código da Missão -->
+                            <div class="form-group">
+                                <label for="{{ form.cm.id_for_label }}">{{ form.cm.label }} *</label>
+                                {{ form.cm }}
+                                {% if form.cm.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.cm.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Quilometragem Inicial -->
+                            <div class="form-group">
+                                <label for="{{ form.km_inicial.id_for_label }}">{{ form.km_inicial.label }} *</label>
+                                {{ form.km_inicial }}
+                                {% if form.km_inicial.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.km_inicial.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Quilometragem Final -->
+                            <div class="form-group">
+                                <label for="{{ form.km_final.id_for_label }}">{{ form.km_final.label }}</label>
+                                {{ form.km_final }}
+                                {% if form.km_final.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.km_final.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Responsável pelo Agendamento -->
+                            <div class="form-group">
+                                <label for="{{ form.responsavel.id_for_label }}">{{ form.responsavel.label }} *</label>
+                                {{ form.responsavel }}
+                                {% if form.responsavel.errors %}
+                                    <div class="invalid-feedback" style="display: block;">
+                                        {% for error in form.responsavel.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Descrição do Agendamento -->
+                    <div class="form-group">
+                        <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+                        {{ form.descricao }}
+                        {% if form.descricao.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {% for error in form.descricao.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Checkboxes -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.pedagio }}
+                                <label class="form-check-label" for="{{ form.pedagio.id_for_label }}">
+                                    {{ form.pedagio.label }} *
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.abastecimento }}
+                                <label class="form-check-label" for="{{ form.abastecimento.id_for_label }}">
+                                    {{ form.abastecimento.label }} *
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                {{ form.cancelar_agenda }}
+                                <label class="form-check-label" for="{{ form.cancelar_agenda.id_for_label }}">
+                                    {{ form.cancelar_agenda.label }} *
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Motivo do Cancelamento (condicional) -->
+                    <div class="form-group" id="motivo-cancelamento-group" style="display: none;">
+                        <label for="{{ form.motivo_cancelamento.id_for_label }}">{{ form.motivo_cancelamento.label }}</label>
+                        {{ form.motivo_cancelamento }}
+                        {% if form.motivo_cancelamento.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {% for error in form.motivo_cancelamento.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="form-group">
+                        <label for="{{ form.status.id_for_label }}">{{ form.status.label }} *</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {% for error in form.status.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Fotos do Veículo -->
+                    <div class="form-group">
+                        <label for="{{ form.fotos.id_for_label }}">{{ form.fotos.label }}</label>
+                        {{ form.fotos }}
+                        {% if form.fotos.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {% for error in form.fotos.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Ocorrências -->
+                    <div class="form-group">
+                        <label for="{{ form.ocorrencia.id_for_label }}">{{ form.ocorrencia.label }}</label>
+                        {{ form.ocorrencia }}
+                        {% if form.ocorrencia.errors %}
+                            <div class="invalid-feedback" style="display: block;">
+                                {% for error in form.ocorrencia.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group text-right">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+{% endblock %}
+
+{% block javascript %}
+<script>
+$(document).ready(function() {
+    // Mostra/oculta motivo de cancelamento
+    function toggleMotivoCancelamento() {
+        const cancelarAgenda = $('#id_cancelar_agenda').is(':checked') || $('#id_status').val() === 'cancelado';
+        $('#motivo-cancelamento-group').toggle(cancelarAgenda);
+        
+        if (cancelarAgenda) {
+            $('#id_motivo_cancelamento').attr('required', 'required');
+        } else {
+            $('#id_motivo_cancelamento').removeAttr('required');
+        }
+    }
+    
+    $('#id_cancelar_agenda').change(toggleMotivoCancelamento);
+    $('#id_status').change(toggleMotivoCancelamento);
+    
+    // Inicializa o estado
+    toggleMotivoCancelamento();
+    
+    // Validação de datas
+    $('#agendamento-form').submit(function(e) {
+        const dataAgenda = new Date($('#id_data_hora_agenda').val());
+        const dataDevolucao = new Date($('#id_data_hora_devolucao').val());
+        
+        if ($('#id_data_hora_devolucao').val() && dataDevolucao <= dataAgenda) {
+            alert('A data/hora de devolução deve ser posterior à data/hora de agendamento.');
+            e.preventDefault();
+            return false;
+        }
+        
+        return true;
+    });
+});
+</script>
+{% endblock %}
+
+</body>
 </html>
+
 

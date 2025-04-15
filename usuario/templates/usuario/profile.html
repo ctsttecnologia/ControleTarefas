@@ -12,7 +12,14 @@
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
 </head>
-<body class="container1">
+<body class="container1" style="background-image: url('{% static 'midia/imagens/painel1.png' %}'); 
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;"
+>
+{% block content %}{% endblock %}   
+    <!--<img src="{% static 'imagens/painel1.png' %}" class="imagempainel">--> <!--Imagem no Django em produção-->
+
     <div class="painel">
         <div class="painel1">
             <p class="mensagem">Bem-vindo, {{ user.username }}!</p>    

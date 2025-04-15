@@ -17,17 +17,71 @@ class AgendamentoForm(forms.ModelForm):
         model = Agendamento
         fields = '__all__'
         widgets = {
-            'data_hora_agenda': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'data_hora_devolucao': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-            'assinatura': forms.HiddenInput(),
+            'data_hora_agenda': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            }),
+            'data_hora_devolucao': forms.DateTimeInput(attrs={
+                'type': 'datetime-local',
+                'class': 'form-control'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control'
+            }),
+            'ocorrencia': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control'
+            }),
+            'motivo_cancelamento': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control'
+            }),
         }
-    
+        labels = {
+            'cm': 'Código da Missão (CM)',
+            'pedagio': 'Pedágio Necessário?',
+            'abastecimento': 'Abastecimento Necessário?',
+            'cancelar_agenda': 'Cancelar Agendamento?',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Definir campos como obrigatórios ou não
+        self.fields['data_hora_devolucao'].required = False
+        self.fields['km_final'].required = False
+        self.fields['fotos'].required = False
+        self.fields['assinatura'].required = False
+        self.fields['ocorrencia'].required = False
+        self.fields['motivo_cancelamento'].required = False
+        self.fields['descricao'].required = False
+        
+        # Adicionar classes CSS para estilização
+        for field in self.fields:
+            if field not in ['pedagio', 'abastecimento', 'cancelar_agenda', 'status']:
+                self.fields[field].widget.attrs.update({'class': 'form-control'})
+            elif field in ['pedagio', 'abastecimento', 'cancelar_agenda']:
+                self.fields[field].widget.attrs.update({'class': 'form-check-input'})
+
     def clean(self):
         cleaned_data = super().clean()
-        data_agenda = cleaned_data.get('data_hora_agenda')
-        data_devolucao = cleaned_data.get('data_hora_devolucao')
+        cancelar_agenda = cleaned_data.get('cancelar_agenda')
+        motivo_cancelamento = cleaned_data.get('motivo_cancelamento')
+        status = cleaned_data.get('status')
         
-        if data_agenda and data_devolucao and data_agenda >= data_devolucao:
-            raise ValidationError("A data de devolução deve ser posterior à data de agendamento.")
+        # Validação condicional para motivo de cancelamento
+        if cancelar_agenda == 'S' and not motivo_cancelamento:
+            self.add_error('motivo_cancelamento', 'Este campo é obrigatório quando o agendamento é cancelado.')
+        
+        # Validação para status cancelado
+        if status == 'cancelado' and not motivo_cancelamento:
+            self.add_error('motivo_cancelamento', 'Motivo do cancelamento é obrigatório para status "Cancelado".')
+        
+        # Validação de datas
+        data_hora_agenda = cleaned_data.get('data_hora_agenda')
+        data_hora_devolucao = cleaned_data.get('data_hora_devolucao')
+        
+        if data_hora_devolucao and data_hora_agenda and data_hora_devolucao <= data_hora_agenda:
+            self.add_error('data_hora_devolucao', 'A data/hora de devolução deve ser posterior à data/hora de agendamento.')
         
         return cleaned_data

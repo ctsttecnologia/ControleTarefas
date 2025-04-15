@@ -1,25 +1,19 @@
 {% extends "automovel/base.html" %}
+{% load static %}
 
 {% block title %}Lista de Agendamentos{% endblock %}
 
 {% block content %}
-
-{% load static %}
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}"> 
-    
-    
 </head>
 <body>
     <div class="container">
-        
         {% if user.is_authenticated %}
         <p>Olá, {{ user.username }}!</p>
         {% else %}
@@ -28,16 +22,12 @@
 
         <h2>Lista de Agendamentos</h2>
         
-        <!-- Botão "Voltar para Home" -->
         <a href="{% url 'home' %}" class="btn-home">Início</a>
         <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>               
         <a href="{% url 'automovel:adicionar_agendamento' %}" class="btn_profile">Novo Agendamento</a>
         <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
-    </div>   
-        <div class="painel">
-        </div>  
-        <div class="painel2">
-            {% csrf_token %}
+
+        <div class="painel1">
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -46,19 +36,21 @@
                         <th>Data/Hora Agenda</th>
                         <th>Data/Hora Devolução</th>
                         <th>KM Inicial</th>
+                        <th>Descrição</th>
                         <th>Assinatura</th>
                         <th>Status</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for Agendamento in agendamentos %}
+                    {% for agendamento in agendamentos %}
                     <tr>
                         <td>{{ agendamento.carro }}</td>
                         <td>{{ agendamento.funcionario }}</td>
                         <td>{{ agendamento.data_hora_agenda }}</td>
-                        <td>{{ agendamento.data_hora_devolucao }}</td>
+                        <td>{{ agendamento.data_hora_devolucao|default:"-" }}</td>
                         <td>{{ agendamento.km_inicial }}</td>
+                        <td>{{ agendamento.descricao }}</td>
                         <td>
                             {% if agendamento.assinatura %}
                                 <span class="badge bg-success">Assinado</span>
@@ -74,25 +66,25 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'automovel:editar_agendamento' agendamento.pk %}" class="btn btn-sm btn-warning">Editar</a>
-                            <a href="{% url 'automovel:excluir_agendamento' agendamento.pk %}" class="btn btn-sm btn-danger">Excluir</a>
+                            <a href="{% url 'automovel:editar_agendamento' agendamento.pk %}" 
+                               class="btn btn-primary">Editar</a>
+                            <a href="{% url 'automovel:excluir_agendamento' agendamento.pk %}" 
+                               class="btn btn-primary">Excluir</a>
                             {% if not agendamento.assinatura %}
-                            <a href="{% url 'automovel:assinar_agendamento' agendamento.pk %}" class="btn btn-sm btn-info">Assinar</a>
+                            <a href="{% url 'automovel:assinar_agendamento' agendamento.pk %}" 
+                               class="btn btn-primary">Assinar</a>
                             {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8">Nenhum agendamento cadastrado.</td>
+                        <td colspan="9">Nenhum agendamento cadastrado.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-            </table>
-            
-        </div>                       
+        </div>
     </div>
-    {% endblock %}  
-</body> 
+</body>
 </html>
-
+{% endblock %}
