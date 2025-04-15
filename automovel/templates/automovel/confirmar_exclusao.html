@@ -9,6 +9,9 @@
 <form method="post">
     {% csrf_token %}
     <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
-    <a href="{% if obj.pk %}{% url 'automovel:lista_agendamentos' %}{% else %}{% url 'automovel:lista_carros' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
+    <a href="{% if obj.pk %}{% url 'automovel:lista_agendamentos' %}
+    {% else %}
+    {% url 'automovel:lista_carros' %}
+    {% endif %}" class="btn btn-secondary">Cancelar</a>
 </form>
 {% endblock %}

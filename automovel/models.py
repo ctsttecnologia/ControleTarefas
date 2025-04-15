@@ -253,7 +253,6 @@ class Agendamento(models.Model):
         verbose_name=_('Motivo do Cancelamento')
     )
     
-    # Métodos avançados
     def clean(self):
         """Validações complexas do agendamento"""
         super().clean()
@@ -262,15 +261,26 @@ class Agendamento(models.Model):
         if self.data_hora_devolucao and self.data_hora_agenda:
             if self.data_hora_devolucao <= self.data_hora_agenda:
                 raise ValidationError({
-                    'data_hora_devolucao': _('A data de devolução deve ser após a data de agendamento.')
+                    'data_hora_devolucao': 'A data de devolução deve ser após a data de agendamento.'
                 })
         
         # Validação de quilometragem
         if self.km_final and self.km_inicial:
             if self.km_final < self.km_inicial:
                 raise ValidationError({
-                    'km_final': _('A quilometragem final não pode ser menor que a inicial.')
+                    'km_final': 'A quilometragem final não pode ser menor que a inicial.'
                 })
+        
+        # Validação de cancelamento
+        if self.cancelar_agenda == 'S' and not self.motivo_cancelamento:
+            raise ValidationError({
+                'motivo_cancelamento': 'Motivo do cancelamento é obrigatório quando o agendamento é cancelado.'
+            })
+        
+        if self.status == 'cancelado' and not self.motivo_cancelamento:
+            raise ValidationError({
+                'motivo_cancelamento': 'Motivo do cancelamento é obrigatório para status "Cancelado".'
+            })
     
     def save(self, *args, **kwargs):
         """Lógica adicional ao salvar"""
@@ -337,3 +347,5 @@ class Agendamento(models.Model):
                 name='check_km_final_maior'
             ),
         ]
+
+        

@@ -22,8 +22,6 @@
         {% else %}
             <a href="{% url 'home' %}" class="btn-home">Início</a>
         {% endif %}
-
-        
         <h1>Lista de Carros</h1>
         <a href="{% url 'automovel:adicionar_carro' %}" class="btn_logout">Adicionar Carro</a>
 
@@ -35,7 +33,8 @@
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
-          
+        </div>    
+       
         <div class="painel2">
             {% csrf_token %}
             <table class="table table-striped">
@@ -49,7 +48,8 @@
                         <th>Renavan</th>
                         <th>Última Manutenção</th>
                         <th>Próxima Manutenção</th>
-                        <th>Ações</th>
+                        <th>Ativo</th>
+                        <th>Descrição</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -63,21 +63,23 @@
                         <td>{{ carro.renavan }}</td>
                         <td>{{ carro.data_ultima_manutencao }}</td>
                         <td>{{ carro.data_proxima_manutencao }}</td>
-                        <div class="paine2">
-                            <td>
-                                <a href="{% url 'automovel:editar_carro' carro.renavan %}" class="btn btn-sm btn-warning">Editar</a>
-                                <a href="{% url 'automovel:excluir_carro' carro.renavan %}" class="btn btn-sm btn-danger">Excluir</a>
-                            </td>
-                        </div>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9">Nenhum carro cadastrado.</td>
-                    </tr>
-                    {% endfor %}
+                        <td>{{ carro.ativo }}</td>
+                        <td>{{ carro.descricao }}</td>
+                    </tr>    
                 </tbody>
             </table>
-            
+                <div class="paine2">
+                    <td>
+                        <a href="{% url 'automovel:editar_carro' carro.renavan %}" class="btn btn-sm btn-warning">Editar</a>
+                        <a href="{% url 'automovel:excluir_carro' carro.renavan %}" class="btn btn-sm btn-danger">Excluir</a>
+                    </td>
+                </div>
+                
+                {% empty %}
+                <tr>
+                    <td colspan="9">Nenhum carro cadastrado.</td>
+                </tr>
+                {% endfor %}
         </div>                       
     </div>
     {% endblock %}  
