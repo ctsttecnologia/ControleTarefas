@@ -86,7 +86,7 @@ h2 {
 /* Estilos para o botão de logout */
 /*Painel menu*/
 .btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile, .btn_tarefa:hover {
-    background-color: #0056b3;
+    background-color: #007bff;
 }
 
 .btn_logout {
