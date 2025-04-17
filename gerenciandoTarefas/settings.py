@@ -129,7 +129,7 @@ LANGUAGE_CODE = 'pt-br'
 USE_I18N = True
 USE_L10N = True
 # Ativar suporte a time zones
-USE_TZ = True
+USE_TZ = False
 # Definir o fuso horário padrão (por exemplo, 'America/Sao_Paulo' para o horário de Brasília)
 TIME_ZONE = 'America/Sao_Paulo'
 
