@@ -74,7 +74,7 @@ h2 {
 
 /*Painel menu*/
 .btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile:hover, .btn_tarefa:hover, .btn_cancelar:hover {
-    background-color: #0056b3;
+    background-color: #007bff;
 }
 
 .btn_logout {
