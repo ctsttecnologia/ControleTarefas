@@ -38,12 +38,12 @@ class AgendamentoForm(forms.ModelForm):
                 'class': 'form-control'
             }),
         }
-        labels = {
-            'cm': 'Código da Missão (CM)',
-            'pedagio': 'Pedágio Necessário?',
-            'abastecimento': 'Abastecimento Necessário?',
-            'cancelar_agenda': 'Cancelar Agendamento?',
-        }
+        #labels = {
+        #   'cm': 'Código do Contrato (CM)',
+        #  'pedagio': 'Pedágio Necessário?',
+        #    'abastecimento': 'Abastecimento Necessário?',
+        #    'cancelar_agenda': 'Cancelar Agendamento?',
+        #}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -51,7 +51,7 @@ class AgendamentoForm(forms.ModelForm):
         self.fields['data_hora_devolucao'].required = False
         self.fields['km_final'].required = False
         self.fields['fotos'].required = False
-        self.fields['assinatura'].required = False
+        self.fields['assinatura'].required = True
         self.fields['ocorrencia'].required = False
         self.fields['motivo_cancelamento'].required = False
         self.fields['descricao'].required = False
