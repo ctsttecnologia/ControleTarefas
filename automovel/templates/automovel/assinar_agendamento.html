@@ -1,0 +1,108 @@
+
+{% block extra_css %}
+{% endblock %}
+{% block content %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/assinatura.css' %}">
+
+</head>
+<body>
+    <div class="container"> 
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+        {% endif %}   
+        <div class="painel">   
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+        </div> 
+
+        <div class="painel2">
+                <!-- Header -->
+                <div class="assinar_agendamento">
+                    <h1 class="text-h1">Assinar Agendamento</h1>
+                    <p class="opacity-90">Confirme os detalhes do seu agendamento abaixo</p>
+                </div>
+                
+                <!-- Content -->
+                <div class="viculo-detalhe">
+                    <div class="mb-8">
+                        <h2 class="text-h2">Detalhes do Veículo</h2>
+                        <div class="grade">
+                            <div>
+                                <p class="text-gray-600">Modelo:</p>
+                                <p class="font-medium">{{ automovel.modelo }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Placa:</p>
+                                <p class="font-medium">{{ automovel.placa }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Ano:</p>
+                                <p class="font-medium">{{ automovel.ano }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Cor:</p>
+                                <p class="font-medium">{{ automovel.cor }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <h2 class="text-h2">Detalhes do Agendamento</h2>
+                        <div class="gride">
+                            <div>
+                                <p class="text-gray-600">Data:</p>
+                                <p class="font-medium">{{ agendamento.data|date:"d/m/Y" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Horário:</p>
+                                <p class="font-medium">{{ agendamento.horario }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Serviço:</p>
+                                <p class="font-medium">{{ agendamento.servico }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Local:</p>
+                                <p class="font-medium">{{ agendamento.local }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" class="mt-8">
+                        {% csrf_token %}
+                        <div class="mb-6">
+                            <label class="label">
+                                <input type="checkbox" name="termos" required class="input">
+                                <span class="texto-aceite">Li e aceito os termos de serviço</span>
+                            </label>
+                        </div>
+
+                        <div class="botao">
+                            <button type="submit" class="confirma-agenda">
+                                Confirmar Agendamento
+                            </button>
+                            <a href="{% url 'automovel:lista_agendamentos' %}" class="cancelar">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+
+        </div>
+    {% endblock %}
+    </div> 
+</body>
+</html>
