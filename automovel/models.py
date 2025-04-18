@@ -179,7 +179,7 @@ class Agendamento(models.Model):
     
     cm = models.CharField(
         max_length=20,
-        verbose_name=_('Código da Missão (CM)')
+        verbose_name=_('Código do Contrato (CM)')
     )
     
     descricao = models.TextField(

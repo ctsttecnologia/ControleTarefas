@@ -39,8 +39,8 @@
             <form method="post">
                 {% csrf_token %}
                 {{ form.as_p }}
-                <button type="submit" class="btn btn-primary">Salvar</button>
-                <a href="{% url 'automovel:lista_carros' %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn_cadastro">Salvar</button>
+                <a href="{% url 'automovel:lista_carros' %}" class="btn_logout">Cancelar</a>
             </form>
             
         </div>                       
