@@ -1,0 +1,57 @@
+/* Container da Assinatura */
+.signature-container {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+/* Canvas da Assinatura */
+.signature-pad {
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+    width: 100%;
+    height: 200px;
+    touch-action: none;
+}
+
+/* Botões de Controle */
+.signature-buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.signature-buttons button {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Preview da Assinatura */
+.signature-preview {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.signature-preview img {
+    max-width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    background: white;
+}
+
+/* Responsividade */
+@media (max-width: 576px) {
+    .signature-pad {
+        height: 150px;
+    }
+    
+    .signature-buttons button {
+        min-width: 100%;
+        margin-bottom: 5px;
+    }
+}

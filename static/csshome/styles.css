@@ -23,12 +23,12 @@ body {
 
 /* Estilo do logo */
 .logo {
-    text-align: left;
+    text-align: center;
     padding: 0px 0;
 }
 
 .logo img {
-    max-width: 100%;
+    max-width: 80%;
     height: auto;
 }
 
