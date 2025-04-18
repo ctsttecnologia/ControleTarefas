@@ -20,7 +20,7 @@
             <a href="{% url 'home' %}" class="btn-home">Início</a>
         {% endif %}
 
-        <h3>Cadastro de Veículo</h3>        
+        <h3>Agendamento</h3>        
         <div class="painel">
             
             <!-- Botão "Voltar para Home" -->
@@ -221,7 +221,26 @@
                     <!-- Fotos do Veículo -->
                     <div class="form-group">
                         <label for="{{ form.fotos.id_for_label }}">{{ form.fotos.label }}</label>
+                        
+                        <!-- Campo de upload -->
                         {{ form.fotos }}
+                        
+                        <!-- Visualização da foto atual (se existir) -->
+                        {% if form.instance.pk and form.instance.fotos %}
+                            <div class="current-photo mt-2">
+                                <p>Foto atual:</p>
+                                <a href="{{ form.instance.fotos.url }}" target="_blank">
+                                    <img src="{{ form.instance.fotos.url }}" class="img-thumbnail" width="150">
+                                </a>
+                                <div class="mt-2">
+                                    <a href="{% url 'automovel:agendamento_fotos' form.instance.pk %}" 
+                                    class="btn btn-sm btn-info" target="_blank">
+                                        <i class="fas fa-expand"></i> Visualizar em tela cheia
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                        
                         {% if form.fotos.errors %}
                             <div class="invalid-feedback" style="display: block;">
                                 {% for error in form.fotos.errors %}
@@ -245,10 +264,10 @@
                     </div>
                     
                     <div class="form-group text-right">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn-home">
                             <i class="fas fa-save"></i> Salvar
                         </button>
-                        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-secondary">
+                        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn-home">
                             <i class="fas fa-times"></i> Cancelar
                         </a>
                     </div>

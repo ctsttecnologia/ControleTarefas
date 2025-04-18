@@ -1,6 +1,8 @@
 
+# automovel/admin.py
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
+from django.utils.html import format_html
 from .models import Carro, Agendamento
 
 @admin.register(Carro)
@@ -50,7 +52,7 @@ class CarroAdmin(admin.ModelAdmin):
 class AgendamentoAdmin(admin.ModelAdmin):
     list_display = (
         'carro', 'funcionario', 'data_hora_formatada', 'status', 
-        'duracao_formatada', 'km_percorrido', 'necessita_abastecimento'
+        'duracao_formatada', 'km_percorrido', 'necessita_abastecimento', 'foto_tag_admin'
     )
     list_filter = ('status', 'cancelar_agenda', 'carro__marca', 'pedagio', 'abastecimento')
     search_fields = (
@@ -60,8 +62,9 @@ class AgendamentoAdmin(admin.ModelAdmin):
     date_hierarchy = 'data_hora_agenda'
     list_select_related = ('carro',)
     raw_id_fields = ('carro',)
-    readonly_fields = ('status', 'duracao_formatada', 'km_percorrido')
+    readonly_fields = ('foto_tag_admin', 'status', 'duracao_formatada', 'km_percorrido')
     actions = ['finalizar_agendamentos', 'cancelar_agendamentos']
+    
     fieldsets = (
         (_('Informações Básicas'), {
             'fields': ('carro', 'funcionario', 'cm', 'status')
@@ -76,13 +79,20 @@ class AgendamentoAdmin(admin.ModelAdmin):
             'fields': ('pedagio', 'abastecimento', 'necessita_abastecimento')
         }),
         (_('Documentação'), {
-            'fields': ('fotos', 'assinatura', 'ocorrencia', 'descricao')
+            'fields': ('fotos', 'foto_tag_admin', 'assinatura', 'ocorrencia', 'descricao')
         }),
         (_('Controle'), {
             'fields': ('cancelar_agenda', 'motivo_cancelamento', 'responsavel'),
             'classes': ('collapse',)
         }),
     )
+
+    def foto_tag_admin(self, obj):
+        if obj.fotos:
+            return format_html('<img src="{}" width="150" />', obj.fotos.url)
+        return "Nenhuma foto"
+    foto_tag_admin.short_description = 'Pré-visualização'
+    foto_tag_admin.allow_tags = True
 
     def data_hora_formatada(self, obj):
         return obj.data_hora_agenda.strftime('%d/%m/%Y %H:%M')
@@ -103,14 +113,14 @@ class AgendamentoAdmin(admin.ModelAdmin):
     km_percorrido.short_description = _('Km Percorrido')
 
     def necessita_abastecimento(self, obj):
-        return obj.necessita_abastecimento
+        return obj.abastecimento
     necessita_abastecimento.short_description = _('Abastecer?')
     necessita_abastecimento.boolean = True
 
     def finalizar_agendamentos(self, request, queryset):
         for agendamento in queryset.filter(status='em_andamento'):
             agendamento.finalizar_agendamento(
-                km_final=agendamento.km_inicial + 100,  # Exemplo - ajuste conforme necessário
+                km_final=agendamento.km_inicial + 100,
                 ocorrencia=_('Finalizado pelo admin')
             )
         self.message_user(request, _('Agendamentos finalizados com sucesso.'))
@@ -118,7 +128,7 @@ class AgendamentoAdmin(admin.ModelAdmin):
 
     def cancelar_agendamentos(self, request, queryset):
         updated = queryset.update(
-            cancelar_agenda='S',
+            cancelar_agenda=True,
             status='cancelado',
             motivo_cancelamento=_('Cancelado pelo administrador')
         )
@@ -127,5 +137,4 @@ class AgendamentoAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('carro')
-
         

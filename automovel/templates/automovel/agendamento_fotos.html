@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container foto-container">
+    <h2>Foto do Veículo - Agendamento #{{ agendamento.pk }}</h2>
+    
+    {% if agendamento.fotos %}
+        <div class="foto-wrapper">
+            <img src="{{ agendamento.fotos.url }}" alt="Foto do veículo" class="img-fluid foto-veiculo">
+            
+            <div class="foto-info">
+                <p><strong>Veículo:</strong> {{ agendamento.carro }}</p>
+                <p><strong>Data/Hora:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
+                <p><strong>Status:</strong> {{ agendamento.get_status_display }}</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">Nenhuma foto disponível para este agendamento.</div>
+    {% endif %}
+    
+    <a href="javascript:window.history.back();" class="btn btn-primary mt-3">
+        <i class="fas fa-arrow-left"></i> Voltar
+    </a>
+</div>
+
+<style>
+    .foto-container {
+        max-width: 800px;
+        margin: 30px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .foto-wrapper {
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .foto-veiculo {
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 5px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    
+    .foto-info {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
