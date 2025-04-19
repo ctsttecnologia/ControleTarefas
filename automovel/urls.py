@@ -19,5 +19,11 @@ urlpatterns = [
     path('excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
     path('assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
     path('agendamento/<int:pk>/fotos/', views.agendamento_fotos, name='agendamento_fotos'),
+
+    # Relatórios
+    path('relatorios/', views.relatorios, name='relatorios'),
+    path('exportar/pdf/<str:tipo>/', views.exportar_pdf, name='exportar_pdf'),
+    path('exportar/excel/<str:tipo>/', views.exportar_excel, name='exportar_excel'),
+    path('dashboard/', views.dashboard, name='dashboard'),
 ]
 

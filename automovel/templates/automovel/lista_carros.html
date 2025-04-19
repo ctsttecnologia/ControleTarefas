@@ -16,7 +16,8 @@
             {% if user.is_authenticated %}
             <p>Olá, {{ user.username }}!</p>
             {% else %}
-                <a href="{% url 'home' %}" class="btn-home">Início</a>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-house"></i> Início
             {% endif %}
         <div class="container mt-4">
             <h1 class="mb-4">Lista de Carros</h1>
@@ -24,7 +25,8 @@
             <div class="d-flex justify-content-between mb-4">
                 <a href="{% url 'automovel:adicionar_carro' %}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> Adicionar Carro
-                </a>       
+                </a>
+                    
                 <div>
                     <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-calendar-event"></i> Agendamentos
@@ -83,7 +85,13 @@
                     </tbody>
                 </table>
             </div>
-        </div>
+                <a href="{% url 'automovel:exportar_pdf' 'carros' %}" class="btn-home">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </a>
+                <a href="{% url 'automovel:exportar_excel' 'carros' %}" class="btn_logout">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </a> 
+        </div>  
     </div>    
     {% endblock %}
 

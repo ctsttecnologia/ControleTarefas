@@ -1,8 +1,6 @@
 {% extends "automovel/base.html" %}
 {% load static %}
-
 {% block title %}Lista de Agendamentos{% endblock %}
-
 {% block content %}
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -67,12 +65,12 @@
                         </td>
                         <td>
                             <a href="{% url 'automovel:editar_agendamento' agendamento.pk %}" 
-                               class="btn btn-primary">Editar</a>
+                               class="signature">Editar</a>
                             <a href="{% url 'automovel:excluir_agendamento' agendamento.pk %}" 
-                               class="btn btn-primary">Excluir</a>
+                               class="signature">Excluir</a>
                             {% if not agendamento.assinatura %}
                             <a href="{% url 'automovel:assinar_agendamento' agendamento.pk %}" 
-                               class="btn btn-primary">Assinar</a>
+                               class="signature">Assinar</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -84,6 +82,16 @@
                 </tbody>
             </table>
         </div>
+        <a href="{% url 'automovel:exportar_pdf' 'agendamentos' %}" class="btn-home">
+            <i class="fas fa-file-pdf"></i> Exportar PDF
+        </a>
+        <a href="{% url 'automovel:exportar_excel' 'agendamentos' %}" class="btn_logout">
+            <i class="fas fa-file-excel"></i> Exportar Excel
+        </a>
+        <a href="{% url 'automovel:dashboard' %}" class="btn_logout">
+            <i class="fas fa-file-excel"></i> Graficos
+        </a>
+
     </div>
 </body>
 </html>

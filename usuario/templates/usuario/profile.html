@@ -25,7 +25,8 @@
             <p class="mensagem">Bem-vindo, {{ user.username }}!</p>    
             <div class="painel">
                 <ul><a href="{% url 'usuario_login:logout' %}" class="btn_tarefas">Logout</a></ul>
-                <ul><a href="{% url 'home' %}" class="btn_tarefas">Home</a></ul>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-house"></i> Início
             </div>
         </div>
         <div class="card_principal">
@@ -93,6 +94,7 @@
                     <a href="{% url 'automovel:adicionar_carro' %}" class="link-card">Cadastrar Carro</a>
                     <a href="{% url 'automovel:adicionar_agendamento' %}" class="link-card">Agendar Carro</a>
                     <a href="{% url 'automovel:lista_carros' %}" class="link-card">Relação de Carros</a>
+                    <a href="{% url 'automovel:relatorios' %}" class="link-card">Relatorios</a>
                     
                 </div>
                 <div class="icone_tarefa">

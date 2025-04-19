@@ -1,4 +1,3 @@
-
 {% block extra_css %}
 {% endblock %}
 {% block content %}
@@ -11,9 +10,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" href="{% static 'csscarro/assinatura.css' %}">
-
 </head>
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    
     <div class="container"> 
         {% if user.is_authenticated %}
         <p>Olá, {{ user.username }}!</p>
@@ -27,82 +27,119 @@
             <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
         </div> 
-
+        
         <div class="painel2">
-                <!-- Header -->
-                <div class="assinar_agendamento">
-                    <h1 class="text-h1">Assinar Agendamento</h1>
-                    <p class="opacity-90">Confirme os detalhes do seu agendamento abaixo</p>
+            <!-- Header -->
+            <div class="assinar_agendamento">
+                <h1 class="text-h1">Assinar Agendamento</h1>
+                <p class="opacity-90">Confirme os detalhes do seu agendamento abaixo</p>
+            </div>
+            
+            <!-- Content -->
+            <div class="viculo-detalhe">
+                <div class="mb-8">
+                    <h2 class="text-h2">Detalhes do Veículo</h2>
+                    <div class="grade">
+
+                          <!-- Pode adicionar mais campos se necessário -->
+                         <div>
+                            <p class="text-gray-600">Marca:</p>
+                            <p class="font-medium">{{ agendamento.carro.marca }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Modelo:</p>
+                            <p class="font-medium">{{ agendamento.carro.modelo }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Placa:</p>
+                            <p class="font-medium">{{ agendamento.carro.placa }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Ano:</p>
+                            <p class="font-medium">{{ agendamento.carro.ano }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Cor:</p>
+                            <p class="font-medium">{{ agendamento.carro.cor }}</p>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Content -->
-                <div class="viculo-detalhe">
-                    <div class="mb-8">
-                        <h2 class="text-h2">Detalhes do Veículo</h2>
-                        <div class="grade">
-                            <div>
-                                <p class="text-gray-600">Modelo:</p>
-                                <p class="font-medium">{{ automovel.modelo }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Placa:</p>
-                                <p class="font-medium">{{ automovel.placa }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Ano:</p>
-                                <p class="font-medium">{{ automovel.ano }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Cor:</p>
-                                <p class="font-medium">{{ automovel.cor }}</p>
-                            </div>
+
+                <div class="mb-8">
+                    <h2 class="text-h2">Detalhes do Agendamento</h2>
+                    <div class="gride">
+                        <div>
+                            <p class="text-gray-600">Data:</p>
+                            <p class="font-medium">{{ agendamento.data_hora_agenda|date:"d/m/Y" }}</p>
                         </div>
+                        <div>
+                            <p class="text-gray-600">Horário:</p>
+                            <p class="font-medium">{{ agendamento.data_hora_agenda|time:"H:i" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Serviço:</p>
+                            <p class="font-medium">{{ agendamento.descricao }}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600">Responsável:</p>
+                            <p class="font-medium">{{ agendamento.responsavel }}</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <form method="post" class="mt-8">
+                    {% csrf_token %}
+                    <input type="hidden" name="assinatura" id="id_assinatura">
+                    
+                    <div class="mb-6">
+                        <label class="label">
+                            <input type="checkbox" name="termos" required class="input">
+                            <span class="texto-aceite">Li e aceito os termos de serviço</span>
+                        </label>
                     </div>
 
-                    <div class="mb-8">
-                        <h2 class="text-h2">Detalhes do Agendamento</h2>
-                        <div class="gride">
-                            <div>
-                                <p class="text-gray-600">Data:</p>
-                                <p class="font-medium">{{ agendamento.data|date:"d/m/Y" }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Horário:</p>
-                                <p class="font-medium">{{ agendamento.horario }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Serviço:</p>
-                                <p class="font-medium">{{ agendamento.servico }}</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Local:</p>
-                                <p class="font-medium">{{ agendamento.local }}</p>
-                            </div>
+                    <div class="signature-container">
+                        <label class="signature-label">Assinatura:</label>
+                        <canvas id="signature-pad" class="signature-pad"></canvas>
+                        <div class="signature-error" id="signature-error">
+                            Por favor, forneça sua assinatura.
                         </div>
-                    </div>
-
-                    <form method="post" class="mt-8">
-                        {% csrf_token %}
-                        <div class="mb-6">
-                            <label class="label">
-                                <input type="checkbox" name="termos" required class="input">
-                                <span class="texto-aceite">Li e aceito os termos de serviço</span>
-                            </label>
-                        </div>
-
-                        <div class="botao">
-                            <button type="submit" class="confirma-agenda">
-                                Confirmar Agendamento
+                        <div class="signature-actions">
+                            <button type="button" id="clear" class="cancelar">
+                                Limpar Assinatura
                             </button>
-                            <a href="{% url 'automovel:lista_agendamentos' %}" class="cancelar">
-                                Cancelar
-                            </a>
+                            <button type="button" id="save" class="confirma-agenda">
+                                Confirmar Assinatura
+                            </button>
                         </div>
-                    </form>
-                </div>
-
+                    </div>
+                </form>
+            </div>
         </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('signature-pad');
+            const signaturePad = new SignaturePad(canvas);
+            
+            document.getElementById('clear').addEventListener('click', function() {
+                signaturePad.clear();
+            });
+            
+            document.getElementById('save').addEventListener('click', function() {
+                if (signaturePad.isEmpty()) {
+                    alert('Por favor, forneça sua assinatura.');
+                } else {
+                    const signatureInput = document.getElementById('id_assinatura');
+                    signatureInput.value = signaturePad.toDataURL();
+                    document.forms[0].submit();
+                }
+            });
+        });
+    </script>
     {% endblock %}
-    </div> 
 </body>
 </html>
+
