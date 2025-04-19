@@ -10,9 +10,12 @@
     <title>Login</title>
     <!-- Link para o arquivo CSS -->
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}"> 
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
+    <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon"> 
 </head>
 <body>
+    
+    
     <div class="painel3">
         <div class="painel1">
             <h1 class="titulo">Login</h1>
@@ -25,6 +28,8 @@
             </form>
             <p class="registro">Não tem uma conta? <a href="{% url 'usuario_login:register' %}" class="link-registro">Registre-se</a></p>
             <a href="{% url 'home' %}" class="link-home">Início</a>
+            <img src="/midia/imagens/logocetest.png">
+            <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção--> 
         </div>
     </div>
 </body>

@@ -13,8 +13,8 @@ body, h1, p, form, button, a {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
-    background-color: #caf3ff;
+    height: 80vh;
+    background-color: #edfbff;
     font-size: 10px;
 }
 
