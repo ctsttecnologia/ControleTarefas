@@ -202,3 +202,17 @@ h2 {
         font-size: 14px;
     }
 }
+
+/* Estilo para ícones nos botões */
+.btn i {
+    margin-right: 8px;
+  }
+  
+  /* Espaçamento entre seções */
+  .form-group + .form-group {
+    margin-top: 1.5rem;
+  }
+  
+  .row + .form-group {
+    margin-top: 1.5rem;
+  }

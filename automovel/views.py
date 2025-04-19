@@ -2,9 +2,16 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib import messages
+from django.db import IntegrityError
+from django.utils import timezone 
+from django.db.models import Count, Q, Sum, Case, When, Value
+from django.http import HttpResponse, JsonResponse 
+
+from .relatorios import gerar_relatorio_pdf, gerar_relatorio_excel
+from datetime import datetime, date
+
 from .forms import CarroForm, AgendamentoForm
 from .models import Carro, Agendamento
-from django.db import IntegrityError  # Adicione esta linha
 
 
 
@@ -141,4 +148,75 @@ def assinar_agendamento(request, pk):
 def agendamento_fotos(request, pk):
     agendamento = get_object_or_404(Agendamento, pk=pk)
     return render(request, 'automovel/agendamento_fotos.html', {'agendamento': agendamento})
+
+#RELATÓRIO
+@login_required
+def relatorios(request):
+    return render(request, 'automovel/relatorios.html')
+
+@login_required
+def exportar_pdf(request, tipo):
+    return gerar_relatorio_pdf(request, tipo)
+
+@login_required
+def exportar_excel(request, tipo):
+    return gerar_relatorio_excel(request, tipo)
+
+@login_required
+def dashboard(request):
+    now = timezone.now()
+
+    # Nomes dos meses (com primeira letra maiúscula)
+    mes_data = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    
+     # Inicializa os dados mensais
+    agendamentos_mes_data = [0] * 12
+    agendamentos_por_mes = Agendamento.objects.filter(
+        data_hora_agenda__year=now.year
+    ).values('data_hora_agenda__month').annotate(total=Count('id'))
+
+    # Dados de veículos
+    carros_por_ativo = Carro.objects.values('ativo').annotate(total=Count('id'))
+    carros_status = [
+        {'status': 'Ativo' if item['ativo'] else 'Inativo', 'total': item['total']}
+        for item in carros_por_ativo
+    ]
+
+    # Dados de agendamentos
+    agendamentos_por_status = list(Agendamento.objects.values('status').annotate(total=Count('id')))
+    
+    # Dados mensais
+    mes_data = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+    agendamentos_mes_data = [0] * 12
+    agendamentos_por_mes = Agendamento.objects.filter(
+        data_hora_agenda__year=now.year
+    ).values('data_hora_agenda__month').annotate(total=Count('id'))
+    
+    for item in agendamentos_por_mes:
+        agendamentos_mes_data[item['data_hora_agenda__month'] - 1] = item['total']
+    
+    for item in agendamentos_por_mes:
+        month_index = item['data_hora_agenda__month'] - 1  # Janeiro = 0
+        if 0 <= month_index < 12:
+            agendamentos_mes_data[month_index] = item['total']
+
+    context = {
+        'carros_status': carros_status,
+        'agendamentos_status': agendamentos_por_status,
+        'agendamentos_mes_data': agendamentos_mes_data,
+        'total_carros': Carro.objects.count(),
+        'carros_ativos': Carro.objects.filter(ativo=True).count(),
+        'agendamentos_hoje': Agendamento.objects.filter(
+            data_hora_agenda__date=now.date()
+        ).count(),
+        'manutencoes_pendentes': Carro.objects.filter(
+            data_proxima_manutencao__lte=now.date()
+        ).count(),
+        'mes_data': mes_data,
+        'agendamentos_mes_data': agendamentos_mes_data,
+        'ano_atual': now.year,
+    }
+    return render(request, 'automovel/dashboard.html', context)
+
 

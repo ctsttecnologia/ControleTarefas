@@ -219,3 +219,128 @@
         font-size: 20px;
     }
 }
+
+/* assinatura.css - Estilo Responsivo para Campo de Assinatura */
+
+/* Container principal */
+.signature-container {
+    margin: 1.5rem 0;
+    width: 100%;
+}
+
+/* Label do campo */
+.signature-label {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 1rem;
+}
+
+/* Canvas da assinatura */
+.signature-pad {
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: #f9fafb;
+    touch-action: none; /* Importante para dispositivos touch */
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2/1; /* Mantém proporção 2:1 (largura:altura) */
+}
+
+/* Botões de ação */
+.signature-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.signature-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-size: 0.875rem;
+}
+
+.signature-btn-primary {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.signature-btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.signature-btn-secondary {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.signature-btn-secondary:hover {
+    background-color: #d1d5db;
+}
+
+/* Mensagem de erro/validação */
+.signature-error {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: none;
+}
+
+/* Media Queries para responsividade */
+@media (max-width: 768px) {
+    .signature-pad {
+        height: 150px; /* Altura fixa para mobile */
+    }
+    
+    .signature-actions {
+        flex-direction: column;
+    }
+    
+    .signature-btn {
+        width: 100%;
+        padding: 0.75rem;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .signature-pad {
+        height: 180px;
+    }
+}
+
+@media (min-width: 1025px) {
+    .signature-pad {
+        height: 200px;
+        max-width: 600px;
+    }
+}
+
+/* Estilo para quando estiver em modo retrato (mobile) */
+@media (orientation: portrait) and (max-width: 768px) {
+    .signature-pad {
+        height: 120px;
+    }
+}
+
+/* Melhorias para touch devices */
+@media (pointer: coarse) {
+    .signature-pad {
+        border-width: 2px; /* Borda mais grossa para melhor feedback tátil */
+    }
+    
+    .signature-btn {
+        padding: 0.75rem 1.25rem; /* Área de toque maior */
+        min-height: 44px; /* Tamanho mínimo recomendado para touch */
+    }
+}
+
+/* Feedback visual durante a assinatura */
+.signature-pad:active {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}

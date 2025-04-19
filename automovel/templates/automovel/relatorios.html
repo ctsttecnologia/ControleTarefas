@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" href="{% static 'csscarro/graficos.css' %}">
+<div class="container">
+    <h2>Relatórios</h2>
+    
+    <div class="card-group mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Veículos</h5>
+                <a href="{% url 'automovel:exportar_pdf' 'carros' %}" class="btn btn-danger">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </a>
+                <a href="{% url 'automovel:exportar_excel' 'carros' %}" class="btn btn-success mt-2">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Agendamentos</h5>
+                <a href="{% url 'automovel:exportar_pdf' 'agendamentos' %}" class="btn btn-danger">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </a>
+                <a href="{% url 'automovel:exportar_excel' 'agendamentos' %}" class="btn btn-success mt-2">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </a>
+            </div>
+        </div>
+    </div>
+    <a href="{% url 'automovel:dashboard' %}" class="btn_logout">
+        <i class="fas fa-file-excel"></i> Graficos
+    </a>
+</div>
+{% endblock %}
+
