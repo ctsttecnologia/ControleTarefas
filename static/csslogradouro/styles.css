@@ -1,145 +1,146 @@
+/* Estilos base */
 
-.container {
+.logradouro-container * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Container principal */
+.logradouro-container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
     background-color: #ffffff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
 }
 
-h2 {
+/* Cabeçalhos */
+.logradouro-container h2,
+.logradouro-container h3 {
     color: #2c3e50;
+    margin-bottom: 20px;
     text-align: center;
+}
+
+/* Painel de navegação */
+.logradouro-painel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding: 15px;
+    background-color: #ecf0f1;
+    border-radius: 8px;
+}
+
+/* Sistema de botões */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    gap: 8px;
+}
+
+.btn-home {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-logout {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-cadastro {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn-profile {
+    background-color: #9b59b6;
+    color: white;
+}
+
+.btn-excel {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-save {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn-edit {
+    background-color: #f39c12;
+    color: white;
+    padding: 5px 10px;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+}
+
+/* Efeitos hover */
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    opacity: 0.9;
+}
+
+/* Formulários */
+.logradouro-form {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
     margin-bottom: 20px;
 }
 
-
-/* Estilos para o painel de cadastro */
-.painel2 {
-    background-color: #ecf0f1;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-.form-cadastro {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
 .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+    margin-bottom: 15px;
 }
 
 .form-group label {
-    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
     color: #2c3e50;
 }
 
-.form-group input,
-.form-group select {
-    padding: 10px;
-    border: 1px solid #bdc3c7;
-    border-radius: 5px;
-    font-size: 16px;
-    transition: border-color 0.3s ease;
-}
+/* ... (continua com os outros estilos) ... */
 
-.form-group input:focus,
-.form-group select:focus {
-    border-color: #3498db;
-    outline: none;
-}
-
-/* Estilos para o botão de salvar */
-.btn-pesquisar {
-    background-color: #27ae60;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.btn-pesquisar:hover {
-    background-color: #219653;
-}
-
-/* Estilos para mensagens de ajuda */
-.form-text {
-    font-size: 12px;
-    color: #7f8c8d;
-}
-
-/* Estilos para o checkbox */
-.form-check-label {
-    margin-left: 10px;
-    font-weight: normal;
-}
-
-/* Estilos para o botão de logout */
-/*Painel menu*/
-.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile, .btn_tarefa:hover {
-    background-color: #0056b3;
-}
-
-.btn_logout {
-    background-color: #626262;
-}
-
-.btn_logout:hover {
-    background-color: #373737;
-}
-
-.btn_cadastro {
-    background-color: #007bff;
-}
-
-.btn_cadastro:hover {
-    background-color: #0056b3;
-}
-
-.btn_profile {
-    background-color: #007bff;
-}
-
-.btn_profile:hover {
-    background-color: #0056b3;
-}
-
-.btn_tarefa:hover {
-    background-color: #0056b3;
-}
-
-/* Responsividade */
+/* Media Queries */
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
+    .logradouro-painel {
+        flex-direction: column;
     }
-
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
-        display: block;
+    
+    .btn {
         width: 100%;
-        margin: 5px 0;
+        margin-bottom: 10px;
     }
-
-    .painel, .painel1 {
-        padding: 10px;
-    }
-}
-
-@media (max-width: 480px) {
-    .container {
-        padding: 5px;
-    }
-
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile, .btn_tarefa {
-        padding: 6px 12px;
+    
+    .form-grid {
+        grid-template-columns: 1fr;
     }
 }

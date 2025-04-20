@@ -30,14 +30,20 @@ class AgendamentoForm(forms.ModelForm):
             'abastecimento': forms.CheckboxInput(),
         }
 
+
+    def clean(self):
+        cleaned_data = super().clean()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['data_hora_devolucao'].required = False
         self.fields['km_final'].required = False
-        self.fields['fotos'].required = False
+        self.fields['foto_principal'].required = False
         self.fields['ocorrencia'].required = False
         self.fields['motivo_cancelamento'].required = False
         self.fields['descricao'].required = False
+
+        
 
     def clean(self):
         cleaned_data = super().clean()

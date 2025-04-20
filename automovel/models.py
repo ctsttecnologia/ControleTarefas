@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, RegexVa
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
+
 from datetime import timedelta
 
 class Carro(models.Model):
@@ -54,6 +55,7 @@ class Carro(models.Model):
     ativo = models.BooleanField(default=True, verbose_name=_('Veículo Ativo na Frota'))
     observacoes = models.TextField(blank=True, null=True, verbose_name=_('Observações'))
 
+    
     def clean(self):
         super().clean()
         
@@ -143,13 +145,21 @@ class Agendamento(models.Model):
         verbose_name=_('Quilometragem Final')
     )
     
-    fotos = models.ImageField(
+    foto_principal = models.ImageField(
         upload_to='agendamentos/%Y/%m/%d/',
         blank=True,
         null=True,
-        verbose_name=_('Fotos do Veículo')
+        verbose_name=_('Foto Principal do Veículo'),
+        help_text=_('Foto agendamento')
     )
-    
+
+    class Meta:
+        verbose_name = _('Agendamento')
+        verbose_name_plural = _('Agendamentos')
+
+    def __str__(self):
+        return f"Agendamento #{self.id} - {self.veiculo.placa}"
+       
     assinatura = models.TextField(blank=True, verbose_name=_('Assinatura Digital'))
     responsavel = models.CharField(max_length=100, verbose_name=_('Responsável pelo Agendamento'))
     ocorrencia = models.TextField(blank=True, verbose_name=_('Ocorrências Durante o Uso'))
@@ -244,4 +254,16 @@ class Agendamento(models.Model):
             ),
         ]
 
+class FotoAgendamento(models.Model):
+    agendamento = models.ForeignKey(
+        Agendamento, 
+        on_delete=models.CASCADE,
+        related_name='fotos'
+    )
+    imagem = models.ImageField(upload_to='agendamentos/fotos/')
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    observacao = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"fotos {self.id} - Agendamento {self.agendamento.id}"
     

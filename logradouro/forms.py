@@ -1,40 +1,38 @@
 from django import forms
 from .models import Logradouro
-from .constant import ESTADOS_BRASIL  # Importe sua lista de estados
+from .constants import ESTADOS_BRASIL
 
 class LogradouroForm(forms.ModelForm):
     class Meta:
         model = Logradouro
-        fields = [  
-            'endereco', 
-            'numero',
-            'cep',  
-            'complemento', 
-            'bairro', 
-            'cidade',
-            'estado',
-            'pais'
+        fields = [
+            'endereco', 'numero', 'cep', 'complemento',
+            'bairro', 'cidade', 'estado', 'pais',
+            'ponto_referencia', 'latitude', 'longitude'
         ]
         
-        # CORREÇÃO: widgets deve ser um dicionário, não uma lista
         widgets = {
             'estado': forms.Select(choices=ESTADOS_BRASIL),
-            'cep': forms.TextInput(attrs={'placeholder': '00000-000'}),
+            'cep': forms.TextInput(attrs={
+                'placeholder': '00000000',
+                'pattern': '\d{8}',
+                'title': 'Digite 8 dígitos'
+            }),
             'numero': forms.NumberInput(attrs={'min': 1}),
             'complemento': forms.TextInput(attrs={'placeholder': 'Opcional'}),
+            'latitude': forms.NumberInput(attrs={'step': '0.000001'}),
+            'longitude': forms.NumberInput(attrs={'step': '0.000001'}),
         }
         
-        # Opcional: labels personalizados
         labels = {
             'endereco': 'Endereço',
-            'cep': 'CEP',
-            'complemento': 'Complemento (opcional)'
+            'cep': 'CEP (apenas números)',
+            'complemento': 'Complemento (opcional)',
+            'ponto_referencia': 'Ponto de Referência (opcional)'
         }
 
-    # Validação customizada do CEP (opcional)
     def clean_cep(self):
         cep = self.cleaned_data.get('cep')
-        # Adicione sua lógica de validação aqui
-        if len(cep) < 8:
-            raise forms.ValidationError("CEP inválido")
+        if len(cep) != 8:
+            raise forms.ValidationError("CEP deve conter exatamente 8 dígitos")
         return cep
