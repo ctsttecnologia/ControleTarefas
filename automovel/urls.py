@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import relatorio_fotos_pdf
 
 
 
@@ -25,5 +26,6 @@ urlpatterns = [
     path('exportar/pdf/<str:tipo>/', views.exportar_pdf, name='exportar_pdf'),
     path('exportar/excel/<str:tipo>/', views.exportar_excel, name='exportar_excel'),
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('agendamento/<int:pk>/relatorio-foto/', views.relatorio_fotos_pdf, name='relatorio_foto_pdf'),
 ]
 

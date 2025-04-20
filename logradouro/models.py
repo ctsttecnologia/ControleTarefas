@@ -1,10 +1,10 @@
 from django.db import models
-from django.utils import timezone
-from .constant import ESTADOS_BRASIL
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.db import models
 
+from logradouro.constants import ESTADOS_BRASIL
 
 class Logradouro(models.Model):
     # Validadores
@@ -100,36 +100,29 @@ class Logradouro(models.Model):
         verbose_name=_('Última Atualização')
     )
 
-    # Métodos avançados
+    # Métodos
     def clean(self):
-        """Validações personalizadas"""
         super().clean()
-        
-        # Validação do estado com a cidade
         if self.estado == 'SP' and 'São Paulo' not in self.cidade:
             raise ValidationError({
                 'cidade': _('Cidades de SP devem conter "São Paulo" no nome')
             })
     
     def save(self, *args, **kwargs):
-        """Garante validações antes de salvar"""
         self.full_clean()
         super().save(*args, **kwargs)
     
     @property
     def cep_formatado(self):
-        """Retorna CEP formatado"""
         return f"{self.cep[:5]}-{self.cep[5:]}" if self.cep else ""
     
     @property
     def coordenadas(self):
-        """Retorna coordenadas formatadas"""
         if self.latitude and self.longitude:
             return f"{self.latitude}, {self.longitude}"
         return _("Não informado")
     
     def get_endereco_completo(self):
-        """Retorna o endereço completo formatado"""
         complemento = f", {self.complemento}" if self.complemento else ""
         return (
             f"{self.endereco}, {self.numero}{complemento} - "
@@ -155,4 +148,3 @@ class Logradouro(models.Model):
                 name='unique_endereco_completo'
             ),
         ]
-

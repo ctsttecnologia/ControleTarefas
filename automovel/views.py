@@ -5,14 +5,22 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone 
 from django.db.models import Count, Q, Sum, Case, When, Value
-from django.http import HttpResponse, JsonResponse 
+from django.http import HttpResponse, JsonResponse, HttpResponseServerError
+from django.db.models.functions import ExtractMonth
+from django.template.loader import get_template
+from django.conf import settings
+
 
 from .relatorios import gerar_relatorio_pdf, gerar_relatorio_excel
 from datetime import datetime, date
+from openpyxl import Workbook
+from xhtml2pdf import pisa 
 
 from .forms import CarroForm, AgendamentoForm
 from .models import Carro, Agendamento
 
+import logging
+import os
 
 
 @login_required
@@ -158,65 +166,130 @@ def relatorios(request):
 def exportar_pdf(request, tipo):
     return gerar_relatorio_pdf(request, tipo)
 
-@login_required
 def exportar_excel(request, tipo):
-    return gerar_relatorio_excel(request, tipo)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"relatorio_{tipo}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    wb = Workbook()
+    ws = wb.active
+    
+    if tipo == 'carros':
+        # Cabeçalhos
+        ws.append(['Placa', 'Marca', 'Modelo', 'Ano', 'Cor', 'Status', 'Última Manutenção'])
+        
+        # Dados
+        for carro in Carro.objects.all():
+            # Simplifica o status para exportação
+            if carro.ativo:
+                status = "Manutenção Pendente" if carro.verificar_manutencao_pendente() else "Ativo"
+            else:
+                status = "Inativo"
+                
+            ws.append([
+                carro.placa,
+                carro.marca,
+                carro.modelo,
+                carro.ano,
+                carro.cor,
+                status,  # Status simplificado
+                carro.data_ultima_manutencao.strftime('%d/%m/%Y') if carro.data_ultima_manutencao else 'N/A'
+            ])
+    
+    # ... (código para outros tipos de relatório)
+    
+    wb.save(response)
+    return response
+
 
 @login_required
 def dashboard(request):
     now = timezone.now()
+    current_year = now.year
+    current_date = now.date()
 
-    # Nomes dos meses (com primeira letra maiúscula)
-    mes_data = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
-                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-    
-     # Inicializa os dados mensais
-    agendamentos_mes_data = [0] * 12
-    agendamentos_por_mes = Agendamento.objects.filter(
-        data_hora_agenda__year=now.year
-    ).values('data_hora_agenda__month').annotate(total=Count('id'))
-
-    # Dados de veículos
+    # 1. Dados de Veículos
     carros_por_ativo = Carro.objects.values('ativo').annotate(total=Count('id'))
     carros_status = [
         {'status': 'Ativo' if item['ativo'] else 'Inativo', 'total': item['total']}
         for item in carros_por_ativo
     ]
 
-    # Dados de agendamentos
+    # 2. Dados de Agendamentos
     agendamentos_por_status = list(Agendamento.objects.values('status').annotate(total=Count('id')))
     
-    # Dados mensais
-    mes_data = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+    # 3. Dados Mensais de Agendamentos
+    mes_data = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    
     agendamentos_mes_data = [0] * 12
     agendamentos_por_mes = Agendamento.objects.filter(
-        data_hora_agenda__year=now.year
-    ).values('data_hora_agenda__month').annotate(total=Count('id'))
-    
+        data_hora_agenda__year=current_year
+    ).annotate(
+        month=ExtractMonth('data_hora_agenda')
+    ).values('month').annotate(
+        total=Count('id')
+    ).order_by('month')
+
     for item in agendamentos_por_mes:
-        agendamentos_mes_data[item['data_hora_agenda__month'] - 1] = item['total']
-    
-    for item in agendamentos_por_mes:
-        month_index = item['data_hora_agenda__month'] - 1  # Janeiro = 0
+        month_index = item['month'] - 1  # Janeiro = 0
         if 0 <= month_index < 12:
             agendamentos_mes_data[month_index] = item['total']
+
+    # 4. Métricas Adicionais
+    metrics = {
+        'total_carros': Carro.objects.count(),
+        'carros_ativos': Carro.objects.filter(ativo=True).count(),
+        'agendamentos_hoje': Agendamento.objects.filter(
+            data_hora_agenda__date=current_date
+        ).count(),
+        'manutencoes_pendentes': Carro.objects.filter(
+            data_proxima_manutencao__lte=current_date
+        ).count(),
+        'ano_atual': current_year,
+    }
 
     context = {
         'carros_status': carros_status,
         'agendamentos_status': agendamentos_por_status,
         'agendamentos_mes_data': agendamentos_mes_data,
-        'total_carros': Carro.objects.count(),
-        'carros_ativos': Carro.objects.filter(ativo=True).count(),
-        'agendamentos_hoje': Agendamento.objects.filter(
-            data_hora_agenda__date=now.date()
-        ).count(),
-        'manutencoes_pendentes': Carro.objects.filter(
-            data_proxima_manutencao__lte=now.date()
-        ).count(),
         'mes_data': mes_data,
-        'agendamentos_mes_data': agendamentos_mes_data,
-        'ano_atual': now.year,
+        **metrics  # Desempacota todas as métricas no contexto
     }
+    
     return render(request, 'automovel/dashboard.html', context)
+
+
+# Relatório fotográfico
+logger = logging.getLogger(__name__)
+
+@login_required
+def relatorio_fotos_pdf(request, pk):
+
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+    
+    # Verifica se existe foto principal
+    if not agendamento.foto_principal:  
+        return HttpResponse("Nenhuma foto disponível para este agendamento", status=404)
+    
+    context = {
+        'agendamento': agendamento,
+        'foto_principal_url': os.path.join(settings.MEDIA_ROOT, agendamento.foto_principal.name),
+        'MEDIA_URL': settings.MEDIA_URL,
+    }
+    
+    template_path = 'automovel/relatorio_foto_principal_pdf.html'
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="relatorio_foto_{pk}.pdf"'
+    
+    template = get_template(template_path)
+    html = template.render(context)
+
+    # Cria o PDF
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    
+    if pisa_status.err:
+        return HttpResponse('Erro ao gerar PDF', status=500)
+    return response
 
 

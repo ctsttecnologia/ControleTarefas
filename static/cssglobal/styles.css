@@ -29,10 +29,10 @@ h2 {
     color: #333;
 }
 
-.painel, .painel1 {
+.painel {
     margin-bottom: 20px;
     padding: 15px;
-    background-color: #f9f9f9;
+    background-color: #f3f3f3;
     border-radius: 8px;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
@@ -40,6 +40,14 @@ h2 {
 .painel1 h2 {
     margin-bottom: 10px;
     color: #555;
+}
+
+.painel1 {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilo dos botões */
@@ -203,9 +211,47 @@ h2 {
     }
 }
 
+
+/* Estilo base para todos os botões */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    gap: 8px;
+}
+
+
 /* Estilo para ícones nos botões */
+
+.btn {
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    color: white;
+    box-shadow: 0 4px 6px rgba(116, 185, 255, 0.2);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(116, 185, 255, 0.3);
+    background: linear-gradient(135deg, #0984e3 0%, #0768b3 100%);
+}
+
+/* Ícones */
+.bi {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
 .btn i {
-    margin-right: 8px;
+    margin-right: 6px;
   }
   
   /* Espaçamento entre seções */
@@ -216,3 +262,21 @@ h2 {
   .row + .form-group {
     margin-top: 1.5rem;
   }
+
+/* Efeito ao passar o mouse */
+.bi-logout:hover {
+    transform: translateX(2px);
+}
+
+.bi-house:hover {
+    transform: scale(1.1);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  
+    .btn {
+        width: 100%;
+        padding: 0.9rem;
+    }
+}

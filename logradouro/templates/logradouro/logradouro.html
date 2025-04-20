@@ -1,91 +1,89 @@
+{% extends 'logradouro/base_logradouro.html' %}
+{% load i18n %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro de Logradouro</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csslogradouro/styles.css' %}">   
-</head>
-<body>
-    <div class="container">
-        <h2>CADASTRO DE ENDEREÇOS</h2>
-        {% if user.is_authenticated %}
-            <p>Olá, {{ user.username }}!</p>
-            <div class="painel">
-                <a href="{% url 'home' %}" class="btn-home">Início</a>
-                <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-                <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
-                <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+{% block logradouro_content %}
+    <h2>{% trans 'CADASTRO DE ENDEREÇOS' %}</h2>
+    
+    {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        <div class="logradouro-painel">
+            <a href="{% url 'home' %}" class="btn btn-home">{% trans 'Início' %}</a>
+            <a href="{% url 'usuario:logout' %}" class="btn btn-logout">Sair</a>
+            <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-excel">
+                <i class="bi bi-file-earmark-excel"></i> {% trans 'Exportar Excel' %}
+            </a>
+            <a href="{% url 'cadastro' %}" class="btn btn-cadastro">Endereços</a>
+            <a href="{% url 'profile' %}" class="btn btn-profile">Menu</a>
+        </div>
+    {% endif %}
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="logradouro-form">
+        {% csrf_token %}
+        <div class="form-grid">
+            {% for field in form %}
+                <div class="form-group {% if field.errors %}has-error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-help">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="error-message">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-save">{% trans 'Salvar' %}</button>
+    </form>
+
+    <div class="logradouro-list">
+        <h3>{% trans 'Endereços Cadastrados' %} ({{ total_logradouros }})</h3>
+        
+        {% if logradouros %}
+            <div class="table-responsive">
+                <table class="logradouro-table">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Endereço' %}</th>
+                            <th>{% trans 'Número' %}</th>
+                            <th>{% trans 'CEP' %}</th>
+                            <th>{% trans 'Bairro' %}</th>
+                            <th>{% trans 'Cidade/UF' %}</th>
+                            <th>{% trans 'Ações' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for logradouro in logradouros %}
+                            <tr>
+                                <td>{{ logradouro.endereco }}</td>
+                                <td>{{ logradouro.numero }}</td>
+                                <td>{{ logradouro.cep_formatado }}</td>
+                                <td>{{ logradouro.bairro }}</td>
+                                <td>{{ logradouro.cidade }}/{{ logradouro.estado }}</td>
+                                <td class="actions">
+                                    <a href="{% url 'logradouro:editar' logradouro.pk %}" class="btn btn-edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'logradouro:excluir' logradouro.pk %}" class="btn btn-delete">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
+            <p class="no-results">{% trans 'Nenhum endereço cadastrado.' %}</p>
         {% endif %}
-            
-        <!-- Formulário de Cadastro -->
-        <form method="post" action="{% url 'logradouro:logradouro' %}" class="form-cadastro">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="endereco">Endereço:</label>
-                <input type="text" id="endereco" name="endereco" placeholder="Digite o endereço" required>
-            </div>
-
-            <div class="form-group">
-                <label for="numero">Número:</label>
-                <input type="number" id="numero" name="numero" placeholder="Digite o número" required>
-            </div>
-
-            <div class="form-group">
-                <label for="cep">CEP:</label>
-                <input type="number" id="cep" name="cep" placeholder="Digite o CEP" required>
-            </div>
-
-            <div class="form-group">
-                <label for="complemento">Complemento:</label>
-                <input type="text" id="complemento" name="complemento" placeholder="Digite o complemento">
-            </div>
-
-            <div class="form-group">
-                <label for="bairro">Bairro:</label>
-                <input type="text" id="bairro" name="bairro" placeholder="Digite o bairro" required>
-            </div>
-
-            <div class="form-group">
-                <label for="cidade">Cidade:</label>
-                <input type="text" id="cidade" name="cidade" placeholder="Digite a cidade" required>
-            </div>
-
-            <div class="form-group">
-                <label for="estados">Estado:</label>
-                <select id="estados" name="estados" required>
-                    <option value="">Selecione um estado</option>
-                    {% for sigla, estados in ESTADOS_BRASIL %}
-                        <option value="{{ sigla }}">{{ estados }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="pais">País:</label>
-                <input type="text" id="pais" name="pais" placeholder="Digite o país">
-            </div>
-
-            <button type="submit" class="btn_cadastro">Salvar</button>
-        </form>
-
-        <div class="painel2">
-            <ul>
-                {% for logradouro in logradouros %}
-                    <li>
-                        {{ logradouro.endereco }} - {{ logradouro.cep }} - {{ logradouro.cidade }}
-                        <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}">Editar</a>
-                        <a href="{% url 'logradouro:excluir_logradouro' logradouro.pk %}">Excluir</a>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
     </div>
-</body>
-</html>
+{% endblock %}

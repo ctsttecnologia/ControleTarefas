@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                 ('abastecimento', models.CharField(choices=[('S', 'Sim'), ('N', 'Não')], default='N', max_length=1, verbose_name='Abastecimento Necessário?')),
                 ('km_inicial', models.PositiveIntegerField(verbose_name='Quilometragem Inicial')),
                 ('km_final', models.PositiveIntegerField(blank=True, null=True, verbose_name='Quilometragem Final')),
-                ('fotos', models.ImageField(blank=True, null=True, upload_to='agendamentos/%Y/%m/%d/', verbose_name='Fotos do Veículo')),
+                ('foto_principal', models.ImageField(blank=True, null=True, upload_to='agendamentos/%Y/%m/%d/', verbose_name='Fotos do Veículo')),
                 ('assinatura', models.TextField(blank=True, verbose_name='Assinatura Digital')),
                 ('responsavel', models.CharField(max_length=100, verbose_name='Responsável pelo Agendamento')),
                 ('ocorrencia', models.TextField(blank=True, verbose_name='Ocorrências Durante o Uso')),

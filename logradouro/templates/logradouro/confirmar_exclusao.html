@@ -1,23 +1,21 @@
+{% extends 'logradouro/base_logradouro.html' %}
 {% load static %}
+{% load i18n %}
 
+{% block logradouro_content %}
+<h2>{% trans 'Confirmar Exclusão' %}</h2>
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <title>Confirmar Exclusão</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
-</head>
-<body>
-    <div class="container">
-        <h1>Confirmar Exclusão</h1>
-        <p>Tem certeza que deseja excluir o logradouro "{{ logradouro.endereco }}"?</p>
-        <form method="post">
-            {% csrf_token %}
-            <button type="submit">Sim, excluir</button>
-        </form>
-        <a href="{% url 'logradouro:logradouro' %}">Cancelar</a>
-    </div>
-</body>
-</html>
+<div class="confirmation-box">
+    <p>{% trans 'Tem certeza que deseja excluir o endereço?' %}</p>
+    <p><strong>{{ logradouro.get_endereco_completo }}</strong></p>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-delete">{% trans 'Sim, excluir' %}</button>
+            <a href="{% url 'logradouro:listar' %}" class="btn btn-cancel">{% trans 'Cancelar' %}</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

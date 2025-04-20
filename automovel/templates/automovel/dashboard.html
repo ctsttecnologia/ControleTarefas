@@ -84,6 +84,14 @@
 <a href="{% url 'automovel:exportar_excel' 'carros' %}" class="btn_logout">
     <i class="fas fa-file-excel"></i> Exportar Excel
 </a>
+{% if agendamento and agendamento.id %}
+    <a href="{% url 'automovel:relatorio_foto_pdf' agendamento.id %}" class="btn btn-primary">
+        <i class="fas fa-file-pdf"></i> Gerar Relatório da Foto
+    </a>
+{% else %}
+    <p>Agendamento não disponível.</p>
+{% endif %}
+
 
 {% endblock %}
 
@@ -189,5 +197,5 @@ new Chart(agendamentosMesCtx, {
 </script>
 {% endblock %}
 
-<script>console.log({{ agendamentos_status|safe }});</script>
+
 
