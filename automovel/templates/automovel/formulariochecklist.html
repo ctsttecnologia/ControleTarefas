@@ -1,0 +1,123 @@
+{% extends "automovel/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="checklist-container">
+    <h2 class="text-center mb-4">Checklist{{ tipo|title }}</h2>
+        <div class="painel">
+            {% if user.is_authenticated %}
+            <p>Olá, {{ user.username }}!</p>
+            {% else %}
+            <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-user-cog"></i> Menu
+            </a>
+            {% endif %}    
+            <form method="post" enctype="multipart/form-data" class="checklist-form">
+                {% csrf_token %}
+        <div class="painel">
+            <div class="painel-relatorios mb-4">            
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-home"></i> Início
+                </a>
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-user-cog"></i> Menu
+                </a>
+            </div>    
+        </div>               
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Frontal</p>
+                <div class="form-group">
+                    {{ form.revisao_frontal_ok.label_tag }}
+                    {{ form.revisao_frontal_ok }}
+                </div>
+                <div class="form-group">
+                    {{ form.foto_frontal.label_tag }}
+                    {{ form.foto_frontal }}
+                </div>
+                <div class="form-group">
+                    {{ form.observacao_frontal.label_tag }}
+                    {{ form.observacao_frontal }}
+                </div>
+            </div>
+
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Trazeira</p>
+                <div class="form-group">
+                    {{ form.revisao_trazeira_ok.label_tag }}
+                    {{ form.revisao_trazeira_ok }}
+                </div>
+                <div class="form-group">
+                    {{ form.foto_trazeira.label_tag }}
+                    {{ form.foto_trazeira }}
+                </div>
+                <div class="form-group">
+                    {{ form.observacao_trazeira.label_tag }}
+                    {{ form.observacao_trazeira }}
+                </div>
+            </div>
+
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Lado Motorista</p>
+                <div class="form-group">
+                    {{ form.revisao_lado_motorista_ok.label_tag }}
+                    {{ form.revisao_lado_motorista_ok }}
+                </div>
+                <div class="form-group">
+                    {{ form.foto_lado_motorista.label_tag }}
+                    {{ form.foto_lado_motorista }}
+                </div>
+                <div class="form-group">
+                    {{ form.observacao_lado_motorista.label_tag }}
+                    {{ form.observacao_lado_motorista }}
+                </div>
+            </div>
+
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Lado Passageiro</p>
+                <div class="form-group">
+                    {{ form.revisao_lado_passageiro_ok.label_tag }}
+                    {{ form.revisao_lado_passageiro_ok }}
+                </div>
+                <div class="form-group">
+                    {{ form.foto_lado_passageiro.label_tag }}
+                    {{ form.foto_lado_passageiro }}
+                </div>
+                <div class="form-group">
+                    {{ form.observacao_lado_passageiro.label_tag }}
+                    {{ form.observacao_flado_passageiro }}
+                </div>
+            </div>
+            
+            <div class="section signature-section">
+                <h3><i class="fas fa-signature"></i> Confirmação</h3>
+                <div class="form-group">
+                    {{ form.observacoes_gerais.label_tag }}
+                    {{ form.observacoes_gerais }}
+                </div>
+                <div class="form-group">
+                    <label for="signature-pad">Assinatura:</label>
+                    <div id="signature-pad" class="signature-pad">
+                        <canvas></canvas>
+                        <button type="button" id="clear-signature" class="btn btn-sm btn-outline-danger">
+                            Limpar
+                        </button>
+                    </div>
+                    <input type="hidden" id="id_assinatura" name="assinatura">
+                </div>
+                <div class="form-group form-check">
+                    {{ form.confirmacao }}
+                    <label class="form-check-label" for="{{ form.confirmacao.id_for_label }}">
+                        Confirmo que as informações estão corretas
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg submit-btn">
+                <i class="fas fa-save"></i> Salvar Checklist
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+

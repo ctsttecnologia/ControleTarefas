@@ -1,201 +1,99 @@
-{% extends 'base.html' %}
-{% block content %}
+{% extends "automovel/base.html" %}
 {% load static %}
 
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-<link rel="stylesheet" href="{% static 'csscarro/graficos.css' %}">
-<div class="container">
-    <h2>Dashboard</h2>
-    
-    <div class="row mt-4">
-        <!-- Cards Resumo -->
-        <div class="col-md-3">
-            <div class="card text-white bg-primary mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Total Veículos</h5>
-                    <p class="card-text display-4">{{ total_carros }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card text-white bg-success mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Veículos Ativos</h5>
-                    <p class="card-text display-4">{{ carros_ativos }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card text-white bg-info mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Agend. Hoje</h5>
-                    <p class="card-text display-4">{{ agendamentos_hoje }}</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="card text-white bg-warning mb-3">
-                <div class="card-body">
-                    <h5 class="card-title">Manut. Pendentes</h5>
-                    <p class="card-text display-4">{{ manutencoes_pendentes }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Gráficos -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Status de Veículos</h5>
-                    <canvas id="carrosChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Status de Agendamentos</h5>
-                    <canvas id="agendamentosChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Agendamentos por Mês ({{ ano_atual }})</h5>
-                    <canvas id="agendamentosMesChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<a href="{% url 'automovel:exportar_pdf' 'carros' %}" class="btn-home">
-    <i class="fas fa-file-pdf"></i> Exportar PDF
-</a>
-<a href="{% url 'automovel:exportar_excel' 'carros' %}" class="btn_logout">
-    <i class="fas fa-file-excel"></i> Exportar Excel
-</a>
-{% if agendamento and agendamento.id %}
-    <a href="{% url 'automovel:relatorio_foto_pdf' agendamento.id %}" class="btn btn-primary">
-        <i class="fas fa-file-pdf"></i> Gerar Relatório da Foto
-    </a>
-{% else %}
-    <p>Agendamento não disponível.</p>
-{% endif %}
+{% block title %}Dashboard{% endblock %}
 
-
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'csscarro/dashboard.css' %}">
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-// Preparar dados para gráficos
-const carrosLabels = {{ carros_status|safe }};
-const agendamentosLabels = {{ agendamentos_status|safe }};
-
-// Gráfico de Status de Veículos
-const carrosCtx = document.getElementById('carrosChart').getContext('2d');
-new Chart(carrosCtx, {
-    type: 'pie',
-    data: {
-        labels: carrosLabels.map(item => item.status),
-        datasets: [{
-            data: carrosLabels.map(item => item.total),
-            backgroundColor: ['#4e73df', '#1cc88a']
-        }]
-    }
-});
-
-// Gráfico de Status de Agendamentos
-const agendamentosCtx = document.getElementById('agendamentosChart').getContext('2d');
-new Chart(agendamentosCtx, {
-    type: 'doughnut',
-    data: {
-        labels: agendamentosLabels.map(item => item.status),
-        datasets: [{
-            data: agendamentosLabels.map(item => item.total),
-            backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
-        }]
-    }
-});
-
-// Gráfico de Agendamentos por Mês
-const agendamentosMesCtx = document.getElementById('agendamentosMesChart').getContext('2d');
-new Chart(agendamentosMesCtx, {
-    type: 'bar',
-    data: {
-        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-        datasets: [{
-            label: 'Agendamentos',
-            data: {{ agendamentos_mes_data|safe }},
-            backgroundColor: '#4e73df'
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
-
-// Gráfico de Agendamentos por Mês
-const agendamentosMesCtx = document.getElementById('agendamentosMesChart').getContext('2d');
-new Chart(agendamentosMesCtx, {
-    type: 'bar',
-    data: {
-        labels: {{ mes_data|safe }},
-        datasets: [{
-            label: 'Quantidade de Agendamentos',
-            data: {{ agendamentos_mes_data|safe }},
-            backgroundColor: '#3182ce',
-            borderColor: '#2c5282',
-            borderWidth: 1
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true,
-                title: {
-                    display: true,
-                    text: 'Quantidade'
-                }
-            },
-            x: {
-                title: {
-                    display: true,
-                    text: 'Meses'
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                position: 'top',
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return `${context.dataset.label}: ${context.raw}`;
-                    }
-                }
-            }
-        }
-    }
-});
-</script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}
 
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-tachometer-alt"></i>
+        Dashboard
+    </h1>
+    <div class="header-actions">
+        <a href="{% url 'automovel:relatorios' %}" class="btn btn-outline">
+            <i class="fas fa-file-alt"></i> Relatórios
+        </a>
+    </div>
+</div>
 
+<div class="metrics-grid">
+    <div class="metric-card bg-blue">
+        <div class="metric-icon">
+            <i class="fas fa-car"></i>
+        </div>
+        <div class="metric-content">
+            <h3>Total Veículos</h3>
+            <p>{{ total_carros }}</p>
+        </div>
+    </div>
+    
+    <div class="metric-card bg-green">
+        <div class="metric-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="metric-content">
+            <h3>Veículos Ativos</h3>
+            <p>{{ carros_ativos }}</p>
+        </div>
+    </div>
+    
+    <div class="metric-card bg-orange">
+        <div class="metric-icon">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div class="metric-content">
+            <h3>Agend. Hoje</h3>
+            <p>{{ agendamentos_hoje }}</p>
+        </div>
+    </div>
+    
+    <div class="metric-card bg-red">
+        <div class="metric-icon">
+            <i class="fas fa-tools"></i>
+        </div>
+        <div class="metric-content">
+            <h3>Manut. Pendentes</h3>
+            <p>{{ manutencoes_pendentes }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-card">
+        <div class="card-header">
+            <h3>Status de Veículos</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="carrosChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card">
+        <div class="card-header">
+            <h3>Status de Agendamentos</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="agendamentosChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="chart-card span-2">
+        <div class="card-header">
+            <h3>Agendamentos por Mês ({{ ano_atual }})</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="agendamentosMesChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
 

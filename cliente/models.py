@@ -4,6 +4,7 @@ from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+
 from logradouro.models import Logradouro
 
 class Cliente(models.Model):
@@ -217,4 +218,10 @@ class ClienteCliente(models.Model):
         indexes = [
             models.Index(fields=['cliente'], name='idx_clientecliente_cliente'),
         ]
+
+class Logradouro(models.Model):
     
+    def cep_formatado(self):
+        if self.cep and len(self.cep) == 8:
+            return f"{self.cep[:5]}-{self.cep[5:]}"
+        return self.cep

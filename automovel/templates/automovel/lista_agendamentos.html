@@ -7,8 +7,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" href="{% static 'csscarro/assinatura.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/tables.css' %}">
 </head>
 <body>
     <div class="container">
@@ -22,8 +22,11 @@
         
         <a href="{% url 'home' %}" class="btn-home">Início</a>
         <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>               
-        <a href="{% url 'automovel:adicionar_agendamento' %}" class="btn_profile">Novo Agendamento</a>
-        <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+        <a href="{% url 'automovel:adicionar_agendamento' %}" class="btn-home">Novo Agendamento</a>
+        <a href="{% url 'profile' %}" class="btn-home">Menu</a>
+        <a href="{% url 'automovel:dashboard' %}" class="btn-home">
+            <i class="fas fa-file-excel"></i> Graficos
+        </a>
 
         <div class="painel1">
             <table class="table table-striped">
@@ -71,6 +74,8 @@
                             {% if not agendamento.assinatura %}
                             <a href="{% url 'automovel:assinar_agendamento' agendamento.pk %}" 
                                class="signature">Assinar</a>
+                            <a href="{% url 'automovel:formulariochecklist' agendamento.pk %}" 
+                               class="signature">Checklist</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -82,16 +87,12 @@
                 </tbody>
             </table>
         </div>
-        <a href="{% url 'automovel:exportar_pdf' 'agendamentos' %}" class="btn-home">
+        <a href="{% url 'automovel:relatorios' %}" class="btn-home">
             <i class="fas fa-file-pdf"></i> Exportar PDF
         </a>
-        <a href="{% url 'automovel:exportar_excel' 'agendamentos' %}" class="btn_logout">
+        <a href="{% url 'automovel:agendamentos_excel' %}" class="btn_logout">
             <i class="fas fa-file-excel"></i> Exportar Excel
         </a>
-        <a href="{% url 'automovel:dashboard' %}" class="btn_logout">
-            <i class="fas fa-file-excel"></i> Graficos
-        </a>
-
     </div>
 </body>
 </html>

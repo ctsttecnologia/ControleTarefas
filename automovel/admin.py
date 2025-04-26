@@ -3,138 +3,259 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-from .models import Carro, Agendamento
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
-@admin.register(Carro)
+from .models import Carro, Agendamento, FotoAgendamento, ChecklistCarro
+
 class CarroAdmin(admin.ModelAdmin):
-    list_display = ('placa', 'modelo', 'marca', 'ano', 'status', 'data_proxima_manutencao', 'idade', 'ativo')
+    list_display = ('marca', 'modelo', 'placa', 'ano', 'cor', 'status_display', 'ativo')
+    list_filter = ('marca', 'modelo', 'ativo', 'cor')
     search_fields = ('placa', 'modelo', 'marca', 'renavan')
-    list_filter = ('marca', 'ano', 'ativo', 'cor')
-    list_editable = ('ativo',)
-    list_select_related = True
     ordering = ('marca', 'modelo')
-    date_hierarchy = 'data_proxima_manutencao'
-    actions = ['marcar_como_inativo', 'agendar_manutencao']
-    readonly_fields = ('status', 'idade')
+    list_per_page = 20
+    date_hierarchy = 'data_ultima_manutencao'
+    readonly_fields = ('status_display', 'idade')
     fieldsets = (
-        (_('Informações Básicas'), {
-            'fields': ('placa', 'renavan', 'marca', 'modelo', 'cor', 'ano', 'ativo')
+        ('Informações Básicas', {
+            'fields': ('marca', 'modelo', 'ano', 'cor', 'placa', 'renavan')
         }),
-        (_('Manutenção'), {
-            'fields': ('data_ultima_manutencao', 'data_proxima_manutencao', 'status')
+        ('Status e Manutenção', {
+            'fields': ('status', 'ativo', 'data_ultima_manutencao', 
+                      'data_proxima_manutencao', 'status_display')
         }),
-        (_('Outras Informações'), {
-            'fields': ('observacoes',),
+        ('Outras Informações', {
+            'fields': ('observacoes', 'idade'),
             'classes': ('collapse',)
         }),
     )
+    
+    actions = ['marcar_como_disponivel', 'marcar_como_manutencao']
+    
+    def status_display(self, obj):
+        colors = {
+            'disponivel': 'green',
+            'manutencao': 'orange',
+            'locado': 'red'
+        }
+        return format_html(
+            '<span style="color: {};">{}</span>',
+            colors.get(obj.status, 'black'),
+            obj.get_status_display()
+        )
+    status_display.short_description = 'Status'
+    
+    def marcar_como_disponivel(self, request, queryset):
+        queryset.update(status='disponivel')
+    marcar_como_disponivel.short_description = "Marcar como Disponível"
+    
+    def marcar_como_manutencao(self, request, queryset):
+        queryset.update(status='manutencao')
+    marcar_como_manutencao.short_description = "Marcar como em Manutenção"
 
-    def status(self, obj):
-        return obj.status
-    status.short_description = _('Status')
+class FotoAgendamentoInline(admin.TabularInline):
+    model = FotoAgendamento
+    extra = 1
+    fields = ('imagem', 'observacao', 'data_criacao')
+    readonly_fields = ('data_criacao',)
 
-    def idade(self, obj):
-        return f"{obj.idade} anos"
-    idade.short_description = _('Idade')
+class ChecklistCarroInline(admin.TabularInline):
+    model = ChecklistCarro
+    extra = 0
+    fields = ('tipo', 'data_criacao', 'revisao_frontal_status', 'confirmacao')
+    readonly_fields = ('data_criacao',)
+    max_num = 2  # Máximo de checklists (saída e retorno)
 
-    def marcar_como_inativo(self, request, queryset):
-        updated = queryset.update(ativo=False)
-        self.message_user(request, _('{} veículos marcados como inativos.').format(updated))
-    marcar_como_inativo.short_description = _('Marcar veículos selecionados como inativos')
-
-    def agendar_manutencao(self, request, queryset):
-        for carro in queryset:
-            carro.calcular_proxima_manutencao()
-        self.message_user(request, _('Manutenção agendada para os veículos selecionados.'))
-    agendar_manutencao.short_description = _('Agendar próxima manutenção (90 dias)')
-
-@admin.register(Agendamento)
 class AgendamentoAdmin(admin.ModelAdmin):
     list_display = (
-        'carro', 'funcionario', 'data_hora_formatada', 'status', 
-        'duracao_formatada', 'km_percorrido', 'necessita_abastecimento', 'foto_tag_admin'
+        'id', 'carro_link', 'funcionario', 'data_hora_agenda', 
+        'status_display', 'km_inicial', 'km_final'
     )
-    list_filter = ('status', 'cancelar_agenda', 'carro__marca', 'pedagio', 'abastecimento')
+    list_filter = ('status', 'carro__marca', 'data_hora_agenda', 'pedagio', 'abastecimento')
     search_fields = (
-        'funcionario', 'responsavel', 'carro__placa', 
-        'carro__modelo', 'carro__marca', 'cm'
+        'carro__placa', 'funcionario', 'cm', 'responsavel', 
+        'carro__modelo', 'carro__marca'
     )
     date_hierarchy = 'data_hora_agenda'
-    list_select_related = ('carro',)
-    raw_id_fields = ('carro',)
-    readonly_fields = ('foto_tag_admin', 'status', 'duracao_formatada', 'km_percorrido')
-    actions = ['finalizar_agendamentos', 'cancelar_agendamentos']
+    ordering = ('-data_hora_agenda',)
+    readonly_fields = (
+        'duracao_display', 'quilometragem_percorrida', 'carro_link',
+        'status_display'
+    )
+    raw_id_fields = ('carro', 'cliente')
+    inlines = [FotoAgendamentoInline, ChecklistCarroInline]
     
     fieldsets = (
-        (_('Informações Básicas'), {
-            'fields': ('carro', 'funcionario', 'cm', 'status')
+        ('Informações Básicas', {
+            'fields': (
+                'carro_link', 'funcionario', 'cliente', 'cm', 
+                'data_hora_agenda', 'data_hora_devolucao', 'duracao_display'
+            )
         }),
-        (_('Datas e Horários'), {
-            'fields': ('data_hora_agenda', 'data_hora_devolucao', 'duracao_formatada')
+        ('Status e Controle', {
+            'fields': (
+                'status', 'cancelar_agenda', 'motivo_cancelamento', 
+                'responsavel', 'assinatura'
+            )
         }),
-        (_('Quilometragem'), {
-            'fields': ('km_inicial', 'km_final', 'km_percorrido')
+        ('Dados do Veículo', {
+            'fields': (
+                'km_inicial', 'km_final', 'quilometragem_percorrida',
+                'pedagio', 'abastecimento'
+            )
         }),
-        (_('Recursos'), {
-            'fields': ('pedagio', 'abastecimento', 'necessita_abastecimento')
-        }),
-        (_('Documentação'), {
-            'fields': ('fotos', 'foto_tag_admin', 'assinatura', 'ocorrencia', 'descricao')
-        }),
-        (_('Controle'), {
-            'fields': ('cancelar_agenda', 'motivo_cancelamento', 'responsavel'),
+        ('Registros', {
+            'fields': ('descricao', 'ocorrencia', 'foto_principal'),
             'classes': ('collapse',)
         }),
     )
-
-    def foto_tag_admin(self, obj):
-        if obj.fotos:
-            return format_html('<img src="{}" width="150" />', obj.fotos.url)
-        return "Nenhuma foto"
-    foto_tag_admin.short_description = 'Pré-visualização'
-    foto_tag_admin.allow_tags = True
-
-    def data_hora_formatada(self, obj):
-        return obj.data_hora_agenda.strftime('%d/%m/%Y %H:%M')
-    data_hora_formatada.short_description = _('Data/Hora')
-    data_hora_formatada.admin_order_field = 'data_hora_agenda'
-
-    def duracao_formatada(self, obj):
-        duracao = obj.duracao_agendamento()
-        if duracao:
-            hours, remainder = divmod(duracao.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            return f"{hours}h {minutes}m"
-        return "-"
-    duracao_formatada.short_description = _('Duração')
-
-    def km_percorrido(self, obj):
-        return obj.calcular_quilometragem_percorrida() or "-"
-    km_percorrido.short_description = _('Km Percorrido')
-
-    def necessita_abastecimento(self, obj):
-        return obj.abastecimento
-    necessita_abastecimento.short_description = _('Abastecer?')
-    necessita_abastecimento.boolean = True
-
-    def finalizar_agendamentos(self, request, queryset):
+    
+    actions = ['finalizar_agendamento', 'cancelar_agendamento']
+    
+    def carro_link(self, obj):
+        url = reverse("admin:frota_carro_change", args=[obj.carro.id])
+        return mark_safe(f'<a href="{url}">{obj.carro}</a>')
+    carro_link.short_description = 'Veículo'
+    
+    def status_display(self, obj):
+        colors = {
+            'agendado': 'blue',
+            'em_andamento': 'orange',
+            'concluido': 'green',
+            'cancelado': 'red'
+        }
+        return format_html(
+            '<span style="color: {};">{}</span>',
+            colors.get(obj.status, 'black'),
+            obj.get_status_display()
+        )
+    status_display.short_description = 'Status'
+    
+    def duracao_display(self, obj):
+        if obj.duracao_agendamento():
+            return str(obj.duracao_agendamento())
+        return "Agendamento em andamento"
+    duracao_display.short_description = 'Duração'
+    
+    def quilometragem_percorrida(self, obj):
+        if obj.calcular_quilometragem_percorrida():
+            return f"{obj.calcular_quilometragem_percorrida()} km"
+        return "Não finalizado"
+    quilometragem_percorrida.short_description = 'Km Percorridos'
+    
+    def finalizar_agendamento(self, request, queryset):
         for agendamento in queryset.filter(status='em_andamento'):
             agendamento.finalizar_agendamento(
-                km_final=agendamento.km_inicial + 100,
-                ocorrencia=_('Finalizado pelo admin')
+                km_final=agendamento.carro.km_atual,
+                ocorrencia="Finalizado pelo admin"
             )
-        self.message_user(request, _('Agendamentos finalizados com sucesso.'))
-    finalizar_agendamentos.short_description = _('Finalizar agendamentos selecionados')
-
-    def cancelar_agendamentos(self, request, queryset):
-        updated = queryset.update(
-            cancelar_agenda=True,
+    finalizar_agendamento.short_description = "Finalizar agendamentos selecionados"
+    
+    def cancelar_agendamento(self, request, queryset):
+        queryset.update(
             status='cancelado',
-            motivo_cancelamento=_('Cancelado pelo administrador')
+            cancelar_agenda=True,
+            motivo_cancelamento="Cancelado pelo admin"
         )
-        self.message_user(request, _('{} agendamentos cancelados.').format(updated))
-    cancelar_agendamentos.short_description = _('Cancelar agendamentos selecionados')
+    cancelar_agendamento.short_description = "Cancelar agendamentos selecionados"
 
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('carro')
-        
+class ChecklistCarroAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'agendamento_link', 'tipo_display', 'data_criacao', 
+        'km_inicial', 'km_final', 'confirmacao'
+    )
+    list_filter = ('tipo', 'confirmacao', 'data_criacao')
+    search_fields = (
+        'agendamento__carro__placa', 'agendamento__funcionario',
+        'usuario__username'
+    )
+    date_hierarchy = 'data_criacao'
+    readonly_fields = (
+        'agendamento_link', 'data_criacao', 'foto_frontal_preview',
+        'foto_trazeira_preview', 'foto_lado_motorista_preview',
+        'foto_lado_passageiro_preview'
+    )
+    raw_id_fields = ('agendamento', 'usuario')
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': (
+                'agendamento_link', 'usuario', 'tipo', 'data_criacao', 
+                'confirmacao', 'assinatura'
+            )
+        }),
+        ('Quilometragem', {
+            'fields': ('km_inicial', 'km_final')
+        }),
+        ('Checklist Frontal', {
+            'fields': (
+                'revisao_frontal_status', 'foto_frontal', 
+                'foto_frontal_preview', 'coordenadas_avaria_frontal'
+            )
+        }),
+        ('Checklist Traseiro', {
+            'fields': (
+                'revisao_trazeira_status', 'foto_trazeira',
+                'foto_trazeira_preview', 'coordenadas_avaria_trazeira'
+            )
+        }),
+        ('Checklist Lateral', {
+            'fields': (
+                'revisao_lado_motorista_status', 'foto_lado_motorista',
+                'foto_lado_motorista_preview', 'coordenadas_avaria_lado_motorista',
+                'revisao_lado_passageiro_status', 'foto_lado_passageiro',
+                'foto_lado_passageiro_preview', 'coordenadas_lado_passageiro'
+            )
+        }),
+        ('Observações', {
+            'fields': ('observacoes_gerais',),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def agendamento_link(self, obj):
+        url = reverse("admin:frota_agendamento_change", args=[obj.agendamento.id])
+        return mark_safe(f'<a href="{url}">{obj.agendamento}</a>')
+    agendamento_link.short_description = 'Agendamento'
+    
+    def tipo_display(self, obj):
+        colors = {
+            'saida': 'blue',
+            'retorno': 'green'
+        }
+        return format_html(
+            '<span style="color: {};">{}</span>',
+            colors.get(obj.tipo, 'black'),
+            obj.get_tipo_display()
+        )
+    tipo_display.short_description = 'Tipo'
+    
+    def foto_frontal_preview(self, obj):
+        if obj.foto_frontal:
+            return mark_safe(f'<img src="{obj.foto_frontal.url}" width="200" />')
+        return "-"
+    foto_frontal_preview.short_description = 'Prévia Foto Frontal'
+    
+    # Criar métodos similares para as outras fotos (trazeira, lado_motorista, lado_passageiro)
+    def foto_trazeira_preview(self, obj):
+        if obj.foto_trazeira:
+            return mark_safe(f'<img src="{obj.foto_trazeira.url}" width="200" />')
+        return "-"
+    foto_trazeira_preview.short_description = 'Prévia Foto Traseira'
+    
+    def foto_lado_motorista_preview(self, obj):
+        if obj.foto_lado_motorista:
+            return mark_safe(f'<img src="{obj.foto_lado_motorista.url}" width="200" />')
+        return "-"
+    foto_lado_motorista_preview.short_description = 'Prévia Lado Motorista'
+    
+    def foto_lado_passageiro_preview(self, obj):
+        if obj.foto_lado_passageiro:
+            return mark_safe(f'<img src="{obj.foto_lado_passageiro.url}" width="200" />')
+        return "-"
+    foto_lado_passageiro_preview.short_description = 'Prévia Lado Passageiro'
+
+# Registro dos modelos no admin
+admin.site.register(Carro, CarroAdmin)
+admin.site.register(Agendamento, AgendamentoAdmin)
+admin.site.register(ChecklistCarro, ChecklistCarroAdmin)

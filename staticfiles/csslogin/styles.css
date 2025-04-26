@@ -1,0 +1,99 @@
+
+
+/* styles LOGIN*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #cacaca;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.painel3 {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.painel1 .titulo {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.painel2 .form-login {
+    display: flex;
+    flex-direction: column;
+}
+
+.painel2 .form-login p {
+    margin-bottom: 15px;
+}
+
+.painel2 .form-login label {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.painel2 .form-login input {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.painel2 .btn-login {
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.painel2 .btn-login:hover {
+    background-color: #007bff;
+}
+
+.painel2 .registro {
+    font-size: 14px;
+    color: #555;
+    margin-top: 15px;
+}
+
+.painel2 .link-registro {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.painel2 .link-registro:hover {
+    text-decoration: underline;
+}
+
+.painel2 .link-home {
+    display: inline-block;
+    margin-top: 10px;
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.painel2 .link-home:hover {
+    text-decoration: underline;
+}

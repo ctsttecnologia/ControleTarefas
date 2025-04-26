@@ -13,13 +13,19 @@
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
 </head>
-
+<img src="/midia/imagens/logocetest.png" width="200">
+<!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção--> 
 {% block content %}{% endblock %}   
     <!--<img src="{% static 'imagens/painel1.png' %}" class="imagempainel">--> <!--Imagem no Django em produção-->
 
     <div class="container1">
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
         <div class="painel1">
-            <p class="mensagem">Bem-vindo, {{ user.username }}!</p>    
+            
             <div class="painel">
                 <a href="{% url 'usuario_login:logout' %}" class="btn">
                     <i class="bi bi-box-arrow-right"></i> Logout
@@ -46,9 +52,8 @@
                 <div class="card card2">CLIENTES
                     <div class="card1-1">
                         <br><br>
-                        <a href="{% url 'cliente' %}" class="link-card">Cliente</a>
-                        <a href="{% url 'lista_clientes' %}" class="link-card">Lista de Clientes</a>
-                        
+                        <a href="{% url 'cliente:cadastro_cliente' %}" class="link-card">Cliente</a>
+                        <a href="{% url 'cliente:lista_clientes' %}" class="link-card">Lista de Clientes</a>
                         
                     </div>
                     <div class="icone_tarefa">
@@ -81,8 +86,8 @@
                 <div class="card card5">ENDEREÇOS
                     <div class="card1-1">
                         <br><br>
-                        <a href="{% url 'logradouro:listar' %}"class="link-card">Endereço</a>
-                        <a href="{% url 'logradouro:cadastrar' %}"class="link-card">Cadastrar Endereço</a>
+                        <a href="{% url 'logradouro:listar_logradouros' %}"class="link-card">Endereço</a>
+                        <a href="{% url 'logradouro:cadastrar_logradouro' %}"class="link-card">Cadastrar Endereço</a>
                     </div>
                     <div class="icone_tarefa">
                         <img src="/midia/imagens/cadastro.gif" class="icone" >
@@ -96,13 +101,14 @@
                         <a href="{% url 'automovel:adicionar_agendamento' %}" class="link-card">Agendar Carro</a>
                         <a href="{% url 'automovel:lista_carros' %}" class="link-card">Relação de Carros</a>
                         <a href="{% url 'automovel:relatorios' %}" class="link-card">Relatorios</a>
-                        
+
                     </div>
-                    <div class="icone_tarefa">
+                    <div class="icone_tarefa">  
                         <img src="/midia/imagens/carro.gif" class="icone" >
                         <img src="{% static 'imagens/carro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
                     </div>
                 </div>      
+            </div>
         </div>
     </div>
     

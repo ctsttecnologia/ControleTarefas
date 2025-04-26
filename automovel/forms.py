@@ -1,7 +1,14 @@
 # automovel/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Carro, Agendamento
+
+
+from .models import ChecklistCarro
+from .models import Carro, Agendamento, ChecklistCarro
+
+from datetime import datetime, timedelta
+
+
 
 class CarroForm(forms.ModelForm):
     class Meta:
@@ -67,3 +74,31 @@ class AgendamentoForm(forms.ModelForm):
             self.add_error('km_final', 'A quilometragem final não pode ser menor que a inicial.')
         
         return cleaned_data
+
+# Checkilist do carro
+class ChecklistCarroForm(forms.ModelForm):
+    class Meta:
+        model = ChecklistCarro
+        fields = '__all__'
+        exclude = ['usuario', 'data_criacao', 'agendamento', 'tipo']
+        widgets = {
+            'observacoes_gerais': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            if 'foto' in field:
+                self.fields[field].widget.attrs.update({
+                    'accept': 'image/*',
+                    'capture': 'environment',
+                    'class': 'photo-input'
+                })
+            if 'status' in field:
+                self.fields[field].widget.attrs.update({
+                    'class': 'status-select'
+                })
+            if field.startswith('km_'):
+                self.fields[field].widget.attrs.update({
+                    'min': 0
+                })

@@ -1,0 +1,82 @@
+{% extends "automovel/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2>Agendamento #{{ agendamento.id }}</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Informações do Veículo</h4>
+                    <p><strong>Carro:</strong> {{ agendamento.carro }}</p>
+                    <p><strong>Placa:</strong> {{ agendamento.carro.placa }}</p>
+                    <p><strong>KM Atual:</strong> {{ agendamento.carro.km_atual }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h4>Detalhes do Agendamento</h4>
+                    <p><strong>Status:</strong> {{ agendamento.get_status_display }}</p>
+                    <p><strong>Período:</strong> {{ agendamento.data_agendamento|date:"d/m/Y H:i" }} - {{ agendamento.data_devolucao|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Motivo:</strong> {{ agendamento.motivo }}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <h4 class="mt-4">Checklists</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header {% if agendamento.checklists.filter(tipo='saida').exists %}bg-success text-white{% else %}bg-warning{% endif %}">
+                            Checklist de Saída
+                        </div>
+                        <div class="card-body">
+                            {% with checklist_saida=agendamento.checklists.filter(tipo='saida').first %}
+                                {% if checklist_saida %}
+                                    <p><strong>KM Inicial:</strong> {{ checklist_saida.km_inicial }}</p>
+                                    <p><strong>Data:</strong> {{ checklist_saida.data_criacao|date:"d/m/Y H:i" }}</p>
+                                    <a href="#" class="btn btn-sm btn-primary">Ver Detalhes</a>
+                                {% else %}
+                                    <p>Não realizado</p>
+                                    <a href="{% url 'criar_checklist' agendamento.id 'saida' %}" class="btn btn-sm btn-success">
+                                        Realizar Checklist de Saída
+                                    </a>
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header {% if agendamento.checklists.filter(tipo='retorno').exists %}bg-success text-white{% else %}bg-warning{% endif %}">
+                            Checklist de Retorno
+                        </div>
+                        <div class="card-body">
+                            {% with checklist_retorno=agendamento.checklists.filter(tipo='retorno').first %}
+                                {% if checklist_retorno %}
+                                    <p><strong>KM Final:</strong> {{ checklist_retorno.km_final }}</p>
+                                    <p><strong>Data:</strong> {{ checklist_retorno.data_criacao|date:"d/m/Y H:i" }}</p>
+                                    <a href="#" class="btn btn-sm btn-primary">Ver Detalhes</a>
+                                {% else %}
+                                    <p>Não realizado</p>
+                                    {% if agendamento.checklists.filter(tipo='saida').exists %}
+                                        <a href="{% url 'criar_checklist' agendamento.id 'retorno' %}" class="btn btn-sm btn-success">
+                                            Realizar Checklist de Retorno
+                                        </a>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-secondary" disabled>
+                                            Aguardando Checklist de Saída
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

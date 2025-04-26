@@ -1,0 +1,15 @@
+
+.relatorio {
+    margin: 20px;
+    font-family: Arial, sans-serif;
+}
+.card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+    background-color: #f9f9f9;
+}
+.resolvida { color: green; }
+.pendente { color: orange; }
+.andamento { color: blue; }
