@@ -1,30 +1,41 @@
 {% extends 'logradouro/base_logradouro.html' %}
-{% load i18n %}
+
 {% load static %}
 
-{% block logradouro_content %}
-<h2>{% trans 'Editar Endereço' %}</h2>
+{% block title %}Editar Logradouro{% endblock %}
 
-<form method="post" class="form-logradouro">
-    {% csrf_token %}
-    <div class="form-grid">
-        {% for field in form %}
-            <div class="form-group {% if field.errors %}has-error{% endif %}">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                    <small class="form-help">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <div class="error-message">{{ error }}</div>
+{% block content %}
+
+    
+<div class="contaniner">
+        <h2>Editar Endereço</h2>
+        {% if user.is_authenticated %}
+            <p>Olá, {{ user.username }}!</p>
+            {% else %}
+                <a href="{% url 'home' %}" class="btn-home">Início</a>
+        {% endif %}
+    <div class="painel">        
+        <form method="post" class="form-logradouro">
+            {% csrf_token %}
+            <div class="form-grid">
+                {% for field in form %}
+                    <div class="form-group">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small class="form-help">{{ field.help_text }}</small>
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="error-message">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 {% endfor %}
             </div>
-        {% endfor %}
-    </div>
-    <div class="form-actions">
-        <button type="submit" class="btn btn-save">{% trans 'Salvar' %}</button>
-        <a href="{% url 'logradouro:listar' %}" class="btn btn-cancel">{% trans 'Cancelar' %}</a>
-    </div>
-</form>
+            <div class="btn-group">
+                <button type="submit" class="btn btn-success">Salvar Alterações</button>
+                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>    
+</div>
 {% endblock %}
-

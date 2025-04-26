@@ -1,15 +1,13 @@
 {% load static %}
 {% load widget_tweaks %}
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
     <title>{% block title %}Meu Projeto{% endblock %}</title>
     
-<body>
+
     <div class="container">
         <h2>GERENCIANDO TAREFAS</h2>
         {% if user.is_authenticated %}
@@ -17,16 +15,6 @@
         {% else %}
             <a href="{% url 'home' %}" class="btn-home">Home</a>
         {% endif %}
-                
-        <div class="painel">
-            
-            <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
-        
-        </div>
-
     <main>
         {% block content %}
         <!-- O conteúdo específico de cada página será inserido aqui -->
@@ -36,5 +24,3 @@
     <footer>
         <p>&copy; 2025</p>
     </footer>
-</body>
-</html>

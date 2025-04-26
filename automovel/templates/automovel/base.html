@@ -1,36 +1,172 @@
-<!-- automovel/templates/automovel/base.html -->
-{% load static %}   
+{% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Agenda de Carros{% endblock %}</title>
-    <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">  
-    <link rel="stylesheet" href="{% static 'csscarro/graficos.css' %}">
+    <title>{% block title %}Sistema de Gestão de Veículos{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}"> 
+    <link rel="stylesheet" href="{% static 'csscarro/base.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/buttons.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/navbar.css' %}">
+    <link rel="stylesheet" href="{% static 'csscarro/cards.css' %}">
+    
+    <!-- CSS específico da página -->
     {% block extra_css %}{% endblock %}
+    
+    <!-- Fontes e ícones -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style type="text/css">
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+            
+            @top-center {
+                content: "{{ titulo }}";
+                font-size: 14pt;
+                font-weight: bold;
+            }
+            
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+            
+            @bottom-right {
+                content: "Emitido em: {{ data_emissao }}";
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            line-height: 1.4;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 16pt;
+            margin-bottom: 5px;
+        }
+        
+        .header .subtitle {
+            font-size: 10pt;
+            color: #666;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        th {
+            background-color: #4F81BD;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        td {
+            border: 1px solid #ddd;
+            padding: 6px;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .nowrap {
+            white-space: nowrap;
+        }
+        
+        /* Estilos para status */
+        .status-disponivel { color: #28a745; }
+        .status-manutencao { color: #ffc107; }
+        .status-locado { color: #dc3545; }
+        .status-agendado { color: #17a2b8; }
+        .status-em_andamento { color: #ffc107; }
+        .status-concluido { color: #28a745; }
+        .status-cancelado { color: #dc3545; }
+        
+        .footer {
+            margin-top: 20px;
+            font-size: 8pt;
+            color: #666;
+            text-align: right;
+        }
+    </style>
+
 </head>
 <body>
-    <div class="container">
+     
+    <main class="container">
         {% if messages %}
+        <div class="messages">
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mt-3" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
             {% endfor %}
+        </div>
         {% endif %}
         
         {% block content %}{% endblock %}
-    </div>
+    </main>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- JavaScript -->
+    <script src="{% static 'js/main.js' %}"></script>
     {% block extra_js %}{% endblock %}
+
+    <table>
+        <thead>
+            <tr>
+                {% for coluna in colunas %}
+                <th>{{ coluna }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for obj in objetos %}
+            <tr>
+                {% if relatorio_tipo == 'carros' %}
+                    <td>{{ obj.id }}</td>
+                    <td>{{ obj.modelo }}</td>
+                    <td>{{ obj.marca }}</td>
+                    <td>{{ obj.placa }}</td>
+                    <td>{{ obj.ano }}</td>
+                    <td>{{ obj.cor }}</td>
+                    <td>{{ obj.status }}</td>
+                {% else %}
+                    <td>{{ obj.id }}</td>
+                    <td>{{ obj.carro }}</td>
+                    <td>{{ obj.data }}</td>
+                    <td>{{ obj.servico }}</td>
+                    <td>{{ obj.responsavel }}</td>
+                    <td>{{ obj.status }}</td>
+                {% endif %}
+            </tr>
+
+            {% endfor %}
+        </tbody>
+    </table>
+
 </body>
 </html>
 

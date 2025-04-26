@@ -1,13 +1,57 @@
 # automovel/models.py
+
+from datetime import timedelta
+
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
+from django.core.validators import FileExtensionValidator
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 
-from datetime import timedelta
 
 class Carro(models.Model):
+
+    MARCA_CHOICES = [
+        ('volkswagen', 'Volkswagen'),
+        ('fiat', 'Fiat'),
+        ('chevrolet', 'Chevrolet'),
+        ('ford', 'Ford'),
+        ('toyota', 'Toyota'),
+        ('hyundai', 'Hyundai'),
+        ('citroen', 'Citroen'), 
+        ('peugeot', 'Peugeot'), 
+        ('mitsubishi', 'Mitsubishi'), 
+        ('subaru', 'Subaru'),
+        ('tesla', 'Tesla'), 
+        ('BYD', 'byd'),
+    ]
+    
+    MODELO_CHOICES = [
+        ('hatch', 'Hatch'),
+        ('sedan', 'Sedan'),
+        ('suv', 'SUV'),
+        ('picape', 'Picape'),
+    
+    ]
+    
+    COR_CHOICES = [
+        ('branco', 'Branco'),
+        ('preto', 'Preto'),
+        ('prata', 'Prata'),
+        
+    ]
+    
+    STATUS_CHOICES = [
+        ('disponivel', 'Disponível'),
+        ('manutencao', 'Em Manutenção'),
+        ('locado', 'Locado'),
+    ]
+
     placa_validator = RegexValidator(
         regex=r'^[A-Z]{3}\d{1}[A-Z]{1}\d{2}$|^[A-Z]{3}\d{4}$',
         message=_('Formato de placa inválido. Use AAA1A11 ou AAA1111')
@@ -40,6 +84,7 @@ class Carro(models.Model):
         help_text=_('Número único do Registro Nacional de Veículos')
     )
     
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disponivel')
     data_ultima_manutencao = models.DateField(
         verbose_name=_('Data da Última Manutenção'),
         null=True,
@@ -96,6 +141,7 @@ class Carro(models.Model):
         return f"{self.marca} {self.modelo} - {self.placa} ({self.ano})"
 
     class Meta:
+        db_table = 'automovel_carro'
         verbose_name = _('Veículo')
         verbose_name_plural = _('Veículos')
         ordering = ['marca', 'modelo']
@@ -152,10 +198,22 @@ class Agendamento(models.Model):
         verbose_name=_('Foto Principal do Veículo'),
         help_text=_('Foto agendamento')
     )
+    cliente = models.ForeignKey(
+        get_user_model(),  
+        on_delete=models.PROTECT,
+        related_name='agendamentos',
+        verbose_name=_('Cliente'),
+        null=True,  # Se for opcional
+        blank=True
+    )
 
     class Meta:
-        verbose_name = _('Agendamento')
-        verbose_name_plural = _('Agendamentos')
+        db_table = 'agendamento'
+        verbose_name_plural = 'Agendamentos'
+        ordering = ['data_agendamento']
+        indexes = [
+            models.Index(fields=['carro', 'data_agendamento']),
+        ]
 
     def __str__(self):
         return f"Agendamento #{self.id} - {self.veiculo.placa}"
@@ -267,3 +325,117 @@ class FotoAgendamento(models.Model):
     def __str__(self):
         return f"fotos {self.id} - Agendamento {self.agendamento.id}"
     
+class ChecklistCarro(models.Model):
+    TIPO_CHOICES = [
+        ('saida', 'Checklist de Saída'),
+        ('retorno', 'Checklist de Retorno'),
+    ]
+
+    STATUS_CHOICES = [
+        ('ok', 'OK'),
+        ('avaria', 'Com Avarias'),
+        ('nao_verificado', 'Não Verificado'),
+    ]
+
+    agendamento = models.ForeignKey(
+        Agendamento, 
+        on_delete=models.PROTECT,
+        related_name='checklists'
+    )
+    usuario = models.ForeignKey(User, on_delete=models.PROTECT)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    
+    # Dados de quilometragem
+    km_inicial = models.PositiveIntegerField(
+        validators=[MinValueValidator(0)]
+    )
+    km_final = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        validators=[MinValueValidator(0)]
+    )
+    
+    # Itens do checklist
+    revisao_frontal_status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default='nao_verificado'
+    )
+    foto_frontal = models.ImageField(
+        upload_to='checklist/frontal/',
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+    )
+    coordenadas_avaria_frontal = models.JSONField(null=True, blank=True)
+    
+     # Itens do checklist
+    revisao_trazeira_status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default='nao_verificado'
+    )
+    foto_trazeira = models.ImageField(
+        upload_to='checklist/trazeira/',
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+    )
+    coordenadas_avaria_trazeira = models.JSONField(null=True, blank=True)
+
+     # Itens do checklist
+    revisao_lado_motorista_status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default='nao_verificado'
+    )
+    foto_lado_motorista = models.ImageField(
+        upload_to='checklist/lado_motorista/',
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+    )
+    coordenadas_avaria_lado_motorista = models.JSONField(null=True, blank=True)
+
+     # Itens do checklist
+    revisao_lado_passageiro_status = models.CharField(
+        max_length=15,
+        choices=STATUS_CHOICES,
+        default='nao_verificado'
+    )
+    foto_lado_passageiro = models.ImageField(
+        upload_to='checklist/lado_passageiro/',
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+    )
+    coordenadas_lado_passageiro = models.JSONField(null=True, blank=True)
+    
+    # Dados finais
+    observacoes_gerais = models.TextField(blank=True, null=True)
+    assinatura = models.TextField()
+    confirmacao = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'checklist_carro'
+        verbose_name_plural = 'Checklists de Carros'
+        ordering = ['-data_criacao']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['agendamento', 'tipo'],
+                name='unique_checklist_por_tipo'
+            )
+        ]
+
+    def __str__(self):
+        return f"Checklist #{self.id} - {self.get_tipo_display()}"
+
+    def save(self, *args, **kwargs):
+        # Atualiza a quilometragem do carro quando checklist de retorno é salvo
+        if self.tipo == 'retorno' and self.km_final:
+            self.agendamento.carro.km_atual = self.km_final
+            self.agendamento.carro.save()
+        super().save(*args, **kwargs)
+
+@receiver(pre_save, sender=Agendamento)
+def atualizar_status_carro(sender, instance, **kwargs):
+    """Atualiza disponibilidade do carro conforme status do agendamento"""
+    if instance.status == 'concluido' or instance.status == 'cancelado':
+        instance.carro.disponivel = True
+    else:
+        instance.carro.disponivel = False
+    instance.carro.save()
+

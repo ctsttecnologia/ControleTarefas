@@ -1,0 +1,146 @@
+/* Reset básico e estilos globais */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-image: url('/midia/imagens/painel1.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #000000;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo do logo */
+.logo {
+    text-align: center;
+    padding: 0px 0;
+}
+
+.logo img {
+    max-width: 80%;
+    height: auto;
+}
+
+/* Cabeçalho e navegação */
+.header {
+    background-color: #00a2ff;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    position: relative;
+}
+
+.header nav ul {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 0;
+    gap: 15px;
+}
+
+.header nav ul li {
+    margin: 0;
+}
+
+.header nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 8px 15px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+    display: inline-block;
+}
+
+.header nav ul li a:hover {
+    background-color: #047ae0;
+}
+
+/* Imagem do painel */
+.imagempainel {
+    width: 100%;
+    max-width: 1500px;
+    height: 50%;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Conteúdo principal */
+main {
+    flex: 1;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Rodapé */
+.rodape {
+    background-color: #00a2ff;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    width: 100%;
+    margin-top: auto;
+}
+
+.rodape footer p {
+    margin: 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .header nav ul {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .header nav ul li a {
+        padding: 6px 10px;
+    }
+
+    .logo {
+        padding: 5px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        padding: 5px 0;
+    }
+
+    .header nav ul li a {
+        padding: 5px 8px;
+        font-size: 14px;
+    }
+
+    .rodape {
+        padding: 10px 0;
+        font-size: 14px;
+    }
+}
+
+
+
+
+/*Largura do main: Adicionei width: 100%; ao main para garantir que ele não ultrapasse a largura da tela em dispositivos menores.
+
+Ajustes no painel: No painel, adicionei padding: 10px; para dispositivos muito pequenos (480px) para garantir que o conteúdo não fique muito próximo das bordas.
+
+Posicionamento do btn-home: Ajustei o posicionamento do botão "Voltar para Home" para que ele fique mais compacto em telas menores.
+
+Rodapé Fixo: Em telas menores, o rodapé foi ajustado para position: static; para que ele não fique fixo e não sobreponha o conteúdo.
+
+Flexibilidade no painel: O painel agora tem height: auto; em telas menores para que ele se ajuste ao conteúdo.

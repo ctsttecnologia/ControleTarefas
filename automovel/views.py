@@ -10,17 +10,24 @@ from django.db.models.functions import ExtractMonth
 from django.template.loader import get_template
 from django.conf import settings
 
+from xhtml2pdf import pisa 
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.utils import get_column_letter
+import openpyxl
+import logging
+import os
+import io
+from io import BytesIO
+import json
 
 from .relatorios import gerar_relatorio_pdf, gerar_relatorio_excel
 from datetime import datetime, date
-from openpyxl import Workbook
-from xhtml2pdf import pisa 
-
 from .forms import CarroForm, AgendamentoForm
 from .models import Carro, Agendamento
+from .forms import ChecklistCarroForm
+from .models import ChecklistCarro
 
-import logging
-import os
 
 
 @login_required
@@ -163,41 +170,169 @@ def relatorios(request):
     return render(request, 'automovel/relatorios.html')
 
 @login_required
-def exportar_pdf(request, tipo):
-    return gerar_relatorio_pdf(request, tipo)
-
-def exportar_excel(request, tipo):
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    filename = f"relatorio_{tipo}_{datetime.now().strftime('%Y%m%d')}.xlsx"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    
-    wb = Workbook()
-    ws = wb.active
-    
-    if tipo == 'carros':
-        # Cabeçalhos
-        ws.append(['Placa', 'Marca', 'Modelo', 'Ano', 'Cor', 'Status', 'Última Manutenção'])
-        
-        # Dados
-        for carro in Carro.objects.all():
-            # Simplifica o status para exportação
-            if carro.ativo:
-                status = "Manutenção Pendente" if carro.verificar_manutencao_pendente() else "Ativo"
-            else:
-                status = "Inativo"
+def exportar_pdf(request, relatorio_tipo):
+    try:
+        # 1. Pré-processamento dos dados
+        if relatorio_tipo == 'carros':
+            dados = Carro.objects.all().order_by('modelo')
+            titulo = "Relatório de Veículos"
+            colunas = ["ID", "Modelo", "Marca", "Placa", "Ano", "Cor", "Status"]
+            
+            objetos = []
+            for item in dados:
+                objetos.append({
+                    'id': item.id,
+                    'modelo': item.modelo,
+                    'marca': item.marca,
+                    'placa': item.placa,
+                    'ano': item.ano,
+                    'cor': item.get_cor_display() if hasattr(item, 'get_cor_display') else item.cor,
+                    'status': item.get_status_display() if hasattr(item, 'get_status_display') else item.status
+                })
                 
-            ws.append([
-                carro.placa,
-                carro.marca,
-                carro.modelo,
-                carro.ano,
-                carro.cor,
-                status,  # Status simplificado
-                carro.data_ultima_manutencao.strftime('%d/%m/%Y') if carro.data_ultima_manutencao else 'N/A'
-            ])
+        elif relatorio_tipo == 'agendamentos':
+            dados = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
+            titulo = "Relatório de Agendamentos"
+            colunas = ["ID", "Veículo", "Data", "Serviço", "Responsável", "Status"]
+            
+            objetos = []
+            for item in dados:
+                objetos.append({
+                    'id': item.id,
+                    'carro': f"{item.carro.marca} {item.carro.modelo}" if item.carro else "N/A",
+                    'data': item.data_hora_agenda.strftime('%d/%m/%Y %H:%M') if item.data_hora_agenda else "N/A",
+                    'servico': item.descricao[:50] + '...' if item.descricao and len(item.descricao) > 50 else (item.descricao if item.descricao else "N/A"),
+                    'responsavel': item.responsavel if item.responsavel else "N/A",
+                    'status': item.get_status_display() if hasattr(item, 'get_status_display') else (item.status if item.status else "N/A")
+                })
+        else:
+            return HttpResponse("Tipo de relatório inválido", status=400)
+
+        # 2. Preparação do contexto
+        context = {
+            'objetos': objetos,
+            'titulo': titulo,
+            'colunas': colunas,
+            'data_emissao': timezone.now().strftime("%d/%m/%Y %H:%M"),
+            'relatorio_tipo': relatorio_tipo
+        }
+
+        # 3. Renderização segura do template
+        template = get_template('automovel/base_relatorio.html')
+        html = template.render(context)
+        
+        # 4. Geração do PDF com tratamento de erro
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="relatorio_{relatorio_tipo}.pdf"'
+        
+        pdf_status = pisa.CreatePDF(
+            BytesIO(html.encode('UTF-8')),
+            dest=response,
+            encoding='UTF-8'
+        )
+        
+        if pdf_status.err:
+            return HttpResponse(f"Erro na geração do PDF: {pdf_status.err}", status=500)
+            
+        return response
+
+    except Exception as e:
+        error_msg = f"Erro ao gerar relatório: {str(e)}"
+        print(error_msg)  # Log no console
+        return HttpResponse(error_msg, status=500)
+
+@login_required
+def exportar_excel(request, relatorio_tipo):
+    # Obtenha os dados conforme o tipo de relatório
+    if relatorio_tipo == 'carros':
+        objetos = Carro.objects.all().order_by('modelo')
+        titulo = "Relatório de Veículos"
+        colunas = ["ID", "Modelo", "Marca", "Placa", "Ano", "Cor", "Status"]
     
-    # ... (código para outros tipos de relatório)
+    elif relatorio_tipo == 'agendamentos':
+        objetos = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
+        titulo = "Relatório de Agendamentos"
+        colunas = ["ID", "Veículo", "Data", "Serviço", "Responsável", "Status"]
     
+    else:
+        return HttpResponse("Tipo de relatório inválido", status=400)
+
+    # Cria um novo workbook do Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = titulo[:31]  # Limita a 31 caracteres
+
+    # Define estilos
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+    even_row_fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
+    odd_row_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                   top=Side(style='thin'), bottom=Side(style='thin'))
+    center_aligned = Alignment(horizontal='center')
+    
+    # Adiciona cabeçalhos
+    for col_num, header in enumerate(colunas, 1):
+        col_letter = get_column_letter(col_num)
+        cell = ws[f"{col_letter}1"]
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = center_aligned
+        ws.column_dimensions[col_letter].width = len(header) + 5
+
+    # Adiciona dados
+    for row_num, obj in enumerate(objetos, 2):
+        row_fill = even_row_fill if row_num % 2 == 0 else odd_row_fill
+        
+        if relatorio_tipo == 'carros':
+            data = [
+                obj.id,
+                obj.modelo,
+                obj.marca,
+                obj.placa,
+                obj.ano,
+            ]
+        if relatorio_tipo == 'agendamentos':
+            data = [
+                obj.id,
+                f"{obj.carro.marca} {obj.carro.modelo} ({obj.carro.placa})",
+                str(obj.carro) if obj.carro else "N/A",  # Trata cliente opcional
+                obj.data_hora_agenda.strftime('%d/%m/%Y %H:%M'),
+                obj.descricao[:50] + '...' if len(obj.descricao) > 50 else obj.descricao,
+                obj.responsavel,
+                obj.get_status_display()
+            ]
+            
+        
+        for col_num, value in enumerate(data, 1):
+            col_letter = get_column_letter(col_num)
+            cell = ws[f"{col_letter}{row_num}"]
+            cell.value = value
+            cell.border = border
+            cell.fill = row_fill
+            if col_num in [1, 4, 7]:  # Colunas para centralizar (ID, Data, Status)
+                cell.alignment = center_aligned
+
+    # Ajusta largura das colunas automaticamente
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2) * 1.2
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Configura a resposta
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="relatorio_{relatorio_tipo}.xlsx"'}
+    )
     wb.save(response)
     return response
 
@@ -292,4 +427,40 @@ def relatorio_fotos_pdf(request, pk):
         return HttpResponse('Erro ao gerar PDF', status=500)
     return response
 
+# Checklist automóvel
 
+@login_required
+def checklist(request, agendamento_id, tipo):
+    agendamento = get_object_or_404(Agendamento, id=agendamento_id)
+    
+    if request.method == 'POST':
+        form = ChecklistCarroForm(request.POST, request.FILES)
+        if form.is_valid():
+            checklist = form.save(commit=False)
+            checklist.agendamento = agendamento
+            checklist.usuario = request.user
+            checklist.tipo = tipo
+            
+            # Atualiza km_inicial com a km atual do carro se for checklist de saída
+            if tipo == 'saida':
+                checklist.km_inicial = agendamento.carro.km_atual
+            
+            checklist.save()
+            return redirect('detalhes_agendamento', pk=agendamento.id)
+    else:
+        form = ChecklistCarroForm(initial={
+            'tipo': tipo,
+            'km_inicial': agendamento.carro.km_atual if tipo == 'saida' else None
+        })
+    
+    return render(request, 'automovel/formulariochecklist.html', {
+        'form': form,
+        'agendamento': agendamento,
+        'tipo': tipo
+    })
+
+@login_required
+def formulario_checklist(request, agendamento_id):
+    agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
+    # Sua lógica aqui
+    return render(request, 'automovel/formulariochecklist.html', {'agendamento': agendamento})

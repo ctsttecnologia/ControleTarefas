@@ -1,4 +1,4 @@
-
+{% extends "automovel/base.html" %}
 {% load static %}
 
 {% block content %}
@@ -24,10 +24,10 @@
         <div class="painel">
             
             <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+            <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
+            <a href="{% url 'usuario:logout' %}" class="btn btn-sm btn-info">Sair</a>
+            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-sm btn-info">Agendamentos</a>
+            <a href="{% url 'profile' %}" class="btn btn-sm btn-info">Menu</a>
         </div> 
             <div class="container">
                 <form method="post" enctype="multipart/form-data" id="agendamento-form">
@@ -264,10 +264,10 @@
                     </div>
                     
                     <div class="form-group text-right">
-                        <button type="submit" class="btn-home">
+                        <button type="submit" class="btn btn-sm btn-info">
                             <i class="fas fa-save"></i> Salvar
                         </button>
-                        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn-home">
+                        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-sm btn-info">
                             <i class="fas fa-times"></i> Cancelar
                         </a>
                     </div>

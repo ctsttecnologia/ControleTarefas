@@ -1,91 +1,232 @@
+
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Cliente{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">      
-    
-</head>
-<body>
-    <div class="container">
-        <h2>CLIENTE</h2>
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-        {% endif %}
-                
-        <div class="painel">
-            
-            <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'cliente' %}" class="btn_cadastro">Pesquisar</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
-        
-        </div>
-        <div class="painel2">
-            {% csrf_token %}
-            <h2>Cadastro de Clientes</h2>
-                <form method="post" action="{% url 'lista_clientes' %}" class="form-cadastro">
-                    {% csrf_token %}
-                    <div class="form-group">
-                        <label for="nome">Nome:</label>
-                        <input type="text" id="nome" name="nome" placeholder="Digite o nome do cliente">
-                    </div>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                    <div class="form-group">
-                        <label for="endereco_id">Endereço:</label>
-                        <select id="endereco_id" name="endereco_id" class="form-control">
-                            <option value="">Selecione um endereço</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="contrato">CM:</label>
-                        <input type="text" id="contrato" name="contrato" placeholder="Digite o CM">
-                    </div>
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" href="{% static 'csscliente/styles.css' %}"> 
+<div class="container">
 
-                    <div class="form-group">
-                        <label for="razao_social">Razão Social:</label>
-                        <input type="text" id="razao_social" name="razao_social" placeholder="Digite a razão social">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="unidade">Unidade:</label>
-                        <input type="text" id="unidade" name="runidade" placeholder="Digite a unidade">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cnpj">CNPJ:</label>
-                        <input type="text" id="cnpj" name="cnpj" placeholder="Digite o CNPJ do cliente">
-                    </div>
-                    
-                    <div class="Form-group">
-                        <label for="id_telefone" class="form-label">Telefone</label>
-                        {{ form.telefone }}
-                        <small class="form-text text-muted">Digite o telefone com DDD.</small>
-                    </div>
-                    
-                    <div class="Form-group">
-                        <label for="id_data_de_inicio" class="form-label">Data de Início</label>
-                        {{ form.data_de_inicio }}
-                    </div>
-
-                    <div class="Form-group">
-                        {{ form.estatus }}
-                        <label class="form-check-label" for="id_estatus">Ativo</label>
-                    </div>
-                                        
-                    <button type="submit" class="btn-pesquisar">Salvar</button>
-                </form>
-                
-        </div>                       
+    <div class="painel">
+        <h2 class="card-title mb-0">
+           Cadastrar Cliente
+        </h2>
     </div>
-    
-</body> 
-</html>
+    {% if user.is_authenticated %}
+    <p>Olá, {{ user.username }}!</p>
+    {% else %}
+        <a href="{% url 'home' %}" class="btn-home">Home</a>
+    {% endif %}
+            
+    <div class="painel">
+        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-house"></i> Início
+        </a>
+        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">Menu</a>
+        <a href="{% url 'usuario:logout' %}" class="btn btn-outline-light">
+            <i class="fas fa-sign-out-alt"></i> Sair
+        </a>
+    </div>
+    <div class="painel">    
+        {% block content %}
+        <div class="card">  
+            <div class="card-body">
+                <form method="post" id="clienteForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.nome.label_tag }}
+                                {{ form.nome }}
+                                <div class="invalid-feedback">
+                                    {{ form.nome.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_logradouro" class="form-label">Endereço</label>
+                                <div class="input-group">
+                                    {{ form.logradouro }}
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#enderecoModal">
+                                        <i class="fas fa-search"></i> Buscar
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">
+                                    {{ form.logradouro.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.contrato.label_tag }}
+                                {{ form.contrato }}
+                                <div class="invalid-feedback">
+                                    {{ form.contrato.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.razao_social.label_tag }}
+                                {{ form.razao_social }}
+                                <div class="invalid-feedback">
+                                    {{ form.razao_social.errors }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.unidade.label_tag }}
+                                {{ form.unidade }}
+                                <div class="invalid-feedback">
+                                    {{ form.unidade.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.cnpj.label_tag }}
+                                {{ form.cnpj }}
+                                <div class="invalid-feedback">
+                                    {{ form.cnpj.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.telefone.label_tag }}
+                                {{ form.telefone }}
+                                <div class="invalid-feedback">
+                                    {{ form.telefone.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.data_de_inicio.label_tag }}
+                                {{ form.data_de_inicio }}
+                                <div class="invalid-feedback">
+                                    {{ form.data_de_inicio.errors }}
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 form-check form-switch">
+                                {{ form.estatus }}
+                                <label class="form-check-label" for="{{ form.estatus.id_for_label }}">Ativo</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i> Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Endereços -->
+        <div class="modal fade" id="enderecoModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Selecionar Endereço</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Endereço</th>
+                                        <th>Número</th>
+                                        <th>CEP</th>
+                                        <th>Bairro</th>
+                                        <th>Cidade/UF</th>
+                                        <th>Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for endereco in enderecos %}
+                                    <tr>
+                                        <td>{{ endereco.endereco }}</td>
+                                        <td>{{ endereco.numero }}</td>
+                                        <td>{{ endereco.cep_formatado }}</td>
+                                        <td>{{ endereco.bairro }}</td>
+                                        <td>{{ endereco.cidade }}/{{ endereco.estado }}</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-primary btn-selecionar-endereco" 
+                                                    data-id="{{ endereco.id }}" data-bs-dismiss="modal">
+                                                <i class="fas fa-check me-1"></i> Selecionar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-3">Nenhum endereço cadastrado</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+
+        {% block scripts %}
+    </div>
+    <div class="painel1">
+        <script>
+        $(document).ready(function() {
+            // Inicializa o Select2
+            $('#id_logradouro').select2({
+                placeholder: "Selecione um endereço",
+                allowClear: true,
+                width: '100%'
+            });
+            
+            // Seleciona endereço no modal
+            $('.btn-selecionar-endereco').click(function() {
+                var enderecoId = $(this).data('id');
+                $('#id_logradouro').val(enderecoId).trigger('change');
+            });
+            
+            // Máscaras
+            $('#id_cnpj').mask('00.000.000/0000-00');
+            $('#id_telefone').mask('(00) 00000-0000');
+            
+            // Validação do formulário
+            $('#clienteForm').submit(function() {
+                var isValid = true;
+                $('.is-invalid').removeClass('is-invalid');
+                
+                // Validação simples - pode ser expandida
+                $('#id_nome, #id_logradouro, #id_cnpj').each(function() {
+                    if (!$(this).val()) {
+                        $(this).addClass('is-invalid');
+                        isValid = false;
+                    }
+                });
+                
+                return isValid;
+            });
+        });
+        </script>
+        {% endblock %}
+        <!-- JavaScript -->
+     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+     <script src="{% static 'js/cliente/base.js' %}"></script>   
+    </div> 
+     
+</div>        
+

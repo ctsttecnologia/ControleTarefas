@@ -1,3 +1,4 @@
+{% extends "automovel/base.html" %}
 {% block extra_css %}
 {% endblock %}
 {% block content %}
@@ -18,14 +19,14 @@
         {% if user.is_authenticated %}
         <p>Olá, {{ user.username }}!</p>
         {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
+            <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
         {% endif %}   
         <div class="painel">   
             <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn_cadastro">Agendamentos</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+            <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
+            <a href="{% url 'usuario:logout' %}" class="btn btn-sm btn-info">Sair</a>
+            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-sm btn-info">Agendamentos</a>
+            <a href="{% url 'profile' %}" class="btn btn-sm btn-info">Menu</a>
         </div> 
         
         <div class="painel2">

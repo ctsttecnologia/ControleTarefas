@@ -23,9 +23,17 @@ urlpatterns = [
 
     # Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),
-    path('exportar/pdf/<str:tipo>/', views.exportar_pdf, name='exportar_pdf'),
-    path('exportar/excel/<str:tipo>/', views.exportar_excel, name='exportar_excel'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('agendamento/<int:pk>/relatorio-foto/', views.relatorio_fotos_pdf, name='relatorio_foto_pdf'),
+    path('relatorios/carros/pdf/', views.exportar_pdf, {'relatorio_tipo': 'carros'}, name='carros_pdf'),
+    path('relatorios/agendamentos/pdf/', views.exportar_pdf, {'relatorio_tipo': 'agendamentos'}, name='agendamentos_pdf'),
+    path('relatorios/carros/excel/', views.exportar_excel, {'relatorio_tipo': 'carros'}, name='carros_excel'),
+    path('relatorios/agendamentos/excel/', views.exportar_excel, {'relatorio_tipo': 'agendamentos'}, name='agendamentos_excel'),
+
+    path('checklist/<str:tipo>/', views.checklist, name='checklist'),
+    #path('checklists/', views.lista_checklists, name='lista_checklists'),
+    #path('checklist/<int:pk>/', views.detalhes_checklist, name='detalhes_checklist'),
+    path('checklist/<int:agendamento_id>/<str:tipo>/', views.checklist, name='criar_checklist'),
+    path('agendamentos/<int:agendamento_id>/checklist/', views.formulario_checklist, name='formulariochecklist'),
 ]
 

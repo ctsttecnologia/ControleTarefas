@@ -1,0 +1,67 @@
+{% extends 'logradouro/base_logradouro.html' %}
+
+{% load static %}
+
+{% block title %}Lista de Logradouros{% endblock %}
+
+{% block content %}
+<div class="contaniner">
+    <h2>Endereços Cadastrados</h2>
+    {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Início</a>
+    {% endif %}
+    <div class="painel">
+        <div class="btn-group">
+            <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Novo Endereço
+            </a>
+            <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-excel">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+            </a>
+            <p>Total de endereços cadastrados: {{ total_logradouros }}</p>
+        </div>
+    </div>
+    {% if logradouros %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Endereço</th>
+                    <th>Número</th>
+                    <th>CEP</th>
+                    <th>Bairro</th>
+                    <th>Cidade/UF</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for logradouro in logradouros %}
+                <tr>
+                    <td>{{ logradouro.endereco }}</td>
+                    <td>{{ logradouro.numero }}</td>
+                    <td>{{ logradouro.cep_formatado }}</td>
+                    <td>{{ logradouro.bairro }}</td>
+                    <td>{{ logradouro.cidade }}/{{ logradouro.estado }}</td>
+                    <td>
+                        <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'logradouro:excluir_logradouro' logradouro.pk %}" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Nenhum endereço cadastrado.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

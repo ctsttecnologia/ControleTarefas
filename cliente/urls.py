@@ -1,11 +1,14 @@
+
 from django.urls import path
 from . import views
-from .views import excluir_cliente
+
+app_name = 'cliente'  # Adicionando namespace
 
 urlpatterns = [
-    path('cliente/', views.cliente, name='cliente'),
-    path('lista_clientes/', views.lista_clientes, name='lista_clientes'),
-    path('cadastro_cliente/', views.cadastro_cliente, name='cadastro_cliente'),
-    path('salvar_cliente/', views.salvar_cliente, name='salvar_cliente'),
-    path('excluir-cliente/<int:id>/', excluir_cliente, name='excluir_cliente'),
+    path('', views.lista_clientes, name='lista_clientes'),  # Página principal
+    path('cadastrar/', views.cadastro_cliente, name='cadastro_cliente'),
+    path('editar/<int:id>/', views.editar_cliente, name='editar_cliente'),
+    path('excluir/<int:id>/', views.excluir_cliente, name='excluir_cliente'),
+    path('pesquisar/', views.pesquisar_clientes, name='pesquisar_clientes'),
+    path('exportar-excel/', views.exportar_clientes_excel, name='exportar_excel'),
 ]
