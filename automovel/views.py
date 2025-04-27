@@ -29,7 +29,6 @@ from .forms import ChecklistCarroForm
 from .models import ChecklistCarro
 
 
-
 @login_required
 def lista_carros(request):
     carros = Carro.objects.all().order_by('marca', 'modelo')
@@ -147,17 +146,32 @@ def excluir_agendamento(request, pk):
     return render(request, 'automovel/confirmar_exclusao.html', {'obj': agendamento})
 
 @login_required
-def assinar_agendamento(request, pk):
-    agendamento = get_object_or_404(Agendamento, pk=pk)
-    if request.method == 'POST':
-        assinatura = request.POST.get('assinatura')
-        if assinatura:
-            agendamento.assinatura = assinatura
-            agendamento.save()
-            messages.success(request, 'Assinatura registrada com sucesso!')
-            return redirect('automovel:lista_agendamentos')
+def assinar_agendamento(request, pk):  
     
-    return render(request, 'automovel/assinar_agendamento.html', {'agendamento': agendamento})
+    # Verifica se o usuário está autenticado
+    if not request.user.is_authenticated:
+        return redirect('login')  # Redireciona para a página de login
+    
+    try:
+        agendamento = get_object_or_404(Agendamento, pk=pk)
+        
+        if request.method == 'POST':
+            form = AgendamentoForm(request.POST, instance=agendamento, user=request.user)
+            if form.is_valid():
+                form.save()
+                return redirect('automovel:lista_agendamentos')  # Redireciona após sucesso
+            # Se o formulário for inválido, continua para renderizar com erros
+        else:
+            form = AgendamentoForm(instance=agendamento, user=request.user)
+        
+        # Renderiza o template em ambos os casos (GET ou POST inválido)
+        return render(request, 'automovel/assinar.html', {'form': form, 'agendamento': agendamento})
+        return render(request, 'automovel/assinar_agendamento.html', {'form': form, 'agendamento': agendamento})
+        
+    except Exception as e:
+        # Log do erro (opcional)
+        print(f"Erro ao assinar agendamento: {str(e)}")
+        return render(request, 'automovel/formulariochecklist.html', {'agendamento': agendamento})
 
 @login_required
 def agendamento_fotos(request, pk):
@@ -434,29 +448,18 @@ def checklist(request, agendamento_id, tipo):
     agendamento = get_object_or_404(Agendamento, id=agendamento_id)
     
     if request.method == 'POST':
-        form = ChecklistCarroForm(request.POST, request.FILES)
+        form = ChecklistForm(request.POST, request.FILES)
         if form.is_valid():
             checklist = form.save(commit=False)
-            checklist.agendamento = agendamento
-            checklist.usuario = request.user
+            checklist.agendamento_id = agendamento_id
             checklist.tipo = tipo
-            
-            # Atualiza km_inicial com a km atual do carro se for checklist de saída
-            if tipo == 'saida':
-                checklist.km_inicial = agendamento.carro.km_atual
-            
+            checklist.usuario = request.user
             checklist.save()
-            return redirect('detalhes_agendamento', pk=agendamento.id)
+            return redirect('automovel:detalhes_agendamento', pk=agendamento_id)
     else:
         form = ChecklistCarroForm(initial={
             'tipo': tipo,
             'km_inicial': agendamento.carro.km_atual if tipo == 'saida' else None
-        })
-    
-    return render(request, 'automovel/formulariochecklist.html', {
-        'form': form,
-        'agendamento': agendamento,
-        'tipo': tipo
     })
 
 @login_required

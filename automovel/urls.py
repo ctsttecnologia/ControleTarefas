@@ -20,6 +20,7 @@ urlpatterns = [
     path('excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
     path('assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
     path('agendamento/<int:pk>/fotos/', views.agendamento_fotos, name='agendamento_fotos'),
+    path('assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
 
     # Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),

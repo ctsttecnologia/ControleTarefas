@@ -32,21 +32,24 @@
 
 {% block content %}
 <h1>Assinar Agendamento</h1>
-<p>Agendamento: {{ agendamento.carro }} - {{ agendamento.data_hora_agenda }}</p>
 
-<form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="assinatura" id="id_assinatura">
+<div class="container">
+    <h2>Assinar Agendamento #{{ agendamento.id }}</h2>
     
-    <div class="mb-3">
-        <label class="form-label">Assinatura:</label>
-        <canvas id="signature-pad" class="signature-pad" width="400" height="200"></canvas>
-    </div>
-    
-    <button type="button" id="clear" class="btn btn-secondary">Limpar</button>
-    <button type="button" id="save" class="btn btn-primary">Salvar Assinatura</button>
-    <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-danger">Cancelar</a>
-</form>
+    <form method="post">
+        {% csrf_token %}
+        
+        <!-- Campos ocultos para o cliente -->
+        {% if form.cliente %}
+            {{ form.cliente }}
+        {% endif %}
+        
+        <!-- Outros campos do formulário -->
+        {{ form.as_p }}
+        
+        <button type="submit" class="btn btn-primary">Assinar</button>
+    </form>
+</div>
 {% endblock %}
 
 

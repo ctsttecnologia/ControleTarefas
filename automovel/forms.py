@@ -2,12 +2,9 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-
-from .models import ChecklistCarro
 from .models import Carro, Agendamento, ChecklistCarro
 
 from datetime import datetime, timedelta
-
 
 
 class CarroForm(forms.ModelForm):
@@ -50,7 +47,14 @@ class AgendamentoForm(forms.ModelForm):
         self.fields['motivo_cancelamento'].required = False
         self.fields['descricao'].required = False
 
-        
+        def __init__(self, *args, **kwargs):
+            user = kwargs.pop('user', None)
+            super().__init__(*args, **kwargs)
+            
+            # Se o usuário estiver autenticado, define como cliente
+            if user and user.is_authenticated:
+                self.initial['cliente'] = user
+                self.fields['cliente'].widget = forms.HiddenInput()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -77,12 +81,44 @@ class AgendamentoForm(forms.ModelForm):
 
 # Checkilist do carro
 class ChecklistCarroForm(forms.ModelForm):
+
+    anexos_ocorrencia = forms.FileField(
+        widget=forms.FileInput(attrs={
+            
+            'class': 'form-control-file'
+        }),
+        required=False,
+        label='Anexos de Ocorrência'
+    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Se estiver editando, não mostre o campo de múltiplos arquivos
+        if self.instance and self.instance.pk:
+            self.fields.pop('anexos_ocorrencia', None)
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        if commit:
+            instance.save()
+            # Salve os arquivos múltiplos aqui se necessário
+            # (veja a implementação na view abaixo)
+        
+        return instance
+
     class Meta:
         model = ChecklistCarro
         fields = '__all__'
         exclude = ['usuario', 'data_criacao', 'agendamento', 'tipo']
         widgets = {
             'observacoes_gerais': forms.Textarea(attrs={'rows': 4}),
+            'foto_frontal': forms.FileInput(attrs={'accept': 'image/*', 'capture': 'environment'}),
+            'observacoes_gerais': forms.Textarea(attrs={
+                'rows': 4,
+                'class': 'form-control',
+                'placeholder': 'Descreva qualquer problema ou ocorrência importante'
+            }),
+            
         }
 
     def __init__(self, *args, **kwargs):

@@ -199,11 +199,11 @@ class Agendamento(models.Model):
         help_text=_('Foto agendamento')
     )
     cliente = models.ForeignKey(
-        get_user_model(),  
+        get_user_model(),
         on_delete=models.PROTECT,
         related_name='agendamentos',
         verbose_name=_('Cliente'),
-        null=True,  # Se for opcional
+        null=True,
         blank=True
     )
 
@@ -405,7 +405,17 @@ class ChecklistCarro(models.Model):
     coordenadas_lado_passageiro = models.JSONField(null=True, blank=True)
     
     # Dados finais
-    observacoes_gerais = models.TextField(blank=True, null=True)
+    observacoes_gerais = models.TextField(
+        verbose_name='Ocorrências',
+        blank=True, null=True,
+        help_text='Registro de quaisquer problemas ou ocorrências encontradas'
+    )
+    anexo_ocorrencia = models.FileField(
+        upload_to='checklist/ocorrencias/',
+        blank=True,
+        null=True,
+        verbose_name='Anexo de Ocorrência'
+    )
     assinatura = models.TextField()
     confirmacao = models.BooleanField(default=False)
 
