@@ -8,10 +8,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">  
+    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">
+   
 </head>
 <body>  
     
+    <div class="painel" align="center">
+        <h1>Agendamento</h1>
+    </div>
+
     <div class="container">
         
         {% if user.is_authenticated %}
@@ -20,7 +25,7 @@
             <a href="{% url 'home' %}" class="btn-home">Início</a>
         {% endif %}
 
-        <h3>Agendamento</h3>        
+        <h3>{% if object %}Editar{% else %}Novo{% endif %} Agendamento</h3>              
         <div class="painel">
             
             <!-- Botão "Voltar para Home" -->
@@ -30,6 +35,7 @@
             <a href="{% url 'profile' %}" class="btn btn-sm btn-info">Menu</a>
         </div> 
             <div class="container">
+                
                 <form method="post" enctype="multipart/form-data" id="agendamento-form">
                     {% csrf_token %}
                     
@@ -97,7 +103,7 @@
                         </div>
                         
                         <div class="col-md-6">
-                            <!-- Código da Missão -->
+                            <!-- Código do cliente CM-->
                             <div class="form-group">
                                 <label for="{{ form.cm.id_for_label }}">{{ form.cm.label }} *</label>
                                 {{ form.cm }}
@@ -109,7 +115,8 @@
                                     </div>
                                 {% endif %}
                             </div>
-                            
+
+                         
                             <!-- Quilometragem Inicial -->
                             <div class="form-group">
                                 <label for="{{ form.km_inicial.id_for_label }}">{{ form.km_inicial.label }} *</label>
@@ -220,30 +227,24 @@
                     
                     <!-- Fotos do Veículo -->
                     <div class="form-group">
-                        <label for="{{ form.fotos.id_for_label }}">{{ form.fotos.label }}</label>
+                        <label for="{{ form.foto_principal.id_for_label }}">{{ form.foto_principal.label }}</label>
                         
                         <!-- Campo de upload -->
-                        {{ form.fotos }}
+                        {{ form.foto_principal }}
                         
                         <!-- Visualização da foto atual (se existir) -->
-                        {% if form.instance.pk and form.instance.fotos %}
+                        {% if form.instance.pk and form.instance.foto_principal %}
                             <div class="current-photo mt-2">
                                 <p>Foto atual:</p>
-                                <a href="{{ form.instance.fotos.url }}" target="_blank">
-                                    <img src="{{ form.instance.fotos.url }}" class="img-thumbnail" width="150">
+                                <a href="{{ form.instance.foto_principal.url }}" target="_blank">
+                                    <img src="{{ form.instance.foto_principal.url }}" class="img-thumbnail" width="150">
                                 </a>
-                                <div class="mt-2">
-                                    <a href="{% url 'automovel:agendamento_fotos' form.instance.pk %}" 
-                                    class="btn btn-sm btn-info" target="_blank">
-                                        <i class="fas fa-expand"></i> Visualizar em tela cheia
-                                    </a>
-                                </div>
                             </div>
                         {% endif %}
                         
-                        {% if form.fotos.errors %}
+                        {% if form.foto_principal.errors %}
                             <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.fotos.errors %}
+                                {% for error in form.foto_principal.errors %}
                                     {{ error }}
                                 {% endfor %}
                             </div>
@@ -268,7 +269,7 @@
                             <i class="fas fa-save"></i> Salvar
                         </button>
                         <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-sm btn-info">
-                            <i class="fas fa-times"></i> Cancelar
+                            <i class="fas fa-eraser"></i> Cancelar
                         </a>
                     </div>
                 </form>
@@ -277,7 +278,12 @@
 {% endblock %}
 
 {% block javascript %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
+
 $(document).ready(function() {
     // Mostra/oculta motivo de cancelamento
     function toggleMotivoCancelamento() {
@@ -309,6 +315,33 @@ $(document).ready(function() {
         }
         
         return true;
+    });
+
+    $(document).ready(function() {
+        // Inicializa o Select2 no campo de cliente
+        $('#id_cliente').select2({
+            placeholder: "Selecione um cliente",
+            allowClear: true,
+            width: '100%'
+        });
+    }
+    // VALIDAÇÃO DO TAMANHO E TIPO DA FOTO (CÓDIGO NOVO)
+    $('#id_foto_principal').change(function() {
+        const file = this.files[0];
+        if (file) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('A foto não pode ser maior que 5MB');
+                $(this).val('');
+            }
+            
+            // Valida tipo de arquivo
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Apenas imagens JPEG, PNG ou GIF são permitidas');
+                $(this).val('');
+            }
+        }
     });
 });
 </script>

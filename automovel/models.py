@@ -12,6 +12,8 @@ from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
+from django.contrib.auth.models import AbstractUser
+
 
 
 class Carro(models.Model):
@@ -132,10 +134,10 @@ class Carro(models.Model):
     @property
     def status(self):
         if not self.ativo:
-            return _('Inativo')
+            return _('dezabilitado')
         if self.verificar_manutencao_pendente():
-            return _('Ativo - Manutenção Pendente')
-        return _('Ativo')
+            return _('abilitado - Manutenção Pendente')
+        return _('abilitado')
 
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placa} ({self.ano})"
@@ -177,7 +179,7 @@ class Agendamento(models.Model):
         blank=True
     )
     
-    cm = models.CharField(max_length=20, verbose_name=_('Código da Missão (CM)'))
+    cm = models.CharField(max_length=20, verbose_name=_('Código do Contrato (CM)'))
     descricao = models.TextField(blank=True, verbose_name=_('Descrição do Agendamento'))
     pedagio = models.BooleanField(default=False, verbose_name=_('Pedágio Necessário?'))
     abastecimento = models.BooleanField(
@@ -198,14 +200,6 @@ class Agendamento(models.Model):
         verbose_name=_('Foto Principal do Veículo'),
         help_text=_('Foto agendamento')
     )
-    cliente = models.ForeignKey(
-        get_user_model(),
-        on_delete=models.PROTECT,
-        related_name='agendamentos',
-        verbose_name=_('Cliente'),
-        null=True,
-        blank=True
-    )
 
     class Meta:
         db_table = 'agendamento'
@@ -216,15 +210,24 @@ class Agendamento(models.Model):
         ]
 
     def __str__(self):
-        return f"Agendamento #{self.id} - {self.veiculo.placa}"
+        try:
+            return f"Agendamento {self.id} - {self.carro.placa if self.carro else 'Sem veículo'} ({self.data_hora_agenda})"
+        except Exception as e:
+            return f"Agendamento {self.id} - {self.veiculo.placa}"
+             
        
-    assinatura = models.TextField(blank=True, verbose_name=_('Assinatura Digital'))
+    assinatura = models.ImageField(
+        upload_to='assinaturas/%Y/%m/%d/',
+        blank=True,
+        null=True,
+        verbose_name=_('Assinatura Digital')
+    )
     responsavel = models.CharField(max_length=100, verbose_name=_('Responsável pelo Agendamento'))
     ocorrencia = models.TextField(blank=True, verbose_name=_('Ocorrências Durante o Uso'))
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default='agendado',
+        default= 'agendado',
         verbose_name=_('Status do Agendamento')
     )
     
@@ -234,6 +237,9 @@ class Agendamento(models.Model):
         null=True,
         verbose_name=_('Motivo do Cancelamento')
     )
+
+    def get_status_display(self):
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
 
     def clean(self):
         super().clean()
@@ -325,7 +331,7 @@ class FotoAgendamento(models.Model):
     def __str__(self):
         return f"fotos {self.id} - Agendamento {self.agendamento.id}"
     
-class ChecklistCarro(models.Model):
+class Checklist_Carro(models.Model):
     TIPO_CHOICES = [
         ('saida', 'Checklist de Saída'),
         ('retorno', 'Checklist de Retorno'),
@@ -448,4 +454,36 @@ def atualizar_status_carro(sender, instance, **kwargs):
     else:
         instance.carro.disponivel = False
     instance.carro.save()
+
+
+
+class CustomUser(AbstractUser):
+    razao_social = models.CharField('Razão Social', max_length=100, blank=True)
+    nome_fantasia = models.CharField('Nome Fantasia', max_length=100, blank=True)
+    
+    # Corrigindo os related_name para evitar conflitos
+    groups = models.ManyToManyField(
+        'auth.Group',
+        related_name='customuser_set',
+        related_query_name='customuser',
+        blank=True,
+        verbose_name='groups'
+    )
+    
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        related_name='customuser_set',
+        related_query_name='customuser',
+        blank=True,
+        verbose_name='user permissions'
+    )
+
+    def get_full_name(self):
+        """Retorna o nome completo (first_name + last_name)"""
+        full_name = f"{self.first_name} {self.last_name}"
+        return full_name.strip()
+
+    def __str__(self):
+        """Representação em string: razao_social OU nome_fantasia OU username"""
+        return self.razao_social or self.nome_fantasia or self.username
 

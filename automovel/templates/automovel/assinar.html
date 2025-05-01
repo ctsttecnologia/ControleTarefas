@@ -1,12 +1,24 @@
 {% extends "automovel/base.html" %}
-
 {% block title %}Assinar Agendamento{% endblock %}
-
 {% block extra_css %}
-
 {% endblock %}
-
 {% block extra_js %}
+{% endblock %}
+<h1>Assinar Agendamento</h1>
+{% block content %}
+<div class="container">
+    <h2>Adicionar Assinatura para Agendamento #{{ object.id }}</h2>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-group">
+            {{ form.as_p }}
+        </div>
+        <button type="submit" class="btn btn-primary">Salvar Assinatura</button>
+        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -28,28 +40,7 @@
         });
     });
 </script>
-{% endblock %}
 
-{% block content %}
-<h1>Assinar Agendamento</h1>
-
-<div class="container">
-    <h2>Assinar Agendamento #{{ agendamento.id }}</h2>
-    
-    <form method="post">
-        {% csrf_token %}
-        
-        <!-- Campos ocultos para o cliente -->
-        {% if form.cliente %}
-            {{ form.cliente }}
-        {% endif %}
-        
-        <!-- Outros campos do formulário -->
-        {{ form.as_p }}
-        
-        <button type="submit" class="btn btn-primary">Assinar</button>
-    </form>
-</div>
 {% endblock %}
 
 

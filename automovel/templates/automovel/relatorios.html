@@ -1,82 +1,51 @@
 {% extends "automovel/base.html" %}
-{% block content %}
 {% load static %}
 
+{% block content %}
 <link rel="stylesheet" href="{% static 'csscarro/relatorios.css' %}">
 <link rel="stylesheet" href="{% static 'csscarro/automovel.css' %}">
 
-
 <div class="container relatorios-container">
     <h2 class="mb-4"><i class="fas fa-file-alt"></i> Relatórios</h2>
-    
-    <div class="painel-relatorios mb-4">            
+    <div class="painel"> 
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
+        {% endif %}
+    </div>      
+    <div class="painel">            
         <a href="{% url 'home' %}" class="btn btn-outline-secondary">
             <i class="fas fa-home"></i> Início
         </a>
         <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
             <i class="fas fa-user-cog"></i> Menu
         </a>
-    </div>        
-    
-    <style>
-        @page {
-            size: A4;
-            margin: 2cm;
-        }
-        body {
-            font-family: Arial, sans-serif;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            color: #2c5282;
-            font-size: 24px;
-        }
-        .info {
-            margin-bottom: 30px;
-        }
-        .photo-container {
-            text-align: center;
-            margin-top: 30px;
-        }
-        .photo {
-            max-width: 100%;
-            max-height: 500px;
-            margin-bottom: 20px;
-        }
-        .footer {
-            font-size: 10px;
-            text-align: center;
-            margin-top: 30px;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>Relatório de Foto Principal</h1>
-        <p>Agendamento #{{ agendamento.id }}</p>
-    </div>
-    
-    <div class="info">
-        <p><strong>Veículo:</strong> {{ agendamento.veiculo.marca }} {{ agendamento.veiculo.modelo }} - {{ agendamento.veiculo.placa }}</p>
-        <p><strong>Data do Agendamento:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
-        <p><strong>Responsável:</strong> {{ agendamento.responsavel }}</p>
-    </div>
-    
-    <div class="photo-container">
-        <img class="photo" src="{{ foto_principal_url }}" />
-        <p>Foto principal do veículo</p>
-    </div>
-    
-    <div class="footer">
-        Relatório gerado em {% now "d/m/Y H:i" %} | Página <pdf:pagenumber> de <pdf:pagecount>
     </div>
 
-
-
+    {% if foto_principal_url %}
+    <div class="photo-report">
+        <div class="header">
+            <h1>Relatório de Foto Principal</h1>
+            <p>Agendamento #{{ agendamento.id }}</p>
+        </div>
+        
+        <div class="info">
+            <p><strong>Veículo:</strong> {{ agendamento.carro.marca }} {{ agendamento.carro.modelo }} - {{ agendamento.carro.placa }}</p>
+            <p><strong>Data do Agendamento:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
+            <p><strong>Responsável:</strong> {{ agendamento.responsavel }}</p>
+        </div>
+        
+        <div class="photo-container">
+            <img class="photo" src="{{ foto_principal_url }}" alt="Foto do veículo"/>
+            <p>Foto principal do veículo</p>
+        </div>
+        
+        <div class="footer">
+            Relatório gerado em {% now "d/m/Y H:i" %}
+        </div>
+    </div>
+    {% endif %}
 
     <div class="card-group mt-4">
         <!-- Card Veículos -->
@@ -87,11 +56,14 @@
                 </h5>
             </div>
             <div class="card-body text-center">
-                <a href="{% url 'automovel:carros_pdf' %}" class="btn btn-danger btn-report mb-2">
-                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                <a href="{% url 'automovel:relatorio_carros_word' %}" class="btn btn-primary mr-2">
+                    <i class="fas fa-file-word"></i> Exportar para Word
                 </a>
                 <a href="{% url 'automovel:carros_excel' %}" class="btn btn-success btn-report mb-2">
                     <i class="fas fa-file-excel"></i> Exportar Excel
+                </a>
+                <a href="{% url 'automovel:relatorio_carros_xml' %}" class="btn btn-secondary">
+                    <i class="fas fa-file-code"></i> Exportar para XML
                 </a>
             </div>
         </div>
@@ -104,11 +76,14 @@
                 </h5>
             </div>
             <div class="card-body text-center">
-                <a href="{% url 'automovel:agendamentos_pdf' %}" class="btn btn-danger btn-report mb-2">
-                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                <a href="{% url 'automovel:relatorio_agendamentos_word' %}" class="btn btn-primary mr-2">
+                    <i class="fas fa-file-word"></i> Exportar para Word
                 </a>
                 <a href="{% url 'automovel:agendamentos_excel' %}" class="btn btn-success btn-report mb-2">
                     <i class="fas fa-file-excel"></i> Exportar Excel
+                </a>
+                <a href="{% url 'automovel:relatorio_agendamentos_xml' %}" class="btn btn-secondary">
+                    <i class="fas fa-file-code"></i> Exportar para XML
                 </a>
             </div>
         </div>

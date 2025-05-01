@@ -1,10 +1,15 @@
 # automovel/forms.py
 from django import forms
 from django.core.exceptions import ValidationError
-
-from .models import Carro, Agendamento, ChecklistCarro
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
+from django.db.models import Q
 
 from datetime import datetime, timedelta
+
+from .models import Carro, Agendamento, Checklist_Carro
+
+
 
 
 class CarroForm(forms.ModelForm):
@@ -32,29 +37,24 @@ class AgendamentoForm(forms.ModelForm):
             'ocorrencia': forms.Textarea(attrs={'rows': 3}),
             'motivo_cancelamento': forms.Textarea(attrs={'rows': 3}),
             'abastecimento': forms.CheckboxInput(),
+            'cliente': forms.Select(attrs={'class': 'select2'}),
         }
-
 
     def clean(self):
         cleaned_data = super().clean()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        User = get_user_model()
+        
+        # Configurações de campos obrigatórios
         self.fields['data_hora_devolucao'].required = False
         self.fields['km_final'].required = False
         self.fields['foto_principal'].required = False
         self.fields['ocorrencia'].required = False
         self.fields['motivo_cancelamento'].required = False
         self.fields['descricao'].required = False
-
-        def __init__(self, *args, **kwargs):
-            user = kwargs.pop('user', None)
-            super().__init__(*args, **kwargs)
-            
-            # Se o usuário estiver autenticado, define como cliente
-            if user and user.is_authenticated:
-                self.initial['cliente'] = user
-                self.fields['cliente'].widget = forms.HiddenInput()
+                
 
     def clean(self):
         cleaned_data = super().clean()
@@ -107,7 +107,7 @@ class ChecklistCarroForm(forms.ModelForm):
         return instance
 
     class Meta:
-        model = ChecklistCarro
+        model = Checklist_Carro
         fields = '__all__'
         exclude = ['usuario', 'data_criacao', 'agendamento', 'tipo']
         widgets = {
@@ -138,3 +138,16 @@ class ChecklistCarroForm(forms.ModelForm):
                 self.fields[field].widget.attrs.update({
                     'min': 0
                 })
+
+
+class AssinaturaForm(forms.ModelForm):
+    class Meta:
+        model = Agendamento
+        fields = ['assinatura']
+        widgets = {
+            'assinatura': forms.ClearableFileInput(attrs={
+                'accept': 'image/*',
+                'capture': 'environment'  # Para dispositivos móveis
+            })
+        }
+

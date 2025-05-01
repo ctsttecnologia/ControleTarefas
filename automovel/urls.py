@@ -1,40 +1,48 @@
-from django.urls import path
+
 from . import views
-from .views import relatorio_fotos_pdf
+from django.urls import path
+from .views import (
+    lista_agendamentos, adicionar_agendamento, editar_agendamento,
+    excluir_agendamento, AdicionarAssinaturaView, checklist_carro,
+    agendamento_fotos)
 
 
 
 app_name = 'automovel'
 
 urlpatterns = [
-    # Carros
+    # URLs de Carros
     path('carros/', views.lista_carros, name='lista_carros'),
     path('carros/adicionar/', views.adicionar_carro, name='adicionar_carro'),
     path('carros/editar/<int:pk>/', views.editar_carro, name='editar_carro'),
     path('carros/excluir/<int:pk>/', views.excluir_carro, name='excluir_carro'),
     
-    # Agendamentos
+    # URLs de Agendamentos
     path('agendamentos/', views.lista_agendamentos, name='lista_agendamentos'),
     path('agendamentos/adicionar/', views.adicionar_agendamento, name='adicionar_agendamento'),
-    path('editar/<int:pk>/', views.editar_agendamento, name='editar_agendamento'),
-    path('excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
-    path('assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
-    path('agendamento/<int:pk>/fotos/', views.agendamento_fotos, name='agendamento_fotos'),
-    path('assinar/<int:pk>/', views.assinar_agendamento, name='assinar_agendamento'),
-
-    # Relatórios
+    path('agendamentos/editar/<int:pk>/', views.editar_agendamento, name='editar_agendamento'),
+    path('agendamentos/excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
+    path('agendamentos/<int:pk>/fotos/', views.agendamento_fotos, name='agendamento_fotos'),
+    path('agendamentos/<int:pk>/assinatura/', AdicionarAssinaturaView.as_view(), name='adicionar_assinatura'), 
+    path('agendamentos/<int:pk>/checklist_carro/', checklist_carro, name='checklist_carro'),
+    path('checklist/<str:tipo>/', views.checklist, name='criar_checklist'),
+    #path('agendamentos/<int:pk>/relatorio-foto/', views.relatorio_foto_pdf, name='relatorio_foto_pdf'),
+    
+    # URLs de Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),
-    path('dashboard/', views.dashboard, name='dashboard'),
-    path('agendamento/<int:pk>/relatorio-foto/', views.relatorio_fotos_pdf, name='relatorio_foto_pdf'),
-    path('relatorios/carros/pdf/', views.exportar_pdf, {'relatorio_tipo': 'carros'}, name='carros_pdf'),
-    path('relatorios/agendamentos/pdf/', views.exportar_pdf, {'relatorio_tipo': 'agendamentos'}, name='agendamentos_pdf'),
     path('relatorios/carros/excel/', views.exportar_excel, {'relatorio_tipo': 'carros'}, name='carros_excel'),
     path('relatorios/agendamentos/excel/', views.exportar_excel, {'relatorio_tipo': 'agendamentos'}, name='agendamentos_excel'),
+    path('relatorios/carros/word/', views.exportar_word, {'relatorio_tipo': 'carros'}, name='relatorio_carros_word'),
+    path('relatorios/agendamentos/word/', views.exportar_word, {'relatorio_tipo': 'agendamentos'}, name='relatorio_agendamentos_word'),
+    path('relatorios/carros/xml/', views.exportar_xml, {'relatorio_tipo': 'carros'}, name='relatorio_carros_xml'),
+    path('relatorios/agendamentos/xml/', views.exportar_xml, {'relatorio_tipo': 'agendamentos'}, name='relatorio_agendamentos_xml'),
 
-    path('checklist/<str:tipo>/', views.checklist, name='checklist'),
-    #path('checklists/', views.lista_checklists, name='lista_checklists'),
-    #path('checklist/<int:pk>/', views.detalhes_checklist, name='detalhes_checklist'),
-    path('checklist/<int:agendamento_id>/<str:tipo>/', views.checklist, name='criar_checklist'),
-    path('agendamentos/<int:agendamento_id>/checklist/', views.formulario_checklist, name='formulariochecklist'),
+
+    
+    #path('checklist/<int:agendamento_id>/<str:tipo>/', views.formulario_checklist, name='formulariochecklist'),
+    
+    # Dashboard
+    path('dashboard/', views.dashboard, name='dashboard'),
+   
 ]
 
