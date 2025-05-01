@@ -4,8 +4,7 @@ from django.urls import path
 from .views import (
     lista_agendamentos, adicionar_agendamento, editar_agendamento,
     excluir_agendamento, AdicionarAssinaturaView, checklist_carro,
-    agendamento_fotos)
-
+    agendamento_fotos, relatorio_checklist_word, relatorio_fotografico_word)
 
 
 app_name = 'automovel'
@@ -26,7 +25,7 @@ urlpatterns = [
     path('agendamentos/<int:pk>/assinatura/', AdicionarAssinaturaView.as_view(), name='adicionar_assinatura'), 
     path('agendamentos/<int:pk>/checklist_carro/', checklist_carro, name='checklist_carro'),
     path('checklist/<str:tipo>/', views.checklist, name='criar_checklist'),
-    #path('agendamentos/<int:pk>/relatorio-foto/', views.relatorio_foto_pdf, name='relatorio_foto_pdf'),
+   
     
     # URLs de Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),
@@ -36,11 +35,8 @@ urlpatterns = [
     path('relatorios/agendamentos/word/', views.exportar_word, {'relatorio_tipo': 'agendamentos'}, name='relatorio_agendamentos_word'),
     path('relatorios/carros/xml/', views.exportar_xml, {'relatorio_tipo': 'carros'}, name='relatorio_carros_xml'),
     path('relatorios/agendamentos/xml/', views.exportar_xml, {'relatorio_tipo': 'agendamentos'}, name='relatorio_agendamentos_xml'),
-
-
-    
-    #path('checklist/<int:agendamento_id>/<str:tipo>/', views.formulario_checklist, name='formulariochecklist'),
-    
+    path('agendamento/<int:agendamento_id>/relatorio_fotografico_word/', relatorio_fotografico_word, name='relatorio_fotografico_word'),
+    path('checklist/<int:checklist_id>/relatorio_word/', views.relatorio_checklist_word, name='relatorio_checklist_word'),
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
    

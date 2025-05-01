@@ -100,231 +100,230 @@ document.addEventListener('DOMContentLoaded', function() {
         </a>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="checklist-form">
-        {% csrf_token %}
-                    
-                    <!-- Seção Frontal -->
-                    <div class="section">
-                        <p><i class="fas fa-car-front"></i> Revisão Frontal</p>
-                        <div class="form-group">
-                            {{ form.revisao_frontal_status.label_tag }}
-                            {{ form.revisao_frontal_status }}
-                        </div>
+        <form method="post" enctype="multipart/form-data" class="checklist-form">
+            {% csrf_token %}
+      
+            <!-- Seção Frontal -->
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Frontal</p>
+                <div class="form-group">
+                    {{ form.revisao_frontal_status.label_tag }}
+                    {{ form.revisao_frontal_status }}
+                </div>
                         
-                        <div class="form-group">
-                            <label>{{ form.foto_frontal.label }}</label>
-                            <div class="camera-options">
-                                <!-- Input de arquivo oculto -->
-                                <input type="file" id="foto_frontal_input" name="foto_frontal" accept="image/*" capture="environment" style="display: none;">
+                <div class="form-group">
+                    <label>{{ form.foto_frontal.label }}</label>
+                        <div class="camera-options">
+                            <!-- Input de arquivo oculto -->
+                            <input type="file" id="foto_frontal_input" name="foto_frontal" accept="image/*" capture="environment" style="display: none;">
                                 
-                                <!-- Botões de ação -->
-                                <button type="button" class="btn-camera" onclick="document.getElementById('foto_frontal_input').click()">
-                                    <i class="fas fa-camera"></i> Tirar Foto
-                                </button>
-                                
-                                <button type="button" class="btn-gallery" onclick="document.getElementById('foto_frontal_input').click()">
-                                    <i class="fas fa-images"></i> Escolher da Galeria
-                                </button>
-                            </div>
+                            <!-- Botões de ação -->
+                            <button type="button" class="btn-camera" onclick="document.getElementById('foto_frontal_input').click()">
+                                <i class="fas fa-camera"></i> Tirar Foto
+                            </button>
+                              
+                            <button type="button" class="btn-gallery" onclick="document.getElementById('foto_frontal_input').click()">
+                                <i class="fas fa-images"></i> Escolher da Galeria
+                            </button>
+                        </div>
                             
                             <!-- Visualização da foto -->
-                            <div class="photo-preview" id="foto_frontal_preview">
-                                {% if form.instance.foto_frontal %}
-                                    <img src="{{ form.instance.foto_frontal.url }}" alt="Foto frontal atual">
-                                {% endif %}
-                            </div>
+                        <div class="photo-preview" id="foto_frontal_preview">
+                            {% if form.instance.foto_frontal %}
+                                <img src="{{ form.instance.foto_frontal.url }}" alt="Foto frontal atual">
+                            {% endif %}
+                        </div>
                             
-                            <!-- Coordenadas de avaria (se aplicável) -->
-                            <div class="coordinates-container" style="display: none;">
-                                <input type="hidden" id="coordenadas_avaria_frontal" name="coordenadas_avaria_frontal">
-                                <p>Clique na imagem para marcar avarias</p>
-                            </div>
+                        <!-- Coordenadas de avaria (se aplicável) -->
+                        <div class="coordinates-container" style="display: none;">
+                            <input type="hidden" id="coordenadas_avaria_frontal" name="coordenadas_avaria_frontal">
+                            <p>Clique na imagem para marcar avarias</p>
                         </div>
+                </div>
                         
-                        <div class="form-group">
-                            {{ form.observacao_frontal.label_tag }}
-                            {{ form.observacao_frontal }}
-                        </div>
-                    </div>
-        
-                    <!-- Seção Frontal Trazeira -->
-                    <div class="section">
-                        <p><i class="fas fa-car-front"></i> Revisão Trazeira</p>
-                        <div class="form-group">
-                            {{ form.revisao_trazeira_status.label_tag }}
-                            {{ form.revisao_trazeira_status }}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>{{ form.foto_trazeira.label }}</label>
-                            <div class="camera-options">
-                                <!-- Input de arquivo oculto -->
-                                <input type="file" id="foto_trazeira_input" name="foto_trazeira" accept="image/*" capture="environment" style="display: none;">
-                                
-                                <!-- Botões de ação -->
-                                <button type="button" class="btn-camera" onclick="document.getElementById('foto_trazeira_input').click()">
-                                    <i class="fas fa-camera"></i> Tirar Foto
-                                </button>
-                                
-                                <button type="button" class="btn-gallery" onclick="document.getElementById('foto_trazeira_input').click()">
-                                    <i class="fas fa-images"></i> Escolher da Galeria
-                                </button>
-                            </div>
-                            
-                            <!-- Visualização da foto -->
-                            <div class="photo-preview" id="foto_trazeira_preview">
-                                {% if form.instance.foto_trazeira %}
-                                    <img src="{{ form.instance.foto_trazeira.url }}" alt="Foto trazeira atual">
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Coordenadas de avaria (se aplicável) -->
-                            <div class="coordinates-container" style="display: none;">
-                                <input type="hidden" id="coordenadas_avaria_trazeira" name="coordenadas_avaria_trazeira">
-                                <p>Clique na imagem para marcar avarias</p>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            {{ form.observacao_trazeira.label_tag }}
-                            {{ form.observacao_trazeira }}
-                        </div>
-                    </div>
-                    
-                    <!-- Seção lado_motorista -->
-                    <div class="section">
-                        <p><i class="fas fa-car-front"></i> Revisão Lado Motorista</p>
-                        <div class="form-group">
-                            {{ form.revisao_lado_motorista_status.label_tag }}
-                            {{ form.revisao_lado_motorista_status }}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>{{ form.foto_lado_motorista.label }}</label>
-                            <div class="camera-options">
-                                <!-- Input de arquivo oculto -->
-                                <input type="file" id="foto_lado_motorista_input" name="foto_lado_motorista" accept="image/*" capture="environment" style="display: none;">
-                                
-                                <!-- Botões de ação -->
-                                <button type="button" class="btn-camera" onclick="document.getElementById('foto_lado_motorista_input').click()">
-                                    <i class="fas fa-camera"></i> Tirar Foto
-                                </button>
-                                
-                                <button type="button" class="btn-gallery" onclick="document.getElementById('foto_lado_motorista_input').click()">
-                                    <i class="fas fa-images"></i> Escolher da Galeria
-                                </button>
-                            </div>
-                            
-                            <!-- Visualização da foto -->
-                            <div class="photo-preview" id="foto_lado_motorista_preview">
-                                {% if form.instance.foto_lado_motorista %}
-                                    <img src="{{ form.instance.foto_lado_motorista.url }}" alt="Foto lado_motorista atual">
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Coordenadas de avaria (se aplicável) -->
-                            <div class="coordinates-container" style="display: none;">
-                                <input type="hidden" id="coordenadas_avaria_lado_motorista" name="coordenadas_avaria_lado_motorista">
-                                <p>Clique na imagem para marcar avarias</p>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            {{ form.observacao_lado_motorista.label_tag }}
-                            {{ form.observacao_lado_motorista }}
-                        </div>
-                    </div>
-        
-                    <!-- Seção lado_passageiro -->
-                    <div class="section">
-                        <p><i class="fas fa-car-front"></i> Revisão Lado Passageiro</p>
-                        <div class="form-group">
-                            {{ form.revisao_lado_passageiro_status.label_tag }}
-                            {{ form.revisao_lado_passageiro_status }}
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>{{ form.foto_lado_passageiro.label }}</label>
-                            <div class="camera-options">
-                                <!-- Input de arquivo oculto -->
-                                <input type="file" id="foto_lado_passageiro_input" name="foto_lado_passageiro" accept="image/*" capture="environment" style="display: none;">
-                                
-                                <!-- Botões de ação -->
-                                <button type="button" class="btn-camera" onclick="document.getElementById('foto_lado_passageiro_input').click()">
-                                    <i class="fas fa-camera"></i> Tirar Foto
-                                </button>
-                                
-                                <button type="button" class="btn-gallery" onclick="document.getElementById('foto_lado_passageiro_input').click()">
-                                    <i class="fas fa-images"></i> Escolher da Galeria
-                                </button>
-                            </div>
-                            
-                            <!-- Visualização da foto -->
-                            <div class="photo-preview" id="foto_lado_passageiro_preview">
-                                {% if form.instance.foto_lado_passageiro %}
-                                    <img src="{{ form.instance.foto_lado_passageiro.url }}" alt="Foto lado_passageiro atual">
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Coordenadas de avaria (se aplicável) -->
-                            <div class="coordinates-container" style="display: none;">
-                                <input type="hidden" id="coordenadas_avaria_lado_passageiro" name="coordenadas_avaria_lado_passageiro">
-                                <p>Clique na imagem para marcar avarias</p>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            {{ form.observacao_lado_passageiro.label_tag }}
-                            {{ form.observacao_lado_passageiro }}
-                        </div>
-                    </div>
-        
-                    <div class="section occurrence-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Registro de Ocorrências</h3>
-                        <div class="form-group">
-                            <label for="ocorrencia">Descreva qualquer ocorrência relevante:</label>
-                            <textarea id="ocorrencia" name="ocorrencia" class="form-control" rows="4" 
-                                    placeholder="Descreva aqui qualquer problema, dano ou ocorrência importante encontrada durante a vistoria"></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Anexar comprovantes (opcional):</label>
-                            <input type="file" id="anexo_ocorrencia" name="anexo_ocorrencia" multiple 
-                                accept="image/*,.pdf,.doc,.docx" class="form-control">
-                            <small class="form-text text-muted">Você pode anexar fotos ou documentos comprobatórios</small>
-                        </div>
-                    </div>
-        
-                    <!-- Seção de Assinatura (existente) -->
-                    <div class="section signature-section">
-                        <h3><i class="fas fa-signature"></i> Confirmação</h3>
-                        <div class="form-group">
-                            <label>Assinatura Digital:</label>
-                            <div id="signature-pad" class="signature-pad">
-                                <div class="signature-pad--body">
-                                    <canvas id="signature-canvas"></canvas>
-                                </div>
-                                <div class="signature-pad--footer">
-                                    <button type="button" id="clear-signature" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-eraser"></i> Limpar
-                                    </button>
-                                </div>
-                            </div>
-                            <input type="hidden" id="id_assinatura" name="assinatura">
-                        </div>
-                        
-                        <div class="form-group form-check">
-                            <input type="checkbox" class="form-check-input" id="confirmacao" name="confirmacao" required>
-                            <label class="form-check-label" for="confirmacao">
-                                Confirmo que as informações estão corretas
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary btn-lg submit-btn">
-                        <i class="fas fa-save"></i> Salvar Checklist
-                    </button>
-                </form>
+                <div class="form-group">
+                    {{ form.observacao_frontal.label_tag }}
+                    {{ form.observacao_frontal }}
+                </div>
             </div>
-            {% endblock %}
+        
+            <!-- Seção Frontal Trazeira -->
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Trazeira</p>
+                    <div class="form-group">
+                        {{ form.revisao_trazeira_status.label_tag }}
+                        {{ form.revisao_trazeira_status }}
+                    </div>
+                        
+                    <div class="form-group">
+                        <label>{{ form.foto_trazeira.label }}</label>
+                        <div class="camera-options">
+                            <!-- Input de arquivo oculto -->
+                            <input type="file" id="foto_trazeira_input" name="foto_trazeira" accept="image/*" capture="environment" style="display: none;">
+                                
+                            <!-- Botões de ação -->
+                            <button type="button" class="btn-camera" onclick="document.getElementById('foto_trazeira_input').click()">
+                                <i class="fas fa-camera"></i> Tirar Foto
+                            </button>
+                                
+                            <button type="button" class="btn-gallery" onclick="document.getElementById('foto_trazeira_input').click()">
+                                <i class="fas fa-images"></i> Escolher da Galeria
+                            </button>
+                        </div>
+                            
+                            <!-- Visualização da foto -->
+                        <div class="photo-preview" id="foto_trazeira_preview">
+                            {% if form.instance.foto_trazeira %}
+                                <img src="{{ form.instance.foto_trazeira.url }}" alt="Foto trazeira atual">
+                            {% endif %}
+                        </div>
+                            
+                        <!-- Coordenadas de avaria (se aplicável) -->
+                        <div class="coordinates-container" style="display: none;">
+                            <input type="hidden" id="coordenadas_avaria_trazeira" name="coordenadas_avaria_trazeira">
+                            <p>Clique na imagem para marcar avarias</p>
+                        </div>
+                    </div>
+                        
+                    <div class="form-group">
+                        {{ form.observacao_trazeira.label_tag }}
+                        {{ form.observacao_trazeira }}
+                    </div>
+            </div>
+                    
+            <!-- Seção lado_motorista -->
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Lado Motorista</p>
+                <div class="form-group">
+                    {{ form.revisao_lado_motorista_status.label_tag }}
+                    {{ form.revisao_lado_motorista_status }}
+                </div>   
+                        
+                <div class="form-group">
+                    <label>{{ form.foto_lado_motorista.label }}</label>
+                    <div class="camera-options">
+                        <!-- Input de arquivo oculto -->
+                        <input type="file" id="foto_lado_motorista_input" name="foto_lado_motorista" accept="image/*" capture="environment" style="display: none;">
+                            
+                        <!-- Botões de ação -->
+                        <button type="button" class="btn-camera" onclick="document.getElementById('foto_lado_motorista_input').click()">
+                            <i class="fas fa-camera"></i> Tirar Foto
+                        </button>
+                            
+                        <button type="button" class="btn-gallery" onclick="document.getElementById('foto_lado_motorista_input').click()">
+                            <i class="fas fa-images"></i> Escolher da Galeria
+                        </button>
+                    </div>    
+                            
+                    <!-- Visualização da foto -->
+                    <div class="photo-preview" id="foto_lado_motorista_preview">
+                        {% if form.instance.foto_lado_motorista %}
+                        <img src="{{ form.instance.foto_lado_motorista.url }}" alt="Foto lado_motorista atual">
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Coordenadas de avaria (se aplicável) -->
+                    <div class="coordinates-container" style="display: none;">
+                        <input type="hidden" id="coordenadas_avaria_lado_motorista" name="coordenadas_avaria_lado_motorista">
+                        <p>Clique na imagem para marcar avarias</p>
+                    </div>
+                </div>       
+                        
+                    <div class="form-group">
+                        {{ form.observacao_lado_motorista.label_tag }}
+                        {{ form.observacao_lado_motorista }}
+                    </div>
+            </div>        
+        
+            <!-- Seção lado_passageiro -->
+            <div class="section">
+                <p><i class="fas fa-car-front"></i> Revisão Lado Passageiro</p>
+                <div class="form-group">
+                    {{ form.revisao_lado_passageiro_status.label_tag }}
+                    {{ form.revisao_lado_passageiro_status }}
+                </div>        
+                        
+                <div class="form-group">
+                    <label>{{ form.foto_lado_passageiro.label }}</label>
+                    <div class="camera-options">
+                        <!-- Input de arquivo oculto -->
+                        <input type="file" id="foto_lado_passageiro_input" name="foto_lado_passageiro" accept="image/*" capture="environment" style="display: none;">
+                        
+                        <!-- Botões de ação -->
+                        <button type="button" class="btn-camera" onclick="document.getElementById('foto_lado_passageiro_input').click()">
+                            <i class="fas fa-camera"></i> Tirar Foto
+                        </button>
+                        
+                        <button type="button" class="btn-gallery" onclick="document.getElementById('foto_lado_passageiro_input').click()">
+                            <i class="fas fa-images"></i> Escolher da Galeria
+                        </button>
+                    </div>        
+                            
+                    <!-- Visualização da foto -->
+                    <div class="photo-preview" id="foto_lado_passageiro_preview">
+                        {% if form.instance.foto_lado_passageiro %}
+                            <img src="{{ form.instance.foto_lado_passageiro.url }}" alt="Foto lado_passageiro atual">
+                        {% endif %}
+                    </div>       
+                            
+                    <!-- Coordenadas de avaria (se aplicável) -->
+                    <div class="coordinates-container" style="display: none;">
+                        <input type="hidden" id="coordenadas_avaria_lado_passageiro" name="coordenadas_avaria_lado_passageiro">
+                        <p>Clique na imagem para marcar avarias</p>
+                    </div>       
+                </div>
+                        
+                <div class="form-group">
+                    {{ form.observacao_lado_passageiro.label_tag }}
+                    {{ form.observacao_lado_passageiro }}
+                </div>        
+            </div>
+        
+            <div class="section occurrence-section">
+                <h3><i class="fas fa-exclamation-triangle"></i> Registro de Ocorrências</h3>
+                <div class="form-group">
+                    <label for="ocorrencia">Descreva qualquer ocorrência relevante:</label>
+                    <textarea id="ocorrencia" name="ocorrencia" class="form-control" rows="4" 
+                            placeholder="Descreva aqui qualquer problema, dano ou ocorrência importante encontrada durante a vistoria"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Anexar comprovantes (opcional):</label>
+                    <input type="file" id="anexo_ocorrencia" name="anexo_ocorrencia" multiple 
+                        accept="image/*,.pdf,.doc,.docx" class="form-control">
+                    <small class="form-text text-muted">Você pode anexar fotos ou documentos comprobatórios</small>
+                </div>
+            </div>        
+        
+            <!-- Seção de Assinatura (existente) -->
+            <div class="section signature-section">
+                <h3><i class="fas fa-signature"></i> Confirmação</h3>
+                <div class="form-group">
+                    <label>Assinatura Digital:</label>
+                    <div id="signature-pad" class="signature-pad">
+                        <div class="signature-pad--body">
+                            <canvas id="signature-canvas"></canvas>
+                        </div>
+                        <div class="signature-pad--footer">
+                            <button type="button" id="clear-signature" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-eraser"></i> Limpar
+                            </button>
+                        </div>
+                    </div>
+                    <input type="hidden" id="id_assinatura" name="assinatura">
+                </div>        
+                        
+                <div class="form-group form-check">
+                    <input type="checkbox" class="form-check-input" id="confirmacao" name="confirmacao" required>
+                    <label class="form-check-label" for="confirmacao">
+                        Confirmo que as informações estão corretas
+                    </label>
+                </div>
+            </div>    
+                <button type="submit" class="btn btn-primary btn-lg submit-btn">
+                    <i class="fas fa-save"></i> Salvar Checklist
+                </button>
+        </form>
+</div>
+{% endblock %}
 

@@ -36,15 +36,13 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
-    justify-content: center;
+    justify-content: flex-start; /* Alterado para flex-start */
     padding: 20px;
     font-size: 0.9rem;
 }
 
 /* Estilo base para os cards */
 .card {
-    align-items: left;
-    justify-content: left;
     background-color: #ffffff;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -56,6 +54,7 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
+   
 }
 
 .card:hover {
