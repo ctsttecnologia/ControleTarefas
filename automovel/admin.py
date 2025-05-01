@@ -161,29 +161,31 @@ class AgendamentoAdmin(admin.ModelAdmin):
         )
     cancelar_agendamento.short_description = "Cancelar agendamentos selecionados"
 
+# automovel/admin.py (revisado para Checklist_Carro)
+
 class ChecklistCarroAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'agendamento_link', 'tipo_display', 'data_criacao', 
-        'km_inicial', 'km_final', 'confirmacao'
+        'km_inicial', 'km_final', 'confirmacao_display'
     )
     list_filter = ('tipo', 'confirmacao', 'data_criacao')
     search_fields = (
-        'agendamento__carro__placa', 'agendamento__funcionario',
-        'usuario__username'
+        'id', 'agendamento__carro__placa',
+        'agendamento__funcionario', 'usuario__username'
     )
     date_hierarchy = 'data_criacao'
     readonly_fields = (
-        'agendamento_link', 'data_criacao', 'foto_frontal_preview',
-        'foto_trazeira_preview', 'foto_lado_motorista_preview',
-        'foto_lado_passageiro_preview'
+        'id', 'agendamento_link', 'data_criacao', 
+        'foto_frontal_preview', 'foto_trazeira_preview',
+        'foto_lado_motorista_preview', 'foto_lado_passageiro_preview'
     )
     raw_id_fields = ('agendamento', 'usuario')
     
     fieldsets = (
         ('Informações Básicas', {
             'fields': (
-                'agendamento_link', 'usuario', 'tipo', 'data_criacao', 
-                'confirmacao', 'assinatura'
+                'checklist_id', 'agendamento_link', 'usuario', 'tipo', 
+                'data_criacao', 'confirmacao', 'assinatura'
             )
         }),
         ('Quilometragem', {
@@ -201,61 +203,89 @@ class ChecklistCarroAdmin(admin.ModelAdmin):
                 'foto_trazeira_preview', 'coordenadas_avaria_trazeira'
             )
         }),
-        ('Checklist Lateral', {
+        ('Checklist Lateral Motorista', {
             'fields': (
                 'revisao_lado_motorista_status', 'foto_lado_motorista',
-                'foto_lado_motorista_preview', 'coordenadas_avaria_lado_motorista',
+                'foto_lado_motorista_preview', 'coordenadas_avaria_lado_motorista'
+            )
+        }),
+        ('Checklist Lateral Passageiro', {
+            'fields': (
                 'revisao_lado_passageiro_status', 'foto_lado_passageiro',
                 'foto_lado_passageiro_preview', 'coordenadas_lado_passageiro'
             )
         }),
-        ('Observações', {
-            'fields': ('observacoes_gerais',),
+        ('Observações e Anexos', {
+            'fields': ('observacoes_gerais', 'anexo_ocorrencia'),
             'classes': ('collapse',)
         }),
     )
     
     def agendamento_link(self, obj):
-        url = reverse("admin:frota_agendamento_change", args=[obj.agendamento.id])
-        return mark_safe(f'<a href="{url}">{obj.agendamento}</a>')
+        url = reverse("admin:automovel_agendamento_change", args=[obj.agendamento.id])
+        return format_html('<a href="{}">{}</a>', url, obj.agendamento)
     agendamento_link.short_description = 'Agendamento'
-    
+
     def tipo_display(self, obj):
-        colors = {
-            'saida': 'blue',
-            'retorno': 'green'
-        }
+        color = 'blue' if obj.tipo == 'saida' else 'green'
         return format_html(
             '<span style="color: {};">{}</span>',
-            colors.get(obj.tipo, 'black'),
+            color,
             obj.get_tipo_display()
         )
     tipo_display.short_description = 'Tipo'
-    
+
+    def confirmacao_display(self, obj):
+        icon = '✅' if obj.confirmacao else '❌'
+        color = 'green' if obj.confirmacao else 'red'
+        return format_html(
+            '<span style="color: {};">{}</span>',
+            color,
+            icon
+        )
+    confirmacao_display.short_description = 'Confirmado'
+
     def foto_frontal_preview(self, obj):
         if obj.foto_frontal:
-            return mark_safe(f'<img src="{obj.foto_frontal.url}" width="200" />')
+            return format_html(
+                '<img src="{}" width="200" style="border: 1px solid #ddd; padding: 5px;"/>',
+                obj.foto_frontal.url
+            )
         return "-"
     foto_frontal_preview.short_description = 'Prévia Foto Frontal'
-    
-    # Criar métodos similares para as outras fotos (trazeira, lado_motorista, lado_passageiro)
+
     def foto_trazeira_preview(self, obj):
         if obj.foto_trazeira:
-            return mark_safe(f'<img src="{obj.foto_trazeira.url}" width="200" />')
+            return format_html(
+                '<img src="{}" width="200" style="border: 1px solid #ddd; padding: 5px;"/>',
+                obj.foto_trazeira.url
+            )
         return "-"
     foto_trazeira_preview.short_description = 'Prévia Foto Traseira'
-    
+
     def foto_lado_motorista_preview(self, obj):
         if obj.foto_lado_motorista:
-            return mark_safe(f'<img src="{obj.foto_lado_motorista.url}" width="200" />')
+            return format_html(
+                '<img src="{}" width="200" style="border: 1px solid #ddd; padding: 5px;"/>',
+                obj.foto_lado_motorista.url
+            )
         return "-"
     foto_lado_motorista_preview.short_description = 'Prévia Lado Motorista'
-    
+
     def foto_lado_passageiro_preview(self, obj):
         if obj.foto_lado_passageiro:
-            return mark_safe(f'<img src="{obj.foto_lado_passageiro.url}" width="200" />')
+            return format_html(
+                '<img src="{}" width="200" style="border: 1px solid #ddd; padding: 5px;"/>',
+                obj.foto_lado_passageiro.url
+            )
         return "-"
     foto_lado_passageiro_preview.short_description = 'Prévia Lado Passageiro'
+
+    def get_readonly_fields(self, request, obj=None):
+        """Torna todos os campos readonly após confirmação"""
+        if obj and obj.confirmacao:
+            return [field.name for field in obj._meta.fields]
+        return super().get_readonly_fields(request, obj)
 
 # Registro dos modelos no admin
 admin.site.register(Carro, CarroAdmin)

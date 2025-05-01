@@ -13,7 +13,26 @@
         {% else %}
             <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
         {% endif %}
-    </div>      
+    </div> 
+    
+    {% for checklist in checklists %}
+        <div class="card">
+            <div class="card-body">
+            <h5 class="card-title">Checklist #{{ checklist.id }}</h5>
+            <p class="card-text">
+                Veículo: {{ checklist.agendamento.carro.marca }} {{ checklist.agendamento.carro.modelo }}<br>
+                Tipo: {{ checklist.get_tipo_display }}<br>
+                Data: {{ checklist.data_criacao|date:"d/m/Y H:i" }}
+            </p>
+            <a href="{% url 'relatorio_checklist_word' checklist.id %}" class="btn btn-primary">
+                <i class="fas fa-file-word"></i> Baixar Relatório
+            </a>
+            </div>
+        </div>
+        {% empty %}
+        <p>Nenhum checklist disponível para relatório.</p>
+        {% endfor %}
+
     <div class="painel">            
         <a href="{% url 'home' %}" class="btn btn-outline-secondary">
             <i class="fas fa-home"></i> Início
@@ -88,6 +107,27 @@
             </div>
         </div>
     </div>
+
+    <!-- Card checklist -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-calendar-alt"></i> Checklist
+            </h5>
+        </div>
+        <div class="card-body text-center">
+            {% for checklist in checklists %}
+            {% with checklist_id=checklist.id|default:0 %}
+                {% if checklist_id > 0 %}
+                    <a href="{% url 'relatorio_checklist_word' checklist_id %}" class="btn btn-primary">
+                        <i class="fas fa-file-word"></i> Baixar Relatório
+                    </a>
+                {% endif %}
+            {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+</div
 
     <div class="text-center mt-4">
         <a href="{% url 'automovel:dashboard' %}" class="btn btn-info btn-lg">

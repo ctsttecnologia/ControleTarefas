@@ -20,11 +20,23 @@
     </h1>
     <div class="header-actions">
         <a href="{% url 'automovel:relatorios' %}" class="btn btn-outline">
-            <i class="fas fa-file-alt"></i> Relatórios
+            <i class="fas fa-file-alt"></i>Relatórios
         </a>
     </div>
 </div>
 
+{% if total_carros == 0 and agendamentos_hoje == 0 and manutencoes_pendentes == 0 %}
+<div class="no-data">
+    <div class="no-data-content">
+        <i class="fas fa-database"></i>
+        <h2>Não há dados a apresentar!</h2>
+        <p>O sistema ainda não possui dados cadastrados para exibir no dashboard.</p>
+        <a href="{% url 'admin:automovel_carro_add' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Adicionar Primeiro Veículo
+        </a>
+    </div>
+</div>
+{% else %}
 <div class="metrics-grid">
     <div class="metric-card bg-blue">
         <div class="metric-icon">
@@ -32,7 +44,7 @@
         </div>
         <div class="metric-content">
             <h3>Total Veículos</h3>
-            <p>{{ total_carros }}</p>
+            <p>{{ total_carros|default:"0" }}</p>
         </div>
     </div>
     
@@ -42,7 +54,7 @@
         </div>
         <div class="metric-content">
             <h3>Veículos Ativos</h3>
-            <p>{{ carros_ativos }}</p>
+            <p>{{ carros_ativos|default:"0" }}</p>
         </div>
     </div>
     
@@ -52,7 +64,7 @@
         </div>
         <div class="metric-content">
             <h3>Agend. Hoje</h3>
-            <p>{{ agendamentos_hoje }}</p>
+            <p>{{ agendamentos_hoje|default:"0" }}</p>
         </div>
     </div>
     
@@ -62,7 +74,7 @@
         </div>
         <div class="metric-content">
             <h3>Manut. Pendentes</h3>
-            <p>{{ manutencoes_pendentes }}</p>
+            <p>{{ manutencoes_pendentes|default:"0" }}</p>
         </div>
     </div>
 </div>
@@ -73,7 +85,14 @@
             <h3>Status de Veículos</h3>
         </div>
         <div class="card-body">
-            <canvas id="carrosChart"></canvas>
+            {% if carros_status %}
+                <canvas id="carrosChart"></canvas>
+            {% else %}
+                <div class="no-chart-data">
+                    <i class="fas fa-chart-pie"></i>
+                    <p>Não há dados para exibir o gráfico</p>
+                </div>
+            {% endif %}
         </div>
     </div>
     
@@ -82,7 +101,14 @@
             <h3>Status de Agendamentos</h3>
         </div>
         <div class="card-body">
-            <canvas id="agendamentosChart"></canvas>
+            {% if agendamentos_status %}
+                <canvas id="agendamentosChart"></canvas>
+            {% else %}
+                <div class="no-chart-data">
+                    <i class="fas fa-chart-bar"></i>
+                    <p>Não há agendamentos para exibir</p>
+                </div>
+            {% endif %}
         </div>
     </div>
     
@@ -91,9 +117,17 @@
             <h3>Agendamentos por Mês ({{ ano_atual }})</h3>
         </div>
         <div class="card-body">
-            <canvas id="agendamentosMesChart"></canvas>
+            {% if agendamentos_mes_data %}
+                <canvas id="agendamentosMesChart"></canvas>
+            {% else %}
+                <div class="no-chart-data">
+                    <i class="fas fa-chart-line"></i>
+                    <p>Não há dados de agendamentos por mês</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
+{% endif %}
 
+{% endblock %}

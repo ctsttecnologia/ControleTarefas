@@ -2,6 +2,11 @@
 
 {% block content %}
 <div class="container mt-4">
+
+    <a href="{% url 'automovel:relatorio_fotografico_word' agendamento.id %}" class="btn btn-primary">
+        <i class="fas fa-file-word"></i> Baixar Relatório Fotográfico em Word
+    </a>
+
     <div class="card">
         <div class="card-header bg-primary text-white">
             <h2>Agendamento{{ agendamento.id }}</h2>

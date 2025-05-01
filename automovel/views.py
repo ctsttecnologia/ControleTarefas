@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.db.models import Count, Q, Sum, Case, When, Value
 from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.db.models.functions import ExtractMonth
-from django.template.loader import get_template
+from django.template.loader import get_template, render_to_string
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.views.generic import UpdateView
@@ -25,17 +25,14 @@ import json
 
 from .relatorios import gerar_relatorio_excel
 from datetime import datetime, date
-from .forms import CarroForm, AgendamentoForm
-from .models import Carro, Agendamento
-from .forms import ChecklistCarroForm, AssinaturaForm
-from .models import Checklist_Carro
+from .forms import CarroForm, AgendamentoForm, ChecklistCarroForm, AssinaturaForm
+from .models import Carro, Agendamento, Checklist_Carro
 
 from docx import Document
-from docx.shared import Inches, Pt
+from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 import xml.etree.ElementTree as ET
-from datetime import datetime
-
+from docx.enum.table import WD_ALIGN_VERTICAL
 
 
 @login_required
@@ -189,7 +186,14 @@ def agendamento_fotos(request, pk):
 #RELATÓRIO
 @login_required
 def relatorios(request):
-    return render(request, 'automovel/relatorios.html')
+    checklists = Checklist_Carro.objects.all().select_related(
+        'agendamento',  # Corrigido: removido o sufixo _id
+        'agendamento__carro'
+    ).order_by('-data_criacao')
+    
+    return render(request, 'automovel/relatorios.html', {
+        'checklists': checklists
+    })  
 
 # view exportar_world
 @login_required
@@ -516,3 +520,163 @@ def checklist_carro(request, pk):
         'agendamento': agendamento,
        
     })
+
+# Relatório ckecklist
+@login_required
+def relatorio_checklist_word(request, checklist_id):
+    try:
+        checklist = Checklist_Carro.objects.get(id=checklist_id)
+        agendamento = checklist.agendamento
+        carro = agendamento.carro
+        
+        # Criar um novo documento Word
+        document = Document()
+        
+        # Configuração básica do documento
+        section = document.sections[0]
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
+        
+        # Cabeçalho
+        header = document.add_heading('RELATÓRIO DE CHECKLIST VEICULAR', level=1)
+        header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        header.runs[0].font.color.rgb = RGBColor(0, 0, 0)
+        header.runs[0].font.size = Pt(14)
+        header.runs[0].font.bold = True
+        
+        # Informações básicas
+        document.add_paragraph(f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        document.add_paragraph(f"Tipo de Checklist: {checklist.get_tipo_display()}")
+        document.add_paragraph(f"Veículo: {carro.marca} {carro.modelo} - {carro.placa}")
+        document.add_paragraph(f"Agendamento: #{agendamento.id} - {agendamento.funcionario}")
+        document.add_paragraph(f"Quilometragem Inicial: {checklist.km_inicial}")
+        if checklist.km_final:
+            document.add_paragraph(f"Quilometragem Final: {checklist.km_final}")
+        
+        # Adicionar tabela de itens do checklist
+        document.add_paragraph("\nItens do Checklist:", style='Heading 2')
+        
+        table = document.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'
+        
+        # Cabeçalhos da tabela
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Item'
+        hdr_cells[1].text = 'Status'
+        hdr_cells[2].text = 'Observações'
+        
+        # Configurar estilo dos cabeçalhos
+        for cell in hdr_cells:
+            cell.paragraphs[0].runs[0].font.bold = True
+            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        
+        # Adicionar itens do checklist
+        itens = [
+            ('Frontal', checklist.revisao_frontal_status, checklist.coordenadas_avaria_frontal),
+            ('Traseira', checklist.revisao_trazeira_status, checklist.coordenadas_avaria_trazeira),
+            ('Lado Motorista', checklist.revisao_lado_motorista_status, checklist.coordenadas_avaria_lado_motorista),
+            ('Lado Passageiro', checklist.revisao_lado_passageiro_status, checklist.coordenadas_lado_passageiro),
+        ]
+        
+        for item in itens:
+            row_cells = table.add_row().cells
+            row_cells[0].text = item[0]
+            row_cells[1].text = item[1]
+            row_cells[2].text = str(item[2]) if item[2] else '-'
+        
+        # Observações gerais
+        if checklist.observacoes_gerais:
+            document.add_paragraph("\nObservações Gerais:", style='Heading 2')
+            document.add_paragraph(checklist.observacoes_gerais)
+        
+        # Assinatura
+        document.add_paragraph("\nResponsável:", style='Heading 2')
+        document.add_paragraph(f"Nome: {checklist.usuario.get_full_name()}")
+        document.add_paragraph(f"Data: {checklist.data_criacao.strftime('%d/%m/%Y %H:%M')}")
+        
+        # Salvar o documento em um buffer
+        buffer = io.BytesIO()
+        document.save(buffer)
+        buffer.seek(0)
+        
+        # Configurar a resposta HTTP
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename=relatorio_checklist_{checklist_id}.docx'
+        
+        return response
+        
+    except Exception as e:
+        return HttpResponse(f"Erro ao gerar relatório: {str(e)}", status=500)
+
+@login_required
+def relatorio_fotografico_word(request, agendamento_id):
+    try:
+        agendamento = Agendamento.objects.get(id=agendamento_id)
+        carro = agendamento.carro
+        fotos = agendamento.fotos.all()
+        
+        # Criar um novo documento Word
+        document = Document()
+        
+        # Configuração básica do documento
+        section = document.sections[0]
+        section.left_margin = Inches(0.5)
+        section.right_margin = Inches(0.5)
+        
+        # Cabeçalho
+        header = document.add_heading('RELATÓRIO FOTOGRÁFICO', level=1)
+        header.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        header.runs[0].font.color.rgb = RGBColor(0, 0, 0)
+        header.runs[0].font.size = Pt(14)
+        header.runs[0].font.bold = True
+        
+        # Informações básicas
+        document.add_paragraph(f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        document.add_paragraph(f"Veículo: {carro.marca} {carro.modelo} - {carro.placa}")
+        document.add_paragraph(f"Agendamento: #{agendamento.id} - {agendamento.funcionario}")
+        document.add_paragraph(f"Data/Hora: {agendamento.data_hora_agenda.strftime('%d/%m/%Y %H:%M')}")
+        
+        # Adicionar fotos
+        if fotos:
+            document.add_paragraph("\nFotos do Veículo:", style='Heading 2')
+            
+            for foto in fotos:
+                # Adicionar título da foto
+                document.add_paragraph(f"Foto: {foto.observacao or 'Sem descrição'}", style='Heading 3')
+                
+                try:
+                    # Adicionar a imagem ao documento
+                    img_path = foto.imagem.path
+                    document.add_picture(img_path, width=Inches(5))
+                    
+                    # Centralizar a imagem
+                    last_paragraph = document.paragraphs[-1]
+                    last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    
+                except Exception as e:
+                    document.add_paragraph(f"Erro ao carregar imagem: {str(e)}")
+        
+        else:
+            document.add_paragraph("\nNenhuma foto encontrada para este agendamento.")
+        
+        # Salvar o documento em um buffer
+        buffer = io.BytesIO()
+        document.save(buffer)
+        buffer.seek(0)
+        
+        # Configurar a resposta HTTP
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = f'attachment; filename=relatorio_fotografico_{agendamento_id}.docx'
+        
+        return response
+        
+    except Exception as e:
+        return HttpResponse(f"Erro ao gerar relatório: {str(e)}", status=500)
+

@@ -456,7 +456,6 @@ def atualizar_status_carro(sender, instance, **kwargs):
     instance.carro.save()
 
 
-
 class CustomUser(AbstractUser):
     razao_social = models.CharField('Razão Social', max_length=100, blank=True)
     nome_fantasia = models.CharField('Nome Fantasia', max_length=100, blank=True)
