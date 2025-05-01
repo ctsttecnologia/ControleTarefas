@@ -5,8 +5,10 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.contrib.auth.admin import UserAdmin
 
-from .models import Carro, Agendamento, FotoAgendamento, ChecklistCarro
+from .models import Carro, Agendamento, FotoAgendamento, Checklist_Carro
+
 
 class CarroAdmin(admin.ModelAdmin):
     list_display = ('marca', 'modelo', 'placa', 'ano', 'cor', 'status_display', 'ativo')
@@ -60,7 +62,7 @@ class FotoAgendamentoInline(admin.TabularInline):
     readonly_fields = ('data_criacao',)
 
 class ChecklistCarroInline(admin.TabularInline):
-    model = ChecklistCarro
+    model = Checklist_Carro
     extra = 0
     fields = ('tipo', 'data_criacao', 'revisao_frontal_status', 'confirmacao')
     readonly_fields = ('data_criacao',)
@@ -82,13 +84,13 @@ class AgendamentoAdmin(admin.ModelAdmin):
         'duracao_display', 'quilometragem_percorrida', 'carro_link',
         'status_display'
     )
-    raw_id_fields = ('carro', 'cliente')
+    raw_id_fields = ('carro', 'carro')
     inlines = [FotoAgendamentoInline, ChecklistCarroInline]
     
     fieldsets = (
         ('Informações Básicas', {
             'fields': (
-                'carro_link', 'funcionario', 'cliente', 'cm', 
+                'carro_link', 'funcionario', 'cm', 
                 'data_hora_agenda', 'data_hora_devolucao', 'duracao_display'
             )
         }),
@@ -113,7 +115,7 @@ class AgendamentoAdmin(admin.ModelAdmin):
     actions = ['finalizar_agendamento', 'cancelar_agendamento']
     
     def carro_link(self, obj):
-        url = reverse("admin:frota_carro_change", args=[obj.carro.id])
+        url = reverse("admin:lista_carros", args=[obj.carro.id])
         return mark_safe(f'<a href="{url}">{obj.carro}</a>')
     carro_link.short_description = 'Veículo'
     
@@ -258,4 +260,6 @@ class ChecklistCarroAdmin(admin.ModelAdmin):
 # Registro dos modelos no admin
 admin.site.register(Carro, CarroAdmin)
 admin.site.register(Agendamento, AgendamentoAdmin)
-admin.site.register(ChecklistCarro, ChecklistCarroAdmin)
+admin.site.register(Checklist_Carro, ChecklistCarroAdmin)
+
+

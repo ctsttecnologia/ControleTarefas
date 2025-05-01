@@ -41,11 +41,14 @@
             <i class="fas fa-search"></i>
         </div>
         <div class="table-actions">
-            <a href="{% url 'automovel:carros_excel' %}" class="btn btn-outline">
-                <i class="fas fa-file-excel"></i> Excel
+            <a href="{% url 'automovel:relatorio_agendamentos_word' %}" class="btn btn-primary mr-2">
+                <i class="fas fa-file-word"></i> Exportar para Word
             </a>
-            <a href="{% url 'automovel:carros_pdf' %}" class="btn btn-outline">
-                <i class="fas fa-file-pdf"></i> PDF
+            <a href="{% url 'automovel:agendamentos_excel' %}" class="btn btn-success btn-report mb-2">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
+            <a href="{% url 'automovel:relatorio_agendamentos_xml' %}" class="btn btn-secondary">
+                <i class="fas fa-file-code"></i> Exportar para XML
             </a>
         </div>
     </div>
@@ -136,9 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const navbarToggle = document.querySelector('.navbar-toggle');
     const navbarLinks = document.querySelector('.navbar-links');
     
-    navbarToggle.addEventListener('click', function() {
-        navbarLinks.classList.toggle('active');
-    });
+    
 });
 </script>
 {% endblock %}

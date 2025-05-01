@@ -9,8 +9,10 @@ from django.http import HttpResponse, JsonResponse, HttpResponseServerError
 from django.db.models.functions import ExtractMonth
 from django.template.loader import get_template
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.views.generic import UpdateView
+from django.urls import reverse_lazy
 
-from xhtml2pdf import pisa 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
@@ -21,12 +23,19 @@ import io
 from io import BytesIO
 import json
 
-from .relatorios import gerar_relatorio_pdf, gerar_relatorio_excel
+from .relatorios import gerar_relatorio_excel
 from datetime import datetime, date
 from .forms import CarroForm, AgendamentoForm
 from .models import Carro, Agendamento
-from .forms import ChecklistCarroForm
-from .models import ChecklistCarro
+from .forms import ChecklistCarroForm, AssinaturaForm
+from .models import Checklist_Carro
+
+from docx import Document
+from docx.shared import Inches, Pt
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import xml.etree.ElementTree as ET
+from datetime import datetime
+
 
 
 @login_required
@@ -86,25 +95,33 @@ def adicionar_agendamento(request):
         if form.is_valid():
             try:
                 agendamento = form.save(commit=False)
+                
+                # Define o responsável se não foi preenchido
                 if not agendamento.responsavel:
                     agendamento.responsavel = request.user.get_full_name() or request.user.username
                 
-                # Processamento seguro dos campos booleanos
-                agendamento.abastecimento = 'abastecimento' in request.POST
-                agendamento.pedagio = 'pedagio' in request.POST
-                agendamento.cancelar_agenda = 'cancelar_agenda' in request.POST
+                # Garante que os campos booleanos são processados corretamente
+                agendamento.pedagio = form.cleaned_data.get('pedagio', False)
+                agendamento.abastecimento = form.cleaned_data.get('abastecimento', False)
+                agendamento.cancelar_agenda = form.cleaned_data.get('cancelar_agenda', False)
+                
+                # Se for cancelado, verifica motivo
+                if agendamento.cancelar_agenda or agendamento.status == 'cancelado':
+                    if not form.cleaned_data.get('motivo_cancelamento'):
+                        form.add_error('motivo_cancelamento', 'Motivo é obrigatório para cancelamentos')
+                        return render(request, 'automovel/agendamento_form.html', {'form': form})
                 
                 agendamento.save()
                 messages.success(request, 'Agendamento criado com sucesso!')
                 return redirect('automovel:lista_agendamentos')
             
             except IntegrityError as e:
-                messages.error(request, 'Erro de integridade ao salvar o agendamento. Verifique os dados.')
-                # Log do erro para debug (opcional)
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"IntegrityError ao criar agendamento: {str(e)}")
-                
+                messages.error(request, f'Erro ao salvar: {str(e)}')
+                logger.error(f"IntegrityError: {str(e)}")
+                return render(request, 'automovel/agendamento_form.html', {'form': form})
+            except Exception as e:
+                messages.error(request, f'Erro inesperado: {str(e)}')
+                logger.error(f"Exception: {str(e)}")
                 return render(request, 'automovel/agendamento_form.html', {'form': form})
     else:
         form = AgendamentoForm(initial={
@@ -146,210 +163,219 @@ def excluir_agendamento(request, pk):
     return render(request, 'automovel/confirmar_exclusao.html', {'obj': agendamento})
 
 @login_required
-def assinar_agendamento(request, pk):  
+class AdicionarAssinaturaView(UpdateView):
+    model = Agendamento
+    form_class = AssinaturaForm
+    template_name = 'automovel/adicionar_assinatura.html'
     
-    # Verifica se o usuário está autenticado
-    if not request.user.is_authenticated:
-        return redirect('login')  # Redireciona para a página de login
+    def get_success_url(self):
+        return reverse_lazy('automovel:lista_agendamentos')
     
-    try:
-        agendamento = get_object_or_404(Agendamento, pk=pk)
-        
-        if request.method == 'POST':
-            form = AgendamentoForm(request.POST, instance=agendamento, user=request.user)
-            if form.is_valid():
-                form.save()
-                return redirect('automovel:lista_agendamentos')  # Redireciona após sucesso
-            # Se o formulário for inválido, continua para renderizar com erros
-        else:
-            form = AgendamentoForm(instance=agendamento, user=request.user)
-        
-        # Renderiza o template em ambos os casos (GET ou POST inválido)
-        return render(request, 'automovel/assinar.html', {'form': form, 'agendamento': agendamento})
-        return render(request, 'automovel/assinar_agendamento.html', {'form': form, 'agendamento': agendamento})
-        
-    except Exception as e:
-        # Log do erro (opcional)
-        print(f"Erro ao assinar agendamento: {str(e)}")
-        return render(request, 'automovel/formulariochecklist.html', {'agendamento': agendamento})
+    def form_valid(self, form):
+        form.instance.responsavel = self.request.user
+        return super().form_valid(form)
+
+def checklist_carro(request, pk):
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+    # Lógica do checklist de saída
+    return render(request, 'automovel/checklist_carro.html', {'agendamento': agendamento})
 
 @login_required
 def agendamento_fotos(request, pk):
     agendamento = get_object_or_404(Agendamento, pk=pk)
     return render(request, 'automovel/agendamento_fotos.html', {'agendamento': agendamento})
 
+
 #RELATÓRIO
 @login_required
 def relatorios(request):
     return render(request, 'automovel/relatorios.html')
 
+# view exportar_world
 @login_required
-def exportar_pdf(request, relatorio_tipo):
+def exportar_word(request, relatorio_tipo):
     try:
-        # 1. Pré-processamento dos dados
         if relatorio_tipo == 'carros':
-            dados = Carro.objects.all().order_by('modelo')
+            queryset = Carro.objects.all().order_by('marca', 'modelo')
+            filename = 'relatorio_carros.docx'
             titulo = "Relatório de Veículos"
-            colunas = ["ID", "Modelo", "Marca", "Placa", "Ano", "Cor", "Status"]
-            
-            objetos = []
-            for item in dados:
-                objetos.append({
-                    'id': item.id,
-                    'modelo': item.modelo,
-                    'marca': item.marca,
-                    'placa': item.placa,
-                    'ano': item.ano,
-                    'cor': item.get_cor_display() if hasattr(item, 'get_cor_display') else item.cor,
-                    'status': item.get_status_display() if hasattr(item, 'get_status_display') else item.status
-                })
-                
         elif relatorio_tipo == 'agendamentos':
-            dados = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
+            queryset = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
+            filename = 'relatorio_agendamentos.docx'
             titulo = "Relatório de Agendamentos"
-            colunas = ["ID", "Veículo", "Data", "Serviço", "Responsável", "Status"]
-            
-            objetos = []
-            for item in dados:
-                objetos.append({
-                    'id': item.id,
-                    'carro': f"{item.carro.marca} {item.carro.modelo}" if item.carro else "N/A",
-                    'data': item.data_hora_agenda.strftime('%d/%m/%Y %H:%M') if item.data_hora_agenda else "N/A",
-                    'servico': item.descricao[:50] + '...' if item.descricao and len(item.descricao) > 50 else (item.descricao if item.descricao else "N/A"),
-                    'responsavel': item.responsavel if item.responsavel else "N/A",
-                    'status': item.get_status_display() if hasattr(item, 'get_status_display') else (item.status if item.status else "N/A")
-                })
         else:
             return HttpResponse("Tipo de relatório inválido", status=400)
 
-        # 2. Preparação do contexto
-        context = {
-            'objetos': objetos,
-            'titulo': titulo,
-            'colunas': colunas,
-            'data_emissao': timezone.now().strftime("%d/%m/%Y %H:%M"),
-            'relatorio_tipo': relatorio_tipo
-        }
+        # Cria um novo documento Word
+        document = Document()
+        
+        # Adiciona título
+        title = document.add_heading(titulo, level=1)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Adiciona data de emissão
+        document.add_paragraph(f"Emitido em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+        document.add_paragraph()
+        
+        # Cria tabela
+        table = document.add_table(rows=1, cols=5)
+        table.style = 'Table Grid'
+        
+        # Cabeçalhos
+        hdr_cells = table.rows[0].cells
+        if relatorio_tipo == 'carros':
+            headers = ['ID', 'Marca', 'Modelo', 'Placa', 'Ano']
+        else:
+            headers = ['ID', 'Veículo', 'Data', 'Responsável', 'Status']
+        
+        for i, header in enumerate(headers):
+            hdr_cells[i].text = header
+            hdr_cells[i].paragraphs[0].runs[0].font.bold = True
+        
+        # Adiciona dados
+        for obj in queryset:
+            row_cells = table.add_row().cells
+            if relatorio_tipo == 'carros':
+                row_cells[0].text = str(obj.id)
+                row_cells[1].text = obj.marca
+                row_cells[2].text = obj.modelo
+                row_cells[3].text = obj.placa
+                row_cells[4].text = str(obj.ano)
+            else:
+                row_cells[0].text = str(obj.id)
+                row_cells[1].text = f"{obj.carro.marca} {obj.carro.modelo}" if obj.carro else "N/A"
+                row_cells[2].text = obj.data_hora_agenda.strftime('%d/%m/%Y %H:%M') if obj.data_hora_agenda else "N/A"
+                row_cells[3].text = obj.responsavel or "N/A"
+                row_cells[4].text = obj.get_status_display() if hasattr(obj, 'get_status_display') else obj.status
 
-        # 3. Renderização segura do template
-        template = get_template('automovel/base_relatorio.html')
-        html = template.render(context)
+        # Configura a resposta
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        document.save(response)
         
-        # 4. Geração do PDF com tratamento de erro
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="relatorio_{relatorio_tipo}.pdf"'
-        
-        pdf_status = pisa.CreatePDF(
-            BytesIO(html.encode('UTF-8')),
-            dest=response,
-            encoding='UTF-8'
-        )
-        
-        if pdf_status.err:
-            return HttpResponse(f"Erro na geração do PDF: {pdf_status.err}", status=500)
-            
         return response
 
     except Exception as e:
-        error_msg = f"Erro ao gerar relatório: {str(e)}"
-        print(error_msg)  # Log no console
-        return HttpResponse(error_msg, status=500)
+        return HttpResponse(f"Erro ao gerar relatório Word: {str(e)}", status=500)
+# Relatório em xml
+@login_required
+def exportar_xml(request, relatorio_tipo):
+    try:
+        if relatorio_tipo == 'carros':
+            queryset = Carro.objects.all().order_by('marca', 'modelo')
+            root = ET.Element('RelatorioCarros')
+        elif relatorio_tipo == 'agendamentos':
+            queryset = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
+            root = ET.Element('RelatorioAgendamentos')
+        else:
+            return HttpResponse("Tipo de relatório inválido", status=400)
+
+        # Adiciona metadados
+        metadata = ET.SubElement(root, 'Metadados')
+        ET.SubElement(metadata, 'DataEmissao').text = datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+        ET.SubElement(metadata, 'TotalRegistros').text = str(queryset.count())
+
+        # Adiciona dados
+        dados = ET.SubElement(root, 'Dados')
+        
+        for obj in queryset:
+            if relatorio_tipo == 'carros':
+                registro = ET.SubElement(dados, 'Carro')
+                ET.SubElement(registro, 'ID').text = str(obj.id)
+                ET.SubElement(registro, 'Marca').text = str(obj.marca)  # Convertendo para string
+                ET.SubElement(registro, 'Modelo').text = str(obj.modelo)
+                ET.SubElement(registro, 'Placa').text = str(obj.placa)
+                ET.SubElement(registro, 'Ano').text = str(obj.ano)
+                # Para campos de escolha, use get_FOO_display() ou force_str
+                ET.SubElement(registro, 'Status').text = str(obj.get_status_display() if hasattr(obj, 'get_status_display') else obj.status)
+            else:
+                registro = ET.SubElement(dados, 'Agendamento')
+                ET.SubElement(registro, 'ID').text = str(obj.id)
+                ET.SubElement(registro, 'Veiculo').text = str(f"{obj.carro.marca} {obj.carro.modelo}" if obj.carro else "N/A")
+                ET.SubElement(registro, 'DataHora').text = obj.data_hora_agenda.strftime('%Y-%m-%dT%H:%M:%S') if obj.data_hora_agenda else ""
+                ET.SubElement(registro, 'Responsavel').text = str(obj.responsavel or "N/A")
+                ET.SubElement(registro, 'Status').text = str(obj.get_status_display())
+
+        # Cria um objeto ElementTree
+        tree = ET.ElementTree(root)
+        
+        # Cria um buffer de memória para o XML
+        xml_buffer = BytesIO()
+        tree.write(xml_buffer, encoding='utf-8', xml_declaration=True)
+        
+        # Configura a resposta
+        response = HttpResponse(xml_buffer.getvalue(), content_type='application/xml')
+        response['Content-Disposition'] = f'attachment; filename=relatorio_{relatorio_tipo}.xml'
+        
+        return response
+
+    except Exception as e:
+        logger.error(f"Erro ao gerar relatório XML: {str(e)}", exc_info=True)
+        return HttpResponse(f"Erro ao gerar relatório XML: {str(e)}", status=500)
 
 @login_required
 def exportar_excel(request, relatorio_tipo):
-    # Obtenha os dados conforme o tipo de relatório
-    if relatorio_tipo == 'carros':
-        objetos = Carro.objects.all().order_by('modelo')
-        titulo = "Relatório de Veículos"
-        colunas = ["ID", "Modelo", "Marca", "Placa", "Ano", "Cor", "Status"]
-    
-    elif relatorio_tipo == 'agendamentos':
-        objetos = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
-        titulo = "Relatório de Agendamentos"
-        colunas = ["ID", "Veículo", "Data", "Serviço", "Responsável", "Status"]
-    
-    else:
-        return HttpResponse("Tipo de relatório inválido", status=400)
-
-    # Cria um novo workbook do Excel
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = titulo[:31]  # Limita a 31 caracteres
-
-    # Define estilos
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
-    even_row_fill = PatternFill(start_color="DCE6F1", end_color="DCE6F1", fill_type="solid")
-    odd_row_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-    border = Border(left=Side(style='thin'), right=Side(style='thin'), 
-                   top=Side(style='thin'), bottom=Side(style='thin'))
-    center_aligned = Alignment(horizontal='center')
-    
-    # Adiciona cabeçalhos
-    for col_num, header in enumerate(colunas, 1):
-        col_letter = get_column_letter(col_num)
-        cell = ws[f"{col_letter}1"]
-        cell.value = header
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.border = border
-        cell.alignment = center_aligned
-        ws.column_dimensions[col_letter].width = len(header) + 5
-
-    # Adiciona dados
-    for row_num, obj in enumerate(objetos, 2):
-        row_fill = even_row_fill if row_num % 2 == 0 else odd_row_fill
-        
+    try:
         if relatorio_tipo == 'carros':
-            data = [
-                obj.id,
-                obj.modelo,
-                obj.marca,
-                obj.placa,
-                obj.ano,
-            ]
-        if relatorio_tipo == 'agendamentos':
-            data = [
-                obj.id,
-                f"{obj.carro.marca} {obj.carro.modelo} ({obj.carro.placa})",
-                str(obj.carro) if obj.carro else "N/A",  # Trata cliente opcional
-                obj.data_hora_agenda.strftime('%d/%m/%Y %H:%M'),
-                obj.descricao[:50] + '...' if len(obj.descricao) > 50 else obj.descricao,
-                obj.responsavel,
-                obj.get_status_display()
-            ]
-            
-        
-        for col_num, value in enumerate(data, 1):
+            queryset = Carro.objects.all().order_by('marca', 'modelo')
+            titulo = "Relatório de Veículos"
+            colunas = ["ID", "Modelo", "Marca", "Placa", "Ano", "Cor", "Status"]
+        elif relatorio_tipo == 'agendamentos':
+            queryset = Agendamento.objects.select_related('carro').all().order_by('-data_hora_agenda')
+            titulo = "Relatório de Agendamentos"
+            colunas = ["ID", "Veículo", "Data", "Serviço", "Responsável", "Status"]
+        else:
+            return HttpResponse("Tipo de relatório inválido", status=400)
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = titulo[:31]
+
+        # Adiciona cabeçalhos
+        for col_num, header in enumerate(colunas, 1):
             col_letter = get_column_letter(col_num)
-            cell = ws[f"{col_letter}{row_num}"]
-            cell.value = value
-            cell.border = border
-            cell.fill = row_fill
-            if col_num in [1, 4, 7]:  # Colunas para centralizar (ID, Data, Status)
-                cell.alignment = center_aligned
+            ws[f"{col_letter}1"] = header
+            ws[f"{col_letter}1"].font = Font(bold=True)
 
-    # Ajusta largura das colunas automaticamente
-    for column in ws.columns:
-        max_length = 0
-        column_letter = get_column_letter(column[0].column)
-        for cell in column:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(str(cell.value))
-            except:
-                pass
-        adjusted_width = (max_length + 2) * 1.2
-        ws.column_dimensions[column_letter].width = adjusted_width
+        # Adiciona dados
+        for row_num, obj in enumerate(queryset, 2):
+            if relatorio_tipo == 'carros':
+                ws[f"A{row_num}"] = obj.id
+                ws[f"B{row_num}"] = obj.modelo
+                ws[f"C{row_num}"] = obj.marca
+                ws[f"D{row_num}"] = obj.placa
+                ws[f"E{row_num}"] = obj.ano
+                ws[f"F{row_num}"] = obj.cor
+                ws[f"G{row_num}"] = str(obj.status)  # Convertendo para string
+            else:
+                ws[f"A{row_num}"] = obj.id
+                ws[f"B{row_num}"] = f"{obj.carro.marca} {obj.carro.modelo}" if obj.carro else "N/A"
+                ws[f"C{row_num}"] = obj.data_hora_agenda.strftime('%d/%m/%Y %H:%M') if obj.data_hora_agenda else "N/A"
+                ws[f"D{row_num}"] = obj.descricao[:50] + '...' if obj.descricao else "N/A"
+                ws[f"E{row_num}"] = obj.responsavel or "N/A"
+                ws[f"F{row_num}"] = str(obj.status)  # Usando o valor bruto ao invés de get_status_display()
 
-    # Configura a resposta
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': f'attachment; filename="relatorio_{relatorio_tipo}.xlsx"'}
-    )
-    wb.save(response)
-    return response
+        # Ajusta largura das colunas
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2) * 1.2
+            ws.column_dimensions[column_letter].width = adjusted_width
 
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="relatorio_{relatorio_tipo}.xlsx"'
+        wb.save(response)
+        return response
+
+    except Exception as e:
+        logger.error(f"Erro ao gerar Excel: {str(e)}")
+        return HttpResponse(f"Erro ao gerar relatório Excel: {str(e)}", status=500)
 
 @login_required
 def dashboard(request):
@@ -412,34 +438,8 @@ def dashboard(request):
 # Relatório fotográfico
 logger = logging.getLogger(__name__)
 
-@login_required
-def relatorio_fotos_pdf(request, pk):
+from django.core.exceptions import ObjectDoesNotExist
 
-    agendamento = get_object_or_404(Agendamento, pk=pk)
-    
-    # Verifica se existe foto principal
-    if not agendamento.foto_principal:  
-        return HttpResponse("Nenhuma foto disponível para este agendamento", status=404)
-    
-    context = {
-        'agendamento': agendamento,
-        'foto_principal_url': os.path.join(settings.MEDIA_ROOT, agendamento.foto_principal.name),
-        'MEDIA_URL': settings.MEDIA_URL,
-    }
-    
-    template_path = 'automovel/relatorio_foto_principal_pdf.html'
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="relatorio_foto_{pk}.pdf"'
-    
-    template = get_template(template_path)
-    html = template.render(context)
-
-    # Cria o PDF
-    pisa_status = pisa.CreatePDF(html, dest=response)
-    
-    if pisa_status.err:
-        return HttpResponse('Erro ao gerar PDF', status=500)
-    return response
 
 # Checklist automóvel
 
@@ -448,10 +448,10 @@ def checklist(request, agendamento_id, tipo):
     agendamento = get_object_or_404(Agendamento, id=agendamento_id)
     
     if request.method == 'POST':
-        form = ChecklistForm(request.POST, request.FILES)
+        form = ChecklistCarroForm(request.POST, request.FILES)
         if form.is_valid():
             checklist = form.save(commit=False)
-            checklist.agendamento_id = agendamento_id
+            checklist.agendamento = agendamento
             checklist.tipo = tipo
             checklist.usuario = request.user
             checklist.save()
@@ -459,11 +459,60 @@ def checklist(request, agendamento_id, tipo):
     else:
         form = ChecklistCarroForm(initial={
             'tipo': tipo,
-            'km_inicial': agendamento.carro.km_atual if tipo == 'saida' else None
+            'km_inicial': agendamento.km_inicial if tipo == 'saida' else None
+        })
+    
+    return render(request, 'automovel/checklist_form.html', {
+        'form': form,
+        'agendamento': agendamento,
+        'tipo': tipo
     })
 
 @login_required
 def formulario_checklist(request, agendamento_id):
     agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
     # Sua lógica aqui
-    return render(request, 'automovel/formulariochecklist.html', {'agendamento': agendamento})
+    return render(request, 'automovel/checklist_carro.html', {'agendamento': agendamento})
+
+class AdicionarAssinaturaView(UpdateView):
+    model = Agendamento
+    form_class = AssinaturaForm
+    template_name = 'automovel/adicionar_assinatura.html'
+    
+    def get_success_url(self):
+        messages.success(self.request, 'Assinatura registrada com sucesso!')
+        return reverse_lazy('automovel:lista_agendamentos')
+    
+    def form_valid(self, form):
+        form.instance.status = 'concluido'
+        return super().form_valid(form)
+
+@login_required
+def checklist_carro(request, pk):
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+    
+    if request.method == 'POST':
+        form = ChecklistCarroForm(request.POST, request.FILES)
+        if form.is_valid():
+            checklist = form.save(commit=False)
+            checklist.agendamento = agendamento
+            checklist.usuario = request.user
+            checklist.save()
+            
+            # Atualiza status do agendamento
+            agendamento.status = 'concluido'
+            agendamento.save()
+            
+            messages.success(request, 'Checklist salvo com sucesso!')
+            return redirect('automovel:lista_agendamentos')
+    else:
+        form = ChecklistCarroForm(initial={
+            'km_inicial': agendamento.km_inicial,
+            'km_final': agendamento.km_final
+        })
+    
+    return render(request, 'automovel/checklist_carro.html', {
+        'form': form,
+        'agendamento': agendamento,
+       
+    })

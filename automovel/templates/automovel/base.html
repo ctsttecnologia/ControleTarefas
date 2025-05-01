@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="{% static 'csscarro/base.css' %}">
     <link rel="stylesheet" href="{% static 'csscarro/buttons.css' %}">
     <link rel="stylesheet" href="{% static 'csscarro/navbar.css' %}">
-    <link rel="stylesheet" href="{% static 'csscarro/cards.css' %}">
     
     <!-- CSS específico da página -->
     {% block extra_css %}{% endblock %}
@@ -112,10 +111,8 @@
             text-align: right;
         }
     </style>
-
 </head>
 <body>
-     
     <main class="container">
         {% if messages %}
         <div class="messages">
@@ -128,11 +125,16 @@
         {% endif %}
         
         {% block content %}{% endblock %}
+        <!-- Inclua em seu template base ou menu -->
+        
+           
+
     </main>
-    
+    <div class="container">
+            
+    </div>    
     <!-- JavaScript -->
-    <script src="{% static 'js/main.js' %}"></script>
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}
 
     <table>
         <thead>
@@ -166,6 +168,56 @@
             {% endfor %}
         </tbody>
     </table>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Configuração para cada campo de foto
+        setupCameraField('foto_frontal_input', 'foto_frontal_preview', 'coordenadas_avaria_frontal');
+        setupCameraField('foto_trazeira_input', 'foto_trazeira_preview', 'coordenadas_avaria_trazeira');
+        setupCameraField('foto_lado_motorista_input', 'foto_lado_motorista_preview', 'coordenadas_avaria_lado_motorista');
+        setupCameraField('foto_lado_passageiro_input', 'foto_lado_passageiro_preview', 'coordenadas_avaria_lado_passageiro');
+        
+        // Configuração da assinatura digital
+        const canvas = document.getElementById('signature-canvas');
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(223, 245, 251)',
+            penColor: 'rgb(0, 0, 0)',
+            minWidth: 1,
+            maxWidth: 3,
+            throttle: 16
+        });
+        
+        // Ajusta o tamanho do canvas
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            const parent = canvas.parentElement;
+            canvas.width = parent.offsetWidth * ratio;
+            canvas.height = parent.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+            signaturePad.clear(); // Limpa após redimensionar
+        }
+        
+        // Inicializa e adiciona listeners
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Botão limpar
+        document.getElementById('clear-signature').addEventListener('click', function() {
+            signaturePad.clear();
+        });
+        
+        // Validação antes de enviar
+        document.querySelector('.checklist-form').addEventListener('submit', function(e) {
+            if (signaturePad.isEmpty()) {
+                alert('Por favor, forneça sua assinatura');
+                e.preventDefault();
+            } else {
+                document.getElementById('id_assinatura').value = signaturePad.toDataURL('image/png');
+            }
+        });
+    });
+    </script>
+    {% endblock %}
 
 </body>
 </html>
