@@ -16,7 +16,47 @@
         ),
 
 
+ dependencies = [
+        ('automovel', '0001_initial'),  # Depende da migração inicial
+        ('auth', '0012_alter_user_first_name_max_length'),  # Para o relacionamento com User
+    ]
 
+    migrations.CreateModel(
+            name='Checklist_Carro',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('tipo', models.CharField(max_length=10)),
+                ('data_criacao', models.DateTimeField(auto_now_add=True)),
+                ('km_inicial', models.PositiveIntegerField()),
+                ('km_final', models.PositiveIntegerField(blank=True, null=True)),
+                ('revisao_frontal_status', models.CharField(max_length=15)),
+                ('foto_frontal', models.CharField(max_length=100)),
+                ('coordenadas_avaria_frontal', models.JSONField(blank=True, null=True)),
+                ('revisao_trazeira_status', models.CharField(max_length=15)),
+                ('foto_trazeira', models.CharField(max_length=100)),
+                ('coordenadas_avaria_trazeira', models.JSONField(blank=True, null=True)),
+                ('revisao_lado_motorista_status', models.CharField(max_length=15)),
+                ('foto_lado_motorista', models.CharField(max_length=100)),
+                ('coordenadas_avaria_lado_motorista', models.JSONField(blank=True, null=True)),
+                ('revisao_lado_passageiro_status', models.CharField(max_length=15)),
+                ('foto_lado_passageiro', models.CharField(max_length=100)),
+                ('coordenadas_lado_passageiro', models.JSONField(blank=True, null=True)),
+                ('observacoes_gerais', models.TextField(blank=True, null=True)),
+                ('anexo_ocorrencia', models.TextField(blank=True, null=True)),
+                ('assinatura', models.TextField()),
+                ('confirmacao', models.BooleanField(default=False)),
+                ('agendamento', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='automovel.agendamento')),
+                ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='auth.user')),
+            ],
+            options={
+                'db_table': 'checklist_carro',
+                'ordering': ['-data_criacao'],
+            },
+        ),
+        migrations.AddConstraint(
+            model_name='checklist_carro',
+            constraint=models.UniqueConstraint(fields=('agendamento', 'tipo'), name='unique_checklist_por_tipo'),
+        ),
 
 
 

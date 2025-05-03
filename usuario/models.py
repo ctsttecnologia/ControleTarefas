@@ -8,15 +8,24 @@ from django.contrib.auth.models import Permission
 
 
 class Usuario(models.Model):
+
+    REQUIRED_FIELDS = ['email', 'nome']  # Campos obrigatórios (ajuste conforme necessário)
+
     nome = models.CharField(unique=True, max_length=200)
     sobrenome = models.CharField(max_length=50)
     email = models.CharField(unique=True, max_length=200)
     senha = models.CharField(unique=True, max_length=6)
+    razao_social = models.CharField('Razão Social', max_length=100, blank=True)
+    nome_fantasia = models.CharField('Nome Fantasia', max_length=100, blank=True)
 
     class Meta:
         managed = True
         db_table = 'usuario'
+        verbose_name = 'Usuário'
+        verbose_name_plural = 'Usuários'
 
+    def __str__(self):
+        return self.username
 
 class UsuarioCustomuser(models.Model):
     id = models.BigAutoField(primary_key=True)
