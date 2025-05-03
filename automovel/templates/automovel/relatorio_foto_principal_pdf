@@ -1,0 +1,67 @@
+{% extends "automovel/base.html" %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Foto Principal - Agendamento {{ agendamento.id }}</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #2c5282;
+            font-size: 24px;
+        }
+        .info {
+            margin-bottom: 30px;
+        }
+        .photo-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .photo {
+            max-width: 100%;
+            max-height: 500px;
+            margin-bottom: 20px;
+        }
+        .footer {
+            font-size: 10px;
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Relatório de Foto Principal</h1>
+        <p>Agendamento #{{ agendamento.id }}</p>
+    </div>
+    
+    <div class="info">
+        <p><strong>Veículo:</strong> {{ agendamento.veiculo.marca }} {{ agendamento.veiculo.modelo }} - {{ agendamento.veiculo.placa }}</p>
+        <p><strong>Data do Agendamento:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
+        <p><strong>Responsável:</strong> {{ agendamento.responsavel }}</p>
+    </div>
+    
+    <div class="photo-container">
+        <img class="photo" src="{{ foto_principal_url }}" />
+        <p>Foto principal do veículo</p>
+    </div>
+    
+    <div class="footer">
+        Relatório gerado em {% now "d/m/Y H:i" %} | Página <pdf:pagenumber> de <pdf:pagecount>
+    </div>
+</body>
+</html>
+

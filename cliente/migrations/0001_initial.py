@@ -1,4 +1,4 @@
-# cliente/migrations/0001_initial.py
+
 # cliente/migrations/0001_initial.py
 from django.db import migrations, models
 import django.core.validators

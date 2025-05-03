@@ -13,34 +13,16 @@
         {% else %}
             <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
         {% endif %}
-    </div> 
-    
-    {% for checklist in checklists %}
-        <div class="card">
-            <div class="card-body">
-            <h5 class="card-title">Checklist #{{ checklist.id }}</h5>
-            <p class="card-text">
-                Veículo: {{ checklist.agendamento.carro.marca }} {{ checklist.agendamento.carro.modelo }}<br>
-                Tipo: {{ checklist.get_tipo_display }}<br>
-                Data: {{ checklist.data_criacao|date:"d/m/Y H:i" }}
-            </p>
-            <a href="{% url 'relatorio_checklist_word' checklist.id %}" class="btn btn-primary">
-                <i class="fas fa-file-word"></i> Baixar Relatório
-            </a>
-            </div>
-        </div>
-        {% empty %}
-        <p>Nenhum checklist disponível para relatório.</p>
-        {% endfor %}
+    </div>        
 
-    <div class="painel">            
-        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-home"></i> Início
-        </a>
-        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-user-cog"></i> Menu
-        </a>
-    </div>
+        <div class="painel">            
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-home"></i> Início
+            </a>
+            <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-user-cog"></i> Menu
+            </a>
+        </div>
 
     {% if foto_principal_url %}
     <div class="photo-report">
@@ -84,6 +66,7 @@
                 <a href="{% url 'automovel:relatorio_carros_xml' %}" class="btn btn-secondary">
                     <i class="fas fa-file-code"></i> Exportar para XML
                 </a>
+                                
             </div>
         </div>
         
@@ -107,26 +90,70 @@
             </div>
         </div>
     </div>
-
-    <!-- Card checklist -->
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mt-4">
         <div class="card-header bg-primary text-white">
             <h5 class="card-title mb-0">
-                <i class="fas fa-calendar-alt"></i> Checklist
+                <i class="fas fa-clipboard-check"></i> Checklists e Relatórios Fotográficos
             </h5>
         </div>
-        <div class="card-body text-center">
-            {% for checklist in checklists %}
-            {% with checklist_id=checklist.id|default:0 %}
-                {% if checklist_id > 0 %}
-                    <a href="{% url 'relatorio_checklist_word' checklist_id %}" class="btn btn-primary">
-                        <i class="fas fa-file-word"></i> Baixar Relatório
-                    </a>
-                {% endif %}
-            {% endwith %}
-            {% endfor %}
+        <div class="card-body">
+            {% if checklists %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Veículo</th>
+                                <th>Tipo</th>
+                                <th>Data</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for checklist in checklists %}
+                            <tr>
+                                <td>{{ checklist.id }}</td>
+                                <td>
+                                    {% if checklist.agendamento and checklist.agendamento.carro %}
+                                        {{ checklist.agendamento.carro.marca }} {{ checklist.agendamento.carro.modelo }}
+                                    {% else %}
+                                        Veículo não disponível
+                                    {% endif %}
+                                </td>
+                                <td>{{ checklist.get_tipo_display|default:"N/A" }}</td>
+                                <td>{{ checklist.data_criacao|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        {% if checklist.id %}
+                                        <a href="{% url 'automovel:relatorio_checklist_word' checklist.id %}" 
+                                           class="btn btn-sm btn-primary" 
+                                           title="Checklist">
+                                            <i class="fas fa-file-word"></i>
+                                        </a>
+                                        {% endif %}
+                                        
+                                        {% if checklist.agendamento and checklist.agendamento.id %}
+                                        <a href="{% url 'automovel:relatorio_fotografico_word' checklist.agendamento.id %}" 
+                                           class="btn btn-sm btn-info" 
+                                           title="Fotos">
+                                            <i class="fas fa-camera"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Nenhum checklist encontrado no banco de dados.
+                </div>
+            {% endif %}
         </div>
-    </div>
+    </div>          
 </div
 
     <div class="text-center mt-4">

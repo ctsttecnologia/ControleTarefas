@@ -2,19 +2,16 @@
 
 from datetime import timedelta
 
-from django.db import models
+from django.db import models, migrations
 from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, AbstractUser
 from django.core.validators import FileExtensionValidator
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from django.contrib.auth.models import AbstractUser
-
-
 
 class Carro(models.Model):
 
@@ -86,7 +83,14 @@ class Carro(models.Model):
         help_text=_('Número único do Registro Nacional de Veículos')
     )
     
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disponivel')
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES,
+        null=True,
+        blank=True, 
+        default='disponivel', 
+        verbose_name='Status')
+
     data_ultima_manutencao = models.DateField(
         verbose_name=_('Data da Última Manutenção'),
         null=True,
@@ -102,7 +106,12 @@ class Carro(models.Model):
     ativo = models.BooleanField(default=True, verbose_name=_('Veículo Ativo na Frota'))
     observacoes = models.TextField(blank=True, null=True, verbose_name=_('Observações'))
 
-    
+    def get_status_display(self):
+        """Método seguro para obter o status"""
+        if not self.status:
+            return 'Indefinido'
+        return dict(self.STATUS_CHOICES).get(self.status, self.status)
+
     def clean(self):
         super().clean()
         
@@ -131,13 +140,13 @@ class Carro(models.Model):
     def idade(self):
         return timezone.now().year - self.ano
 
-    @property
+    
     def status(self):
         if not self.ativo:
-            return _('dezabilitado')
+            return 'desabilitado'
         if self.verificar_manutencao_pendente():
-            return _('abilitado - Manutenção Pendente')
-        return _('abilitado')
+            return 'manutencao_pendente'
+        return self.status
 
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placa} ({self.ano})"
@@ -322,36 +331,44 @@ class FotoAgendamento(models.Model):
     agendamento = models.ForeignKey(
         Agendamento, 
         on_delete=models.CASCADE,
-        related_name='fotos'
+        related_name='fotos',
+        db_column='agendamento_id',  # Força o nome da coluna no BD
     )
     imagem = models.ImageField(upload_to='agendamentos/fotos/')
     data_criacao = models.DateTimeField(auto_now_add=True)
     observacao = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"fotos {self.id} - Agendamento {self.agendamento.id}"
+        return f"Foto {self.id} - Agendamento {self.agendamento.id}"
+
+    
     
 class Checklist_Carro(models.Model):
-    TIPO_CHOICES = [
-        ('saida', 'Checklist de Saída'),
-        ('retorno', 'Checklist de Retorno'),
-    ]
-
+    TIPO_CHOICES = (
+        ('saida', 'Saída'),
+        ('retorno', 'Retorno'),
+    )
     STATUS_CHOICES = [
         ('ok', 'OK'),
         ('avaria', 'Com Avarias'),
         ('nao_verificado', 'Não Verificado'),
     ]
-
     agendamento = models.ForeignKey(
-        Agendamento, 
+        'Agendamento', 
         on_delete=models.PROTECT,
-        related_name='checklists'
+        related_name='checklists',
+        verbose_name='Agendamento'
     )
-    usuario = models.ForeignKey(User, on_delete=models.PROTECT)
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        verbose_name='Usuário'
+    )
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
     data_criacao = models.DateTimeField(auto_now_add=True)
-    
+            
     # Dados de quilometragem
     km_inicial = models.PositiveIntegerField(
         validators=[MinValueValidator(0)]
@@ -370,9 +387,17 @@ class Checklist_Carro(models.Model):
     )
     foto_frontal = models.ImageField(
         upload_to='checklist/frontal/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
+        blank=True,
+        null=True
     )
-    coordenadas_avaria_frontal = models.JSONField(null=True, blank=True)
+    coordenadas_avaria_frontal = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Coordenadas Avaria Frontal',
+        help_text='Formato: "x,y" (ex: "100,200")'
+    )
     
      # Itens do checklist
     revisao_trazeira_status = models.CharField(
@@ -382,9 +407,17 @@ class Checklist_Carro(models.Model):
     )
     foto_trazeira = models.ImageField(
         upload_to='checklist/trazeira/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
+        blank=True,
+        null=True
     )
-    coordenadas_avaria_trazeira = models.JSONField(null=True, blank=True)
+    coordenadas_avaria_trazeira = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Coordenadas Avaria Traseira',
+        help_text='Formato: "x,y" (ex: "100,200")'
+    )
 
      # Itens do checklist
     revisao_lado_motorista_status = models.CharField(
@@ -394,9 +427,17 @@ class Checklist_Carro(models.Model):
     )
     foto_lado_motorista = models.ImageField(
         upload_to='checklist/lado_motorista/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
+        blank=True,
+        null=True
     )
-    coordenadas_avaria_lado_motorista = models.JSONField(null=True, blank=True)
+    coordenadas_avaria_lado_motorista = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Coordenadas Avaria Lado Motorista',
+        help_text='Formato: "x,y" (ex: "100,200")'
+    )
 
      # Itens do checklist
     revisao_lado_passageiro_status = models.CharField(
@@ -406,28 +447,45 @@ class Checklist_Carro(models.Model):
     )
     foto_lado_passageiro = models.ImageField(
         upload_to='checklist/lado_passageiro/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])]
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
+        blank=True,
+        null=True
     )
-    coordenadas_lado_passageiro = models.JSONField(null=True, blank=True)
+    coordenadas_lado_passageiro = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='Coordenadas Lado Passageiro',
+        help_text='Formato: "x,y" (ex: "100,200")'
+    )
     
     # Dados finais
     observacoes_gerais = models.TextField(
         verbose_name='Ocorrências',
-        blank=True, null=True,
-        help_text='Registro de quaisquer problemas ou ocorrências encontradas'
+        blank=True, null=True
     )
     anexo_ocorrencia = models.FileField(
         upload_to='checklist/ocorrencias/',
         blank=True,
-        null=True,
-        verbose_name='Anexo de Ocorrência'
+        null=True
     )
-    assinatura = models.TextField()
+
+    @receiver(pre_save, sender=Agendamento)
+    def atualizar_status_carro(sender, instance, **kwargs):
+        """Atualiza status do carro conforme status do agendamento"""
+        if instance.status == 'concluido' or instance.status == 'cancelado':
+            instance.carro.status = 'disponivel'
+        else:
+            instance.carro.status = 'locado'
+        instance.carro.save()
+
+    assinatura = models.TextField(blank=True, null=True)
     confirmacao = models.BooleanField(default=False)
 
     class Meta:
-        db_table = 'checklist_carro'
-        verbose_name_plural = 'Checklists de Carros'
+        db_table = 'checklist_carro'  # Isso define o nome exato da tabela
+        verbose_name = 'Checklist de Veículo'
+        verbose_name_plural = 'Checklists de Veículos'
         ordering = ['-data_criacao']
         constraints = [
             models.UniqueConstraint(
@@ -436,29 +494,42 @@ class Checklist_Carro(models.Model):
             )
         ]
 
+    def clean(self):
+        super().clean()
+        
+        # Validação da quilometragem
+        if self.km_final is not None and self.km_inicial is not None:
+            if self.km_final < self.km_inicial:
+                raise ValidationError(
+                    {'km_final': 'O quilometragem final não pode ser menor que o inicial.'}
+                )
+        
+        # Validação adicional para tipo 'retorno'
+        if self.tipo == 'retorno' and self.km_final is None:
+            raise ValidationError(
+                {'km_final': 'Quilometragem final é obrigatória para checklists de retorno.'}
+            )
+
     def __str__(self):
-        return f"Checklist #{self.id} - {self.get_tipo_display()}"
+        return f"Checklist #{self.id} - {self.get_tipo_display()} (Agendamento #{self.agendamento.id})"
 
     def save(self, *args, **kwargs):
         # Atualiza a quilometragem do carro quando checklist de retorno é salvo
         if self.tipo == 'retorno' and self.km_final:
-            self.agendamento.carro.km_atual = self.km_final
-            self.agendamento.carro.save()
+            self.agendamento.km_final = self.km_final
+            self.agendamento.save()
         super().save(*args, **kwargs)
-
-@receiver(pre_save, sender=Agendamento)
-def atualizar_status_carro(sender, instance, **kwargs):
-    """Atualiza disponibilidade do carro conforme status do agendamento"""
-    if instance.status == 'concluido' or instance.status == 'cancelado':
-        instance.carro.disponivel = True
-    else:
-        instance.carro.disponivel = False
-    instance.carro.save()
-
 
 class CustomUser(AbstractUser):
     razao_social = models.CharField('Razão Social', max_length=100, blank=True)
     nome_fantasia = models.CharField('Nome Fantasia', max_length=100, blank=True)
+    
+    class Meta:
+        verbose_name = 'Usuário'
+        verbose_name_plural = 'Usuários'
+
+    def __str__(self):
+        return self.razao_social or self.nome_fantasia or self.username
     
     # Corrigindo os related_name para evitar conflitos
     groups = models.ManyToManyField(

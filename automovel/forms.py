@@ -4,13 +4,11 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 
 from datetime import datetime, timedelta
 
 from .models import Carro, Agendamento, Checklist_Carro
-
-
-
 
 class CarroForm(forms.ModelForm):
     class Meta:
@@ -121,24 +119,44 @@ class ChecklistCarroForm(forms.ModelForm):
             
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields:
-            if 'foto' in field:
-                self.fields[field].widget.attrs.update({
-                    'accept': 'image/*',
-                    'capture': 'environment',
-                    'class': 'photo-input'
-                })
-            if 'status' in field:
-                self.fields[field].widget.attrs.update({
-                    'class': 'status-select'
-                })
-            if field.startswith('km_'):
-                self.fields[field].widget.attrs.update({
-                    'min': 0
-                })
-
+    def clean(self):  # Manter apenas um método clean
+        cleaned_data = super().clean()
+        
+        # Validação de coordenadas
+        campos_coordenadas = [
+            'coordenadas_avaria_frontal',
+            'coordenadas_avaria_trazeira',
+            'coordenadas_avaria_lado_motorista',
+            'coordenadas_lado_passageiro'
+        ]
+        
+        for campo in campos_coordenadas:
+            valor = cleaned_data.get(campo)
+            if valor:
+                try:
+                    x, y = map(float, valor.split(','))
+                    if not (0 <= x <= 1000) or not (0 <= y <= 1000):
+                        raise ValidationError(
+                            f"{campo.replace('_', ' ').title()}: valores devem estar entre 0 e 1000"
+                        )
+                except ValueError:
+                    raise ValidationError(
+                        f"{campo.replace('_', ' ').title()}: use o formato 'x,y' com números"
+                    )
+        
+        # Validação de quilometragem
+        km_inicial = cleaned_data.get('km_inicial')
+        km_final = cleaned_data.get('km_final')
+        tipo = cleaned_data.get('tipo')
+        
+        if km_final is not None and km_inicial is not None:
+            if km_final < km_inicial:
+                self.add_error('km_final', 'O quilometragem final não pode ser menor que o inicial.')
+        
+        if tipo == 'retorno' and km_final is None:
+            self.add_error('km_final', 'Quilometragem final é obrigatória para checklists de retorno.')
+        
+        return cleaned_data
 
 class AssinaturaForm(forms.ModelForm):
     class Meta:
@@ -150,4 +168,23 @@ class AssinaturaForm(forms.ModelForm):
                 'capture': 'environment'  # Para dispositivos móveis
             })
         }
+
+    # Atualize as mensagens de erro 
+    error_messages = {
+        'km_invalid': _('A quilometragem final não pode ser menor que a inicial.'),
+        'km_required': _('Quilometragem final é obrigatória para checklists de retorno.'),
+    }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        # ... código existente ...
+        
+        if km_final is not None and km_inicial is not None:
+            if km_final < km_inicial:
+                self.add_error('km_final', self.error_messages['km_invalid'])
+        
+        if tipo == 'retorno' and km_final is None:
+            self.add_error('km_final', self.error_messages['km_required'])
+        
+        return cleaned_data
 

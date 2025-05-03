@@ -186,14 +186,25 @@ def agendamento_fotos(request, pk):
 #RELATÓRIO
 @login_required
 def relatorios(request):
-    checklists = Checklist_Carro.objects.all().select_related(
-        'agendamento',  # Corrigido: removido o sufixo _id
+
+    # Busca checklists com agendamentos e carros relacionados
+    checklists = Checklist_Carro.objects.select_related(
+        'agendamento',
         'agendamento__carro'
+    ).filter(
+        agendamento__isnull=False
     ).order_by('-data_criacao')
+    
+    # Verifica se há dados para debug
+    print(f"Checklists encontrados: {checklists.count()}")  # Debug
     
     return render(request, 'automovel/relatorios.html', {
         'checklists': checklists
-    })  
+    })
+
+    # Mostra todos os checklists, mesmo sem agendamento (para debug)
+    checklists = Checklist_Carro.objects.all().order_by('-data_criacao')
+    return render(request, 'automovel/relatorios.html', {'checklists': checklists})
 
 # view exportar_world
 @login_required
@@ -615,7 +626,7 @@ def relatorio_checklist_word(request, checklist_id):
 @login_required
 def relatorio_fotografico_word(request, agendamento_id):
     try:
-        agendamento = Agendamento.objects.get(id=agendamento_id)
+        agendamento = get_object_or_404(Agendamento, id=agendamento_id)
         carro = agendamento.carro
         fotos = agendamento.fotos.all()
         
@@ -637,11 +648,13 @@ def relatorio_fotografico_word(request, agendamento_id):
         # Informações básicas
         document.add_paragraph(f"Data: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
         document.add_paragraph(f"Veículo: {carro.marca} {carro.modelo} - {carro.placa}")
-        document.add_paragraph(f"Agendamento: #{agendamento.id} - {agendamento.funcionario}")
-        document.add_paragraph(f"Data/Hora: {agendamento.data_hora_agenda.strftime('%d/%m/%Y %H:%M')}")
+        document.add_paragraph(f"Agendamento: #{agendamento.id}")
+        document.add_paragraph(f"Responsável: {agendamento.responsavel or 'N/A'}")
+        if agendamento.data_hora_agenda:
+            document.add_paragraph(f"Data/Hora: {agendamento.data_hora_agenda.strftime('%d/%m/%Y %H:%M')}")
         
         # Adicionar fotos
-        if fotos:
+        if fotos.exists():
             document.add_paragraph("\nFotos do Veículo:", style='Heading 2')
             
             for foto in fotos:
@@ -658,7 +671,8 @@ def relatorio_fotografico_word(request, agendamento_id):
                     last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     
                 except Exception as e:
-                    document.add_paragraph(f"Erro ao carregar imagem: {str(e)}")
+                    logger.error(f"Erro ao carregar imagem {foto.id}: {str(e)}")
+                    document.add_paragraph(f"[Erro ao carregar esta imagem]")
         
         else:
             document.add_paragraph("\nNenhuma foto encontrada para este agendamento.")
@@ -678,5 +692,5 @@ def relatorio_fotografico_word(request, agendamento_id):
         return response
         
     except Exception as e:
+        logger.error(f"Erro ao gerar relatório fotográfico: {str(e)}", exc_info=True)
         return HttpResponse(f"Erro ao gerar relatório: {str(e)}", status=500)
-

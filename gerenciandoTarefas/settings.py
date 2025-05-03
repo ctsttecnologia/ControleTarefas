@@ -138,8 +138,10 @@ USE_TZ = False
 TIME_ZONE = 'America/Sao_Paulo'
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
+#AUTH_USER_MODEL = 'usuario.Usuario'
+
+#Static files (CSS, JavaScript, Images)
+#https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 
 
