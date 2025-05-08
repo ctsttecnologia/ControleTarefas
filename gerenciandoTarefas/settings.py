@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'automovel.apps.AutomovelConfig',
     'treinamentos.apps.TreinamentosConfig',
+    'crispy_forms',
+    'crispy_bootstrap5',  # se estiver usando Bootstrap5
 
  
 ]
@@ -81,6 +83,8 @@ TEMPLATES = [
         },
     },
 ]
+
+CRISPY_TEMPLATE_PACK = 'bootstrap5'  # ou 'bootstrap4', dependendo da versão
 
 WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
 

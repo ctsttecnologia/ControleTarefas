@@ -1,44 +1,32 @@
 
-from . import views
 from django.urls import path
-from .views import (
-    lista_agendamentos, adicionar_agendamento, editar_agendamento,
-    excluir_agendamento, AdicionarAssinaturaView, checklist_carro,
-    agendamento_fotos, relatorio_checklist_word, relatorio_fotografico_word)
-
+from . import views
 
 app_name = 'automovel'
 
 urlpatterns = [
-    # URLs de Carros
-    path('carros/', views.lista_carros, name='lista_carros'),
-    path('carros/adicionar/', views.adicionar_carro, name='adicionar_carro'),
-    path('carros/editar/<int:pk>/', views.editar_carro, name='editar_carro'),
-    path('carros/excluir/<int:pk>/', views.excluir_carro, name='excluir_carro'),
-    
-    # URLs de Agendamentos
-    path('agendamentos/', views.lista_agendamentos, name='lista_agendamentos'),
-    path('agendamentos/adicionar/', views.adicionar_agendamento, name='adicionar_agendamento'),
-    path('agendamentos/editar/<int:pk>/', views.editar_agendamento, name='editar_agendamento'),
-    path('agendamentos/excluir/<int:pk>/', views.excluir_agendamento, name='excluir_agendamento'),
-    path('agendamentos/<int:pk>/fotos/', views.agendamento_fotos, name='agendamento_fotos'),
-    path('agendamentos/<int:pk>/assinatura/', AdicionarAssinaturaView.as_view(), name='adicionar_assinatura'), 
-    path('agendamentos/<int:pk>/checklist_carro/', checklist_carro, name='checklist_carro'),
-    path('checklist/<str:tipo>/', views.checklist, name='criar_checklist'),
-   
-    
-    # URLs de Relatórios
-    path('relatorios/', views.relatorios, name='relatorios'),
-    path('relatorios/carros/excel/', views.exportar_excel, {'relatorio_tipo': 'carros'}, name='carros_excel'),
-    path('relatorios/agendamentos/excel/', views.exportar_excel, {'relatorio_tipo': 'agendamentos'}, name='agendamentos_excel'),
-    path('relatorios/carros/word/', views.exportar_word, {'relatorio_tipo': 'carros'}, name='relatorio_carros_word'),
-    path('relatorios/agendamentos/word/', views.exportar_word, {'relatorio_tipo': 'agendamentos'}, name='relatorio_agendamentos_word'),
-    path('relatorios/carros/xml/', views.exportar_xml, {'relatorio_tipo': 'carros'}, name='relatorio_carros_xml'),
-    path('relatorios/agendamentos/xml/', views.exportar_xml, {'relatorio_tipo': 'agendamentos'}, name='relatorio_agendamentos_xml'),
-    path('agendamento/<int:agendamento_id>/relatorio_fotografico_word/', relatorio_fotografico_word, name='relatorio_fotografico_word'),
-    path('checklist/<int:checklist_id>/relatorio_word/', views.relatorio_checklist_word, name='relatorio_checklist_word'),
     # Dashboard
-    path('dashboard/', views.dashboard, name='dashboard'),
-   
+    path('', views.DashboardView.as_view(), name='dashboard'),
+    
+    # Carros
+    path('carros/', views.CarroListView.as_view(), name='carro_list'),
+    path('carros/novo/', views.CarroCreateView.as_view(), name='carro_create'),
+    path('carros/<int:pk>/editar/', views.CarroUpdateView.as_view(), name='carro_update'),
+    path('carros/<int:pk>/', views.CarroDetailView.as_view(), name='carro_detail'),
+    
+    # Agendamentos
+    path('agendamentos/', views.AgendamentoListView.as_view(), name='agendamento_list'),
+    path('agendamentos/novo/', views.AgendamentoCreateView.as_view(), name='agendamento_create'),
+    path('agendamentos/<int:pk>/', views.AgendamentoDetailView.as_view(), name='agendamento_detail'),
+    path('agendamentos/<int:pk>/editar/', views.AgendamentoUpdateView.as_view(), name='agendamento_update'),
+    
+    # Checklists
+    path('checklists/novo/', views.ChecklistCreateView.as_view(), name='checklist_create'),
+    
+    # Relatórios
+    path('relatorios/carros/<str:format>/', views.relatorio_carros, name='relatorio_carros'),
+    
+    # APIs
+    path('api/carros-disponiveis/', views.carros_disponiveis, name='api_carros_disponiveis'),
+    path('api/proxima-manutencao/', views.proxima_manutencao, name='api_proxima_manutencao'),
 ]
-

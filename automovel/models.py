@@ -1,559 +1,104 @@
-# automovel/models.py
-
-from datetime import timedelta
-
-from django.db import models, migrations
-from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator
+from django.db import models
+from django.contrib.auth.models import User
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
-from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User, AbstractUser
-from django.core.validators import FileExtensionValidator
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
 
 class Carro(models.Model):
-
-    MARCA_CHOICES = [
-        ('volkswagen', 'Volkswagen'),
-        ('fiat', 'Fiat'),
-        ('chevrolet', 'Chevrolet'),
-        ('ford', 'Ford'),
-        ('toyota', 'Toyota'),
-        ('hyundai', 'Hyundai'),
-        ('citroen', 'Citroen'), 
-        ('peugeot', 'Peugeot'), 
-        ('mitsubishi', 'Mitsubishi'), 
-        ('subaru', 'Subaru'),
-        ('tesla', 'Tesla'), 
-        ('BYD', 'byd'),
-    ]
+    placa = models.CharField(max_length=10, unique=True)
+    modelo = models.CharField(max_length=50)
+    marca = models.CharField(max_length=50)
+    cor = models.CharField(max_length=30)
+    ano = models.PositiveIntegerField()
+    renavan = models.CharField(max_length=20, unique=True)
+    data_ultima_manutencao = models.DateField(null=True, blank=True)
+    data_proxima_manutencao = models.DateField(null=True, blank=True)
+    ativo = models.BooleanField(default=True)
+    observacoes = models.TextField(blank=True, null=True)
+    disponivel = models.BooleanField(default=True)
     
-    MODELO_CHOICES = [
-        ('hatch', 'Hatch'),
-        ('sedan', 'Sedan'),
-        ('suv', 'SUV'),
-        ('picape', 'Picape'),
-    
-    ]
-    
-    COR_CHOICES = [
-        ('branco', 'Branco'),
-        ('preto', 'Preto'),
-        ('prata', 'Prata'),
-        
-    ]
-    
-    STATUS_CHOICES = [
-        ('disponivel', 'Disponível'),
-        ('manutencao', 'Em Manutenção'),
-        ('locado', 'Locado'),
-    ]
-
-    placa_validator = RegexValidator(
-        regex=r'^[A-Z]{3}\d{1}[A-Z]{1}\d{2}$|^[A-Z]{3}\d{4}$',
-        message=_('Formato de placa inválido. Use AAA1A11 ou AAA1111')
-    )
-    
-    placa = models.CharField(
-        max_length=10,
-        validators=[placa_validator],
-        unique=True,
-        verbose_name=_('Placa do Veículo'),
-        help_text=_('Formato: AAA1A11 ou AAA1111')
-    )
-    
-    modelo = models.CharField(max_length=50, verbose_name=_('Modelo do Veículo'))
-    marca = models.CharField(max_length=50, verbose_name=_('Marca do Veículo'))
-    cor = models.CharField(max_length=30, verbose_name=_('Cor do Veículo'))
-    
-    ano = models.PositiveIntegerField(
-        validators=[
-            MinValueValidator(1900, message=_('Ano mínimo permitido é 1900')),
-            MaxValueValidator(timezone.now().year + 1, message=_('Ano não pode ser no futuro'))
-        ],
-        verbose_name=_('Ano de Fabricação')
-    )
-    
-    renavan = models.CharField(
-        max_length=20,
-        unique=True,
-        verbose_name=_('Número do RENAVAM'),
-        help_text=_('Número único do Registro Nacional de Veículos')
-    )
-    
-    status = models.CharField(
-        max_length=20, 
-        choices=STATUS_CHOICES,
-        null=True,
-        blank=True, 
-        default='disponivel', 
-        verbose_name='Status')
-
-    data_ultima_manutencao = models.DateField(
-        verbose_name=_('Data da Última Manutenção'),
-        null=True,
-        blank=True
-    )
-    
-    data_proxima_manutencao = models.DateField(
-        verbose_name=_('Data da Próxima Manutenção'),
-        null=True,
-        blank=True
-    )
-    
-    ativo = models.BooleanField(default=True, verbose_name=_('Veículo Ativo na Frota'))
-    observacoes = models.TextField(blank=True, null=True, verbose_name=_('Observações'))
-
-    def get_status_display(self):
-        """Método seguro para obter o status"""
-        if not self.status:
-            return 'Indefinido'
-        return dict(self.STATUS_CHOICES).get(self.status, self.status)
-
-    def clean(self):
-        super().clean()
-        
-        if self.data_ultima_manutencao and self.data_proxima_manutencao:
-            if self.data_proxima_manutencao <= self.data_ultima_manutencao:
-                raise ValidationError({
-                    'data_proxima_manutencao': _('A data da próxima manutenção deve ser após a última manutenção.')
-                })
-
-    def save(self, *args, **kwargs):
-        self.placa = self.placa.upper()
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def calcular_proxima_manutencao(self, dias=90):
-        if self.data_ultima_manutencao:
-            self.data_proxima_manutencao = self.data_ultima_manutencao + timedelta(days=dias)
-            self.save()
-
-    def verificar_manutencao_pendente(self):
-        if self.data_proxima_manutencao:
-            return self.data_proxima_manutencao <= timezone.now().date()
-        return False
-
-    @property
-    def idade(self):
-        return timezone.now().year - self.ano
-
-    
-    def status(self):
-        if not self.ativo:
-            return 'desabilitado'
-        if self.verificar_manutencao_pendente():
-            return 'manutencao_pendente'
-        return self.status
-
     def __str__(self):
-        return f"{self.marca} {self.modelo} - {self.placa} ({self.ano})"
-
+        return f"{self.marca} {self.modelo} - {self.placa}"
+    
     class Meta:
-        db_table = 'automovel_carro'
-        verbose_name = _('Veículo')
-        verbose_name_plural = _('Veículos')
-        ordering = ['marca', 'modelo']
-        indexes = [
-            models.Index(fields=['placa'], name='idx_carro_placa'),
-            models.Index(fields=['marca', 'modelo'], name='idx_carro_marca_modelo'),
-        ]
-        constraints = [
-            models.UniqueConstraint(fields=['placa', 'renavan'], name='unique_placa_renavan'),
-        ]
-
+        verbose_name = "Carro"
+        verbose_name_plural = "Carros"
 
 class Agendamento(models.Model):
     STATUS_CHOICES = [
-        ('agendado', _('Agendado')),
-        ('em_andamento', _('Em Andamento')),
-        ('concluido', _('Concluído')),
-        ('cancelado', _('Cancelado')),
+        ('agendado', 'Agendado'),
+        ('em_andamento', 'Em Andamento'),
+        ('finalizado', 'Finalizado'),
+        ('cancelado', 'Cancelado'),
     ]
     
-    carro = models.ForeignKey(
-        Carro,
-        on_delete=models.PROTECT,
-        related_name='agendamentos',
-        verbose_name=_('Veículo')
-    )
+    funcionario = models.CharField(max_length=100)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    carro = models.ForeignKey(Carro, on_delete=models.CASCADE)
+    data_hora_agenda = models.DateTimeField()
+    data_hora_devolucao = models.DateTimeField(null=True, blank=True)
+    cm = models.CharField(max_length=20)
+    descricao = models.TextField()
+    pedagio = models.BooleanField(default=False)
+    abastecimento = models.BooleanField(default=False)
+    km_inicial = models.PositiveIntegerField()
+    km_final = models.PositiveIntegerField(null=True, blank=True)
+    foto_principal = models.ImageField(upload_to='agendamentos/', null=True, blank=True)
+    assinatura = models.TextField(blank=True)
+    responsavel = models.CharField(max_length=100)
+    ocorrencia = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='agendado')
+    cancelar_agenda = models.BooleanField(default=False)
+    motivo_cancelamento = models.TextField(blank=True, null=True)
     
-    funcionario = models.CharField(max_length=100, verbose_name=_('Funcionário Responsável'))
-    data_hora_agenda = models.DateTimeField(verbose_name=_('Data/Hora do Agendamento'))
-    data_hora_devolucao = models.DateTimeField(
-        verbose_name=_('Data/Hora da Devolução'),
-        null=True,
-        blank=True
-    )
+    def __str__(self):
+        return f"Agendamento #{self.id} - {self.carro} - {self.funcionario}"
     
-    cm = models.CharField(max_length=20, verbose_name=_('Código do Contrato (CM)'))
-    descricao = models.TextField(blank=True, verbose_name=_('Descrição do Agendamento'))
-    pedagio = models.BooleanField(default=False, verbose_name=_('Pedágio Necessário?'))
-    abastecimento = models.BooleanField(
-        default=False,
-        verbose_name='Abastecimento Necessário?'
-    )
-    km_inicial = models.PositiveIntegerField(verbose_name=_('Quilometragem Inicial'))
-    km_final = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        verbose_name=_('Quilometragem Final')
-    )
-    
-    foto_principal = models.ImageField(
-        upload_to='agendamentos/%Y/%m/%d/',
-        blank=True,
-        null=True,
-        verbose_name=_('Foto Principal do Veículo'),
-        help_text=_('Foto agendamento')
-    )
-
     class Meta:
-        db_table = 'agendamento'
-        verbose_name_plural = 'Agendamentos'
-        ordering = ['data_agendamento']
-        indexes = [
-            models.Index(fields=['carro', 'data_agendamento']),
-        ]
+        verbose_name = "Agendamento"
+        verbose_name_plural = "Agendamentos"
 
-    def __str__(self):
-        try:
-            return f"Agendamento {self.id} - {self.carro.placa if self.carro else 'Sem veículo'} ({self.data_hora_agenda})"
-        except Exception as e:
-            return f"Agendamento {self.id} - {self.veiculo.placa}"
-             
-       
-    assinatura = models.ImageField(
-        upload_to='assinaturas/%Y/%m/%d/',
-        blank=True,
-        null=True,
-        verbose_name=_('Assinatura Digital')
-    )
-    responsavel = models.CharField(max_length=100, verbose_name=_('Responsável pelo Agendamento'))
-    ocorrencia = models.TextField(blank=True, verbose_name=_('Ocorrências Durante o Uso'))
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default= 'agendado',
-        verbose_name=_('Status do Agendamento')
-    )
-    
-    cancelar_agenda = models.BooleanField(default=False, verbose_name=_('Cancelar Agendamento?'))
-    motivo_cancelamento = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name=_('Motivo do Cancelamento')
-    )
-
-    def get_status_display(self):
-        return dict(self.STATUS_CHOICES).get(self.status, self.status)
-
-    def clean(self):
-        super().clean()
-        
-        if self.data_hora_devolucao and self.data_hora_agenda:
-            if self.data_hora_devolucao <= self.data_hora_agenda:
-                raise ValidationError({
-                    'data_hora_devolucao': _('A data de devolução deve ser após a data de agendamento.')
-                })
-        
-        if self.km_final and self.km_inicial:
-            if self.km_final < self.km_inicial:
-                raise ValidationError({
-                    'km_final': _('A quilometragem final não pode ser menor que a inicial.')
-                })
-        
-        if (self.cancelar_agenda or self.status == 'cancelado') and not self.motivo_cancelamento:
-            raise ValidationError({
-                'motivo_cancelamento': _('Motivo do cancelamento é obrigatório quando o agendamento é cancelado.')
-            })
-
-    def save(self, *args, **kwargs):
-        if self.cancelar_agenda:
-            self.status = 'cancelado'
-        
-        if self.data_hora_devolucao and not self.cancelar_agenda:
-            self.status = 'concluido'
-        
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def calcular_quilometragem_percorrida(self):
-        if self.km_final and self.km_inicial:
-            return self.km_final - self.km_inicial
-        return None
-
-    def duracao_agendamento(self):
-        if self.data_hora_devolucao:
-            return self.data_hora_devolucao - self.data_hora_agenda
-        return None
-
-    @property
-    def necessita_abastecimento(self):
-        return self.abastecimento
-
-    @property
-    def necessita_pedagio(self):
-        return self.pedagio
-
-    def finalizar_agendamento(self, km_final, ocorrencia=None):
-        self.km_final = km_final
-        self.ocorrencia = ocorrencia or self.ocorrencia
-        self.data_hora_devolucao = timezone.now()
-        self.save()
-
-    def __str__(self):
-        return f"Agendamento {self.id} - {self.carro.placa} ({self.data_hora_agenda})"
-
-    class Meta:
-        verbose_name = _('Agendamento de Veículo')
-        verbose_name_plural = _('Agendamentos de Veículos')
-        ordering = ['-data_hora_agenda']
-        indexes = [
-            models.Index(fields=['data_hora_agenda'], name='idx_data_agenda'),
-            models.Index(fields=['carro'], name='idx_agendamento_carro'),
-            models.Index(fields=['status'], name='idx_agendamento_status'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(data_hora_devolucao__gt=models.F('data_hora_agenda')),
-                name='check_data_devolucao_maior'
-            ),
-            models.CheckConstraint(
-                check=models.Q(km_final__gte=models.F('km_inicial')),
-                name='check_km_final_maior'
-            ),
-        ]
-
-class FotoAgendamento(models.Model):
-    agendamento = models.ForeignKey(
-        Agendamento, 
-        on_delete=models.CASCADE,
-        related_name='fotos',
-        db_column='agendamento_id',  # Força o nome da coluna no BD
-    )
-    imagem = models.ImageField(upload_to='agendamentos/fotos/')
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    observacao = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"Foto {self.id} - Agendamento {self.agendamento.id}"
-
-    
-    
-class Checklist_Carro(models.Model):
-    TIPO_CHOICES = (
-        ('saida', 'Saída'),
-        ('retorno', 'Retorno'),
-    )
+class Checklist(models.Model):
     STATUS_CHOICES = [
         ('ok', 'OK'),
-        ('avaria', 'Com Avarias'),
-        ('nao_verificado', 'Não Verificado'),
+        ('danificado', 'Danificado'),
+        ('nao_aplicavel', 'Não Aplicável'),
     ]
-    agendamento = models.ForeignKey(
-        'Agendamento', 
-        on_delete=models.PROTECT,
-        related_name='checklists',
-        verbose_name='Agendamento'
-    )
-    usuario = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        verbose_name='Usuário'
-    )
-    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
-    data_criacao = models.DateTimeField(auto_now_add=True)
-            
-    # Dados de quilometragem
-    km_inicial = models.PositiveIntegerField(
-        validators=[MinValueValidator(0)]
-    )
-    km_final = models.PositiveIntegerField(
-        null=True, 
-        blank=True,
-        validators=[MinValueValidator(0)]
-    )
     
-    # Itens do checklist
-    revisao_frontal_status = models.CharField(
-        max_length=15,
-        choices=STATUS_CHOICES,
-        default='nao_verificado'
-    )
-    foto_frontal = models.ImageField(
-        upload_to='checklist/frontal/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
-        blank=True,
-        null=True
-    )
-    coordenadas_avaria_frontal = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name='Coordenadas Avaria Frontal',
-        help_text='Formato: "x,y" (ex: "100,200")'
-    )
-    
-     # Itens do checklist
-    revisao_trazeira_status = models.CharField(
-        max_length=15,
-        choices=STATUS_CHOICES,
-        default='nao_verificado'
-    )
-    foto_trazeira = models.ImageField(
-        upload_to='checklist/trazeira/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
-        blank=True,
-        null=True
-    )
-    coordenadas_avaria_trazeira = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name='Coordenadas Avaria Traseira',
-        help_text='Formato: "x,y" (ex: "100,200")'
-    )
-
-     # Itens do checklist
-    revisao_lado_motorista_status = models.CharField(
-        max_length=15,
-        choices=STATUS_CHOICES,
-        default='nao_verificado'
-    )
-    foto_lado_motorista = models.ImageField(
-        upload_to='checklist/lado_motorista/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
-        blank=True,
-        null=True
-    )
-    coordenadas_avaria_lado_motorista = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name='Coordenadas Avaria Lado Motorista',
-        help_text='Formato: "x,y" (ex: "100,200")'
-    )
-
-     # Itens do checklist
-    revisao_lado_passageiro_status = models.CharField(
-        max_length=15,
-        choices=STATUS_CHOICES,
-        default='nao_verificado'
-    )
-    foto_lado_passageiro = models.ImageField(
-        upload_to='checklist/lado_passageiro/',
-        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
-        blank=True,
-        null=True
-    )
-    coordenadas_lado_passageiro = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name='Coordenadas Lado Passageiro',
-        help_text='Formato: "x,y" (ex: "100,200")'
-    )
-    
-    # Dados finais
-    observacoes_gerais = models.TextField(
-        verbose_name='Ocorrências',
-        blank=True, null=True
-    )
-    anexo_ocorrencia = models.FileField(
-        upload_to='checklist/ocorrencias/',
-        blank=True,
-        null=True
-    )
-
-    @receiver(pre_save, sender=Agendamento)
-    def atualizar_status_carro(sender, instance, **kwargs):
-        """Atualiza status do carro conforme status do agendamento"""
-        if instance.status == 'concluido' or instance.status == 'cancelado':
-            instance.carro.status = 'disponivel'
-        else:
-            instance.carro.status = 'locado'
-        instance.carro.save()
-
-    assinatura = models.TextField(blank=True, null=True)
+    tipo = models.CharField(max_length=10)
+    data_criacao = models.DateTimeField(default=timezone.now)
+    km_inicial = models.PositiveIntegerField()
+    km_final = models.PositiveIntegerField(null=True, blank=True)
+    revisao_frontal_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
+    foto_frontal = models.ImageField(upload_to='checklists/')
+    revisao_trazeira_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
+    foto_trazeira = models.ImageField(upload_to='checklists/')
+    revisao_lado_motorista_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
+    foto_lado_motorista = models.ImageField(upload_to='checklists/')
+    revisao_lado_passageiro_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
+    foto_lado_passageiro = models.ImageField(upload_to='checklists/')
+    observacoes_gerais = models.TextField(blank=True, null=True)
+    anexo_ocorrencia = models.TextField(blank=True, null=True)
+    assinatura = models.TextField()
     confirmacao = models.BooleanField(default=False)
-
-    class Meta:
-        db_table = 'checklist_carro'  # Isso define o nome exato da tabela
-        verbose_name = 'Checklist de Veículo'
-        verbose_name_plural = 'Checklists de Veículos'
-        ordering = ['-data_criacao']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['agendamento', 'tipo'],
-                name='unique_checklist_por_tipo'
-            )
-        ]
-
-    def clean(self):
-        super().clean()
-        
-        # Validação da quilometragem
-        if self.km_final is not None and self.km_inicial is not None:
-            if self.km_final < self.km_inicial:
-                raise ValidationError(
-                    {'km_final': 'O quilometragem final não pode ser menor que o inicial.'}
-                )
-        
-        # Validação adicional para tipo 'retorno'
-        if self.tipo == 'retorno' and self.km_final is None:
-            raise ValidationError(
-                {'km_final': 'Quilometragem final é obrigatória para checklists de retorno.'}
-            )
-
+    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='checklists')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    
     def __str__(self):
-        return f"Checklist #{self.id} - {self.get_tipo_display()} (Agendamento #{self.agendamento.id})"
-
-    def save(self, *args, **kwargs):
-        # Atualiza a quilometragem do carro quando checklist de retorno é salvo
-        if self.tipo == 'retorno' and self.km_final:
-            self.agendamento.km_final = self.km_final
-            self.agendamento.save()
-        super().save(*args, **kwargs)
-
-class CustomUser(AbstractUser):
-    razao_social = models.CharField('Razão Social', max_length=100, blank=True)
-    nome_fantasia = models.CharField('Nome Fantasia', max_length=100, blank=True)
+        return f"Checklist #{self.id} - {self.agendamento}"
     
     class Meta:
-        verbose_name = 'Usuário'
-        verbose_name_plural = 'Usuários'
+        verbose_name = "Checklist"
+        verbose_name_plural = "Checklists"
 
-    def __str__(self):
-        return self.razao_social or self.nome_fantasia or self.username
+class Foto(models.Model):
+    imagem = models.ImageField(upload_to='fotos/')
+    data_criacao = models.DateTimeField(default=timezone.now)
+    observacao = models.TextField(blank=True, null=True)
+    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='fotos')
     
-    # Corrigindo os related_name para evitar conflitos
-    groups = models.ManyToManyField(
-        'auth.Group',
-        related_name='customuser_set',
-        related_query_name='customuser',
-        blank=True,
-        verbose_name='groups'
-    )
-    
-    user_permissions = models.ManyToManyField(
-        'auth.Permission',
-        related_name='customuser_set',
-        related_query_name='customuser',
-        blank=True,
-        verbose_name='user permissions'
-    )
-
-    def get_full_name(self):
-        """Retorna o nome completo (first_name + last_name)"""
-        full_name = f"{self.first_name} {self.last_name}"
-        return full_name.strip()
-
     def __str__(self):
-        """Representação em string: razao_social OU nome_fantasia OU username"""
-        return self.razao_social or self.nome_fantasia or self.username
+        return f"Foto #{self.id} - {self.agendamento}"
+    
+    class Meta:
+        verbose_name = "Foto"
+        verbose_name_plural = "Fotos"
 

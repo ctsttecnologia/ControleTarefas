@@ -1,353 +1,41 @@
-{% extends "automovel/base.html" %}
-{% load static %}
+{% extends 'automovel/base.html' %}
+{% load static crispy_forms_tags %}
+
+{% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento{% endblock %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csscarro/styles.css' %}">
-   
-</head>
-<body>  
-    
-    <div class="painel" align="center">
-        <h1>Agendamento</h1>
-    </div>
-
-    <div class="container">
-        
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-        {% endif %}
-
-        <h3>{% if object %}Editar{% else %}Novo{% endif %} Agendamento</h3>              
-        <div class="painel">
-            
-            <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn btn-sm btn-info">Início</a>
-            <a href="{% url 'usuario:logout' %}" class="btn btn-sm btn-info">Sair</a>
-            <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-sm btn-info">Agendamentos</a>
-            <a href="{% url 'profile' %}" class="btn btn-sm btn-info">Menu</a>
-        </div> 
-            <div class="container">
-                
-                <form method="post" enctype="multipart/form-data" id="agendamento-form">
-                    {% csrf_token %}
-                    
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {% for error in form.non_field_errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <!-- Veículo -->
-                            <div class="form-group">
-                                <label for="{{ form.carro.id_for_label }}">{{ form.carro.label }} *</label>
-                                {{ form.carro }}
-                                {% if form.carro.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.carro.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Funcionário Responsável -->
-                            <div class="form-group">
-                                <label for="{{ form.funcionario.id_for_label }}">{{ form.funcionario.label }} *</label>
-                                {{ form.funcionario }}
-                                {% if form.funcionario.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.funcionario.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Data/Hora do Agendamento -->
-                            <div class="form-group">
-                                <label for="{{ form.data_hora_agenda.id_for_label }}">{{ form.data_hora_agenda.label }} *</label>
-                                {{ form.data_hora_agenda }}
-                                {% if form.data_hora_agenda.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.data_hora_agenda.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Data/Hora da Devolução -->
-                            <div class="form-group">
-                                <label for="{{ form.data_hora_devolucao.id_for_label }}">{{ form.data_hora_devolucao.label }}</label>
-                                {{ form.data_hora_devolucao }}
-                                {% if form.data_hora_devolucao.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.data_hora_devolucao.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <!-- Código do cliente CM-->
-                            <div class="form-group">
-                                <label for="{{ form.cm.id_for_label }}">{{ form.cm.label }} *</label>
-                                {{ form.cm }}
-                                {% if form.cm.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.cm.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                         
-                            <!-- Quilometragem Inicial -->
-                            <div class="form-group">
-                                <label for="{{ form.km_inicial.id_for_label }}">{{ form.km_inicial.label }} *</label>
-                                {{ form.km_inicial }}
-                                {% if form.km_inicial.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.km_inicial.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Quilometragem Final -->
-                            <div class="form-group">
-                                <label for="{{ form.km_final.id_for_label }}">{{ form.km_final.label }}</label>
-                                {{ form.km_final }}
-                                {% if form.km_final.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.km_final.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Responsável pelo Agendamento -->
-                            <div class="form-group">
-                                <label for="{{ form.responsavel.id_for_label }}">{{ form.responsavel.label }} *</label>
-                                {{ form.responsavel }}
-                                {% if form.responsavel.errors %}
-                                    <div class="invalid-feedback" style="display: block;">
-                                        {% for error in form.responsavel.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Descrição do Agendamento -->
-                    <div class="form-group">
-                        <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
-                        {{ form.descricao }}
-                        {% if form.descricao.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.descricao.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Checkboxes -->
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                {{ form.pedagio }}
-                                <label class="form-check-label" for="{{ form.pedagio.id_for_label }}">
-                                    {{ form.pedagio.label }} *
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                {{ form.abastecimento }}
-                                <label class="form-check-label" for="{{ form.abastecimento.id_for_label }}">
-                                    {{ form.abastecimento.label }} *
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                {{ form.cancelar_agenda }}
-                                <label class="form-check-label" for="{{ form.cancelar_agenda.id_for_label }}">
-                                    {{ form.cancelar_agenda.label }} *
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Motivo do Cancelamento (condicional) -->
-                    <div class="form-group" id="motivo-cancelamento-group" style="display: none;">
-                        <label for="{{ form.motivo_cancelamento.id_for_label }}">{{ form.motivo_cancelamento.label }}</label>
-                        {{ form.motivo_cancelamento }}
-                        {% if form.motivo_cancelamento.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.motivo_cancelamento.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Status -->
-                    <div class="form-group">
-                        <label for="{{ form.status.id_for_label }}">{{ form.status.label }} *</label>
-                        {{ form.status }}
-                        {% if form.status.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.status.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Fotos do Veículo -->
-                    <div class="form-group">
-                        <label for="{{ form.foto_principal.id_for_label }}">{{ form.foto_principal.label }}</label>
-                        
-                        <!-- Campo de upload -->
-                        {{ form.foto_principal }}
-                        
-                        <!-- Visualização da foto atual (se existir) -->
-                        {% if form.instance.pk and form.instance.foto_principal %}
-                            <div class="current-photo mt-2">
-                                <p>Foto atual:</p>
-                                <a href="{{ form.instance.foto_principal.url }}" target="_blank">
-                                    <img src="{{ form.instance.foto_principal.url }}" class="img-thumbnail" width="150">
-                                </a>
-                            </div>
-                        {% endif %}
-                        
-                        {% if form.foto_principal.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.foto_principal.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Ocorrências -->
-                    <div class="form-group">
-                        <label for="{{ form.ocorrencia.id_for_label }}">{{ form.ocorrencia.label }}</label>
-                        {{ form.ocorrencia }}
-                        {% if form.ocorrencia.errors %}
-                            <div class="invalid-feedback" style="display: block;">
-                                {% for error in form.ocorrencia.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="form-group text-right">
-                        <button type="submit" class="btn btn-sm btn-info">
-                            <i class="fas fa-save"></i> Salvar
-                        </button>
-                        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-sm btn-info">
-                            <i class="fas fa-eraser"></i> Cancelar
-                        </a>
-                    </div>
-                </form>
-            </div>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h3>{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento</h3>
         </div>
-{% endblock %}
-
-{% block javascript %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{% if form.instance.id %}{% url 'automovel:agendamento_detail' form.instance.id %}{% else %}{% url 'automovel:agendamento_list' %}{% endif %}" 
+                       class="btn btn-outline-secondary me-2">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if form.instance.id %}Atualizar{% else %}Salvar{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <script>
-
-$(document).ready(function() {
-    // Mostra/oculta motivo de cancelamento
-    function toggleMotivoCancelamento() {
-        const cancelarAgenda = $('#id_cancelar_agenda').is(':checked') || $('#id_status').val() === 'cancelado';
-        $('#motivo-cancelamento-group').toggle(cancelarAgenda);
-        
-        if (cancelarAgenda) {
-            $('#id_motivo_cancelamento').attr('required', 'required');
-        } else {
-            $('#id_motivo_cancelamento').removeAttr('required');
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    // Preencher campo de carro se vier por parâmetro
+    const urlParams = new URLSearchParams(window.location.search);
+    const carroId = urlParams.get('carro');
+    
+    if (carroId) {
+        document.getElementById('id_carro').value = carroId;
     }
-    
-    $('#id_cancelar_agenda').change(toggleMotivoCancelamento);
-    $('#id_status').change(toggleMotivoCancelamento);
-    
-    // Inicializa o estado
-    toggleMotivoCancelamento();
-    
-    // Validação de datas
-    $('#agendamento-form').submit(function(e) {
-        const dataAgenda = new Date($('#id_data_hora_agenda').val());
-        const dataDevolucao = new Date($('#id_data_hora_devolucao').val());
-        
-        if ($('#id_data_hora_devolucao').val() && dataDevolucao <= dataAgenda) {
-            alert('A data/hora de devolução deve ser posterior à data/hora de agendamento.');
-            e.preventDefault();
-            return false;
-        }
-        
-        return true;
-    });
-
-    $(document).ready(function() {
-        // Inicializa o Select2 no campo de cliente
-        $('#id_cliente').select2({
-            placeholder: "Selecione um cliente",
-            allowClear: true,
-            width: '100%'
-        });
-    }
-    // VALIDAÇÃO DO TAMANHO E TIPO DA FOTO (CÓDIGO NOVO)
-    $('#id_foto_principal').change(function() {
-        const file = this.files[0];
-        if (file) {
-            const maxSize = 5 * 1024 * 1024; // 5MB
-            if (file.size > maxSize) {
-                alert('A foto não pode ser maior que 5MB');
-                $(this).val('');
-            }
-            
-            // Valida tipo de arquivo
-            const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (!validTypes.includes(file.type)) {
-                alert('Apenas imagens JPEG, PNG ou GIF são permitidas');
-                $(this).val('');
-            }
-        }
-    });
 });
 </script>
 {% endblock %}
-
-</body>
-</html>
-
-
