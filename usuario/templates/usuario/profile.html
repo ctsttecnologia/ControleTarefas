@@ -10,6 +10,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <!-- Link para o arquivo CSS -->
+    
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
 </head>
@@ -17,13 +18,22 @@
 <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção--> 
 {% block content %}{% endblock %}   
     <!--<img src="{% static 'imagens/painel1.png' %}" class="imagempainel">--> <!--Imagem no Django em produção-->
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="{% static 'automovel/js/scripts.js' %}"></script>
+    <script src="{% static 'automovel/js/camera.js' %}"></script>
     <div class="container1">
         {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
+            <div>
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i> Olá, {{ request.user.username }}
+                </a>
+            </div>
         {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
+                <a href="{% url 'home' %}" class="btn-home">Home</a>
         {% endif %}
+        
         <div class="painel1">
             
             <div class="painel">
@@ -97,10 +107,10 @@
                 <div class="card card6">VEÍCULO
                     <div class="card1-1">
                         <br><br>
-                        <a href="{% url 'automovel:adicionar_carro' %}" class="link-card">Cadastrar Carro</a>
-                        <a href="{% url 'automovel:adicionar_agendamento' %}" class="link-card">Agendar Carro</a>
-                        <a href="{% url 'automovel:lista_carros' %}" class="link-card">Relação de Carros</a>
-                        <a href="{% url 'automovel:relatorios' %}" class="link-card">Relatorios</a>
+                        <a href="{% url 'automovel:carro_list' %}" class="link-card">Cadastrar Carro</a>
+                        <a href="{% url 'automovel:agendamento_list' %}" class="link-card">Agendar Carro</a>
+                        <a href="{% url 'automovel:carro_list' %}" class="link-card">Relação de Carros</a>
+                        <a href="{% url 'automovel:dashboard' %}" class="link-card">Relatorios</a>
 
                     </div>
                     <div class="icone_tarefa">  

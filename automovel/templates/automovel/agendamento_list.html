@@ -1,0 +1,97 @@
+{% extends 'automovel/base.html' %}
+{% load static %}
+
+{% block title %}Agendamentos{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Agendamentos</h1>
+        <a href="{% url 'automovel:agendamento_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Novo Agendamento
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">Todos os Agendamentos</h5>
+                </div>
+                <div class="d-flex">
+                    <div class="dropdown me-2">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" 
+                                id="filterDropdown" data-bs-toggle="dropdown">
+                            {% if request.GET.status %}
+                                {{ request.GET.status|title }}
+                            {% else %}
+                                Todos Status
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="?">Todos</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% for value, label in status_choices %}
+                                <li><a class="dropdown-item" href="?status={{ value }}">{{ label }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <form method="get" class="form-inline">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Pesquisar..." 
+                                   value="{{ request.GET.search }}">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if agendamentos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Carro</th>
+                                <th>Data/Hora</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for agendamento in agendamentos %}
+                            <tr>
+                                <td>{{ agendamento.funcionario }}</td>
+                                <td>{{ agendamento.carro }}</td>
+                                <td>{{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <span class="badge bg-{% if agendamento.status == 'agendado' %}info{% elif agendamento.status == 'em_andamento' %}primary{% elif agendamento.status == 'finalizado' %}success{% else %}danger{% endif %}">
+                                        {{ agendamento.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if agendamento.status == 'agendado' %}
+                                    <a href="#" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">Nenhum agendamento encontrado.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

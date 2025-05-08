@@ -1,0 +1,148 @@
+{% extends 'automovel/base.html' %}
+{% load static %}
+
+{% block title %}Agendamento #{{ agendamento.id }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Agendamento #{{ agendamento.id }}</h3>
+                <span class="badge bg-{% if agendamento.status == 'agendado' %}info{% elif agendamento.status == 'em_andamento' %}primary{% elif agendamento.status == 'finalizado' %}success{% else %}danger{% endif %}">
+                    {{ agendamento.get_status_display }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h5>Informações Básicas</h5>
+                        <hr>
+                        <p><strong>Funcionário:</strong> {{ agendamento.funcionario }}</p>
+                        <p><strong>Carro:</strong> {{ agendamento.carro }}</p>
+                        <p><strong>Data/Hora do Agendamento:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
+                        {% if agendamento.data_hora_devolucao %}
+                            <p><strong>Data/Hora da Devolução:</strong> {{ agendamento.data_hora_devolucao|date:"d/m/Y H:i" }}</p>
+                        {% endif %}
+                        <p><strong>CM:</strong> {{ agendamento.cm }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h5>Detalhes da Viagem</h5>
+                        <hr>
+                        <p><strong>KM Inicial:</strong> {{ agendamento.km_inicial }}</p>
+                        {% if agendamento.km_final %}
+                            <p><strong>KM Final:</strong> {{ agendamento.km_final }}</p>
+                        {% endif %}
+                        <p><strong>Pedágio:</strong> {% if agendamento.pedagio %}Sim{% else %}Não{% endif %}</p>
+                        <p><strong>Abastecimento:</strong> {% if agendamento.abastecimento %}Sim{% else %}Não{% endif %}</p>
+                        <p><strong>Responsável:</strong> {{ agendamento.responsavel }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if agendamento.descricao %}
+            <div class="mb-3">
+                <h5>Descrição</h5>
+                <hr>
+                <p>{{ agendamento.descricao|linebreaks }}</p>
+            </div>
+            {% endif %}
+
+            {% if agendamento.ocorrencia %}
+            <div class="mb-3">
+                <h5>Ocorrência</h5>
+                <hr>
+                <p>{{ agendamento.ocorrencia|linebreaks }}</p>
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-end">
+                <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+                {% if agendamento.status == 'agendado' %}
+                <a href="{% url 'automovel:agendamento_update' agendamento.id %}" class="btn btn-primary me-2">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+                <a href="{% url 'automovel:checklist_create' %}?agendamento={{ agendamento.id }}" 
+                   class="btn btn-success">
+                    <i class="bi bi-clipboard-check"></i> Checklist
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if checklist_form %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Checklists</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Data</th>
+                            <th>KM Inicial</th>
+                            <th>KM Final</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for checklist in checklists %}
+                        <tr>
+                            <td>{{ checklist.get_tipo_display }}</td>
+                            <td>{{ checklist.data_criacao|date:"d/m/Y H:i" }}</td>
+                            <td>{{ checklist.km_inicial }}</td>
+                            <td>{{ checklist.km_final|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'automovel:checklist_update' checklist.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if fotos %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Fotos</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for foto in fotos %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <img src="{{ foto.imagem.url }}" class="card-img-top" alt="Foto do agendamento">
+                        <div class="card-body">
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    {{ foto.data_criacao|date:"d/m/Y H:i" }}
+                                </small>
+                                {% if foto.observacao %}
+                                <br>{{ foto.observacao }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

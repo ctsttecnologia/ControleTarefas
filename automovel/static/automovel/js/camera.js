@@ -1,149 +1,75 @@
-/**
- * Configura o campo de captura de imagem com visualização e marcação de avarias
- * @param {string} inputId - ID do input file
- * @param {string} previewId - ID do elemento de visualização
- * @param {string} coordinatesId - ID do input hidden para coordenadas (opcional)
- */
-function setupCameraField(inputId, previewId, coordinatesId = null) {
-    const fileInput = document.getElementById(inputId);
-    const previewContainer = document.getElementById(previewId);
-    const coordinatesInput = coordinatesId ? document.getElementById(coordinatesId) : null;
-    
-    if (!fileInput || !previewContainer) {
-        console.error('Elementos não encontrados para:', {inputId, previewId});
-        return;
+document.addEventListener('DOMContentLoaded', function() {
+    // Função para capturar imagem da câmera
+    function captureCamera(elementId) {
+        const input = document.getElementById(elementId);
+        const video = document.createElement('video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    // Mostrar preview da câmera
+                    const preview = document.getElementById(`${elementId}-preview`);
+                    preview.innerHTML = '';
+                    preview.appendChild(video);
+                    
+                    // Botão para capturar imagem
+                    const captureBtn = document.createElement('button');
+                    captureBtn.textContent = 'Capturar';
+                    captureBtn.className = 'btn btn-primary mt-2';
+                    captureBtn.onclick = function() {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // Converter para base64 e definir no campo de input
+                        const dataUrl = canvas.toDataURL('image/png');
+                        input.value = dataUrl;
+                        
+                        // Mostrar imagem capturada
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+                        img.className = 'img-thumbnail mt-2';
+                        preview.innerHTML = '';
+                        preview.appendChild(img);
+                        
+                        // Parar stream de vídeo
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    preview.appendChild(captureBtn);
+                })
+                .catch(function(error) {
+                    console.error('Erro ao acessar câmera:', error);
+                });
+        }
     }
-
-    fileInput.addEventListener('change', function(e) {
-        if (fileInput.files && fileInput.files[0]) {
-            const reader = new FileReader();
+    
+    // Configurar captura para cada campo de imagem
+    const imageFields = ['foto_frontal', 'foto_trazeira', 'foto_lado_motorista', 'foto_lado_passageiro'];
+    imageFields.forEach(function(fieldId) {
+        const field = document.getElementById(`id_${fieldId}`);
+        if (field) {
+            field.style.display = 'none';
             
-            reader.onload = function(e) {
-                // Limpa o preview anterior
-                previewContainer.innerHTML = '';
-                
-                // Cria e configura a nova imagem
-                const img = new Image();
-                img.src = e.target.result;
-                img.alt = 'Foto capturada';
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
-                
-                // Adiciona a imagem ao container
-                previewContainer.appendChild(img);
-                
-                // Configura marcação de avarias se necessário
-                if (coordinatesInput) {
-                    setupDamageMarking(img, coordinatesInput);
-                }
+            const container = document.createElement('div');
+            container.id = `${fieldId}-preview`;
+            container.className = 'camera-preview mb-3';
+            field.parentNode.insertBefore(container, field.nextSibling);
+            
+            const btn = document.createElement('button');
+            btn.textContent = 'Abrir Câmera';
+            btn.className = 'btn btn-sm btn-outline-primary';
+            btn.onclick = function(e) {
+                e.preventDefault();
+                captureCamera(fieldId);
             };
-            
-            reader.onerror = function() {
-                console.error('Erro ao ler a imagem');
-                previewContainer.innerHTML = '<p class="error">Erro ao carregar imagem</p>';
-            };
-            
-            reader.readAsDataURL(fileInput.files[0]);
+            container.appendChild(btn);
         }
     });
-}
-
-/**
- * Configura a funcionalidade de marcação de avarias na imagem
- * @param {HTMLImageElement} imgElement - Elemento de imagem
- * @param {HTMLInputElement} coordinatesInput - Input para armazenar coordenadas
- */
-function setupDamageMarking(imgElement, coordinatesInput) {
-    let coordinates = [];
-    
-    // Tenta carregar coordenadas existentes
-    try {
-        coordinates = coordinatesInput.value ? JSON.parse(coordinatesInput.value) : [];
-    } catch (e) {
-        console.error('Erro ao parsear coordenadas:', e);
-        coordinates = [];
-    }
-    
-    // Adiciona marcadores existentes
-    coordinates.forEach(coord => {
-        addDamageMarker(imgElement, coord.x, coord.y, false);
-    });
-    
-    // Configura o listener para novos cliques
-    imgElement.style.cursor = 'crosshair';
-    imgElement.addEventListener('click', function(e) {
-        const rect = imgElement.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width;
-        const y = (e.clientY - rect.top) / rect.height;
-        
-        // Adiciona novo marcador
-        addDamageMarker(imgElement, x, y, true);
-        
-        // Armazena coordenada
-        coordinates.push({x, y});
-        coordinatesInput.value = JSON.stringify(coordinates);
-    });
-}
-
-/**
- * Adiciona um marcador visual de avaria na imagem
- * @param {HTMLImageElement} imgElement - Elemento de imagem
- * @param {number} x - Posição horizontal relativa (0-1)
- * @param {number} y - Posição vertical relativa (0-1)
- * @param {boolean} animate - Se deve animar o marcador
- */
-function addDamageMarker(imgElement, x, y, animate = false) {
-    const marker = document.createElement('div');
-    marker.className = 'damage-marker';
-    
-    // Posiciona o marcador
-    marker.style.position = 'absolute';
-    marker.style.left = `${x * 100}%`;
-    marker.style.top = `${y * 100}%`;
-    
-    // Estilos do marcador
-    marker.style.width = '12px';
-    marker.style.height = '12px';
-    marker.style.backgroundColor = 'rgba(255, 0, 0, 0.7)';
-    marker.style.border = '2px solid white';
-    marker.style.borderRadius = '50%';
-    marker.style.transform = 'translate(-50%, -50%)';
-    marker.style.pointerEvents = 'none';
-    
-    if (animate) {
-        marker.style.animation = 'pulse 0.5s';
-    }
-    
-    // Adiciona ao container da imagem
-    imgElement.parentNode.appendChild(marker);
-}
-
-// Adiciona estilos dinâmicos se necessário
-function addDynamicStyles() {
-    if (!document.getElementById('camera-js-styles')) {
-        const style = document.createElement('style');
-        style.id = 'camera-js-styles';
-        style.textContent = `
-            .damage-marker {
-                position: absolute;
-                pointer-events: none;
-            }
-            @keyframes pulse {
-                0% { transform: translate(-50%, -50%) scale(1); }
-                50% { transform: translate(-50%, -50%) scale(1.5); }
-                100% { transform: translate(-50%, -50%) scale(1); }
-            }
-            .error {
-                color: #dc3545;
-                padding: 10px;
-                background: #f8d7da;
-                border-radius: 4px;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Inicializa os estilos quando o script carrega
-addDynamicStyles();
+});
 

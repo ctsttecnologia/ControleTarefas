@@ -1,0 +1,172 @@
+/* carro.css - Estilos específicos para páginas de carros */
+.carro-detail {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .carro-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .carro-title {
+    font-size: 1.75rem;
+    color: var(--dark-color);
+    margin: 0;
+  }
+  
+  .carro-badge {
+    font-size: 0.875rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50rem;
+  }
+  
+  .badge-disponivel {
+    background-color: var(--success-color);
+    color: white;
+  }
+  
+  .badge-indisponivel {
+    background-color: var(--danger-color);
+    color: white;
+  }
+  
+  .carro-image {
+    width: 100%;
+    height: auto;
+    border-radius: var(--border-radius);
+    margin-bottom: 1.5rem;
+    object-fit: cover;
+  }
+  
+  .carro-info {
+    margin-bottom: 1.5rem;
+  }
+  
+  .info-row {
+    display: flex;
+    margin-bottom: 0.75rem;
+  }
+  
+  .info-label {
+    font-weight: 600;
+    width: 150px;
+    color: var(--text-light);
+  }
+  
+  .info-value {
+    flex: 1;
+  }
+  
+  .carro-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  /* Lista de carros */
+  .carro-list-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 1rem;
+    transition: var(--transition);
+  }
+  
+  .carro-list-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.1);
+  }
+  
+  .carro-list-image {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--border-radius);
+    object-fit: cover;
+    margin-right: 1.5rem;
+  }
+  
+  .carro-list-info {
+    flex: 1;
+  }
+  
+  .carro-list-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .carro-list-meta {
+    color: var(--text-light);
+    font-size: 0.875rem;
+  }
+  
+  .carro-list-status {
+    margin-left: 1rem;
+  }
+  
+  /* Formulário de carro */
+  .carro-form {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+  }
+  
+  /* Responsivo */
+  @media (max-width: 768px) {
+    .carro-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .carro-title {
+      margin-bottom: 0.5rem;
+    }
+    
+    .carro-list-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .carro-list-image {
+      width: 100%;
+      height: auto;
+      margin-right: 0;
+      margin-bottom: 1rem;
+    }
+    
+    .info-row {
+      flex-direction: column;
+    }
+    
+    .info-label {
+      width: 100%;
+      margin-bottom: 0.25rem;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .carro-actions {
+      flex-direction: column;
+    }
+    
+    .carro-actions .btn {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    
+    .carro-actions .btn:last-child {
+      margin-bottom: 0;
+    }
+  }
+

@@ -1,0 +1,189 @@
+{% extends 'automovel/base.html' %}
+{% load static crispy_forms_tags %}
+
+{% block title %}Checklist de Veículo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'csscarro/assinatura.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h3>Checklist de Veículo</h3>
+            <p class="mb-0">Agendamento: {{ agendamento.funcionario }} - {{ agendamento.carro }}</p>
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        {{ form.tipo|as_crispy_field }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ form.km_inicial|as_crispy_field }}
+                    </div>
+                </div>
+
+                <h4 class="mb-3">Vistoria do Veículo</h4>
+                
+                <div class="row">
+                    <!-- Parte Frontal -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Parte Frontal</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.revisao_frontal_status|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label class="form-label">Foto Frontal</label>
+                                    <div id="foto_frontal-preview" class="camera-preview mb-3"></div>
+                                    {{ form.foto_frontal }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Parte Traseira -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Parte Traseira</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.revisao_trazeira_status|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label class="form-label">Foto Traseira</label>
+                                    <div id="foto_trazeira-preview" class="camera-preview mb-3"></div>
+                                    {{ form.foto_trazeira }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Lado Motorista -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Lado Motorista</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.revisao_lado_motorista_status|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label class="form-label">Foto Lado Motorista</label>
+                                    <div id="foto_lado_motorista-preview" class="camera-preview mb-3"></div>
+                                    {{ form.foto_lado_motorista }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Lado Passageiro -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Lado Passageiro</h5>
+                            </div>
+                            <div class="card-body">
+                                {{ form.revisao_lado_passageiro_status|as_crispy_field }}
+                                <div class="mb-3">
+                                    <label class="form-label">Foto Lado Passageiro</label>
+                                    <div id="foto_lado_passageiro-preview" class="camera-preview mb-3"></div>
+                                    {{ form.foto_lado_passageiro }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Observações e Ocorrências -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        {{ form.observacoes_gerais|as_crispy_field }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.anexo_ocorrencia|as_crispy_field }}
+                    </div>
+                </div>
+                
+                <!-- Assinatura Digital -->
+                <div class="signature-container">
+                    <div class="signature-header">
+                        <h5 class="signature-title">Assinatura Digital</h5>
+                    </div>
+                    <div class="signature-canvas-container">
+                        <canvas id="signatureCanvas" class="signature-canvas"></canvas>
+                    </div>
+                    <div class="signature-actions">
+                        <button type="button" class="signature-clear-btn" id="clearSignature">
+                            <i class="bi bi-eraser"></i> Limpar
+                        </button>
+                    </div>
+                    {{ form.assinatura }}
+                </div>
+                
+                {{ form.confirmacao|as_crispy_field }}
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" 
+                       class="btn btn-outline-secondary me-2">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Salvar Checklist
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preencher campo de agendamento se vier por parâmetro
+    const urlParams = new URLSearchParams(window.location.search);
+    const agendamentoId = urlParams.get('agendamento');
+    
+    if (agendamentoId) {
+        document.getElementById('id_agendamento').value = agendamentoId;
+    }
+    
+    // Configurar assinatura digital
+    const canvas = document.getElementById('signatureCanvas');
+    const signaturePad = new SignaturePad(canvas);
+    const signatureInput = document.getElementById('id_assinatura');
+    
+    // Redimensionar canvas
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        signaturePad.clear();
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    // Atualizar campo hidden quando a assinatura mudar
+    canvas.addEventListener('mouseup', function() {
+        if (!signaturePad.isEmpty()) {
+            signatureInput.value = signaturePad.toDataURL();
+        }
+    });
+    
+    // Limpar assinatura
+    document.getElementById('clearSignature').addEventListener('click', function() {
+        signaturePad.clear();
+        signatureInput.value = '';
+    });
+});
+</script>
+{% endblock %}

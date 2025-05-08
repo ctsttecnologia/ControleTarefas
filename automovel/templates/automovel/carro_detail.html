@@ -1,0 +1,135 @@
+{% extends 'automovel/base.html' %}
+{% load static %}
+
+{% block title %}{{ carro.marca }} {{ carro.modelo }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'csscarro/carro.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="carro-detail">
+        <div class="carro-header">
+            <h1 class="carro-title">{{ carro.marca }} {{ carro.modelo }}</h1>
+            <span class="carro-badge {% if carro.disponivel %}badge-disponivel{% else %}badge-indisponivel{% endif %}">
+                {% if carro.disponivel %}Disponível{% else %}Indisponível{% endif %}
+            </span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4">
+                <img src="{% static 'automovel/img/car-placeholder.png' %}" 
+                     alt="{{ carro.modelo }}" class="carro-image">
+            </div>
+            <div class="col-md-8">
+                <div class="carro-info">
+                    <div class="info-row">
+                        <span class="info-label">Placa:</span>
+                        <span class="info-value">{{ carro.placa }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Ano:</span>
+                        <span class="info-value">{{ carro.ano }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Cor:</span>
+                        <span class="info-value">{{ carro.cor }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Renavan:</span>
+                        <span class="info-value">{{ carro.renavan }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Última Manutenção:</span>
+                        <span class="info-value">
+                            {% if carro.data_ultima_manutencao %}
+                                {{ carro.data_ultima_manutencao|date:"d/m/Y" }}
+                            {% else %}
+                                Não registrada
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Próxima Manutenção:</span>
+                        <span class="info-value">
+                            {% if carro.data_proxima_manutencao %}
+                                {{ carro.data_proxima_manutencao|date:"d/m/Y" }}
+                            {% else %}
+                                Não agendada
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                {% if carro.observacoes %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Observações</h5>
+                    </div>
+                    <div class="card-body">
+                        {{ carro.observacoes|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="carro-actions">
+                    <a href="{% url 'automovel:carro_update' carro.id %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <a href="{% url 'automovel:agendamento_create' %}?carro={{ carro.id }}" 
+                       class="btn btn-success">
+                        <i class="bi bi-calendar-plus"></i> Agendar
+                    </a>
+                    <a href="{% url 'automovel:carro_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Últimos Agendamentos</h5>
+        </div>
+        <div class="card-body">
+            {% if agendamentos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Data/Hora</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for agendamento in agendamentos %}
+                            <tr>
+                                <td>{{ agendamento.funcionario }}</td>
+                                <td>{{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <span class="badge bg-{% if agendamento.status == 'agendado' %}info{% elif agendamento.status == 'em_andamento' %}primary{% elif agendamento.status == 'finalizado' %}success{% else %}danger{% endif %}">
+                                        {{ agendamento.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">Nenhum agendamento registrado para este veículo.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

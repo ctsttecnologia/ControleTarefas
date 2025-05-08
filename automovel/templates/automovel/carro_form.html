@@ -1,176 +1,33 @@
+{% extends 'automovel/base.html' %}
+{% load static crispy_forms_tags %}
 
-{% extends "automovel/base.html" %}
-{% load static %}
-
-{% block title %}{% if form.instance.pk %}Editar{% else %}Adicionar{% endif %} Veículo{% endblock %}
+{% block title %}{% if form.instance.id %}Editar{% else %}Adicionar{% endif %} Carro{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'csscarro/forms.css' %}">
-
+<link rel="stylesheet" href="{% static 'csscarro/carro.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <h1>
-        <i class="fas fa-car"></i>
-        {% if form.instance.pk %}Editar Veículo{% else %}Adicionar Veículo{% endif %}
-    </h1>
-    <div class="painel-relatorios mb-4">            
-        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-home"></i> Início
-        </a>
-        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-user-cog"></i> Menu
-        </a>
-    </div> 
-    <a href="{% url 'automovel:lista_carros' %}" class="btn btn-outline">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </a>
-</div>
-
-<div class="card">
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        
+<div class="container">
+    <div class="card carro-form">
+        <div class="card-header">
+            <h3>{% if form.instance.id %}Editar{% else %}Adicionar{% endif %} Carro</h3>
+        </div>
         <div class="card-body">
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {% for error in form.non_field_errors %}
-                    {{ error }}
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="{{ form.placa.id_for_label }}">{{ form.placa.label }}</label>
-                    {{ form.placa }}
-                    {% if form.placa.errors %}
-                    <div class="form-error">
-                        {% for error in form.placa.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{% if form.instance.id %}{% url 'automovel:carro_detail' form.instance.id %}{% else %}{% url 'automovel:carro_list' %}{% endif %}" 
+                       class="btn btn-outline-secondary me-2">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if form.instance.id %}Atualizar{% else %}Salvar{% endif %}
+                    </button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.marca.id_for_label }}">{{ form.marca.label }}</label>
-                    {{ form.marca }}
-                    {% if form.marca.errors %}
-                    <div class="form-error">
-                        {% for error in form.marca.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.modelo.id_for_label }}">{{ form.modelo.label }}</label>
-                    {{ form.modelo }}
-                    {% if form.modelo.errors %}
-                    <div class="form-error">
-                        {% for error in form.modelo.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.ano.id_for_label }}">{{ form.ano.label }}</label>
-                    {{ form.ano }}
-                    {% if form.ano.errors %}
-                    <div class="form-error">
-                        {% for error in form.ano.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.cor.id_for_label }}">{{ form.cor.label }}</label>
-                    {{ form.cor }}
-                    {% if form.cor.errors %}
-                    <div class="form-error">
-                        {% for error in form.cor.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.renavan.id_for_label }}">{{ form.renavan.label }}</label>
-                    {{ form.renavan }}
-                    {% if form.renavan.errors %}
-                    <div class="form-error">
-                        {% for error in form.renavan.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
-                    {{ form.status }}
-                    {% if form.status.errors %}
-                    <div class="form-error">
-                        {% for error in form.status.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label for="{{ form.km_atual.id_for_label }}">{{ form.km_atual.label }}</label>
-                    {{ form.km_atual }}
-                    {% if form.km_atual.errors %}
-                    <div class="form-error">
-                        {% for error in form.km_atual.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group span-2">
-                    <label for="{{ form.observacoes.id_for_label }}">{{ form.observacoes.label }}</label>
-                    {{ form.observacoes }}
-                    {% if form.observacoes.errors %}
-                    <div class="form-error">
-                        {% for error in form.observacoes.errors %}
-                            {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                
-                <div class="form-group">
-                    <label>{{ form.ativo.label }}</label>
-                    <div class="form-check">
-                        {{ form.ativo }}
-                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
-                            Veículo ativo
-                        </label>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
-        
-        <div class="card-footer">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Salvar
-            </button>
-            <a href="{% url 'automovel:lista_carros' %}" class="btn btn-outline">
-                Cancelar
-            </a>
-        </div>
-    </form>
+    </div>
 </div>
 {% endblock %}
-
