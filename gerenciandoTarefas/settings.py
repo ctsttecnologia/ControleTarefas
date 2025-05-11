@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # Para formatação de dados
-    'home',
     'usuario',
     'cliente.apps.ClienteConfig',
     'seguranca_trabalho',
@@ -52,7 +51,9 @@ INSTALLED_APPS = [
     'treinamentos.apps.TreinamentosConfig',
     'crispy_forms',
     'crispy_bootstrap5',  # se estiver usando Bootstrap5
+    'home',
 
+    
  
 ]
 
@@ -85,6 +86,7 @@ TEMPLATES = [
 ]
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'  # ou 'bootstrap4', dependendo da versão
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
 

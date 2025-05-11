@@ -45,7 +45,7 @@ def user_profile(request):
 
 def user_logout(request):
     logout(request)
-    return redirect('home')
+    return redirect('home:home')
 
 
 

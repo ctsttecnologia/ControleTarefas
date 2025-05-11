@@ -1,6 +1,7 @@
 
 from django.urls import path
 from . import views
+from .views import export_checklist_word, export_checklist_excel
 
 app_name = 'automovel'
 
@@ -19,9 +20,11 @@ urlpatterns = [
     path('agendamentos/novo/', views.AgendamentoCreateView.as_view(), name='agendamento_create'),
     path('agendamentos/<int:pk>/', views.AgendamentoDetailView.as_view(), name='agendamento_detail'),
     path('agendamentos/<int:pk>/editar/', views.AgendamentoUpdateView.as_view(), name='agendamento_update'),
-    
+        
     # Checklists
     path('checklists/novo/', views.ChecklistCreateView.as_view(), name='checklist_create'),
+    path('checklist/<int:pk>/word/', export_checklist_word, name='export_checklist_word'),
+    path('checklist/<int:pk>/excel/', export_checklist_excel, name='export_checklist_excel'),
     
     # Relatórios
     path('relatorios/carros/<str:format>/', views.relatorio_carros, name='relatorio_carros'),

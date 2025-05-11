@@ -1,6 +1,7 @@
 {% extends 'automovel/base.html' %}
 {% load static crispy_forms_tags %}
 
+
 {% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento{% endblock %}
 
 {% block content %}
@@ -9,6 +10,7 @@
         <div class="card-header">
             <h3>{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento</h3>
         </div>
+       
         <div class="card-body">
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
@@ -26,6 +28,7 @@
         </div>
     </div>
 </div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

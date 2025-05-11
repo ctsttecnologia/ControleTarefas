@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.core.validators import FileExtensionValidator
 
 class Carro(models.Model):
     placa = models.CharField(max_length=10, unique=True)
@@ -34,7 +35,7 @@ class Agendamento(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     carro = models.ForeignKey(Carro, on_delete=models.CASCADE)
     data_hora_agenda = models.DateTimeField()
-    data_hora_devolucao = models.DateTimeField(null=True, blank=True)
+    data_hora_devolucao = models.DateTimeField()
     cm = models.CharField(max_length=20)
     descricao = models.TextField()
     pedagio = models.BooleanField(default=False)
@@ -42,7 +43,7 @@ class Agendamento(models.Model):
     km_inicial = models.PositiveIntegerField()
     km_final = models.PositiveIntegerField(null=True, blank=True)
     foto_principal = models.ImageField(upload_to='agendamentos/', null=True, blank=True)
-    assinatura = models.TextField(blank=True)
+    assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     responsavel = models.CharField(max_length=100)
     ocorrencia = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='agendado')
@@ -57,31 +58,57 @@ class Agendamento(models.Model):
         verbose_name_plural = "Agendamentos"
 
 class Checklist(models.Model):
+
+    TIPO_CHOICES = [
+        ('saida', 'Saída'),
+        ('retorno', 'Retorno'),
+        ('vistoria', 'Vistoria'),
+    ]
+
     STATUS_CHOICES = [
         ('ok', 'OK'),
         ('danificado', 'Danificado'),
         ('nao_aplicavel', 'Não Aplicável'),
     ]
+
+    agendamento = models.ForeignKey(
+        'Agendamento', 
+        on_delete=models.CASCADE,
+        verbose_name="Agendamento"
+    )
     
-    tipo = models.CharField(max_length=10)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     data_criacao = models.DateTimeField(default=timezone.now)
+    data_hora = models.DateTimeField(default=timezone.now, verbose_name="Data/Hora")
     km_inicial = models.PositiveIntegerField()
     km_final = models.PositiveIntegerField(null=True, blank=True)
     revisao_frontal_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
-    foto_frontal = models.ImageField(upload_to='checklists/')
+    foto_frontal = models.ImageField(upload_to='checklist/frontal/', validators=[
+        FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])
+    ])
     revisao_trazeira_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
-    foto_trazeira = models.ImageField(upload_to='checklists/')
+    foto_trazeira = models.ImageField(upload_to='checklist/trazeira/', validators=[
+        FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])
+    ])
     revisao_lado_motorista_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
-    foto_lado_motorista = models.ImageField(upload_to='checklists/')
+    foto_lado_motorista = models.ImageField(upload_to='checklist/lado_motorista/', validators=[
+        FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])
+    ])
     revisao_lado_passageiro_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
-    foto_lado_passageiro = models.ImageField(upload_to='checklists/')
+    foto_lado_passageiro = models.ImageField(upload_to='checklist/lado_passageiro/', validators=[
+        FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])
+    ])
     observacoes_gerais = models.TextField(blank=True, null=True)
     anexo_ocorrencia = models.TextField(blank=True, null=True)
-    assinatura = models.TextField()
+    assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
     agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='checklists')
     usuario = models.ForeignKey(User, on_delete=models.CASCADE)
     
+    def save(self, *args, **kwargs):
+        # Lógica adicional antes de salvar pode ser adicionada aqui
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"Checklist #{self.id} - {self.agendamento}"
     
