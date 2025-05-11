@@ -5,17 +5,23 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.db.models import Q
+from django.views.generic.edit import CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse
+from django.contrib import messages
+from django.utils import timezone
+from django.template.loader import get_template
+
 from datetime import datetime, timedelta
 from openpyxl import Workbook
 from docx import Document
 
 from .models import Carro, Agendamento, Checklist, Foto
 from .forms import CarroForm, AgendamentoForm, ChecklistForm, FotoForm
+from io import BytesIO
 
 
-
-
-class DashboardView(LoginRequiredMixin, ListView):
+class DashboardView(LoginRequiredMixin, ListView):  
     template_name = 'automovel/dashboard.html'
     context_object_name = 'carros'
     
@@ -39,7 +45,6 @@ class DashboardView(LoginRequiredMixin, ListView):
         context['ultimos_agendamentos'] = Agendamento.objects.order_by('-data_hora_agenda')[:5]
         
         return context
-
 
 class CarroListView(LoginRequiredMixin, ListView):
     model = Carro
@@ -131,24 +136,238 @@ class AgendamentoDetailView(LoginRequiredMixin, DetailView):
         context['checklists'] = Checklist.objects.filter(agendamento=self.object)
         context['fotos'] = Foto.objects.filter(agendamento=self.object)
         return context
+def agendamento_detail(request, pk):
+    agendamento = get_object_or_404(Agendamento, pk=pk)
+    checklist_saida = Checklist.objects.filter(agendamento=agendamento, tipo='saida').first()
+    checklist_retorno = Checklist.objects.filter(agendamento=agendamento, tipo='retorno').first()
+    context = {
+        'agendamento': agendamento,
+        'checklist_saida': checklist_saida,
+        'checklist_retorno': checklist_retorno,
+    }
+    return render(request, 'automovel/agendamento_detail.html', context)
 
 class ChecklistCreateView(LoginRequiredMixin, CreateView):
     model = Checklist
     form_class = ChecklistForm
     template_name = 'automovel/checklist_form.html'
-    success_url = reverse_lazy('lista_checklists')
 
-    def get(self, request, *args, **kwargs):
-        form = ChecklistForm()
-        return render(request, 'automovel:checklist_form.html', {'form': form})
-    
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['data_hora'] = timezone.now()
+        agendamento_id = self.request.GET.get('agendamento')
+        if agendamento_id:
+            initial['agendamento'] = agendamento_id
+        return initial
+
     def get_success_url(self):
-        return reverse_lazy('automovel:agendamento_detail', kwargs={'pk': self.object.agendamento.id})
+        return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.agendamento.id})
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Checklist criado com sucesso!')
+        return super().form_valid(form)
+    
+    # Adicione também estes métodos para garantir que o agendamento seja passado para o template
+    def get_initial(self):
+        initial = super().get_initial()
+        agendamento_id = self.request.GET.get('agendamento')
+        if agendamento_id:
+            initial['agendamento'] = agendamento_id
+        return initial
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        agendamento_id = self.request.GET.get('agendamento')
+        if agendamento_id:
+            try:
+                from .models import Agendamento  # Importe seu modelo Agendamento
+                context['agendamento'] = Agendamento.objects.get(pk=agendamento_id)
+            except Agendamento.DoesNotExist:
+                pass
+        return context
     
     def form_valid(self, form):
         form.instance.usuario = self.request.user
         messages.success(self.request, 'Checklist criado com sucesso!')
         return super().form_valid(form)
+
+def checklist_create(request, agendamento_id):
+    agendamento = get_object_or_404(Agendamento, pk=agendamento_id)
+    
+    if request.method == 'POST':
+        form = ChecklistForm(request.POST, request.FILES)
+        if form.is_valid():
+            checklist = form.save(commit=False)
+            checklist.agendamento = agendamento
+            checklist.usuario = request.user
+            checklist.save()
+
+            # Verifica se é para finalizar
+            if 'finalizar' in request.POST and checklist.tipo == 'retorno':
+                agendamento.status = 'finalizado'
+                agendamento.save()
+                messages.success(request, 'Checklist de retorno salvo e agendamento finalizado com sucesso!')
+            else:
+                agendamento.status = 'em_andamento'
+                agendamento.save()
+                messages.success(request, 'Checklist salvo com sucesso!')
+                
+            return redirect('automovel:agendamento_detail', agendamento.id)
+        else:
+            form = ChecklistForm(initial={
+                'agendamento': agendamento,
+                'usuario': request.user,
+                'tipo': 'retorno' if agendamento.status == 'em_andamento' else 'saida'
+            })
+        
+        # Adiciona URLs das fotos existentes ao contexto do formulário
+    if form.instance.pk:
+        for field in ['foto_frontal', 'foto_trazeira', 'foto_lado_motorista', 'foto_lado_passageiro']:
+            if getattr(form.instance, field):
+                form.fields[field].widget.attrs['data-existing-file'] = getattr(form.instance, field).url
+    
+            return render(request, 'automovel/checklist_form.html', {
+            'form': form,
+            'agendamento': agendamento
+        })
+            
+            # Atualiza status do agendamento
+            if checklist.tipo == 'saida':
+                agendamento.status = 'em_andamento'
+                agendamento.save()
+            elif checklist.tipo == 'retorno':
+                agendamento.status = 'finalizado'
+                agendamento.save()
+            
+            messages.success(request, 'Checklist salvo com sucesso!')
+            return redirect('automovel:agendamento_detail', agendamento.id)
+    else:
+        form = ChecklistForm(initial={'agendamento': agendamento, 'usuario': request.user})
+    
+    return render(request, 'automovel/checklist_form.html', {
+        'form': form,
+        'agendamento': agendamento
+    })        
+
+def export_checklist_word(request, pk):
+    checklist = get_object_or_404(Checklist, pk=pk)
+    
+    # Cria um novo documento Word
+    document = Document()
+    
+    # Adiciona título
+    document.add_heading(f'Checklist de Veículo - {checklist.get_tipo_display()}', 0)
+    
+    # Informações básicas
+    document.add_paragraph(f'Data/Hora: {checklist.data_hora.strftime("%d/%m/%Y %H:%M")}')
+    document.add_paragraph(f'Veículo: {checklist.agendamento.carro.modelo} - Placa: {checklist.agendamento.carro.placa}')
+    document.add_paragraph(f'Motorista: {checklist.agendamento.funcionario.nome}')
+    document.add_paragraph(f'KM Inicial: {checklist.km_inicial} | KM Final: {checklist.km_final}')
+    
+    # Adiciona tabela de vistoria
+    document.add_heading('Vistoria do Veículo', level=1)
+    table = document.add_table(rows=1, cols=3)
+    table.style = 'Table Grid'
+    
+    # Cabeçalho da tabela
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Item'
+    hdr_cells[1].text = 'Status'
+    hdr_cells[2].text = 'Observações'
+    
+    # Adiciona itens da vistoria
+    items = [
+        ('Parte Frontal', checklist.get_revisao_frontal_status_display()),
+        ('Parte Trazeira', checklist.get_revisao_trazeira_status_display()),
+        ('Lado Motorista', checklist.get_revisao_lado_motorista_status_display()),
+        ('Lado Passageiro', checklist.get_revisao_lado_passageiro_status_display()),
+    ]
+    
+    for item, status in items:
+        row_cells = table.add_row().cells
+        row_cells[0].text = item
+        row_cells[1].text = status
+        row_cells[2].text = checklist.observacoes_gerais if checklist.observacoes_gerais else 'N/A'
+    
+    # Adiciona assinatura
+    document.add_heading('Assinatura', level=1)
+    document.add_paragraph('Responsável pela vistoria: _________________________________________')
+    
+    # Salva o documento em um buffer
+    buffer = BytesIO()
+    document.save(buffer)
+    buffer.seek(0)
+    
+    # Cria a resposta
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    )
+    response['Content-Disposition'] = f'attachment; filename=checklist_{checklist.id}_{checklist.tipo}.docx'
+    
+    return response
+
+def export_checklist_excel(request, pk):
+    checklist = get_object_or_404(Checklist, pk=pk)
+    
+    # Cria uma nova planilha Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Checklist {checklist.tipo}"
+    
+    # Adiciona cabeçalho
+    ws['A1'] = f'Checklist de Veículo - {checklist.get_tipo_display()}'
+    ws.merge_cells('A1:D1')
+    
+    # Informações básicas
+    ws.append(['Data/Hora:', checklist.data_hora.strftime("%d/%m/%Y %H:%M")])
+    ws.append(['Veículo:', f'{checklist.agendamento.carro.modelo} - Placa: {checklist.agendamento.carro.placa}'])
+    ws.append(['Motorista:', checklist.agendamento.funcionario.nome])
+    ws.append(['KM Inicial:', checklist.km_inicial])
+    ws.append(['KM Final:', checklist.km_final])
+    ws.append([])  # Linha vazia
+    
+    # Adiciona tabela de vistoria
+    ws.append(['Vistoria do Veículo'])
+    ws.merge_cells('A6:D6')
+    
+    # Cabeçalho da tabela
+    ws.append(['Item', 'Status', 'Observações'])
+    
+    # Adiciona itens da vistoria
+    items = [
+        ('Parte Frontal', checklist.get_revisao_frontal_status_display()),
+        ('Parte Trazeira', checklist.get_revisao_trazeira_status_display()),
+        ('Lado Motorista', checklist.get_revisao_lado_motorista_status_display()),
+        ('Lado Passageiro', checklist.get_revisao_lado_passageiro_status_display()),
+    ]
+    
+    for item, status in items:
+        ws.append([item, status, checklist.observacoes_gerais if checklist.observacoes_gerais else 'N/A'])
+    
+    # Adiciona assinatura
+    ws.append([])
+    ws.append(['Assinatura'])
+    ws.merge_cells('A13:D13')
+    ws.append(['Responsável pela vistoria: _________________________________________'])
+    
+    # Ajusta o tamanho das colunas
+    for column in ['A', 'B', 'C', 'D']:
+        ws.column_dimensions[column].width = 30
+    
+    # Salva a planilha em um buffer
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    # Cria a resposta
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename=checklist_{checklist.id}_{checklist.tipo}.xlsx'
+    
+    return response
 
 def relatorio_carros(request, format):
     carros = Carro.objects.filter(ativo=True)
@@ -239,3 +458,4 @@ class AgendamentoUpdateView(UpdateView):
     fields = "__all__"  # seus campos aqui
     template_name = 'automovel/agendamento_form.html'
     success_url = '/automovel/agendamentos/'  # ou use reverse_lazy
+

@@ -16,7 +16,7 @@
                 <div class="user-info">
                     <span>Olá, {{ user.username }}!</span>
                     <nav class="app-nav">
-                        <a href="{% url 'home' %}" class="nav-btn">Início</a>
+                        <a href="{% url 'home:home' %}" class="nav-btn">Início</a>
                         <a href="{% url 'usuario:logout' %}" class="nav-btn logout">Sair</a>
                         <a href="{% url 'treinamentos:listar_treinamentos' %}" class="nav-btn">Treinamentos</a>
                         <a href="{% url 'treinamentos:listar_tipos_treinamento' %}" class="nav-btn">Tipos</a>

@@ -11,7 +11,7 @@
     <header>
         <h1>Meu Projeto</h1>
         <nav>
-            <a href="{% url 'home' %}">Início</a>
+            <a href="{% url 'home:home' %}">Início</a>
             <a href="{% url 'lista_clientes' %}">Pesquisar Clientes</a>
         </nav>
     </header>

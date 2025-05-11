@@ -31,7 +31,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="?">Todos</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            {% for value, label in status_choices %}
+                            {% for value, label in status1_choices %}
                                 <li><a class="dropdown-item" href="?status={{ value }}">{{ label }}</a></li>
                             {% endfor %}
                         </ul>
@@ -67,6 +67,7 @@
                                 <td>{{ agendamento.funcionario }}</td>
                                 <td>{{ agendamento.carro }}</td>
                                 <td>{{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</td>
+                                <td>{{ agendamento.data_hora_devolucao|date:"d/m/Y H:i" }}</td>
                                 <td>
                                     <span class="badge bg-{% if agendamento.status == 'agendado' %}info{% elif agendamento.status == 'em_andamento' %}primary{% elif agendamento.status == 'finalizado' %}success{% else %}danger{% endif %}">
                                         {{ agendamento.get_status_display }}
@@ -91,6 +92,44 @@
             {% else %}
                 <div class="alert alert-info">Nenhum agendamento encontrado.</div>
             {% endif %}
+        </div>
+    </div>
+    <!-- Modal para edição -->
+    <div class="modal fade" id="editarAgendamentoModal" tabindex="-1" aria-labelledby="editarAgendamentoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editarAgendamentoModalLabel">Editar Agendamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editarAgendamentoForm" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" id="agendamento_id" name="agendamento_id">
+                        <div class="mb-3">
+                            <label for="km_final" class="form-label">KM Final</label>
+                            <input type="number" class="form-control" id="km_final" name="km_final">
+                        </div>
+                        <div class="mb-3">
+                            <label for="ocorrencia" class="form-label">Ocorrência</label>
+                            <textarea class="form-control" id="ocorrencia" name="ocorrencia" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="foto_principal" class="form-label">Foto</label>
+                            <input type="file" class="form-control" id="foto_principal" name="foto_principal">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="pedagio" name="pedagio">
+                            <label class="form-check-label" for="pedagio">Pedágio</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="abastecimento" name="abastecimento">
+                            <label class="form-check-label" for="abastecimento">Abastecimento</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
