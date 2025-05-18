@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'csstarefa/detailstyles.css' %}">
+<div class="task-card">
+        <div class="task-header">
+            <div class="task">
+                <div>
+                    <h1 class="task-title">{{ tarefa.titulo }}</h1>
+                    <div class="d-flex gap-2">
+                        <span class="badge status-{{ tarefa.status }}">
+                            {{ tarefa.get_status_display }}
+                        </span>
+                        <span class="badge priority-{{ tarefa.prioridade }}">
+                            {{ tarefa.get_prioridade_display }}
+                        </span>
+                    </div>
+                </div>
+  
+                {% if tarefa.atrasada %}
+                <span class="badge bg-danger">Atrasada</span>
+                {% endif %}
+            </div>
+        </div> 
+</div>          
+<div class="container">             
+            <div class="task-meta">
+                <div class="meta-item">
+                    <div class="meta-label">Criado por</div>
+                    <div class="meta-value">{{ tarefa.usuario.username }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Responsável</div>
+                    <div class="meta-value">{{ tarefa.responsavel.username|default:"Não atribuído" }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Data de criação</div>
+                    <div class="meta-value">{{ tarefa.data_criacao|date:"d/m/Y H:i" }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Prazo final</div>
+                    <div class="meta-value">{{ tarefa.prazo|date:"d/m/Y"|default:"Não definido" }}</div>
+                </div>
+            </div>
+</div>
+<div class="container">    
+        <div class="task-body">
+            <div class="mb-5">
+                <h2 class="section-title">Descrição</h2>
+                <div class="task-description">
+                    {{ tarefa.descricao|linebreaks }}
+                </div>
+            </div>
+            
+            <div class="mb-5">
+                <h2 class="section-title">Comentários</h2>
+                {% for comentario in comentarios %}
+                <div class="comment-card">
+                    <div class="comment-header">
+                        <span class="comment-author">{{ comentario.autor.username }}</span>
+                        <span class="comment-date">{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="comment-text">{{ comentario.texto }}</div>
+                </div>
+                {% empty %}
+                <p class="text-muted">Nenhum comentário ainda.</p>
+                {% endfor %}
+            </div>
+            
+            <div class="mb-4">
+                <h2 class="section-title">Adicionar Comentário</h2>
+                <form method="post" class="comment-form">
+                    {% csrf_token %}
+                    {{ form.texto }}
+                    <button type="submit" class="btn btn-primary">Enviar Comentário</button>
+                </form>
+            </div>
+            <div class="container">            
+                <div class="painel">
+                    <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-secondary">Voltar para lista</a>
+                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-primary">Editar Tarefa</a>
+                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-danger">Excluir Tarefa</a>
+                </div>
+            </div>            
+        </div>        
+</div>
+{% endblock %}
+
