@@ -7,11 +7,6 @@ from .models import Funcionarios, Admissao, Documentos, Cargos, Departamentos, C
 from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
 
 
-@csrf_exempt
-@csrf_protect
-@requires_csrf_token
-
-
 @login_required # retrição de autenticação
 def departamento_pessoal(request):
     return render(request, 'departamento_pessoal/departamento_pessoal.html') 

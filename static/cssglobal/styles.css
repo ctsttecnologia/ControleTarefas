@@ -39,7 +39,7 @@ h2 {
     text-align: center;
     margin-bottom: 12px;
     color: #2c3e50;
-    font-size: 1.5rem;
+    font-size: 0.5rem;
 }
 
 /* Painéis */
@@ -239,5 +239,98 @@ h2 {
 .btn:active {
     transform: translateY(0);
     box-shadow: none;
+}
+
+/* Variáveis de cores e estilos globais */
+
+
+/* Reset e estilos base */
+
+a {
+    text-decoration: none;
+    color: var(--primary-blue);
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--dark-blue);
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--primary-blue) !important;
+    box-shadow: var(--shadow);
+}
+
+.navbar-brand, .navbar-nav .nav-link {
+    color: var(--white) !important;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--light-blue) !important;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.card-header {
+    background-color: var(--primary-blue);
+    color: var(--white);
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    padding: 1rem 1.5rem;
+}
+
+.card-title {
+    margin-bottom: 0;
+    font-weight: 500;
+}
+
+/* Botões */
+.btn-primary {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+}
+
+.btn-primary:hover {
+    background-color: var(--dark-blue);
+    border-color: var(--dark-blue);
+}
+
+.btn-outline-primary {
+    color: var(--primary-blue);
+    border-color: var(--primary-blue);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-blue);
+    color: var(--white);
+}
+
+/* Formulários */
+.form-control {
+    border-radius: var(--border-radius);
+    border: 1px solid #dadce0;
+    padding: 0.5rem 1rem;
+}
+
+.form-control:focus {
+    border-color: var(--secondary-blue);
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
 }
 

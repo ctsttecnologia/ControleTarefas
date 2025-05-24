@@ -55,4 +55,6 @@ def listar_tipos_treinamento(request):
 def buscar_treinamentos(request):
     query = request.GET.get('q')
     resultados = Treinamento.objects.filter(nome__icontains=query) if query else None
-    return render(request, 'treinamentos/buscar_treinamentos.html', {'resultados': resultados, 'query': query})
+    return render(request, 'treinamentos/listar_treinamentos.html', {'resultados': resultados, 'query': query})
+
+    

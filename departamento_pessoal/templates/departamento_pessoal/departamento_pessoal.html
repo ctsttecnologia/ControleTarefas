@@ -1,3 +1,5 @@
+
+
 {% load static %}
 
 <!DOCTYPE html>
@@ -8,31 +10,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Departamento Pessoal{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
     
 </head>
 <body>
     <div class="container">
         <h2>DEPARTAMENTO PESSOAL</h2>
-        
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-        {% endif %}
                 
         <div class="painel">
             
             <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn-home">Cadastro de Funcionário</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
         <div class="painel1">
             {% csrf_token %}
             <h2>Pesquisa de Funcionário</h2>
-                <form method="get" action="{% url 'lista_funcionarios' %}" class="form-pesquisa">
+                <form method="get" action="{% url 'departamento_pessoal:lista_funcionarios' %}" class="form-pesquisa">
                 
                     <div class="form-group">
                         <label for="nome">Nome:</label>
@@ -40,7 +37,7 @@
                     </div>
                     <div class="form-group">
                         <label for="cpf">CPF:</label>
-                        <input type="text" id="cpf" name="cpf" placeholder="Digite o CPf do colaborador">
+                        <input type="text" id="cpf" name="cpf" placeholder="Digite o cpf do colaborador">
                     </div>
                     <div class="form-group">
                         <label for="matricula">Matrícula:</label>

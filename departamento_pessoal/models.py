@@ -148,8 +148,6 @@ class Departamentos(models.Model):
         verbose_name_plural = _('Documentos Pessoais')
    
 
-
-
 class Documentos(models.Model):
     # Validadores
     cpf_validator = RegexValidator(

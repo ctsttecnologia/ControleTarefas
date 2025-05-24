@@ -6,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Treinamento</title>
-    <link rel="stylesheet" href="{% static 'treinamentos/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstreinamento/styles.css' %}">
 </head>
 <body>
     <div class="app-container">
@@ -16,7 +16,7 @@
                 <div class="user-info">
                     <span>Olá, {{ user.username }}!</span>
                     <nav class="app-nav">
-                        <a href="{% url 'home:home' %}" class="nav-btn">Início</a>
+                        <a href="{% url 'home' %}" class="nav-btn">Início</a>
                         <a href="{% url 'usuario:logout' %}" class="nav-btn logout">Sair</a>
                         <a href="{% url 'treinamentos:listar_treinamentos' %}" class="nav-btn">Treinamentos</a>
                         <a href="{% url 'treinamentos:listar_tipos_treinamento' %}" class="nav-btn">Tipos</a>

@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # Para formatação de dados
     'usuario',
-    'cliente.apps.ClienteConfig',
+    'cliente',
     'seguranca_trabalho',
     'departamento_pessoal',
     'tarefas.apps.TarefasConfig',
