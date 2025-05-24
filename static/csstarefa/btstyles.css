@@ -1,0 +1,89 @@
+/* Reset e estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    width: 95%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 2.2rem;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+h2 {
+    font-size: 1.8rem;
+    color: #2c3e50;
+}
+
+/* Painel de navegação */
+.painel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+/* Estilos base para botões */
+a {
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-home, .btn_logout, .btn_profile, 
+.btn-warning, .btn-danger {
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-home {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-home:hover {
+    background-color: #2980b9;
+}
+
+.btn_logout {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn_logout:hover {
+    background-color: #c0392b;
+}
+
+.btn_profile {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn_profile:hover {
+    background-color: #27ae60;
+}
+

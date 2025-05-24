@@ -3,6 +3,7 @@
 
 
 {% block content %}
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
 <link rel="stylesheet" href="{% static 'csstarefa/detailstyles.css' %}">
 <div class="task-card">
         <div class="task-header">
@@ -44,6 +45,45 @@
                     <div class="meta-value">{{ tarefa.prazo|date:"d/m/Y"|default:"Não definido" }}</div>
                 </div>
             </div>
+            <div class="mb-5">
+            <h2 class="section-title">Detalhes do Projeto</h2>
+            <div class="task-meta">
+                <div class="meta-item">
+                    <div class="meta-label">Projeto</div>
+                    <div class="meta-value">{{ tarefa.projeto|default:"Não definido" }}</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Duração Prevista</div>
+                    <div class="meta-value">{{ tarefa.duracao_prevista|default:"Não definido" }} horas</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Tempo Gasto</div>
+                    <div class="meta-value">{{ tarefa.tempo_gasto|default:"0" }} horas</div>
+                </div>
+                <div class="meta-item">
+                    <div class="meta-label">Progresso</div>
+                    <div class="meta-value">{{ tarefa.progresso }}%</div>
+                </div>
+            </div>
+        </div>
+
+<div class="mb-5">
+    <h2 class="section-title">Datas Importantes</h2>
+    <div class="task-meta">
+        <div class="meta-item">
+            <div class="meta-label">Data de Início</div>
+            <div class="meta-value">{{ tarefa.data_inicio|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Concluída em</div>
+            <div class="meta-value">{{ tarefa.concluida_em|date:"d/m/Y H:i"|default:"-" }}</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Última Atualização</div>
+            <div class="meta-value">{{ tarefa.data_atualizacao|date:"d/m/Y H:i" }}</div>
+        </div>
+    </div>
+</div>
 </div>
 <div class="container">    
         <div class="task-body">

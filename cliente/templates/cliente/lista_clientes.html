@@ -71,6 +71,7 @@
                                         {{ cliente.estatus|yesno:"Ativo,Inativo" }}
                                     </span>
                                 </td>
+                                <td>{{ cliente.data_encerramento }}</td>
                                 <td>
                                     <a href="{% url 'cliente:editar_cliente' cliente.id %}" class="btn btn-sm btn-primary" title="Editar">
                                         <i class="fas fa-edit"></i>

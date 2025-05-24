@@ -52,6 +52,7 @@ class Migration(migrations.Migration):
                 ('codigo', models.CharField(blank=True, help_text='Código interno da unidade', max_length=10, null=True, unique=True, verbose_name='Código da Unidade')),
                 ('ativa', models.BooleanField(default=True, verbose_name='Ativa?')),
                 ('data_criacao', models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')),
+                ('data_encerramento', models.DateTimeField(auto_now_add=True, verbose_name='data_encerramento')),
                 ('cliente', models.ForeignKey(on_delete=models.CASCADE, related_name='unidades_cliente', to='cliente.cliente', verbose_name='Cliente Matriz')),
             ],
             options={

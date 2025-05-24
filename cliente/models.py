@@ -92,6 +92,10 @@ class Cliente(models.Model):
         auto_now=True,
         verbose_name=_('Última Atualização')
     )
+
+    data_encerramento = models.DateField(null=True, 
+    blank=True, verbose_name='Data de Encerramento'
+    )
     
     # Métodos avançados
     def clean(self):

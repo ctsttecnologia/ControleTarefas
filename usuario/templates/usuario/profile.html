@@ -8,7 +8,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Perfil</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
 </head>
 <img src="/midia/imagens/logocetest.png" width="200">
@@ -43,12 +42,25 @@
             </div>
         
             <div class="card_principal">
+                <div class="card card6">GA
+                    <div class="card6-1">
+                        <br><br>
+                        <a href="{% url 'ata_reuniao_list' %}" class="link-card">Ata de Reunião</a>
+                        <a href="{% url 'tarefas:dashboard' %}" class="link-card">Dashboard</a>
+                        <a href="{% url 'tarefas:calendario_tarefas' %}" class="link-card">Agenda</a>
+                        
+                    </div>
+                    <div class="icone_tarefa">
+                        <img src="/midia/imagens/tarefa.gif" class="icone">
+                        <img src="{% static 'imagens/tarefa.gif' %}" class="icone"> <!--Imagem no Django em produção-->
+                    </div>      
+                </div>
                 <div class="card card1">TAREFAS
                     <div class="card1-1">
                         <br><br>
-                        <a href="{% url 'tarefas:tarefas' %}" class="link-card">Tarefas</a>
+                        <a href="{% url 'tarefas:listar_tarefas' %}" class="link-card">Tarefas</a>
                         <a href="{% url 'tarefas:dashboard' %}" class="link-card">Dashboard</a>
-                        <a href="{% url 'tarefas:calendario-tarefas' %}" class="link-card">Agenda</a>
+                        <a href="{% url 'tarefas:calendario_tarefas' %}" class="link-card">Agenda</a>
                         
                     </div>
                     <div class="icone_tarefa">

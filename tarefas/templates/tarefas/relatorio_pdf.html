@@ -3,39 +3,67 @@
 <head>
     <title>Relatório de Tarefas - PDF</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        h1 { color: #333; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
-        .resumo { margin-bottom: 20px; }
+        body { font-family: Arial, sans-serif; font-size: 12px; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #444; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .info { margin-bottom: 20px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #f8f9fa; text-align: left; }
+        th, td { padding: 8px; border: 1px solid #ddd; }
+        .resumo-table { width: 80%; margin: 20px auto; }
         .badge {
             padding: 3px 6px; border-radius: 3px; color: white; font-size: 0.8em;
+            display: inline-block;
         }
-        .resolvida { background: #4CAF50; }
-        .pendente { background: #FFC107; }
-        .andamento { background: #2196F3; }
+        .page-break { page-break-after: always; }
     </style>
 </head>
 <body>
-    <h1>Relatório de Tarefas</h1>
-    <p>Gerado em: {% now "d/m/Y H:i" %}</p>
-    
-    <div class="resumo">
-        <h3>Resumo</h3>
-        <p>Total de Tarefas: {{ contagens.total }}</p>
-        <p>Tarefas Resolvidas: {{ contagens.resolvidas }}</p>
-        <p>Tarefas Pendentes: {{ contagens.pendentes }}</p>
-        <p>Tarefas em Andamento: {{ contagens.em_andamento }}</p>
+    <!-- Adicione no cabeçalho -->
+    <div style="text-align: left; margin-bottom: 20px;">
+        <img src="{{ logo_path }}" style="height: 40px;" alt="Logo">
+        <h1>Relatório de Tarefas</h1>
+    </div>
+    <div class="info">
+        <p>Gerado em: {{ now|date:"d/m/Y H:i" }}</p>
+        {% if date_from or date_to %}
+        <p>Período: {{ date_from|default:"Início" }} a {{ date_to|default:"Hoje" }}</p>
+        {% endif %}
     </div>
 
-    <h3>Detalhes das Tarefas</h3>
+    <h2>Resumo</h2>
+    <table class="resumo-table">
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Quantidade</th>
+                <th>Percentual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for status in status_data %}
+            <tr>
+                <td>{{ status.label }}</td>
+                <td>{{ status.count }}</td>
+                <td>{{ status.percent }}%</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <td><strong>TOTAL</strong></td>
+                <td><strong>{{ total_tarefas }}</strong></td>
+                <td><strong>100%</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Detalhes das Tarefas</h2>
     <table>
         <thead>
             <tr>
                 <th>Título</th>
-                <th>Responsável</th>
                 <th>Status</th>
-                <th>Criação</th>
+                <th>Responsável</th>
+                <th>Data Criação</th>
                 <th>Prazo</th>
             </tr>
         </thead>
@@ -43,12 +71,7 @@
             {% for tarefa in tarefas %}
             <tr>
                 <td>{{ tarefa.titulo }}</td>
-                <td>{{ tarefa.nome }}</td>
-                <td>
-                    <span class="badge {{ tarefa.status }}">
-                        {{ tarefa.get_status_display }}
-                    </span>
-                </td>
+                <td>{{ tarefa.responsavel.username|default:tarefa.usuario.username }}</td>
                 <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
                 <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
             </tr>

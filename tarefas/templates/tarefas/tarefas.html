@@ -1,60 +1,77 @@
+
 {% load static %}
-
-
 <!DOCTYPE html>
 <html lang="pt-BR">
-    <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{% block title %}Tarefas{% endblock %}</title>
-            <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-            <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
-
-            <h1>TAREFAS</h1>
-        
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tarefas{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstarefa/btstyles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstarefa/tarefastyles.css' %}">
+</head>
 <body>
-
     <div class="container">
-        <h1>Consultar Tarefas</h1>
+        <h1>TAREFAS</h1>
+        <h2>Consultar Tarefas</h2>
+        
         {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
+            <p>Olá, {{ user.username }}!</p>
         {% else %}
             <a href="{% url 'home' %}" class="btn-home">Home</a>
         {% endif %}
                 
         <div class="painel">
-            <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn_profile">Nova Tarefa</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn-warning">Relatório</a>  
         </div>
-            
-        <tr>
-            <th>Título</th>
-            <th>Descrição</th>
-            <th>Status</th>
-  
-        </tr>
+        
         {% block content %}
-        {% for tarefas in tarefas %}
-        <tr>
-            <td>{{ tarefa.titulo }}</td>
-            <td>{{ tarefa.descricao }}</td>
-            <td>{{ tarefa.get_status_display }}</td>
-            <td>
-                <a href="{% url 'tarefas:editar_tarefa' tarefa.id %}" class="btn-warning">Editar</a>
-                <a href="{% url 'tarefas:excluir_tarefa' tarefa.id %}" class="btn-danger">Excluir</a>
-                <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
-                <a href="{% url 'tarefas:relatorio_tarefa' %}" class="btn_profile">Relatório</a> 
-            </td>
-        </tr>
-        {% endfor %}
-
+        <table>
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th>Prioridade</th>
+                    <th>Prazo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tarefa in tarefas %}
+                <tr>
+                    <td>{{ tarefa.titulo }}</td>
+                    <td>{{ tarefa.usuario.username }}</td>
+                    <td>
+                        <span class="badge badge-{{ tarefa.status }}">
+                            {{ tarefa.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ tarefa.prioridade }}">
+                            {{ tarefa.get_prioridade_display }}
+                        </span>
+                    </td>
+                    <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                    <td>
+                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn-warning">Editar</a>
+                        <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn-danger">Excluir</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">Nenhuma tarefa encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% endblock %}
-    <div>    
-<body>
+    </div>
+</body>
 </html>
 
 

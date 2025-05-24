@@ -28,6 +28,7 @@ urlpatterns = [
     path('logradouro/', include('logradouro.urls')),
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
+    path('atas/', include('ata_reuniao.urls')),
     
     # URLs estáticas e de mídia (para desenvolvimento)
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

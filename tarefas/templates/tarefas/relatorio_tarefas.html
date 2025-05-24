@@ -1,27 +1,140 @@
+
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <link rel="stylesheet" href="{% static 'csstarefas/relatorioStyles.css' %}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Tarefas</title>
+   
+    <link rel="stylesheet" href="{% static 'csstarefa/btstyles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstarefa/tarefastyles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstarefa/relatoriostyles.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="relatorio">
+    <div class="container">
         <h1>Relatório de Tarefas</h1>
         
-        <div class="card">
-            <h3>Total de Tarefas: {{ total_tarefas }}</h3>
+        <div class="painel">
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn-home">Voltar</a>
+            <a href="?export=pdf{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+               class="btn-danger">Exportar PDF</a>
+            <a href="?export=docx{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+               class="btn-warning">Exportar Word</a>
+            <a href="?" class="btn_profile">Limpar</a>
         </div>
-        
-        <div class="card resolvida">
-            <h3>Tarefas Resolvidas: {{ resolvidas }}</h3>
+
+        <!-- Filtros -->
+        <form method="get" class="filtros-form">
+            <div class="filtro-group">
+                <label>Status:</label>
+                <select name="status">
+                    <option value="">Todos</option>
+                    {% for status_key, status_label in status_map.items %}
+                    <option value="{{ status_key }}" {% if status_filter == status_key %}selected{% endif %}>{{ status_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-group">
+                <label>De:</label>
+                <input type="date" name="date_from" value="{{ date_from }}">
+            </div>
+            
+            <div class="filtro-group">
+                <label>Até:</label>
+                <input type="date" name="date_to" value="{{ date_to }}">
+            </div>
+            
+            <button type="submit" class="btn_profile">Filtrar</button>
+            
+        </form>
+
+        <!-- Resumo -->
+        <div class="resumo-card">
+            <h2>Resumo Geral</h2>
+            <div class="resumo-grid">
+                <div class="resumo-item total">
+                    <span>Total</span>
+                    <strong>{{ total_tarefas }}</strong>
+                </div>
+                {% for status in status_data %}
+                <div class="resumo-item {{ status.key }}" style="border-left-color: {{ status.color }};">
+                    <span>{{ status.label }}</span>
+                    <strong>{{ status.count }} ({{ status.percent }}%)</strong>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-        
-        <div class="card pendente">
-            <h3>Tarefas Pendentes: {{ pendentes }}</h3>
+
+        <!-- Gráfico -->
+        <div class="chart-container">
+            <canvas id="statusChart"></canvas>
         </div>
-        
-        <div class="card andamento">
-            <h3>Tarefas em Andamento: {{ em_andamento }}</h3>
+
+        <!-- Tabela de Tarefas -->
+        <div class="table-responsive">
+            <table class="tarefas-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Status</th>
+                        <th>Responsável</th>
+                        <th>Data Criação</th>
+                        <th>Prazo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tarefa in tarefas %}
+                    <tr class="status-{{ tarefa.status }}">
+                        <td>{{ tarefa.titulo }}</td>
+                        <td>{{ tarefa.responsavel.username|default:tarefa.usuario.username }}</td>
+                        <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5">Nenhuma tarefa encontrada com os filtros selecionados</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
+
+    <script>
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: {{ chart_data.labels|safe }},
+                datasets: [{
+                    data: {{ chart_data.data|safe }},
+                    backgroundColor: {{ chart_data.colors|safe }},
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>

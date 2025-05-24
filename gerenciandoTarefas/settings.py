@@ -52,9 +52,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',  # se estiver usando Bootstrap5
     'home',
-
-    
- 
+    'ata_reuniao',
+      
 ]
 
 MIDDLEWARE = [

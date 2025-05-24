@@ -1,15 +1,194 @@
+/* Estilos para o relatório */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-.relatorio {
-    margin: 20px;
-    font-family: Arial, sans-serif;
+.painel {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
-.card {
+
+.filtros-form {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filtro-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filtro-group label {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.filtro-group select, 
+.filtro-group input {
+    padding: 8px 12px;
     border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 15px;
-    margin: 10px 0;
-    background-color: #f9f9f9;
+    border-radius: 4px;
 }
-.resolvida { color: green; }
-.pendente { color: orange; }
-.andamento { color: blue; }
+
+.resumo-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.resumo-card h2 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.resumo-item {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.resumo-item span {
+    display: block;
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.resumo-item strong {
+    font-size: 1.2em;
+    color: #333;
+}
+
+/* Cores específicas para cada status */
+.resumo-item.total {
+    border-left: 4px solid #6c757d;
+}
+
+.resumo-item.pendente {
+    border-left: 4px solid #FFC107;
+}
+
+.resumo-item.andamento {
+    border-left: 4px solid #2196F3;
+}
+
+.resumo-item.concluida {
+    border-left: 4px solid #4CAF50;
+}
+
+.resumo-item.cancelada {
+    border-left: 4px solid #F44336;
+}
+
+.resumo-item.pausada {
+    border-left: 4px solid #9C27B0;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    margin-bottom: 30px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.tarefas-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.tarefas-table th {
+    background-color: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+}
+
+.tarefas-table td {
+    padding: 12px 15px;
+    border-top: 1px solid #dee2e6;
+}
+
+.tarefas-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+    color: white;
+}
+
+.badge-pendente {
+    background-color: #FFC107;
+}
+
+.badge-andamento {
+    background-color: #2196F3;
+}
+
+.badge-concluida {
+    background-color: #4CAF50;
+}
+
+.badge-cancelada {
+    background-color: #F44336;
+}
+
+.badge-pausada {
+    background-color: #9C27B0;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .filtros-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .resumo-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .resumo-grid {
+        grid-template-columns: 1fr;
+    }
+}
