@@ -7,7 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Treinamentos</title>
-    <link rel="stylesheet" href="{% static 'treinamento/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstreinamento/styles.css' %}">
 </head>
 <body>
     <div class="app-container">
@@ -17,7 +17,7 @@
                 <div class="user-info">
                     <span>Olá, {{ user.username }}!</span>
                     <nav class="app-nav">
-                        <a href="{% url 'home:home' %}" class="nav-btn">Início</a>
+                        <a href="{% url 'home' %}" class="nav-btn">Início</a>
                         <a href="{% url 'usuario:logout' %}" class="nav-btn logout">Sair</a>
                         <a href="{% url 'treinamentos:cadastrar_treinamento' %}" class="nav-btn">Novo</a>
                     </nav>
@@ -27,7 +27,7 @@
 
         <main class="data-container">
             <div class="search-bar">
-                <form method="get" action="{% url 'treinamentos:buscar_treinamentos' %}" class="search-form">
+                <form method="get" action="{% url 'treinamentos:listar_treinamentos' %}" class="search-form">
                     <input type="text" name="q" placeholder="Buscar treinamentos..." class="search-input">
                     <button type="submit" class="search-btn">Buscar</button>
                 </form>

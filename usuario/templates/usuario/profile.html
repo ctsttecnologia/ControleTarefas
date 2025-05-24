@@ -46,8 +46,7 @@
                     <div class="card6-1">
                         <br><br>
                         <a href="{% url 'ata_reuniao_list' %}" class="link-card">Ata de Reunião</a>
-                        <a href="{% url 'tarefas:dashboard' %}" class="link-card">Dashboard</a>
-                        <a href="{% url 'tarefas:calendario_tarefas' %}" class="link-card">Agenda</a>
+                        <a href="{% url 'ata_reuniao_create' %}" class="link-card">Crear Ata</a>
                         
                     </div>
                     <div class="icone_tarefa">
@@ -76,14 +75,14 @@
                         
                     </div>
                     <div class="icone_tarefa">
-                        <img src="/midia/imagens/cliente.gif" class="icone">
-                        <img src="{% static 'imagens/cliente.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+                        <img src="/midia/imagens/reuniao.png" class="icone">
+                        
                     </div>
                 </div>
                 <div class="card card3">DEPARTAMENTO PESSOAL
                     <div class="card1-1">
                         <br><br>
-                        <a href="{% url 'departamento_pessoal' %}" class="link-card">Departamento Pessoal</a>
+                        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="link-card">Departamento Pessoal</a>
                         <a href="{% url 'treinamentos:cadastrar_treinamento' %}" class="link-card">Treinamentos</a> 
                     </div>
                     <div class="icone_tarefa">

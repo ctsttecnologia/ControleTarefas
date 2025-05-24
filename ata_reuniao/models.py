@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.core.validators import MinLengthValidator
 
@@ -9,6 +8,10 @@ class Cliente(models.Model):
     email = models.EmailField(blank=True, null=True)
     endereco = models.TextField(blank=True, null=True)
     
+    class Meta:
+        verbose_name = "Cliente"
+        verbose_name_plural = "Clientes"
+    
     def __str__(self):
         return self.nome
 
@@ -18,6 +21,10 @@ class Funcionario(models.Model):
     telefone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField()
     ativo = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name = "Funcionário"
+        verbose_name_plural = "Funcionários"
     
     def __str__(self):
         return f"{self.nome} ({self.cargo})"
@@ -38,11 +45,12 @@ class AtaReuniao(models.Model):
     ]
     
     contrato = models.ForeignKey(
-        Cliente, on_delete=models.PROTECT, 
+        Cliente,  # Referência direta ao modelo Cliente
+        on_delete=models.PROTECT, 
         verbose_name="Contrato"
     )
     coordenador = models.ForeignKey(
-        Funcionario, 
+        Funcionario,  # Referência direta ao modelo Funcionario
         on_delete=models.PROTECT, 
         related_name='atas_coordenadas',
         verbose_name="Coordenador"
@@ -78,4 +86,3 @@ class AtaReuniao(models.Model):
     
     def __str__(self):
         return f"Ata {self.id} - {self.contrato} ({self.get_status_display()})"
-

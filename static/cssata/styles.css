@@ -26,6 +26,13 @@ body {
   background-color: #f5f7fa;
 }
 
+h2 {
+    text-align: center;
+    margin-bottom: 12px;
+    color: #2c3e50;
+    font-size: 0.5rem;
+}
+
 /* Container principal */
 .container {
   max-width: 1200px;

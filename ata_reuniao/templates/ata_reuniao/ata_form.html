@@ -1,6 +1,24 @@
-{% extends 'base.html' %}
-
+{% extends 'base.html' %} 
+{% load static %}
 {% block content %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
+
+<h2>Ata de Reunião</h2>
+
+<!-- Botões de navegação no topo -->
+<div class="d-flex justify-content-between mb-3">
+    <div>
+        <a href="{% url 'ata_reuniao_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <a href="{% url 'profile' %}" class="btn ms-2">
+            <i class="fas fa-bars"></i> Menu
+        </a>
+    </div>
+</div>
+
 <div class="card">
     <div class="card-header">
         <h5 class="mb-0">

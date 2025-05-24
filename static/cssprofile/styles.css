@@ -164,6 +164,7 @@ header img {
 .card4::before { background-color: #e74c3c; }
 .card5::before { background-color: #f39c12; }
 .card6::before { background-color: #1abc9c; }
+.card7::before { background-color: #bc1aa6; }
 
 .card > div:first-child {
     font-size: 1.5rem;
@@ -272,3 +273,4 @@ header img {
 .card:nth-child(4) { animation-delay: 0.4s; }
 .card:nth-child(5) { animation-delay: 0.5s; }
 .card:nth-child(6) { animation-delay: 0.6s; }
+.card:nth-child(7) { animation-delay: 0.7s; }

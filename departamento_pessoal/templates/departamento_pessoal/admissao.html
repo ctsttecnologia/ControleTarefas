@@ -24,14 +24,14 @@
             
             <!-- Botão "Voltar para Home" -->
             <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'departamento_pessoal' %}" class="btn_cadastro">Departamento Pessoal</a>
-            <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+            <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn_cadastro">Departamento Pessoal</a>
+            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
         <div class="painel1">
             {% csrf_token %}
-            <form method="post" action="{% url 'lista_funcionarios' %}" class="form-cadastro">
+            <form method="post" action="{% url 'departamento_pessoal:lista_funcionarios' %}" class="form-cadastro">
             {% csrf_token %}
                  <h2>Admissão</h2>
                 <div class="form-group">
