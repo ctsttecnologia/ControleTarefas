@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Atas de Reunião</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        h1 { text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .status-concluido { background-color: #d4edda; }
+        .status-andamento { background-color: #cce5ff; }
+        .status-pendente { background-color: #fff3cd; }
+        .status-cancelado { background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>Relatório de Atas de Reunião</h1>
+    <p>Gerado em: {% now "d/m/Y H:i" %}</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Contrato</th>
+                <th>Coordenador</th>
+                <th>Responsável</th>
+                <th>Natureza</th>
+                <th>Entrada</th>
+                <th>Prazo</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ata in atas %}
+            <tr>
+                <td>{{ ata.id }}</td>
+                <td>{{ ata.contrato }}</td>
+                <td>{{ ata.coordenador }}</td>
+                <td>{{ ata.responsavel }}</td>
+                <td>{{ ata.get_natureza_display }}</td>
+                <td>{{ ata.entrada|date:"d/m/Y" }}</td>
+                <td>{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
+                <td class="status-{{ ata.status|lower }}">{{ ata.get_status_display }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
+
+

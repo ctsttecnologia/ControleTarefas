@@ -1,155 +1,206 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
-    <h1 class="mt-4">Dashboard de Tarefas</h1>
-    
-    <div class="row mt-4">
-        <!-- Cards de métricas -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                Total de Tarefas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tarefas }}</div>
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" href="{% static 'csstarefa/dashboard.css' %}">
+
+<div class="container">
+    <div class="container-fluid">
+        <h2 class="mt-4">Dashboard de Tarefas</h2>
+        
+        <div class="row mt-4">
+            <!-- Cards de métricas -->
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total de Tarefas</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tarefas }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                            </div>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-tasks fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Tarefas Concluídas</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_concluidas }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Tarefas Atrasadas</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_atrasadas }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Tarefas em Andamento</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_andamento }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-spinner fa-2x text-gray-300"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Tarefas Resolvidas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_resolvidas }}</div>
+        <!-- Gráficos -->
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Distribuição por Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-pie pt-4 pb-2">
+                            <canvas id="statusChart"></canvas>
                         </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        <div class="mt-4 text-center small">
+                            {% for item in status_dist %}
+                            <span class="mr-2">
+                                <i class="fas fa-circle" style="color: {{ item.cor }}"></i> {{ item.status }} ({{ item.total }})
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Distribuição por Prioridade</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-pie pt-4 pb-2">
+                            <canvas id="prioridadeChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-center small">
+                            {% for item in prioridade_dist %}
+                            <span class="mr-2">
+                                <i class="fas fa-circle" style="color: {{ item.cor }}"></i> {{ item.prioridade }} ({{ item.total }})
+                            </span>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Tarefas Atrasadas</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_atrasadas }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
+        <!-- Tabela de tarefas -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Lista de Tarefas Recentes</h6>
+                <div>
+                    <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-secondary mr-2">
+                        <i class="fas fa-list"></i> Ver Todas
+                    </a>
+                    <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-calendar-alt"></i> Ver Calendário
+                    </a>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Gráficos -->
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Distribuição por Status</h6>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Responsável</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                                <th>Prazo</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tarefa in tarefas_recentes %}
+                            <tr>
+                                <td>{{ tarefa.titulo }}</td>
+                                <td>{{ tarefa.responsavel.username|default:tarefa.usuario.username }}</td>
+                                <td>
+                                    <span class="badge badge-{{ tarefa.status }}">
+                                        {{ tarefa.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-{{ tarefa.prioridade }}">
+                                        {{ tarefa.get_prioridade_display }}
+                                    </span>
+                                </td>
+                                <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                                <td>
+                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">Nenhuma tarefa encontrada.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-4 pb-2">
-                        <canvas id="statusChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Distribuição por Prioridade</h6>
-                </div>
-                <div class="card-body">
-                    <div class="chart-pie pt-4 pb-2">
-                        <canvas id="prioridadeChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tabela de tarefas -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">Lista de Tarefas</h6>
-            <a href="{% url 'tarefas:calendario-tarefas' %}" class="btn btn-primary btn-sm">
-                <i class="fas fa-calendar-alt"></i> Ver Calendário
-            </a>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>Título</th>
-                            <th>Responsável</th>
-                            <th>Status</th>
-                            <th>Prioridade</th>
-                            <th>Prazo</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for tarefa in tarefas %}
-                        <tr>
-                            <td>{{ tarefa.titulo }}</td>
-                            <td>{{ tarefa.usuario.username }}</td>
-                            <td>
-                                <span class="badge badge-{{ tarefa.status }}">
-                                    {{ tarefa.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge badge-{{ tarefa.prioridade }}">
-                                    {{ tarefa.get_prioridade_display }}
-                                </span>
-                            </td>
-                            <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
-                            <td>
-                                <a href="{% url 'tarefa-detail' tarefa.pk %}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
 </div>
-
 <!-- Gráficos JS -->
-<script src="{% static 'vendor/chart.js/Chart.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Gráfico de status
-    var ctx = document.getElementById('statusChart');
+    var ctx = document.getElementById('statusChart').getContext('2d');
     var statusChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: [
                 {% for item in status_dist %}
-                    '{{ item.status }}',
+                    '{{ item.status|title }}',
                 {% endfor %}
             ],
             datasets: [{
@@ -158,39 +209,39 @@
                         {{ item.total }},
                     {% endfor %}
                 ],
-                backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc'],
-                hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
+                backgroundColor: [
+                    {% for item in status_dist %}
+                        '{{ item.cor }}',
+                    {% endfor %}
+                ],
+                hoverBackgroundColor: [
+                    {% for item in status_dist %}
+                        '{{ item.cor_hover }}',
+                    {% endfor %}
+                ],
                 hoverBorderColor: "rgba(234, 236, 244, 1)",
             }],
         },
         options: {
             maintainAspectRatio: false,
-            tooltips: {
-                backgroundColor: "rgb(255,255,255)",
-                bodyFontColor: "#858796",
-                borderColor: '#dddfeb',
-                borderWidth: 1,
-                xPadding: 15,
-                yPadding: 15,
-                displayColors: false,
-                caretPadding: 10,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
             },
-            legend: {
-                display: true,
-                position: 'bottom'
-            },
-            cutoutPercentage: 80,
+            cutout: '70%',
         },
     });
 
     // Gráfico de prioridade
-    var ctx2 = document.getElementById('prioridadeChart');
+    var ctx2 = document.getElementById('prioridadeChart').getContext('2d');
     var prioridadeChart = new Chart(ctx2, {
         type: 'pie',
         data: {
             labels: [
                 {% for item in prioridade_dist %}
-                    '{{ item.prioridade }}',
+                    '{{ item.prioridade|title }}',
                 {% endfor %}
             ],
             datasets: [{
@@ -199,29 +250,29 @@
                         {{ item.total }},
                     {% endfor %}
                 ],
-                backgroundColor: ['#e74a3b', '#f6c23e', '#1cc88a'],
-                hoverBackgroundColor: ['#d62d1f', '#e0a800', '#17a673'],
+                backgroundColor: [
+                    {% for item in prioridade_dist %}
+                        '{{ item.cor }}',
+                    {% endfor %}
+                ],
+                hoverBackgroundColor: [
+                    {% for item in prioridade_dist %}
+                        '{{ item.cor_hover }}',
+                    {% endfor %}
+                ],
                 hoverBorderColor: "rgba(234, 236, 244, 1)",
             }],
         },
         options: {
             maintainAspectRatio: false,
-            tooltips: {
-                backgroundColor: "rgb(255,255,255)",
-                bodyFontColor: "#858796",
-                borderColor: '#dddfeb',
-                borderWidth: 1,
-                xPadding: 15,
-                yPadding: 15,
-                displayColors: false,
-                caretPadding: 10,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
             },
-            legend: {
-                display: true,
-                position: 'bottom'
-            },
-            cutoutPercentage: 50,
         },
     });
 </script>
+
 {% endblock %}

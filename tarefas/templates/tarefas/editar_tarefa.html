@@ -1,34 +1,211 @@
 {% load static %}
-
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Tarefa - {{ tarefa.titulo }}</title>
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-{% block content %}
+    <link rel="stylesheet" href="{% static 'csstarefa/detailstyles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstarefa/editstyles.css' %}">
 </head>
-
 <body>
     <div class="container">
-    
-        <h1>Editar Tarefa</h1>
-        <div>
-            <a href="{% url 'tarefas:consultar_tarefa' %}" class="btn-secondary">Voltar</a>
-            <a href="{% url 'tarefas:tarefas' %}" class="btn_tarefas">Tarefas</a>
-            
-        </div>
-        <div>
-            <form method="post">
+        <header class="form-header">
+            <h1 class="form-title">Editar Tarefa</h1>
+            <div class="action-buttons">
+                <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-secondary">Voltar</a>
+                <a href="{% url 'tarefas:tarefas' %}" class="btn btn-tarefas">Tarefas</a>
+            </div>
+        </header>
+        <h2 class="form-title">{{ tarefa.titulo }}</h2>
+        <main class="form-container">
+            <form method="post" class="task-form" enctype="multipart/form-data">
                 {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn-primary">Salvar</button>
-            </form>
-            
-            {% endblock %}
-        </div>
-    </div
+                
+                <!-- Exibe erros não relacionados a campos específicos -->
+                {% if form.non_field_errors %}
+                <div class="form-errors">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
 
+                <!-- Seção: Informações Básicas -->
+                <fieldset class="form-section">
+                    <legend>Informações Básicas</legend>
+                    
+                    <div class="form-group {% if form.titulo.errors %}has-error{% endif %}">
+                        <label for="{{ form.titulo.id_for_label }}" class="form-label">Título*</label>
+                        {{ form.titulo }}
+                        {% if form.titulo.errors %}
+                        <div class="error-message">{{ form.titulo.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group {% if form.descricao.errors %}has-error{% endif %}">
+                        <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+                        {{ form.descricao }}
+                        {% if form.descricao.errors %}
+                        <div class="error-message">{{ form.descricao.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group {% if form.projeto.errors %}has-error{% endif %}">
+                        <label for="{{ form.projeto.id_for_label }}" class="form-label">Projeto</label>
+                        {{ form.projeto }}
+                        {% if form.projeto.errors %}
+                        <div class="error-message">{{ form.projeto.errors }}</div>
+                        {% endif %}
+                    </div>
+                </fieldset>
+
+                <!-- Seção: Status e Prioridade -->
+                <fieldset class="form-section">
+                    <legend>Status e Prioridade</legend>
+                    
+                    <div class="form-group {% if form.status.errors %}has-error{% endif %}">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">Status*</label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                        <div class="error-message">{{ form.status.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group {% if form.prioridade.errors %}has-error{% endif %}">
+                        <label for="{{ form.prioridade.id_for_label }}" class="form-label">Prioridade*</label>
+                        {{ form.prioridade }}
+                        {% if form.prioridade.errors %}
+                        <div class="error-message">{{ form.prioridade.errors }}</div>
+                        {% endif %}
+                    </div>
+                </fieldset>
+
+                <!-- Seção: Datas e Prazos -->
+                <fieldset class="form-section">
+                    <legend>Datas e Prazos</legend>
+                    
+                    <div class="form-group {% if form.data_inicio.errors %}has-error{% endif %}">
+                        <label for="{{ form.data_inicio.id_for_label }}" class="form-label">Data de Início*</label>
+                        <input type="datetime-local" 
+                               id="{{ form.data_inicio.id_for_label }}" 
+                               name="{{ form.data_inicio.name }}" 
+                               value="{{ form.data_inicio.value|date:'Y-m-d\TH:i' }}"
+                               class="form-control datetime-input">
+                        {% if form.data_inicio.errors %}
+                        <div class="error-message">{{ form.data_inicio.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group {% if form.prazo.errors %}has-error{% endif %}">
+                        <label for="{{ form.prazo.id_for_label }}" class="form-label">Prazo Final</label>
+                        <input type="date" 
+                               id="{{ form.prazo.id_for_label }}" 
+                               name="{{ form.prazo.name }}" 
+                               value="{{ form.prazo.value|date:'Y-m-d'|default:'' }}"
+                               class="form-control date-input">
+                        {% if form.prazo.errors %}
+                        <div class="error-message">{{ form.prazo.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if tarefa.concluida_em %}
+                    <div class="form-group">
+                        <label class="form-label">Concluída em</label>
+                        <input type="text" 
+                               value="{{ tarefa.concluida_em|date:'d/m/Y H:i' }}" 
+                               class="form-control" 
+                               disabled>
+                    </div>
+                    {% endif %}
+                </fieldset>
+
+                <!-- Seção: Responsáveis -->
+                <fieldset class="form-section">
+                    <legend>Responsáveis</legend>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Criado por</label>
+                        <input type="text" 
+                               value="{{ tarefa.usuario.get_full_name|default:tarefa.usuario.username }}" 
+                               class="form-control" 
+                               disabled>
+                    </div>
+
+                    <div class="form-group {% if form.responsavel.errors %}has-error{% endif %}">
+                        <label for="{{ form.responsavel.id_for_label }}" class="form-label">Responsável</label>
+                        {{ form.responsavel }}
+                        {% if form.responsavel.errors %}
+                        <div class="error-message">{{ form.responsavel.errors }}</div>
+                        {% endif %}
+                    </div>
+                </fieldset>
+
+                <!-- Seção: Tempo -->
+                <fieldset class="form-section">
+                    <legend>Tempo</legend>
+                    
+                    <div class="form-group {% if form.duracao_prevista.errors %}has-error{% endif %}">
+                        <label for="{{ form.duracao_prevista.id_for_label }}" class="form-label">Duração Prevista (horas)</label>
+                        {{ form.duracao_prevista }}
+                        {% if form.duracao_prevista.errors %}
+                        <div class="error-message">{{ form.duracao_prevista.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group {% if form.tempo_gasto.errors %}has-error{% endif %}">
+                        <label for="{{ form.tempo_gasto.id_for_label }}" class="form-label">Tempo Gasto (horas)</label>
+                        {{ form.tempo_gasto }}
+                        {% if form.tempo_gasto.errors %}
+                        <div class="error-message">{{ form.tempo_gasto.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if tarefa.duracao_prevista and tarefa.tempo_gasto %}
+                    <div class="form-group">
+                        <label class="form-label">Progresso</label>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: {{ tarefa.progresso }}%"></div>
+                            <span class="progress-text">{{ tarefa.progresso }}%</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </fieldset>
+
+                <!-- Seção: Informações do Sistema -->
+                <fieldset class="form-section">
+                    <legend>Informações do Sistema</legend>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Criado em</label>
+                        <input type="text" 
+                               value="{{ tarefa.data_criacao|date:'d/m/Y H:i' }}" 
+                               class="form-control" 
+                               disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Última Atualização</label>
+                        <input type="text" 
+                               value="{{ tarefa.data_atualizacao|date:'d/m/Y H:i' }}" 
+                               class="form-control" 
+                               disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Situação</label>
+                        <input type="text" 
+                               value="{% if tarefa.atrasada %}Atrasada{% else %}No prazo{% endif %}" 
+                               class="form-control {% if tarefa.atrasada %}status-atrasada{% else %}status-ok{% endif %}" 
+                               disabled>
+                    </div>
+                </fieldset>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-danger">Excluir Tarefa</a>
+                </div>
+            </form>
+        </main>
+    </div>
 </body>
 </html>

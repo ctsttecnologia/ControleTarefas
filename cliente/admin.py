@@ -114,7 +114,9 @@ class ClienteClienteAdmin(admin.ModelAdmin):
         'cliente_link',
         'codigo',
         'status_badge',
-        'data_criacao', 'ativa'
+        'data_criacao', 
+        'ativa'
+        
     )
     list_filter = (
         'ativa',

@@ -17,7 +17,7 @@ class Tarefas(models.Model):
 
     STATUS_CHOICES = [
         ('pendente', _('Pendente')),
-        ('em_andamento', _('Em Andamento')),
+        ('andamento', _('Andamento')),
         ('concluida', _('Concluída')),
         ('cancelada', _('Cancelada')),
         ('pausada', _('Pausada')),
@@ -187,10 +187,8 @@ class Tarefas(models.Model):
 
 class Comentario(models.Model):
     tarefa = models.ForeignKey(
-        Tarefas,
-        on_delete=models.CASCADE,
-        related_name='comentarios',
-        verbose_name=_('Tarefa')
+        Tarefas, on_delete=models.CASCADE, 
+        related_name='comentarios'
     )
     
     autor = models.ForeignKey(

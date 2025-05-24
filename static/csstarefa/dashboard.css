@@ -1,0 +1,127 @@
+/* Estilos para os cards */
+.card {
+    border-radius: 0.35rem;
+    transition: all 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+/* Estilos para os badges */
+.badge {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-pendente {
+    color: #fff;
+    background-color: #4e73df;
+}
+
+.badge-andamento {
+    color: #fff;
+    background-color: #36b9cc;
+}
+
+.badge-concluida {
+    color: #fff;
+    background-color: #1cc88a;
+}
+
+.badge-cancelada {
+    color: #fff;
+    background-color: #e74a3b;
+}
+
+.badge-pausada {
+    color: #fff;
+    background-color: #858796;
+}
+
+.badge-alta {
+    color: #fff;
+    background-color: #e74a3b;
+}
+
+.badge-media {
+    color: #000;
+    background-color: #f6c23e;
+}
+
+.badge-baixa {
+    color: #fff;
+    background-color: #1cc88a;
+}
+
+/* Estilos para a tabela */
+.table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#dataTable {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #858796;
+}
+
+#dataTable th {
+    background-color: #f8f9fc;
+    font-weight: 600;
+}
+
+/* Estilos para os gráficos */
+.chart-area, .chart-pie {
+    position: relative; /* Alterado de 'left' para 'relative' */
+    height: 500px;
+    width: 100%; /* Alterado de 200% para 100% */
+    margin: 0 auto; /* Centraliza horizontalmente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .chart-area {
+        height: 20rem;
+    }
+    .chart-pie {
+        height: 15rem;
+    }
+}
+
+/* Container adicional para garantir centralização perfeita */
+.chart-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 15px;
+}
+
+

@@ -27,16 +27,23 @@
             <thead class="thead-dark">
                 <tr>
                     <th>Título</th>
+                    <th>Projeto</th>
+                    <th>Criado por</th>
+                    <th>Responsável</th>
                     <th>Status</th>
                     <th>Prioridade</th>
                     <th>Prazo</th>
+                    <th>Progresso</th>
                     <th>Ações</th>
                 </tr>
             </thead>
             <tbody>
-                {% for tarefa in tarefas %}
+            {% for tarefa in tarefas %}
                 <tr>
                     <td>{{ tarefa.titulo }}</td>
+                    <td>{{ tarefa.projeto|default:"-" }}</td>
+                    <td>{{ tarefa.usuario.username }}</td>
+                    <td>{{ tarefa.responsavel.username|default:"-" }}</td>
                     <td>
                         <span class="badge badge-{{ tarefa.status }}">
                             {{ tarefa.get_status_display }}
@@ -49,20 +56,24 @@
                     </td>
                     <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
                     <td>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: {{ tarefa.progresso }}%" 
+                                aria-valuenow="{{ tarefa.progresso }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ tarefa.progresso }}%
+                            </div>
+                        </div>
+                    </td>
+                    <td>
                         <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-sm btn-info">
                             <i class="fas fa-eye"></i>
                         </a>
-                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-sm btn-warning">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-sm btn-danger">
-                            <i class="fas fa-trash"></i>
-                        </a>
+                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn-warning">Editar</a>
+                        <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn-danger">Excluir</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center">Nenhuma tarefa encontrada</td>
+                    <td colspan="9">Nenhuma tarefa encontrada.</td>
                 </tr>
                 {% endfor %}
             </tbody>
