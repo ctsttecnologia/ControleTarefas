@@ -30,3 +30,5 @@ class AtaReuniaoAdmin(admin.ModelAdmin):
         updated = queryset.update(status='Concluído')
         self.message_user(request, f"{updated} atas marcadas como concluídas.")
     marcar_como_concluido.short_description = "Marcar selecionadas como Concluído"
+
+    

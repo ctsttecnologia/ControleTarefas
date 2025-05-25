@@ -1,162 +1,45 @@
 
- migrations.CreateModel(
-            name='FichaEPI',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('cargo', models.CharField(max_length=100)),
-                ('registro', models.CharField(max_length=50)),
-                ('admissao', models.DateField()),
-                ('demissao', models.DateField(blank=True, null=True)),
-                ('contrato', models.CharField(max_length=100)),
-                ('local_data', models.CharField(max_length=100)),
-                ('assinatura', models.ImageField(blank=True, null=True, upload_to='assinaturas/')),
-                ('criado_em', models.DateTimeField(auto_now_add=True)),
-                ('empregado', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
-            ],
-        ),
+# models.py
+#class Funcionarios(models.Model):
+    """
+    Modelo que representa um funcionário da empresa.
+    
+    Atributos:
+        nome (CharField): Nome completo do funcionário (max_length=100)
+        data_nascimento (DateField): Data de nascimento do funcionário
+        telefone (CharField): Número de telefone (max_length=15)
+        email (EmailField): Endereço de e-mail único
+        sexo (CharField): Sexo do funcionário (choices: M, F, O)
+        estatus (IntegerField): Situação atual do funcionário (choices: 1=Ativo, 2=Afastado, etc.)
+        documentos (OneToOneField): Relacionamento com os documentos pessoais
+        admissao (OneToOneField): Relacionamento com os dados de admissão
+        
+    Métodos:
+        idade: Retorna a idade atual do funcionário
+        promover: Atualiza o cargo e salário do funcionário
+    """
+    # campos existentes...
 
+    #@property
+    #def idade(self):
+        """Calcula e retorna a idade atual do funcionário com base na data de nascimento."""
+        #today = timezone.now().date()
+       #born = self.data_nascimento
+        #return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
- dependencies = [
-        ('automovel', '0001_initial'),  # Depende da migração inicial
-        ('auth', '0012_alter_user_first_name_max_length'),  # Para o relacionamento com User
-    ]
-
-    migrations.CreateModel(
-            name='Checklist_Carro',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('tipo', models.CharField(max_length=10)),
-                ('data_criacao', models.DateTimeField(auto_now_add=True)),
-                ('km_inicial', models.PositiveIntegerField()),
-                ('km_final', models.PositiveIntegerField(blank=True, null=True)),
-                ('revisao_frontal_status', models.CharField(max_length=15)),
-                ('foto_frontal', models.CharField(max_length=100)),
-                ('coordenadas_avaria_frontal', models.JSONField(blank=True, null=True)),
-                ('revisao_trazeira_status', models.CharField(max_length=15)),
-                ('foto_trazeira', models.CharField(max_length=100)),
-                ('coordenadas_avaria_trazeira', models.JSONField(blank=True, null=True)),
-                ('revisao_lado_motorista_status', models.CharField(max_length=15)),
-                ('foto_lado_motorista', models.CharField(max_length=100)),
-                ('coordenadas_avaria_lado_motorista', models.JSONField(blank=True, null=True)),
-                ('revisao_lado_passageiro_status', models.CharField(max_length=15)),
-                ('foto_lado_passageiro', models.CharField(max_length=100)),
-                ('coordenadas_lado_passageiro', models.JSONField(blank=True, null=True)),
-                ('observacoes_gerais', models.TextField(blank=True, null=True)),
-                ('anexo_ocorrencia', models.TextField(blank=True, null=True)),
-                ('assinatura', models.TextField()),
-                ('confirmacao', models.BooleanField(default=False)),
-                ('agendamento', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='automovel.agendamento')),
-                ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='auth.user')),
-            ],
-            options={
-                'db_table': 'checklist_carro',
-                'ordering': ['-data_criacao'],
-            },
-        ),
-        migrations.AddConstraint(
-            model_name='checklist_carro',
-            constraint=models.UniqueConstraint(fields=('agendamento', 'tipo'), name='unique_checklist_por_tipo'),
-        ),
-
-
-
-
-
-
-<!--Para inserir imagens em um projeto Django online (em produção), você precisa garantir que:
-
-As imagens estejam sendo servidas corretamente
-
-O caminho das imagens esteja configurado para funcionar em produção
-
-O servidor web (como Nginx ou Apache) esteja configurado para servir arquivos estáticos
-
-Solução para imagens em produção:
-1. Usando "{% static %}" (Recomendado)
-Modifique seus templates para usar o template tag static:
-
-html
-Copy
-
-"Substitua todos os caminhos de imagem como abaixo" 
-
-<img src="{% static 'imagens/tarefa.gif' %}" class="icone">
-Run HTML
-2. Configuração do Django (settings.py)
-Certifique-se de que seu settings.py tenha:
-
-python
-Copy
-# Configurações para arquivos estáticos
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # Pasta local dos estáticos
-]
-3. Configuração do Servidor Web (Nginx/Apache)
-Para que as imagens sejam servidas corretamente em produção, você precisa configurar seu servidor:
-
-Exemplo para Nginx:
-
-nginx
-Copy
-server {
-    listen 80;
-    server_name seu-site.com;
-
-    location /static/ {
-        alias /caminho/para/seu/projeto/staticfiles/;
-    }
-
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-Exemplo para Apache:
-
-apache
-Copy
-Alias /static /caminho/para/seu/projeto/staticfiles
-<Directory /caminho/para/seu/projeto/staticfiles>
-    Require all granted
-</Directory>
-4. Coletar Arquivos Estáticos
-Antes de subir para produção, execute:
-
-bash
-Copy
-python manage.py collectstatic
-Isso copiará todos os arquivos estáticos (incluindo imagens) para STATIC_ROOT.
-
-Se estiver usando serviços de hospedagem (Heroku, PythonAnywhere, etc.)
-Heroku: Ele não armazena arquivos estáticos permanentemente. Use Amazon S3, Whitenoise ou outro CDN.
-
-PythonAnywhere: Siga a documentação deles para configurar arquivos estáticos.
-
-AWS/GCP: Configure um bucket no S3 ou Google Cloud Storage e use django-storages.
-
-Alternativa: Usando CDN (Amazon S3, Cloudinary, etc.)
-Se seu projeto estiver em um serviço que não armazena arquivos estáticos (como Heroku), use um CDN:
-
-Instale django-storages e boto3 (para S3):
-
-bash
-Copy
-pip install django-storages boto3
-Configure settings.py:
-
-python
-Copy
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-AWS_ACCESS_KEY_ID = 'SUA_CHAVE_AWS'
-AWS_SECRET_ACCESS_KEY = 'SUA_SECRET_AWS'
-AWS_STORAGE_BUCKET_NAME = 'nome-do-seu-bucket'
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
-AWS_S3_FILE_OVERWRITE = False
-No template, continue usando {% static %} e o Django cuidará do resto.
-
--->
+    #def promover(self, novo_cargo, novo_salario):
+        """
+        Promove o funcionário para um novo cargo com novo salário.
+        
+        Args:
+            novo_cargo (Cargos): Instância do novo cargo
+            novo_salario (Decimal): Novo valor do salário
+            
+        Raises:
+            ValueError: Se o novo salário for menor que o salário base do cargo
+        """
+        #if novo_salario < novo_cargo.salario_base:
+        #    raise ValueError("Salário não pode ser menor que o base do cargo")
+        #self.admissao.cargo = novo_cargo
+        #self.admissao.salario = novo_salario
+        #self.admissao.save()

@@ -1,0 +1,179 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'cssdp/stylesdocumentos.css' %}">
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+
+<div class="container">
+    <div class="header-container">
+        <h2 class="page-title">Cadastro de Documentos Pessoais</h2>
+        {% if funcionario %}
+        <p class="user-info">Funcionário: {{ funcionario.nome }}</p>
+        {% endif %}
+    </div>
+    
+    <!-- Painel de Navegação -->
+    <div class="navigation-panel">
+        <a href="{% url 'departamento_pessoal:detalhes_funcionario' funcionario.id %}" class="btn btn-navigation">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+            <i class="fas fa-users"></i> Funcionários
+        </a>
+    </div>
+
+    <!-- Formulário Principal -->
+    <div class="form-container">
+        <form method="post" class="document-form" novalidate enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Seção 1: Documentos Básicos -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-id-card"></i> Documentos Básicos
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.cpf.id_for_label }}" class="form-label">CPF *</label>
+                        {{ form.cpf|add_class:"form-control cpf-mask" }}
+                        {% if form.cpf.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.cpf.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.rg.id_for_label }}" class="form-label">RG *</label>
+                        {{ form.rg|add_class:"form-control rg-mask" }}
+                        {% if form.rg.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.rg.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.emissor.id_for_label }}" class="form-label">Órgão Emissor *</label>
+                        {{ form.emissor|add_class:"form-control" }}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.uf.id_for_label }}" class="form-label">UF *</label>
+                        {{ form.uf|add_class:"form-select" }}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.data_emissao.id_for_label }}" class="form-label">Data Emissão</label>
+                        {{ form.data_emissao|add_class:"form-control"|attr:"type:date" }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção 2: Documentos Trabalhistas -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-briefcase"></i> Documentos Trabalhistas
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.pis.id_for_label }}" class="form-label">PIS/PASEP</label>
+                        {{ form.pis|add_class:"form-control pis-mask" }}
+                        {% if form.pis.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.pis.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.ctps.id_for_label }}" class="form-label">CTPS</label>
+                        {{ form.ctps|add_class:"form-control" }}
+                    </div>
+                    
+                    <div class="form-group col-md-4">
+                        <label for="{{ form.serie.id_for_label }}" class="form-label">Série</label>
+                        {{ form.serie|add_class:"form-control" }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seção 3: Documentos Anexos -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-paperclip"></i> Documentos Anexos
+                </h3>
+                
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="{{ form.copia_rg.id_for_label }}" class="form-label">Cópia do RG</label>
+                        {{ form.copia_rg|add_class:"form-control" }}
+                        {% if form.copia_rg.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.copia_rg.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group col-md-6">
+                        <label for="{{ form.copia_cpf.id_for_label }}" class="form-label">Cópia do CPF</label>
+                        {{ form.copia_cpf|add_class:"form-control" }}
+                        {% if form.copia_cpf.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.copia_cpf.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botões de Ação -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-save">
+                    <i class="fas fa-save"></i> Salvar Documentos
+                </button>
+                <a href="{% url 'departamento_pessoal:detalhes_funcionario' funcionario.id %}" class="btn btn-cancel">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Máscaras para os campos
+    $('.cpf-mask').mask('000.000.000-00');
+    $('.rg-mask').mask('00.000.000-0');
+    $('.pis-mask').mask('000.00000.00-0');
+    
+    // Validação do formulário
+    $('.document-form').submit(function(e) {
+        let isValid = true;
+        $('[required]').each(function() {
+            if ($(this).val() === '') {
+                $(this).addClass('is-invalid');
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            $('html, body').animate({
+                scrollTop: $('.is-invalid').first().offset().top - 100
+            }, 500);
+        }
+    });
+});
+</script>
+{% endblock %}

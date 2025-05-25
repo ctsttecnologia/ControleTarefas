@@ -1,0 +1,64 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
+
+<div class="container">
+    <h2>Editar Admissão</h2>
+    
+    <div class="painel">
+        <a href="{% url 'home' %}" class="btn-home">Home</a>
+        <a href="{% url 'departamento_pessoal:lista_admissao' %}" class="btn_cadastro">Lista de Admissões</a>
+        <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+    </div>
+
+    <div class="painel1">
+        <form method="post" class="form-cadastro">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_funcionario" class="form-label">Funcionário</label>
+                {{ form.funcionario }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_matricula" class="form-label">Matrícula</label>
+                {{ form.matricula }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_cargo" class="form-label">Cargo</label>
+                {{ form.cargo }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_data_admissao" class="form-label">Data de Admissão</label>
+                {{ form.data_admissao }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_salario" class="form-label">Salário</label>
+                {{ form.salario }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_hora_entrada" class="form-label">Horário de Entrada</label>
+                {{ form.hora_entrada }}
+            </div>
+            
+            <div class="form-group">
+                <label for="id_hora_saida" class="form-label">Horário de Saída</label>
+                {{ form.hora_saida }}
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                <a href="{% url 'departamento_pessoal:lista_admissao' %}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

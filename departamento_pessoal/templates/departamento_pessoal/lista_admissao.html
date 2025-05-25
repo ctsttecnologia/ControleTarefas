@@ -1,0 +1,71 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
+
+<div class="container">
+    <h2>Lista de Admissões</h2>
+    
+    <div class="painel">
+        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn btn-navigation">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+            <i class="fas fa-users"></i> Funcionários
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Matrícula</th>
+                    <th>Funcionário</th>
+                    <th>Cargo</th>
+                    <th>Departamento</th>
+                    <th>Data Admissão</th>
+                    <th>Salário</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for admissao in admissoes %}
+                <tr>
+                    <td>{{ admissao.matricula }}</td>
+                    <td>
+                        {% if admissao.funcionario %}
+                            {{ admissao.funcionario.nome }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>{{ admissao.cargo.nome }}</td>
+                    <td>{{ admissao.departamento.nome }}</td>
+                    <td>{{ admissao.data_admissao|date:"d/m/Y" }}</td>
+                    <td>R$ {{ admissao.salario }}</td>
+                    <td>
+                        <a href="{% url 'departamento_pessoal:editar_admissao' admissao.funcionario.pk %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        {% if admissao.funcionario %}
+                        <a href="{% url 'departamento_pessoal:detalhes_funcionario' admissao.funcionario.pk %}" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">Nenhuma admissão cadastrada</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -13,7 +13,7 @@ CBO_CHOICES = [
     ('731210', 'Técnico em Manutenção de Equipamentos de Transporte'),
     ('731105', 'Instalador de Sistemas Hidráulicos'),
     ('731305', 'Encanador'),
-    ('7.201-1', 'Pedreiro'),
+    ('72011', 'Pedreiro'),
     ('', ''),
     ('', ''),
     ('', ''),
