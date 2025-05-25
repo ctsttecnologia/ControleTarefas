@@ -25,11 +25,13 @@ class Funcionario(models.Model):
     class Meta:
         verbose_name = "Funcionário"
         verbose_name_plural = "Funcionários"
+        ordering = ['nome']  # Ordenação padrão por nome
     
     def __str__(self):
         return f"{self.nome} ({self.cargo})"
 
 class AtaReuniao(models.Model):
+
     NATUREZA_CHOICES = [
         ('Administrativa', 'Administrativa'),
         ('Comercial', 'Comercial'),
@@ -81,6 +83,8 @@ class AtaReuniao(models.Model):
         verbose_name = "Ata de Reunião"
         verbose_name_plural = "Atas de Reunião"
         ordering = ['-entrada']
+        get_latest_by = 'entrada'
     
     def __str__(self):
         return f"Ata {self.id} - {self.contrato} ({self.get_status_display()})"
+

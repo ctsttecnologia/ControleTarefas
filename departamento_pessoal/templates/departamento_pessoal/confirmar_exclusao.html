@@ -22,7 +22,7 @@
         <div class="painel">
    
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
             <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         
         </div>
@@ -31,7 +31,7 @@
         <form method="post">
             {% csrf_token %}
             <button type="submit" class="btn_excluir">Excluir</button>
-            <a href="{% url 'lista_funcionarios' %}" class="btn_cancelar">Cancelar</a>
+            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn_cancelar">Cancelar</a>
         </form>
     </div>
 </body>

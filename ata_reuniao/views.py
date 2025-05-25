@@ -36,6 +36,10 @@ class AtaReuniaoCreateView(CreateView):
     template_name = 'ata_reuniao/ata_form.html'
     success_url = reverse_lazy('ata_reuniao_list')
     
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        return kwargs
+    
     def form_valid(self, form):
         messages.success(self.request, 'Ata de reunião criada com sucesso!')
         return super().form_valid(form)

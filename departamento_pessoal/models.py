@@ -1,10 +1,11 @@
+
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from logradouro.models import Logradouro  # Importação correta
+from logradouro.models import Logradouro
 from django.core.validators import RegexValidator
 from django.utils.translation import gettext_lazy as _
-
+from django.core.validators import MinLengthValidator
 
 class Departamentos(models.Model):
     TIPO_DEPARTAMENTO_CHOICES = [
@@ -14,9 +15,8 @@ class Departamentos(models.Model):
         ('FIN', 'Financeiro'),
         ('RH', 'Recursos Humanos'),
         ('PCM', 'Planejamento'),
-        ('TST', 'Seguraça do Trabalho'),
+        ('TST', 'Segurança do Trabalho'),
         ('DP', 'Departamento Pessoal'),
-
     ]
     
     nome = models.CharField(
@@ -36,7 +36,7 @@ class Departamentos(models.Model):
     tipo = models.CharField(
         max_length=3,
         choices=TIPO_DEPARTAMENTO_CHOICES,
-        default='OUT',
+        default='ADM',
         verbose_name=_('Tipo de Departamento')
     )
     
@@ -59,56 +59,32 @@ class Departamentos(models.Model):
         help_text=_('Código do centro de custo associado')
     )
     
-     
     data_atualizacao = models.DateTimeField(
         auto_now=True,
         verbose_name=_('Última Atualização')
     )
 
-    # Métodos avançados
     def clean(self):
         """Validações personalizadas"""
         super().clean()
         
-        # Validação da sigla
         if not self.sigla.isalpha():
             raise ValidationError({
                 'sigla': _('A sigla deve conter apenas letras.')
             })
         
-        # Validação do nome
         if len(self.nome.split()) < 2:
             raise ValidationError({
                 'nome': _('Informe o nome completo do departamento.')
             })
 
     def save(self, *args, **kwargs):
-        """Garante validações antes de salvar"""
         self.full_clean()
         super().save(*args, **kwargs)
     
     @property
     def total_funcionarios(self):
-        """Retorna o número total de funcionários no departamento"""
-        if hasattr(self, 'admissoes'):
-            return self.admissoes.filter(funcionario__estatus=1).count()
-        return 0
-    
-    @property
-    def orcamento_disponivel(self):
-        """Método placeholder para cálculo de orçamento"""
-        # Implementação real dependeria de integração com sistema financeiro
-        return 0
-    
-    def ativar(self):
-        """Ativa o departamento"""
-        self.ativo = True
-        self.save()
-    
-    def desativar(self):
-        """Desativa o departamento"""
-        self.ativo = False
-        self.save()
+        return self.admissoes.filter(funcionario__estatus=1).count()
     
     def __str__(self):
         return f"{self.nome} ({self.sigla})"
@@ -130,26 +106,7 @@ class Departamentos(models.Model):
             ),
         ]
 
-    # Métodos
-    def clean(self):
-        """Validações adicionais"""
-        super().clean()
-        if self.cpf == '00000000000':
-            raise ValidationError({'cpf': _('CPF inválido')})
-
-    @property
-    def cpf_formatado(self):
-        """Formata o CPF para exibição"""
-        return f"{self.cpf[:3]}.{self.cpf[3:6]}.{self.cpf[6:9]}-{self.cpf[9:]}"
-
-    class Meta:
-        db_table = 'documentos'
-        verbose_name = _('Documento Pessoal')
-        verbose_name_plural = _('Documentos Pessoais')
-   
-
 class Documentos(models.Model):
-    # Validadores
     cpf_validator = RegexValidator(
         regex=r'^\d{11}$',
         message=_('CPF deve conter exatamente 11 dígitos')
@@ -167,7 +124,6 @@ class Documentos(models.Model):
         message=_('UF deve ser a sigla de 2 letras maiúsculas')
     )
 
-    # Campos
     cpf = models.CharField(
         unique=True,
         max_length=11,
@@ -223,6 +179,20 @@ class Documentos(models.Model):
         null=True,
         verbose_name=_('Título de Eleitor')
     )
+
+    def clean(self):
+        super().clean()
+        if self.cpf == '00000000000':
+            raise ValidationError({'cpf': _('CPF inválido')})
+
+    @property
+    def cpf_formatado(self):
+        return f"{self.cpf[:3]}.{self.cpf[3:6]}.{self.cpf[6:9]}-{self.cpf[9:]}"
+
+    class Meta:
+        db_table = 'documentos'
+        verbose_name = _('Documento Pessoal')
+        verbose_name_plural = _('Documentos Pessoais')
 
 class Cbos(models.Model):
     codigo_validator = RegexValidator(
@@ -283,8 +253,7 @@ class Cargos(models.Model):
     )
 
     def funcionarios_ativos(self):
-        """Retorna quantidade de funcionários ativos no cargo"""
-        return self.admissao.filter(funcionarios__estatus=1).count()
+        return self.admissoes.filter(funcionario__estatus=1).count()
 
     def __str__(self):
         return f"{self.nome} ({self.cbo.codigo})"
@@ -302,7 +271,7 @@ class Admissao(models.Model):
         ('EST', 'Estagiário'),
         ('APR', 'Aprendiz'),
     ]
-
+    
     cargo = models.ForeignKey(
         Cargos,
         models.PROTECT,
@@ -341,27 +310,18 @@ class Admissao(models.Model):
     )
 
     def clean(self):
-        """Validações complexas da admissão"""
         super().clean()
         
-        # Valida data de admissão
         if self.data_admissao > timezone.now().date():
             raise ValidationError({'data_admissao': _('Data de admissão não pode ser futura')})
         
-        # Valida salário mínimo para o cargo
         if self.cargo.salario_base and self.salario < self.cargo.salario_base:
             raise ValidationError({
                 'salario': _('Salário não pode ser menor que o base do cargo (R$ %s)') % self.cargo.salario_base
             })
 
-    def save(self, *args, **kwargs):
-        """Garante validação antes de salvar"""
-        self.full_clean()
-        super().save(*args, **kwargs)
-
     @property
     def tempo_empresa(self):
-        """Calcula tempo de empresa em meses"""
         delta = timezone.now().date() - self.data_admissao
         return round(delta.days / 30)
 
@@ -377,6 +337,8 @@ class Admissao(models.Model):
             )
         ]
 
+    def __str__(self):
+        return f"{self.matricula} - {self.cargo.nome}"
 
 class Funcionarios(models.Model):
     SEXO_CHOICES = [
@@ -402,13 +364,16 @@ class Funcionarios(models.Model):
     )
     documentos = models.OneToOneField(
         Documentos,
-        models.PROTECT,
-        related_name='funcionario',
+        on_delete=models.CASCADE,
+        null=True,  # Permite criar funcionário sem documentos inicialmente
+        blank=True,
         verbose_name=_('Documentos')
     )
     admissao = models.OneToOneField(
         Admissao,
         models.PROTECT,
+        null=True,  # Permite criar funcionário sem documentos inicialmente
+        blank=True,
         related_name='funcionario',
         verbose_name=_('Dados de Admissão')
     )
@@ -427,7 +392,7 @@ class Funcionarios(models.Model):
         verbose_name=_('Naturalidade')
     )
     telefone = models.CharField(
-        max_length=11,
+        max_length=15,  
         blank=True,
         null=True,
         verbose_name=_('Telefone')
@@ -451,16 +416,13 @@ class Funcionarios(models.Model):
         verbose_name=_('Data de Cadastro')
     )
 
-    # Métodos avançados
     @property
     def idade(self):
-        """Calcula idade atual"""
         today = timezone.now().date()
         born = self.data_nascimento
         return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
     def promover(self, novo_cargo, novo_salario):
-        """Promove funcionário para novo cargo"""
         self.admissao.cargo = novo_cargo
         self.admissao.salario = novo_salario
         self.admissao.save()
@@ -475,6 +437,8 @@ class Funcionarios(models.Model):
             models.Index(fields=['estatus'], name='idx_funcionario_status'),
         ]
 
+    def __str__(self):
+        return f"{self.nome} ({self.admissao.matricula if hasattr(self, 'admissao') else 'Sem matrícula'})"
 
 
 
