@@ -17,8 +17,7 @@
     <script src="{% static 'automovel/js/scripts.js' %}"></script>
     <script src="{% static 'automovel/js/camera.js' %}"></script>
     <div class="container">
-        <h2>GERENCIANDO TAREFAS</h2>
-        {% if user.is_authenticated %}
+            {% if user.is_authenticated %}
             <div>
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                     <i class="bi bi-person-circle"></i> Olá, {{ request.user.username }}

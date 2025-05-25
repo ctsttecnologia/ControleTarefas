@@ -25,8 +25,13 @@ class AtaReuniaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['contrato'].queryset = Cliente.objects.all().order_by('nome')
-        self.fields['coordenador'].queryset = Funcionario.objects.filter(ativo=True).order_by('nome')
-        self.fields['responsavel'].queryset = Funcionario.objects.filter(ativo=True).order_by('nome')
+        self.fields['coordenador'].queryset = Funcionario.objects.all().order_by('nome')
+        self.fields['responsavel'].queryset = Funcionario.objects.all().order_by('nome')
 
+        for field in self.fields:
+            if isinstance(self.fields[field].widget, forms.Select):
+                self.fields[field].widget.attrs.update({'class': 'form-select'})
+            else:
+                self.fields[field].widget.attrs.update({'class': 'form-control'})
 
 
