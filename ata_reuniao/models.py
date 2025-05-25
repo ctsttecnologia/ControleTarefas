@@ -44,11 +44,9 @@ class AtaReuniao(models.Model):
         ('Cancelado', 'Cancelado'),
     ]
     
-    contrato = models.ForeignKey(
-        Cliente,  # Referência direta ao modelo Cliente
-        on_delete=models.PROTECT, 
-        verbose_name="Contrato"
-    )
+    contrato = models.ForeignKey(Cliente, 
+        on_delete=models.CASCADE)
+    
     coordenador = models.ForeignKey(
         Funcionario,  # Referência direta ao modelo Funcionario
         on_delete=models.PROTECT, 
