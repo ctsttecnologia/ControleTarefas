@@ -1,0 +1,167 @@
+
+
+
+{% load static %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+
+    
+<link rel="stylesheet" href="{% static 'csstreinamento/styles.css' %}">
+
+{% include 'includes/header.html' %}
+
+<div class="container">
+    <h2 class="my-4">Treinamentos Disponíveis</h2>
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="modalidade">Modalidade:</label>
+                            <select name="modalidade" id="modalidade" class="form-control">
+                                <option value="">Todas</option>
+                                <option value="interno" {% if current_modalidade == 'interno' %}selected{% endif %}>Interno</option>
+                                <option value="externo" {% if current_modalidade == 'externo' %}selected{% endif %}>Externo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="tipo">Tipo:</label>
+                            <select name="tipo" id="tipo" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="graduacao" {% if current_tipo == 'graduacao' %}selected{% endif %}>Graduação</option>
+                                <option value="tecnico" {% if current_tipo == 'tecnico' %}selected{% endif %}>Técnico</option>
+                                <option value="profissionalizante" {% if current_tipo == 'profissionalizante' %}selected{% endif %}>Profissionalizante</option>
+                                <option value="livre" {% if current_tipo == 'livre' %}selected{% endif %}>Livre</option>
+                                <option value="outros" {% if current_tipo == 'outros' %}selected{% endif %}>Outros</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="search">Pesquisar:</label>
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="Nome do treinamento" value="{{ current_search|default:'' }}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="fas fa-search"></i> Pesquisar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela de Treinamentos -->
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Nome do Treinamento</th>
+                    <th>Validade (meses)</th>
+                    <th>Modalidade</th>
+                    <th>Tipo</th>
+                    <th>Criado em</th>
+      
+                </tr>
+            </thead>
+            <tbody>
+                {% for treinamento in treinamentos %}
+                <tr>
+                    <td>{{ treinamento.id }}</td>
+                    <td>{{ treinamento.nome_treinamento }}</td>
+                    <td>{{ treinamento.validade }}</td>
+                    <td>
+                        <span class="badge {% if treinamento.modalidade == 'interno' %}bg-primary{% else %}bg-secondary{% endif %}">
+                            {{ treinamento.get_modalidade_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-info text-dark">
+                            {{ treinamento.get_tipo_display }}
+                        </span>
+                    </td>
+                    <td>{{ treinamento.criado_em|date:"d/m/Y H:i" }}</td>
+   
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">Nenhum treinamento disponível</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if treinamentos.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if treinamentos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if current_modalidade %}&modalidade={{ current_modalidade }}{% endif %}{% if current_tipo %}&tipo={{ current_tipo }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" 
+                       aria-label="Primeira">
+                        <span aria-hidden="true">««</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?page={{ treinamentos.previous_page_number }}{% if current_modalidade %}&modalidade={{ current_modalidade }}{% endif %}{% if current_tipo %}&tipo={{ current_tipo }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" 
+                       aria-label="Anterior">
+                        <span aria-hidden="true">«</span>
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in treinamentos.paginator.page_range %}
+                {% if treinamentos.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                {% elif num > treinamentos.number|add:'-3' and num < treinamentos.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="?page={{ num }}{% if current_modalidade %}&modalidade={{ current_modalidade }}{% endif %}{% if current_tipo %}&tipo={{ current_tipo }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if treinamentos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?page={{ treinamentos.next_page_number }}{% if current_modalidade %}&modalidade={{ current_modalidade }}{% endif %}{% if current_tipo %}&tipo={{ current_tipo }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" 
+                       aria-label="Próxima">
+                        <span aria-hidden="true">»</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" 
+                       href="?page={{ treinamentos.paginator.num_pages }}{% if current_modalidade %}&modalidade={{ current_modalidade }}{% endif %}{% if current_tipo %}&tipo={{ current_tipo }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}" 
+                       aria-label="Última">
+                        <span aria-hidden="true">»»</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    <a href="{% url 'treinamentos:listar_treinamentos' %}" class="btn secondary">
+        Treinamentos Aplicados
+    </a>
+</div>
+
+{% include 'includes/footer.html' %}
+{% endblock %}

@@ -1,14 +1,16 @@
 
-{% extends 'base.html' %}
+
 {% load static %}
 
 {% block content %}
 
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+
 <link rel="stylesheet" href="{% static 'csstarefa/dashboard.css' %}">
 
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
 <div class="container">
     <div class="container-fluid">
         <h2 class="mt-4">Dashboard de Tarefas</h2>
@@ -190,6 +192,8 @@
         </div>
     </div>
 </div>
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}
 <!-- Gráficos JS -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

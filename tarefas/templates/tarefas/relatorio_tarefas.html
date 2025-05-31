@@ -13,6 +13,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
     <div class="container">
         <h1>Relatório de Tarefas</h1>
         
@@ -53,7 +56,6 @@
 
         <!-- Resumo -->
         <div class="resumo-card">
-            <h2>Resumo Geral</h2>
             <div class="resumo-grid">
                 <div class="resumo-item total">
                     <span>Total</span>
@@ -102,7 +104,8 @@
             </table>
         </div>
     </div>
-
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}
     <script>
         const ctx = document.getElementById('statusChart').getContext('2d');
         new Chart(ctx, {

@@ -1,173 +1,174 @@
-
-* {
+/* Estilos Gerais */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
-}
-
-/* Estilo body cliente */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #cacaca;
     color: #333;
     line-height: 1.6;
-    padding: 20px;
 }
 
 .container {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin: 20px auto;
+    padding: 0 15px;
 }
 
-h2 {
-    text-align: center;
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.painel, .painel1 {
-    margin-bottom: 20px;
-    padding: 15px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
-}
-
-.painel1 h2 {
-    margin-bottom: 10px;
-    color: #555;
-}
-
-/* Estilo dos botões */
-.btn-home, .btn_logout, .btn_cadastro, .btn_profile {
-    display: inline-block;
-    padding: 7px 20px;
-    margin: 5px;
-    font-size: 16px;
-    color: #fff;
-    background-color: #007bff;
-    border: none;
+/* Painel Superior */
+.painel {
+    background-color: #2c3e50;
+    padding: 15px 20px;
     border-radius: 5px;
-    text-decoration: none;
-    text-align: center;
-    transition: background-color 0.3s ease;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.btn-home:hover, .btn_logout:hover, .btn_cadastro:hover, .btn_profile:hover {
-    background-color: #0056b3;
+.painel1 {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+/* Títulos */
+h2 {
+    color: #2c3e50;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eaeaea;
+    font-size: 1.8rem;
+}
+
+/* Formulário */
+.form-cadastro {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="number"]:focus,
+.form-group input[type="date"]:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Checkbox Personalizado */
+.form-group input[type="checkbox"] {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+}
+
+/* Botões */
+.btn_logout, .btn_cadastro {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
 }
 
 .btn_logout {
-    background-color: #626262;
+    background-color: #e74c3c;
+    color: white;
+    border: 1px solid #c0392b;
 }
 
 .btn_logout:hover {
-    background-color: #373737;
+    background-color: #c0392b;
 }
 
 .btn_cadastro {
-    background-color: #007bff;
+    background-color: #3498db;
+    color: white;
+    border: 1px solid #2980b9;
 }
 
 .btn_cadastro:hover {
-    background-color: #0056b3;
+    background-color: #2980b9;
 }
 
-.btn_profile {
-    background-color: #007bff;
+input[type="submit"] {
+    background-color: #2ecc71;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.3s;
+    grid-column: 1 / -1;
+    max-width: 200px;
+    margin-top: 10px;
 }
 
-.btn_profile:hover {
-    background-color: #0056b3;
+input[type="submit"]:hover {
+    background-color: #27ae60;
 }
 
 /* Responsividade */
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
+    .form-cadastro {
+        grid-template-columns: 1fr;
     }
-
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile {
-        display: block;
-        width: 100%;
-        margin: 5px 0;
+    
+    .painel {
+        flex-direction: column;
+        align-items: flex-start;
     }
-
-    .painel, .painel1 {
-        padding: 10px;
+    
+    input[type="submit"] {
+        max-width: 100%;
     }
 }
 
 @media (max-width: 480px) {
-    .container {
-        padding: 5px;
+    .painel1 {
+        padding: 15px;
     }
-
-    .btn-home, .btn_logout, .btn_cadastro, .btn_profile {
-        padding: 6px 12px;
-    }
-}
-
-/* Estilos do formulário de pesquisa */
-.form-pesquisa {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #555;
-}
-
-.form-group input {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-.btn-pesquisar {
-    padding: 10px 20px;
-    background-color: #626262;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-}
-
-.btn-pesquisar:hover {
-    background-color: #303030;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .painel {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .form-pesquisa {
-        gap: 10px;
-    }
-
-    .form-group input {
-        font-size: 14px;
-    }
-
-    .btn-pesquisar {
-        font-size: 14px;
+    
+    h2 {
+        font-size: 1.5rem;
     }
 }

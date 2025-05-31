@@ -1,0 +1,79 @@
+
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cliente{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
+    
+</head>
+<body>
+    <div class="container">
+        <h2>CLIENTE</h2>
+        {% if user.is_authenticated %}
+        <p>Olá, {{ user.username }}!</p>
+        {% else %}
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+        {% endif %}
+                
+        <div class="painel">
+            
+            <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'home' %}" class="btn-home">Home</a>
+            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+            <a href="{% url 'cadastro_cliente' %}" class="btn_cadastro">Cadastrar</a>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
+        
+        </div>
+        <div class="painel1">
+            {% csrf_token %}
+             {% block content %}
+                <div class="container">
+                    <h2>Resultados da Pesquisa</h2>
+                    {% if cliente %}
+                        <table class="tabela-resultados">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Endereço</th>
+                                    <th>CM</th>
+                                    <th>Razão social</th>
+                                    <th>Unidade</th>
+                                    <th>CNPJ</th>
+                                    <th>Telefone</th>
+                                    <th>Data de Início</th>
+                                    <th>Estatus</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cliente in cliente %}
+                                    <tr>
+                                        <td>{{ cliente.nome }}</td>
+                                        <td>{{ cliente.logradouro }}</td>
+                                        <td>{{ cliente.contrato }}</td>
+                                        <td>{{ cliente.razao_social }}</td>
+                                        <td>{{ cliente.cnpj }}</td>
+                                        <td>{{ cliente.telefone }}</td>
+                                        <td>{{ cliente.estatus|yesno:"Ativo,Inativo" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p>Nenhum cliente encontrado.</p>
+                    {% endif %}
+                </div>
+            {% endblock %}
+
+            {% load static %}
+        </div>                       
+        
+    </div>
+</body> 
+</html>

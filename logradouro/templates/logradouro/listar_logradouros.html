@@ -6,23 +6,19 @@
 
 {% block content %}
 <div class="contaniner">
+ 
     <h2>Endereços Cadastrados</h2>
-    {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-    {% endif %}
+
     <div class="painel">
-        <div class="btn-group">
             <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Novo Endereço
             </a>
             <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-excel">
                 <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-            </a>
-            <p>Total de endereços cadastrados: {{ total_logradouros }}</p>
-        </div>
+            </a>    
     </div>
+
+    <p>Total de endereços cadastrados: {{ total_logradouros }}</p>
     {% if logradouros %}
     <div class="table-responsive">
         <table class="table">
@@ -56,12 +52,15 @@
                 {% endfor %}
             </tbody>
         </table>
+       
     </div>
+
     {% else %}
     <div class="alert alert-info">
         Nenhum endereço cadastrado.
     </div>
     {% endif %}
+    
 </div>
 {% endblock %}
 

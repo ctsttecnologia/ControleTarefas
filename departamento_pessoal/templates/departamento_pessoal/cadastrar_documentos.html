@@ -1,15 +1,24 @@
 
-{% extends 'base.html' %}
+
 {% load static %}
 {% load widget_tweaks %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'cssdp/stylesdocumentos.css' %}">
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+
+  <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cssdp/stylesfuncionario.css' %}">
+
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
 
 <div class="container">
     <div class="header-container">
-        <h2 class="page-title">Cadastro de Documentos Pessoais</h2>
+        <h2 class="page-title" aling="center">Cadastro de Documentos Pessoais</h2>
         {% if funcionario %}
         <p class="user-info">Funcionário: {{ funcionario.nome }}</p>
         {% endif %}
@@ -17,10 +26,10 @@
     
     <!-- Painel de Navegação -->
     <div class="navigation-panel">
-        <a href="{% url 'departamento_pessoal:detalhes_funcionario' funcionario.id %}" class="btn btn-navigation">
+        <a href="{% url 'departamento_pessoal:detalhes_funcionario' funcionario.id %}" class="btn-navigation">
             <i class="fas fa-arrow-left"></i> Voltar
         </a>
-        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn-navigation">
             <i class="fas fa-users"></i> Funcionários
         </a>
     </div>
@@ -136,17 +145,18 @@
             
             <!-- Botões de Ação -->
             <div class="form-actions">
-                <button type="submit" class="btn btn-save">
+                <button type="submit" class="btn-save">
                     <i class="fas fa-save"></i> Salvar Documentos
                 </button>
-                <a href="{% url 'departamento_pessoal:detalhes_funcionario' funcionario.id %}" class="btn btn-cancel">
+                <a href="{% url 'departamento_pessoal:detalhes_funcionario' funcionario.id %}" class="btn-cancel">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
             </div>
         </form>
     </div>
 </div>
-
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}   
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>

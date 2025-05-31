@@ -3,11 +3,12 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, DetailView
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.template.loader import get_template
 from datetime import datetime
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.exceptions import ValidationError
 
 from xhtml2pdf import pisa
 import csv
@@ -122,6 +123,16 @@ def editar_funcionario(request, pk):
         'form': form,
         'funcionario': funcionario
     })
+
+@login_required
+@permission_required('departamento_pessoal.change_funcionarios', raise_exception=True)
+def check_email_exists(request):
+    email = request.GET.get('email', '')
+    try:
+        exists = Funcionario.objects.filter(email=email).exists()
+        return JsonResponse({'exists': exists})
+    except ValidationError:
+        return JsonResponse({'exists': False})
 
 @login_required
 @permission_required('departamento_pessoal.delete_funcionarios', raise_exception=True)

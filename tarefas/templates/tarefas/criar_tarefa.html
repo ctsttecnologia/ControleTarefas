@@ -7,38 +7,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Criar Tarefas{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
    
 </head>
 <body>
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
+
     <div class="container">
         <h2>CRIAR TAREFAS</h2>
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-        {% endif %}
-                    
-            <div class="painel">
-                <!-- Botão "Voltar para Home" -->
-                <a href="{% url 'home' %}" class="btn-home">Home</a>
-                <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-                <a href="{% url 'tarefas:tarefas' %}" class="btn_profile">Tarefas</a>
-                <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
-
-            </div>
+        <div class="painel">
+        <!-- Botão "Voltar para Home" -->
+            <a href="{% url 'tarefas:tarefas' %}" class="btn_profile">Tarefas</a>
+        
             <div class="container">
                 {% block content %}
-                <br><p>Dados das tarefas</p></br>
+                    <br><p>Dados das tarefas</p></br>
 
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit" class="btn_profile">Salvar</button>
-                </form>           
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form.as_p }}
+                        <button type="submit" class="btn_profile">Salvar</button>
+                    </form>           
                 {% endblock %}
-        
-    </div>    
+            </div>
+        </div>      
+    </div>        
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}    
 </body>
 </html>

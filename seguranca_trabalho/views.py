@@ -1,24 +1,21 @@
-from django.shortcuts import render
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
+from django.utils import timezone
 
 from .models import FichaEPI
 from .forms import FichaEPIForm
 from .models import EquipamentosSeguranca
 from .forms import EquipamentosSegurancaForm
 from .forms import PesquisarFichaForm
-from django.utils import timezone
+from .forms import EquipamentoForm  # Importação crítica
 
-from django.http import HttpResponse
+
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from openpyxl import Workbook
-from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
 
-
-@csrf_exempt
-@csrf_protect
-@requires_csrf_token
 
 @login_required
 def seguranca_trabalho(request):
@@ -57,16 +54,19 @@ def listar_equipamentos(request):
     return render(request, 'seguranca_trabalho/listar_equipamentos.html', {'equipamentos': equipamentos})
 
 # Cadastrar novo equipamento
-@login_required
 def cadastrar_equipamento(request):
     if request.method == 'POST':
-        form = EquipamentosSegurancaForm(request.POST)
+        form = EquipamentoForm(request.POST, user=request.user)
         if form.is_valid():
             form.save()
-            return redirect('listar_equipamentos')
+            return redirect('   cadastrar_equipamento')
     else:
-        form = EquipamentosSegurancaForm()
-    return render(request, 'seguranca_trabalho/cadastrar_equipamento.html', {'form': form})
+        form = EquipamentoForm(user=request.user)
+    
+    return render(request, 'seguranca_trabalho/cadastrar_equipamento.html', {
+        'form': form,
+        'titulo': 'Cadastro de Equipamento'
+    })
 
 # Editar equipamento existente
 @login_required

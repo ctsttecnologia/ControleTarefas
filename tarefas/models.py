@@ -5,6 +5,7 @@ from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
@@ -129,7 +130,7 @@ class Tarefas(models.Model):
         # Validação de datas
         if self.prazo and self.prazo < timezone.now().date():
             raise ValidationError({
-                'prazo': _('O prazo não pode ser uma data passada')
+                'prazo': _('O prazo não pode ser uma data passada') 
             })
         
         if self.concluida_em and self.concluida_em < self.data_criacao:
