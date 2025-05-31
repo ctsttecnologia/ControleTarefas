@@ -9,11 +9,7 @@
     
 <div class="contaniner">
         <h2>Editar Endereço</h2>
-        {% if user.is_authenticated %}
-            <p>Olá, {{ user.username }}!</p>
-            {% else %}
-                <a href="{% url 'home' %}" class="btn-home">Início</a>
-        {% endif %}
+ 
     <div class="painel">        
         <form method="post" class="form-logradouro">
             {% csrf_token %}

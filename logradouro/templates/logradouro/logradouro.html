@@ -2,21 +2,19 @@
 {% load i18n %}
 {% load static %}
 
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
+
 {% block logradouro_content %}
-    <h2>{% trans 'CADASTRO DE ENDEREÇOS' %}</h2>
-    
-    {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        <div class="logradouro-painel">
-            <a href="{% url 'home' %}" class="btn btn-home">{% trans 'Início' %}</a>
-            <a href="{% url 'usuario:logout' %}" class="btn btn-logout">Sair</a>
+    <div class="logradouro-painel">   
+        <h2>{% trans 'CADASTRO DE ENDEREÇOS' %}</h2>
+    </div>
             <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-excel">
                 <i class="bi bi-file-earmark-excel"></i> {% trans 'Exportar Excel' %}
             </a>
             <a href="{% url 'cadastro' %}" class="btn btn-cadastro">Endereços</a>
-            <a href="{% url 'profile' %}" class="btn btn-profile">Menu</a>
-        </div>
-    {% endif %}
+      
+{% endif %}
     
     {% if messages %}
         {% for message in messages %}
@@ -87,3 +85,5 @@
         {% endif %}
     </div>
 {% endblock %}
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}

@@ -1,4 +1,4 @@
-{% extends 'logradouro/base_logradouro.html' %}
+
 {% load i18n %}
 {% load static %}
 
@@ -17,16 +17,14 @@
     <div class="container">
         <div class="painel">
             <h2>{% trans 'CADASTRO DE ENDEREÇOS' %}</h2>
-            {% if user.is_authenticated %}
-                <p>Olá, {{ user.username }}!</p>
+            
                 <div class="painel">
-                    <a href="{% url 'home' %}" class="btn btn-home">{% trans 'Início' %}</a>
-                    <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
+
                     <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-excel">
                         <i class="bi bi-file-earmark-excel"></i> {% trans 'Exportar Excel' %}
                     </a>
                     <a href="{% url 'cadastro' %}" class="btn_cadastro">Endereços</a>
-                    <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+
                 </div>
         </div>
         <div class="painel1">        

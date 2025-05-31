@@ -5,6 +5,13 @@
     padding: 20px;
 }
 
+.container1 {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #b5f1ff;
+}
+
 .form-container {
     background: #fff;
     border-radius: 8px;

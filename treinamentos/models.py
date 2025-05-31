@@ -2,6 +2,8 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.contrib.auth.models import User
+
 
 class TipoTreinamento(models.Model):
     MODALIDADE_CHOICES = [
@@ -99,6 +101,20 @@ class TipoTreinamento(models.Model):
         ]
 
 class Treinamento(models.Model):
+
+    MODALIDADE_CHOICES = [
+        ('interno', 'Interno'),
+        ('externo', 'Externo'),
+    ]
+    
+    TIPO_CHOICES = [
+        ('graduacao', 'Graduação'),
+        ('tecnico', 'Técnico'),
+        ('profissionalizante', 'Profissionalizante'),
+        ('livre', 'Livre'),
+        ('outros', 'Outros'),
+    ]
+    
     STATUS_CHOICES = [
         ('P', _('Planejado')),
         ('A', _('Agendado')),
@@ -121,7 +137,7 @@ class Treinamento(models.Model):
     )
     
     data_inicio = models.DateTimeField(
-        verbose_name=_('Data de Início')
+       default=timezone.now
     )
     
     data_vencimento = models.DateField(
@@ -132,6 +148,7 @@ class Treinamento(models.Model):
     duracao = models.PositiveIntegerField(
         validators=[MinValueValidator(1)],
         verbose_name=_('Duração (horas)'),
+        null=True, blank=True,
         help_text=_('Duração total em horas')
     )
     
@@ -165,7 +182,7 @@ class Treinamento(models.Model):
         help_text=_('Nome do palestrante ou instrutor')
     )
     
-    hxh = models.PositiveIntegerField(
+    hxh = models.IntegerField(default=0,
         verbose_name=_('Horas por Participante'),
         help_text=_('Horas necessárias por participante')
     )
@@ -205,6 +222,14 @@ class Treinamento(models.Model):
         auto_now=True,
         verbose_name=_('Última Atualização')
     )
+
+    def __str__(self):
+        return self.nome  # Corrigido para retornar o nome
+
+    # método para facilitar
+    @property
+    def tipo_display(self):
+        return dict(self.TIPO_CHOICES).get(self.tipo, self.tipo)
 
     # Métodos avançados
     def clean(self):
@@ -255,13 +280,14 @@ class Treinamento(models.Model):
     
     @property
     def carga_horaria_total(self):
-        """Calcula carga horária total"""
-        return self.duracao * self.participantes_previstos
-    
-    def __str__(self):
-        return f"{self.nome} ({self.data_inicio.strftime('%d/%m/%Y')})"
-    
+        """Calcula a carga horária total do treinamento"""
+        if self.duracao is None or self.Hxh is None:
+            return 0
+        return self.duracao * self.Hxh
+
+       
     class Meta:
+        
         verbose_name = _('Treinamento')
         verbose_name_plural = _('Treinamentos')
         ordering = ['-data_inicio']
@@ -281,3 +307,91 @@ class Treinamento(models.Model):
             ),
         ]
 
+from django.db import models
+
+class TreinamentoDisponivel(models.Model):
+    MODALIDADE_CHOICES = [
+        ('interno', 'Interno'),
+        ('externo', 'Externo'),
+    ]
+    
+    TIPO_CHOICES = [
+        ('graduacao', 'Graduação'),
+        ('tecnico', 'Técnico'),
+        ('profissionalizante', 'Profissionalizante'),
+        ('livre', 'Livre'),
+        ('outros', 'Outros'),
+    ]
+
+    codigo = models.CharField('Código', max_length=20, unique=True)
+    nome = models.CharField('Nome do Treinamento', max_length=100)
+    descricao = models.TextField('Descrição', blank=True)
+    carga_horaria = models.PositiveIntegerField('Carga Horária (horas)')
+    validade_meses = models.PositiveIntegerField('Validade (meses)')
+    modalidade = models.CharField('Modalidade', max_length=10, choices=MODALIDADE_CHOICES)
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
+    fornecedor = models.CharField('Fornecedor', max_length=100, blank=True)
+    custo = models.DecimalField('Custo', max_digits=10, decimal_places=2, null=True, blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Treinamento'
+        verbose_name_plural = 'Treinamentos'
+        ordering = ['nome']
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nome}"
+
+    def get_absolute_url(self):
+        return reverse('treinamento_detail', args=[str(self.id)])
+
+from django.contrib.auth.models import User
+
+class Colaborador(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    matricula = models.CharField(max_length=20, unique=True)
+    departamento = models.CharField(max_length=100)
+    cargo = models.CharField(max_length=100)
+    data_admissao = models.DateField()
+    ativo = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} ({self.matricula})"
+
+class TreinamentoColaborador(models.Model):
+    STATUS_CHOICES = [
+        ('ativo', 'Ativo'),
+        ('expirado', 'Expirado'),
+        ('proximo', 'Próximo a vencer'),
+    ]
+    
+    colaborador = models.ForeignKey(Colaborador, on_delete=models.CASCADE, related_name='treinamentos')
+    treinamento = models.ForeignKey(Treinamento, on_delete=models.CASCADE)
+    data_realizacao = models.DateField()
+    data_validade = models.DateField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+    certificado = models.FileField(upload_to='certificados/', null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('colaborador', 'treinamento')
+    
+    @property
+    def dias_para_vencer(self):
+        return (self.data_validade - timezone.now().date()).days
+    
+    def save(self, *args, **kwargs):
+        # Atualiza status automaticamente
+        if self.data_validade < timezone.now().date():
+            self.status = 'expirado'
+        elif self.dias_para_vencer <= 30:
+            self.status = 'proximo'
+        else:
+            self.status = 'ativo'
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.colaborador} - {self.treinamento}"
+
+        

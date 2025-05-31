@@ -6,12 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Logradouros{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+
     <link rel="stylesheet" href="{% static 'csslogradouro/styles.css' %}">
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
+
     {% block extra_js %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -41,6 +45,7 @@
         <!-- Conteúdo será inserido aqui pelos templates filhos -->
         {% endblock %}
     </div>
-     
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}    
 </body>
 </html>

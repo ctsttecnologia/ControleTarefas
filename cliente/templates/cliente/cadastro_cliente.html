@@ -1,205 +1,321 @@
 
 {% load static %}
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Cliente</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-<link rel="stylesheet" href="{% static 'csscliente/styles.css' %}"> 
-<div class="container">
+    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">
 
-    <div class="painel">
-        <h2 class="card-title mb-0">
-           Cadastrar Cliente
-        </h2>
-    </div>
-    {% if user.is_authenticated %}
-    <p>Olá, {{ user.username }}!</p>
-    {% else %}
-        <a href="{% url 'home' %}" class="btn-home">
-            <i class="bi bi-house"></i> Início
-        </a>
-    {% endif %}
-            
-    <div class="painel">
-        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-house"></i> Início
-        </a>
-        <a href="{% url 'usuario:logout' %}" class="btn btn-outline-light">
-            <i class="fas fa-sign-out-alt"></i> Sair
-        </a>
-        <a href="{% url 'profile' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-sign-out-pen"></i> Menu
-        </a>
+</head>
+<body>
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
+
+    <div class="container py-4">
+        <!-- Mensagens de erro/sucesso -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
         
-    </div>
-    <div class="painel">    
-        {% block content %}
-        <div class="card">  
-            <div class="card-body">
-                <form method="post" id="clienteForm">
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                {{ form.nome.label_tag }}
-                                {{ form.nome }}
-                                <div class="invalid-feedback">
-                                    {{ form.nome.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="id_logradouro" class="form-label">Endereço</label>
-                                <div class="input-group">
-                                    {{ form.logradouro }}
-                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#enderecoModal">
-                                        <i class="fas fa-search"></i> Buscar
-                                    </button>
-                                </div>
-                                <div class="invalid-feedback">
-                                    {{ form.logradouro.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                {{ form.contrato.label_tag }}
-                                {{ form.contrato }}
-                                <div class="invalid-feedback">
-                                    {{ form.contrato.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                {{ form.razao_social.label_tag }}
-                                {{ form.razao_social }}
-                                <div class="invalid-feedback">
-                                    {{ form.razao_social.errors }}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                {{ form.unidade.label_tag }}
-                                {{ form.unidade }}
-                                <div class="invalid-feedback">
-                                    {{ form.unidade.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                {{ form.cnpj.label_tag }}
-                                {{ form.cnpj }}
-                                <div class="invalid-feedback">
-                                    {{ form.cnpj.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                {{ form.telefone.label_tag }}
-                                {{ form.telefone }}
-                                <div class="invalid-feedback">
-                                    {{ form.telefone.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                {{ form.data_de_inicio.label_tag }}
-                                {{ form.data_de_inicio }}
-                                <div class="invalid-feedback">
-                                    {{ form.data_de_inicio.errors }}
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3 form-check form-switch">
-                                {{ form.estatus }}
-                                <label class="form-check-label" for="{{ form.estatus.id_for_label }}">Ativo</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left me-2"></i> Voltar
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i> Salvar
-                        </button>
-                    </div>
-                </form>
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Cadastrar Cliente</h2>
+        </div>
+        
+        <!-- Navegação -->
+        <div class="d-flex flex-wrap justify-content-between mb-4">
+            <div class="d-flex flex-wrap">
+                <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary me-2 mb-2">
+                    <i class="fas fa-list me-1"></i> Lista de Clientes
+                </a>
+                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-primary mb-2">
+                    <i class="fas fa-plus-circle me-1"></i> Novo Endereço
+                </a>
             </div>
         </div>
-
+        
+        <!-- Formulário -->
+        <div class="form-container">
+            <form method="post" id="clienteForm" novalidate>
+                {% csrf_token %}
+                
+                <!-- Erros não relacionados a campos específicos -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="row">
+                    <!-- Coluna 1 -->
+                    <div class="col-md-6">
+                        <!-- Nome -->
+                        <div class="mb-3">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label">
+                                {{ form.nome.label }}
+                                {% if form.nome.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.nome }}
+                            {% if form.nome.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.nome.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.nome.help_text %}
+                                <small class="form-text text-muted">{{ form.nome.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Endereço -->
+                        <div class="mb-3">
+                            <label for="{{ form.logradouro.id_for_label }}" class="form-label">
+                                {{ form.logradouro.label }}
+                                {% if form.logradouro.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            <div class="input-group">
+                                {{ form.logradouro }}
+                                <button type="button" class="btn btn-outline-secondary input-group-btn" data-bs-toggle="modal" data-bs-target="#enderecoModal">
+                                    <i class="fas fa-search me-1"></i> Buscar
+                                </button>
+                            </div>
+                            {% if form.logradouro.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.logradouro.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Contrato -->
+                        <div class="mb-3">
+                            <label for="{{ form.contrato.id_for_label }}" class="form-label">
+                                {{ form.contrato.label }}
+                                {% if form.contrato.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.contrato }}
+                            {% if form.contrato.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.contrato.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Coluna 2 -->
+                    <div class="col-md-6">
+                        <!-- Razão Social -->
+                        <div class="mb-3">
+                            <label for="{{ form.razao_social.id_for_label }}" class="form-label">
+                                {{ form.razao_social.label }}
+                                {% if form.razao_social.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.razao_social }}
+                            {% if form.razao_social.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.razao_social.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Unidade -->
+                        <div class="mb-3">
+                            <label for="{{ form.unidade.id_for_label }}" class="form-label">
+                                {{ form.unidade.label }}
+                                {% if form.unidade.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.unidade }}
+                            {% if form.unidade.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.unidade.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- CNPJ -->
+                        <div class="mb-3">
+                            <label for="{{ form.cnpj.id_for_label }}" class="form-label">
+                                {{ form.cnpj.label }}
+                                {% if form.cnpj.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.cnpj }}
+                            {% if form.cnpj.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.cnpj.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Coluna 3 -->
+                    <div class="col-md-6">
+                        <!-- Telefone -->
+                        <div class="mb-3">
+                            <label for="{{ form.telefone.id_for_label }}" class="form-label">
+                                {{ form.telefone.label }}
+                                {% if form.telefone.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.telefone }}
+                            {% if form.telefone.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.telefone.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Coluna 4 -->
+                    <div class="col-md-6">
+                        <!-- Data de Início -->
+                        <div class="mb-3">
+                            <label for="{{ form.data_de_inicio.id_for_label }}" class="form-label">
+                                {{ form.data_de_inicio.label }}
+                                {% if form.data_de_inicio.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            {{ form.data_de_inicio }}
+                            {% if form.data_de_inicio.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.data_de_inicio.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Estatus -->
+                        <div class="mb-3 form-check form-switch">
+                            {{ form.estatus }}
+                            <label class="form-check-label" for="{{ form.estatus.id_for_label }}">
+                                {{ form.estatus.label }}
+                            </label>
+                            {% if form.estatus.errors %}
+                                <div class="errorlist">
+                                    {% for error in form.estatus.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botões de ação -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary btn-action">
+                        <i class="fas fa-arrow-left me-1"></i> Voltar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-action">
+                        <i class="fas fa-save me-1"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+        
         <!-- Modal de Endereços -->
         <div class="modal fade" id="enderecoModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title">Selecionar Endereço</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Endereço</th>
-                                        <th>Número</th>
-                                        <th>CEP</th>
-                                        <th>Bairro</th>
-                                        <th>Cidade/UF</th>
-                                        <th>Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for endereco in enderecos %}
-                                    <tr>
-                                        <td>{{ endereco.endereco }}</td>
-                                        <td>{{ endereco.numero }}</td>
-                                        <td>{{ endereco.cep_formatado }}</td>
-                                        <td>{{ endereco.bairro }}</td>
-                                        <td>{{ endereco.cidade }}/{{ endereco.estado }}</td>
-                                        <td>
-                                            <button type="button" class="btn btn-sm btn-primary btn-selecionar-endereco" 
-                                                    data-id="{{ endereco.id }}" data-bs-dismiss="modal">
-                                                <i class="fas fa-check me-1"></i> Selecionar
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="6" class="text-center py-3">Nenhum endereço cadastrado</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                        {% if enderecos %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Endereço</th>
+                                            <th>Número</th>
+                                            <th>CEP</th>
+                                            <th>Bairro</th>
+                                            <th>Cidade/UF</th>
+                                            <th>Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for endereco in enderecos %}
+                                        <tr>
+                                            <td>{{ endereco.endereco }}</td>
+                                            <td>{{ endereco.numero }}</td>
+                                            <td>{{ endereco.cep_formatado }}</td>
+                                            <td>{{ endereco.bairro }}</td>
+                                            <td>{{ endereco.cidade }}/{{ endereco.estado }}</td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-primary btn-selecionar-endereco" 
+                                                        data-id="{{ endereco.id }}" data-bs-dismiss="modal">
+                                                    <i class="fas fa-check me-1"></i> Selecionar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info text-center">
+                                <i class="fas fa-info-circle me-2"></i> Nenhum endereço cadastrado
+                            </div>
+                        {% endif %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i> Fechar
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        {% endblock %}
-
-        {% block scripts %}
     </div>
-    <div class="painel1">
-        <script>
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}   
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <script src="{% static 'js/cliente/base.js' %}"></script>
+    
+    <script>
         $(document).ready(function() {
             // Inicializa o Select2
             $('#id_logradouro').select2({
                 placeholder: "Selecione um endereço",
                 allowClear: true,
-                width: '100%'
+                width: '100%',
+                dropdownParent: $('#clienteForm')
             });
             
             // Seleciona endereço no modal
-            $('.btn-selecionar-endereco').click(function() {
+            $(document).on('click', '.btn-selecionar-endereco', function() {
                 var enderecoId = $(this).data('id');
                 $('#id_logradouro').val(enderecoId).trigger('change');
             });
@@ -208,30 +324,52 @@
             $('#id_cnpj').mask('00.000.000/0000-00');
             $('#id_telefone').mask('(00) 00000-0000');
             
-            // Validação do formulário
-            $('#clienteForm').submit(function() {
+            // Validação do formulário ao enviar
+            $('#clienteForm').on('submit', function(e) {
                 var isValid = true;
-                $('.is-invalid').removeClass('is-invalid');
                 
-                // Validação simples - pode ser expandida
+                // Remove classes de erro anteriores
+                $('.is-invalid').removeClass('is-invalid');
+                $('.errorlist').remove();
+                
+                // Validação dos campos obrigatórios
                 $('#id_nome, #id_logradouro, #id_cnpj').each(function() {
                     if (!$(this).val()) {
                         $(this).addClass('is-invalid');
+                        $(this).after('<div class="errorlist">Este campo é obrigatório.</div>');
                         isValid = false;
                     }
                 });
                 
-                return isValid;
+                // Validação adicional do CNPJ
+                var cnpj = $('#id_cnpj').val().replace(/\D/g, '');
+                if (cnpj.length !== 14 && $('#id_cnpj').val()) {
+                    $('#id_cnpj').addClass('is-invalid');
+                    $('#id_cnpj').after('<div class="errorlist">CNPJ inválido.</div>');
+                    isValid = false;
+                }
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    $('html, body').animate({
+                        scrollTop: $('.is-invalid').first().offset().top - 100
+                    }, 500);
+                }
+            });
+            
+            // Fecha automaticamente as mensagens após 5 segundos
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+            
+            // Adiciona classe de erro aos campos com erro quando a página carrega
+            $('.errorlist').each(function() {
+                var fieldId = $(this).prev().attr('id');
+                if (fieldId) {
+                    $('#' + fieldId).addClass('is-invalid');
+                }
             });
         });
-        </script>
-        {% endblock %}
-        <!-- JavaScript -->
-     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-     <script src="{% static 'js/cliente/base.js' %}"></script>   
-    </div> 
-     
-</div>        
-
+    </script>
+</body>
+</html>

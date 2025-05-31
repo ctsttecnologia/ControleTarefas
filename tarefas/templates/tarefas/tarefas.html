@@ -6,26 +6,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Tarefas{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" href="{% static 'csstarefa/btstyles.css' %}">
     <link rel="stylesheet" href="{% static 'csstarefa/tarefastyles.css' %}">
 </head>
 <body>
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
+
     <div class="container">
-        <h1>TAREFAS</h1>
-        <h2>Consultar Tarefas</h2>
-        
-        {% if user.is_authenticated %}
-            <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-        {% endif %}
-                
+        <h2 align="center">Consultar Tarefas</h2>
+               
         <div class="painel">
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn_profile">Nova Tarefa</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn-warning">Relatório</a>  
         </div>
         
@@ -71,6 +63,9 @@
         </table>
         {% endblock %}
     </div>
+
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}
 </body>
 </html>
 

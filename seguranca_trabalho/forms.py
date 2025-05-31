@@ -61,4 +61,16 @@ class PesquisarFichaForm(forms.Form):
     nome_colaborador = forms.CharField(label='Nome do Colaborador', required=False)
     equipamento = forms.CharField(label='Equipamento', required=False)
     ca_equipamento = forms.CharField(label='Código CA', required=False)
-    
+
+
+class EquipamentoForm(forms.ModelForm):
+    class Meta:
+        model = FichaEPI  # Substitua pelo seu modelo real
+        fields = '__all__'   # Liste todos os campos necessários
+        
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['empregado'].initial = user
+            self.fields['empregado'].widget = forms.HiddenInput()

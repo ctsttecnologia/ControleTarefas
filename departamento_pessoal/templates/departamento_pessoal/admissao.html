@@ -7,19 +7,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Admissão{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">   
+
     
 </head>
 <body>
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
     <div class="container">
-        <h2>DEPARTAMENTO PESSOAL</h2>
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-        {% endif %}
-                
+        <h2 aling="center">DEPARTAMENTO PESSOAL</h2>
         <div class="painel">
             
             <!-- Botão "Voltar para Home" -->
@@ -80,6 +75,8 @@
             </form>
         </div>                       
     </div>
+    <!-- Rodapé -->
+{% include 'includes/footer.html' %}   
 </body> 
 </html>
 

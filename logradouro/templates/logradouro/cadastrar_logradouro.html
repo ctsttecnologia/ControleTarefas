@@ -2,25 +2,14 @@
 
 {% load static %}
 
-{% block title %}Cadastro de Logradouro{% endblock %}
-
 {% block content %}
 <div class="contaniner">
     <h2>Cadastro de Endereço</h2>
-    {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-    {% endif %}
+
     <div class="painel1">
-        {% if user.is_authenticated %}
             <div class="btn-group">
-                <a href="{% url 'home' %}" class="btn btn-secondary">Início</a>
-                <a href="{% url 'usuario:logout' %}" class="btn btn-danger">Sair</a>
                 <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-primary">Endereços</a>
-                <a href="{% url 'profile' %}" class="btn btn-success">Menu</a>
             </div>
-        {% endif %}
     </div>
     <div class="painel1">
         {% if messages %}

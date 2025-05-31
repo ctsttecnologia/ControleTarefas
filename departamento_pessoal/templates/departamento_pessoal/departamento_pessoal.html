@@ -1,5 +1,4 @@
 
-
 {% load static %}
 
 <!DOCTYPE html>
@@ -9,22 +8,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Departamento Pessoal{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
     <link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
-    
+   
 </head>
 <body>
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
     <div class="container">
-        <h2>DEPARTAMENTO PESSOAL</h2>
-                
         <div class="painel">
-            
-            <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn-home">Cadastro de Funcionário</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
-        
+            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn-home">Cadastro de Funcionário</a>   
         </div>
         <div class="painel1">
             {% csrf_token %}
@@ -45,9 +38,10 @@
                     </div>
                     <button type="submit" class="btn-pesquisar">Pesquisar</button>
                 </form>
-        </div>                       
-        
+        </div>                             
     </div>
+    <!-- Rodapé -->
+{% include 'includes/footer.html' %}   
 </body> 
 </html>
 

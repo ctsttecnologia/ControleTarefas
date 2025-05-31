@@ -1,0 +1,213 @@
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Clientes</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   
+
+</head>
+<body>
+    <div class="container py-4">
+        <!-- Mensagens -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="page-header mb-0">Lista de Clientes</h1>
+                {% if user.is_authenticated %}
+                    <span class="badge bg-primary d-inline-flex align-items-center">
+                        <i class="fas fa-user me-2"></i> {{ user.username }}
+                    </span>
+                {% endif %}
+            </div>
+            
+            <div class="d-flex">
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-home me-1"></i> Início
+                </a>
+                
+                {% if user.is_authenticated %}
+                    <a href="{% url 'usuario:logout' %}" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt me-1"></i> Sair
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Navegação -->
+        <div class="d-flex flex-wrap justify-content-between mb-4">
+            <div class="d-flex flex-wrap">
+                <a href="{% url 'profile' %}" class="btn btn-outline-secondary me-2 mb-2">
+                    <i class="fas fa-bars me-1"></i> Menu
+                </a>
+                <a href="{% url 'cliente:cadastrar_cliente' %}" class="btn btn-primary me-2 mb-2">
+                    <i class="fas fa-plus-circle me-1"></i> Novo Cliente
+                </a>
+                <a href="{% url 'cliente' %}" class="btn btn-outline-primary mb-2">
+                    <i class="fas fa-search me-1"></i> Pesquisar
+                </a>
+            </div>
+        </div>
+        
+        <!-- Tabela de Clientes -->
+        <div class="table-container">
+            {% if clientes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome</th>
+                                <th>Endereço</th>
+                                <th>CM</th>
+                                <th>Razão Social</th>
+                                <th>CNPJ</th>
+                                <th>Telefone</th>
+                                <th>Status</th>
+                                <th class="table-actions">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in clientes %}
+                            <tr>
+                                <td data-label="Nome">{{ cliente.nome }}</td>
+                                <td data-label="Endereço">{{ cliente.logradouro|default:"-" }}</td>
+                                <td data-label="CM">{{ cliente.contrato|default:"-" }}</td>
+                                <td data-label="Razão Social">{{ cliente.razao_social|default:"-" }}</td>
+                                <td data-label="CNPJ">{{ cliente.cnpj|default:"-" }}</td>
+                                <td data-label="Telefone">{{ cliente.telefone|default:"-" }}</td>
+                                <td data-label="Status">
+                                    <span class="{% if cliente.estatus %}status-active{% else %}status-inactive{% endif %}">
+                                        <i class="fas fa-circle me-1"></i> {{ cliente.estatus|yesno:"Ativo,Inativo" }}
+                                    </span>
+                                </td>
+                                <td class="table-actions">
+                                    <a href="{% url 'cliente:editar_cliente' cliente.id %}" class="btn btn-sm btn-primary btn-action" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger btn-action" title="Excluir" 
+                                            data-bs-toggle="modal" data-bs-target="#modalExcluir{{ cliente.id }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- Modal de Confirmação de Exclusão -->
+                            <div class="modal fade" id="modalExcluir{{ cliente.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title">Confirmar Exclusão</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p>Tem certeza que deseja excluir o cliente <strong>{{ cliente.nome }}</strong>?</p>
+                                            <p class="text-muted">Esta ação não pode ser desfeita.</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                <i class="fas fa-times me-1"></i> Cancelar
+                                            </button>
+                                            <form method="post" action="{% url 'cliente:excluir_cliente' cliente.id %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger">
+                                                    <i class="fas fa-trash-alt me-1"></i> Confirmar Exclusão
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Paginação -->
+                {% if is_paginated %}
+                <nav aria-label="Navegação de páginas">
+                    <ul class="pagination justify-content-center mt-4">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1" aria-label="Primeira">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Anterior">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Próxima">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Última">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i> Nenhum cliente cadastrado.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Fecha automaticamente as mensagens após 5 segundos
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+            
+            // Tooltips para botões de ação
+            $('[title]').tooltip({
+                trigger: 'hover',
+                placement: 'top'
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+

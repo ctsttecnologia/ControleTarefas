@@ -1,11 +1,13 @@
 
-{% extends 'base.html' %}
+
 {% load static %}
 
 {% block content %}
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-<link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
 
+
+
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
 <div class="container">
     <h2>Editar Admissão</h2>
     
@@ -62,3 +64,5 @@
     </div>
 </div>
 {% endblock %}
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}   

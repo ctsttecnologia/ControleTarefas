@@ -9,37 +9,31 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{% block title %}Tarefas{% endblock %}</title>
-        <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-        <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
 
-        
+        <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
     </head>
 <body>
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
     <div class="container">
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-        {% endif %}
+
         <div class="painel1">
             <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn_profile">Nova Tarefa</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
         </div>
 
         <h2>Calendário de Tarefas</h2>
         <div id="calendar"></div>
     
-        <!-- Inclua FullCalendar CSS -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
-
-        <!-- Inclua FullCalendar JS -->
-         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
+<!-- Inclua FullCalendar CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+ <!-- Rodapé -->
+{% include 'includes/footer.html' %}
+<!-- Inclua FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
       
-        <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             var calendar = new FullCalendar.Calendar(calendarEl, {

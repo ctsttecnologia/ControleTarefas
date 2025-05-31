@@ -5,19 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Tarefa - {{ tarefa.titulo }}</title>
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csstarefa/detailstyles.css' %}">
+
     <link rel="stylesheet" href="{% static 'csstarefa/editstyles.css' %}">
 </head>
 <body>
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
     <div class="container">
         <header class="form-header">
             <h1 class="form-title">Editar Tarefa</h1>
             <div class="action-buttons">
                 <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-secondary">Voltar</a>
-                <a href="{% url 'tarefas:tarefas' %}" class="btn btn-tarefas">Tarefas</a>
+                <a href="{% url 'tarefas:tarefas' %}" class="btn btn-primary">Tarefas</a>
             </div>
         </header>
+    
         <h2 class="form-title">{{ tarefa.titulo }}</h2>
         <main class="form-container">
             <form method="post" class="task-form" enctype="multipart/form-data">
@@ -29,7 +31,7 @@
                     {{ form.non_field_errors }}
                 </div>
                 {% endif %}
-
+            <div class="container1">
                 <!-- Seção: Informações Básicas -->
                 <fieldset class="form-section">
                     <legend>Informações Básicas</legend>
@@ -58,7 +60,8 @@
                         {% endif %}
                     </div>
                 </fieldset>
-
+            </div>    
+            <div class="container1">
                 <!-- Seção: Status e Prioridade -->
                 <fieldset class="form-section">
                     <legend>Status e Prioridade</legend>
@@ -79,7 +82,8 @@
                         {% endif %}
                     </div>
                 </fieldset>
-
+            </div>    
+            <div class="container1">
                 <!-- Seção: Datas e Prazos -->
                 <fieldset class="form-section">
                     <legend>Datas e Prazos</legend>
@@ -118,7 +122,8 @@
                     </div>
                     {% endif %}
                 </fieldset>
-
+            </div>    
+            <div class="container1">    
                 <!-- Seção: Responsáveis -->
                 <fieldset class="form-section">
                     <legend>Responsáveis</legend>
@@ -139,7 +144,8 @@
                         {% endif %}
                     </div>
                 </fieldset>
-
+            </div>    
+            <div class="container1">
                 <!-- Seção: Tempo -->
                 <fieldset class="form-section">
                     <legend>Tempo</legend>
@@ -170,7 +176,8 @@
                     </div>
                     {% endif %}
                 </fieldset>
-
+            </div>    
+            <div class="container1">
                 <!-- Seção: Informações do Sistema -->
                 <fieldset class="form-section">
                     <legend>Informações do Sistema</legend>
@@ -205,7 +212,10 @@
                     <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-danger">Excluir Tarefa</a>
                 </div>
             </form>
+            </div>
         </main>
     </div>
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}
 </body>
 </html>

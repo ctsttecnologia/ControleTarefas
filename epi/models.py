@@ -124,6 +124,7 @@ class FichaEPI(models.Model):
         ('AFASTADO', 'Afastado'),
     ]
     
+    empregado = models.ForeignKey('Empregado', on_delete=models.CASCADE, related_name='fichas_epi')
     empregado = models.ForeignKey(
         User, 
         on_delete=models.PROTECT,
