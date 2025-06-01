@@ -203,3 +203,5 @@ class ItemEquipamentoSegurancaAdmin(admin.ModelAdmin):
             color, text
         )
     status_entrega.short_description = _('Status')
+
+    

@@ -1,4 +1,6 @@
 from django import forms
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 from .models import FichaEPI
 from .models import EquipamentosSeguranca
 
@@ -34,28 +36,78 @@ class FichaEPIForm(forms.ModelForm):
 class EquipamentosSegurancaForm(forms.ModelForm):
     class Meta:
         model = EquipamentosSeguranca
-        fields = '__all__'  # Inclui todos os campos do model
-           # Personalizando os widgets (opcional)
+        fields = '__all__'
         widgets = {
-            'nome_equioamento': forms.TextInput(attrs={'placeholder': 'Nome do equipamento'}),
-            'tipo': forms.TextInput(attrs={'placeholder': 'Tipo (3 caracteres)'}),
-            'codigo_ca': forms.TextInput(attrs={'placeholder': 'Código CA'}),
-            'descricao': forms.Textarea(attrs={'placeholder': 'Descrição do equipamento', 'rows': 3}),
-            'quantidade_estoque': forms.NumberInput(attrs={'placeholder': 'Quantidade em estoque'}),
-            'data_validade': forms.DateInput(attrs={'type': 'date'}),
-            'ativo': forms.Select(choices=[(1, 'Ativo'), (0, 'Inativo')]),
+            'nome_equipamento': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': _('Nome do equipamento')
+            }),
+            'tipo': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'codigo_ca': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'AA-1234'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': _('Descrição detalhada')
+            }),
+            'quantidade_estoque': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0
+            }),
+            'estoque_minimo': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 1
+            }),
+            'data_validade': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'ativo': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+        }
+        labels = {
+            'nome_equipamento': _('Nome do Equipamento'),
+            'tipo': _('Tipo'),
+            'codigo_ca': _('Código CA'),
+            'descricao': _('Descrição'),
+            'quantidade_estoque': _('Quantidade em Estoque'),
+            'estoque_minimo': _('Estoque Mínimo'),
+            'data_validade': _('Data de Validade'),
+            'ativo': _('Status'),
+        }
+        error_messages = {
+            'nome_equipamento': {
+                'required': _('O nome do equipamento é obrigatório'),
+                'max_length': _('O nome não pode exceder 100 caracteres')
+            },
+            'codigo_ca': {
+                'unique': _('Este código CA já está em uso'),
+                'invalid': _('Formato inválido (use AA-1234)')
+            }
         }
 
-        # Personalizando os rótulos (opcional)
-        labels = {
-            'nome_equioamento': 'Nome do Equipamento',
-            'tipo': 'Tipo',
-            'codigo_ca': 'Código CA',
-            'descricao': 'Descrição',
-            'quantidade_estoque': 'Quantidade em Estoque',
-            'data_validade': 'Data de Validade',
-            'ativo': 'Status',
-        }
+    def clean(self):
+        cleaned_data = super().clean()
+        quantidade_estoque = cleaned_data.get('quantidade_estoque')
+        estoque_minimo = cleaned_data.get('estoque_minimo')
+        
+        if quantidade_estoque is not None and estoque_minimo is not None:
+            if quantidade_estoque < 0:
+                self.add_error('quantidade_estoque', _('A quantidade não pode ser negativa'))
+            if estoque_minimo < 1:
+                self.add_error('estoque_minimo', _('O estoque mínimo deve ser pelo menos 1'))
+            if quantidade_estoque < estoque_minimo:
+                self.add_error(
+                    None,
+                    _('A quantidade em estoque está abaixo do mínimo definido')
+                )
+        
+        return cleaned_data
 
 class PesquisarFichaForm(forms.Form):
     nome_colaborador = forms.CharField(label='Nome do Colaborador', required=False)
@@ -63,14 +115,3 @@ class PesquisarFichaForm(forms.Form):
     ca_equipamento = forms.CharField(label='Código CA', required=False)
 
 
-class EquipamentoForm(forms.ModelForm):
-    class Meta:
-        model = FichaEPI  # Substitua pelo seu modelo real
-        fields = '__all__'   # Liste todos os campos necessários
-        
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        if user:
-            self.fields['empregado'].initial = user
-            self.fields['empregado'].widget = forms.HiddenInput()
