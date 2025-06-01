@@ -3,18 +3,19 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
 from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from django.contrib import messages
 
 from .models import FichaEPI
 from .forms import FichaEPIForm
 from .models import EquipamentosSeguranca
 from .forms import EquipamentosSegurancaForm
 from .forms import PesquisarFichaForm
-from .forms import EquipamentoForm  # Importação crítica
-
-
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
 
 
 @login_required
@@ -53,15 +54,25 @@ def listar_equipamentos(request):
     equipamentos = EquipamentosSeguranca.objects.all()
     return render(request, 'seguranca_trabalho/listar_equipamentos.html', {'equipamentos': equipamentos})
 
+def verificar_codigo_ca(request):
+    if request.method == 'POST':
+ 
+        codigo = request.POST.get('codigo')
+     
+        return JsonResponse({'valid': True})  
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
 # Cadastrar novo equipamento
+@login_required
 def cadastrar_equipamento(request):
     if request.method == 'POST':
-        form = EquipamentoForm(request.POST, user=request.user)
+        form = EquipamentosSegurancaForm(request.POST) 
         if form.is_valid():
             form.save()
-            return redirect('   cadastrar_equipamento')
+            messages.success(request, 'Item cadastrado com sucesso!')
+            return redirect('seguranca_trabalho:cadastrar_equipamento')
     else:
-        form = EquipamentoForm(user=request.user)
+        form = EquipamentosSegurancaForm()
     
     return render(request, 'seguranca_trabalho/cadastrar_equipamento.html', {
         'form': form,
@@ -76,7 +87,7 @@ def editar_equipamento(request, id):
         form = EquipamentosSegurancaForm(request.POST, instance=equipamento)
         if form.is_valid():
             form.save()
-            return redirect('listar_equipamentos')
+            return redirect('seguranca_trabalho:listar_equipamentos')
     else:
         form = EquipamentosSegurancaForm(instance=equipamento)
     return render(request, 'seguranca_trabalho/editar_equipamento.html', {'form': form, 'equipamento': equipamento})
@@ -86,7 +97,7 @@ def editar_equipamento(request, id):
 def excluir_equipamento(request, id):
     equipamento = get_object_or_404(EquipamentosSeguranca, id=id)
     equipamento.delete()
-    return redirect('listar_equipamentos')
+    return redirect('seguranca_trabalho:listar_equipamentos')
 
 # Views para impressão de ficha PDF
 @login_required
@@ -123,7 +134,6 @@ def gerar_pdf(request):
 
     return response
 
-
 # Views para impressão de ficha Execl
 @login_required
 def gerar_excel(request):
@@ -142,5 +152,76 @@ def gerar_excel(request):
     for ficha in fichas:
         ws.append([ficha.nome_colaborador, ficha.equipamento, ficha.ca_equipamento, ficha.data_entrega, ficha.data_devolucao, ficha.contrato_id, ficha.quantidade, ficha.descricao])
 
+    wb.save(response)
+    return respons
+
+#exportar lista para exel
+@login_required
+def exportar_equipamentos_excel(request):
+    equipamentos = EquipamentosSeguranca.objects.all()
+    
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="equipamentos_seguranca.xlsx"'
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Equipamentos de Segurança"
+    
+    # Estilos
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill(start_color="3498db", end_color="3498db", fill_type="solid")
+    header_alignment = Alignment(horizontal="center")
+    thin_border = Border(left=Side(style='thin'), 
+                         right=Side(style='thin'), 
+                         top=Side(style='thin'), 
+                         bottom=Side(style='thin'))
+    
+    # Cabeçalhos
+    columns = [
+        ("Nome do Equipamento", 30),
+        ("Tipo", 15),
+        ("Código CA", 12),
+        ("Descrição", 40),
+        ("Quantidade", 12),
+        ("Estoque Mínimo", 12),
+        ("Data Validade", 12),
+        ("Status", 10)
+    ]
+    
+    for col_num, (column_title, column_width) in enumerate(columns, 1):
+        cell = ws.cell(row=1, column=col_num, value=column_title)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = thin_border
+        ws.column_dimensions[get_column_letter(col_num)].width = column_width
+    
+    # Dados
+    for row_num, equipamento in enumerate(equipamentos, 2):
+        ws.cell(row=row_num, column=1, value=equipamento.nome_equipamento).border = thin_border
+        ws.cell(row=row_num, column=2, value=equipamento.get_tipo_display()).border = thin_border
+        ws.cell(row=row_num, column=3, value=equipamento.codigo_ca).border = thin_border
+        ws.cell(row=row_num, column=4, value=equipamento.descricao).border = thin_border
+        
+        qtd_cell = ws.cell(row=row_num, column=5, value=equipamento.quantidade_estoque)
+        qtd_cell.border = thin_border
+        if equipamento.quantidade_estoque < equipamento.estoque_minimo:
+            qtd_cell.fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="solid")
+        
+        ws.cell(row=row_num, column=6, value=equipamento.estoque_minimo).border = thin_border
+        
+        data_cell = ws.cell(row=row_num, column=7, 
+                           value=equipamento.data_validade.strftime("%d/%m/%Y") if equipamento.data_validade else "-")
+        data_cell.border = thin_border
+        if equipamento.data_validade and equipamento.data_validade < timezone.now().date():
+            data_cell.fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="solid")
+        
+        status_cell = ws.cell(row=row_num, column=8, value="Ativo" if equipamento.ativo else "Inativo")
+        status_cell.border = thin_border
+        if equipamento.ativo:
+            status_cell.fill = PatternFill(start_color="99FF99", end_color="99FF99", fill_type="solid")
+        else:
+            status_cell.fill = PatternFill(start_color="FF9999", end_color="FF9999", fill_type="solid")
+    
     wb.save(response)
     return response

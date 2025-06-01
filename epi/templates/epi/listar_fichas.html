@@ -21,18 +21,13 @@
 
 {% block content %}
     <div class="container">
-        <h2>FICHA DE EPI</h2>
-        
-        <div class="painel">
-            <!-- Botão "Voltar para Home" -->
-    
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'epi:criar_ficha' %}" class="btn_cadastro">Cadastrar Ficha</a>
-
+         <a href="{% url 'epi:criar_ficha' %}" class="btn_cadastro">Cadastrar Ficha</a>
+    <div class="painel">   
+         
         <div class="painel2">
             {% csrf_token %}
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card">
                     <h2>Minhas Fichas de EPI</h2>
                 </div>
                 <div class="card-body">
@@ -69,7 +64,8 @@
                     </div>
                     <a href="{% url 'epi:criar_ficha' %}" class="btn_cadastro">Nova Ficha</a>
                 </div>
-            </div>                       
+            </div>
+        </div>                                
     </div>
 {% endblock %}  
 <!-- Rodapé -->

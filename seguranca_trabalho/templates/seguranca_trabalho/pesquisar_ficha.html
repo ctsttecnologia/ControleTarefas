@@ -5,40 +5,90 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Listar de Fichas</title>
-    <link rel="stylesheet" href="{% static 'cssseguranca/lt_equipamento_styles.css' %}">
-   
+    <title>Pesquisar Fichas</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/stylespesquisar.css' %}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 </head>
 <body>
-    <h1>Fichas de EPI</h1>
-    <a href="{% url 'criar_ficha' %}">Cadastrar Ficha</a>
-    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Início</a>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Nome do Colaborador</th>
-                <th>Equipamento</th>
-                <th>CA do Equipamento</th>
-                <th>Data de Entrega</th>
-                <th>Data de Devolução</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pesquisar_ficha in pesquisar_ficha %}
-            <tr>
-                <td>{{ ficha.nome_colaborador }}</td>
-                <td>{{ ficha.equipamento }}</td>
-                <td>{{ ficha.ca_equipamento }}</td>
-                <td>{{ ficha.data_entrega }}</td>
-                <td>{{ ficha.data_devolucao }}</td>
-                <td>
-                    <a href="{% url 'criar_ficha' %}">Nova Ficha</a>
-                    <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">Voltar</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% include 'includes/header.html' %}
+    
+    <h1><i class="fas fa-search"></i> Pesquisar Fichas de EPI</h1>
+    
+    <div class="nav-links">
+        <a href="{% url 'criar_ficha' %}">
+            <i class="fas fa-plus-circle"></i> Cadastrar Ficha
+        </a>
+        <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">
+            <i class="fas fa-home"></i> Início
+        </a>
+    </div>
+    
+    <form method="get" class="search-form">
+        <div class="form-group">
+            <label for="nome_colaborador">Nome do Colaborador:</label>
+            <input type="text" id="nome_colaborador" name="nome_colaborador" value="{{ request.GET.nome_colaborador }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="equipamento">Equipamento:</label>
+            <input type="text" id="equipamento" name="equipamento" value="{{ request.GET.equipamento }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="ca_equipamento">Código CA:</label>
+            <input type="text" id="ca_equipamento" name="ca_equipamento" value="{{ request.GET.ca_equipamento }}">
+        </div>
+        
+        <button type="submit">
+            <i class="fas fa-search"></i> Pesquisar
+        </button>
+    </form>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Colaborador</th>
+                    <th>Equipamento</th>
+                    <th>CA do Equipamento</th>
+                    <th>Data de Entrega</th>
+                    <th>Data de Devolução</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ficha in pesquisar_ficha %}
+                <tr>
+                    <td>{{ ficha.nome_colaborador }}</td>
+                    <td>{{ ficha.equipamento }}</td>
+                    <td>{{ ficha.ca_equipamento }}</td>
+                    <td>{{ ficha.data_entrega|date:"d/m/Y" }}</td>
+                    <td class="{% if ficha.data_devolucao %}devolvido-true{% else %}devolvido-false{% endif %}">
+                        {% if ficha.data_devolucao %}{{ ficha.data_devolucao|date:"d/m/Y" }}{% else %}Pendente{% endif %}
+                    </td>
+                    <td class="actions">
+                        <a href="{% url 'editar_ficha' ficha.id %}">
+                            <i class="fas fa-edit"></i> Editar
+                        </a>
+                        <a href="{% url 'visualizar_ficha' ficha.id %}">
+                            <i class="fas fa-eye"></i> Visualizar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center;">Nenhuma ficha encontrada</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% include 'includes/footer.html' %}
 </body>
 </html>

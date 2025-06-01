@@ -1,16 +1,117 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Editar Equipamento</title>
+    <title>Listar Equipamentos</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/styleslistaequipamento.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
 </head>
 <body>
-    <h1>Editar Equipamento</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Salvar Alterações</button>
-    </form>
-    <a href="{% url 'listar_equipamentos' %}">Voltar</a>
+    {% include 'includes/header.html' %}
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">Lista de Equipamentos de Segurança</h1>
+            <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Cadastrar Novo Equipamento
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome do Equipamento</th>
+                        <th>Tipo</th>
+                        <th>Código CA</th>
+                        <th>Descrição</th>
+                        <th>Quantidade</th>
+                        <th>Validade</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipamento in equipamentos %}
+                    <tr>
+                        <td>{{ equipamento.nome_equipamento }}</td>
+                        <td>{{ equipamento.get_tipo_display }}</td>
+                        <td>{{ equipamento.codigo_ca }}</td>
+                        <td>{{ equipamento.descricao|truncatechars:50 }}</td>
+                        <td class="{% if equipamento.quantidade_estoque < equipamento.estoque_minimo %}text-danger fw-bold{% endif %}">
+                            {{ equipamento.quantidade_estoque }}
+                        </td>
+                        <td class="{% if equipamento.data_validade and equipamento.data_validade < today %}text-danger{% endif %}">
+                            {% if equipamento.data_validade %}
+                                {{ equipamento.data_validade|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if equipamento.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'seguranca_trabalho:editar_equipamento' equipamento.id %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ equipamento.id }}" title="Excluir">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Modal de Confirmação -->
+                    <div class="modal fade" id="confirmDeleteModal{{ equipamento.id }}" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p>Tem certeza que deseja excluir o equipamento <strong>{{ equipamento.nome_equipamento }}</strong> (CA: {{ equipamento.codigo_ca }})?</p>
+                                    <p class="text-danger fw-bold">Esta ação não pode ser desfeita!</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                    <form method="post" action="{% url 'seguranca_trabalho:excluir_equipamento' equipamento.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'includes/footer.html' %}
+
+    <!-- Bootstrap JS e dependências -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Inicialização de tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
 </body>
 </html>
