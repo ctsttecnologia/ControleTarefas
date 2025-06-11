@@ -10,6 +10,9 @@ urlpatterns = [
     path('fichas/<int:ficha_id>/', views.visualizar_ficha, name='visualizar_ficha'),
     path('fichas/<int:ficha_id>/pdf/', views.gerar_pdf, name='gerar_pdf'),
     path('fichas/<int:ficha_id>/word/', views.gerar_word, name='gerar_word'),
+
+    path('api/funcionarios/', views.buscar_funcionario, name='buscar_funcionario'),
+
 ]
 
 

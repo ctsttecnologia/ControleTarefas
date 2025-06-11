@@ -1,6 +1,6 @@
 from django import forms
 from .models import Logradouro
-from .constants import ESTADOS_BRASIL
+from .constant import ESTADOS_BRASIL
 
 class LogradouroForm(forms.ModelForm):
     class Meta:

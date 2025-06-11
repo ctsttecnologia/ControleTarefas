@@ -1,36 +1,40 @@
 
 {% load widget_tweaks %}
-
 {% load static %}
 
 {% block content %}
-
-    <!-- CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'cssdp/stylesfuncionario.css' %}">
+<!-- CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
+<link rel="stylesheet" href="{% static 'cssdp/stylesfuncionario.css' %}">
 
 <!-- Barra de Navegação Principal -->
 {% include 'includes/header.html' %}
 
 <div class="container">
+    <!-- Mensagens -->
+    {% if messages %}
+    <div class="mt-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
     <div class="header-container">
-        <h2 class="page-title" aling="center">Cadastro de Funcionário</h2>
+        <h2 class="page-title text-center">{% if form.instance.pk %}Editar{% else %}Cadastro de{% endif %} Funcionário</h2>
     </div>
-    <!-- Painel de Navegação -->
-    <div class="navigation-panel">
-        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn-navigation">
-            <i class="fas fa-users"></i> Departamento Pessoal
+        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn btn-navigation">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>    
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+            <i class="fas fa-users"></i> Lista Funcionários
         </a>
-        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn-navigation">
-            <i class="fas fa-list"></i> Funcionários
-        </a>
-    </div>
-
     <!-- Formulário Principal -->
     <div class="form-container">
         <form method="post" id="funcionarioForm" class="employee-form" novalidate>
@@ -55,7 +59,11 @@
                     
                     <div class="form-group col-md-6">
                         <label for="{{ form.data_nascimento.id_for_label }}" class="form-label">Data Nascimento *</label>
-                        {{ form.data_nascimento|add_class:"form-control"|attr:"type:date" }}
+                        <input type="date" 
+                               name="{{ form.data_nascimento.name }}" 
+                               id="{{ form.data_nascimento.id_for_label }}" 
+                               class="form-control" 
+                               value="{{ form.data_nascimento.value|date:'Y-m-d' }}">
                         {% if form.data_nascimento.errors %}
                             <div class="invalid-feedback d-block">
                                 {{ form.data_nascimento.errors.as_text }}
@@ -73,6 +81,11 @@
                     <div class="form-group col-md-6">
                         <label for="{{ form.sexo.id_for_label }}" class="form-label">Sexo *</label>
                         {{ form.sexo|add_class:"form-control" }}
+                        {% if form.sexo.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.sexo.errors.as_text }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -116,6 +129,11 @@
                     <div class="form-group col-md-6">
                         <label for="{{ form.estatus.id_for_label }}" class="form-label">Situação *</label>
                         {{ form.estatus|add_class:"form-control" }}
+                        {% if form.estatus.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.estatus.errors.as_text }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -123,23 +141,26 @@
             <!-- Botões de Ação -->
             <div class="form-actions">
                 <button type="submit" class="btn-save">
-                    <i class="fas fa-save"></i> Salvar e Continuar
+                    <i class="fas fa-save"></i> Salvar
                 </button>
                 <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn-cancel">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
             </div>
-            
         </form>
     </div>
+    
+    {% if not form.instance.pk %}
     <div class="form-info">
         <p><i class="fas fa-info-circle"></i> Após salvar, você será redirecionado para cadastrar os documentos do funcionário.</p>
     </div>
+    {% endif %}
 </div>
-
+  
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 $(document).ready(function() {
     // Máscaras
@@ -152,6 +173,8 @@ $(document).ready(function() {
             if ($(this).val() === '') {
                 $(this).addClass('is-invalid');
                 isValid = false;
+            } else {
+                $(this).removeClass('is-invalid');
             }
         });
         
@@ -160,10 +183,16 @@ $(document).ready(function() {
             $('html, body').animate({
                 scrollTop: $('.is-invalid').first().offset().top - 100
             }, 500);
+            
+            // Mostrar alerta de campos obrigatórios
+            alert('Por favor, preencha todos os campos obrigatórios.');
         }
     });
 });
 </script>
 {% endblock %}
+
 <!-- Rodapé -->
-{% include 'includes/footer.html' %}   
+{% include 'includes/footer.html' %}
+
+

@@ -4,12 +4,15 @@ from django.urls import reverse
 from django.utils import timezone
 from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
+from datetime import timedelta
+
+
+
 
 User = get_user_model()
 
-
-
 class EPI(models.Model):
+    
     TIPO_EPI_CHOICES = [
         ('PROT', 'Proteção'),
         ('SEG', 'Segurança'),
@@ -124,7 +127,6 @@ class FichaEPI(models.Model):
         ('AFASTADO', 'Afastado'),
     ]
     
-    empregado = models.ForeignKey('Empregado', on_delete=models.CASCADE, related_name='fichas_epi')
     empregado = models.ForeignKey(
         User, 
         on_delete=models.PROTECT,
@@ -189,16 +191,15 @@ class FichaEPI(models.Model):
         auto_now=True,
         verbose_name=_("Atualizado em")
     )
-
+    
     # Métodos avançados
-    def itens_ativos(self):
-        """Retorna itens de EPI ainda não devolvidos"""
-        return self.itens.filter(data_devolucao__isnull=True)
-    
+    @property
     def total_itens(self):
-        """Retorna total de itens associados"""
         return self.itens.count()
-    
+    @property
+    def itens_ativos(self):
+        return self.itens.filter(data_devolucao__isnull=True)
+   
     def get_absolute_url(self):
         return reverse('epi:visualizar_ficha', args=[str(self.id)])
     
@@ -265,7 +266,8 @@ class ItemEPI(models.Model):
         null=True,
         blank=True,
         verbose_name=_("Data de Validade"),
-        help_text=_("Data de validade do EPI (se aplicável)")
+        help_text="Assinatura em base64"
+
     )
     
     recebedor = models.CharField(
@@ -287,21 +289,24 @@ class ItemEPI(models.Model):
         verbose_name=_("Criado em")
     )
 
+    def save(self, *args, **kwargs):
+        if not self.data_validade and self.data_recebimento:
+            self.data_validade = self.calculate_validade()
+        super().save(*args, **kwargs)
+
     # Métodos avançados
     def esta_entregue(self):
         """Verifica se o item ainda não foi devolvido"""
         return self.data_devolucao is None
     
-    def calcular_validade(self):
-        """Calcula data de validade baseada na vida útil do EPI"""
-        if self.epi.vida_util and self.data_recebimento:
-            return self.data_recebimento + timedelta(days=self.epi.vida_util*30)
-        return None
+    def calculate_validade(self):
+        if self.equipamento.vida_util:
+            return self.data_recebimento + timedelta(days=self.equipamento.vida_util*30)
+        return self.equipamento.data_validade
     
     def save(self, *args, **kwargs):
-        """Calcula validade automaticamente se não definida"""
-        if not self.data_validade:
-            self.data_validade = self.calcular_validade()
+        if not self.data_validade and self.data_recebimento:
+            self.data_validade = self.calculate_validade()
         super().save(*args, **kwargs)
     
     def __str__(self):
@@ -318,3 +323,84 @@ class ItemEPI(models.Model):
             models.Index(fields=['epi'], name='idx_item_epi'),
         ]
 
+class EquipamentoSeguranca(models.Model):
+    TIPO_CHOICES = [
+        ('CAP', 'Capacete'),
+        ('LUV', 'Luva'),
+        ('OCU', 'Óculos'),
+        ('PRO', 'Protetor Auditivo'),
+        ('CAL', 'Calçado'),
+        ('VES', 'Vestuário'),
+        ('OUT', 'Outros'),
+    ]
+    
+    nome_equipamento = models.CharField(
+        max_length=100,
+        verbose_name="Nome do Equipamento"
+    )
+    
+    tipo = models.CharField(
+        max_length=3,
+        choices=TIPO_CHOICES,
+        default='OUT',
+        verbose_name="Tipo de Equipamento"
+    )
+    
+    codigo_CA = models.CharField(
+        max_length=10,
+        verbose_name="Código CA",
+        blank=True,
+        null=True
+    )
+    
+    descricao = models.TextField(
+        verbose_name="Descrição",
+        blank=True,
+        null=True
+    )
+    
+    quantidade_estoque = models.IntegerField(
+        verbose_name="Quantidade em Estoque",
+        default=0
+    )
+    
+    estoque_minimo = models.IntegerField(
+        verbose_name="Estoque Mínimo",
+        default=5
+    )
+    
+    data_validade = models.DateField(
+        verbose_name="Data de Validade",
+        blank=True,
+        null=True
+    )
+    
+    ativo = models.BooleanField(
+        verbose_name="Ativo?",
+        default=True
+    )
+    
+    data_cadastro = models.DateTimeField(
+        verbose_name="Data de Cadastro",
+        auto_now_add=True
+    )
+    
+    data_atualizacao = models.DateTimeField(
+        verbose_name="Última Atualização",
+        auto_now=True
+    )
+
+    vida_util = models.PositiveIntegerField(
+        verbose_name="Vida Útil (meses)",
+        default=12,
+        help_text="Tempo de vida útil do equipamento em meses"
+    )
+
+    def __str__(self):
+        return f"{self.nome_equipamento} (CA: {self.codigo_CA or 'N/A'})"
+
+    class Meta:
+        verbose_name = "Equipamento de Segurança"
+        verbose_name_plural = "Equipamentos de Segurança"
+        ordering = ['nome_equipamento']
+        

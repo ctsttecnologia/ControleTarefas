@@ -1,24 +1,36 @@
 from django.urls import path
 from . import views
+from .views import EditarAdmissaoView, NovaAdmissaoView, CadastroAuxiliarView, CadastrarDepartamentoView, CadastrarCboView, CadastrarCargoView
+from .views import FuncionarioDetailView, detalhe_funcionario
 
-app_name = 'departamento_pessoal'  # Adicionando namespace
+app_name = 'departamento_pessoal'
 
 urlpatterns = [
-   
-    path('departamento_pessoal/', views.departamento_pessoal, name='departamento_pessoal'),
+    path('', views.departamento_pessoal, name='departamento_pessoal'),
+    path('funcionarios/', views.lista_funcionarios, name='lista_funcionarios'),
+    path('funcionarios/cadastrar/', views.cadastrar_funcionario, name='cadastrar_funcionario'),
+    path('funcionarios/<int:pk>/', FuncionarioDetailView.as_view(), name='detalhe_funcionario'),
+    path('funcionarios/<int:pk>/editar/', views.editar_funcionario, name='editar_funcionario'),
+    path('buscar-funcionario/', views.buscar_funcionario_por_matricula, name='buscar_funcionario'),
+    path('funcionario/<int:pk>/excluir/', views.confirmar_exclusao, name='confirmar_exclusao'),
+    path('funcionarios/<int:funcionario_pk>/documentos/editar/', views.cadastrar_documentos, name='editar_documentos'),
+    path('funcionarios/<int:funcionario_pk>/documentos/', views.cadastrar_documentos, name='cadastrar_documentos'),
 
-    path('lista_funcionarios', views.lista_funcionarios, name='lista_funcionarios'),
-    path('cadastrar/', views.cadastrar_funcionario, name='cadastrar_funcionario'),
-    path('funcionario/novo/', views.cadastrar_funcionario, name='cadastrar_funcionario'),
-    path('funcionario/<int:funcionario_id>/documentos/', views.cadastrar_documentos, name='cadastrar_documentos'),
-    path('funcionario/editar/<int:pk>/', views.editar_funcionario, name='editar_funcionario'),
-    #path('detalhes/<int:pk>/', views.detalhes_funcionario, name='detalhes_funcionario'),
-    path('excluir/<int:pk>/', views.excluir_funcionario, name='excluir_funcionario'),
-    path('funcionario/<int:pk>/', views.FuncionarioDetailView.as_view(), name='detalhes_funcionario'),
+    # URLs de Admissão
+    path('admissoes/', views.ListaAdmissoesView.as_view(), name='lista_admissoes'),
+    path('admissoes/<int:pk>/', views.DetalhesAdmissaoView.as_view(), name='detalhes_admissao'),
+    #path('funcionarios/<int:funcionario_pk>/nova-admissao/', NovaAdmissaoView.as_view(), name='nova_admissao'),
+    path('funcionario/<int:funcionario_pk>/admissao/nova/', views.NovaAdmissaoView.as_view(), name='nova_admissao'),
+    path('admissoes/<int:pk>/editar/', EditarAdmissaoView.as_view(), name='editar_admissao'),
 
-    path('admissao/', views.ListaAdmissoesView.as_view(), name='lista_admissao'),
-    path('admissao/nova/<int:funcionario_pk>/', views.NovaAdmissaoView.as_view(), name='nova_admissao'),
-    path('admissao/editar/<int:pk>/', views.EditarAdmissaoView.as_view(), name='editar_admissao'),
-    
+    # Cadastro Auxiliar
+    path('cadastro-auxiliar/', CadastroAuxiliarView.as_view(), name='cadastro_auxiliar'),
+    path('cadastro-auxiliar/departamento/', CadastrarDepartamentoView.as_view(), name='cadastrar_departamento'),
+    path('cadastro-auxiliar/cbo/', CadastrarCboView.as_view(), name='cadastrar_cbo'),
+    path('cadastro-auxiliar/cargo/', CadastrarCargoView.as_view(), name='cadastrar_cargo'),
+
+    # API
+    path('api/buscar-funcionario/', views.buscar_funcionario_por_matricula, name='buscar_funcionario'),
 ]
 
+    

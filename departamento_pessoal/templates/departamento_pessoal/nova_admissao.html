@@ -1,0 +1,115 @@
+
+{% load static %}
+{% load widget_tweaks %}
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar Admissão</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cssdp/stylesCadastroAdmissao.css' %}">
+
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Cadastrar Admissão</h2>
+    <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn btn-navigation">
+            <i class="fas fa-arrow-left"></i> Voltar
+    </a>    
+    <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" class="btn btn-navigation">
+            <i class="fas fa-users"></i> Lista Funcionários
+    </a>
+    <form method="post" class="mt-4">
+        {% csrf_token %}
+        
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4>Dados da Admissão</h4>
+            </div>
+            <div class="card-body">
+                {{ form.funcionario }}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Matrícula*</label>
+                        {{ form.matricula|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Data de Admissão*</label>
+                        {{ form.data_admissao|add_class:"form-control" }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Cargo*</label>
+                        {{ form.cargo|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Departamento*</label>
+                        {{ form.departamento|add_class:"form-control" }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Salário*</label>
+                        {{ form.salario|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo de Contrato*</label>
+                        {{ form.tipo_contrato|add_class:"form-control" }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Horário de Entrada</label>
+                        {{ form.hora_entrada|add_class:"form-control" }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Horário de Saída</label>
+                        {{ form.hora_saida|add_class:"form-control" }}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Dias Trabalhados</label>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for code, day in form.dias_semana.field.choices %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   name="dias_semana" value="{{ code }}"
+                                   id="dia_{{ code }}"
+                                   {% if code in form.dias_semana.value %}checked{% endif %}>
+                            <label class="form-check-label" for="dia_{{ code }}">
+                                {{ day }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" 
+               class="btn btn-secondary">
+               Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+                Salvar Admissão
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}
+

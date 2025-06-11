@@ -5,17 +5,18 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csr
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
+from django.db.models import Q
+from django.core.paginator import Paginator
 
 from .models import FichaEPI
-from .forms import FichaEPIForm
-from .models import EquipamentosSeguranca
 from .forms import EquipamentosSegurancaForm
-from .forms import PesquisarFichaForm
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+
+from seguranca_trabalho.models import EPIEquipamentoSeguranca
 
 
 @login_required
@@ -51,9 +52,42 @@ def pesquisar_ficha(request):
 
 @login_required
 def listar_equipamentos(request):
-    equipamentos = EquipamentosSeguranca.objects.all()
-    return render(request, 'seguranca_trabalho/listar_equipamentos.html', {'equipamentos': equipamentos})
+    # Obtenha todos os equipamentos inicialmente
+    equipamentos = EPIEquipamentoSeguranca.objects.all().order_by('nome_equipamento')
+    
+    # Processar filtros
+    search_query = request.GET.get('search', '')
+    status_filter = request.GET.get('status', '')
+    
+    # Aplicar filtro de pesquisa
+    if search_query:
+        equipamentos = equipamentos.filter(
+            Q(nome_equipamento__icontains=search_query) |
+            Q(descricao__icontains=search_query) |
+            Q(codigo_ca__icontains=search_query)
+        )
+    
+    # Aplicar filtro de status
+    if status_filter == 'ativo':
+        equipamentos = equipamentos.filter(ativo=True)
+    elif status_filter == 'inativo':
+        equipamentos = equipamentos.filter(ativo=False)
+    
+    # Configurar paginação
+    paginator = Paginator(equipamentos, 10)  # 10 itens por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'equipamentos': page_obj.object_list,
+        'search_query': search_query,
+        'status_filter': status_filter,
+    }
+    
+    return render(request, 'seguranca_trabalho/listar_equipamentos.html', context)
 
+@login_required
 def verificar_codigo_ca(request):
     if request.method == 'POST':
  
@@ -82,20 +116,28 @@ def cadastrar_equipamento(request):
 # Editar equipamento existente
 @login_required
 def editar_equipamento(request, id):
-    equipamento = get_object_or_404(EquipamentosSeguranca, id=id)
+    equipamento = get_object_or_404(EPIEquipamentoSeguranca, id=id)
     if request.method == 'POST':
         form = EquipamentosSegurancaForm(request.POST, instance=equipamento)
         if form.is_valid():
-            form.save()
+            # Salva o formulário mas mantém a data de validade original
+            equipamento_editado = form.save(commit=False)
+            equipamento_editado.data_validade = equipamento.data_validade  # Mantém o valor original
+            equipamento_editado.save()
+            messages.success(request, 'Equipamento atualizado com sucesso!')
             return redirect('seguranca_trabalho:listar_equipamentos')
     else:
         form = EquipamentosSegurancaForm(instance=equipamento)
-    return render(request, 'seguranca_trabalho/editar_equipamento.html', {'form': form, 'equipamento': equipamento})
+    
+    return render(request, 'seguranca_trabalho/editar_equipamento.html', {
+        'form': form,
+        'equipamento': equipamento
+    })
 
 # Excluir equipamento
 @login_required
 def excluir_equipamento(request, id):
-    equipamento = get_object_or_404(EquipamentosSeguranca, id=id)
+    equipamento = get_object_or_404(EPIEquipamentoSeguranca, id=id)
     equipamento.delete()
     return redirect('seguranca_trabalho:listar_equipamentos')
 
@@ -145,12 +187,30 @@ def gerar_excel(request):
     ws.title = "Ficha EPI"
 
     # Cabeçalho do Excel
-    ws.append(["Nome do Colaborador", "Equipamento", "Código CA", "Data de Entrega", "Data de Devolução", "Contrato ID", "Quantidade", "Descrição"])
+    ws.append([
+        "Nome do Colaborador",
+        "Equipamento", 
+        "Código CA", 
+        "Data de Entrega", 
+        "Data de Devolução", 
+        "Contrato ID", 
+        "Quantidade", 
+        "Descrição"
+    ])
 
     # Dados do formulário
     fichas = FichaEPI.objects.all()
     for ficha in fichas:
-        ws.append([ficha.nome_colaborador, ficha.equipamento, ficha.ca_equipamento, ficha.data_entrega, ficha.data_devolucao, ficha.contrato_id, ficha.quantidade, ficha.descricao])
+        ws.append([
+        ficha.nome_colaborador, 
+        ficha.equipamento, 
+        ficha.ca_equipamento, 
+        ficha.data_entrega, 
+        ficha.data_devolucao, 
+        ficha.contrato_id, 
+        ficha.quantidade, 
+        ficha.descricao
+    ])
 
     wb.save(response)
     return respons
@@ -225,3 +285,4 @@ def exportar_equipamentos_excel(request):
     
     wb.save(response)
     return response
+

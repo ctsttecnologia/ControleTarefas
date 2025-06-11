@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.db import models
 
-from logradouro.constants import ESTADOS_BRASIL
+from logradouro.constant import ESTADOS_BRASIL
 
 class Logradouro(models.Model):
     # Validadores

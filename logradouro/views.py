@@ -9,7 +9,7 @@ from openpyxl.styles import Font
 from openpyxl.utils import get_column_letter
 from .models import Logradouro
 from .forms import LogradouroForm
-from .constants import ESTADOS_BRASIL
+from .constant import ESTADOS_BRASIL
 
 
 @login_required
