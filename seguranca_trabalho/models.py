@@ -4,9 +4,14 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+
 from epi.models import FichaEPI
 
-class EquipamentosSeguranca(models.Model):
+User = get_user_model()
+
+class EPIEquipamentoSeguranca(models.Model):
+
     # Validadores reutilizáveis
     CODIGO_CA_VALIDATOR = RegexValidator(
         regex=r'^[A-Z]{2}-\d{4}$',
@@ -21,7 +26,7 @@ class EquipamentosSeguranca(models.Model):
         ('SOC', 'Socorro'),
         ('OUT', 'Outros'),
     ]
-    
+
     STATUS_CHOICES = [
         (1, 'Ativo'),
         (0, 'Inativo'),
@@ -160,7 +165,8 @@ class EquipamentosSeguranca(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        db_table = 'equipamentos_seguranca'
+        db_table = 'epi_equipamentoseguranca'  # Usa a tabela existente
+        managed = False  # Indica que o Django não gerencia a criação/alteração da tabeladb_table = 'equipamentos_seguranca'
         verbose_name = _('Equipamento de Segurança')
         verbose_name_plural = _('Equipamentos de Segurança')
         ordering = ['tipo', 'nome_equipamento']
@@ -179,6 +185,12 @@ class EquipamentosSeguranca(models.Model):
                 name='check_estoque_minimo_positivo'
             ),
         ]
+    def __str__(self):
+            return f"{self.nome_equipamento} (CA: {self.codigo_CA or 'N/A'})"
+
+    @property
+    def precisa_repor(self):
+        return self.quantidade_estoque < self.estoque_minimo
 
 
 class ItemEquipamentoSeguranca(models.Model):
@@ -189,7 +201,7 @@ class ItemEquipamentoSeguranca(models.Model):
     )
     
     equipamento = models.ForeignKey(
-        EquipamentosSeguranca,
+        EPIEquipamentoSeguranca,
         on_delete=models.CASCADE,
         verbose_name=_('Equipamento')
     )

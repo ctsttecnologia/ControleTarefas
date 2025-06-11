@@ -26,7 +26,12 @@ SECRET_KEY = 'django-insecure-wt$exc#ld^38(f66)^zde_&=sd5c_xkx9n0r)^t7x67v0g!2*o
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'testserver'  # Adicione esta linha
+
+]
 
 
 # Application definition
@@ -40,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # Para formatação de dados
     'usuario',
+    'home',
     'cliente',
     'seguranca_trabalho',
     'departamento_pessoal',
@@ -51,8 +57,8 @@ INSTALLED_APPS = [
     'treinamentos.apps.TreinamentosConfig',
     'crispy_forms',
     'crispy_bootstrap5',  # se estiver usando Bootstrap5
-    'home',
     'ata_reuniao',
+    'localflavor',
       
 ]
 

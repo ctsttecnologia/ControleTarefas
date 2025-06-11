@@ -9,10 +9,12 @@ from django.urls import reverse
 
 @admin.register(Documentos)
 class DocumentosAdmin(admin.ModelAdmin):
-    list_display = ('cpf_formatado', 'rg', 'pis', 'ctps')
-    search_fields = ('cpf', 'rg', 'pis', 'ctps')
+    list_display = ('cpf_formatado', 'rg', 'pis', 'ctps', 'funcionario', 'nome', 'sigla')
+    search_fields = ('cpf', 'rg', 'pis', 'ctps', 'funcionario__nome')
     readonly_fields = ('cpf_formatado',)
+    list_select_related = ( 'admissao__cargo', 'admissao__departamento', 'documentos') 
     list_per_page = 20
+    raw_id_fields = ('funcionario',)
 
     def cpf_formatado(self, obj):
         return obj.cpf_formatado
@@ -56,49 +58,35 @@ class CargosAdmin(admin.ModelAdmin):
         self.message_user(request, _('%d cargos desativados') % updated)
     desativar_cargos.short_description = _('Desativar cargos selecionados')
 
-@admin.register(Admissao)
+
 class AdmissaoAdmin(admin.ModelAdmin):
-    list_display = (
-        'matricula', 
-        'funcionario_link', 
-        'cargo_link', 
-        'departamento_link', 
-        'data_admissao', 
-        'salario_formatado',
-        'tempo_empresa_meses'
-    )
+    list_display = ('matricula', 'funcionario', 'cargo', 'data_admissao', 'salario_formatado')
     list_filter = ('cargo', 'departamento', 'tipo_contrato')
     search_fields = ('matricula', 'funcionario__nome')
-    raw_id_fields = ('cargo', 'departamento')
-    date_hierarchy = 'data_admissao'
-    readonly_fields = ('tempo_empresa_meses',)
-    list_per_page = 30
-
-    def funcionario_link(self, obj):
-        if hasattr(obj, 'funcionario'):
-            url = f"/admin/rh/funcionarios/{obj.funcionario.id}/change/"
-            return format_html('<a href="{}">{}</a>', url, obj.funcionario.nome)
-        return "-"
-    funcionario_link.short_description = _('Funcionário')
-
-    def cargo_link(self, obj):
-        url = f"/admin/rh/cargos/{obj.cargo.id}/change/"
-        return format_html('<a href="{}">{}</a>', url, obj.cargo.nome)
-    cargo_link.short_description = _('Cargo')
-
-    def departamento_link(self, obj):
-        url = f"/admin/rh/departamentos/{obj.departamento.id}/change/"
-        return format_html('<a href="{}">{}</a>', url, obj.departamento.nome)
-    departamento_link.short_description = _('Departamento')
+    readonly_fields = ('tempo_empresa_display',)
+    fieldsets = (
+        (None, {
+            'fields': ('funcionario', 'matricula', 'data_admissao', 'data_demissao')
+        }),
+        ('Cargo e Departamento', {
+            'fields': ('cargo', 'departamento', 'tipo_contrato')
+        }),
+        ('Remuneração', {
+            'fields': ('salario',)
+        }),
+        ('Horários', {
+            'fields': ('hora_entrada', 'hora_saida', 'dias_semana')
+        }),
+    )
 
     def salario_formatado(self, obj):
         return f"R$ {obj.salario:,.2f}"
-    salario_formatado.short_description = _('Salário')
-    salario_formatado.admin_order_field = 'salario'
+    salario_formatado.short_description = 'Salário'
 
-    def tempo_empresa_meses(self, obj):
+    def tempo_empresa_display(self, obj):
         return f"{obj.tempo_empresa} meses"
-    tempo_empresa_meses.short_description = _('Tempo na Empresa')
+    tempo_empresa_display.short_description = 'Tempo na Empresa'
+
 
 @admin.register(Funcionarios)
 class FuncionariosAdmin(admin.ModelAdmin):
@@ -113,10 +101,9 @@ class FuncionariosAdmin(admin.ModelAdmin):
     )
     list_filter = ('estatus', 'sexo', 'admissao__cargo', 'admissao__departamento')
     search_fields = ('nome', 'documentos__cpf', 'email')
-    raw_id_fields = ('logradouro', 'documentos', 'admissao')
+    raw_id_fields = ('logradouro',)
     readonly_fields = ('idade', 'status_formatado')
     date_hierarchy = ('admissao__data_admissao')
-    list_select_related = ('admissao__cargo', 'admissao__departamento')
     actions = ['promover_funcionarios']
     list_per_page = 50
 
@@ -171,8 +158,8 @@ class DepartamentosAdmin(admin.ModelAdmin):
         'sigla',
         'tipo_formatado',
         'status_badge',
-        'total_funcionarios_link',
-        'data_criacao_formatada', 'tipo'
+        'data_criacao_formatada', 
+        'tipo'
     )
     
     list_filter = (
@@ -193,7 +180,6 @@ class DepartamentosAdmin(admin.ModelAdmin):
     
     readonly_fields = (
         'data_atualizacao',
-        'total_funcionarios',
         'data_criacao_formatada'
     )
     
@@ -215,7 +201,6 @@ class DepartamentosAdmin(admin.ModelAdmin):
         (_('Status'), {
             'fields': (
                 'ativo',
-                'total_funcionarios',
             )
         }),
         (_('Datas'), {

@@ -8,6 +8,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Departamento Pessoal{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
     <link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
    
@@ -17,7 +19,12 @@
 {% include 'includes/header.html' %}
     <div class="container">
         <div class="painel">
-            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn-home">Cadastro de Funcionário</a>   
+            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn-home">
+                <i class="fas fa-users"></i> Cadastro de Funcionário
+            </a>
+            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+                <i class="fas fa-list"></i> Lista Funcionários
+            </a>   
         </div>
         <div class="painel1">
             {% csrf_token %}
@@ -40,8 +47,9 @@
                 </form>
         </div>                             
     </div>
-    <!-- Rodapé -->
+
+</body>
+<!-- Rodapé -->
 {% include 'includes/footer.html' %}   
-</body> 
 </html>
 

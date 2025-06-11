@@ -1,10 +1,7 @@
 
-
 {% load static %}
 
 {% block content %}
-
-
 
 <!-- Barra de Navegação Principal -->
 {% include 'includes/header.html' %}
@@ -12,9 +9,11 @@
     <h2>Editar Admissão</h2>
     
     <div class="painel">
-        <a href="{% url 'home' %}" class="btn-home">Home</a>
-        <a href="{% url 'departamento_pessoal:lista_admissao' %}" class="btn_cadastro">Lista de Admissões</a>
-        <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+
+        <a href="{% url 'departamento_pessoal:lista_admissoes' %}" class="btn_cadastro">
+           <i class="fas fa-list"></i> Lista Admissão
+        </a>
+
     </div>
 
     <div class="painel1">
@@ -58,7 +57,7 @@
             
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                <a href="{% url 'departamento_pessoal:lista_admissao' %}" class="btn btn-secondary">Cancelar</a>
+                <a href="{% url 'departamento_pessoal:lista_admissoes' %}" class="btn btn-secondary">Cancelar</a>
             </div>
         </form>
     </div>

@@ -4,114 +4,173 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Listar Equipamentos</title>
-    <link rel="stylesheet" href="{% static 'cssseguranca/styleslistaequipamento.css' %}">
+    <title>Editar Equipamento - {{ equipamento.nome_equipamento }}</title>
+    <link rel="stylesheet" href="{% static 'cssseguranca/styleseditar.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+
 </head>
 <body>
-    {% include 'includes/header.html' %}
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="mb-0">Lista de Equipamentos de Segurança</h1>
-            <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}" class="btn btn-primary">
+    <p>{% include 'includes/header.html' %}</p>
+
+    <div>
+        <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}" class="btn btn-primary">
                 <i class="fas fa-plus-circle"></i> Cadastrar Novo Equipamento
-            </a>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Nome do Equipamento</th>
-                        <th>Tipo</th>
-                        <th>Código CA</th>
-                        <th>Descrição</th>
-                        <th>Quantidade</th>
-                        <th>Validade</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for equipamento in equipamentos %}
-                    <tr>
-                        <td>{{ equipamento.nome_equipamento }}</td>
-                        <td>{{ equipamento.get_tipo_display }}</td>
-                        <td>{{ equipamento.codigo_ca }}</td>
-                        <td>{{ equipamento.descricao|truncatechars:50 }}</td>
-                        <td class="{% if equipamento.quantidade_estoque < equipamento.estoque_minimo %}text-danger fw-bold{% endif %}">
-                            {{ equipamento.quantidade_estoque }}
-                        </td>
-                        <td class="{% if equipamento.data_validade and equipamento.data_validade < today %}text-danger{% endif %}">
-                            {% if equipamento.data_validade %}
-                                {{ equipamento.data_validade|date:"d/m/Y" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if equipamento.ativo %}
-                                <span class="badge bg-success">Ativo</span>
-                            {% else %}
-                                <span class="badge bg-secondary">Inativo</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <a href="{% url 'seguranca_trabalho:editar_equipamento' equipamento.id %}" class="btn btn-sm btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ equipamento.id }}" title="Excluir">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Modal de Confirmação -->
-                    <div class="modal fade" id="confirmDeleteModal{{ equipamento.id }}" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-danger text-white">
-                                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <p>Tem certeza que deseja excluir o equipamento <strong>{{ equipamento.nome_equipamento }}</strong> (CA: {{ equipamento.codigo_ca }})?</p>
-                                    <p class="text-danger fw-bold">Esta ação não pode ser desfeita!</p>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <form method="post" action="{% url 'seguranca_trabalho:excluir_equipamento' equipamento.id %}" style="display: inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+        </a>
+    </div>
+    <div class="container">
+        <div class="form-container">
+            <h2 class="text-center mb-4">
+                <i class="fas fa-edit"></i> Editar Equipamento: {{ equipamento.nome_equipamento }}
+            </h2>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <!-- Nome do Equipamento -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.nome_equipamento.id_for_label }}" class="form-label required-field">
+                            {{ form.nome_equipamento.label }}
+                        </label>
+                        {{ form.nome_equipamento }}
+                        {% if form.nome_equipamento.errors %}
+                            <div class="text-danger">{{ form.nome_equipamento.errors }}</div>
+                        {% endif %}
                     </div>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    
+                    <!-- Tipo -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.tipo.id_for_label }}" class="form-label required-field">
+                            {{ form.tipo.label }}
+                        </label>
+                        {{ form.tipo }}
+                        {% if form.tipo.errors %}
+                            <div class="text-danger">{{ form.tipo.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Código CA -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.codigo_ca.id_for_label }}" class="form-label">
+                            {{ form.codigo_ca.label }}
+                        </label>
+                        {{ form.codigo_ca }}
+                        {% if form.codigo_ca.errors %}
+                            <div class="text-danger">{{ form.codigo_ca.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Quantidade em Estoque -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.quantidade_estoque.id_for_label }}" class="form-label required-field">
+                            {{ form.quantidade_estoque.label }}
+                        </label>
+                        {{ form.quantidade_estoque }}
+                        {% if form.quantidade_estoque.errors %}
+                            <div class="text-danger">{{ form.quantidade_estoque.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Descrição -->
+                <div class="form-group">
+                    <label for="{{ form.descricao.id_for_label }}" class="form-label">
+                        {{ form.descricao.label }}
+                    </label>
+                    {{ form.descricao }}
+                    {% if form.descricao.errors %}
+                        <div class="text-danger">{{ form.descricao.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="row">
+                    <!-- Data de Validade -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.data_validade.id_for_label }}" class="form-label">
+                            {{ form.data_validade.label }}
+                        </label>
+                        {{ form.data_validade }}
+                        {% if form.data_validade.errors %}
+                            <div class="text-danger">{{ form.data_validade.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Estoque Mínimo -->
+                    <div class="col-md-6 form-group">
+                        <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">
+                            {{ form.estoque_minimo.label }}
+                        </label>
+                        {{ form.estoque_minimo }}
+                        {% if form.estoque_minimo.errors %}
+                            <div class="text-danger">{{ form.estoque_minimo.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Status Ativo -->
+                <div class="form-group form-check">
+                    <label for="{{ form.ativo.id_for_label }}" class="form-check-label">
+                        {{ form.ativo.label }}
+                    </label>
+                    {{ form.ativo }}
+                    {% if form.ativo.errors %}
+                        <div class="text-danger">{{ form.ativo.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Ações -->
+                <div class="actions text-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                    <a href="{% url 'seguranca_trabalho:listar_equipamentos' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-
-    {% include 'includes/footer.html' %}
-
-    <!-- Bootstrap JS e dependências -->
+    
+    <!-- Scripts para melhorar a experiência -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Inicialização de tooltips
+        // Adiciona classe 'is-invalid' para campos com erro
         document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
+            const errorFields = document.querySelectorAll('.text-danger');
+            errorFields.forEach(function(errorField) {
+                const fieldId = errorField.id.replace('_errors', '');
+                const inputField = document.getElementById(fieldId);
+                if (inputField) {
+                    inputField.classList.add('is-invalid');
+                }
             });
+            
+            // Formatação da data
+            const dateField = document.getElementById('{{ form.data_validade.id_for_label }}');
+            if (dateField) {
+                dateField.type = 'date';
+            }
         });
     </script>
+    <!--Adicione este JavaScript no final do template para garantir que 
+    o campo não possa ser editado mesmo que alguém tente manipular o HTML-->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateField = document.getElementById('{{ form.data_validade.id_for_label }}');
+            if (dateField) {
+                // Garante que o campo permaneça desabilitado mesmo se alguém tentar manipular o HTML
+                dateField.disabled = true;
+                dateField.readOnly = true;
+                
+                // Adiciona um tooltip explicativo
+                dateField.title = "A data de validade não pode ser alterada após o cadastro";
+            }
+        });
+    </script>
+    {% include 'includes/footer.html' %}
 </body>
 </html>

@@ -8,8 +8,9 @@ User = get_user_model()
 class FichaEPIForm(forms.ModelForm):
     class Meta:
         model = FichaEPI
-        fields = ['cargo', 'registro', 'admissao', 'demissao', 'contrato', 'local_data', 'assinatura']
+        fields = ['empregado', 'cargo', 'registro', 'admissao', 'demissao', 'contrato', 'local_data', 'assinatura']
         widgets = {
+            'empregado': forms.TextInput(attrs={'class': 'form-control'}),
             'admissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'demissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'cargo': forms.TextInput(attrs={'class': 'form-control'}),
@@ -18,6 +19,10 @@ class FichaEPIForm(forms.ModelForm):
             'local_data': forms.TextInput(attrs={'class': 'form-control'}),
             'assinatura': forms.FileInput(attrs={'class': 'form-control'}),
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['empregado'].disabled = True
+        self.fields['empregado'].widget.attrs['readonly'] = True
 
 class ItemEPIForm(forms.ModelForm):
     class Meta:

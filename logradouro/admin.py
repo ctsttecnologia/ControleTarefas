@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import Logradouro
-from .constants import ESTADOS_BRASIL
+from .constant import ESTADOS_BRASIL
 
 @admin.register(Logradouro)
 class LogradouroAdmin(admin.ModelAdmin):

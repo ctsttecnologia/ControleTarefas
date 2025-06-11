@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .models import FichaEPI
-from .models import EquipamentosSeguranca
+from .models import EPIEquipamentoSeguranca
 
 class FichaEPIForm(forms.ModelForm):
     class Meta:
@@ -35,7 +35,7 @@ class FichaEPIForm(forms.ModelForm):
 
 class EquipamentosSegurancaForm(forms.ModelForm):
     class Meta:
-        model = EquipamentosSeguranca
+        model = EPIEquipamentoSeguranca
         fields = '__all__'
         widgets = {
             'nome_equipamento': forms.TextInput(attrs={
@@ -51,7 +51,7 @@ class EquipamentosSegurancaForm(forms.ModelForm):
             }),
             'descricao': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 3,
+                'rows': 1,
                 'placeholder': _('Descrição detalhada')
             }),
             'quantidade_estoque': forms.NumberInput(attrs={
@@ -64,7 +64,8 @@ class EquipamentosSegurancaForm(forms.ModelForm):
             }),
             'data_validade': forms.DateInput(attrs={
                 'class': 'form-control',
-                'type': 'date'
+                'type': 'date',
+                'readonly': 'readonly'
             }),
             'ativo': forms.Select(attrs={
                 'class': 'form-select'
@@ -90,6 +91,14 @@ class EquipamentosSegurancaForm(forms.ModelForm):
                 'invalid': _('Formato inválido (use AA-1234)')
             }
         }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:  # Verifica se é uma edição
+            self.fields['data_validade'].disabled = True
+            self.fields['data_validade'].help_text = "A data de validade não pode ser alterada após o cadastro."
+            # Garante que o valor original será usado mesmo se alguém manipular o HTML
+            if self.instance.data_validade:
+                self.initial['data_validade'] = self.instance.data_validade.strftime('%Y-%m-%d')   
 
     def clean(self):
         cleaned_data = super().clean()

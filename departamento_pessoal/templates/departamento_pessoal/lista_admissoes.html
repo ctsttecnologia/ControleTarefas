@@ -31,6 +31,7 @@
                     <th>Cargo</th>
                     <th>Departamento</th>
                     <th>Data Admissão</th>
+                    <th>Data Demissão</th>
                     <th>Salário</th>
                     <th>Ações</th>
                 </tr>
@@ -49,13 +50,14 @@
                     <td>{{ admissao.cargo.nome }}</td>
                     <td>{{ admissao.departamento.nome }}</td>
                     <td>{{ admissao.data_admissao|date:"d/m/Y" }}</td>
+                    <td>{{ admissao.data_demissao|date:"d/m/Y" }}</td>
                     <td>R$ {{ admissao.salario }}</td>
                     <td>
-                        <a href="{% url 'departamento_pessoal:editar_admissao' admissao.funcionario.pk %}" class="btn btn-sm btn-primary">
+                        <a href="{% url 'departamento_pessoal:editar_admissao' admissao.pk %}" class="btn btn-sm btn-primary">
                             <i class="fas fa-edit"></i> Editar
                         </a>
                         {% if admissao.funcionario %}
-                        <a href="{% url 'departamento_pessoal:detalhes_funcionario' admissao.funcionario.pk %}" class="btn btn-sm btn-info">
+                        <a href="{% url 'departamento_pessoal:detalhe_funcionario' admissao.funcionario.pk %}" class="btn btn-sm btn-info">
                             <i class="fas fa-eye"></i> Ver
                         </a>
                         {% endif %}
