@@ -14,7 +14,7 @@
     <img src="/midia/imagens/logocetest.png" width="200">
     <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção-->
 </div> 
-{% block content %}{% endblock %}   
+{% block content %} 
     <!--<img src="{% static 'imagens/painel1.png' %}" class="imagempainel">--> <!--Imagem no Django em produção-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -27,18 +27,18 @@
         <div class="painel1">
             {% if user.is_authenticated %}
                 <div>
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle" href="{% url 'usuario:lista_usuarios' %}" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle"></i> Olá, {{ request.user.username }}
                     </a>
                 </div>
-            {% else %}
+            {% else %}  
                     <a href="{% url 'home' %}" class="btn-home">Início</a>
             {% endif %}
         </div>
     </div>
     <div class="container1">        
         <div class="painel">
-                <a href="{% url 'usuario_login:logout' %}" class="btn">
+                <a href="{% url 'usuario:logout' %}" class="btn">
                     <i class="bi bi-box-arrow-right"></i> Logout
                 </a>
                 <a href="{% url 'home' %}"  class="btn">
@@ -138,4 +138,4 @@
     
 </body>
 </html>
-
+{% endblock %}

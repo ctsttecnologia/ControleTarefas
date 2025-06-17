@@ -187,27 +187,28 @@
             <i class="fas fa-arrow-left"></i> Voltar
         </a>
         <div>
-            {% if funcionario.documentos %}
-            <a href="{% url 'departamento_pessoal:editar_documentos' funcionario.pk %}" 
-                class="btn btn-primary" title="Editar Documentos">
-                <i class="fas fa-edit"></i> Editar Documentos
-            </a>
+            {% if funcionario.documentos.pk %}
+                <a href="{% url 'departamento_pessoal:editar_documentos' funcionario_pk=funcionario.pk pk=funcionario.documentos.pk %}"
+                    class="btn btn-primary" title="Editar Documentos">
+                    <i class="fas fa-file-edit"></i> Editar Documentos
+                </a>
             {% else %}
-            <a href="{% url 'departamento_pessoal:cadastrar_documentos' funcionario.pk %}" 
-                class="btn btn-primary" title="Cadastrar Documentos">
-                <i class="fas fa-file-alt"></i> Cadastrar Documentos
-            </a>
+                <a href="{% url 'departamento_pessoal:cadastrar_documentos' funcionario.pk %}" 
+                    class="btn btn-primary" title="Cadastrar Documentos">
+                    <i class="fas fa-file-alt"></i> Cadastrar Documentos
+                </a>
             {% endif %}
-            {% if funcionario.admissao %}
-            <a href="{% url 'departamento_pessoal:editar_admissao' funcionario.pk %}" 
-                class="btn btn-primary" title="Editar Admissão">
-                <i class="fas fa-edit"></i> Editar Admissão
-            </a>
+            
+            {% if funcionario.admissao.pk %}
+                <a href="{% url 'departamento_pessoal:editar_admissao' funcionario_pk=funcionario.pk pk=funcionario.admissao.pk %}" 
+                    class="btn btn-primary" title="Editar Admissão">
+                    <i class="fas fa-edit"></i> Editar Admissão
+                </a>
             {% else %}
-            <a href="{% url 'departamento_pessoal:nova_admissao' funcionario.pk %}" 
-                class="btn btn-primary" title="Cadastrar Admissão">
-                <i class="fas fa-file-alt"></i> Cadastrar Admissão
-            </a>
+                <a href="{% url 'departamento_pessoal:nova_admissao' funcionario.pk %}" 
+                    class="btn btn-primary" title="Cadastrar Admissão">
+                    <i class="fas fa-file-alt"></i> Cadastrar Admissão
+                </a>
             {% endif %}
             <a href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}" class="btn btn-primary">
                 <i class="fas fa-edit"></i> Editar Funcionário

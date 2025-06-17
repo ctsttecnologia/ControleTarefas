@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
+from django.conf import settings # Importe settings
 
 class Carro(models.Model):
     placa = models.CharField(max_length=10, unique=True)
@@ -32,7 +33,7 @@ class Agendamento(models.Model):
     ]
     
     funcionario = models.CharField(max_length=100)
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     carro = models.ForeignKey(Carro, on_delete=models.CASCADE)
     data_hora_agenda = models.DateTimeField()
     data_hora_devolucao = models.DateTimeField()
@@ -103,7 +104,7 @@ class Checklist(models.Model):
     assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
     agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='checklists')
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL    , on_delete=models.CASCADE)
     
     def save(self, *args, **kwargs):
         # Lógica adicional antes de salvar pode ser adicionada aqui

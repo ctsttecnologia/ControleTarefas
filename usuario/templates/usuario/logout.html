@@ -1,22 +1,16 @@
+{% extends 'base.html' %}
 
 {% load static %}
 
-
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
     <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}"> <title>Logout</title>
-</head>
-<body>
+
     <h1>Você foi desconectado com sucesso.</h1>
     
-    <a href="{% url 'usuario_login:login' %}">Fazer login novamente</a>
+    <a href="{% url 'usuario:login' %}">Fazer login novamente</a>
     <img src="/midia/imagens/logocetest.png">
     <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção--> 
 
-</body>
-</html>
 

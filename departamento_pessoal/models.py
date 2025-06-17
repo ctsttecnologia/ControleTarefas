@@ -105,16 +105,7 @@ class Funcionarios(models.Model):
     estatus = models.IntegerField(choices=ESTATUS_CHOICES, default=1)
     data_cadastro = models.DateTimeField(auto_now_add=True)
     logradouro = models.ForeignKey('logradouro.Logradouro', on_delete=models.PROTECT, null=True, blank=True)
-    
-    # Adicionado relacionamento com Documentos
-    documentos = models.OneToOneField(
-        'Documentos',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='funcionario_documentos'
-    )
-
+        
     class Meta:
         db_table = 'funcionarios'
         verbose_name = _('Funcionário')
@@ -122,8 +113,20 @@ class Funcionarios(models.Model):
         ordering = ['nome']
     
     def __str__(self):
-        matricula = self.matricula if hasattr(self, 'admissao') else 'Sem matrícula'
+        matricula = self.matricula if hasattr(self, 'admissao') and self.admissao else 'Sem matrícula'
         return f"{self.nome} ({matricula})"
+
+    @property
+    def documentos_do_funcionario(self):
+        """Retorna todos os documentos associados a este funcionário"""
+        return self.documentos.all()
+
+    @property
+    def documento_principal(self):
+        """Retorna o documento principal (vinculado à admissão) se existir"""
+        if hasattr(self, 'admissao') and self.admissao and self.admissao.documento_principal:
+            return self.admissao.documento_principal
+        return None
 
     @property
     def idade(self):
@@ -132,6 +135,12 @@ class Funcionarios(models.Model):
             (hoje.month, hoje.day) < 
             (self.data_nascimento.month, self.data_nascimento.day)
         )
+
+    @property
+    def matricula(self):
+        if hasattr(self, 'admissao') and self.admissao:
+            return self.admissao.matricula
+        return "N/D"  # Ou None, conforme sua necessidade
 
     @property
     def matricula(self):
@@ -155,6 +164,154 @@ class Funcionarios(models.Model):
             return '({}) {}-{}'.format(tel[:2], tel[2:6], tel[6:])
         return tel
 
+class Documentos(models.Model):
+    TIPO_CHOICES = [
+        ('CLT', 'Registro CLT'),
+        ('PJ', 'Pessoa Jurídica'),
+        ('MEI', 'Micro-Empresa'),
+    
+    ]
+    
+    funcionario = models.ForeignKey(
+        'Funcionarios',
+        on_delete=models.CASCADE,
+        related_name='documentos' # Isso permite funcionario.documentos.all()
+    )
+    nome = models.CharField(max_length=50, verbose_name='Nome do Documento')
+    sigla = models.CharField(max_length=10, verbose_name='Sigla')
+    tipo = models.CharField(max_length=4, choices=TIPO_CHOICES, verbose_name='Tipo de Contrato')
+    data_criacao = models.DateField(verbose_name='Data de Criação')
+    ativo = models.BooleanField(default=True, verbose_name='Ativo?')
+    centro_custo = models.CharField(max_length=20, verbose_name='Centro de Custo')
+    data_atualizacao = models.DateTimeField(auto_now=True, verbose_name='Última Atualização')
+    
+    # Campos específicos de documentos
+    cpf = models.CharField(
+        max_length=14, 
+        blank=True, 
+        null=True, 
+        verbose_name='CPF',
+        validators=[RegexValidator(
+            regex=r'^\d{3}\.\d{3}\.\d{3}-\d{2}$',
+            message='CPF deve estar no formato 000.000.000-00'
+        )]
+    )
+    pis = models.CharField(
+        max_length=14, 
+        blank=True, 
+        null=True, 
+        verbose_name='PIS/PASEP',
+        validators=[RegexValidator(
+            regex=r'^\d{3}\.\d{5}\.\d{2}-\d{1}$',
+            message='PIS deve estar no formato 000.00000.00-0'
+        )]
+    )
+    ctps = models.CharField(
+        max_length=11, 
+        blank=True, 
+        null=True, 
+        verbose_name='CTPS',
+        validators=[RegexValidator(
+            regex=r'^\d{7}\/\d{2}$',
+            message='CTPS deve estar no formato 0000000/00'
+        )]
+    )
+    uf = models.CharField(
+        max_length=2, 
+        blank=True, 
+        null=True, 
+        choices=ESTADOS_BRASIL, 
+        verbose_name='UF'
+    )
+    rg = models.CharField(
+        max_length=10, 
+        blank=True, 
+        null=True, 
+        verbose_name='RG'
+    )
+    emissor = models.CharField(
+        max_length=6, 
+        blank=True, 
+        null=True, 
+        verbose_name='Órgão Emissor'
+    )
+    reservista = models.CharField(
+        max_length=12, 
+        blank=True, 
+        null=True, 
+        verbose_name='Nº Reservista'
+    )
+    titulo_eleitor = models.CharField(
+        max_length=15, 
+        blank=True, 
+        null=True, 
+        verbose_name='Título de Eleitor'
+    )
+    
+    # Campos para anexos
+    anexo_cpf = models.FileField(
+        upload_to='documentos/cpf/', 
+        blank=True, 
+        null=True, 
+        verbose_name='Anexo CPF'
+    )
+    anexo_ctps = models.FileField(
+        upload_to='documentos/ctps/', 
+        blank=True, 
+        null=True, 
+        verbose_name='Anexo CTPS'
+    )
+    anexo_pis = models.FileField(
+        upload_to='documentos/pis/', 
+        blank=True, 
+        null=True, 
+        verbose_name='Anexo PIS'
+    )
+    anexo_rg = models.FileField(
+        upload_to='documentos/rg/', 
+        blank=True, 
+        null=True, 
+        verbose_name='Anexo RG'
+    )
+
+    class Meta:
+        db_table = 'documentos'
+        verbose_name = 'Documento'
+        verbose_name_plural = 'Documentos'
+        ordering = ['-data_atualizacao']
+
+    def __str__(self):
+        return f"{self.nome} - {self.funcionario.nome}"
+
+    def clean(self):
+        # Verifica se o documento está sendo definido como principal
+        if hasattr(self, 'admissao_vinculada') and self.admissao_vinculada:
+            # Verifica se já existe outro documento principal para este funcionário
+            if Documentos.objects.filter(
+                funcionario=self.funcionario,
+                admissao_vinculada__isnull=False
+            ).exclude(pk=self.pk).exists():
+                raise ValidationError('Já existe um documento principal para este funcionário')
+                
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        
+        # Validação condicional baseada no tipo de documento
+        if self.tipo == 'CPF' and not self.cpf:
+            raise ValidationError({'cpf': 'CPF é obrigatório para este tipo de documento'})
+        if self.tipo == 'PIS' and not self.pis:
+            raise ValidationError({'pis': 'PIS é obrigatório para este tipo de documento'})
+        if self.tipo == 'CTPS' and not self.ctps:
+            raise ValidationError({'ctps': 'CTPS é obrigatório para este tipo de documento'})
+        if self.tipo == 'RG' and (not self.rg or not self.uf or not self.emissor):
+            raise ValidationError({
+                'rg': 'RG, UF e Órgão Emissor são obrigatórios para este tipo de documento'
+            })
+        if self.tipo == 'RES' and not self.reservista:
+            raise ValidationError({'reservista': 'Número de reservista é obrigatório para este tipo de documento'})
+        if self.tipo == 'TIT' and not self.titulo_eleitor:
+            raise ValidationError({'titulo_eleitor': 'Título de eleitor é obrigatório para este tipo de documento'})
+
 class Admissao(models.Model):
     TIPO_CONTRATO_CHOICES = [
         ('CLT', 'Registro CLT'),
@@ -173,9 +330,20 @@ class Admissao(models.Model):
         ('DOM', 'Domingo'),
     ]
     
-    funcionario = models.OneToOneField(Funcionarios, on_delete=models.CASCADE, related_name='admissao')
-    cargo = models.ForeignKey(Cargos, on_delete=models.PROTECT, related_name='admissoes')
-    departamento = models.ForeignKey(Departamentos, on_delete=models.PROTECT, related_name='admissoes')
+    funcionario = models.OneToOneField(  # Alterado para ser o relacionamento principal
+        'Funcionarios',
+        on_delete=models.CASCADE,
+        related_name='admissao'
+    )
+    documento_principal = models.OneToOneField(
+        Documentos, 
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='admissao_vinculada'
+    )
+    cargo = models.ForeignKey('Cargos', on_delete=models.PROTECT, related_name='admissoes')
+    departamento = models.ForeignKey('Departamentos', on_delete=models.PROTECT, related_name='admissoes')
     matricula = models.CharField(max_length=10, unique=True)
     data_admissao = models.DateField(default=timezone.now)
     salario = models.DecimalField(max_digits=10, decimal_places=2)
@@ -183,7 +351,7 @@ class Admissao(models.Model):
     data_demissao = models.DateField(null=True, blank=True)
     hora_entrada = models.TimeField(verbose_name='Horário de entrada', null=True, blank=True)
     hora_saida = models.TimeField(verbose_name='Horário de saída', null=True, blank=True)
-    dias_trabalhado =  models.CharField(max_length=27, blank=True)
+    dias_trabalhado = models.CharField(max_length=27, blank=True)
     dias_semana = models.CharField(max_length=1, blank=True)
 
     class Meta:
@@ -208,93 +376,6 @@ class Admissao(models.Model):
         dias_map = dict(self.DIAS_SEMANA_CHOICES)
         dias = [dias_map[code] for code in self.dias_semana.split(',') if code in dias_map]
         return ', '.join(dias) or "Nenhum dia válido selecionado"
-
-class Documentos(models.Model):
-    TIPO_DOCUMENTO_CHOICES = [
-        ('PF', 'Pessoa Física'),
-        ('PJ', 'Pessoa Jurídica'),
-        ('ME', 'MEI'),
-    ]
-
-    rg_regex = RegexValidator(
-        regex=r'^\d{2}\.\d{3}\.\d{3}-[\dX]$|^\d{9}$',
-        message="RG inválido. Formato esperado: 00.000.000-0 ou 00.000.000-X."
-    )
-    
-    # Alterado para OneToOneField para manter consistência com o campo em Funcionarios
-    funcionario = models.OneToOneField(
-        Funcionarios,
-        on_delete=models.CASCADE,
-        related_name='documentos_funcionario'
-    )
-    
-    nome = models.CharField(max_length=50, blank=True) 
-    sigla = models.CharField(max_length=10, blank=True)
-    tipo = models.CharField(max_length=3, choices=TIPO_DOCUMENTO_CHOICES, blank=True)
-    cpf = models.CharField(max_length=14, unique=True, verbose_name=_('CPF'))
-    pis = models.CharField(max_length=14, unique=True, verbose_name=_('PIS/PASEP'), blank=True)
-    rg = models.CharField(
-        max_length=10, 
-        unique=True, 
-        verbose_name=_('RG'),
-        validators=[
-            MinLengthValidator(8, message="RG deve ter no mínimo 8 dígitos"),
-            rg_regex
-        ]
-    )
-    emissor = models.CharField(max_length=6, verbose_name=_('Orgão Emissor'), blank=True)
-    uf = models.CharField(
-        max_length=2,
-        choices=ESTADOS_BRASIL,
-        blank=True,
-        default=''
-    )
-    ctps = models.CharField(max_length=11, blank=True, null=True)
-    reservista = models.CharField(max_length=12, verbose_name=_('Certificado de Reservista'), blank=True)
-    titulo_eleitor = models.CharField(max_length=15, verbose_name=_('Título de Eleitor'), blank=True)
-    anexo_cpf = models.FileField(upload_to='documentos/cpf/', max_length=100, blank=True, null=True)
-    anexo_ctps = models.FileField(upload_to='documentos/ctps/', max_length=100, blank=True, null=True)
-    anexo_pis = models.FileField(upload_to='documentos/pis/', max_length=100, blank=True, null=True)
-    anexo_rg = models.FileField(upload_to='documentos/rg/', max_length=100, blank=True, null=True)
-    centro_custo = models.CharField(max_length=20, blank=True)
-    ativo = models.BooleanField(default=True)
-    data_criacao = models.DateField(auto_now_add=True)
-    data_atualizacao = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'documentos'
-        verbose_name = _('Documento')
-        verbose_name_plural = _('Documentos Pessoais')
-        unique_together = ['nome', 'sigla']
-
-    def __str__(self):
-        return f"Documentos de {self.funcionario.nome}"
-
-    @property
-    def cpf_formatado(self):
-        if not self.cpf:
-            return ""
-        return f"{self.cpf[:3]}.{self.cpf[3:6]}.{self.cpf[6:9]}-{self.cpf[9:]}"
-
-    @property
-    def rg_formatado(self):
-        if not self.rg:
-            return ""
-        return f"{self.rg[:2]}.{self.rg[2:5]}.{self.rg[5:8]}-{self.rg[8:]}" if len(self.rg) > 8 else self.rg
-        
-    def clean_rg(self):
-        rg = self.cleaned_data.get('rg')
-        if rg:
-            digitos = sum(c.isdigit() for c in rg)
-            if digitos < 8:  # 8 dígitos + dígito verificador (que pode ser letra)
-                raise ValidationError("RG deve conter pelo menos 8 dígitos numéricos")
-        return rg
-
-    @property
-    def pis_formatado(self):
-        if not self.pis:
-            return ""
-        return f"{self.pis[:3]}.{self.pis[3:8]}.{self.pis[8:10]}-{self.pis[10:]}"
 
 
 

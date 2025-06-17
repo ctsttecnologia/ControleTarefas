@@ -1,0 +1,198 @@
+
+/* Estilos gerais */
+.document-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.document-header {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-weight: 600;
+}
+
+/* Ações e Filtros */
+.document-actions {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+    border: 1px solid #2980b9;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.document-filters {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.filter-form {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-control {
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.btn-filter {
+    background-color: #6c757d;
+    color: white;
+    border: 1px solid #5a6268;
+    height: fit-content;
+}
+
+.btn-filter:hover {
+    background-color: #5a6268;
+}
+
+/* Tabela de documentos */
+.document-table-container {
+    overflow-x: auto;
+}
+
+.document-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+}
+
+.document-table th, 
+.document-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.document-table th {
+    background-color: #343a40;
+    color: white;
+    font-weight: 500;
+}
+
+.document-table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.document-table tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Status */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: white;
+}
+
+.status-badge.active {
+    background-color: #28a745;
+}
+
+.status-badge.inactive {
+    background-color: #dc3545;
+}
+
+/* Ações */
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-action {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-action.edit {
+    background-color: #ffc107;
+}
+
+.btn-action.edit:hover {
+    background-color: #e0a800;
+}
+
+.btn-action.view {
+    background-color: #17a2b8;
+}
+
+.btn-action.view:hover {
+    background-color: #138496;
+}
+
+.btn-action[disabled] {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Mensagem sem registros */
+.no-records {
+    text-align: center;
+    padding: 1rem;
+    color: #6c757d;
+}
+
+/* Paginação */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.page-link:hover {
+    background-color: #e9ecef;
+}
+
+.current {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+}
+
+/* Ícones */
+.fas {
+    font-size: 0.875rem;
+}

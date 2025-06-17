@@ -77,30 +77,25 @@
                                 class="btn btn-sm btn-primary" title="Editar Funcionário">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            {% if funcionario.documentos %}
-                                <!-- botão para editar Documentos -->
-                                <a href="{% url 'departamento_pessoal:editar_documentos' funcionario.pk %}" 
-                                    class="btn btn-sm btn-secondary" title="Editar Documentos">
-                                    <i class="fas fa-user-edit"></i> 
-                                </a>
-                            {% else %}    
-                                <!-- botão para Documentos -->
-                                <a href="{% url 'departamento_pessoal:cadastrar_documentos' funcionario.pk %}" 
-                                    class="btn btn-sm btn-secondary" title="Cadastrar Documentos">
-                                    <i class="fas fa-file-alt"></i> 
-                                </a>
-                            {% endif %}    
-                            {% if funcionario.admissao %}
-                                <!-- Para editar admissão -->
-                                <a href="{% url 'departamento_pessoal:editar_admissao' funcionario.admissao.pk %}" 
-                                class="btn btn-sm btn-warning" title="Editar Admissão">
-                                <i class="fas fa-user-edit"></i>
+                            {% if funcionario.admissao and funcionario.admissao.documento_principal %}
+                                <a href="{% url 'departamento_pessoal:editar_documentos' funcionario_pk=funcionario.pk pk=funcionario.admissao.documento_principal.pk %}"
+                                    class="btn btn-sm btn-primary" title="Editar Dcumentos">
+                                    <i class="fas fa-edit"></i>
                                 </a>
                             {% else %}
-                                <!-- Para nova admissão -->
+                                <a href="{% url 'departamento_pessoal:cadastrar_documentos' funcionario.pk %}"
+                                    class="btn btn-sm btn-secondary" title="Cadastrar Dcumentos">
+                                    <i class="fas fa-file-alt"></i> 
+                                </a>
+                            {% endif %}
+                            {% if funcionario.admissao.pk %}
+                                <a href="{% url 'departamento_pessoal:editar_admissao' funcionario_pk=funcionario.pk pk=funcionario.admissao.pk %}" 
+                                    class="btn btn-primary" title="Editar Admissão">
+                                    <i class="fas fa-edit"></i> 
+                            {% else %}
                                 <a href="{% url 'departamento_pessoal:nova_admissao' funcionario.pk %}" 
-                                class="btn btn-sm btn-success" title="Cadastrar Admissão">
-                                <i class="fas fa-user-plus"></i>
+                                    class="btn btn-primary" title="Cadastrar Admissão">
+                                    <i class="fas fa-file-alt"></i> 
                                 </a>
                             {% endif %}
                         </div>

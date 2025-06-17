@@ -1,0 +1,120 @@
+
+
+{% load static %}
+{% load crispy_forms_tags %}
+{% include 'includes/header.html' %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-user-edit"></i> Editar Usuário
+                    </h4>
+                    TESTE Editar
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <!-- Dados Básicos -->
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2">Informações Pessoais</h5>
+                                {{ form.nome|as_crispy_field }}
+                                {{ form.email|as_crispy_field }}
+                                {{ form.username|as_crispy_field }}
+                            </div>
+                            
+                            <!-- Status e Permissões -->
+                            <div class="col-md-6">
+                                <h5 class="border-bottom pb-2">Configurações de Acesso</h5>
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.is_active|as_crispy_field }}
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.is_staff|as_crispy_field }}
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    {{ form.is_superuser|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Grupos -->
+                        <div class="mt-4">
+                            <h5 class="border-bottom pb-2">Grupos</h5>
+                            <div class="scrollable-checkboxes">
+                                {{ form.groups|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <!-- Permissões Individuais -->
+                        <div class="mt-4">
+                            <h5 class="border-bottom pb-2">Permissões Adicionais</h5>
+                            <div class="scrollable-checkboxes">
+                                {{ form.user_permissions|as_crispy_field }}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .scrollable-checkboxes {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+    }
+    
+    .form-check-label {
+        margin-left: 5px;
+    }
+    
+    .card {
+        border-radius: 10px;
+    }
+    
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        // Ativa os tooltips
+        $('[data-toggle="tooltip"]').tooltip();
+        
+        // Validação do formulário
+        $('form').submit(function() {
+            const email = $('#id_email').val();
+            if (!email) {
+                alert('O campo email é obrigatório!');
+                return false;
+            }
+            return true;
+        });
+    });
+</script>
+{% endblock %}
+{% include 'includes/footer.html' %} 
+

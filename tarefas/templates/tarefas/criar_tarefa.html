@@ -1,39 +1,32 @@
 {% load static %}
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Criar Tarefas{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Criar Tarefas{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
-   
-</head>
-<body>
 <!-- Barra de Navegação Principal -->    
 {% include 'includes/header.html' %}
-
-    <div class="container">
-        <h2>CRIAR TAREFAS</h2>
-        <div class="painel">
-        <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'tarefas:tarefas' %}" class="btn_profile">Tarefas</a>
-        
-            <div class="container">
-                {% block content %}
-                    <br><p>Dados das tarefas</p></br>
-
+    {% block content %}
+        <div class="container">
+            <h2>CRIAR TAREFAS</h2>
+            <div class="painel">
+            <!-- Botão "Voltar para Home" -->
+                <a href="{% url 'tarefas:tarefas' %}" class="btn_profile">
+                    <i class="bi bi-pencil-square"></i> arefas
+                </a>
+                <div class="container">
                     <form method="post">
                         {% csrf_token %}
                         {{ form.as_p }}
-                        <button type="submit" class="btn_profile">Salvar</button>
+                        <button type="submit" class="btn_profile">
+                            <i class="bi bi-floppy"></i> Salvar
+                        </button>
                     </form>           
-                {% endblock %}
-            </div>
-        </div>      
-    </div>        
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}    
-</body>
-</html>
+                </div>
+            </div>      
+        </div>
+            
+    <!-- Rodapé -->
+    {% include 'includes/footer.html' %}    
+{% endblock %}

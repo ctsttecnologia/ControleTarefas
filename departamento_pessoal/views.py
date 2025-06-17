@@ -10,12 +10,27 @@ from datetime import datetime
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.views.generic import DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
 
 from xhtml2pdf import pisa
 import csv
-from .forms import AdmissaoForm, DepartamentoForm, CboForm, CargoForm, DocumentosForm, FuncionarioForm, DocumentosEditForm
-from .models import Funcionarios, Admissao, Documentos, Cargos, Departamentos, Cbos
-
+from .forms import (
+    AdmissaoForm, 
+    DepartamentoForm, 
+    CboForm, 
+    CargoForm, 
+    DocumentoForm, 
+    FuncionarioForm
+)
+from .models import (
+    Funcionarios, 
+    Admissao, 
+    Documentos, 
+    Cargos, 
+    Departamentos, 
+    Cbos
+)
 
 
 @login_required
@@ -67,134 +82,101 @@ def cadastrar_funcionario(request):
     
     return render(request, 'departamento_pessoal/cadastrar_funcionario.html', {'form': form})
 
+
 @login_required
 def cadastrar_documentos(request, funcionario_pk):
+
     funcionario = get_object_or_404(Funcionarios, pk=funcionario_pk)
-    departamento = getattr(funcionario, 'departamento', None)
-    admissao = getattr(funcionario, 'admissao', None)
-
-    context = {
-        'form': DocumentosForm(initial={'funcionario_id': funcionario.id}),
-        'departamento': departamento,
-        'funcionario': funcionario,
-        'admissao': admissao
-    }
-    return render(request, 'departamento_pessoal/cadastrar_documentos.html', context)
-
-    # Verifica se já existe documento para este funcionário
-    try:
-        documento_existente = Documentos.objects.get(funcionario=funcionario)
-        return redirect('departamento_pessoal:editar_documentos', funcionario_pk=funcionario.pk)
-    except Documentos.DoesNotExist:
-        pass
-
+    
     if request.method == 'POST':
-        form = DocumentosForm(request.POST, request.FILES)
+        form = DocumentoForm(request.POST, request.FILES)
         if form.is_valid():
             documento = form.save(commit=False)
             documento.funcionario = funcionario
-            
-            # Configura valores padrão
-            documento.sigla = 'DOC'
-            documento.nome = 'Documentos Pessoais'
-            
-            try:
-                documento.departamento = Departamentos.objects.get(nome='Departamento Pessoal')
-            except Departamentos.DoesNotExist:
-                documento.departamento = Departamentos.objects.create(
-                    nome='Departamento Pessoal',
-                    sigla='DP'
-                )
-            
-            try:
-                documento.save()
-                messages.success(request, 'Documentos cadastrados com sucesso!')
-                return redirect('departamento_pessoal:detalhe_funcionario', pk=funcionario.pk)
-            except IntegrityError as e:
-                messages.error(request, f'Erro ao salvar documentos: {str(e)}')
-            except Exception as e:
-                messages.error(request, f'Erro inesperado: {str(e)}')
-        else:
-            messages.error(request, 'Por favor, corrija os erros no formulário.')
+            documento.save()
+            messages.success(request, 'Documento cadastrado com sucesso!')
+            return redirect('detalhe_funcionario', pk=funcionario_pk)
     else:
-        form = DocumentosForm()
-
+        form = DocumentoForm()
+    
     return render(request, 'departamento_pessoal/cadastrar_documentos.html', {
         'form': form,
         'funcionario': funcionario
     })
 
-@login_required
-def cadastrar_documentos(request, funcionario_pk):
-    funcionario = get_object_or_404(Funcionarios, pk=funcionario_pk)
-    
-    # Verifica se já existe documento para este funcionário
-    if Documentos.objects.filter(funcionario=funcionario).exists():
-        return redirect('departamento_pessoal:editar_documentos', funcionario_pk=funcionario.pk)
-
-    departamento = getattr(funcionario, 'departamento', None)
-    admissao = getattr(funcionario, 'admissao', None)
-
-    if request.method == 'POST':
-        form = DocumentosForm(request.POST, request.FILES)
+    def sua_view(request):
         if form.is_valid():
-            documento = form.save(commit=False)
-            documento.funcionario = funcionario
-            documento.sigla = 'DOC'
-            documento.nome = 'Documentos Pessoais'
-            documento.tipo = 'PES'
-            documento.ativo = True
+            form.save()
+            messages.success(request, "Documento cadastrado com sucesso!")
+            return redirect('departamento_pessoal/detalhe_funcionario.html')
+        
+@login_required
+def editar_documentos(request, funcionario_pk, pk):
+    funcionario = get_object_or_404(Funcionarios, pk=funcionario_pk)
+    documento = get_object_or_404(Documentos, pk=pk, funcionario=funcionario)
+    
+    if request.method == 'POST':
+        form = DocumentoForm(request.POST, request.FILES, instance=documento)
+        if form.is_valid():
+            documento = form.save()
             
-            # Define departamento padrão se não existir
-            if not departamento:
-                departamento, created = Departamentos.objects.get_or_create(
-                    nome='Departamento Pessoal',
-                    defaults={'sigla': 'DP'}
-                )
-            documento.departamento = departamento
-
-            try:
-                documento.save()
-                messages.success(request, 'Documentos cadastrados com sucesso!')
-                return redirect('departamento_pessoal:detalhe_funcionario', pk=funcionario.pk)
-            except IntegrityError as e:
-                messages.error(request, f'Erro ao salvar documentos: {str(e)}')
-            except Exception as e:
-                messages.error(request, f'Erro inesperado: {str(e)}')
+            # Atualiza a admissão se este for o documento principal
+            if documento.admissao_vinculada:
+                documento.admissao_vinculada.save()
+                
+            messages.success(request, 'Documento atualizado com sucesso!')
+            return redirect('detalhe_funcionario', pk=funcionario_pk)
     else:
-        initial_data = {
-            'funcionario_id': funcionario.id,
-            'departamento': departamento.id if departamento else None
-        }
-        form = DocumentosForm(initial=initial_data)
-
-    context = {
+        form = DocumentoForm(instance=documento)
+    
+    return render(request, 'editar_documentos.html', {
         'form': form,
-        'funcionario': funcionario,
-        'departamento': departamento,
-        'admissao': admissao,
-        'titulo_pagina': 'Cadastrar Documentos Pessoais'
-    }
-    return render(request, 'departamento_pessoal/cadastrar_documentos.html', context)
+        'documento': documento,
+        'funcionario': funcionario
+    })
+        
+class ListaDocumentosView(ListView):
+    model = Documentos
+    template_name = 'lista_documentos.html'
+    context_object_name = 'documentos'
+    paginate_by = 10
 
+    def lista_funcionarios(request):
+        queryset = Funcionarios.objects.select_related(
+            'logradouro',
+            'admissao',
+            'documento_principal',
+            'admissao__cargo',
+            'admissao__departamento'
+        ).all()
+    
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('funcionario')
+        tipo = self.request.GET.get('tipo')
+        
+        if tipo:
+            queryset = queryset.filter(tipo=tipo)
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tipos_documento'] = Documentos.TIPO_CHOICES
+        return context
 
 class FuncionarioDetailView(DetailView):
-    model = Funcionarios
+    model = Funcionarios  # Certifique-se que Funcionarios está importado corretamente
     template_name = 'departamento_pessoal/detalhe_funcionario.html'
     context_object_name = 'funcionario'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Você pode adicionar mais contexto aqui se necessário
+        funcionario = self.get_object()  # Obtém o objeto funcionário
+        
+        context.update({
+            'matricula': funcionario.admissao.matricula if hasattr(funcionario, 'admissao') and funcionario.admissao else None
+        })
         return context
 
-@login_required
-def detalhe_funcionario(request, pk):
-    funcionario = get_object_or_404(Funcionarios, pk=pk)
-    context = {
-        'funcionario': funcionario,
-    }
-    return render(request, 'departamento_pessoal/detalhe_funcionario.html', context)
 
 @login_required
 @permission_required('departamento_pessoal.change_funcionarios', raise_exception=True)

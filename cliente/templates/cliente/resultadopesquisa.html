@@ -1,4 +1,4 @@
-
+{% extends 'base.html' %}
 
 {% load static %}
 
@@ -11,8 +11,6 @@
     <title>{% block title %}Cliente{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">  
     
-</head>
-<body>
     <div class="container">
         <h2>CLIENTE</h2>
         {% if user.is_authenticated %}
@@ -27,12 +25,11 @@
             <a href="{% url 'home' %}" class="btn-home">Home</a>
             <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
             <a href="{% url 'cadastro_cliente' %}" class="btn_cadastro">Cadastrar</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
-        
-        </div>
+            <a href="{% url 'profile' %}" class="btn_profile">Menu</a>
+        </div> 
+{% block content %}      
         <div class="painel1">
             {% csrf_token %}
-             {% block content %}
                 <div class="container">
                     <h2>Resultados da Pesquisa</h2>
                     {% if cliente %}
@@ -69,11 +66,8 @@
                         <p>Nenhum cliente encontrado.</p>
                     {% endif %}
                 </div>
-            {% endblock %}
-
-            {% load static %}
+{% endblock %}
         </div>                       
-        
     </div>
 </body> 
 </html>

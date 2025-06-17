@@ -1,11 +1,12 @@
 from django import forms
 from django.shortcuts import render, get_object_or_404
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email, RegexValidator, MinLengthValidator, RegexValidator
+from django.core.validators import validate_email, RegexValidator, MinLengthValidator, RegexValidator, FileExtensionValidator
 
 from .models import Funcionarios, Admissao, Documentos, Cargos, Departamentos, Cbos
 from localflavor.br.forms import BRStateSelect
 import re  # Para usar expressões regulares na validação
+
 
 from logradouro.constant import ESTADOS_BRASIL
 
@@ -87,10 +88,78 @@ class AdmissaoForm(forms.ModelForm):
         data = self.cleaned_data.get('dias_semana', [])
         return ','.join(data)
 
-class DocumentosBaseForm(forms.ModelForm):
-    """
-    Classe base com funcionalidades comuns a ambos os formulários
-    """
+class DocumentoForm(forms.ModelForm):
+    class Meta:
+        model = Documentos
+        fields = '__all__'
+        widgets = {
+            'data_criacao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'uf': forms.Select(attrs={'class': 'form-select'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'sigla': forms.TextInput(attrs={'class': 'form-control'}),
+            'cpf': forms.TextInput(attrs={'class': 'form-control cpf-mask'}),
+            'pis': forms.TextInput(attrs={'class': 'form-control pis-mask'}),
+            'ctps': forms.TextInput(attrs={'class': 'form-control ctps-mask'}),
+            'rg': forms.TextInput(attrs={'class': 'form-control'}),
+            'emissor': forms.TextInput(attrs={'class': 'form-control'}),
+            'reservista': forms.TextInput(attrs={'class': 'form-control'}),
+            'titulo_eleitor': forms.TextInput(attrs={'class': 'form-control'}),
+            'anexo_cpf': forms.FileInput(attrs={'class': 'form-control'}),
+            'anexo_ctps': forms.FileInput(attrs={'class': 'form-control'}),
+            'anexo_pis': forms.FileInput(attrs={'class': 'form-control'}),
+            'anexo_rg': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Configuração do centro_custo
+        self.fields['centro_custo'].required = False
+        self.fields['centro_custo'].label = "Centro de Custo"
+        self.fields['centro_custo'].widget.attrs.update({'class': 'form-select'})
+        
+        # Adicionando validações de arquivo
+        self.fields['anexo_cpf'].validators.append(
+            FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])
+        )
+        self.fields['anexo_ctps'].validators.append(
+            FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])
+        )
+        self.fields['anexo_pis'].validators.append(
+            FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])
+        )
+        self.fields['anexo_rg'].validators.append(
+            FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])
+        )
+        
+        # Adicionando placeholders
+        self.fields['cpf'].widget.attrs.update({'placeholder': '999.999.999-99'})
+        self.fields['pis'].widget.attrs.update({'placeholder': '999.99999.99-9'})
+        self.fields['ctps'].widget.attrs.update({'placeholder': '9999999/99'})
+        
+        # Tornando campos obrigatórios condicionalmente
+        if self.instance and self.instance.tipo:
+            self.set_required_fields(self.instance.tipo)
+    
+    def set_required_fields(self, tipo_documento):
+        required_fields = {
+            'CPF': ['cpf', 'anexo_cpf'],
+            'PIS': ['pis', 'anexo_pis'],
+            'CTPS': ['ctps', 'anexo_ctps'],
+            'RG': ['rg', 'uf', 'emissor', 'anexo_rg'],
+            'RES': ['reservista'],
+            'TIT': ['titulo_eleitor'],
+        }
+        # Implementação da lógica para tornar campos obrigatórios
+        fields_to_require = required_fields.get(tipo_documento, [])
+        for field_name in fields_to_require:
+            if field_name in self.fields:
+                self.fields[field_name].required = True
+        
+    #Classe base com funcionalidades comuns a ambos os formulários """
     def clean_cpf(self):
         cpf = self.cleaned_data.get('cpf', '')
         cpf_numeros = ''.join(filter(str.isdigit, cpf))
@@ -212,223 +281,6 @@ class DocumentosBaseForm(forms.ModelForm):
             if ext not in ['pdf', 'jpg', 'jpeg', 'png']:
                 raise ValidationError('Formato de arquivo inválido. Use PDF, JPG ou PNG')
         return anexo
-
-
-class DocumentosForm(DocumentosBaseForm):
-    # Campos básicos
-    cpf = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control cpf-mask',
-            'placeholder': '000.000.000-00',
-            'data-mask': '000.000.000-00'
-        }),
-        max_length=14,
-        required=True,
-        help_text="Informe o CPF no formato: 000.000.000-00"
-    )
-    
-    rg = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control rg-mask',
-            'placeholder': '00.000.000-0',
-            'data-mask': '00.000.000-0'
-        }),
-        required=True,
-        max_length=12,
-        help_text="Formato: 00.000.000-0 (com dígito verificador)"
-    )
-    
-    emissor = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'SSP'
-        }),
-        required=True,
-        max_length=6,
-        validators=[
-            RegexValidator(
-                r'^[A-Z]{2,6}$',
-                message="Emissor deve conter apenas letras maiúsculas (2 a 6 caracteres)"
-            )
-        ]
-    )
-    
-    uf = forms.ChoiceField(
-        choices=ESTADOS_BRASIL,
-        widget=forms.Select(attrs={
-            'class': 'form-select',
-            'required': 'required'
-        }),
-        label='UF Emissor *',
-        initial=''
-    )
-    
-    # Documentos trabalhistas
-    pis = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control pis-mask',
-            'placeholder': '000.00000.00-0',
-            'data-mask': '000.00000.00-0'
-        }),
-        required=False,
-        max_length=14,
-        help_text="Formato: 000.00000.00-0"
-    )
-    
-    ctps = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control ctps-mask',
-            'placeholder': '0000000',
-            'data-mask': '0000000'
-        }),
-        required=False,
-        max_length=7,
-        help_text="Número da CTPS (apenas dígitos)"
-    )
-    
-    # Documentos militares e eleitorais
-    titulo_eleitor = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control titulo-mask',
-            'placeholder': '000000000000',
-            'data-mask': '000000000000'
-        }),
-        required=False,
-        max_length=12,
-        help_text="12 dígitos (sem pontos ou espaços)"
-    )
-    
-    reservista = forms.CharField(
-        widget=forms.TextInput(attrs={
-            'class': 'form-control reservista-mask',
-            'placeholder': '000000000000',
-            'data-mask': '000000000000'
-        }),
-        required=False,
-        max_length=12,
-        help_text="12 dígitos (sem formatação)"
-    )
-    
-    # Campos de anexos
-    anexo_cpf = forms.FileField(
-        widget=forms.ClearableFileInput(attrs={
-            'class': 'form-control',
-            'accept': 'application/pdf,image/jpeg,image/png'
-        }),
-        required=False,
-        help_text="Anexar cópia do CPF (PDF, JPG ou PNG, máximo 5MB)"
-    )
-    
-    anexo_rg = forms.FileField(
-        widget=forms.ClearableFileInput(attrs={
-            'class': 'form-control',
-            'accept': 'application/pdf,image/jpeg,image/png'
-        }),
-        required=False,
-        help_text="Anexar cópia do RG (PDF, JPG ou PNG, máximo 5MB)"
-    )
-    
-    anexo_pis = forms.FileField(
-        widget=forms.ClearableFileInput(attrs={
-            'class': 'form-control',
-            'accept': 'application/pdf,image/jpeg,image/png'
-        }),
-        required=False,
-        help_text="Anexar cópia do PIS (PDF, JPG ou PNG, máximo 5MB)"
-    )
-    
-    anexo_ctps = forms.FileField(
-        widget=forms.ClearableFileInput(attrs={
-            'class': 'form-control',
-            'accept': 'application/pdf,image/jpeg,image/png'
-        }),
-        required=False,
-        help_text="Anexar cópia da CTPS (PDF, JPG ou PNG, máximo 5MB)"
-    )
-
-    class Meta:
-        model = Documentos
-        fields = '__all__'
-        widgets = {
-            'uf': forms.Select(attrs={'class': 'form-select'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Configura classes CSS para todos os campos
-        for field_name, field in self.fields.items():
-            if 'class' not in field.widget.attrs:
-                field.widget.attrs['class'] = 'form-control'
-            
-            # Configura campos obrigatórios
-            if field_name in ['cpf', 'rg', 'emissor', 'uf']:
-                field.required = True
-                field.widget.attrs['required'] = 'required'
-
-
-class DocumentosEditForm(DocumentosBaseForm):
-    class Meta:
-        db_table = 'documentos'
-        model = Documentos
-        fields = '__all__'
-        exclude = ['funcionario', 'data_criacao', 'data_atualizacao']
-        widgets = {
-            'cpf': forms.TextInput(attrs={
-                'class': 'form-control cpf-mask',
-                'data-mask': '000.000.000-00',
-                'placeholder': '000.000.000-00'
-            }),
-            'rg': forms.TextInput(attrs={
-                'class': 'form-control rg-mask',
-                'data-mask': '00.000.000-0',
-                'placeholder': '00.000.000-0'
-            }),
-            'emissor': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'SSP'
-            }),
-            'uf': forms.Select(attrs={
-                'class': 'form-select',
-                'required': True
-            }),
-            'pis': forms.TextInput(attrs={
-                'class': 'form-control pis-mask',
-                'data-mask': '000.00000.00-0',
-                'placeholder': '000.00000.00-0'
-            }),
-            'ctps': forms.TextInput(attrs={
-                'class': 'form-control ctps-mask',
-                'data-mask': '0000000',
-                'placeholder': '0000000'
-            }),
-            'titulo_eleitor': forms.TextInput(attrs={
-                'class': 'form-control titulo-mask',
-                'data-mask': '000000000000',
-                'placeholder': '000000000000'
-            }),
-            'reservista': forms.TextInput(attrs={
-                'class': 'form-control reservista-mask',
-                'data-mask': '000000000000',
-                'placeholder': '000000000000'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['uf'].choices = ESTADOS_BRASIL
-        
-        # Configura campos obrigatórios
-        for field in ['cpf', 'rg', 'emissor', 'uf']:
-            self.fields[field].required = True
-            self.fields[field].widget.attrs['required'] = 'required'
-        
-        # Configura campos de arquivo
-        for field_name in ['anexo_cpf', 'anexo_rg', 'anexo_pis', 'anexo_ctps']:
-            self.fields[field_name].widget.attrs.update({
-                'class': 'form-control',
-                'accept': '.pdf,.jpg,.jpeg,.png'
-            })
 
 class DepartamentoForm(forms.ModelForm):
     class Meta:

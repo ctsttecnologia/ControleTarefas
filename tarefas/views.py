@@ -1,31 +1,39 @@
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.csrf import csrf_exempt, csrf_protect, requires_csrf_token
-from django.http import HttpResponse
-from django.template.loader import get_template
-from django.contrib.auth.models import User
-from django.http import JsonResponse
-from django.db.models import Count, Q
-from datetime import datetime, timedelta
-from django.views.decorators.http import require_POST
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.urls import reverse
 from django.conf import settings
+from django.db.models import Count, Q
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.views.generic import UpdateView
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_http_methods, require_POST
 
-from .models import Tarefas, Comentario, HistoricoStatus
-from .forms import TarefaForm, ComentarioForm
+# Para geração de PDF
+from django.template.loader import get_template
 from xhtml2pdf import pisa
+
+# Para geração de DOCX
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
-from collections import defaultdict
-from django.utils import timezone
+from .models import Tarefas, Comentario, HistoricoStatus
+from .forms import TarefaForm, ComentarioForm
+import logging
+
+# Outras bibliotecas
+from datetime import datetime, timedelta
 import io
 import os
 
 
+
+logger = logging.getLogger(__name__)
 
 # Constantes para status e cores
 STATUS_MAP = {
@@ -50,25 +58,32 @@ PRIORIDADE_COLORS = {
     'baixa': {'cor': '#1cc88a', 'cor_hover': '#17a673'},
 }
 
+User = get_user_model()
 
-@login_required # retrição de autenticação
+
+@login_required
 def tarefas(request):
+    """Lista todas as tarefas (para admin ou superusuário)"""
+    if not request.user.is_superuser:
+        return redirect('tarefas:listar_tarefas')
+    
     tarefas = Tarefas.objects.all().order_by('-data_criacao')
     return render(request, 'tarefas/tarefas.html', {'tarefas': tarefas})
 
+"""Cria uma nova tarefa"""
 @login_required
 def criar_tarefa(request):
-    """Cria uma nova tarefa"""
     if request.method == 'POST':
         form = TarefaForm(request.POST)
         if form.is_valid():
             tarefa = form.save(commit=False)
-            tarefa.usuario = request.user
+            tarefa.usuario = request.user  # Define o usuário logado
             tarefa.save()
             messages.success(request, 'Tarefa criada com sucesso!')
             return redirect('tarefas:listar_tarefas')
     else:
         form = TarefaForm()
+    
     return render(request, 'tarefas/criar_tarefa.html', {'form': form})
 
 """Edita uma tarefa existente"""
@@ -77,27 +92,36 @@ def editar_tarefa(request, pk):
     tarefa = get_object_or_404(Tarefas, pk=pk, usuario=request.user)
     
     if request.method == 'POST':
-        form = TarefaForm(request.POST, instance=tarefa)  # Passa a instância para o formulário
+        form = TarefaForm(request.POST, instance=tarefa)
         if form.is_valid():
             form.save()
             messages.success(request, 'Tarefa atualizada com sucesso!')
-            return redirect('tarefas:lista_tarefas')
+            return redirect('tarefas:tarefa_detail', pk=pk)
     else:
-        form = TarefaForm(instance=tarefa)  # Pré-preenche o formulário com os dados existentes
+        form = TarefaForm(instance=tarefa)
     
     return render(request, 'tarefas/editar_tarefa.html', {
         'form': form,
         'tarefa': tarefa,
-    })    
+    })
 
 @login_required
 def excluir_tarefa(request, pk):
-    """Exclui uma tarefa"""
+    """View para excluir uma tarefa com confirmação"""
     tarefa = get_object_or_404(Tarefas, pk=pk, usuario=request.user)
+    
     if request.method == 'POST':
-        tarefa.delete()
-        messages.success(request, 'Tarefa excluída com sucesso!')
-        return redirect('tarefas:listar_tarefas')
+        try:
+            tarefa.delete()
+            logger.info(f'Tarefa {pk} excluída por {request.user}')
+            messages.success(request, 'Tarefa excluída com sucesso!')
+            return redirect('tarefas:listar_tarefas')
+        except Exception as e:
+            logger.error(f'Erro ao excluir tarefa {pk}: {str(e)}')
+            messages.error(request, 'Erro ao excluir tarefa!')
+            return redirect('tarefas:tarefa_detail', pk=pk)
+    
+    # Se for GET, mostrar página de confirmação
     return render(request, 'tarefas/confirmar_exclusao.html', {'tarefa': tarefa})
 
 @login_required  # Garante que apenas usuários logados acessem o perfil
@@ -106,15 +130,25 @@ def profile_view(request):
 
 @login_required
 def listar_tarefas(request):
-    """Lista todas as tarefas do usuário"""
-    tarefas = Tarefas.objects.filter(usuario=request.user).order_by('-data_criacao')
-    return render(request, 'tarefas/listar_tarefas.html', {'tarefas': tarefas})
+    # Obter as choices diretamente do modelo
+    status_choices = Tarefas.STATUS_CHOICES
+    prioridade_choices = Tarefas.PRIORIDADE_CHOICES
+    
+    # Restante da lógica da view...
+    tarefas = Tarefas.objects.all()
+    
+    return render(request, 'tarefas/listar_tarefas.html', {
+        'tarefas': tarefas,
+        'status_choices': status_choices,
+        'prioridade_choices': prioridade_choices,
+        # outros contextos...
+    })
 
 @login_required
 def tarefa_detail(request, pk):
     """Detalhes de uma tarefa específica"""
     tarefa = get_object_or_404(Tarefas, pk=pk, usuario=request.user)
-    comentarios = tarefa.comentarios.all().order_by('-criado_em')  # Adicione esta linha
+    comentarios = tarefa.comentarios.all().order_by('-criado_em')
     
     if request.method == 'POST':
         form = ComentarioForm(request.POST)
@@ -131,11 +165,19 @@ def tarefa_detail(request, pk):
     return render(request, 'tarefas/tarefa_detail.html', {
         'tarefa': tarefa,
         'form': form,
-        'comentarios': comentarios,  # Adicione esta linha
+        'comentarios': comentarios,
     })
 
+class TarefaUpdateView(UserPassesTestMixin, UpdateView):
+    model = Tarefas
+    form_class = TarefaForm
+    
+    def test_func(self):
+        return self.get_object().usuario == self.request.user
+    
+
 @login_required
-@require_POST
+@require_POST  # Agora funcionará corretamente
 def atualizar_status(request, pk):
     tarefa = get_object_or_404(Tarefas, pk=pk)
     novo_status = request.POST.get('status')
@@ -153,11 +195,11 @@ def atualizar_status(request, pk):
         tarefa.status = novo_status
         tarefa.save()
         
-        # Enviar notificação (implementar lógica de notificação)
         messages.success(request, f'Status da tarefa atualizado para {tarefa.get_status_display()}')
     
-    return redirect('tarefa_detail', pk=pk)
+    return redirect('tarefas:tarefa_detail', pk=pk)
 
+@login_required
 def calendario_tarefas(request):
     tarefas = Tarefas.objects.all()
     eventos = []
