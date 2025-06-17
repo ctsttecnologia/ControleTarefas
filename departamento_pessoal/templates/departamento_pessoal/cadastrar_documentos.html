@@ -2,324 +2,266 @@
 {% load static %}
 {% load widget_tweaks %}
 
-{% block content %}
-<!-- CSS -->
+{% block css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="{% static 'cssdp/stylesfuncionario.css' %}">
+<link rel="stylesheet" href="{% static 'cssdp/stylesdocumentos.css' %}">
+{% endblock %}
 
 <!-- Barra de Navegação -->
 {% include 'includes/header.html' %}
 
-<div class="container mt-4">
-    <!-- Mensagens -->
-    {% if messages %}
-    <div class="row mb-3">
+<!-- Mensagens do sistema -->
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn btn-navigation">
+    <i class="fas fa-arrow-left"></i> Voltar
+</a>
+<a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+    <i class="fas fa-users"></i> Funcionários
+</a>
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
         <div class="col-12">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-2">Cadastrar Novo Documento</h4><h4 class="mb-0" align="center">{{ funcionario.nome }}</h4> 
+                </div>
+
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="documento-form">
+                        {% csrf_token %}
+                        
+                        <!-- Exibir erros não relacionados a campos específicos -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="form-section">
+                            <h5 class="section-title">Informações Básicas</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo de Documento*</label>
+                                    {{ form.tipo|add_class:"form-control" }}
+                                    {% if form.tipo.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.tipo.errors.as_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.data_criacao.id_for_label }}" class="form-label">Data de Criação*</label>
+                                    {{ form.data_criacao|add_class:"form-control" }}
+                                    {% if form.data_criacao.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.data_criacao.errors.as_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.centro_custo.id_for_label }}" class="form-label">Centro de Custo</label>
+                                    {{ form.centro_custo|add_class:"form-control" }}
+                                    <small class="text-muted">(Opcional)</small>
+                                </div>
+                                <div class="col-md-4 mb-3 d-flex align-items-end">
+                                    <div class="form-check form-switch">
+                                        {{ form.ativo|add_class:"form-check-input" }}
+                                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section" id="documentos-section">
+                            <h5 class="section-title">Detalhes do Documento</h5>
+                            <div class="row">
+                                <div class="col-md-4 mb-3" id="cpf-field">
+                                    <label for="{{ form.cpf.id_for_label }}" class="form-label">CPF</label>
+                                    {{ form.cpf|add_class:"form-control cpf-mask" }}
+                                    {% if form.cpf.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.cpf.errors.as_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3" id="pis-field">
+                                    <label for="{{ form.pis.id_for_label }}" class="form-label">PIS/PASEP</label>
+                                    {{ form.pis|add_class:"form-control pis-mask" }}
+                                </div>
+                                <div class="col-md-4 mb-3" id="ctps-field">
+                                    <label for="{{ form.ctps.id_for_label }}" class="form-label">CTPS</label>
+                                    {{ form.ctps|add_class:"form-control ctps-mask" }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 mb-3" id="rg-field">
+                                    <label for="{{ form.rg.id_for_label }}" class="form-label">RG</label>
+                                    {{ form.rg|add_class:"form-control rg-mask" }}
+                                </div>
+                                <div class="col-md-1 mb-3" id="rg-digito-field">
+                                    <label for="rg_digito" class="form-label">DV</label>
+                                    <input type="text" name="rg_digito" id="rg_digito" class="form-control" maxlength="1" placeholder="X">
+                                </div>
+                                <div class="col-md-2 mb-3" id="uf-field">
+                                    <label for="{{ form.uf.id_for_label }}" class="form-label">UF</label>
+                                    {{ form.uf|add_class:"form-control" }}
+                                </div>
+                                <div class="col-md-3 mb-3" id="emissor-field">
+                                    <label for="{{ form.emissor.id_for_label }}" class="form-label">Órgão Emissor</label>
+                                    {{ form.emissor|add_class:"form-control" }}
+                                </div>
+                                <div class="col-md-3 mb-3" id="reservista-field">
+                                    <label for="{{ form.reservista.id_for_label }}" class="form-label">Reservista</label>
+                                    {{ form.reservista|add_class:"form-control" }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3" id="titulo-field">
+                                    <label for="{{ form.titulo_eleitor.id_for_label }}" class="form-label">Título de Eleitor</label>
+                                    {{ form.titulo_eleitor|add_class:"form-control" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h5 class="section-title">Anexos</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3" id="anexo-cpf-field">
+                                    <label for="{{ form.anexo_cpf.id_for_label }}" class="form-label">Anexo CPF</label>
+                                    {{ form.anexo_cpf|add_class:"form-control" }}
+                                    {% if form.anexo_cpf.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.anexo_cpf.errors.as_text }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3" id="anexo-pis-field">
+                                    <label for="{{ form.anexo_pis.id_for_label }}" class="form-label">Anexo PIS</label>
+                                    {{ form.anexo_pis|add_class:"form-control" }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3" id="anexo-ctps-field">
+                                    <label for="{{ form.anexo_ctps.id_for_label }}" class="form-label">Anexo CTPS</label>
+                                    {{ form.anexo_ctps|add_class:"form-control" }}
+                                </div>
+                                <div class="col-md-6 mb-3" id="anexo-rg-field">
+                                    <label for="{{ form.anexo_rg.id_for_label }}" class="form-label">Anexo RG</label>
+                                    {{ form.anexo_rg|add_class:"form-control" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex mt-4">
+                            <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-submit">Salvar Documento</button>
+                        </div>
+                    </form>
+                </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Cabeçalho -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="text-center"><i class="fas fa-id-card me-2"></i>Cadastro de Documentos Pessoais</h2>
-            {% if funcionario %}
-            <p class="text-center text-muted">Funcionário: <strong>{{ funcionario.nome }}</strong></p>
-            {% endif %}
-        </div>
-    </div>
-    
-    <!-- Navegação -->
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between">
-            <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Voltar
-            </a>
-            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-primary">
-                <i class="fas fa-users me-2"></i>Lista de Funcionários
-            </a>
-        </div>
-    </div>
-
-    <!-- Formulário -->
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <form method="post" enctype="multipart/form-data" novalidate>
-                {% csrf_token %}
-                
-                <!-- Campos Ocultos -->
-                <input type="hidden" name="funcionario_id" value="{{ funcionario.id }}">
-                <input type="hidden" name="sigla" value="DOC">
-                <input type="hidden" name="nome" value="Documentos Pessoais">
-                <input type="hidden" name="tipo" value="PES">
-                <input type="hidden" name="ativo" value="1">
-                {% if departamento %}
-                <input type="hidden" name="departamento" value="{{ departamento.id }}">
-                {% endif %}
-
-                <!-- Seção 1: Documentos Básicos -->
-                <div class="mb-5">
-                    <h4 class="border-bottom pb-2 mb-4">
-                        <i class="fas fa-id-card text-primary me-2"></i>Documentos Básicos
-                    </h4>
-                    
-                    <div class="row g-3">
-                        <!-- CPF -->
-                        <div class="col-md-4">
-                            <label for="{{ form.cpf.id_for_label }}" class="form-label">CPF *</label>
-                            {{ form.cpf|add_class:"form-control cpf-mask"|attr:"placeholder:000.000.000-00" }}
-                            {% if form.cpf.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.cpf.errors.as_text }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">Formato: 000.000.000-00</small>
-                        </div>
-                        
-                        <!-- RG -->
-                        <div class="col-md-4">
-                            <label for="{{ form.rg.id_for_label }}" class="form-label">RG *</label>
-                            {{ form.rg|add_class:"form-control rg-mask"|attr:"placeholder:00.000.000-X" }}
-                            {% if form.rg.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.rg.errors.as_text }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">Formato: 00.000.000-0 ou 00.000.000-X</small>
-                        </div>
-                        
-                        <!-- Emissor -->
-                        <div class="col-md-2">
-                            <label for="{{ form.emissor.id_for_label }}" class="form-label">Emissor *</label>
-                            {{ form.emissor|add_class:"form-control"|attr:"placeholder:SSP" }}
-                            {% if form.emissor.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.emissor.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- UF -->
-                        <div class="col-md-2">
-                            <label for="{{ form.uf.id_for_label }}" class="form-label">UF *</label>
-                            {{ form.uf|add_class:"form-select" }}
-                            {% if form.uf.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.uf.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Título de Eleitor -->
-                        <div class="col-md-4">
-                            <label for="{{ form.titulo_eleitor.id_for_label }}" class="form-label">Título de Eleitor</label>
-                            {{ form.titulo_eleitor|add_class:"form-control titulo-mask"|attr:"placeholder:000000000000" }}
-                            {% if form.titulo_eleitor.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.titulo_eleitor.errors.as_text }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">12 dígitos</small>
-                        </div>
-                        
-                        <!-- Reservista -->
-                        <div class="col-md-4">
-                            <label for="{{ form.reservista.id_for_label }}" class="form-label">Certificado de Reservista</label>
-                            {{ form.reservista|add_class:"form-control reservista-mask"|attr:"placeholder:000000000000" }}
-                            {% if form.reservista.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.reservista.errors.as_text }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">12 dígitos</small>
-                        </div>
-                        
-                        <!-- Centro de Custo -->
-                        <div class="col-md-4">
-                            <label for="{{ form.centro_custo.id_for_label }}" class="form-label">Centro de Custo</label>
-                            {{ form.centro_custo|add_class:"form-control" }}
-                            {% if form.centro_custo.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.centro_custo.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seção 2: Documentos Trabalhistas -->
-                <div class="mb-5">
-                    <h4 class="border-bottom pb-2 mb-4">
-                        <i class="fas fa-briefcase text-primary me-2"></i>Documentos Trabalhistas
-                    </h4>
-                    
-                    <div class="row g-3">
-                        <!-- PIS -->
-                        <div class="col-md-6">
-                            <label for="{{ form.pis.id_for_label }}" class="form-label">PIS/PASEP/NIT</label>
-                            {{ form.pis|add_class:"form-control pis-mask"|attr:"placeholder:000.00000.00-0" }}
-                            {% if form.pis.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.pis.errors.as_text }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">Formato: 000.00000.00-0</small>
-                        </div>
-                        
-                        <!-- CTPS -->
-                        <div class="col-md-6">
-                            <label for="{{ form.ctps.id_for_label }}" class="form-label">CTPS (Número/Série/UF)</label>
-                            {{ form.ctps|add_class:"form-control ctps-mask"|attr:"placeholder:0000000 000/UF" }}
-                            {% if form.ctps.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.ctps.errors.as_text }}
-                            </div>
-                            {% endif %}
-                            <small class="form-text text-muted">Formato: NNNNNNN SSS/UF</small>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seção 3: Anexos -->
-                <div class="mb-4">
-                    <h4 class="border-bottom pb-2 mb-4">
-                        <i class="fas fa-paperclip text-primary me-2"></i>Anexos dos Documentos
-                    </h4>
-                    
-                    <div class="row g-3">
-                        <!-- Anexo CPF -->
-                        <div class="col-md-3">
-                            <label for="{{ form.anexo_cpf.id_for_label }}" class="form-label">CPF (PDF/Imagem)</label>
-                            {{ form.anexo_cpf|add_class:"form-control" }}
-                            {% if form.anexo_cpf.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.anexo_cpf.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Anexo RG -->
-                        <div class="col-md-3">
-                            <label for="{{ form.anexo_rg.id_for_label }}" class="form-label">RG (PDF/Imagem)</label>
-                            {{ form.anexo_rg|add_class:"form-control" }}
-                            {% if form.anexo_rg.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.anexo_rg.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Anexo PIS -->
-                        <div class="col-md-3">
-                            <label for="{{ form.anexo_pis.id_for_label }}" class="form-label">PIS (PDF/Imagem)</label>
-                            {{ form.anexo_pis|add_class:"form-control" }}
-                            {% if form.anexo_pis.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.anexo_pis.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Anexo CTPS -->
-                        <div class="col-md-3">
-                            <label for="{{ form.anexo_ctps.id_for_label }}" class="form-label">CTPS (PDF/Imagem)</label>
-                            {{ form.anexo_ctps|add_class:"form-control" }}
-                            {% if form.anexo_ctps.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.anexo_ctps.errors.as_text }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Botões -->
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <button type="submit" class="btn btn-primary me-md-2">
-                        <i class="fas fa-save me-2"></i>Salvar Documentos
-                    </button>
-                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" class="btn btn-secondary">
-                        <i class="fas fa-times me-2"></i>Cancelar
-                    </a>
-                </div>
-            </form>
         </div>
     </div>
 </div>
+{% endblock %}
 
-<!-- Scripts -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/plugins/jquery.mask.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-$(document).ready(function() {
-    // Máscaras
-    $('.cpf-mask').mask('000.000.000-00');
-    $('.rg-mask').mask('00.000.000-0');
-    $('.titulo-mask').mask('000000000000');
-    $('.reservista-mask').mask('000000000000');
-    $('.pis-mask').mask('000.00000.00-0');
-    $('.ctps-mask').mask('0000000 000/AA', {
-        translation: {
-            'A': {pattern: /[A-Za-z]/}
-        }
-    });
+    $(document).ready(function() {
+        // Inicializa Select2
+        $('select').select2({
+            theme: 'bootstrap4',
+            placeholder: "Selecione uma opção",
+            allowClear: true
+        });
 
-    // Validação ao enviar
-    $('form').submit(function() {
-        let valid = true;
-        
-        // Remove máscaras para validação
-        $('.cpf-mask').unmask();
-        $('.rg-mask').unmask();
-        $('.titulo-mask').unmask();
-        $('.reservista-mask').unmask();
-        $('.pis-mask').unmask();
-        
-        // Valida campos obrigatórios
-        $('[required]').each(function() {
-            if (!$(this).val()) {
-                $(this).addClass('is-invalid');
-                if (!$(this).next('.invalid-feedback').length) {
-                    $(this).after('<div class="invalid-feedback">Este campo é obrigatório</div>');
-                }
-                valid = false;
+        // Máscaras para os campos
+        $('.cpf-mask').mask('000.000.000-00');
+        $('.pis-mask').mask('000.00000.00-0');
+        $('.ctps-mask').mask('0000000/00');
+        $('.rg-mask').mask('00.000.000');
+
+        // Adiciona máscara para o dígito verificador do RG
+        $('#rg_digito').mask('X', {
+            translation: {
+                'X': { pattern: /[0-9Xx]/ }
             }
         });
-        
-        // Validação específica para CPF (11 dígitos)
-        const cpf = $('#id_cpf').val().replace(/\D/g, '');
-        if (cpf.length !== 11 && $('#id_cpf').is('[required]')) {
-            $('#id_cpf').addClass('is-invalid');
-            $('#id_cpf').next('.invalid-feedback').text('CPF deve ter 11 dígitos');
-            valid = false;
+
+        // Mostrar/ocultar campos baseado no tipo de documento
+        function toggleFields() {
+            const tipo = $('#id_tipo').val();
+            
+            // Oculta todos os campos primeiro
+            $('#cpf-field, #pis-field, #ctps-field, #rg-field, #rg-digito-field, #uf-field, #emissor-field, #reservista-field, #titulo-field').hide();
+            $('#anexo-cpf-field, #anexo-pis-field, #anexo-ctps-field, #anexo-rg-field').hide();
+            
+            // Mostra os campos relevantes baseado no tipo
+            switch(tipo) {
+                case 'CPF':
+                    $('#cpf-field, #anexo-cpf-field').show();
+                    break;
+                case 'PIS':
+                    $('#pis-field, #anexo-pis-field').show();
+                    break;
+                case 'CTPS':
+                    $('#ctps-field, #anexo-ctps-field').show();
+                    break;
+                case 'RG':
+                    $('#rg-field, #rg-digito-field, #uf-field, #emissor-field, #anexo-rg-field').show();
+                    break;
+                case 'RES':
+                    $('#reservista-field').show();
+                    break;
+                case 'TIT':
+                    $('#titulo-field').show();
+                    break;
+            }
         }
+
+        // Executa na carga inicial
+        toggleFields();
         
-        // Reaplica máscaras
-        $('.cpf-mask').mask('000.000.000-00');
-        $('.rg-mask').mask('00.000.000-0');
-        $('.titulo-mask').mask('000000000000');
-        $('.reservista-mask').mask('000000000000');
-        $('.pis-mask').mask('000.00000.00-0');
-        
-        return valid;
+        // E sempre que o tipo mudar
+        $('#id_tipo').change(toggleFields);
+
+        // Verifica se há mensagem de sucesso na URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.has('success')) {
+            Swal.fire({
+                title: 'Sucesso!',
+                text: 'Documento cadastrado com sucesso.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Remove o parâmetro da URL sem recarregar a página
+                window.history.replaceState({}, document.title, window.location.pathname);
+            });
+        }
     });
-    
-    // Limpa erros ao digitar
-    $('input, select').on('input change', function() {
-        $(this).removeClass('is-invalid');
-        $(this).next('.invalid-feedback').remove();
-    });
-});
 </script>
+{% endblock %}
 
 <!-- Rodapé -->
 {% include 'includes/footer.html' %}
-{% endblock %}
+

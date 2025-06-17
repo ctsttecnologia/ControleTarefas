@@ -1,0 +1,111 @@
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% block conteudo %}
+<div class="confirmation-container">
+    <div class="confirmation-card">
+        <header class="confirmation-header">
+            <h2 class="confirmation-title">
+                <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão
+            </h2>
+        </header>
+        
+        <div class="confirmation-body">
+            <div class="confirmation-message">
+                <p>Você está prestes a excluir permanentemente o grupo:</p>
+                <div class="alert alert-warning">
+                    <strong><i class="fas fa-users me-2"></i>{{ object.name }}</strong>
+                </div>
+                <p class="text-muted">Esta ação não pode ser desfeita.</p>
+            </div>
+            
+            <div class="confirmation-actions">
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="fas fa-trash-alt me-2"></i>Confirmar Exclusão
+                    </button>
+                </form>
+                
+                <a href="{% url 'usuario:grupo_lista' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </a>
+            </div>
+        </div>
+        
+        <footer class="confirmation-footer">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i> Todos os usuários deste grupo perderão as permissões associadas.
+            </small>
+        </footer>
+    </div>
+</div>
+
+<style>
+    .confirmation-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        background-color:rgba(157, 206, 255, 0.14);
+    }
+    
+    .confirmation-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        border: none;
+
+    }
+    
+    .confirmation-header {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .confirmation-title {
+        color: #dc3545;
+        margin: 0;
+        font-weight: 600;
+    }
+    
+    .confirmation-body {
+        padding: 2rem;
+    }
+    
+    .confirmation-message {
+        margin-bottom: 2rem;
+    }
+    
+    .confirmation-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 2rem;
+    }
+    
+    .confirmation-footer {
+        padding: 1rem 2rem;
+        background-color: #f8f9fa;
+        border-top: 1px solid #eee;
+    }
+    
+    @media (max-width: 576px) {
+        .confirmation-body {
+            padding: 1.5rem;
+        }
+        
+        .confirmation-actions {
+            flex-direction: column;
+        }
+        
+        .confirmation-actions .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .confirmation-actions .ms-2 {
+            margin-left: 0 !important;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,3 +1,4 @@
+from datetime import timezone
 from django.contrib import admin
 from .models import Tarefas
 from django.utils.html import format_html
@@ -6,6 +7,9 @@ from django.contrib.auth.admin import UserAdmin
 from .models import Tarefas, Comentario, HistoricoStatus
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+
+from usuario.models import Usuario
+
 
 
 class ComentarioInline(admin.StackedInline):
@@ -29,11 +33,16 @@ class TarefasAdmin(admin.ModelAdmin):
         'usuario_link',
         'responsavel_link',
         'status_badge',
-        'prioridade_badge',
+        'prioridade',
+        'dias_restantes_display',
         'prazo_formatado',
         'progresso_bar',
-        'atrasada_flag'
+        'atrasada_flag',
+        'progresso_display',  # Usando método customizado
+        'dias_lembrete'
     )
+    # Adicionando novos campos para edição rápida
+    list_editable = ('prioridade', 'dias_lembrete')
     
     list_filter = (
         'status',
@@ -41,6 +50,8 @@ class TarefasAdmin(admin.ModelAdmin):
         'usuario',
         'responsavel',
         'projeto',
+        'data_inicio',
+        'prazo'
     )
     
     search_fields = (
@@ -51,12 +62,13 @@ class TarefasAdmin(admin.ModelAdmin):
         'projeto'
     )
     
+    # Campos readonly devem ser campos reais ou métodos do admin
     readonly_fields = (
         'data_criacao',
         'data_atualizacao',
         'concluida_em',
-        'progresso',
-        'atrasada_flag_admin'
+        'atrasada_flag_admin',
+        'progresso_display'  # Método customizado
     )
     
     fieldsets = (
@@ -106,6 +118,15 @@ class TarefasAdmin(admin.ModelAdmin):
         'redefinir_prioridade_media',
         'exportar_tarefas_csv'
     ]
+
+    # Adicione estes métodos:
+    def progresso_display(self, obj):
+        return f"{obj.progresso}%"
+    progresso_display.short_description = _('Progresso')
+    
+    def get_progresso(self, obj):
+        return obj.progresso
+    get_progresso.short_description = _('Progresso (%)')
     
     # Métodos de exibição
     def usuario_link(self, obj):
@@ -210,6 +231,21 @@ class TarefasAdmin(admin.ModelAdmin):
             status_anterior = form.initial.get('status', 'pendente')
             obj.registrar_historico(request.user, status_anterior)
         super().save_model(request, obj, form, change)
+
+    # Novo método para exibir dias restantes
+    def dias_restantes_display(self, obj):
+        days = obj.dias_restantes
+        if days is None:
+            return _("Sem prazo")
+        color = "green" if days > 3 else "orange" if days > 0 else "red"
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{} {}</span>',
+            color,
+            days,
+            _("dias") if days != 1 else _("dia")
+        )
+    dias_restantes_display.short_description = _('Dias Restantes')
+    dias_restantes_display.admin_order_field = 'prazo'
 
 @admin.register(Comentario)
 class ComentarioAdmin(admin.ModelAdmin):
@@ -323,3 +359,4 @@ class HistoricoStatusAdmin(admin.ModelAdmin):
         return obj.data_alteracao.strftime('%d/%m/%Y %H:%M')
     data_alteracao_formatada.short_description = _('Data da Alteração')
     data_alteracao_formatada.admin_order_field = 'data_alteracao'
+    

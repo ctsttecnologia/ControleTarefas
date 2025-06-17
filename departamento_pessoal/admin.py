@@ -1,279 +1,244 @@
+
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import (Documentos, Cbos, Cargos,
-    Departamentos, Admissao, Funcionarios
+from .models import (
+    Departamentos, 
+    Cbos, 
+    Cargos, 
+    Funcionarios, 
+    Documentos, 
+    Admissao
 )
-from django.utils.translation import gettext_lazy as _
-from django.urls import reverse
 
+# Configurações comuns
+class BaseAdmin(admin.ModelAdmin):
+    list_per_page = 25
+    save_on_top = True
+    actions_on_top = True
+    actions_on_bottom = True
 
-@admin.register(Documentos)
-class DocumentosAdmin(admin.ModelAdmin):
-    list_display = ('cpf_formatado', 'rg', 'pis', 'ctps', 'funcionario', 'nome', 'sigla')
-    search_fields = ('cpf', 'rg', 'pis', 'ctps', 'funcionario__nome')
-    readonly_fields = ('cpf_formatado',)
-    list_select_related = ( 'admissao__cargo', 'admissao__departamento', 'documentos') 
-    list_per_page = 20
-    raw_id_fields = ('funcionario',)
+# Departamento
+@admin.register(Departamentos)
+class DepartamentosAdmin(BaseAdmin):
+    list_display = ('nome', 'sigla', 'tipo', 'centro_custo', 'ativo', 'data_criacao')
+    list_filter = ('tipo', 'ativo')
+    search_fields = ('nome', 'sigla', 'centro_custo')
+    list_editable = ('ativo',)
+    readonly_fields = ('data_criacao', 'data_atualizacao')
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('nome', 'sigla', 'tipo')
+        }),
+        ('Dados Financeiros', {
+            'fields': ('centro_custo',)
+        }),
+        ('Status e Datas', {
+            'fields': ('ativo', 'data_criacao', 'data_atualizacao')
+        }),
+    )
 
-    def cpf_formatado(self, obj):
-        return obj.cpf_formatado
-    cpf_formatado.short_description = _('CPF')
-
+# CBOs
 @admin.register(Cbos)
-class CbosAdmin(admin.ModelAdmin):
-    list_display = ('codigo', 'descricao', 'total_cargos')
-    search_fields = ('codigo', 'descricao')
-    list_per_page = 20
+class CbosAdmin(BaseAdmin):
+    list_display = ('codigo', 'titulo', 'data_atualizacao')
+    search_fields = ('codigo', 'titulo', 'descricao')
+    readonly_fields = ('data_atualizacao',)
+    
+    fieldsets = (
+        ('Dados do CBO', {
+            'fields': ('codigo', 'titulo', 'descricao')
+        }),
+        ('Metadados', {
+            'fields': ('data_atualizacao',)
+        }),
+    )
 
-    def total_cargos(self, obj):
-        return obj.cargos.count()
-    total_cargos.short_description = _('Cargos Associados')
-
+# Cargos
 @admin.register(Cargos)
-class CargosAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'cbo_link', 'salario_base', 'funcionarios_ativos_count', 'ativo')
+class CargosAdmin(BaseAdmin):
+    list_display = ('nome', 'cbo', 'salario_base', 'ativo')
     list_filter = ('ativo', 'cbo')
     search_fields = ('nome', 'descricao')
+    list_editable = ('ativo', 'salario_base')
     raw_id_fields = ('cbo',)
-    actions = ['ativar_cargos', 'desativar_cargos']
-    list_per_page = 20
+    
+    fieldsets = (
+        ('Informações do Cargo', {
+            'fields': ('nome', 'cbo', 'descricao')
+        }),
+        ('Remuneração', {
+            'fields': ('salario_base',)
+        }),
+        ('Status', {
+            'fields': ('ativo',)
+        }),
+    )
 
-    def cbo_link(self, obj):
-        url = f"/admin/rh/cbos/{obj.cbo.id}/change/"
-        return format_html('<a href="{}">{}</a>', url, obj.cbo.codigo)
-    cbo_link.short_description = _('CBO')
+# Documentos - Inline para Funcionarios
+class DocumentosInline(admin.TabularInline):
+    model = Documentos
+    extra = 1  # Mostra 1 formulário vazio por padrão
+    min_num = 0  # Permite zero documentos
+    fields = ('nome', 'sigla', 'tipo', 'cpf', 'rg', 'data_criacao', 'ativo', 'download_anexos')
+    readonly_fields = ('data_criacao', 'data_atualizacao', 'download_anexos')
+    show_change_link = True
+    
+    def download_anexos(self, obj):
+        if obj.anexo_cpf or obj.anexo_ctps or obj.anexo_pis or obj.anexo_rg:
+            links = []
+            if obj.anexo_cpf:
+                links.append(f'<a href="{obj.anexo_cpf.url}" target="_blank">CPF</a>')
+            if obj.anexo_ctps:
+                links.append(f'<a href="{obj.anexo_ctps.url}" target="_blank">CTPS</a>')
+            if obj.anexo_pis:
+                links.append(f'<a href="{obj.anexo_pis.url}" target="_blank">PIS</a>')
+            if obj.anexo_rg:
+                links.append(f'<a href="{obj.anexo_rg.url}" target="_blank">RG</a>')
+            return format_html(' | '.join(links))
+        return "-"
+    download_anexos.short_description = "Anexos"
 
-    def funcionarios_ativos_count(self, obj):
-        return obj.funcionarios_ativos()
-    funcionarios_ativos_count.short_description = _('Funcionários Ativos')
-
-    def ativar_cargos(self, request, queryset):
-        updated = queryset.update(ativo=True)
-        self.message_user(request, _('%d cargos ativados') % updated)
-    ativar_cargos.short_description = _('Ativar cargos selecionados')
-
-    def desativar_cargos(self, request, queryset):
-        updated = queryset.update(ativo=False)
-        self.message_user(request, _('%d cargos desativados') % updated)
-    desativar_cargos.short_description = _('Desativar cargos selecionados')
-
-
-class AdmissaoAdmin(admin.ModelAdmin):
-    list_display = ('matricula', 'funcionario', 'cargo', 'data_admissao', 'salario_formatado')
-    list_filter = ('cargo', 'departamento', 'tipo_contrato')
-    search_fields = ('matricula', 'funcionario__nome')
-    readonly_fields = ('tempo_empresa_display',)
+# Admissão - Inline para Funcionarios
+class AdmissaoInline(admin.StackedInline):
+    model = Admissao
+    extra = 0
     fieldsets = (
         (None, {
-            'fields': ('funcionario', 'matricula', 'data_admissao', 'data_demissao')
+            'fields': ('matricula', 'cargo', 'departamento', 'tipo_contrato')
         }),
-        ('Cargo e Departamento', {
-            'fields': ('cargo', 'departamento', 'tipo_contrato')
+        ('Datas', {
+            'fields': ('data_admissao', 'data_demissao')
         }),
         ('Remuneração', {
             'fields': ('salario',)
         }),
-        ('Horários', {
+        ('Horário', {
             'fields': ('hora_entrada', 'hora_saida', 'dias_semana')
         }),
+        ('Documentação', {
+            'fields': ('documento_principal',)
+        }),
     )
-
-    def salario_formatado(self, obj):
-        return f"R$ {obj.salario:,.2f}"
-    salario_formatado.short_description = 'Salário'
-
-    def tempo_empresa_display(self, obj):
-        return f"{obj.tempo_empresa} meses"
-    tempo_empresa_display.short_description = 'Tempo na Empresa'
-
-
-@admin.register(Funcionarios)
-class FuncionariosAdmin(admin.ModelAdmin):
-    list_display = (
-        'nome', 
-        'idade', 
-        'sexo', 
-        'status_badge', 
-        'cargo_atual', 
-        'departamento_atual',
-        'data_admissao'
-    )
-    list_filter = ('estatus', 'sexo', 'admissao__cargo', 'admissao__departamento')
-    search_fields = ('nome', 'documentos__cpf', 'email')
-    raw_id_fields = ('logradouro',)
-    readonly_fields = ('idade', 'status_formatado')
-    date_hierarchy = ('admissao__data_admissao')
-    actions = ['promover_funcionarios']
-    list_per_page = 50
-
-    def status_formatado(self, obj):
-        return "Ativo" if obj.ativo else "Inativo"
-    status_formatado.short_description = 'Status'
-
-    def status_badge(self, obj):
-        colors = {1: 'green', 2: 'orange', 3: 'red', 4: 'blue'}
-        return format_html(
-            '<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 10px;">{}</span>',
-            colors.get(obj.estatus, 'gray'),
-            obj.get_estatus_display()
-        )
-    status_badge.short_description = _('Status')
-    status_badge.admin_order_field = 'estatus'
-
-    def cargo_atual(self, obj):
-        if hasattr(obj, 'admissao'):
-            return obj.admissao.cargo.nome
-        return "-"
-    cargo_atual.short_description = _('Cargo')
-
-    def departamento_atual(self, obj):
-        if hasattr(obj, 'admissao'):
-            return obj.admissao.departamento.nome
-        return "-"
-    departamento_atual.short_description = _('Departamento')
-
-    def data_admissao(self, obj):
-        if hasattr(obj, 'admissao'):
-            return obj.admissao.data_admissao
-        return "-"
-    data_admissao.short_description = _('Admitido em')
-    data_admissao.admin_order_field = 'admissao__data_admissao'
-
-    def promover_funcionarios(self, request, queryset):
-        # Implementação da ação de promoção
-        pass
-    promover_funcionarios.short_description = _('Promover funcionários selecionados')
-
+    readonly_fields = ('tempo_empresa',)
+    show_change_link = True
+    
+    def funcionario_display(self, obj):
+        return obj.funcionario.nome if obj.funcionario else "N/D"
+    funcionario_display.short_description = 'Funcionário'
+    
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            'admissao__cargo', 
-            'admissao__departamento',
-            'documentos'
-        )
-@admin.register(Departamentos)
-class DepartamentosAdmin(admin.ModelAdmin):
-    list_display = (
-        'nome_completo',
-        'sigla',
-        'tipo_formatado',
-        'status_badge',
-        'data_criacao_formatada', 
-        'tipo'
-    )
-    
-    list_filter = (
-        'tipo',
-        'ativo',
-        'data_criacao',
-    )
-    
-    search_fields = (
-        'nome',
-        'sigla',
-        'centro_custo',
-    )
-    
-    list_editable = ('sigla', 'tipo')
-    
-    date_hierarchy = 'data_criacao'
-    
-    readonly_fields = (
-        'data_atualizacao',
-        'data_criacao_formatada'
-    )
-    
-    actions = [
-        'ativar_departamentos',
-        'desativar_departamentos',
-        'migrar_para_tecnologia'
-    ]
+        return super().get_queryset(request).select_related('funcionario', 'cargo', 'departamento')
+
+# Funcionarios
+@admin.register(Funcionarios)
+class FuncionariosAdmin(BaseAdmin):
+    list_display = ('nome', 'email', 'sexo', 'estatus', 'idade', 'matricula_display', 'telefone_formatado', 'total_documentos')
+    list_filter = ('sexo', 'estatus', 'data_cadastro')
+    search_fields = ('nome', 'email', 'telefone')
+    readonly_fields = ('data_cadastro', 'idade', 'telefone_formatado', 'total_documentos')
+    inlines = [AdmissaoInline, DocumentosInline]
     
     fieldsets = (
-        (_('Identificação'), {
-            'fields': (
-                'nome',
-                'sigla',
-                'tipo',
-                'centro_custo'
-            )
+        ('Informações Pessoais', {
+            'fields': ('nome', 'data_nascimento', 'idade', 'sexo', 'naturalidade')
         }),
-        (_('Status'), {
-            'fields': (
-                'ativo',
-            )
+        ('Contato', {
+            'fields': ('email', 'telefone', 'telefone_formatado', 'logradouro')
         }),
-        (_('Datas'), {
-            'fields': (
-                'data_criacao',
-                'data_atualizacao',
-            ),
+        ('Documentos', {
+            'fields': ('total_documentos',),
             'classes': ('collapse',)
         }),
+        ('Status', {
+            'fields': ('estatus', 'data_cadastro')
+        }),
     )
+    
+    def total_documentos(self, obj):
+        return obj.documentos.count()
+    total_documentos.short_description = 'Total de Documentos'
+    
+    def matricula_display(self, obj):
+        # Acessa a matrícula através do relacionamento inverso
+        return obj.admissao.matricula if hasattr(obj, 'admissao') else "N/D"
+    matricula_display.short_description = 'Matrícula'
+    
+    def telefone_formatado(self, obj):
+        return obj.telefone_formatado
+    telefone_formatado.short_description = 'Telefone'
 
-    # Métodos de exibição
-    def nome_completo(self, obj):
-        return obj.nome
-    nome_completo.short_description = _('Departamento')
-    nome_completo.admin_order_field = 'nome'
+# Admissao
+@admin.register(Admissao)
+class AdmissaoAdmin(BaseAdmin):
+    list_display = ('matricula', 'funcionario', 'cargo', 'departamento', 'data_admissao', 'tipo_contrato', 'salario', 'tempo_empresa')
+    list_filter = ('tipo_contrato', 'departamento', 'cargo', 'data_admissao')
+    search_fields = ('matricula', 'funcionario__nome', 'cargo__nome', 'departamento__nome')
+    readonly_fields = ('tempo_empresa',)
+    raw_id_fields = ('funcionario', 'cargo', 'departamento', 'documento_principal')
+    
+    fieldsets = (
+        ('Informações Principais', {
+            'fields': ('funcionario', 'matricula', 'cargo', 'departamento', 'tipo_contrato')
+        }),
+        ('Datas', {
+            'fields': ('data_admissao', 'data_demissao', 'tempo_empresa')
+        }),
+        ('Remuneração', {
+            'fields': ('salario',)
+        }),
+        ('Horário de Trabalho', {
+            'fields': ('hora_entrada', 'hora_saida', 'dias_semana')
+        }),
+        ('Documentação', {
+            'fields': ('documento_principal',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('funcionario', 'cargo', 'departamento')
 
-    def tipo_formatado(self, obj):
-        tipo_dict = dict(self.model.TIPO_DEPARTAMENTO_CHOICES)
-        return tipo_dict.get(obj.tipo, obj.tipo)
-    tipo_formatado.short_description = _('Tipo')
-
-    def status_badge(self, obj):
-        color = 'green' if obj.ativo else 'red'
-        text = _('Ativo') if obj.ativo else _('Inativo')
-        return format_html(
-            '<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 10px;">{}</span>',
-            color, text
-        )
-    status_badge.short_description = _('Status')
-    status_badge.admin_order_field = 'ativo'
-
-    def total_funcionarios_link(self, obj):
-        count = obj.total_funcionarios
-        url = (
-            reverse('admin:funcionarios_funcionarios_changelist') +
-            f'?admissao__departamento__id__exact={obj.id}'
-        )
-        return format_html(
-            '<a href="{}">{} funcionário(s)</a>',
-            url, count
-        )
-    total_funcionarios_link.short_description = _('Funcionários')
-
-    def data_criacao_formatada(self, obj):
-        return obj.data_criacao.strftime('%d/%m/%Y')
-    data_criacao_formatada.short_description = _('Criado em')
-    data_criacao_formatada.admin_order_field = 'data_criacao'
-
-    # Ações personalizadas
-    def ativar_departamentos(self, request, queryset):
-        updated = queryset.update(ativo=True)
-        self.message_user(
-            request,
-            _('{} departamentos ativados com sucesso.').format(updated)
-        )
-    ativar_departamentos.short_description = _('Ativar departamentos selecionados')
-
-    def desativar_departamentos(self, request, queryset):
-        updated = queryset.update(ativo=False)
-        self.message_user(
-            request,
-            _('{} departamentos desativados com sucesso.').format(updated)
-        )
-    desativar_departamentos.short_description = _('Desativar departamentos selecionados')
-
-    def migrar_para_tecnologia(self, request, queryset):
-        updated = queryset.update(tipo='TEC')
-        self.message_user(
-            request,
-            _('{} departamentos migrados para Tecnologia.').format(updated)
-        )
-    migrar_para_tecnologia.short_description = _('Migrar para Tecnologia')
-
-
+# Documentos
+@admin.register(Documentos)
+class DocumentosAdmin(BaseAdmin):
+    list_display = ('funcionario_link', 'nome', 'tipo', 'cpf', 'rg', 'ativo', 'data_criacao', 'download_links')
+    list_filter = ('tipo', 'ativo', 'data_criacao')
+    search_fields = ('funcionario__nome', 'nome', 'cpf', 'pis', 'rg')
+    list_editable = ('ativo',)
+    readonly_fields = ('data_atualizacao', 'download_links')
+    raw_id_fields = ('funcionario',)
+    
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('funcionario', 'nome', 'sigla', 'tipo', 'centro_custo')
+        }),
+        ('Documentos Pessoais', {
+            'fields': ('cpf', 'pis', 'ctps', 'rg', 'emissor', 'uf', 'reservista', 'titulo_eleitor')
+        }),
+        ('Anexos', {
+            'fields': ('anexo_cpf', 'anexo_ctps', 'anexo_pis', 'anexo_rg', 'download_links')
+        }),
+        ('Status', {
+            'fields': ('ativo', 'data_criacao', 'data_atualizacao')
+        }),
+    )
+    
+    def funcionario_link(self, obj):
+        url = reverse("admin:departamento_pessoal_funcionarios_change", args=[obj.funcionario.id])
+        return format_html('<a href="{}">{}</a>', url, obj.funcionario.nome)
+    funcionario_link.short_description = 'Funcionário'
+    funcionario_link.admin_order_field = 'funcionario__nome'
+    
+    def download_links(self, obj):
+        links = []
+        if obj.anexo_cpf:
+            links.append(f'<a href="{obj.anexo_cpf.url}" target="_blank">CPF</a>')
+        if obj.anexo_ctps:
+            links.append(f'<a href="{obj.anexo_ctps.url}" target="_blank">CTPS</a>')
+        if obj.anexo_pis:
+            links.append(f'<a href="{obj.anexo_pis.url}" target="_blank">PIS</a>')
+        if obj.anexo_rg:
+            links.append(f'<a href="{obj.anexo_rg.url}" target="_blank">RG</a>')
+        return format_html(' | '.join(links)) if links else "-"
+    download_links.short_description = "Download Anexos"
 

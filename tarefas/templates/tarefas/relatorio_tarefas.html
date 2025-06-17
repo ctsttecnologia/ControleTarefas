@@ -1,23 +1,19 @@
 
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Tarefas</title>
+    
    
     <link rel="stylesheet" href="{% static 'csstarefa/btstyles.css' %}">
     <link rel="stylesheet" href="{% static 'csstarefa/tarefastyles.css' %}">
     <link rel="stylesheet" href="{% static 'csstarefa/relatoriostyles.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
 
 <!-- Barra de Navegação Principal -->    
 {% include 'includes/header.html' %}
     <div class="container">
-        <h1>Relatório de Tarefas</h1>
+        <h1><title>Relatório de Tarefas</title></h1>
         
         <div class="painel">
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn-home">Voltar</a>
@@ -139,5 +135,3 @@
             }
         });
     </script>
-</body>
-</html>

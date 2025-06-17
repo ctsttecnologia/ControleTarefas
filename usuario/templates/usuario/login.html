@@ -1,34 +1,38 @@
 
+
+{# usuario/login.html #}
 {% load static %}
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login</title>
+<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+<link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
+<link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon"> 
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <!-- Link para o arquivo CSS -->
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
-    <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon"> 
-</head>
-<body>
-    <div class="painel3">
-        <div class="painel1">
-            <h1 class="titulo">Login</h1>
-        </div>
-        <div class="painel2">
-            <form method="post" class="form-login">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="btn-login">Login</button>
-            </form>
-            <p class="registro">Não tem uma conta? <a href="{% url 'usuario_login:register' %}" class="link-registro">Registre-se</a></p>
-            <a href="{% url 'home' %}" class="link-home">Início</a>
-            <img src="/midia/imagens/logocetest.png">
-            <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção--> 
-        </div>
+<div class="painel3">
+    <div class="painel1">
+        <h1 class="titulo">Login</h1>
     </div>
-</body>
-</html>
+    <div class="painel2">
+        <form method="post" class="form-login">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn-login">Login</button>
+        </form>
+        <p class="registro">Não tem uma conta? 
+            <a href="{% url 'usuario:cadastrar_usuario' %}" class="link-registro">
+                Registre-se
+            </a>
+        </p>
+        <p class="esqueci-senha">
+            <a href="{% url 'usuario:password_reset' %}" class="link-esqueci-senha">
+                Esqueci minha senha
+            </a>
+        </p>
+        <a href="{% url 'home' %}" class="link-home">Início</a>
+        <img src="/midia/imagens/logocetest.png" alt="Logo"> 
+        {# <img src="{% static '/midia/imagens/logo.png' %}" class="icone"> #}
+    </div>
+</div>
+

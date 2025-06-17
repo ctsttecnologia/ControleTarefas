@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.conf import settings # Importe settings
 
 
 class TipoTreinamento(models.Model):
@@ -347,10 +348,8 @@ class TreinamentoDisponivel(models.Model):
     def get_absolute_url(self):
         return reverse('treinamento_detail', args=[str(self.id)])
 
-from django.contrib.auth.models import User
-
 class Colaborador(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     matricula = models.CharField(max_length=20, unique=True)
     departamento = models.CharField(max_length=100)
     cargo = models.CharField(max_length=100)

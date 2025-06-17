@@ -1,15 +1,20 @@
+from datetime import timedelta
+import logging
 from django.db import models
-from django.contrib.auth.models import User
 from django.urls import reverse
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
 class Tarefas(models.Model):
+    
     PRIORIDADE_CHOICES = [
         ('alta', _('Alta')),
         ('media', _('Média')),
@@ -17,12 +22,14 @@ class Tarefas(models.Model):
     ]
 
     STATUS_CHOICES = [
-        ('pendente', _('Pendente')),
-        ('andamento', _('Andamento')),
-        ('concluida', _('Concluída')),
-        ('cancelada', _('Cancelada')),
-        ('pausada', _('Pausada')),
+        (1, 'pendente', _('Pendente')),
+        (2, 'andamento', _('Em Andamento')),  
+        (3, 'concluida', _('Concluído')),
+        (4, 'cancelada', _('Cancelado')),
+        (5, 'pausada', _('Em Pausa')),       
+        (7, 'arquivada', _('Arquivada')),    
     ]
+    STATUS_CHOICES = [(code, label) for _, code, label in STATUS_CHOICES]
     
     # Campos principais
     titulo = models.CharField(
@@ -50,15 +57,16 @@ class Tarefas(models.Model):
     )
     
     data_inicio = models.DateTimeField(
-        default=timezone.now,
-        verbose_name=_('Data de Início')
+        default=timezone.now,  # Definindo valor padrão como agora
+        verbose_name=_('Data de Início'),
+        help_text=_('Data inicial da atividade')
     )
     
-    prazo = models.DateField(
+    prazo = models.DateTimeField(
         blank=True,
         null=True,
         verbose_name=_('Prazo Final'),
-        help_text=_('Data limite para conclusão')
+        help_text=_('Data e hora limite para conclusão (formato: DD/MM/AAAA HH:MM)')
     )
     
     concluida_em = models.DateTimeField(
@@ -84,14 +92,15 @@ class Tarefas(models.Model):
     
     # Relacionamentos
     usuario = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='tarefas',
-        verbose_name=_('Criado por')
+        verbose_name=_('Criado por'),
+        editable=False  # Impede edição no admin/formulários
     )
     
     responsavel = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -107,72 +116,152 @@ class Tarefas(models.Model):
         null=True
     )
     
-    # Tempo e controle
-    duracao_prevista = models.PositiveIntegerField(
+    # Tempo e controle - agora usando DurationField para melhor precisão
+    duracao_prevista = models.DurationField(
         blank=True,
         null=True,
-        verbose_name=_('Duração Prevista (horas)'),
-        validators=[MinValueValidator(1)]
+        verbose_name=_('Duração Prevista'),
+        help_text=_('Formato: DD HH:MM:SS')
     )
     
-    tempo_gasto = models.PositiveIntegerField(
+    tempo_gasto = models.DurationField(
         blank=True,
         null=True,
-        verbose_name=_('Tempo Gasto (horas)'),
-        default=0
+        verbose_name=_('Tempo Gasto'),
+        default=timedelta(0),
+        help_text=_('Formato: DD HH:MM:SS')
     )
     
-    # Métodos avançados
+    # Campos de lembrete
+    data_lembrete = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name=_('Data de Lembrete'),
+        help_text=_('Data e hora para envio de lembrete')
+    )
+    
+    dias_lembrete = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(30)],
+        verbose_name=_('Dias para Lembrete'),
+        help_text=_('Dias antes do prazo para enviar lembrete (1-30)')
+    )
+    
+    class Meta:
+        verbose_name = _('Tarefa')
+        verbose_name_plural = _('Tarefas')
+        ordering = ['-prioridade', 'prazo']
+        indexes = [
+            models.Index(fields=['status'], name='idx_tarefa_status'),
+            models.Index(fields=['prioridade'], name='idx_tarefa_prioridade'),
+            models.Index(fields=['usuario'], name='idx_tarefa_usuario'),
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Removemos a tentativa de pegar o usuário no __init__
+
     def clean(self):
-        """Validações personalizadas"""
+        """Validações avançadas de datas e consistência"""
+        if self.status not in dict(self.STATUS_CHOICES).keys():
+            raise ValidationError({'status': 'Status inválido'})
         super().clean()
         
-        # Validação de datas
-        if self.prazo and self.prazo < timezone.now().date():
+        now = timezone.now()
+        
+        # Validação de data_inicio
+        if self.data_inicio and self.data_inicio < now - timedelta(minutes=5):
             raise ValidationError({
-                'prazo': _('O prazo não pode ser uma data passada') 
+                'data_inicio': _('Data de início não pode ser no passado')
             })
         
-        if self.concluida_em and self.concluida_em < self.data_criacao:
+        # Validação de prazo
+        if self.prazo:
+            if self.data_inicio and self.prazo < self.data_inicio:
+                raise ValidationError({
+                    'prazo': _('Prazo não pode ser anterior à data de início')
+                })
+            
+            if self.prazo < now - timedelta(minutes=5):
+                raise ValidationError({
+                    'prazo': _('Prazo não pode ser no passado')
+                })
+        
+        # Validação de concluida_em
+        if self.concluida_em:
+            if self.concluida_em < self.data_criacao:
+                raise ValidationError({
+                    'concluida_em': _('Data de conclusão não pode ser anterior à criação')
+                })
+            
+            if self.prazo and self.concluida_em > self.prazo + timedelta(days=1):
+                self.status = 'atrasada'
+        
+        # Configura data_lembrete automaticamente se não definida
+        if self.prazo and not self.data_lembrete:
+            self.data_lembrete = self.prazo - timedelta(days=self.dias_lembrete)
+            
+        # Validação de duração prevista
+        if self.duracao_prevista and self.duracao_prevista.total_seconds() <= 0:
             raise ValidationError({
-                'concluida_em': _('Data de conclusão não pode ser anterior à criação')
+                'duracao_prevista': _('Duração deve ser maior que zero')
             })
-    
+
     def save(self, *args, **kwargs):
-        """Lógica adicional ao salvar"""
-        # Atualiza status quando concluída
+        """Lógica avançada ao salvar a tarefa"""
+        # Define o usuário atual como criador se for uma nova instância
+        if not self.pk and not self.usuario_id:
+            from django.contrib.auth.mixins import LoginRequiredMixin
+            # O usuário deve ser passado como argumento ou obtido de outra forma
+            # Removemos a tentativa de pegar o usuário diretamente aqui
+        
+        # Garante data_inicio padrão se não informada
+        if not self.data_inicio:
+            self.data_inicio = timezone.now()
+        
+        # Atualiza status de conclusão
         if self.status == 'concluida' and not self.concluida_em:
             self.concluida_em = timezone.now()
         elif self.status != 'concluida':
             self.concluida_em = None
-            
+        
+        # Verifica atraso automaticamente
+        if (self.prazo and self.prazo < timezone.now() and 
+            self.status not in ['concluida', 'cancelada']):
+            self.status = 'atrasada'
+        
         self.full_clean()
         super().save(*args, **kwargs)
-    
+
     @property
-    def atrasada(self):
-        """Verifica se a tarefa está atrasada"""
-        if self.prazo and self.status not in ['concluida', 'cancelada']:
-            return self.prazo < timezone.now().date()
-        return False
-    
+    def dias_restantes(self):
+        """Retorna dias restantes para o prazo de forma segura"""
+        if not self.prazo:
+            return None
+        try:
+            delta = (self.prazo - timezone.now()).days
+            return max(0, delta) if delta > 0 else abs(delta)
+        except Exception:
+            return None
+
     @property
     def progresso(self):
-        """Calcula progresso baseado no tempo gasto"""
-        if self.duracao_prevista and self.tempo_gasto:
-            return min(100, int((self.tempo_gasto / self.duracao_prevista) * 100))
-        return 0
-    
-    def registrar_historico(self, user, status_anterior):
-        """Registra mudança de status no histórico"""
-        if status_anterior != self.status:
-            HistoricoStatus.objects.create(
-                tarefa=self,
-                status_anterior=status_anterior,
-                novo_status=self.status,
-                alterado_por=user
-            )
-    
+        """Calcula progresso com tratamento de erros"""
+        try:
+            if not all([self.duracao_prevista, self.tempo_gasto]):
+                return 0
+                
+            total_previsto = self.duracao_prevista.total_seconds()
+            total_gasto = self.tempo_gasto.total_seconds()
+            
+            if total_previsto <= 0:
+                return 0
+                
+            progresso = (total_gasto / total_previsto) * 100
+            return min(100, int(progresso))
+        except Exception:
+            return 0
+
     def __str__(self):
         return f"{self.titulo} ({self.get_status_display()})"
     
@@ -193,7 +282,7 @@ class Comentario(models.Model):
     )
     
     autor = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name=_('Autor')
     )
@@ -252,7 +341,7 @@ class HistoricoStatus(models.Model):
     )
     
     alterado_por = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         verbose_name=_('Alterado por')
     )

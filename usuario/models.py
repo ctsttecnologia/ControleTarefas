@@ -1,86 +1,65 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.core.validators import MinValueValidator
-from django.utils import timezone
-from django.contrib.auth.models import Group
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.utils.translation import gettext_lazy as _ # Para tradução de strings
 
+# ==============================================================================
+# Modelo de Usuário Customizado
+# Herda de AbstractUser para incluir todos os campos e funcionalidades padrão
+# do usuário do Django (username, password, email, is_staff, is_active, etc.)
+# ==============================================================================
+class Usuario(AbstractUser):
+    # Campo 'nome' customizado, conforme a tabela auth_user fornecida.
+    # Adicionamos este campo, pois ele não é padrão no AbstractUser.
+    nome = models.CharField(_('nome completo'), max_length=150, blank=True, null=True)
+    email = models.EmailField(_('endereço de email'), unique=True, blank=False, null=False)
 
-
-class Usuario(models.Model):
-
-    REQUIRED_FIELDS = ['email', 'nome']  # Campos obrigatórios (ajuste conforme necessário)
-
-    nome = models.CharField(unique=True, max_length=200)
-    sobrenome = models.CharField(max_length=50)
-    email = models.CharField(unique=True, max_length=200)
-    senha = models.CharField(unique=True, max_length=6)
-    razao_social = models.CharField('Razão Social', max_length=100, blank=True)
-    nome_fantasia = models.CharField('Nome Fantasia', max_length=100, blank=True)
-
-    class Meta:
-        managed = True
-        db_table = 'usuario'
-        verbose_name = 'Usuário'
-        verbose_name_plural = 'Usuários'
-
-    def __str__(self):
-        return self.username
-
-class UsuarioCustomuser(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    password = models.CharField(max_length=128)
-    last_login = models.DateTimeField(blank=True, null=True)
-    is_superuser = models.IntegerField()
-    username = models.CharField(unique=True, max_length=150)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
-    email = models.CharField(max_length=254)
-    is_staff = models.IntegerField()
-    is_active = models.IntegerField()
-    date_joined = models.DateTimeField()
-    matricula = models.CharField(max_length=100, blank=True, null=True)
-
-    
-    class Meta:
-        managed = True
-        db_table = 'usuario_customuser'
-
+    # Definindo 'email' como o campo de login principal.
+    # O campo 'username' ainda existirá, mas não será usado para login.
+    USERNAME_FIELD = 'email'
+    # Os campos em REQUIRED_FIELDS serão solicitados quando criar um superusuário
+    # se USERNAME_FIELD não for 'username'.
+    REQUIRED_FIELDS = ['username'] # 'username' ainda é requerido para AbstractUser,
+  
     groups = models.ManyToManyField(
         Group,
-        verbose_name='groupos',
+        verbose_name=_('grupos'),
         blank=True,
-        help_text='Grupos ao qual os usuários pertence.',
-        related_name="ConjuntoUsuaario",
-        related_query_name="user",
+        help_text=_('Os grupos aos quais este usuário pertence. Um usuário terá todas as permissões concedidas a cada um de seus grupos.'),
+        related_name="usuario_set", # Evita o conflito 'auth.User.groups' clashes with 'usuario.Usuario.groups'
+        related_query_name="usuario", # Usado para consultas reversas
     )
     user_permissions = models.ManyToManyField(
         Permission,
-        verbose_name='Permissões do usúario',
+        verbose_name=_('permissões de usuário'),
         blank=True,
-        help_text='Permissões específicas para este usuário.',
-        related_name="ConjuntoUsuario",
-        related_query_name="user",
+        help_text=_('Permissões específicas para este usuário.'),
+        related_name="usuario_set", # Evita o conflito 'auth.User.user_permissions' clashes with 'usuario.Usuario.user_permissions'
+        related_query_name="usuario", # Usado para consultas reversas
     )
 
-
-class CustomUserGroup(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    customuser = models.ForeignKey(UsuarioCustomuser, models.DO_NOTHING)
-    group = models.ForeignKey(Group, models.DO_NOTHING)
-
     class Meta:
-        managed = True
-        db_table = 'customusergroup'
-        unique_together = (('customuser', 'group'),)
+ 
+        db_table = 'usuario'
+        verbose_name = _('usuário')
+        verbose_name_plural = _('usuários')
+        ordering = ['-date_joined'] # Ordem padrão para listagens
 
+    def __str__(self):
+        # Retorna uma representação em string do objeto Usuario.
+        # Como USERNAME_FIELD é 'email', usar self.email faz mais sentido.
+        # Se 'nome' for preferível e sempre preenchido, pode ser 'self.nome'.
+        return self.email or self.username # Retorna o email, ou o username se o email for vazio
 
-class CustomUserPermission(models.Model):
-    id = models.BigAutoField(primary_key=True)
-    customuser = models.ForeignKey(UsuarioCustomuser, models.DO_NOTHING)
-    permission = models.ForeignKey(Permission, models.DO_NOTHING)
-
+# Modelo Proxy para Grupo (refere-se ao modelo Group padrão do Django)
+class GrupoProxy(Group):
     class Meta:
-        managed = True
-        db_table = 'customuserpermission'
-        unique_together = (('customuser', 'permission'),)
+        proxy = True # Define que este é um modelo proxy
+        verbose_name = _('grupo')
+        verbose_name_plural = _('grupos')
+
+# Modelo Proxy para Permissão (refere-se ao modelo Permission padrão do Django)
+class PermissaoProxy(Permission):
+    class Meta:
+        proxy = True # Define que este é um modelo proxy
+        verbose_name = _('permissão')
+        verbose_name_plural = _('permissões')

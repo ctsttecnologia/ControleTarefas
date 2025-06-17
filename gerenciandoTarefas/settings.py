@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -37,14 +36,14 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.humanize',  # Para formatação de dados
-    'usuario',
+    'django.contrib.admin', # Mova para cima
+    'usuario', # Agora 'usuario' vem DEPOIS de 'auth' e 'contenttypes'
+    'django.contrib.auth', # Mova para cima
+    'django.contrib.contenttypes', # Mova para cima
+    'django.contrib.sessions', # Mova para cima
+    'django.contrib.messages', # Mova para cima
+    'django.contrib.staticfiles', # Mova para cima
+    'django.contrib.humanize',
     'home',
     'cliente',
     'seguranca_trabalho',
@@ -56,10 +55,9 @@ INSTALLED_APPS = [
     'automovel.apps.AutomovelConfig',
     'treinamentos.apps.TreinamentosConfig',
     'crispy_forms',
-    'crispy_bootstrap5',  # se estiver usando Bootstrap5
+    'crispy_bootstrap5',
     'ata_reuniao',
     'localflavor',
-      
 ]
 
 MIDDLEWARE = [
@@ -108,6 +106,10 @@ DATABASES = {
         'PASSWORD': 'esg1234E', # Senha do MySQL
         'HOST': 'localhost',     # Endereço do servidor MySQL
         'PORT': '3306',          # Porta do MySQL (padrão é 3306)
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        }
+
     }
 }
 
@@ -130,9 +132,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-#AUTH_USER_MODEL = ''
 
 
+AUTH_USER_MODEL = 'usuario.Usuario'
 
 
 # Internationalization
@@ -176,9 +178,6 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# settings.py
-LOGOUT_REDIRECT_URL = 'home.html'  # url pós logaout
-LOGIN_URL = '/accounts/login/'  # URL para a página de login
 
 # Configurações de email (ajuste conforme seu servidor de email)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -188,3 +187,9 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'seu-email@dominio.com'
 EMAIL_HOST_PASSWORD = 'sua-senha'
 DEFAULT_FROM_EMAIL = 'seu-email@dominio.com'
+
+# LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
+# Corrija o LOGIN_REDIRECT_URL se 'profile' não for um nome de URL existente
+LOGIN_URL = 'usuario:login'
+LOGIN_REDIRECT_URL = 'usuario:profile'
+LOGOUT_REDIRECT_URL = 'usuario:login'

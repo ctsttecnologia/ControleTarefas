@@ -1,10 +1,13 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.contrib.auth import get_user_model
+
 from .models import Tarefas, HistoricoStatus
+
+User = get_user_model()
 
 @receiver(post_save, sender=HistoricoStatus)
 def enviar_notificacao_status(sender, instance, created, **kwargs):

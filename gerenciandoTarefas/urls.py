@@ -9,17 +9,15 @@ from tarefas import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # URLs de autenticação
+    # URLs de autenticação, Apps principais 
     path('login/', LoginView.as_view(template_name='login.html'), name='login'),
     path('logout/', LogoutView.as_view(template_name='logout.html'), name='logout'),
-    path('profile/', views.profile_view, name='profile'),
-    
-    # Apps principais
     path('', include('home.urls')),  # Inclui as URLs do app home
     path('accounts/', include('usuario.urls')),
     path('usuario/', include(('usuario.urls', 'usuario'), namespace='usuario')),
     
     # Outros apps
+    path('profile/', views.profile_view, name='profile'),
     path('epi/', include('epi.urls')),
     path('cliente/', include('cliente.urls')),
     path('seguranca/', include('seguranca_trabalho.urls')),
