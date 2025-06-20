@@ -9,6 +9,7 @@ class ClienteAdmin(admin.ModelAdmin):
     list_display = (
         'nome', 
         'cnpj_formatado', 
+        'email',
         'logradouro_link', 
         'tempo_contrato_meses', 
         'status_badge',
@@ -24,10 +25,13 @@ class ClienteAdmin(admin.ModelAdmin):
         'razao_social', 
         'cnpj', 
         'contrato',
-        'logradouro__endereco'
+        'logradouro__endereco',
+        'email',
+        'inscricao_estadual',
+        'inscricao_municipal'
     )
     raw_id_fields = ('logradouro',)
-    list_editable = ('data_de_inicio',)
+    list_editable = ('data_de_inicio', 'email')
     date_hierarchy = 'data_de_inicio'
     readonly_fields = (
         'data_cadastro', 
@@ -43,18 +47,30 @@ class ClienteAdmin(admin.ModelAdmin):
                 'razao_social',
                 'cnpj',
                 'cnpj_formatado',
-                'contrato'
+                'contrato',
+                'unidade'
             )
         }),
         (_('Endereço'), {
             'fields': ('logradouro',)
         }),
         (_('Contato'), {
-            'fields': ('telefone',)
-        }),
-        (_('Datas'), {
             'fields': (
+                'telefone',
+                'email'
+            )
+        }),
+        (_('Documentos'), {
+            'fields': (
+                'inscricao_estadual',
+                'inscricao_municipal'
+            )
+        }),
+        (_('Informações Adicionais'), {
+            'fields': (
+                'observacoes',
                 'data_de_inicio',
+                'data_encerramento',
                 'tempo_contrato_meses',
                 'estatus'
             )
@@ -168,3 +184,4 @@ class ClienteClienteAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('cliente')
 
+pass

@@ -31,6 +31,11 @@ from datetime import datetime, timedelta
 import io
 import os
 
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import View
+from .reports import gerar_relatorio_tarefas
+
+from django.core.mail import send_mail
 
 
 logger = logging.getLogger(__name__)
@@ -175,11 +180,10 @@ class TarefaUpdateView(UserPassesTestMixin, UpdateView):
     def test_func(self):
         return self.get_object().usuario == self.request.user
     
-
 @login_required
-@require_POST  # Agora funcionará corretamente
+@require_POST
 def atualizar_status(request, pk):
-    tarefa = get_object_or_404(Tarefas, pk=pk)
+    tarefa = get_object_or_404(Tarefas, pk=pk, usuario=request.user)  # Adicionada verificação de usuário
     novo_status = request.POST.get('status')
     
     if novo_status and novo_status != tarefa.status:
@@ -199,6 +203,30 @@ def atualizar_status(request, pk):
     
     return redirect('tarefas:tarefa_detail', pk=pk)
 
+"""
+def criar_tarefa(request):
+    if request.method == 'POST':
+        # Aqui você extrairia os dados do POST (exemplo simplificado):
+        titulo = request.POST.get('titulo')
+        responsavel = request.POST.get('responsavel')  # Supondo que seja o ID
+
+        tarefa = Tarefas.objects.create(
+            titulo=titulo,
+            responsavel_id=responsavel,
+            # outros campos...
+        )
+
+        if tarefa.responsavel and tarefa.responsavel.email:
+            send_mail(
+                subject='Nova tarefa criada',
+                message=f'Você foi designado para a tarefa: {tarefa.titulo}',
+                from_email='esg.emerson@gmail.com',
+                recipient_list=[tarefa.responsavel.email],
+                fail_silently=False,
+            )
+
+        return redirect('lista_tarefas')
+"""
 @login_required
 def calendario_tarefas(request):
     tarefas = Tarefas.objects.all()
@@ -379,6 +407,11 @@ def export_word(context):
     filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+
+class RelatorioTarefasPDF(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        queryset = Tarefas.objects.filter(responsavel=request.user)
+        return gerar_relatorio_tarefas(queryset)
 
 @login_required
 def dashboard(request):

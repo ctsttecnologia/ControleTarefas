@@ -11,14 +11,6 @@
 {% include 'includes/header.html' %}
 {% block content %}  
 
-
-{% comment %} Debug dos valores do formulário {% endcomment %}
-<div style="display: none;">
-    <p>Data Início: {{ form.data_inicio.value }}</p>
-    <p>Prazo: {{ form.prazo.value }}</p>
-    <p>Status: {{ form.status.value }}</p>
-    <p>Prioridade: {{ form.prioridade.value }}</p>
-</div>
     <div class="container">
         <header class="form-header">
             <h1 class="form-title">
@@ -38,18 +30,15 @@
         <main class="form-container">
             <form method="post" action="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="task-form" enctype="multipart/form-data" id="tarefaForm">
                 {% csrf_token %}
-                <!-- Mensagens de sistema -->
+                <!-- Mensagens e Erros -->
                 {% if messages %}
                 <div class="alert-container">
                     {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">
-                        {{ message }}
-                    </div>
+                    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
                     {% endfor %}
                 </div>
                 {% endif %}
                 
-                <!-- Erros gerais do formulário -->
                 {% if form.non_field_errors %}
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-circle"></i>
@@ -60,138 +49,80 @@
                 <div class="form-grid">
                     <!-- Seção: Informações Básicas -->
                     <div class="form-section card">
-                        <div class="card-header">
-                            <i class="fas fa-info-circle"></i> Informações Básicas
-                        </div>
+                        <div class="card-header"><i class="fas fa-info-circle"></i> Informações Básicas</div>
                         <div class="card-body">
                             <div class="form-group {% if form.titulo.errors %}has-error{% endif %}">
-                                <label for="{{ form.titulo.id_for_label }}" class="form-label required">
-                                    <i class="fas fa-heading"></i> Título
-                                </label>
+                                <label for="{{ form.titulo.id_for_label }}" class="form-label required"><i class="fas fa-heading"></i> Título</label>
                                 {{ form.titulo }}
-                                {% if form.titulo.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.titulo.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.titulo.errors %}<div class="error-message">{{ form.titulo.errors }}</div>{% endif %}
                             </div>
-
                             <div class="form-group {% if form.descricao.errors %}has-error{% endif %}">
-                                <label for="{{ form.descricao.id_for_label }}" class="form-label">
-                                    <i class="fas fa-align-left"></i> Descrição
-                                </label>
+                                <label for="{{ form.descricao.id_for_label }}" class="form-label"><i class="fas fa-align-left"></i> Descrição</label>
                                 {{ form.descricao }}
-                                {% if form.descricao.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.descricao.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.descricao.errors %}<div class="error-message">{{ form.descricao.errors }}</div>{% endif %}
                             </div>
-
                             <div class="form-group {% if form.projeto.errors %}has-error{% endif %}">
-                                <label for="{{ form.projeto.id_for_label }}" class="form-label">
-                                    <i class="fas fa-project-diagram"></i> Projeto
-                                </label>
+                                <label for="{{ form.projeto.id_for_label }}" class="form-label"><i class="fas fa-project-diagram"></i> Projeto</label>
                                 {{ form.projeto }}
-                                {% if form.projeto.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.projeto.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.projeto.errors %}<div class="error-message">{{ form.projeto.errors }}</div>{% endif %}
                             </div>
                         </div>
                     </div>
 
                     <!-- Seção: Status e Prioridade -->
                     <div class="form-section card">
-                        <div class="card-header">
-                            <i class="fas fa-tasks"></i> Status e Prioridade
-                        </div>
+                        <div class="card-header"><i class="fas fa-tasks"></i> Status e Prioridade</div>
                         <div class="card-body">
                             <div class="form-group {% if form.status.errors %}has-error{% endif %}">
-                                <label for="{{ form.status.id_for_label }}" class="form-label required">
-                                    <i class="fas fa-flag"></i> Status
-                                </label>
+                                <label for="{{ form.status.id_for_label }}" class="form-label required"><i class="fas fa-flag"></i> Status</label>
                                 {{ form.status }}
-                                {% if form.status.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.status.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.status.errors %}<div class="error-message">{{ form.status.errors }}</div>{% endif %}
                             </div>
-
                             <div class="form-group {% if form.prioridade.errors %}has-error{% endif %}">
-                                <label for="{{ form.prioridade.id_for_label }}" class="form-label required">
-                                    <i class="fas fa-exclamation-triangle"></i> Prioridade
-                                </label>
+                                <label for="{{ form.prioridade.id_for_label }}" class="form-label required"><i class="fas fa-exclamation-triangle"></i> Prioridade</label>
                                 {{ form.prioridade }}
-                                {% if form.prioridade.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.prioridade.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.prioridade.errors %}<div class="error-message">{{ form.prioridade.errors }}</div>{% endif %}
                             </div>
                         </div>
                     </div>
 
-                    <!-- Seção: Datas e Prazos -->
+                    <!-- Seção: Datas e Prazos (CORRIGIDO) -->
                     <div class="form-section card">
-                        <div class="card-header">
-                            <i class="far fa-calendar-alt"></i> Datas e Prazos
-                        </div>
+                        <div class="card-header"><i class="far fa-calendar-alt"></i> Datas e Prazos</div>
                         <div class="card-body">
+                            <!-- CORREÇÃO: Renderizando o campo data_inicio corretamente -->
                             <div class="form-group {% if form.data_inicio.errors %}has-error{% endif %}">
-                                <label for="{{ form.data_inicio.id_for_label }}" class="form-label required">
-                                    <i class="far fa-clock"></i> Data de Início
-                                </label>
-                                <div class="input-group">
-                                    <input type="datetime-local" 
-                                            id="{{ form.prazo.id_for_label }}" 
-                                            name="{{ form.prazo.name }}" 
-                                            value="{{ form.prazo.value|date:'Y-m-d\TH:i'|default:'' }}"
-                                            class="form-control datetime-input">
-                                    
-                                    <div class="input-group-append">
-                                        <span class="input-group-text"><i class="far fa-calendar"></i></span>
-                                    </div>
-                                </div>
-                                {% if form.data_inicio.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.data_inicio.errors }}
-                                </div>
-                                {% endif %}
+                                <label for="{{ form.data_inicio.id_for_label }}" class="form-label required"><i class="far fa-clock"></i> Data de Início</label>
+                                {{ form.data_inicio }}
+                                
                             </div>
 
+                            <!-- CORREÇÃO: Renderizando o campo prazo corretamente -->
                             <div class="form-group {% if form.prazo.errors %}has-error{% endif %}">
-                                <label for="{{ form.prazo.id_for_label }}" class="form-label">
-                                    <i class="fas fa-hourglass-end"></i> Prazo Final
-                                </label>
-                                <div class="input-group">
-                                    <input type="datetime-local" 
-                                           id="{{ form.prazo.id_for_label }}" 
-                                           name="{{ form.prazo.name }}" 
-                                           value="{{ form.prazo.value|date:'Y-m-d\TH:i'|default:'' }}"
-                                           class="form-control datetime-input">
-                                    <div class="input-group-append">
-                                        <span class="input-group-text"><i class="far fa-calendar"></i></span>
-                                    </div>
-                                </div>
-                                {% if form.prazo.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.prazo.errors }}
-                                </div>
-                                {% endif %}
+                                <label for="{{ form.prazo.id_for_label }}" class="form-label"><i class="fas fa-hourglass-end"></i> Prazo Final</label>
+                                {{ form.prazo }}
+                                {% if form.prazo.errors %}<div class="error-message">{{ form.prazo.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <!-- NOVO: Adicionando os campos de lembrete que estavam faltando -->
+                            <div class="form-group {% if form.dias_lembrete.errors %}has-error{% endif %}">
+                                <label for="{{ form.dias_lembrete.id_for_label }}" class="form-label"><i class="far fa-bell"></i> Dias para Lembrete</label>
+                                {{ form.dias_lembrete }}
+                                {% if form.dias_lembrete.help_text %}<small class="text-muted">{{ form.dias_lembrete.help_text }}</small>{% endif %}
+                                {% if form.dias_lembrete.errors %}<div class="error-message">{{ form.dias_lembrete.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="form-group {% if form.data_lembrete.errors %}has-error{% endif %}">
+                                <label for="{{ form.data_lembrete.id_for_label }}" class="form-label"><i class="far fa-calendar-check"></i> Data do Lembrete</label>
+                                {{ form.data_lembrete }}
+                                {% if form.data_lembrete.help_text %}<small class="text-muted">{{ form.data_lembrete.help_text }}</small>{% endif %}
+                                {% if form.data_lembrete.errors %}<div class="error-message">{{ form.data_lembrete.errors }}</div>{% endif %}
                             </div>
 
                             {% if tarefa.concluida_em %}
                             <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-check-circle"></i> Concluída em
-                                </label>
-                                <input type="text" 
-                                       value="{{ tarefa.concluida_em|date:'d/m/Y H:i' }}" 
-                                       class="form-control" 
-                                       disabled>
+                                <label class="form-label"><i class="fas fa-check-circle"></i> Concluída em</label>
+                                <input type="text" value="{{ tarefa.concluida_em|date:'d/m/Y H:i' }}" class="form-control" disabled>
                             </div>
                             {% endif %}
                         </div>
@@ -199,152 +130,60 @@
 
                     <!-- Seção: Responsáveis -->
                     <div class="form-section card">
-                        <div class="card-header">
-                            <i class="fas fa-users"></i> Responsáveis
-                        </div>
+                        <div class="card-header"><i class="fas fa-users"></i> Responsáveis</div>
                         <div class="card-body">
                             <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-user-plus"></i> Criado por
-                                </label>
-                                <input type="text" 
-                                       value="{{ tarefa.usuario.get_full_name|default:tarefa.usuario.username }}" 
-                                       class="form-control" 
-                                       disabled>
+                                <label class="form-label"><i class="fas fa-user-plus"></i> Criado por</label>
+                                <input type="text" value="{{ tarefa.usuario.get_full_name|default:tarefa.usuario.username }}" class="form-control" disabled>
                             </div>
-
                             <div class="form-group {% if form.responsavel.errors %}has-error{% endif %}">
-                                <label for="{{ form.responsavel.id_for_label }}" class="form-label">
-                                    <i class="fas fa-user-tie"></i> Responsável
-                                </label>
+                                <label for="{{ form.responsavel.id_for_label }}" class="form-label"><i class="fas fa-user-tie"></i> Responsável</label>
                                 {{ form.responsavel }}
-                                {% if form.responsavel.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.responsavel.errors }}
-                                </div>
-                                {% endif %}
+                                {% if form.responsavel.errors %}<div class="error-message">{{ form.responsavel.errors }}</div>{% endif %}
                             </div>
                         </div>
                     </div>
 
                     <!-- Seção: Tempo -->
                     <div class="form-section card">
-                        <div class="card-header">
-                            <i class="fas fa-stopwatch"></i> Tempo
-                        </div>
+                        <div class="card-header"><i class="fas fa-stopwatch"></i> Tempo</div>
                         <div class="card-body">
                             <div class="form-group {% if form.duracao_prevista.errors %}has-error{% endif %}">
-                                <label for="{{ form.duracao_prevista.id_for_label }}" class="form-label">
-                                    <i class="far fa-clock"></i> Duração Prevista
-                                </label>
-                                <div class="input-group">
-                                    {{ form.duracao_prevista }}
-                                    <div class="input-group-append">
-                                        <span class="input-group-text">horas</span>
-                                    </div>
-                                </div>
-                                {% if form.duracao_prevista.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.duracao_prevista.errors }}
-                                </div>
-                                {% endif %}
+                                <label for="{{ form.duracao_prevista.id_for_label }}" class="form-label"><i class="far fa-clock"></i> Duração Prevista (horas)</label>
+                                {{ form.duracao_prevista }}
+                                {% if form.duracao_prevista.errors %}<div class="error-message">{{ form.duracao_prevista.errors }}</div>{% endif %}
                             </div>
-
                             <div class="form-group {% if form.tempo_gasto.errors %}has-error{% endif %}">
-                                <label for="{{ form.tempo_gasto.id_for_label }}" class="form-label">
-                                    <i class="fas fa-clock"></i> Tempo Gasto
-                                </label>
-                                <div class="input-group">
-                                    {{ form.tempo_gasto }}
-                                    <div class="input-group-append">
-                                        <span class="input-group-text">horas</span>
-                                    </div>
-                                </div>
-                                {% if form.tempo_gasto.errors %}
-                                <div class="error-message">
-                                    <i class="fas fa-exclamation-triangle"></i> {{ form.tempo_gasto.errors }}
-                                </div>
-                                {% endif %}
+                                <input type="text" name="tempo_gasto" pattern="(\d{1,2} )?(\d{1,2}:)?(\d{1,2}:)?\d{1,2}" placeholder="DD HH:MM:SS">
+                                <label for="{{ form.tempo_gasto.id_for_label }}" class="form-label"><i class="fas fa-clock"></i> Tempo Gasto (horas)</label>
+                                {{ form.tempo_gasto }}
+                                {% if form.tempo_gasto.errors %}<div class="error-message">{{ form.tempo_gasto.errors }}</div>{% endif %}
                             </div>
-
-                            {% if tarefa.duracao_prevista and tarefa.tempo_gasto %}
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-chart-line"></i> Progresso
-                                </label>
-                                <div class="progress-container">
-                                    <div class="progress">
-                                        <div class="progress-bar progress-bar-striped 
-                                                    {% if tarefa.progresso < 50 %}bg-danger
-                                                    {% elif tarefa.progresso < 75 %}bg-warning
-                                                    {% else %}bg-success{% endif %}" 
-                                             style="width: {{ tarefa.progresso }}%">
-                                            <span class="progress-text">{{ tarefa.progresso }}%</span>
-                                        </div>
-                                    </div>
-                                    <small class="text-muted">
-                                        {{ tarefa.tempo_gasto }}h de {{ tarefa.duracao_prevista }}h
-                                    </small>
-                                </div>
-                            </div>
-                            {% endif %}
+                            <!-- ... (seção de progresso) ... -->
                         </div>
                     </div>
 
                     <!-- Seção: Informações do Sistema -->
                     <div class="form-section card">
-                        <div class="card-header">
-                            <i class="fas fa-info-circle"></i> Informações do Sistema
-                        </div>
+                        <div class="card-header"><i class="fas fa-cogs"></i> Informações do Sistema</div>
                         <div class="card-body">
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="far fa-calendar-plus"></i> Criado em
-                                </label>
-                                <input type="text" 
-                                       value="{{ tarefa.data_criacao|date:'d/m/Y H:i' }}" 
-                                       class="form-control" 
-                                       disabled>
+                             <div class="form-group">
+                                <label class="form-label"><i class="far fa-calendar-plus"></i> Criado em</label>
+                                <input type="text" value="{{ tarefa.data_criacao|date:'d/m/Y H:i' }}" class="form-control" disabled>
                             </div>
-
                             <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-sync-alt"></i> Última Atualização
-                                </label>
-                                <input type="text" 
-                                       value="{{ tarefa.data_atualizacao|date:'d/m/Y H:i' }}" 
-                                       class="form-control" 
-                                       disabled>
+                                <label class="form-label"><i class="fas fa-sync-alt"></i> Última Atualização</label>
+                                <input type="text" value="{{ tarefa.data_atualizacao|date:'d/m/Y H:i' }}" class="form-control" disabled>
                             </div>
-
-                            <div class="form-group">
-                                <label class="form-label">
-                                    <i class="fas fa-traffic-light"></i> Situação
-                                </label>
-                                <div class="status-indicator {% if tarefa.atrasada %}status-atrasada{% else %}status-ok{% endif %}">
-                                    <i class="fas fa-{% if tarefa.atrasada %}exclamation-triangle{% else %}check-circle{% endif %}"></i>
-                                    {% if tarefa.atrasada %}Atrasada{% else %}No prazo{% endif %}
-                                    {% if tarefa.dias_restantes is not None %}
-                                    <span class="days-remaining">
-                                        ({{ tarefa.dias_restantes }} dia{{ tarefa.dias_restantes|pluralize }})
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
+                            <!-- ... (seção de situação) ... -->
                         </div>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Salvar Alterações
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='{% url 'tarefas:listar_tarefas' %}'">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-danger confirm-delete">
-                        <i class="fas fa-trash-alt"></i> Excluir Tarefa
-                    </a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Salvar Alterações</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='{% url 'tarefas:listar_tarefas' %}'"><i class="fas fa-times"></i> Cancelar</button>
+                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-danger confirm-delete"><i class="fas fa-trash-alt"></i> Excluir Tarefa</a>
                 </div>
             </form>
         </main>
@@ -354,38 +193,58 @@
     {% include 'includes/footer.html' %}
 
     <!-- Scripts -->
-    <script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
             // Confirmação antes de excluir
-            $('.confirm-delete').on('click', function() {
-                return confirm('Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.');
+            $('.confirm-delete').on('click', function(e) {
+                if (!confirm('Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.')) {
+                    e.preventDefault();
+                }
             });
 
-            // Validação do formulário
+            // Validação de formulário no lado do cliente
             $('#tarefaForm').on('submit', function() {
-                const prazo = $('#{{ form.prazo.id_for_label }}').val();
-                const dataInicio = $('#{{ form.data_inicio.id_for_label }}').val();
+                // CORREÇÃO: Seletores agora devem funcionar
+                const prazoInput = $('#{{ form.prazo.id_for_label }}');
+                const dataInicioInput = $('#{{ form.data_inicio.id_for_label }}');
                 
-                if (prazo && dataInicio && new Date(prazo) < new Date(dataInicio)) {
-                    alert('O prazo não pode ser anterior à data de início!');
-                    return false;
+                if (prazoInput.val() && dataInicioInput.val()) {
+                    const prazo = new Date(prazoInput.val());
+                    /*const dataInicio = new Date(dataInicioInput.val());*/
+
+                    if (prazo < dataInicio) {
+                        alert('O prazo não pode ser anterior à data de início!');
+                        return false; // Impede o envio do formulário
+                    }
                 }
-                return true;
+                return true; // Permite o envio
             });
 
             // Atualizar data_lembrete quando prazo ou dias_lembrete mudar
-            $('#{{ form.prazo.id_for_label }}, #{{ form.dias_lembrete.id_for_label }}').on('change', function() {
-                const prazo = $('#{{ form.prazo.id_for_label }}').val();
-                const dias = $('#{{ form.dias_lembrete.id_for_label }}').val();
+            const prazoInput = $('#{{ form.prazo.id_for_label }}');
+            const diasInput = $('#{{ form.dias_lembrete.id_for_label }}');
+            const dataLembreteInput = $('#{{ form.data_lembrete.id_for_label }}');
+
+            function atualizarDataLembrete() {
+                const prazo = prazoInput.val();
+                const dias = diasInput.val();
                 
                 if (prazo && dias) {
                     const prazoDate = new Date(prazo);
                     prazoDate.setDate(prazoDate.getDate() - parseInt(dias));
-                    $('#{{ form.data_lembrete.id_for_label }}').val(prazoDate.toISOString().slice(0, 16));
+                    
+                    // Formata a data para o formato 'YYYY-MM-DDTHH:MM'
+                    const offset = prazoDate.getTimezoneOffset();
+                    const localDate = new Date(prazoDate.getTime() - (offset*60*1000));
+                    dataLembreteInput.val(localDate.toISOString().slice(0, 16));
                 }
-            });
+            }
+
+            prazoInput.on('change', atualizarDataLembrete);
+            diasInput.on('change', atualizarDataLembrete);
         });
     </script>
 {% endblock %}
+
+

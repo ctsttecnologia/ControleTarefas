@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'seguranca_trabalho',
     'departamento_pessoal',
     'tarefas.apps.TarefasConfig',
+    'rest_framework',
     'logradouro',
     'epi',
     'widget_tweaks',
@@ -187,6 +188,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'seu-email@dominio.com'
 EMAIL_HOST_PASSWORD = 'sua-senha'
 DEFAULT_FROM_EMAIL = 'seu-email@dominio.com'
+
+# Configurações DRF
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
 
 # LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
 # Corrija o LOGIN_REDIRECT_URL se 'profile' não for um nome de URL existente

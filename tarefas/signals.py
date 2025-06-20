@@ -1,9 +1,11 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.mail import send_mail
+from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.auth import get_user_model
+
 
 from .models import Tarefas, HistoricoStatus
 
@@ -28,3 +30,15 @@ def enviar_notificacao_status(sender, instance, created, **kwargs):
             [tarefa.usuario.email],
             fail_silently=True,
         )
+
+def criar_tarefa(request, instance):
+    if request.method == 'POST':
+        # lógica para salvar a tarefa...
+        send_mail(
+            subject='Nova tarefa criada',
+            message='Uma nova tarefa foi adicionada ao sistema.',
+            from_email='esg.emerson@gmail.com',
+            recipient_list=[instance.responsavel.email],
+            fail_silently=False,
+        )
+        return redirect('lista_tarefas')

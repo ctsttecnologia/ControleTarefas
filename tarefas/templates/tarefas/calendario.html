@@ -9,49 +9,204 @@
 <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
 <!-- Barra de Navegação Principal -->    
 {% include 'includes/header.html' %}
-    <div class="container">
 
+<div class="container calendar-container">
+    <div class="calendar-header">
         <div class="painel1">
-            <!-- Botão "Voltar para Home" -->
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn_profile">Nova Tarefa</a>
+            <button id="theme-toggle" class="btn-theme-toggle">
+                <i class="fas fa-moon"></i> Tema Escuro
+            </button>
         </div>
-
         <h2>Calendário de Tarefas</h2>
-        <div id="calendar"></div>
-    
+    </div>
+
+    <div id="calendar"></div>
+</div>
+
 <!-- Inclua FullCalendar CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
- <!-- Rodapé -->
+<!-- Font Awesome para ícones -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Rodapé -->
 {% include 'includes/footer.html' %}
 <!-- Inclua FullCalendar JS -->
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
-      
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('calendar');
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'pt-br',
-                events: [
-                    {% for evento in eventos %}
-                    {
-                        title: '{{ evento.title|escapejs }}',
-                        start: '{{ evento.start }}',
-                        color: '{{ evento.color }}',
-                        url: '{{ evento.url }}'
-                    },
-                    {% endfor %}
-                ],
-                eventClick: function(info) {
-                    if (info.event.url) {
-                        window.location.href = info.event.url;
-                        return false;
-                    }
+
+<style>
+    /* Estilos base */
+    .calendar-container {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .calendar-header {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .btn-theme-toggle {
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: 10px;
+    }
+    
+    .btn-theme-toggle:hover {
+        background-color: #1a252f;
+    }
+    
+    /* Estilo padrão (tema claro) */
+    :root {
+        --calendar-bg: #ffffff;
+        --calendar-border: #e0e0e0;
+        --calendar-text: #333333;
+        --calendar-header-bg: #f8f9fa;
+        --calendar-event-bg: #3788d8;
+        --calendar-event-text: #ffffff;
+        --calendar-today-bg: #ffffcc;
+    }
+    
+    /* Estilo tema escuro */
+    .dark-theme {
+        --calendar-bg: #2c3e50;
+        --calendar-border: #34495e;
+        --calendar-text: #ecf0f1;
+        --calendar-header-bg: #1a252f;
+        --calendar-event-bg: #3498db;
+        --calendar-event-text: #ffffff;
+        --calendar-today-bg: #3d566e;
+    }
+    
+    /* Aplicando os estilos ao calendário */
+    #calendar {
+        background-color: var(--calendar-bg);
+        border: 1px solid var(--calendar-border);
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .fc-toolbar-title,
+    .fc-col-header-cell-cushion,
+    .fc-daygrid-day-number,
+    .fc-timegrid-slot-label-cushion {
+        color: var(--calendar-text);
+    }
+    
+    .fc-col-header {
+        background-color: var(--calendar-header-bg);
+    }
+    
+    .fc-event {
+        background-color: var(--calendar-event-bg);
+        color: var(--calendar-event-text);
+        border: none;
+    }
+    
+    .fc-day-today {
+        background-color: var(--calendar-today-bg) !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verificar preferência de tema salva
+        const savedTheme = localStorage.getItem('calendar-theme') || 'light';
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-theme');
+            updateThemeButton('dark');
+        }
+        
+        // Configuração do calendário
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'pt-br',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                day: 'Dia'
+            },
+            events: [
+                {% for evento in eventos %}
+                {
+                    title: '{{ evento.title|escapejs }}',
+                    start: '{{ evento.start }}',
+                    color: '{{ evento.color }}',
+                    url: '{{ evento.url }}',
+                    description: '{{ evento.description|escapejs }}'
+                },
+                {% endfor %}
+            ],
+            eventClick: function(info) {
+                if (info.event.url) {
+                    window.location.href = info.event.url;
+                    return false;
                 }
-            });
-            calendar.render();
+            },
+            eventContent: function(arg) {
+                // Customização do conteúdo do evento
+                return {
+                    html: `<div class="fc-event-title">${arg.event.title}</div>`
+                };
+            },
+            eventDidMount: function(info) {
+                // Tooltip para mostrar descrição
+                if (info.event.extendedProps.description) {
+                    new bootstrap.Tooltip(info.el, {
+                        title: info.event.extendedProps.description,
+                        placement: 'top',
+                        trigger: 'hover',
+                        container: 'body'
+                    });
+                }
+            }
         });
-    </script>
-</div>
+        
+        calendar.render();
+        
+        // Botão de alternar tema
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            document.body.classList.toggle('dark-theme');
+            
+            if (document.body.classList.contains('dark-theme')) {
+                localStorage.setItem('calendar-theme', 'dark');
+                updateThemeButton('dark');
+            } else {
+                localStorage.setItem('calendar-theme', 'light');
+                updateThemeButton('light');
+            }
+            
+            calendar.updateSize(); // Atualiza o calendário após mudança de tema
+        });
+        
+        function updateThemeButton(theme) {
+            const button = document.getElementById('theme-toggle');
+            if (theme === 'dark') {
+                button.innerHTML = '<i class="fas fa-sun"></i> Tema Claro';
+                button.style.backgroundColor = '#f8f9fa';
+                button.style.color = '#333';
+            } else {
+                button.innerHTML = '<i class="fas fa-moon"></i> Tema Escuro';
+                button.style.backgroundColor = '#2c3e50';
+                button.style.color = 'white';
+            }
+        }
+    });
+</script>
 {% endblock %}

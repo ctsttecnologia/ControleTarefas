@@ -2,85 +2,112 @@
 {% extends 'base.html' %}
 {% load static %}
 
-
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
+{% block extra_css %}
 <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
+{% endblock %}
+
 {% block content %}
-    
-<div class="container mt-4">
-    <div class="painel">
-            <!-- Botão "Voltar para Home" -->
-            <a href="{% url 'home' %}" class="btn-home">Início</a>
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
-    </div>
+    <div class="container mt-4">
+        <!-- Cabeçalho -->
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div class="painel-controles">
+                <a href="{% url 'profile' %}" class="btn btn-info">
+                    <i class="fas fa-user"></i> Menu
+                </a>
+                <a href="{% url 'usuario:logout' %}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
+            </div>
             
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Lista de Tarefas</h1>
-        <div>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Nova Tarefa
-            </a>
+            <h1 class="mb-0">Lista de Tarefas</h1>
+            
+            <div>
+                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Nova Tarefa
+                </a>
+            </div>
+        </header>
+
+        <!-- Tabela de Tarefas -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="bg-primary text-white">
+                            <tr>
+                                <th>Título</th>
+                                <th>Projeto</th>
+                                <th>Criado por</th>
+                                <th>Responsável</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                                <th>Prazo</th>
+                                <th>Progresso</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tarefa in tarefas %}
+                            <tr class="align-middle">
+                                <td>{{ tarefa.titulo }}</td>
+                                <td>{{ tarefa.projeto|default:"-" }}</td>
+                                <td>{{ tarefa.usuario.username }}</td>
+                                <td>{{ tarefa.responsavel.username|default:"-" }}</td>
+                                <td>
+                                    <span class="badge bg-{{ tarefa.status }}">
+                                        {{ tarefa.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ tarefa.prioridade }}">
+                                        {{ tarefa.get_prioridade_display }}
+                                    </span>
+                                </td>
+                                <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" 
+                                            role="progressbar" 
+                                            style="width: {{ tarefa.progresso }}%" 
+                                            aria-valuenow="{{ tarefa.progresso }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                            {{ tarefa.progresso }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="d-flex gap-2">
+                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" 
+                                    class="btn btn-sm btn-info" 
+                                    title="Visualizar">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" 
+                                    class="btn btn-sm btn-warning" 
+                                    title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" 
+                                    class="btn btn-sm btn-danger" 
+                                    title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-4">
+                                    <div class="alert alert-info">
+                                        Nenhuma tarefa encontrada.
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Título</th>
-                    <th>Projeto</th>
-                    <th>Criado por</th>
-                    <th>Responsável</th>
-                    <th>Status</th>
-                    <th>Prioridade</th>
-                    <th>Prazo</th>
-                    <th>Progresso</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for tarefa in tarefas %}
-                <tr>
-                    <td>{{ tarefa.titulo }}</td>
-                    <td>{{ tarefa.projeto|default:"-" }}</td>
-                    <td>{{ tarefa.usuario.username }}</td>
-                    <td>{{ tarefa.responsavel.username|default:"-" }}</td>
-                    <td>
-                        <span class="badge badge-{{ tarefa.status }}">
-                            {{ tarefa.get_status_display }}
-                        </span>
-                    </td>
-                    <td>
-                        <span class="badge badge-{{ tarefa.prioridade }}">
-                            {{ tarefa.get_prioridade_display }}
-                        </span>
-                    </td>
-                    <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
-                    <td>
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: {{ tarefa.progresso }}%" 
-                                aria-valuenow="{{ tarefa.progresso }}" aria-valuemin="0" aria-valuemax="100">
-                                {{ tarefa.progresso }}%
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-sm btn-info">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn-warning">Editar</a>
-                        <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn-danger">Excluir</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="9">Nenhuma tarefa encontrada.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
 {% endblock %}
 
