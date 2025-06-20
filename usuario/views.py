@@ -56,7 +56,7 @@ def perfil_view(request):
     # Sua lógica de view aqui
     return render(request, 'usuario/profile.html')
 
-@login_required
+
 def cadastrar_usuario(request):
     if request.method == 'POST':
         form = UsuarioCreationForm(request.POST)
@@ -78,7 +78,7 @@ def lista_usuarios(request):
     return render(request, 'usuario/lista_usuarios.html', {'usuarios': usuarios})
 
 # Alterar senha para usuário logado
-@login_required
+
 def alterar_senha(request, pk):
     usuario = get_object_or_404(Usuario, pk=pk)
     

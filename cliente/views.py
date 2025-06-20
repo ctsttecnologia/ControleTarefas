@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.http import HttpResponse 
 
@@ -15,8 +15,6 @@ from logradouro.models import Logradouro
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
-
-
 
 
 @login_required
@@ -41,26 +39,29 @@ def cadastro_cliente(request):
     })
 
 @login_required
-def editar_cliente(request, id):
-    cliente = get_object_or_404(Cliente, id=id)
+def editar_cliente(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    
     if request.method == 'POST':
         form = ClienteForm(request.POST, instance=cliente)
         if form.is_valid():
             form.save()
             messages.success(request, 'Cliente atualizado com sucesso!')
-            return redirect('cliente:lista_clientes')
+            return redirect('cliente:lista_clientes')  # Corrigido para redirecionar para a lista
+            
     else:
         form = ClienteForm(instance=cliente)
     
-    return render(request, 'cliente/cadastro_cliente.html', {
+    return render(request, 'cliente/editar_cliente.html', {
         'form': form,
+        'object': cliente,
         'enderecos': Logradouro.objects.all(),
         'edicao': True
     })
 
 @login_required
-def excluir_cliente(request, id):
-    cliente = get_object_or_404(Cliente, id=id)
+def excluir_cliente(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
     if request.method == 'POST':
         cliente.delete()
         messages.success(request, 'Cliente excluído com sucesso!')
