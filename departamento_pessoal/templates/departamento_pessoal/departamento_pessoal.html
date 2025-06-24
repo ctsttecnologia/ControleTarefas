@@ -28,7 +28,41 @@
     </div>
     <div class="container">    
         <div class="painel1">
-           CORPO
+           <!-- Cards de Resumo -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-primary h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Total Treinamentos</h5>
+                            <p class="card-text display-4">{{ total_treinamentos }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-success h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Participantes</h5>
+                            <p class="card-text display-4">{{ total_participantes }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-info h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Em Andamento</h5>
+                            <p class="card-text display-4">{{ em_andamento }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-warning h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Investimento Total</h5>
+                            <p class="card-text display-4">R$ {{ total_custo|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>                             
     </div>
 </body> 

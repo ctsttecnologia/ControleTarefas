@@ -14,7 +14,7 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(template_name='logout.html'), name='logout'),
     path('', include('home.urls')),  # Inclui as URLs do app home
     path('accounts/', include('usuario.urls')),
-    path('usuario/', include(('usuario.urls', 'usuario'), namespace='usuario')),
+    path('usuario/', include(('usuario.urls', 'usuario'), namespace='usuariouse')),
     
     # Outros apps
     path('profile/', views.profile_view, name='profile'),

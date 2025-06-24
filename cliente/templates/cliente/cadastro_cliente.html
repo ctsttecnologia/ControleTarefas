@@ -1,57 +1,12 @@
 
-{% extends 'base.html' %}
 {% load static %}
 
-{% block extra_css %}
-{{ block.super }}
+
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<style>
-    /* Estilos específicos para este template */
-    .form-floating > label {
-        transform-origin: 0 0;
-        transition: all 0.2s ease-out;
-    }
-    
-    .form-floating > .form-control:focus ~ label,
-    .form-floating > .form-control:not(:placeholder-shown) ~ label,
-    .form-floating > .form-select ~ label {
-        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-        opacity: 0.8;
-    }
-    
-    .select2-container--default .select2-selection--single {
-        height: calc(3.5rem + 2px);
-        padding: 1rem 0.75rem;
-        border: 1px solid #ced4da;
-    }
-    
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: calc(3.5rem + 2px);
-    }
-    
-    .card {
-        border-radius: 0.5rem;
-    }
-    
-    .form-control, .form-select {
-        border-radius: 0.375rem;
-    }
-        /* Estilos para as máscaras e validação */
-    .invalid-input {
-        border-color: #dc3545 !important;
-    }
-    
-    .valid-input {
-        border-color: #28a745 !important;
-    }
-    
-    .mask-error {
-        color: #dc3545;
-        font-size: 0.875em;
-        display: none;
-    }
-</style>
-{% endblock %}
+<link rel="stylesheet" href="{% static 'csscliente/styles.css' %}"> 
+
+<!-- Barra de Navegação Principal -->
+{% include 'includes/header.html' %}
 
 {% block content %}
 <div class="container py-4">
@@ -68,7 +23,6 @@
     <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0"><i class="fas fa-user-plus me-2"></i>Cadastrar Cliente</h2>
-
         <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary">
             <i class="fas fa-list me-1"></i> Clientes Cadastrados
         </a>
@@ -261,9 +215,11 @@
     </div>
 </div>
 {% endblock %}
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}  
 
 {% block extra_js %}
-{{ block.super }}
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
@@ -360,3 +316,5 @@ $(document).ready(function() {
 });
 </script>
 {% endblock %}
+
+

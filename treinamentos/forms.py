@@ -1,12 +1,14 @@
+# G:\Projetos\treinamentos\forms.py
+
 from django import forms
-from .models import TipoTreinamento, Treinamento, TreinamentoColaborador
-from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.forms import inlineformset_factory, BaseInlineFormSet
+from django.apps import apps # Importe 'apps'
+from .models import Treinamento, Participante, TipoCurso
+from django.conf import settings
 
-
-class TipoTreinamentoForm(forms.ModelForm):
+class TipoCursoForm(forms.ModelForm):
     class Meta:
-        model = TipoTreinamento
+        model = TipoCurso
         fields = '__all__'
         widgets = {
             'descricao': forms.Textarea(attrs={'rows': 3}),
@@ -16,40 +18,50 @@ class TreinamentoForm(forms.ModelForm):
     class Meta:
         model = Treinamento
         fields = '__all__'
-    
-    def clean(self):
-        cleaned_data = super().clean()
-        data_inicio = cleaned_data.get('data_inicio')
-        data_fim = cleaned_data.get('data_fim')
-
-        if not data_inicio or not data_fim:
-            return cleaned_data
-
-        # Converter para timezone-aware datetime se necessário
-        if isinstance(data_inicio, date) and not isinstance(data_inicio, datetime):
-            data_inicio = timezone.make_aware(
-                datetime.combine(data_inicio, datetime.min.time())
-            )
-        if isinstance(data_fim, date) and not isinstance(data_fim, datetime):
-            data_fim = timezone.make_aware(
-                datetime.combine(data_fim, datetime.min.time())
-            )
-
-        # Validações
-        if data_inicio > data_fim:
-            self.add_error('data_fim', 'A data de término não pode ser anterior à data de início')
-        
-        if data_inicio < timezone.now():
-            self.add_error('data_inicio', 'Não é possível agendar treinamentos para datas passadas')
-
-        return cleaned_data
-
-class TreinamentoColaboradorForm(forms.ModelForm):
-    class Meta:
-        model = TreinamentoColaborador
-        fields = '__all__'
         widgets = {
-            'data_realizacao': forms.DateInput(attrs={'type': 'date'}),
-            'data_validade': forms.DateInput(attrs={'type': 'date'}),
+            'data_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'data_vencimento': forms.DateInput(attrs={'type': 'date'}),
+            'descricao': forms.Textarea(attrs={'rows': 4}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['tipo_curso'].queryset = TipoCurso.objects.filter(ativo=True)
+        # Use apps.get_model para obter o modelo de usuário
+        User = apps.get_model(settings.AUTH_USER_MODEL)
+        self.fields['responsavel'].queryset = User.objects.filter(is_active=True)
+
+class ParticipanteForm(forms.ModelForm):
+    class Meta:
+        model = Participante
+        fields = ['funcionario', 'presente']
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        User = apps.get_model(settings.AUTH_USER_MODEL)
+        self.fields['funcionario'].queryset = User.objects.filter(is_active=True)
+
+class BaseParticipanteFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        
+        participantes = []
+        for form in self.forms:
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                funcionario = form.cleaned_data.get('funcionario')
+                if funcionario in participantes:
+                    form.add_error('funcionario', 'Este funcionário já está na lista.')
+                participantes.append(funcionario)
+
+# Criação do FormSet
+ParticipanteFormSet = inlineformset_factory(
+    Treinamento,
+    Participante,
+    form=ParticipanteForm,
+    formset=BaseParticipanteFormSet,
+    fields=['funcionario', 'presente'],
+    extra=1,
+    can_delete=True
+)

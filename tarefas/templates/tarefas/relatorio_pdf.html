@@ -1,7 +1,12 @@
 <!DOCTYPE html>
+
 <html>
 <head>
     <title>Relatório de Tarefas - PDF</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; }
         h1 { color: #333; text-align: center; }
@@ -17,8 +22,6 @@
         }
         .page-break { page-break-after: always; }
     </style>
-</head>
-<body>
     <!-- Adicione no cabeçalho -->
     <div style="text-align: left; margin-bottom: 20px;">
         <img src="{{ logo_path }}" style="height: 40px;" alt="Logo">
@@ -78,5 +81,7 @@
             {% endfor %}
         </tbody>
     </table>
+    <!-- Rodapé -->
+    {% include 'includes/footer.html' %}
 </body>
 </html>

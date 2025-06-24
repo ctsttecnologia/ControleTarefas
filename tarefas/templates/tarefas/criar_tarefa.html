@@ -1,69 +1,102 @@
 
 {% load static %}
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Criar Tarefa{% endblock %}</title>
-<link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
-
-{% block content %}
-<div class="container">
-    <h2><i class="fas fa-plus-circle"></i> CRIAR NOVA TAREFA</h2>
-    <div class="container">
-        <!-- Botão "Voltar" -->
-        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-secondary mb-3">
-            <i class="fas fa-arrow-left"></i> Voltar para a Lista
-        </a>
-    </div>    
+{% block head %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Criar Tarefa{% endblock %}</title>
     
-    <div class="form-container card">
-        <div class="card-body">
-            <form method="post" class="task-form">
-                {% csrf_token %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-                <!-- Loop para renderizar cada campo do formulário com estilo -->
-                {% for field in form %}
-                    <div class="form-group mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label {% if field.field.required %}required{% endif %}">
-                            {{ field.label }}
-                        </label>
-                        {{ field }}
-                        {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                        {% endif %}
-                        {% for error in field.errors %}
-                            <div class="error-message text-danger">
-                                <i class="fas fa-exclamation-triangle"></i> {{ error }}
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endfor %}
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Salvar Tarefa
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}
+        <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
 {% endblock %}
 
-<style>
-    .required:after {
-        content: " *";
-        color: red;
-    }
-    .error-message {
-        font-size: 0.875em;
-        margin-top: 0.25rem;
-    }
-</style>
+{% block content %}
+    <!-- Barra de Navegação Principal -->
+    {% include 'includes/header.html' %}
+    
+    <main class="task-create-container">
+        <div class="container">
+            <div class="task-header">
+                <h1 class="task-title">
+                    <i class="fas fa-plus-circle"></i> Criar Nova Tarefa
+                </h1>
+                <div class="task-actions">
+                    <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-back">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                    <button id="themeToggle" class="btn btn-theme" title="Alternar Tema">
+                        <i class="fas fa-adjust"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-container card">
+                <div class="card-body">
+                    <form method="post" class="task-form">
+                        {% csrf_token %}
+
+                        <!-- Loop para renderizar cada campo do formulário -->
+                        {% for field in form %}
+                            <div class="form-group mb-4">
+                                <label for="{{ field.id_for_label }}" class="form-label {% if field.field.required %}required{% endif %}">
+                                    {{ field.label }}
+                                </label>
+                                
+                                {% if field.field.widget.input_type == 'select' %}
+                                    <div class="select-wrapper">
+                                        {{ field }}
+                                        <i class="fas fa-chevron-down select-arrow"></i>
+                                    </div>
+                                {% else %}
+                                    {{ field }}
+                                {% endif %}
+                                
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted">{{ field.help_text }}</small>
+                                {% endif %}
+                                
+                                {% for error in field.errors %}
+                                    <div class="error-message">
+                                        <i class="fas fa-exclamation-circle"></i> {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-save">
+                                <i class="fas fa-save"></i> Salvar Tarefa
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    {% include 'includes/footer.html' %}
+
+    <!-- Scripts -->
+    <script>
+        // Toggle de tema escuro/claro
+        const toggle = document.getElementById("themeToggle");
+        const body = document.body;
+
+        // Aplica o tema salvo
+        if (localStorage.getItem("darkMode") === "enabled") {
+            body.classList.add("dark-mode");
+        }
+
+        toggle.addEventListener("click", () => {
+            body.classList.toggle("dark-mode");
+            const isDark = body.classList.contains("dark-mode");
+            localStorage.setItem("darkMode", isDark ? "enabled" : "disabled");
+        });
+    </script>
+{% endblock %}
 

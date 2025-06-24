@@ -1,194 +1,313 @@
-/* Estilos para o relatório */
+
+/* Variáveis CSS */
+:root {
+    --primary-color: #4e73df;
+    --primary-hover: #2e59d9;
+    --success-color: #1cc88a;
+    --success-hover: #17a673;
+    --info-color: #36b9cc;
+    --info-hover: #2c9faf;
+    --warning-color: #f6c23e;
+    --warning-hover: #dda20a;
+    --danger-color: #e74a3b;
+    --danger-hover: #be2617;
+    --secondary-color: #858796;
+    --secondary-hover: #6b6d7d;
+    --light-color: #f8f9fc;
+    --dark-color: #5a5c69;
+    --border-radius: 0.35rem;
+    --box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    --transition: all 0.3s ease;
+}
+
+/* Estilos Base */
+.relatorio-container {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+    margin-top: 60px;
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 0 15px;
 }
 
-.painel {
+h1 {
+    font-size: 2rem;
+    color: var(--dark-color);
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+/* Painel de Ações */
+.painel-acoes {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
     flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    justify-content: right;
 }
 
+/* Botões */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-home {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-home:hover {
+    background-color: var(--secondary-hover);
+    color: white;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-hover);
+    color: white;
+}
+
+.btn-warning {
+    background-color: var(--warning-color);
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: var(--warning-hover);
+    color: white;
+}
+
+.btn-profile {
+    background-color: var(--info-color);
+    color: white;
+}
+
+.btn-profile:hover {
+    background-color: var(--info-hover);
+    color: white;
+}
+
+/* Formulário de Filtros */
 .filtros-form {
     display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
     flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
     align-items: flex-end;
+    background: white;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
 }
 
 .filtro-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    min-width: 150px;
 }
 
 .filtro-group label {
-    font-weight: bold;
-    font-size: 0.9em;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--dark-color);
 }
 
-.filtro-group select, 
+.filtro-group select,
 .filtro-group input {
-    padding: 8px 12px;
+    padding: 0.5rem;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
 }
 
+/* Card de Resumo */
 .resumo-card {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 30px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.resumo-card h2 {
-    margin-top: 0;
-    color: #333;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 10px;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 2rem;
+    padding: 1rem;
 }
 
 .resumo-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-    margin-top: 15px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
 }
 
 .resumo-item {
-    background: white;
-    padding: 15px;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    text-align: center;
+    padding: 1rem;
+    background: #f8f9fc;
+    border-radius: var(--border-radius);
+    border-left: 4px solid transparent;
+}
+
+.resumo-item.total {
+    border-left-color: var(--dark-color);
 }
 
 .resumo-item span {
     display: block;
-    font-size: 0.9em;
-    color: #666;
-    margin-bottom: 5px;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    margin-bottom: 0.5rem;
 }
 
 .resumo-item strong {
-    font-size: 1.2em;
-    color: #333;
+    font-size: 1.2rem;
+    color: var(--dark-color);
 }
 
-/* Cores específicas para cada status */
-.resumo-item.total {
-    border-left: 4px solid #6c757d;
-}
-
-.resumo-item.pendente {
-    border-left: 4px solid #FFC107;
-}
-
-.resumo-item.andamento {
-    border-left: 4px solid #2196F3;
-}
-
-.resumo-item.concluida {
-    border-left: 4px solid #4CAF50;
-}
-
-.resumo-item.cancelada {
-    border-left: 4px solid #F44336;
-}
-
-.resumo-item.pausada {
-    border-left: 4px solid #9C27B0;
-}
-
+/* Gráfico */
 .chart-container {
-    position: relative;
-    height: 400px;
-    margin-bottom: 30px;
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 2rem;
+    height: 400px;
 }
 
-.table-responsive {
+/* Tabela de Tarefas */
+.table-container {
     overflow-x: auto;
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1rem;
 }
 
 .tarefas-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 20px;
-    background: white;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    overflow: hidden;
+}
+
+.tarefas-table th,
+.tarefas-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e3e6f0;
 }
 
 .tarefas-table th {
-    background-color: #f8f9fa;
-    padding: 12px 15px;
-    text-align: left;
+    background-color: #f8f9fc;
+    color: var(--dark-color);
     font-weight: 600;
-    color: #495057;
-}
-
-.tarefas-table td {
-    padding: 12px 15px;
-    border-top: 1px solid #dee2e6;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
 }
 
 .tarefas-table tbody tr:hover {
-    background-color: #f8f9fa;
+    background-color: #f8f9fc;
 }
 
+/* Badges de Status */
 .badge {
     display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    font-weight: 600;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
     color: white;
 }
 
-.badge-pendente {
-    background-color: #FFC107;
+.status-pendente {
+    background-color: var(--warning-color);
 }
 
-.badge-andamento {
-    background-color: #2196F3;
+.status-andamento {
+    background-color: var(--info-color);
 }
 
-.badge-concluida {
-    background-color: #4CAF50;
+.status-concluido {
+    background-color: var(--success-color);
 }
 
-.badge-cancelada {
-    background-color: #F44336;
+.status-cancelado {
+    background-color: var(--secondary-color);
 }
 
-.badge-pausada {
-    background-color: #9C27B0;
+/* Mensagem sem resultados */
+.no-results {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--secondary-color);
+    font-style: italic;
 }
 
-/* Estilos responsivos */
-@media (max-width: 768px) {
+/* Responsividade */
+@media (max-width: 992px) {
+    .resumo-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+    
     .filtros-form {
         flex-direction: column;
         align-items: stretch;
     }
     
-    .resumo-grid {
-        grid-template-columns: 1fr 1fr;
+    .filtro-group {
+        min-width: 100%;
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    .chart-container {
+        height: 350px;
+    }
+    
+    .tarefas-table th,
+    .tarefas-table td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .relatorio-container {
+        padding: 15px 10px;
+    }
+    
     .resumo-grid {
         grid-template-columns: 1fr;
     }
+    
+    .painel-acoes {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        width: 100%;
+    }
 }
+
+

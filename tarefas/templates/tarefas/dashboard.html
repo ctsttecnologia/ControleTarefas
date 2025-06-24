@@ -1,150 +1,153 @@
 
-
 {% load static %}
 
-{% block content %}
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+ 
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Depois o Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Seu CSS primeiro -->
+    <link rel="stylesheet" href="{% static 'csstarefa/dashboard.css' %}">
 
-<link rel="stylesheet" href="{% static 'csstarefa/dashboard.css' %}">
+
 
 <!-- Barra de Navegação Principal -->    
 {% include 'includes/header.html' %}
-<div class="container">
-    <div class="container-fluid">
-        <h2 class="mt-4">Dashboard de Tarefas</h2>
-        
-        <div class="row mt-4">
-            <!-- Cards de métricas -->
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-primary shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                    Total de Tarefas</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_tarefas }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-tasks fa-2x text-gray-300"></i>
-                            </div>
+
+{% block content %}   
+    <main class="dashboard-container">
+        <div class="container-fluid">
+            <div class="dashboard-header">
+                <h1>Dashboard de Tarefas</h1>
+            </div>
+            
+            <!-- Cards de Métricas -->
+            <div class="metrics-grid">
+                <!-- Total de Tarefas -->
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-info">
+                            <p class="metric-label">Total de Tarefas</p>
+                            <p class="metric-value">{{ total_tarefas }}</p>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="fas fa-tasks"></i>
                         </div>
                     </div>
+                    <div class="metric-border metric-border-primary"></div>
+                </div>
+
+                <!-- Tarefas Concluídas -->
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-info">
+                            <p class="metric-label">Tarefas Concluídas</p>
+                            <p class="metric-value">{{ tarefas_concluidas }}</p>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="metric-border metric-border-success"></div>
+                </div>
+
+                <!-- Tarefas Atrasadas -->
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-info">
+                            <p class="metric-label">Tarefas Atrasadas</p>
+                            <p class="metric-value">{{ tarefas_atrasadas }}</p>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="metric-border metric-border-warning"></div>
+                </div>
+
+                <!-- Tarefas em Andamento -->
+                <div class="metric-card">
+                    <div class="metric-content">
+                        <div class="metric-info">
+                            <p class="metric-label">Tarefas em Andamento</p>
+                            <p class="metric-value">{{ tarefas_andamento }}</p>
+                        </div>
+                        <div class="metric-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                    </div>
+                    <div class="metric-border metric-border-info"></div>
                 </div>
             </div>
 
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-success shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                    Tarefas Concluídas</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_concluidas }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-                            </div>
+            <!-- Seção de Gráficos -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Distribuição por Status</h3>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-warning shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                    Tarefas Atrasadas</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_atrasadas }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-md-6 mb-4">
-                <div class="card border-left-info shadow h-100 py-2">
-                    <div class="card-body">
-                        <div class="row no-gutters align-items-center">
-                            <div class="col mr-2">
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                    Tarefas em Andamento</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ tarefas_andamento }}</div>
-                            </div>
-                            <div class="col-auto">
-                                <i class="fas fa-spinner fa-2x text-gray-300"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Gráficos -->
-        <div class="row">
-            <div class="col-lg-6 mb-4">
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-primary">Distribuição por Status</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-pie pt-4 pb-2">
+                        <div class="chart-body">
                             <canvas id="statusChart"></canvas>
                         </div>
-                        <div class="mt-4 text-center small">
+                        <div class="chart-legend">
                             {% for item in status_dist %}
-                            <span class="mr-2">
-                                <i class="fas fa-circle" style="color: {{ item.cor }}"></i> {{ item.status }} ({{ item.total }})
+                            <span class="legend-item">
+                                <i class="fas fa-circle" style="color: {{ item.cor }}"></i> 
+                                {{ item.status }} ({{ item.total }})
                             </span>
                             {% endfor %}
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-lg-6 mb-4">
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-primary">Distribuição por Prioridade</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-pie pt-4 pb-2">
+                <div class="chart-container">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Distribuição por Prioridade</h3>
+                        </div>
+                        <div class="chart-body">
                             <canvas id="prioridadeChart"></canvas>
                         </div>
-                        <div class="mt-4 text-center small">
+                        <div class="chart-legend">
                             {% for item in prioridade_dist %}
-                            <span class="mr-2">
-                                <i class="fas fa-circle" style="color: {{ item.cor }}"></i> {{ item.prioridade }} ({{ item.total }})
+                            <span class="legend-item">
+                                <i class="fas fa-circle" style="color: {{ item.cor }}"></i> 
+                                {{ item.prioridade }} ({{ item.total }})
                             </span>
                             {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Tabela de tarefas -->
-        <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">Lista de Tarefas Recentes</h6>
-                <div>
-                    <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-secondary mr-2">
-                        <i class="fas fa-list"></i> Ver Todas
-                    </a>
-                    <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-calendar-alt"></i> Ver Calendário
-                    </a>
+            <!-- Tabela de Tarefas -->
+            <div class="tasks-section">
+                <div class="tasks-header">
+                    <h3>Lista de Tarefas Recentes</h3>
+                    <div class="tasks-actions">
+                        <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-report">
+                            <i class="fas fa-file-alt"></i> Relatórios
+                        </a>
+                        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-secondary">
+                            <i class="fas fa-list"></i> Ver Todas
+                        </a>
+                        <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-primary">
+                            <i class="fas fa-calendar-alt"></i> Ver Calendário
+                        </a>
+                    </div>
                 </div>
-            </div>
-            <div class="card-body">
+                
                 <div class="table-responsive">
-                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <table class="tasks-table">
                         <thead>
                             <tr>
                                 <th>Título</th>
@@ -171,18 +174,18 @@
                                     </span>
                                 </td>
                                 <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
-                                <td>
-                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-sm btn-info">
+                                <td class="actions-cell">
+                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-info">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-sm btn-warning">
+                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center">Nenhuma tarefa encontrada.</td>
+                                <td colspan="6" class="no-tasks">Nenhuma tarefa encontrada.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -190,93 +193,89 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}
-<!-- Gráficos JS -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    // Gráfico de status
-    var ctx = document.getElementById('statusChart').getContext('2d');
-    var statusChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: [
-                {% for item in status_dist %}
-                    '{{ item.status|title }}',
-                {% endfor %}
-            ],
-            datasets: [{
-                data: [
-                    {% for item in status_dist %}
-                        {{ item.total }},
-                    {% endfor %}
-                ],
-                backgroundColor: [
-                    {% for item in status_dist %}
-                        '{{ item.cor }}',
-                    {% endfor %}
-                ],
-                hoverBackgroundColor: [
-                    {% for item in status_dist %}
-                        '{{ item.cor_hover }}',
-                    {% endfor %}
-                ],
-                hoverBorderColor: "rgba(234, 236, 244, 1)",
-            }],
-        },
-        options: {
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom'
-                }
-            },
-            cutout: '70%',
-        },
-    });
+    </main>
+    <!-- Rodapé -->
+    {% include 'includes/footer.html' %}    
+    <!-- Scripts de Gráficos -->
 
-    // Gráfico de prioridade
-    var ctx2 = document.getElementById('prioridadeChart').getContext('2d');
-    var prioridadeChart = new Chart(ctx2, {
-        type: 'pie',
-        data: {
-            labels: [
-                {% for item in prioridade_dist %}
-                    '{{ item.prioridade|title }}',
-                {% endfor %}
-            ],
-            datasets: [{
-                data: [
-                    {% for item in prioridade_dist %}
-                        {{ item.total }},
+    <script>
+        // Gráfico de status
+        var ctx = document.getElementById('statusChart').getContext('2d');
+        var statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [
+                    {% for item in status_dist %}
+                        '{{ item.status|title }}',
                     {% endfor %}
                 ],
-                backgroundColor: [
-                    {% for item in prioridade_dist %}
-                        '{{ item.cor }}',
-                    {% endfor %}
-                ],
-                hoverBackgroundColor: [
-                    {% for item in prioridade_dist %}
-                        '{{ item.cor_hover }}',
-                    {% endfor %}
-                ],
-                hoverBorderColor: "rgba(234, 236, 244, 1)",
-            }],
-        },
-        options: {
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom'
-                }
+                datasets: [{
+                    data: [
+                        {% for item in status_dist %}
+                            {{ item.total }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        {% for item in status_dist %}
+                            '{{ item.cor }}',
+                        {% endfor %}
+                    ],
+                    hoverBackgroundColor: [
+                        {% for item in status_dist %}
+                            '{{ item.cor_hover }}',
+                        {% endfor %}
+                    ],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }],
             },
-        },
-    });
-</script>
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '70%',
+            },
+        });
 
+        // Gráfico de prioridade
+        var ctx2 = document.getElementById('prioridadeChart').getContext('2d');
+        var prioridadeChart = new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: [
+                    {% for item in prioridade_dist %}
+                        '{{ item.prioridade|title }}',
+                    {% endfor %}
+                ],
+                datasets: [{
+                    data: [
+                        {% for item in prioridade_dist %}
+                            {{ item.total }},
+                        {% endfor %}
+                    ],
+                    backgroundColor: [
+                        {% for item in prioridade_dist %}
+                            '{{ item.cor }}',
+                        {% endfor %}
+                    ],
+                    hoverBackgroundColor: [
+                        {% for item in prioridade_dist %}
+                            '{{ item.cor_hover }}',
+                        {% endfor %}
+                    ],
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+            },
+        });
+    </script>
 {% endblock %}

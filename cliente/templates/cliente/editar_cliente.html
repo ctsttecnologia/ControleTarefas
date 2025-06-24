@@ -1,27 +1,38 @@
 
+
 {% extends 'base.html' %}
 {% load static %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/cliente.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
-                <h3 class="mb-0">
-                    <i class="fas fa-edit me-2"></i>Editar Cliente
-                </h3>
+                <h3 class="mb-0"><i class="fas fa-edit me-2"></i>Editar Cliente</h3>
                 <span class="badge bg-light text-dark">
-                    <i class="fas fa-calendar-alt me-1"></i>
-                    Cadastrado em: {{ object.data_cadastro|date:"d/m/Y" }}
+                    <i class="fas fa-calendar-alt me-1"></i> Cadastrado em: {{ object.data_cadastro|date:"d/m/Y" }}
                 </span>
             </div>
         </div>
         <div class="card-body">
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" id="editarClienteForm">
                 {% csrf_token %}
                 
-                <!-- Seção 1: Dados Básicos -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
                 <div class="row mb-4">
+                    <!-- Seção 1: Dados Básicos -->
                     <div class="col-md-6 mb-3">
                         <label for="{{ form.nome.id_for_label }}" class="form-label">Nome/Razão Social*</label>
                         {{ form.nome }}
@@ -31,31 +42,40 @@
                             </div>
                         {% endif %}
                     </div>
-                    <label class="form-label">CNPJ</label>
-                    <input type="hidden" name="cnpj" value="{{ object.cnpj }}">
-                    <div class="input-group">
-                        <input type="text" class="form-control" value="{{ object.cnpj_formatado }}" readonly>
-                        <span class="input-group-text bg-light">
-                            <i class="fas fa-lock text-muted" title="Campo não editável"></i>
-                        </span>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">CNPJ</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ object.cnpj_formatado }}" readonly>
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-lock text-muted" title="Campo não editável"></i>
+                            </span>
+                        </div>
+                        <input type="hidden" name="cnpj" value="{{ object.cnpj }}">
                     </div>
                 </div>
 
                 <!-- Seção 2: Contato -->
                 <div class="row mb-4">
-                    <label class="form-label">Data de Início</label>
-                    <input type="hidden" name="data_de_inicio" value="{{ object.data_de_inicio|date:'Y-m-d' }}">
-                    <div class="input-group">
-                        <input type="text" class="form-control" value="{{ object.data_de_inicio|date:'d/m/Y' }}" readonly>
-                        <span class="input-group-text bg-light">
-                            <i class="fas fa-lock text-muted" title="Campo não editável"></i>
-                        </span>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Data de Início</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" value="{{ object.data_de_inicio|date:'d/m/Y' }}" readonly>
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-lock text-muted" title="Campo não editável"></i>
+                            </span>
+                        </div>
+                        <input type="hidden" name="data_de_inicio" value="{{ object.data_de_inicio|date:'Y-m-d' }}">
                     </div>
-                </div>
-                <div class="row mb-4">    
+                    
                     <div class="col-md-6 mb-3">
                         <label for="{{ form.email.id_for_label }}" class="form-label">E-mail</label>
                         {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.email.errors }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -64,10 +84,31 @@
                     <div class="col-md-4 mb-3">
                         <label for="{{ form.contrato.id_for_label }}" class="form-label">Contrato (CM)</label>
                         {{ form.contrato }}
+                        {% if form.contrato.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.contrato.errors }}
+                            </div>
+                        {% endif %}
                     </div>
+                    
                     <div class="col-md-4 mb-3">
                         <label for="{{ form.data_encerramento.id_for_label }}" class="form-label">Data Encerramento</label>
                         {{ form.data_encerramento }}
+                        {% if form.data_encerramento.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.data_encerramento.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="{{ form.telefone.id_for_label }}" class="form-label">Telefone</label>
+                        {{ form.telefone }}
+                        {% if form.telefone.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.telefone.errors }}
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -77,69 +118,26 @@
                         <label class="form-label">Status</label>
                         <div class="form-check form-switch">
                             {{ form.estatus }}
-                            <label class="form-check-label" for="{{ form.estatus.id_for_label }}">
-                                Ativo/Inativo
-                            </label>
+                            <label class="form-check-label" for="{{ form.estatus.id_for_label }}">Ativo/Inativo</label>
                         </div>
                     </div>
+                    
                     <div class="col-md-6 mb-3">
                         <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações</label>
                         {{ form.observacoes }}
                     </div>
                 </div>
 
-                <!-- Seção 5: Endereço -->
+                <!-- Seção 5: Documentos -->
                 <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Endereço</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.logradouro.id_for_label }}" class="form-label">Logradouro</label>
-                                {{ form.logradouro }}
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="{{ form.numero.id_for_label }}" class="form-label">Número</label>
-                                {{ form.numero }}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="{{ form.complemento.id_for_label }}" class="form-label">Complemento</label>
-                                {{ form.complemento }}
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="{{ form.bairro.id_for_label }}" class="form-label">Bairro</label>
-                                {{ form.bairro }}
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="{{ form.cidade.id_for_label }}" class="form-label">Cidade</label>
-                                {{ form.cidade }}
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="{{ form.uf.id_for_label }}" class="form-label">UF</label>
-                                {{ form.uf }}
-                            </div>
-                            <div class="col-md-2 mb-3">
-                                <label for="{{ form.cep.id_for_label }}" class="form-label">CEP</label>
-                                {{ form.cep }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seção 6: Documentos -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Documentos</h5>
-                    </div>
+                    <div class="card-header bg-light"><h5 class="mb-0">Documentos</h5></div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="{{ form.inscricao_estadual.id_for_label }}" class="form-label">Inscrição Estadual</label>
                                 {{ form.inscricao_estadual }}
                             </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label for="{{ form.inscricao_municipal.id_for_label }}" class="form-label">Inscrição Municipal</label>
                                 {{ form.inscricao_municipal }}
@@ -148,18 +146,22 @@
                     </div>
                 </div>
 
-                <!-- Botões de Ação -->
+                <!-- Botões -->
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary">
-                        <i class="fas fa-times me-2"></i>Cancelar
-                    </a>
+                    <div>
+                        <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                    </div>
+                    
                     <div>
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="fas fa-save me-2"></i>Salvar Alterações
                         </button>
-                        <a href="#" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir">
+                        
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalExcluir">
                             <i class="fas fa-trash-alt me-2"></i>Excluir
-                        </a>
+                        </button>
                     </div>
                 </div>
             </form>
@@ -173,18 +175,20 @@
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
             </div>
             <div class="modal-body">
                 <p>Tem certeza que deseja excluir o cliente <strong>{{ object.nome }}</strong>?</p>
-                <p class="text-danger">Esta ação não pode ser desfeita!</p>
+                <p class="text-danger">Esta ação não poderá ser desfeita.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn btn-danger" data-bs-toggle="modal" 
-                        data-bs-target="#modalExcluir{{ cliente.id }}" title="Excluir">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
+                <form method="post" action="{% url 'cliente:excluir_cliente' object.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-1"></i>Excluir
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -192,17 +196,39 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+
 <script>
 $(document).ready(function() {
-    // Máscaras para os campos
-    $('#id_telefone').mask('(00) 00000-0000');
-    $('#id_cep').mask('00000-000');
-    
     // Inicializa o select2 para o campo logradouro
     $('.select2').select2({
         placeholder: "Selecione um endereço",
         allowClear: true
     });
+    
+    // Máscaras para os campos
+    $('#id_telefone').mask('(00) 00000-0000');
+    
+    // Validação do formulário
+    $('#editarClienteForm').on('submit', function(e) {
+        let isValid = true;
+        
+        // Validação do nome (obrigatório)
+        if ($('#id_nome').val().trim() === '') {
+            isValid = false;
+            $('#id_nome').addClass('is-invalid');
+        } else {
+            $('#id_nome').removeClass('is-invalid');
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Por favor, corrija os erros no formulário.');
+        }
+    });
 });
 </script>
 {% endblock %}
+

@@ -20,7 +20,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
   color: var(--dark-color);
   background-color: #f5f7fa;
