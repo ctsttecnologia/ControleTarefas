@@ -1,32 +1,289 @@
-/* Estilos para os cards */
-.card {
-    border-radius: 0.35rem;
-    transition: all 0.3s;
+/* Variáveis CSS */
+/* Variáveis de cores e estilos */
+:root {
+    --primary-color: #4e73df;
+    --primary-hover: #2e59d9;
+    --success-color: #1cc88a;
+    --success-hover: #17a673;
+    --info-color: #36b9cc;
+    --info-hover: #2c9faf;
+    --warning-color: #f6c23e;
+    --warning-hover: #dda20a;
+    --danger-color: #e74a3b;
+    --danger-hover: #be2617;
+    --secondary-color: #858796;
+    --secondary-hover: #6c757d;
+    --light-color: #f8f9fc;
+    --dark-color: #5a5c69;
+    --white: #fff;
+    --gray-100: #f8f9fc;
+    --gray-200: #eaecf4;
+    --gray-300: #dddfeb;
+    --gray-400: #d1d3e2;
+    --gray-500: #b7b9cc;
+    --gray-600: #858796;
+    --gray-700: #6e707e;
+    --gray-800: #5a5c69;
+    --gray-900: #3a3b45;
+    --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --shadow-sm: 0 0.15rem 0.35rem rgba(0, 0, 0, 0.075);
+    --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+    --border-radius: 0.35rem;
+    --border-radius-lg: 0.5rem;
+    --transition: all 0.3s ease;
 }
 
-.card:hover {
+/* Reset e estilos base */
+body {
+    font-family: var(--font-sans);
+    background-color: var(--gray-100);
+    color: var(--gray-800);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+.dashboard-container {
+    padding: 20px;
+    margin-top: 60px;
+    transition: var(--transition);
+}
+
+.dashboard-header {
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+    font-weight: 700;
+    color: var(--gray-800);
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Cards de Métricas */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    overflow: hidden;
+    position: relative;
+}
+
+.metric-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    box-shadow: var(--shadow);
 }
 
-.border-left-primary {
-    border-left: 0.25rem solid #4e73df !important;
+.metric-content {
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5rem;
+    position: relative;
+    z-index: 1;
 }
 
-.border-left-success {
-    border-left: 0.25rem solid #1cc88a !important;
+.metric-info {
+    display: flex;
+    flex-direction: column;
 }
 
-.border-left-info {
-    border-left: 0.25rem solid #36b9cc !important;
+.metric-label {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
 }
 
-.border-left-warning {
-    border-left: 0.25rem solid #f6c23e !important;
+.metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0;
 }
 
-/* Estilos para os badges */
+.metric-icon {
+    font-size: 2.5rem;
+    opacity: 0.2;
+    color: var(--gray-700);
+    display: flex;
+    align-items: center;
+}
+
+.metric-border {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+}
+
+.metric-border-primary {
+    background-color: var(--primary-color);
+}
+
+.metric-border-success {
+    background-color: var(--success-color);
+}
+
+.metric-border-warning {
+    background-color: var(--warning-color);
+}
+
+.metric-border-info {
+    background-color: var(--info-color);
+}
+
+/* Seção de Gráficos */
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-container {
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    overflow: hidden;
+}
+
+.chart-container:hover {
+    box-shadow: var(--shadow);
+}
+
+.chart-card {
+    padding: 1.5rem;
+}
+
+.chart-header {
+    margin-bottom: 1rem;
+}
+
+.chart-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+}
+
+.chart-body {
+    position: relative;
+    height: 250px;
+    min-height: 250px;
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    margin-top: 1rem;
+    font-size: 0.85rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+/* Seção de Tarefas */
+.tasks-section {
+    background-color: var(--white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.tasks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.tasks-header h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    margin-bottom: 0;
+}
+
+.tasks-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    font-size: 0.85rem;
+}
+
+.btn-report {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    border: none;
+}
+
+.btn-report:hover {
+    background-color: var(--secondary-hover);
+    color: var(--white);
+}
+
+/* Tabela de Tarefas */
+.tasks-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.tasks-table thead {
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.tasks-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 700;
+}
+
+.tasks-table td {
+    padding: 1rem;
+    border-top: 1px solid var(--gray-200);
+    vertical-align: middle;
+}
+
+.tasks-table tbody tr:hover {
+    background-color: var(--gray-100);
+}
+
 .badge {
+    display: inline-block;
     padding: 0.35em 0.65em;
     font-size: 0.75em;
     font-weight: 700;
@@ -35,93 +292,143 @@
     white-space: nowrap;
     vertical-align: baseline;
     border-radius: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.badge-pendente {
-    color: #fff;
-    background-color: #4e73df;
+.badge-concluida, .badge-Concluída {
+    background-color: rgba(28, 200, 138, 0.1);
+    color: var(--success-color);
 }
 
-.badge-andamento {
-    color: #fff;
-    background-color: #36b9cc;
+.badge-andamento, .badge-Em Andamento {
+    background-color: rgba(54, 185, 204, 0.1);
+    color: var(--info-color);
 }
 
-.badge-concluida {
-    color: #fff;
-    background-color: #1cc88a;
+.badge-pendente, .badge-Pendente {
+    background-color: rgba(246, 194, 62, 0.1);
+    color: var(--warning-color);
 }
 
-.badge-cancelada {
-    color: #fff;
-    background-color: #e74a3b;
+.badge-atrasada, .badge-Atrasada {
+    background-color: rgba(231, 74, 59, 0.1);
+    color: var(--danger-color);
 }
 
-.badge-pausada {
-    color: #fff;
-    background-color: #858796;
+.badge-alta, .badge-Alta {
+    background-color: rgba(231, 74, 59, 0.1);
+    color: var(--danger-color);
 }
 
-.badge-alta {
-    color: #fff;
-    background-color: #e74a3b;
+.badge-media, .badge-Média {
+    background-color: rgba(246, 194, 62, 0.1);
+    color: var(--warning-color);
 }
 
-.badge-media {
-    color: #000;
-    background-color: #f6c23e;
+.badge-baixa, .badge-Baixa {
+    background-color: rgba(28, 200, 138, 0.1);
+    color: var(--success-color);
 }
 
-.badge-baixa {
-    color: #fff;
-    background-color: #1cc88a;
-}
-
-/* Estilos para a tabela */
-.table-responsive {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-#dataTable {
-    width: 100%;
-    margin-bottom: 1rem;
-    color: #858796;
-}
-
-#dataTable th {
-    background-color: #f8f9fc;
-    font-weight: 600;
-}
-
-/* Estilos para os gráficos */
-.chart-area, .chart-pie {
-    position: relative; /* Alterado de 'left' para 'relative' */
-    height: 500px;
-    width: 100%; /* Alterado de 200% para 100% */
-    margin: 0 auto; /* Centraliza horizontalmente */
+.actions-cell {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    gap: 0.5rem;
 }
 
-@media (min-width: 768px) {
-    .chart-area {
-        height: 20rem;
+.actions-cell .btn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+}
+
+.no-tasks {
+    text-align: center;
+    padding: 2rem;
+    color: var(--gray-600);
+    font-style: italic;
+}
+
+/* Responsividade */
+@media (max-width: 992px) {
+    .dashboard-container {
+        padding: 15px;
     }
-    .chart-pie {
-        height: 15rem;
+    
+    .metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .charts-section {
+        grid-template-columns: 1fr;
     }
 }
 
-/* Container adicional para garantir centralização perfeita */
+@media (max-width: 768px) {
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .metric-icon {
+        font-size: 2rem;
+    }
+    
+    .tasks-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .tasks-actions {
+        width: 100%;
+    }
+    
+    .btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .metrics-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .tasks-table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .chart-body {
+        height: 200px;
+    }
+}
+
+/* Animações e efeitos */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.metric-card {
+    animation: fadeIn 0.5s ease forwards;
+}
+
+.metric-card:nth-child(1) { animation-delay: 0.1s; }
+.metric-card:nth-child(2) { animation-delay: 0.2s; }
+.metric-card:nth-child(3) { animation-delay: 0.3s; }
+.metric-card:nth-child(4) { animation-delay: 0.4s; }
+
 .chart-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    padding: 15px;
+    animation: fadeIn 0.5s ease forwards;
 }
 
+.chart-container:nth-child(1) { animation-delay: 0.2s; }
+.chart-container:nth-child(2) { animation-delay: 0.3s; }
 
+.tasks-section {
+    animation: fadeIn 0.5s ease forwards;
+    animation-delay: 0.4s;
+}

@@ -6,6 +6,7 @@ body {
   margin: 0;
   padding: 0;
   background-color: #f5f7fa; /* Mantenha sua cor de fundo padrão */
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 /* 2. Estilização do navbar principal */

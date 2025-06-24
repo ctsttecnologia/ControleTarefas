@@ -1,396 +1,168 @@
+
 from django.db import models
-from django.core.validators import MinValueValidator
-from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
-from django.contrib.auth.models import User
-from django.conf import settings # Importe settings
+from django.urls import reverse
+from django.conf import settings # Melhor prática para referenciar o User model
 
-
-class TipoTreinamento(models.Model):
+class TipoCurso(models.Model):
+    """
+    Define os tipos de cursos que podem ser oferecidos,
+    com suas características como modalidade, área e validade.
+    """
     MODALIDADE_CHOICES = [
-        ('I', _('Interno')),
-        ('E', _('Externo')),
-        ('H', _('Híbrido')),
-        ('O', _('Online')),
+        ('P', 'Presencial'),
+        ('O', 'Online'),
+        ('H', 'Híbrido'),
     ]
     
     AREA_CHOICES = [
-        ('TEC', _('Tecnologia')),
-        ('ADM', _('Administrativo')),
-        ('OPR', _('Operacional')),
-        ('SEG', _('Segurança')),
-        ('SAU', _('Saúde')),
-        ('OUT', _('Outros')),
+        ('SAU', 'Saúde'),
+        ('SEG', 'Segurança'),
+        ('ADM', 'Administrativo'),
+        ('OPE', 'Operacional'),
+        ('TEC', 'Técnico'),
     ]
-    
-    nome = models.CharField(
-        max_length=100,
-        unique=True,
-        verbose_name=_('Nome do Tipo'),
-        help_text=_('Nome descritivo do tipo de treinamento')
-    )
-    
-    modalidade = models.CharField(
-        max_length=1,
-        choices=MODALIDADE_CHOICES,
-        verbose_name=_('Modalidade'),
-        help_text=_('Forma de realização do treinamento')
-    )
-    
-    area = models.CharField(
-        max_length=3,
-        choices=AREA_CHOICES,
-        default='OUT',
-        verbose_name=_('Área de Conhecimento')
-    )
-    
-    descricao = models.TextField(
-        verbose_name=_('Descrição'),
-        blank=True,
-        null=True,
-        help_text=_('Detalhes sobre este tipo de treinamento')
-    )
-    
-    certificado = models.BooleanField(
-        default=True,
-        verbose_name=_('Emite Certificado?')
-    )
-    
-    validade_meses = models.PositiveIntegerField(
-        default=12,
-        verbose_name=_('Validade em Meses'),
-        help_text=_('Validade padrão do treinamento em meses')
-    )
-    
-    ativo = models.BooleanField(
-        default=True,
-        verbose_name=_('Ativo?')
-    )
-    
-    data_cadastro = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('Data de Cadastro')
-    )
-    
-    data_atualizacao = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_('Última Atualização')
-    )
 
-    # Métodos avançados
-    @property
-    def modalidade_formatada(self):
-        """Retorna a modalidade formatada"""
-        return dict(self.MODALIDADE_CHOICES).get(self.modalidade, self.modalidade)
-    
-    @property
-    def area_formatada(self):
-        """Retorna a área formatada"""
-        return dict(self.AREA_CHOICES).get(self.area, self.area)
-    
-    def __str__(self):
-        return f"{self.nome} ({self.modalidade_formatada})"
-    
+    nome = models.CharField("Nome do Curso", max_length=100, unique=True)
+    modalidade = models.CharField("Modalidade", max_length=1, choices=MODALIDADE_CHOICES)
+    area = models.CharField("Área de Conhecimento", max_length=3, choices=AREA_CHOICES)
+    descricao = models.TextField("Descrição", blank=True, null=True)
+    certificado = models.BooleanField("Emite Certificado?", default=True)
+    # Corrigido para PositiveIntegerField, pois a validade não pode ser negativa.
+    validade_meses = models.PositiveIntegerField("Validade do Certificado (meses)")
+    ativo = models.BooleanField("Ativo", default=True)
+    data_cadastro = models.DateTimeField("Data de Cadastro", auto_now_add=True)
+    data_atualizacao = models.DateTimeField("Data de Atualização", auto_now=True)
+
     class Meta:
-        verbose_name = _('Tipo de Treinamento')
-        verbose_name_plural = _('Tipos de Treinamento')
+        db_table = 'tipocurso'
+        verbose_name = "Tipo de Curso"
+        verbose_name_plural = "Tipos de Cursos"
         ordering = ['nome']
-        indexes = [
-            models.Index(fields=['nome'], name='idx_tipo_treinamento_nome'),
-            models.Index(fields=['modalidade'], name='idx_tipo_treina_modalidade'),
-            models.Index(fields=['area'], name='idx_tipo_treinamento_area'),
+        permissions = [
+            ('ativar_tipocurso', 'Pode ativar/desativar tipo de curso'),
+            ('relatorio_tipocurso', 'Pode gerar relatórios de tipos de curso'),
         ]
-
-class Treinamento(models.Model):
-
-    MODALIDADE_CHOICES = [
-        ('interno', 'Interno'),
-        ('externo', 'Externo'),
-    ]
-    
-    TIPO_CHOICES = [
-        ('graduacao', 'Graduação'),
-        ('tecnico', 'Técnico'),
-        ('profissionalizante', 'Profissionalizante'),
-        ('livre', 'Livre'),
-        ('outros', 'Outros'),
-    ]
-    
-    STATUS_CHOICES = [
-        ('P', _('Planejado')),
-        ('A', _('Agendado')),
-        ('E', _('Em Andamento')),
-        ('C', _('Concluído')),
-        ('X', _('Cancelado')),
-    ]
-    
-    tipo_treinamento = models.ForeignKey(
-        TipoTreinamento,
-        on_delete=models.PROTECT,
-        related_name='treinamentos',
-        verbose_name=_('Tipo de Treinamento')
-    )
-    
-    nome = models.CharField(
-        max_length=200,
-        verbose_name=_('Nome do Treinamento'),
-        help_text=_('Nome completo do treinamento')
-    )
-    
-    data_inicio = models.DateTimeField(
-       default=timezone.now
-    )
-    
-    data_vencimento = models.DateField(
-        verbose_name=_('Data de Vencimento'),
-        help_text=_('Data de validade do treinamento')
-    )
-    
-    duracao = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-        verbose_name=_('Duração (horas)'),
-        null=True, blank=True,
-        help_text=_('Duração total em horas')
-    )
-    
-    atividade = models.CharField(
-        max_length=200,
-        verbose_name=_('Atividade Relacionada'),
-        help_text=_('Atividade ou processo relacionado')
-    )
-    
-    descricao = models.TextField(
-        verbose_name=_('Descrição Detalhada'),
-        blank=True,
-        null=True
-    )
-    
-    funcionario = models.CharField(
-        max_length=100,
-        verbose_name=_('Responsável'),
-        help_text=_('Funcionário responsável pela organização')
-    )
-    
-    cm = models.CharField(
-        max_length=100,
-        verbose_name=_('Coordenador/Mentor'),
-        help_text=_('Coordenador ou mentor do treinamento')
-    )
-    
-    palestrante = models.CharField(
-        max_length=100,
-        verbose_name=_('Palestrante/Instrutor'),
-        help_text=_('Nome do palestrante ou instrutor')
-    )
-    
-    hxh = models.IntegerField(default=0,
-        verbose_name=_('Horas por Participante'),
-        help_text=_('Horas necessárias por participante')
-    )
-    
-    status = models.CharField(
-        max_length=1,
-        choices=STATUS_CHOICES,
-        default='P',
-        verbose_name=_('Status')
-    )
-    
-    local = models.CharField(
-        max_length=200,
-        blank=True,
-        null=True,
-        verbose_name=_('Local do Treinamento')
-    )
-    
-    custo = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        default=0,
-        verbose_name=_('Custo Estimado')
-    )
-    
-    participantes_previstos = models.PositiveIntegerField(
-        default=0,
-        verbose_name=_('Participantes Previstos')
-    )
-    
-    data_cadastro = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('Data de Cadastro')
-    )
-    
-    data_atualizacao = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_('Última Atualização')
-    )
 
     def __str__(self):
-        return self.nome  # Corrigido para retornar o nome
-
-    # método para facilitar
-    @property
-    def tipo_display(self):
-        return dict(self.TIPO_CHOICES).get(self.tipo, self.tipo)
-
-    # Métodos avançados
-    def clean(self):
-        """Validações personalizadas"""
-        super().clean()
-        
-        # Validação de datas
-        if self.data_vencimento and self.data_inicio:
-            if self.data_vencimento < self.data_inicio.date():
-                raise ValidationError({
-                    'data_vencimento': _('Data de vencimento não pode ser anterior à data de início')
-                })
-        
-        # Validação de horas
-        if self.hxh > self.duracao:
-            raise ValidationError({
-                'hxh': _('Horas por participante não podem ser maiores que a duração total')
-            })
-    
-    def save(self, *args, **kwargs):
-        """Lógica adicional ao salvar"""
-        # Calcula data de vencimento se não informada
-        if not self.data_vencimento and self.tipo_treinamento:
-            self.data_vencimento = self.data_inicio.date() + timedelta(
-                days=30 * self.tipo_treinamento.validade_meses
-            )
-        
-        self.full_clean()
-        super().save(*args, **kwargs)
-    
-    @property
-    def status_formatado(self):
-        """Retorna status formatado"""
-        return dict(self.STATUS_CHOICES).get(self.status, self.status)
-    
-    @property
-    def tempo_restante(self):
-        """Calcula dias restantes para início"""
-        if self.data_inicio > timezone.now():
-            delta = self.data_inicio - timezone.now()
-            return delta.days
-        return 0
-    
-    @property
-    def custo_total_estimado(self):
-        """Calcula custo total estimado"""
-        return self.custo * self.participantes_previstos
-    
-    @property
-    def carga_horaria_total(self):
-        """Calcula a carga horária total do treinamento"""
-        if self.duracao is None or self.Hxh is None:
-            return 0
-        return self.duracao * self.Hxh
-
-       
-    class Meta:
-        
-        verbose_name = _('Treinamento')
-        verbose_name_plural = _('Treinamentos')
-        ordering = ['-data_inicio']
-        indexes = [
-            models.Index(fields=['tipo_treinamento'], name='idx_treinamento_tipo'),
-            models.Index(fields=['data_inicio'], name='idx_treinamento_data'),
-            models.Index(fields=['status'], name='idx_treinamento_status'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(data_vencimento__gte=models.F('data_inicio')),
-                name='check_data_vencimento_maior_inicio'
-            ),
-            models.CheckConstraint(
-                check=models.Q(hxh__lte=models.F('duracao')),
-                name='check_hxh_menor_duracao'
-            ),
-        ]
-
-from django.db import models
-
-class TreinamentoDisponivel(models.Model):
-    MODALIDADE_CHOICES = [
-        ('interno', 'Interno'),
-        ('externo', 'Externo'),
-    ]
-    
-    TIPO_CHOICES = [
-        ('graduacao', 'Graduação'),
-        ('tecnico', 'Técnico'),
-        ('profissionalizante', 'Profissionalizante'),
-        ('livre', 'Livre'),
-        ('outros', 'Outros'),
-    ]
-
-    codigo = models.CharField('Código', max_length=20, unique=True)
-    nome = models.CharField('Nome do Treinamento', max_length=100)
-    descricao = models.TextField('Descrição', blank=True)
-    carga_horaria = models.PositiveIntegerField('Carga Horária (horas)')
-    validade_meses = models.PositiveIntegerField('Validade (meses)')
-    modalidade = models.CharField('Modalidade', max_length=10, choices=MODALIDADE_CHOICES)
-    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
-    fornecedor = models.CharField('Fornecedor', max_length=100, blank=True)
-    custo = models.DecimalField('Custo', max_digits=10, decimal_places=2, null=True, blank=True)
-    ativo = models.BooleanField('Ativo', default=True)
-    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
-    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
-
-    class Meta:
-        verbose_name = 'Treinamento'
-        verbose_name_plural = 'Treinamentos'
-        ordering = ['nome']
-
-    def __str__(self):
-        return f"{self.codigo} - {self.nome}"
+        return self.nome
 
     def get_absolute_url(self):
-        return reverse('treinamento_detail', args=[str(self.id)])
+        # Corrigido: o nome da URL da lista de tipos de curso é 'lista_tipos_curso'.
+        return reverse('treinamentos:lista_tipos_curso')
 
-class Colaborador(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    matricula = models.CharField(max_length=20, unique=True)
-    departamento = models.CharField(max_length=100)
-    cargo = models.CharField(max_length=100)
-    data_admissao = models.DateField()
-    ativo = models.BooleanField(default=True)
-    
-    def __str__(self):
-        return f"{self.user.get_full_name()} ({self.matricula})"
 
-class TreinamentoColaborador(models.Model):
+class Treinamento(models.Model):
+    """
+    Armazena informações sobre cada treinamento realizado,
+    incluindo datas, status, custos e participantes.
+    """
     STATUS_CHOICES = [
-        ('ativo', 'Ativo'),
-        ('expirado', 'Expirado'),
-        ('proximo', 'Próximo a vencer'),
+        ('P', 'Planejado'),
+        ('A', 'Em Andamento'),
+        ('C', 'Cancelado'),
+        ('F', 'Finalizado'),
     ]
-    
-    colaborador = models.ForeignKey(Colaborador, on_delete=models.CASCADE, related_name='treinamentos')
-    treinamento = models.ForeignKey(Treinamento, on_delete=models.CASCADE)
-    data_realizacao = models.DateField()
-    data_validade = models.DateField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
-    certificado = models.FileField(upload_to='certificados/', null=True, blank=True)
-    
-    class Meta:
-        unique_together = ('colaborador', 'treinamento')
-    
-    @property
-    def dias_para_vencer(self):
-        return (self.data_validade - timezone.now().date()).days
-    
-    def save(self, *args, **kwargs):
-        # Atualiza status automaticamente
-        if self.data_validade < timezone.now().date():
-            self.status = 'expirado'
-        elif self.dias_para_vencer <= 30:
-            self.status = 'proximo'
-        else:
-            self.status = 'ativo'
-        super().save(*args, **kwargs)
-    
-    def __str__(self):
-        return f"{self.colaborador} - {self.treinamento}"
 
-        
+    nome = models.CharField("Nome do Treinamento", max_length=200)
+    tipo_curso = models.ForeignKey(TipoCurso, on_delete=models.PROTECT, verbose_name="Tipo de Curso")
+    data_inicio = models.DateTimeField("Data de Início")
+    # O campo data_vencimento pode ser calculado com base na data_inicio e validade do curso,
+    # mas mantido aqui se a regra de negócio exigir uma data customizada.
+    data_vencimento = models.DateField("Data de Vencimento")
+    # Corrigido: 'unique=True' foi removido, pois vários treinamentos podem ter a mesma duração.
+    duracao = models.IntegerField("Duração (horas)")
+    atividade = models.CharField("Atividade Relacionada", max_length=200, blank=True)
+    descricao = models.TextField("Descrição Detalhada")
+    # Corrigido: Alterado de CharField para uma relação com o usuário responsável.
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='treinamentos_responsavel',
+        verbose_name="Responsável"
+    )
+    # Campo 'cm' mantido, mas um nome mais descritivo como 'centro_custo' é recomendado.
+    cm = models.CharField("CM (Centro de Custo?)", max_length=100, blank=True)
+    palestrante = models.CharField("Palestrante/Instrutor", max_length=100)
+    # Campo 'hxh' mantido, mas um nome como 'horas_homem' é recomendado.
+    hxh = models.IntegerField("HxH (Horas Homem)")
+    status = models.CharField("Status", max_length=1, choices=STATUS_CHOICES, default='P')
+    local = models.CharField("Local", max_length=200)
+    custo = models.DecimalField("Custo Total", max_digits=10, decimal_places=2, default=0.00)
+    # Corrigido: 'unique=True' foi removido.
+    participantes_previstos = models.IntegerField("Nº de Participantes Previstos")
+    data_cadastro = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'Treinamento'
+        verbose_name = "Treinamento"
+        verbose_name_plural = "Treinamentos"
+        ordering = ['-data_inicio']
+        permissions = [
+            ('gerenciar_participantes', 'Pode gerenciar participantes do treinamento'),
+            ('alterar_status', 'Pode alterar status do treinamento'),
+            ('gerar_certificados', 'Pode gerar certificados de treinamento'),
+        ]
+
+    def __str__(self):
+        return f"{self.nome} ({self.get_status_display()})"
+
+    def get_absolute_url(self):
+        return reverse('treinamentos:detalhe_treinamento', kwargs={'pk': self.pk})
+
+
+class Participante(models.Model):
+    """
+    Representa a relação entre um Funcionário (User) e um Treinamento,
+    registrando presença, notas e emissão de certificado.
+    """
+    treinamento = models.ForeignKey(
+        Treinamento,
+        on_delete=models.CASCADE,
+        related_name='participantes',
+        verbose_name='Treinamento'
+    )
+    # Usando settings.AUTH_USER_MODEL para referenciar o usuário.
+    funcionario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        verbose_name='Funcionário'
+    )
+    presente = models.BooleanField(
+        default=False,
+        verbose_name='Presença Confirmada'
+    )
+    nota_avaliacao = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Nota da Avaliação'
+    )
+    certificado_emitido = models.BooleanField(
+        default=False,
+        verbose_name='Certificado Emitido'
+    )
+    data_registro = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data de Registro'
+    )
+
+    class Meta:
+        db_table = 'participante'
+        verbose_name = 'Participante'
+        verbose_name_plural = 'Participantes'
+        # Garante que um funcionário não pode ser inscrito duas vezes no mesmo treinamento.
+        unique_together = ['treinamento', 'funcionario']
+        permissions = [
+            ('registrar_presenca', 'Pode registrar presença de participantes'),
+            ('emitir_certificado', 'Pode emitir certificado para participante'),
+            ('avaliar_participante', 'Pode avaliar participante'),
+        ]
+
+    def __str__(self):
+        # Utiliza o método __str__ do User model, que geralmente é o username.
+        return f"{self.funcionario} - {self.treinamento.nome}"
+

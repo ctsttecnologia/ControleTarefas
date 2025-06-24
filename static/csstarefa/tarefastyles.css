@@ -69,7 +69,7 @@ tbody tr:hover {
 /* Ícones para status (opcional) */
 .badge::before {
     margin-right: 5px;
-    font-family: 'Font Awesome', sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 .badge-pendente::before {

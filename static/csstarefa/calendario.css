@@ -1,0 +1,82 @@
+
+    /* Estilos base */
+    .calendar-container {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .calendar-header {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .btn-theme-toggle {
+        background-color: #2c3e50;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: 10px;
+    }
+    
+    .btn-theme-toggle:hover {
+        background-color: #1a252f;
+    }
+    
+    /* Estilo padrão (tema claro) */
+    :root {
+        --calendar-bg: #ffffff;
+        --calendar-border: #e0e0e0;
+        --calendar-text: #333333;
+        --calendar-header-bg: #f8f9fa;
+        --calendar-event-bg: #3788d8;
+        --calendar-event-text: #ffffff;
+        --calendar-today-bg: #ffffcc;
+    }
+    
+    /* Estilo tema escuro */
+    .dark-theme {
+        --calendar-bg: #2c3e50;
+        --calendar-border: #34495e;
+        --calendar-text: #ecf0f1;
+        --calendar-header-bg: #1a252f;
+        --calendar-event-bg: #3498db;
+        --calendar-event-text: #ffffff;
+        --calendar-today-bg: #3d566e;
+    }
+    
+    /* Aplicando os estilos ao calendário */
+    #calendar {
+        background-color: var(--calendar-bg);
+        border: 1px solid var(--calendar-border);
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .fc-toolbar-title,
+    .fc-col-header-cell-cushion,
+    .fc-daygrid-day-number,
+    .fc-timegrid-slot-label-cushion {
+        color: var(--calendar-text);
+    }
+    
+    .fc-col-header {
+        background-color: var(--calendar-header-bg);
+    }
+    
+    .fc-event {
+        background-color: var(--calendar-event-bg);
+        color: var(--calendar-event-text);
+        border: none;
+    }
+    
+    .fc-day-today {
+        background-color: var(--calendar-today-bg) !important;
+    }
+

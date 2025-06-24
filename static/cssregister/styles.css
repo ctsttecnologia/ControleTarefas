@@ -13,7 +13,7 @@
 
 /* Estilos gerais */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     background-color: var(--azul-suave);
     margin: 0;
     padding: 0;

@@ -2,8 +2,13 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, Permission # Importe Permission
-from .models import Usuario, GrupoProxy, PermissaoProxy
+from .models import Usuario, GrupoProxy, PermissaoProxy, CustomUser
 from .forms import UsuarioCreationForm, UsuarioChangeForm, GrupoForm
+from django.contrib.auth import get_user_model
+from django.db.models import Count
+from django.contrib.auth.admin import UserAdmin
+
+admin.site.register(CustomUser, UserAdmin)
 
 # ---
 # Configuração do Admin de Usuário
@@ -51,13 +56,24 @@ admin.site.register(Usuario, UsuarioAdmin)
 if admin.site.is_registered(Group):
     admin.site.unregister(Group)
 
+class GrupoProxyAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(total_usuarios=Count('user'))
+    
+    def count_users(self, obj):
+        return obj.total_usuarios
+    
+    list_display = ['name', 'count_users']
+
 class GrupoAdmin(admin.ModelAdmin):
     form = GrupoForm
     filter_horizontal = ['permissions']
     list_display = ('name', 'count_users')
 
     def count_users(self, obj):
-        return obj.user_set.count()
+        User = get_user_model()
+        return User.objects.filter(groups__id=obj.id).count()
     count_users.short_description = 'Número de Usuários'
 
 # Registre seu GrupoProxy personalizado com GrupoAdmin
@@ -83,6 +99,6 @@ class PermissaoAdmin(admin.ModelAdmin):
 # ATENÇÃO: Adicionei a verificação para PermissaoProxy aqui!
 if admin.site.is_registered(PermissaoProxy):
     admin.site.unregister(PermissaoProxy)
-admin.site.register(PermissaoProxy, PermissaoAdmin)
+    admin.site.register(PermissaoProxy, PermissaoAdmin)
 
 

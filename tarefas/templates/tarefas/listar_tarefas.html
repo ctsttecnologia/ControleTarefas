@@ -1,27 +1,30 @@
 <!-- templates/tarefas/listar_tarefas.html -->
-{% extends 'base.html' %}
+
 {% load static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
+{% block head %}
+    {% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
+    {% endblock %}
 {% endblock %}
+<title>{% block title %}Lista de Tarefas{% endblock %}</title>
+
+<!-- Barra de Navegação Principal -->    
+{% include 'includes/header.html' %}
 
 {% block content %}
     <div class="container mt-4">
         <!-- Cabeçalho -->
         <header class="d-flex justify-content-between align-items-center mb-4">
             <div class="painel-controles">
-                <a href="{% url 'profile' %}" class="btn btn-info">
-                    <i class="fas fa-user"></i> Menu
-                </a>
-                <a href="{% url 'usuario:logout' %}" class="btn btn-danger">
-                    <i class="fas fa-sign-out-alt"></i> Sair
-                </a>
+             <h1 class="mb-0">Lista de Tarefas</h1>
             </div>
-            
-            <h1 class="mb-0">Lista de Tarefas</h1>
-            
             <div>
+                <a href="{% url 'tarefas:dashboard' %}" class="btn btn-secondary">
+                    <i class="bi bi-speedometer2"></i> Dashboard</a>
+                <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> Relatórios
+                </a>
                 <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
                     <i class="fas fa-plus"></i> Nova Tarefa
                 </a>
@@ -110,4 +113,6 @@
         </div>
     </div>
 {% endblock %}
+<!-- Rodapé -->
+{% include 'includes/footer.html' %}
 
