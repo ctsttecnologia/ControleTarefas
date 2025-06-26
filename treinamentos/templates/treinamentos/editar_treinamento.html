@@ -4,14 +4,14 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-
+<div class="card shadow-sm">
     <div class="card-header text-black">
         <h2 class="mb-0"><i class="bi bi-book me-2"></i>{{ titulo }}</h2>
     </div>
-<div class="card shadow-sm">
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
+
             <div class="row g-3">
                 {% for field in form %}
                 <div class="col-md-6">
@@ -20,7 +20,24 @@
                             {{ field.label }}
                             {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
                         </label>
-                        {{ field }}
+
+                        {# Tratamento especial para campos de data e datetime #}
+                        {% if field.name == 'data_inicio' %}
+                            <input type="datetime-local"
+                                   class="form-control"
+                                   id="{{ field.id_for_label }}"
+                                   name="{{ field.name }}"
+                                   value="{{ field.value|date:'Y-m-d\TH:i' }}">
+                        {% elif field.name == 'data_vencimento' %}
+                            <input type="date"
+                                   class="form-control"
+                                   id="{{ field.id_for_label }}"
+                                   name="{{ field.name }}"
+                                   value="{{ field.value|date:'Y-m-d' }}">
+                        {% else %}
+                            {{ field }}
+                        {% endif %}
+
                         {% if field.help_text %}
                             <small class="form-text text-muted">{{ field.help_text }}</small>
                         {% endif %}
@@ -33,7 +50,62 @@
                 </div>
                 {% endfor %}
             </div>
-            
+
+            <div class="mt-4 border-top pt-3">
+                <h4 class="mb-3"><i class="bi bi-people-fill me-2"></i>Participantes</h4>
+
+                {{ participantes_formset.management_form }}
+
+                <div class="table-responsive">
+                    <table class="table table-bordered" id="participantes-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Presente</th>
+                                <th>Aproveitamento</th>
+                                <th>Certificado Emitido</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in participantes_formset %}
+                            <tr class="participante-form">
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+
+                                <td>{{ form.funcionario }}</td>
+                                <td>{{ form.presente }}</td>
+                                <td>{{ form.nota_avaliacao }}</td>
+                                <td>{{ form.certificado_emitido }}</td>
+                                <td>
+                                    {% if form.instance.pk %}
+                                        {{ form.DELETE }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if form.errors %}
+                            <tr>
+                                <td colspan="5">
+                                    <div class="alert alert-danger">
+                                        {% for error in form.non_field_errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                        {% for field in form %}
+                                            {% for error in field.errors %}
+                                                <strong>{{ field.label }}:</strong> {{ error }}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between border-top pt-3 mt-4">
                 <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-lg"></i> Cancelar
@@ -50,7 +122,29 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar datepickers ou outras funcionalidades JS
+        // Configuração para campos de data
+        const dateInputs = document.querySelectorAll('input[type="date"], input[type="datetime-local"]');
+        dateInputs.forEach(input => {
+            input.autocomplete = 'off';
+        });
+
+        // Adiciona estilização aos selects do formset
+        document.querySelectorAll('#participantes-table select').forEach(select => {
+            select.classList.add('form-select', 'form-select-sm');
+        });
+
+        // Adiciona estilização aos inputs do formset
+        document.querySelectorAll('#participantes-table input[type="text"], #participantes-table input[type="number"]').forEach(input => {
+            input.classList.add('form-control', 'form-control-sm');
+        });
+
+        // Adiciona estilização aos checkboxes
+        document.querySelectorAll('#participantes-table input[type="checkbox"]').forEach(checkbox => {
+            checkbox.classList.add('form-check-input');
+            checkbox.style.marginLeft = '0';
+        });
     });
 </script>
 {% endblock %}
+
+

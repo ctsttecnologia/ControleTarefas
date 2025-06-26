@@ -1,0 +1,140 @@
+/* Estilos gerais */
+.dashboard-container {
+  margin-top: 1.5rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Cards */
+.summary-card {
+  height: 100%;
+}
+
+.summary-card .card-body {
+  padding: 0.75rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.card-text {
+  font-size: 1.5rem;
+}
+
+/* Gráficos */
+.chart-container {
+  position: relative;
+  height: 220px;
+  width: 100%;
+}
+
+.chart-card {
+  height: 100%;
+}
+
+.chart-card .card-header {
+  padding: 0.75rem 1rem;
+}
+
+.chart-card .card-body {
+  padding: 0.75rem;
+}
+
+/* Tabela */
+.recent-trainings {
+  margin-bottom: 1.5rem;
+}
+
+.recent-trainings .table {
+  margin-bottom: 0;
+}
+
+/* Botão de tema */
+.btn-theme-toggle {
+  margin-left: 10px;
+}
+
+/* Estilos para tema escuro */
+body.dark-theme {
+  background-color: #1a1a1a;
+  color: #f8f9fa;
+}
+
+.dark-theme .card {
+  background-color: #2d2d2d;
+  border-color: #444;
+}
+
+.dark-theme .card-header {
+  background-color: #333 !important;
+  border-bottom-color: #444;
+}
+
+.dark-theme .table {
+  color: #f8f9fa;
+}
+
+.dark-theme .table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark-theme .table-hover tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-theme .bg-light {
+  background-color: #333 !important;
+}
+
+/* Estilos para os badges de vencimento */
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529;
+}
+
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+/* Tooltip customizado */
+[title] {
+  position: relative;
+  cursor: help;
+}
+
+[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .summary-card .card-text {
+    font-size: 1.25rem;
+  }
+  
+  .chart-container {
+    height: 200px;
+  }
+}

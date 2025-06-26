@@ -1,21 +1,21 @@
+{% extends 'base.html' %}
 
 {% load static %}
 
-{% block content %}
+{% block head %}
 
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
+    {% block extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
 <div class="container">
     <h2 class="mmb-2">Editar Admissão</h2><h4 class="mb-0" align="center">{{ funcionario.nome }}</h4>
-    
     <div class="painel">
 
         <a href="{% url 'departamento_pessoal:lista_admissoes' %}" class="btn_cadastro">
            <i class="fas fa-list"></i> Lista Admissão
         </a>
-
     </div>
-
     <div class="painel1">
         <form method="post" class="form-cadastro">
             {% csrf_token %}
@@ -63,5 +63,4 @@
     </div>
 </div>
 {% endblock %}
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}   
+

@@ -1,371 +1,545 @@
 
-
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}Dashboard de Treinamentos{% endblock %}
+{% block head %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-{% block content %}
+  <link href="{% static 'csstreinamento/stylesdashboard.css' %}" rel="stylesheet">
 
-<style>
-  .chart-container {
-    position: relative;
-    height: 250px;  /* Altura reduzida */
-    width: 100%;
-  }
-  
-  .small-card .card-body {
-    padding: 0.75rem;  /* Reduz o padding interno */
-  }
-</style>
-
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Dashboard de Treinamentos</h1>
-        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-primary">
-            <i class="bi bi-list"></i> Lista de Treinamentos
-        </a>
-    </div>
-
-    <!-- Cards de Resumo -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-primary h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Treinamentos</h5>
-
-                <p class="card-text display-4">{{ total_treinamentos }}</p>    
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-success h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Participantes</h5>
-
-                <p class="card-text display-4">{{ total_participantes }}</p>    
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2 mb-2">
-            <div class="card text-white bg-info h-100">
-                <div class="card-body"  py-2> <!-- py-2 reduz o padding vertical -->
-                    <h5 class="card-title">Em Andamento</h5><!-- mb-0 remove margem inferior -->
-
-                <p class="card-text display-4">{{ em_andamento }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-warning h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Investimento Total</h5>
-                <p class="card-text display-4">R$ {{ total_custo|floatformat:2 }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Primeira Linha de Gráficos -->
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5>Treinamentos por Área</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartArea"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5>Participação Mensal</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartParticipacao"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Segunda Linha de Gráficos -->
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5>Status dos Treinamentos</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartStatus"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5>Treinamentos por Modalidade</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartModalidade"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Terceira Linha - Custo por Área -->
-    <div class="row">
-        <div class="col-md-12 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h5>Custo Total por Área</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="chartCusto"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Treinamentos Recentes -->
-    <div class="row">
-        <div class="col-md-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5>Treinamentos Recentes</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Tipo</th>
-                                    <th>Data Início</th>
-                                    <th>Status</th>
-                                    <th>Participantes</th>
-                                    <th>Custo</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for treinamento in treinamentos_recentes %}
-                                <tr>
-                                    <td>
-                                        <a href="{{ treinamento.get_absolute_url }}">{{ treinamento.nome }}</a>
-                                    </td>
-                                    <td>{{ treinamento.tipo_curso.nome }}</td>
-                                    <td>{{ treinamento.data_inicio|date:"d/m/Y" }}</td>
-                                    <td>
-                                        <span class="badge 
-                                            {% if treinamento.status == 'P' %}bg-secondary
-                                            {% elif treinamento.status == 'A' %}bg-primary
-                                            {% elif treinamento.status == 'F' %}bg-success
-                                            {% else %}bg-danger{% endif %}">
-                                            {{ treinamento.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ treinamento.participantes.count }}</td>
-                                    <td>R$ {{ treinamento.custo|floatformat:2 }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  // Gráfico de Treinamentos por Área
-  const areaData = {{ treinamentos_por_area|safe }};
-  const areaLabels = areaData.map(item => {
-    switch (item.tipo_curso__area) {
-      case 'SAU': return 'Saúde';
-      case 'SEG': return 'Segurança';
-      case 'ADM': return 'Administrativo';
-      case 'OPE': return 'Operacional';
-      case 'TEC': return 'Técnico';
-      default: return 'Desconhecido';
-    }
-  });
-  const areaValues = areaData.map(item => item.total);
-
-  new Chart(document.getElementById('chartArea'), {
-    type: 'pie',
-    data: {
-      labels: areaLabels,
-      datasets: [{
-        data: areaValues,
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)',
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' },
-        title: { display: true, text: 'Distribuição de Treinamentos por Área' }
-      }
-    }
-  });
-
-  // Gráfico de Participação Mensal
-  const participacaoData = {{ participacao_mensal|safe }};
-  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-  const participacaoLabels = Array(12).fill().map((_, i) => monthNames[i]);
-  const participacaoValues = Array(12).fill(0);
-  
-  participacaoData.forEach(item => {
-    participacaoValues[item.month - 1] = item.total;
-  });
-
-  new Chart(document.getElementById('chartParticipacao'), {
-    type: 'bar',
-    data: {
-      labels: participacaoLabels,
-      datasets: [{
-        label: 'Participantes',
-        data: participacaoValues,
-        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'Participantes' } },
-        x: { title: { display: true, text: 'Mês' } }
-      },
-      plugins: {
-        title: { display: true, text: 'Participação Mensal' }
-      }
-    }
-  });
-
-  // Gráfico de Status dos Treinamentos
-  const statusData = {{ status_treinamentos|safe }};
-  const statusLabels = statusData.map(item => {
-    switch (item.status) {
-      case 'P': return 'Planejado';
-      case 'A': return 'Em Andamento';
-      case 'C': return 'Cancelado';
-      case 'F': return 'Finalizado';
-      default: return 'Desconhecido';
-    }
-  });
-  const statusValues = statusData.map(item => item.total);
-
-  new Chart(document.getElementById('chartStatus'), {
-    type: 'doughnut',
-    data: {
-      labels: statusLabels,
-      datasets: [{
-        data: statusValues,
-        backgroundColor: [
-          'rgba(108, 117, 125, 0.7)',  // Planejado (cinza)
-          'rgba(13, 110, 253, 0.7)',   // Em Andamento (azul)
-          'rgba(220, 53, 69, 0.7)',    // Cancelado (vermelho)
-          'rgba(25, 135, 84, 0.7)',    // Finalizado (verde)
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' },
-        title: { display: true, text: 'Status dos Treinamentos' }
-      }
-    }
-  });
-
-  // Gráfico de Treinamentos por Modalidade
-  const modalidadeData = {{ treinamentos_por_modalidade|safe }};
-  const modalidadeLabels = modalidadeData.map(item => {
-    switch (item.tipo_curso__modalidade) {
-      case 'P': return 'Presencial';
-      case 'O': return 'Online';
-      case 'H': return 'Híbrido';
-      default: return 'Desconhecido';
-    }
-  });
-  const modalidadeValues = modalidadeData.map(item => item.total);
-
-  new Chart(document.getElementById('chartModalidade'), {
-    type: 'polarArea',
-    data: {
-      labels: modalidadeLabels,
-      datasets: [{
-        data: modalidadeValues,
-        backgroundColor: [
-          'rgba(255, 159, 64, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)',
-        ],
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' },
-        title: { display: true, text: 'Treinamentos por Modalidade' }
-      }
-    }
-  });
-
-  // Gráfico de Custo por Área
-  const custoData = {{ custo_por_area|safe }};
-  const custoLabels = custoData.map(item => {
-    switch (item.tipo_curso__area) {
-      case 'SAU': return 'Saúde';
-      case 'SEG': return 'Segurança';
-      case 'ADM': return 'Administrativo';
-      case 'OPE': return 'Operacional';
-      case 'TEC': return 'Técnico';
-      default: return 'Desconhecido';
-    }
-  });
-  const custoValues = custoData.map(item => item.total);
-
-  new Chart(document.getElementById('chartCusto'), {
-    type: 'line',
-    data: {
-      labels: custoLabels,
-      datasets: [{
-        label: 'Custo Total (R$)',
-        data: custoValues,
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderColor: 'rgba(255, 99, 132, 1)',
-        borderWidth: 2,
-        tension: 0.1,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { 
-          beginAtZero: true,
-          title: { display: true, text: 'Custo Total (R$)' }
-        },
-        x: { title: { display: true, text: 'Área' } }
-      },
-      plugins: {
-        title: { display: true, text: 'Custo Total por Área' }
-      }
-    }
-  });
-</script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 {% endblock %}
 
+{% block content %}
+<div class="dashboard-container container">
+  <!-- Cabeçalho -->
+  <div class="dashboard-header">
+    <h1>Dashboard de Treinamentos</h1>
+    <div>
+      <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+        </svg>
+        Lista de Treinamentos
+      </a>
+      <!-- Botão de alternar tema -->
+      <button id="theme-toggle" class="btn-theme-toggle btn btn-outline-secondary ms-2" title="Alternar tema">
+        <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Cards de Resumo -->
+  <div class="row mb-4">
+    <div class="col-md-3 col-6 mb-3">
+      <div class="summary-card card text-white bg-primary">
+        <div class="card-body">
+          <h5 class="card-title">Total Treinamentos</h5>
+          <p class="card-text">{{ total_treinamentos }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-3">
+      <div class="summary-card card text-white bg-success">
+        <div class="card-body">
+          <h5 class="card-title">Participantes</h5>
+          <p class="card-text">{{ total_participantes }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-3">
+      <div class="summary-card card text-white bg-info">
+        <div class="card-body">
+          <h5 class="card-title">Em Andamento</h5>
+          <p class="card-text">{{ em_andamento }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-3">
+      <div class="summary-card card text-white bg-warning">
+        <div class="card-body">
+          <h5 class="card-title">Investimento Total</h5>
+          <p class="card-text">R$ {{ total_custo|floatformat:2 }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha de Gráficos 1 -->
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="chart-card card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Treinamentos por Área</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="chartArea"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+      <div class="chart-card card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Participação Mensal</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="chartParticipacao"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Linha de Gráficos 2 -->
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <div class="chart-card card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Status dos Treinamentos</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="chartStatus"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+      <div class="chart-card card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Treinamentos por Modalidade</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="chartModalidade"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de Custo -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="chart-card card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Custo Total por Área</h5>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="chartCusto"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Treinamentos Recentes -->
+  <div class="row">
+    <div class="col-12">
+      <div class="recent-trainings card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Treinamentos Recentes</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Data Início</th>
+                  <th>Data Vencimento</th>
+                  <th>Dias</th>
+                  <th>Status</th>
+                  <th>Participantes</th>
+                  <th>Custo</th>
+                </tr>
+              </thead>
+              <tbody>
+                    {% for treinamento in treinamentos_recentes %}
+                    <tr>
+                      <td>
+                        <a href="{{ treinamento.get_absolute_url }}">{{ treinamento.nome }}</a>
+                      </td>
+                      <td>{{ treinamento.tipo_curso.nome }}</td>
+                      <td>{{ treinamento.data_inicio|date:"d/m/Y" }}</td>
+                      <td>
+                        {% with dias_para_vencer=treinamento.dias_para_vencer %}
+                          <span class="badge 
+                            {% if dias_para_vencer > 30 %}bg-success
+                            {% elif dias_para_vencer > 7 %}bg-warning
+                            {% else %}bg-danger{% endif %}"
+                            title="{% if dias_para_vencer > 0 %}Vence em {{ dias_para_vencer }} dias
+                                  {% elif dias_para_vencer == 0 %}Vence hoje
+                                  {% else %}Venceu há {% load math_extras %}{{ dias_para_vencer|absolute }} dias{% endif %}">
+                                  {{ treinamento.data_vencimento|date:"d/m/Y" }}
+                            {% if dias_para_vencer <= 7 %}
+                              <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                            {% endif %}
+                          </span> 
+                        {% endwith %}
+                        </td>
+                        <td>{% with dias_para_vencer=treinamento.dias_para_vencer %}
+                            <span class="badge 
+                              {% if dias_para_vencer > 30 %}bg-success
+                              {% elif dias_para_vencer > 7 %}bg-warning
+                              {% else %}bg-danger{% endif %}"
+                              title="{% if dias_para_vencer > 0 %}Vence em {{ dias_para_vencer }} dias
+                                    {% elif dias_para_vencer == 0 %}Vence hoje
+                                    {% else %}Venceu há {% load math_extras %}{{ dias_para_vencer|absolute }} dias{% endif %}">
+                              {% if dias_para_vencer <= 7 %}
+                                <i class="bi bi-exclamation-triangle-fill ms-1"></i>
+                              {% endif %}{{ dias_para_vencer }}
+                            </span>
+                            {% endwith %} 
+                        </td>
+                        <td>
+                        <span class="badge 
+                          {% if treinamento.status == 'P' %}bg-secondary
+                          {% elif treinamento.status == 'A' %}bg-primary
+                          {% elif treinamento.status == 'F' %}bg-success
+                          {% else %}bg-danger{% endif %}">
+                          {{ treinamento.get_status_display }}
+                        </span>
+                      </td>
+                      <td>{{ treinamento.participantes.count }}</td>
+                      <td>R$ {{ treinamento.custo|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // Função para aplicar o tema
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.body.classList.add('dark-theme');
+      document.getElementById('theme-icon').innerHTML = `
+        <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708z"/>
+      `;
+    } else {
+      document.body.classList.remove('dark-theme');
+      document.getElementById('theme-icon').innerHTML = `
+        <path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/>
+      `;
+    }
+  }
+
+  // Verificar tema salvo
+  const savedTheme = localStorage.getItem('dashboard-theme') || 'light';
+  applyTheme(savedTheme);
+
+  // Botão de alternar tema
+  document.getElementById('theme-toggle').addEventListener('click', function() {
+    const currentTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
+    localStorage.setItem('dashboard-theme', currentTheme);
+    applyTheme(currentTheme);
+    updateChartsForTheme(currentTheme);
+  });
+
+  // Atualizar gráficos para o tema
+  function updateChartsForTheme(theme) {
+    const textColor = theme === 'dark' ? '#f8f9fa' : '#666';
+    const gridColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    
+    Chart.helpers.each(Chart.instances, function(instance) {
+      if (instance.options.scales) {
+        if (instance.options.scales.x) {
+          instance.options.scales.x.grid.color = gridColor;
+          instance.options.scales.x.ticks.color = textColor;
+        }
+        if (instance.options.scales.y) {
+          instance.options.scales.y.grid.color = gridColor;
+          instance.options.scales.y.ticks.color = textColor;
+        }
+      }
+      
+      if (instance.options.plugins) {
+        if (instance.options.plugins.title) {
+          instance.options.plugins.title.color = textColor;
+        }
+        if (instance.options.plugins.legend) {
+          instance.options.plugins.legend.labels.color = textColor;
+        }
+      }
+      
+      instance.update();
+    });
+  }
+
+  // Configurações comuns para os gráficos
+  const getChartOptions = (title) => {
+    const isDark = document.body.classList.contains('dark-theme');
+    const textColor = isDark ? '#ffffff' : '#666';
+    const gridColor = isDark ? 'rgba(13, 13, 13, 0.92)' : 'rgba(0, 0, 0, 0.1)';
+    
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          position: 'bottom',
+          labels: {
+            color: textColor,
+            font: {
+              size: 16
+            }
+          }
+        }
+      }
+    };
+    
+    if (title) {
+      options.plugins.title = {
+        display: true,
+        text: title,
+        color: textColor,
+        font: {
+          size: 14,
+          weight: 'bold'
+        }
+      };
+    }
+    
+    return options;
+  };
+
+  // Inicializar todos os gráficos após o DOM estar pronto
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Gráfico de Treinamentos por Área
+    // Use aspas simples e o filtro 'escapejs' para segurança
+    const areaData = JSON.parse('{{ treinamentos_por_area|escapejs }}'); 
+    const areaLabels = areaData.map(item => {
+      switch (item.tipo_curso__area) {
+        case 'SAU': return 'Saúde';
+        case 'SEG': return 'Segurança';
+        case 'ADM': return 'Administrativo';
+        case 'OPE': return 'Operacional';
+        case 'TEC': return 'Técnico';
+        default: return 'Desconhecido';
+      }
+    });
+    const areaValues = areaData.map(item => item.total);
+
+    new Chart(document.getElementById('chartArea'), {
+      type: 'pie',
+      data: {
+        labels: areaLabels,
+        datasets: [{
+          data: areaValues,
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.7)',
+            'rgba(54, 162, 235, 0.7)',
+            'rgba(255, 206, 86, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: getChartOptions('Distribuição de Treinamentos por Área')
+    });
+
+    // 2. Gráfico de Participação Mensal
+    const participacaoData = JSON.parse('{{ participacao_mensal|escapejs }}');
+    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const participacaoValues = Array(12).fill(0);
+    
+    participacaoData.forEach(item => {
+      participacaoValues[item.month - 1] = item.total;
+    });
+
+    new Chart(document.getElementById('chartParticipacao'), {
+      type: 'bar',
+      data: {
+        labels: monthNames,
+        datasets: [{
+          label: 'Participantes',
+          data: participacaoValues,
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        ...getChartOptions('Participação Mensal'),
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Participantes',
+              color: document.body.classList.contains('dark-theme') ? '#f8f9fa' : '#666'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Mês',
+              color: document.body.classList.contains('dark-theme') ? '#f8f9fa' : '#666'
+            }
+          }
+        }
+      }
+    });
+
+    // 3. Gráfico de Status dos Treinamentos
+    const statusData = JSON.parse('{{ status_treinamentos|escapejs }}');
+    const statusLabels = statusData.map(item => {
+      switch (item.status) {
+        case 'P': return 'Planejado';
+        case 'A': return 'Em Andamento';
+        case 'C': return 'Cancelado';
+        case 'F': return 'Finalizado';
+        default: return 'Desconhecido';
+      }
+    });
+    const statusValues = statusData.map(item => item.total);
+
+    new Chart(document.getElementById('chartStatus'), {
+      type: 'doughnut',
+      data: {
+        labels: statusLabels,
+        datasets: [{
+          data: statusValues,
+          backgroundColor: [
+            'rgba(108, 117, 125, 0.7)',
+            'rgba(13, 110, 253, 0.7)',
+            'rgba(220, 53, 69, 0.7)',
+            'rgba(25, 135, 84, 0.7)',
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: getChartOptions('Status dos Treinamentos')
+    });
+
+    // 4. Gráfico de Treinamentos por Modalidade
+    const modalidadeData = JSON.parse('{{ treinamentos_por_modalidade|escapejs }}');
+    const modalidadeLabels = modalidadeData.map(item => {
+      switch (item.tipo_curso__modalidade) {
+        case 'P': return 'Presencial';
+        case 'O': return 'Online';
+        case 'H': return 'Híbrido';
+        default: return 'Desconhecido';
+      }
+    });
+    const modalidadeValues = modalidadeData.map(item => item.total);
+
+    new Chart(document.getElementById('chartModalidade'), {
+      type: 'polarArea',
+      data: {
+        labels: modalidadeLabels,
+        datasets: [{
+          data: modalidadeValues,
+          backgroundColor: [
+            'rgba(255, 159, 64, 0.7)',
+            'rgba(75, 192, 192, 0.7)',
+            'rgba(153, 102, 255, 0.7)',
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: getChartOptions('Treinamentos por Modalidade')
+    });
+
+    // 5. Gráfico de Custo por Área (PONTO PRINCIPAL DA CORREÇÃO)
+    // Use a nova variável de contexto 'custo_por_area_json'
+    const custoData = JSON.parse('{{ custo_por_area_json|escapejs }}');
+    const custoLabels = custoData.map(item => {
+    switch (item.tipo_curso__area) {
+        case 'SAU': return 'Saúde';
+        case 'SEG': return 'Segurança';
+        case 'ADM': return 'Administrativo';
+        case 'OPE': return 'Operacional';
+        case 'TEC': return 'Técnico';
+        default: return item.tipo_curso__area; // Mantém o original se não conhecer
+    }
+    });
+    const custoValues = custoData.map(item => item.total); // Agora item.total é um número limpo
+
+    // Verificação de segurança dos dados
+    if (custoData.length === 0) {
+    console.warn('Nenhum dado de custo encontrado');
+    document.getElementById('chartCusto').innerHTML = 
+        '<div class="alert alert-warning">Dados de custo não disponíveis</div>';
+    } else {
+    new Chart(document.getElementById('chartCusto'), {
+        type: 'line',
+        data: {
+        labels: custoLabels,
+        datasets: [{
+            label: 'Custo Total (R$)',
+            data: custoValues,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 2,
+            tension: 0.1,
+            fill: true
+        }]
+        },
+        options: {
+        ...getChartOptions('Custo Total por Área'),
+        scales: {
+            y: {
+            beginAtZero: false, // Melhor para valores monetários
+            title: {
+                display: true,
+                text: 'Custo Total (R$)',
+                color: document.body.classList.contains('dark-theme') ? '#f8f9fa' : '#666'
+            },
+            ticks: {
+                callback: function(value) {
+                return 'R$ ' + value.toLocaleString('pt-BR');
+                }
+            }
+            },
+            x: {
+            title: {
+                display: true,
+                text: 'Área',
+                color: document.body.classList.contains('dark-theme') ? '#f8f9fa' : '#666'
+            }
+            }
+        },
+        plugins: {
+            tooltip: {
+            callbacks: {
+                label: function(context) {
+                return 'Custo: R$ ' + context.parsed.y.toLocaleString('pt-BR');
+                }
+            }
+            },
+            datalabels: {
+            display: false // Desativado para gráfico de linha (pode poluir visualmente)
+            }
+        }
+        }
+    });
+    }
+  });
+  
+</script>
+{% endblock %}
 
