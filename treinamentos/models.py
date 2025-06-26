@@ -2,6 +2,9 @@
 from django.db import models
 from django.urls import reverse
 from django.conf import settings # Melhor prática para referenciar o User model
+from django.utils import timezone
+
+from datetime import timedelta
 
 class TipoCurso(models.Model):
     """
@@ -13,7 +16,7 @@ class TipoCurso(models.Model):
         ('O', 'Online'),
         ('H', 'Híbrido'),
     ]
-    
+
     AREA_CHOICES = [
         ('SAU', 'Saúde'),
         ('SEG', 'Segurança'),
@@ -112,6 +115,11 @@ class Treinamento(models.Model):
     def get_absolute_url(self):
         return reverse('treinamentos:detalhe_treinamento', kwargs={'pk': self.pk})
 
+    @property
+    def dias_para_vencer(self):
+        if not self.data_vencimento:
+            return float('inf')  # Retorna infinito se não houver data de vencimento
+        return (self.data_vencimento - timezone.now().date()).days
 
 class Participante(models.Model):
     """
@@ -165,4 +173,5 @@ class Participante(models.Model):
     def __str__(self):
         # Utiliza o método __str__ do User model, que geralmente é o username.
         return f"{self.funcionario} - {self.treinamento.nome}"
+
 

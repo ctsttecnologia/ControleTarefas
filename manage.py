@@ -3,6 +3,12 @@
 import os
 import sys
 
+# --- ADICIONE ESTE CÓDIGO PARA DIAGNÓSTICO ---
+print("="*50)
+print(f"!!! EXECUTANDO COM O PYTHON EM: {sys.executable}")
+print("="*50)
+# ---------------------------------------------
+
 
 def main():
     """Run administrative tasks."""

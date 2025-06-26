@@ -1,4 +1,3 @@
-# G:\Projetos\treinamentos\forms.py
 
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
@@ -34,8 +33,8 @@ class TreinamentoForm(forms.ModelForm):
 class ParticipanteForm(forms.ModelForm):
     class Meta:
         model = Participante
-        fields = ['funcionario', 'presente']
-        
+        fields = ['funcionario', 'presente', 'nota_avaliacao', 'certificado_emitido']
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         User = apps.get_model(settings.AUTH_USER_MODEL)
@@ -44,16 +43,16 @@ class ParticipanteForm(forms.ModelForm):
 class BaseParticipanteFormSet(BaseInlineFormSet):
     def clean(self):
         super().clean()
-        if any(self.errors):
-            return
-        
-        participantes = []
-        for form in self.forms:
-            if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
-                funcionario = form.cleaned_data.get('funcionario')
-                if funcionario in participantes:
-                    form.add_error('funcionario', 'Este funcionário já está na lista.')
-                participantes.append(funcionario)
+        # if any(self.errors):
+        #     return
+
+        # participantes = []
+        # for form in self.forms:
+        #     if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+        #         funcionario = form.cleaned_data.get('funcionario')
+        #         if funcionario in participantes:
+        #             form.add_error('funcionario', 'Este funcionário já está na lista.')
+        #         participantes.append(funcionario)
 
 # Criação do FormSet
 ParticipanteFormSet = inlineformset_factory(
@@ -61,7 +60,8 @@ ParticipanteFormSet = inlineformset_factory(
     Participante,
     form=ParticipanteForm,
     formset=BaseParticipanteFormSet,
-    fields=['funcionario', 'presente'],
+    fields=['funcionario', 'presente', 'nota_avaliacao', 'certificado_emitido'],
     extra=1,
     can_delete=True
 )
+

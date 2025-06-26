@@ -15,6 +15,8 @@ from django.contrib.messages.views import SuccessMessageMixin
 
 from xhtml2pdf import pisa
 import csv
+
+from ata_reuniao.models import Funcionario
 from .forms import (
     AdmissaoForm, 
     DepartamentoForm, 

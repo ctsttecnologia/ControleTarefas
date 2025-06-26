@@ -107,6 +107,9 @@
         <a href="{% url 'treinamentos:relatorio_treinamentos' %}?ano={{ treinamento.data_inicio|date:'Y' }}&tipo_curso={{ treinamento.tipo_curso.pk }}" class="btn btn-info">
             <i class="bi bi-bar-chart-line"></i> Relatório de Treinamentos
         </a>
+        <a href="{% url 'treinamentos:relatorio_treinamento_word' pk=treinamento.pk %}" class="btn btn-primary">
+            <i class="fas fa-file-word"></i> Gerar Relatório - Word
+        </a>
     </div>
 </div>
 {% endblock %}

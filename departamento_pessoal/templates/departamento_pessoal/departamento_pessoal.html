@@ -1,72 +1,38 @@
 
+{% extends 'base.html' %}
+
 {% load static %}
 
-<!DOCTYPE html>
-<html>
-<head>
-    
+{% block head %}    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Departamento Pessoal{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'cssdp/styles.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+{% endblock %}
    
-</head>
-<body>
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
-    
+{% block content %}    
     <div class="painel">
-        <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn-home">
-            <i class="fas fa-users"></i> Cadastro de Funcionário
+        <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn btn-primary">
+            <i class="fas fa-users"></i> Cadastrar de Funcionário
         </a>
-        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-navigation">
+        <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Cadastrar Treinamento
+        </a>
+        <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> Cadastrar Tipo Curso
+        </a>
+                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-primary">
             <i class="fas fa-list"></i> Lista Funcionários
+        </a>
+        <a href="{% url 'departamento_pessoal:lista_admissoes' %}" class="btn btn-primary">
+            <i class="fas fa-list"></i> Lista Admissão
         </a>   
     </div>
-    <div class="container">    
-        <div class="painel1">
-           <!-- Cards de Resumo -->
-            <div class="row mb-4">
-                <div class="col-md-3 mb-3">
-                    <div class="card text-white bg-primary h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Treinamentos</h5>
-                            <p class="card-text display-4">{{ total_treinamentos }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card text-white bg-success h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">Participantes</h5>
-                            <p class="card-text display-4">{{ total_participantes }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card text-white bg-info h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">Em Andamento</h5>
-                            <p class="card-text display-4">{{ em_andamento }}</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3 mb-3">
-                    <div class="card text-white bg-warning h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">Investimento Total</h5>
-                            <p class="card-text display-4">R$ {{ total_custo|floatformat:2 }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>                             
+    <div class="container">     
+            <h2>Dashboard de Treinamentos</h2>                         
     </div>
-</body> 
-</html>
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}  
-
+{% endblock %}

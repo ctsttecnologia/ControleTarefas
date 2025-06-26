@@ -12,6 +12,9 @@
         <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary" title="Incluir novo curso">
             <i class="bi bi-plus-lg"></i> Novo Treinamento
         </a>
+        <a href="{% url 'treinamentos:relatorio_geral_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Exportar para Excel
+        </a>
     </div>
 </div>
 
