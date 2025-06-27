@@ -11,10 +11,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
 from pathlib import Path
-
+from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv() # Carrega as variáveis do arquivo .env
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -104,12 +104,12 @@ WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bd_controle_tarefas',  # Nome do banco de dados
-        'USER': 'esgemerson',          # Nome de usuário do MySQL
-        'PASSWORD': 'esg1234E', # Senha do MySQL
-        'HOST': 'localhost',     # Endereço do servidor MySQL
-        'PORT': '3306',          # Porta do MySQL (padrão é 3306)
+        'ENGINE': os.getenv('DB_ENGINE'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'), # Lendo a senha de forma segura!
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),        
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
