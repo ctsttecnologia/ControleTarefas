@@ -166,11 +166,10 @@ TIME_ZONE = 'America/Sao_Paulo'
 
 # Configurações para arquivos estáticos
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # Pasta local dos estáticos
-    
+    os.path.join(BASE_DIR, 'static'),  # Pasta local dos estáticos  
 ]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
 
 MEDIA_URL = '/midia/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'midia')

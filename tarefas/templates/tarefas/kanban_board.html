@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csstarefa/kanban.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Quadro Kanban</h1>
+        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">Ver Lista</a>
+    </header>
+
+    <div class="kanban-board">
+        {% for coluna in colunas %}
+        <div class="kanban-column">
+            <div class="kanban-column-header">
+                {{ coluna.nome }}
+                <span class="badge bg-secondary rounded-pill float-end">{{ coluna.tarefas|length }}</span>
+            </div>
+            <div class="kanban-cards-container" id="{{ coluna.id }}">
+                {% for tarefa in coluna.tarefas %}
+                    <div class="kanban-card {% if tarefa.atrasada %}is-overdue{% endif %}" data-task-id="{{ tarefa.pk }}">
+                        <p class="kanban-card-title">{{ tarefa.titulo }}</p>
+                        <div class="kanban-card-meta d-flex justify-content-between align-items-center">
+                            <span class="{% if tarefa.atrasada %}text-danger fw-bold{% endif %}">
+                                <i class="far fa-calendar-alt"></i> 
+                                {% if tarefa.prazo %}
+                                    {{ tarefa.prazo|date:"d/m" }}
+                                {% else %}
+                                    S/ Prazo
+                                {% endif %}
+                            </span>
+                            <span class="badge rounded-pill 
+                                {% if tarefa.prioridade == 'baixa' %}bg-success-subtle text-success-emphasis
+                                {% elif tarefa.prioridade == 'media' %}bg-warning-subtle text-warning-emphasis
+                                {% else %}bg-danger-subtle text-danger-emphasis{% endif %}">
+                                {{ tarefa.get_prioridade_display }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const kanbanContainers = document.querySelectorAll('.kanban-cards-container');
+
+    kanbanContainers.forEach(container => {
+        new Sortable(container, {
+            group: 'kanban', // Permite mover cards entre colunas
+            animation: 150,
+            onEnd: function (evt) {
+                const itemEl = evt.item;  // o card que foi movido
+                const toContainer = evt.to;   // a coluna de destino
+
+                const taskId = itemEl.dataset.taskId;
+                const newStatus = toContainer.id;
+
+                // Envia a atualização para o servidor via AJAX
+                updateTask(taskId, newStatus);
+            }
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function updateTask(taskId, newStatus) {
+        const csrftoken = getCookie('csrftoken');
+        const url = "{% url 'tarefas:update_task_status' %}";
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrftoken
+            },
+            body: `task_id=${taskId}&new_status=${newStatus}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Status da tarefa atualizado com sucesso!');
+                // Opcional: mostrar uma pequena notificação de sucesso
+            } else {
+                console.error('Falha ao atualizar o status:', data.message);
+                // Opcional: mostrar uma notificação de erro e reverter a ação
+            }
+        })
+        .catch(error => console.error('Erro na requisição AJAX:', error));
+    }
+});
+</script>
+{% endblock %}

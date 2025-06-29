@@ -1,26 +1,25 @@
-<!-- templates/tarefas/listar_tarefas.html -->
-
+{% extends 'base.html' %}
 {% load static %}
 
 {% block head %}
-    {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstarefa/styles.css' %}">
-    {% endblock %}
+        {% block extra_css %}
+            <link rel="stylesheet" href="{% static 'csstarefa/tarefastyles.css' %}">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        {% endblock extra_css %}
 {% endblock %}
-<title>{% block title %}Lista de Tarefas{% endblock %}</title>
-
-<!-- Barra de Navegação Principal -->    
-{% include 'includes/header.html' %}
 
 {% block content %}
     <div class="container mt-4">
         <!-- Cabeçalho -->
         <header class="d-flex justify-content-between align-items-center mb-4">
             <div class="painel-controles">
-             <h1 class="mb-0">Lista de Tarefas</h1>
+             <h1 class="mb-0"><i class="fas fa-list"></i>Lista de Tarefas</h1>
             </div>
             <div>
-                <a href="{% url 'tarefas:dashboard' %}" class="btn btn-secondary">
+                <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> Kanban
+                </a>
+                <a href="{% url 'tarefas:dashboard_analitico' %}" class="btn btn-secondary">
                     <i class="bi bi-speedometer2"></i> Dashboard</a>
                 <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">
                     <i class="fas fa-list"></i> Relatórios
@@ -30,7 +29,6 @@
                 </a>
             </div>
         </header>
-
         <!-- Tabela de Tarefas -->
         <div class="card shadow-sm">
             <div class="card-body">
@@ -57,18 +55,29 @@
                                 <td>{{ tarefa.usuario.username }}</td>
                                 <td>{{ tarefa.responsavel.username|default:"-" }}</td>
                                 <td>
-                                    <span class="badge bg-{{ tarefa.status }}">
+                                    {# CORREÇÃO AQUI: Usando if/elif para mapear o status para uma classe Bootstrap válida #}
+                                    <span class="badge rounded-pill 
+                                        {% if tarefa.status == 'P' %}bg-secondary
+                                        {% elif tarefa.status == 'A' %}bg-primary
+                                        {% elif tarefa.status == 'C' %}bg-danger
+                                        {% elif tarefa.status == 'F' %}bg-success
+                                        {% else %}bg-light text-dark{% endif %}">
                                         {{ tarefa.get_status_display }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ tarefa.prioridade }}">
+                                    {# CORREÇÃO AQUI: Mapeando a prioridade para uma classe Bootstrap válida #}
+                                    <span class="badge rounded-pill
+                                        {% if tarefa.prioridade == 'B' %}bg-success
+                                        {% elif tarefa.prioridade == 'M' %}bg-warning text-dark
+                                        {% elif tarefa.prioridade == 'A' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}">
                                         {{ tarefa.get_prioridade_display }}
                                     </span>
                                 </td>
                                 <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
                                 <td>
-                                    <div class="progress" style="height: 20px;">
+                                    <div class="progress" style="height: 20px;" title="{{ tarefa.progresso }}% Concluído">
                                         <div class="progress-bar bg-success" 
                                             role="progressbar" 
                                             style="width: {{ tarefa.progresso }}%" 
@@ -79,30 +88,24 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="d-flex gap-2">
-                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" 
-                                    class="btn btn-sm btn-info" 
-                                    title="Visualizar">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" 
-                                    class="btn btn-sm btn-warning" 
-                                    title="Editar">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" 
-                                    class="btn btn-sm btn-danger" 
-                                    title="Excluir">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
+                                <td class="text-end"> {# CORREÇÃO: Alinhando os botões à direita para um melhor visual #}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-outline-info" title="Visualizar">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-outline-warning" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-outline-danger" title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
                                 <td colspan="9" class="text-center py-4">
-                                    <div class="alert alert-info">
-                                        Nenhuma tarefa encontrada.
-                                    </div>
+                                    <div class="alert alert-info">Nenhuma tarefa encontrada.</div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -113,6 +116,5 @@
         </div>
     </div>
 {% endblock %}
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}
+
 

@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Count, Q, Sum, F
+from django.db.models import Sum, Count, F, Q, FloatField
 from django.forms import inlineformset_factory
 from django.http import HttpResponse
 from django.urls import reverse_lazy
@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.db import models
 from django.db.models.functions import Coalesce, ExtractMonth
 from django.db.models.fields import FloatField
+from decimal import Decimal
 
 import os
 import io
@@ -373,92 +374,96 @@ class RelatorioGeralExcelView(LoginRequiredMixin, PermissionRequiredMixin, View)
             messages.error(request, f"Ocorreu um erro ao gerar o relatório Excel.")
             return redirect('treinamentos:lista_treinamentos')
 
+# --- Classe auxiliar (mantenha como está) ---
+# treinamentos/views.py
+
+# --- Imports (garanta que todos estes estejam no topo do arquivo) ---
+import json
+from decimal import Decimal
+from django.db.models import Sum, Count, FloatField
+from django.db.models.functions import Coalesce
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from .models import Treinamento, Participante, TipoCurso # Importe seus modelos
+
+# --- Classe auxiliar para o JSON (mantenha como está) ---
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            return float(o)
+        return super(DecimalEncoder, self).default(o)
+
+# --- Sua View, com a correção final e definitiva ---
 class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
     template_name = 'treinamentos/dashboard.html'
-    permission_required = 'treinamentos.view_report'
+    permission_required = 'treinamentos.view_report' # Verifique se o nome da app está correto
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        base_queryset = Treinamento.objects.all()
 
-        # Treinamentos por área
-        treinamentos_por_area = Treinamento.objects.values(
-            'tipo_curso__area'
-        ).annotate(
-            total=Count('id')
-        ).order_by('-total')
+        # Mapeamentos para tradução (usando as choices dos modelos)
+        area_map = dict(TipoCurso.AREA_CHOICES)
+        status_map = dict(Treinamento.STATUS_CHOICES)
+        modalidade_map = dict(TipoCurso.MODALIDADE_CHOICES)
+        
+        # --- 1. DADOS PARA OS GRÁFICOS (Esta parte já estava correta) ---
+        area_data_db = base_queryset.values('tipo_curso__area').annotate(total=Count('id'))
+        treinamentos_por_area = [
+            {'nome_legivel': area_map.get(item['tipo_curso__area'], item['tipo_curso__area']), 'total': item['total']}
+            for item in area_data_db
+        ]
+        
+        status_data_db = base_queryset.values('status').annotate(total=Count('id'))
+        status_treinamentos = [
+            {'nome_legivel': status_map.get(item['status'], item['status']), 'total': item['total']}
+            for item in status_data_db
+        ]
 
-        # Participação mensal
-        participacao_mensal = Participante.objects.filter(
-            presente=True
-        ).annotate(
-            month=ExtractMonth('data_registro')
-        ).values(
-            'month'
-        ).annotate(
-            total=Count('id')
-        ).order_by('month')
+        modalidade_data_db = base_queryset.values('tipo_curso__modalidade').annotate(total=Count('id'))
+        treinamentos_por_modalidade = [
+            {'nome_legivel': modalidade_map.get(item['tipo_curso__modalidade'], item['tipo_curso__modalidade']), 'total': item['total']}
+            for item in modalidade_data_db
+        ]
 
-        # Status dos treinamentos
-        status_treinamentos = Treinamento.objects.values(
-            'status'
-        ).annotate(
-            total=Count('id')
-        ).order_by('-total')
-
-        # Treinamentos por modalidade
-        treinamentos_por_modalidade = Treinamento.objects.values(
-            'tipo_curso__modalidade'
-        ).annotate(
-            total=Count('id')
-        ).order_by('-total')
-
-        # Custo total por área (VERSÃO CORRIGIDA)
-        custo_por_area = Treinamento.objects.values(
-            'tipo_curso__area'
-        ).annotate(
-            # Coalesce trata custos nulos, e output_field garante um float
-            total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
-        ).order_by('tipo_curso__area') # Ordenar por área para consistência
-
-        # Treinamentos recentes
-        treinamentos_recentes = Treinamento.objects.order_by('-data_inicio')[:5]
-
-        # --- CÁLCULOS TOTAIS ---
-        todos_treinamentos = Treinamento.objects.all()
-        total_treinamentos = todos_treinamentos.count()
-        total_participantes = Participante.objects.filter(presente=True).count()
-        total_custo_agregado = todos_treinamentos.aggregate(
+        custo_data_db = base_queryset.values('tipo_curso__area').annotate(
             total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
         )
-        total_custo = total_custo_agregado['total']
-        em_andamento = todos_treinamentos.filter(status='A').count()
+        custo_por_area = [
+            {'nome_legivel': area_map.get(item['tipo_curso__area'], item['tipo_curso__area']), 'total': item['total']}
+            for item in custo_data_db
+        ]
+        
+        # --- 2. MONTANDO O JSON ÚNICO (Esta parte já estava correta) ---
+        dashboard_data = {
+            'area': treinamentos_por_area,
+            'status': status_treinamentos,
+            'modalidade': treinamentos_por_modalidade,
+            'custo': custo_por_area,
+        }
+        
+        # --- 3. DADOS PARA CARDS E TABELA ---
+        total_treinamentos = base_queryset.count()
+        em_andamento = base_queryset.filter(status='A').count()
+        
+        # CORREÇÃO FINAL ESTÁ AQUI: Adicionando o 'output_field'
+        total_custo = base_queryset.aggregate(
+            total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
+        )['total']
+        
+        total_participantes = Participante.objects.count() # Ajuste conforme sua regra
+        treinamentos_recentes = base_queryset.select_related('tipo_curso').order_by('-data_inicio')[:5]
 
-        # Obter treinamentos em andamento
-        em_andamento = next(
-            (item['total'] for item in status_treinamentos if item['status'] == 'A'),
-            0
-        )
-
-        # --- ATUALIZAÇÃO DO CONTEXTO ---
+        # --- 4. ATUALIZAÇÃO FINAL DO CONTEXTO ---
         context.update({
             'total_treinamentos': total_treinamentos,
             'total_participantes': total_participantes,
             'total_custo': total_custo,
             'em_andamento': em_andamento,
             'treinamentos_recentes': treinamentos_recentes,
-            
-            # Dados para os gráficos, agora em JSON
-            'treinamentos_por_area': json.dumps(list(treinamentos_por_area)),
-            'participacao_mensal': json.dumps(list(participacao_mensal)),
-            'status_treinamentos': json.dumps(list(status_treinamentos)),
-            'treinamentos_por_modalidade': json.dumps(list(treinamentos_por_modalidade)),
-            'custo_por_area_json': json.dumps(list(custo_por_area)),
+            'dashboard_data_json': json.dumps(dashboard_data, cls=DecimalEncoder),
         })
+        
         return context
-
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data(**kwargs)   
-        return render(request, self.template_name, context)
-
 
 

@@ -1,0 +1,42 @@
+
+/* static/css/admin_extra.css */
+
+.progress-bar-container {
+    width: 120px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    height: 22px;
+}
+
+.progress-bar-fill {
+    background-color: #4CAF50; /* Verde */
+    height: 100%;
+    border-radius: 5px;
+    text-align: center;
+    color: white;
+    line-height: 22px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.badge-admin {
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+/* Cores para os status */
+.status-pendente { background-color: #6c757d; }
+.status-andamento { background-color: #0d6efd; }
+.status-concluida { background-color: #198754; }
+.status-cancelada { background-color: #dc3545; }
+.status-pausada { background-color: #ffc107; color: #000; }
+.status-atrasada { background-color: #6f42c1; }
+
+/* Cores para as prioridades */
+.priority-alta { background-color: #dc3545; }
+.priority-media { background-color: #fd7e14; }
+.priority-baixa { background-color: #20c997; }

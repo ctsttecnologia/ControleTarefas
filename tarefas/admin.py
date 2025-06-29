@@ -1,30 +1,47 @@
 
-from datetime import timedelta, timezone
+from datetime import timedelta
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from .models import Tarefas, Comentario, HistoricoStatus
 
-class ComentarioInline(admin.StackedInline):
+# --- INLINES OTIMIZADOS ---
+
+class ComentarioInline(admin.TabularInline): # Trocado para Tabular, mais compacto
     model = Comentario
     extra = 0
-    fields = ('autor', 'texto', 'anexo', 'criado_em')
-    readonly_fields = ('criado_em', 'atualizado_em')
+    fields = ('texto', 'anexo', 'autor', 'criado_em')
+    readonly_fields = ('autor', 'criado_em') # Autor será definido automaticamente
     classes = ('collapse',)
+
+    def has_change_permission(self, request, obj=None):
+        return False # Comentários não devem ser editados aqui, apenas vistos
 
 class HistoricoStatusInline(admin.TabularInline):
     model = HistoricoStatus
     extra = 0
-    fields = ('data_alteracao', 'status_anterior', 'novo_status', 'alterado_por', 'observacao')
-    readonly_fields = ('data_alteracao', 'alterado_por')
+    fields = ('data_alteracao', 'status_anterior', 'novo_status', 'alterado_por')
+    readonly_fields = ('data_alteracao', 'status_anterior', 'novo_status', 'alterado_por')
     classes = ('collapse',)
+    can_delete = False
+    
+    def has_add_permission(self, request, obj=None):
+        return False # Histórico é apenas para leitura
+
+# --- ADMIN PRINCIPAL DE TAREFAS ---
 
 @admin.register(Tarefas)
 class TarefasAdmin(admin.ModelAdmin):
+    # Definindo a Media para carregar nosso CSS customizado
+    class Media:
+        css = {
+            'all': ('css/admin_extra.css',)
+        }
+
     list_display = (
         'titulo', 
-        'usuario_link',
         'responsavel_link',
         'status_badge',
         'prioridade_badge',
@@ -32,191 +49,96 @@ class TarefasAdmin(admin.ModelAdmin):
         'progresso_bar',
         'atrasada_flag'
     )
-    list_filter = ('status', 'prioridade', 'usuario', 'projeto')
+    list_filter = ('status', 'prioridade', 'responsavel', 'projeto')
     search_fields = ('titulo', 'descricao', 'projeto')
-    readonly_fields = ('data_criacao', 'data_atualizacao', 'progresso_display')
+    readonly_fields = ('data_criacao', 'data_atualizacao', 'usuario') # 'usuario' é definido no save
+    
     fieldsets = (
-        (None, {
-            'fields': ('titulo', 'descricao', 'projeto')
-        }),
-        (_('Responsáveis'), {
-            'fields': ('usuario', 'responsavel')
-        }),
-        (_('Tempo'), {
-            'fields': ('data_inicio', 'prazo', 'duracao_prevista', 'tempo_gasto', 'dias_lembrete')
-        }),
-        (_('Status'), {
-            'fields': ('status', 'prioridade', 'concluida_em')
-        }),
-        (_('Auditoria'), {
-            'fields': ('data_criacao', 'data_atualizacao'),
-            'classes': ('collapse',)
-        }),
+        (None, {'fields': ('titulo', 'descricao', 'projeto')}),
+        (_('Organização'), {'fields': ('status', 'prioridade')}),
+        (_('Responsáveis'), {'fields': ('usuario', 'responsavel')}),
+        (_('Prazos e Duração'), {'fields': ('data_inicio', 'prazo', 'concluida_em', 'duracao_prevista', 'tempo_gasto')}),
     )
     inlines = [ComentarioInline, HistoricoStatusInline]
     actions = ['marcar_como_concluidas']
 
-    def usuario_link(self, obj):
-        return format_html(
-            '<a href="{}">{}</a>',
-            reverse('admin:auth_user_change', args=[obj.usuario.id]),
-            obj.usuario
-        )
-    usuario_link.short_description = _('Criado por')
+    # --- MÉTODOS DE EXIBIÇÃO OTIMIZADOS (usando classes CSS) ---
 
+    @admin.display(description=_('Responsável'), ordering='responsavel__username')
     def responsavel_link(self, obj):
         if obj.responsavel:
-            return format_html(
-                '<a href="{}">{}</a>',
-                reverse('admin:auth_user_change', args=[obj.responsavel.id]),
-                obj.responsavel
-            )
+            url = reverse('admin:auth_user_change', args=[obj.responsavel.id])
+            return format_html('<a href="{}">{}</a>', url, obj.responsavel.username)
         return "-"
-    responsavel_link.short_description = _('Responsável')
 
+    @admin.display(description=_('Status'), ordering='status')
     def status_badge(self, obj):
-        colors = {
-            'pendente': 'gray', 
-            'andamento': 'blue',
-            'concluida': 'green',
-            'cancelada': 'red',
-            'pausada': 'orange',
-            'atrasada': 'darkred'
-        }
         return format_html(
-            '<span style="color:white;background:{};padding:2px 6px;border-radius:10px">{}</span>',
-            colors.get(obj.status, 'gray'),
-            obj.get_status_display()
+            '<span class="badge-admin status-{}">{}</span>',
+            obj.status, obj.get_status_display()
         )
-    status_badge.short_description = _('Status')
 
+    @admin.display(description=_('Prioridade'), ordering='prioridade')
     def prioridade_badge(self, obj):
-        colors = {'alta': 'red', 'media': 'orange', 'baixa': 'green'}
         return format_html(
-            '<span style="color:white;background:{};padding:2px 6px;border-radius:10px">{}</span>',
-            colors.get(obj.prioridade, 'gray'),
-            obj.get_prioridade_display()
+            '<span class="badge-admin priority-{}">{}</span>',
+            obj.prioridade, obj.get_prioridade_display()
         )
-    prioridade_badge.short_description = _('Prioridade')
 
+    @admin.display(description=_('Prazo'), ordering='prazo')
     def prazo_formatado(self, obj):
-        return obj.prazo.strftime('%d/%m/%Y') if obj.prazo else "-"
-    prazo_formatado.short_description = _('Prazo')
+        if not obj.prazo: return "-"
+        return obj.prazo.strftime('%d/%m/%Y %H:%M')
 
+    @admin.display(description=_('Progresso'))
     def progresso_bar(self, obj):
+        progresso = obj.progresso
         return format_html(
-            '<div style="width:100px;background:#ddd;border-radius:3px">'
-            '<div style="width:{}%;background:#4CAF50;height:20px;border-radius:3px;'
-            'text-align:center;color:white">{}%</div></div>',
-            obj.progresso, obj.progresso
+            '<div class="progress-bar-container">'
+            '<div class="progress-bar-fill" style="width:{}%;">{}%</div></div>',
+            progresso, progresso
         )
-    progresso_bar.short_description = _('Progresso')
 
+    @admin.display(description='!', ordering='prazo')
     def atrasada_flag(self, obj):
-        return "⏰" if obj.esta_atrasada() else ""
-    atrasada_flag.short_description = _('Atraso')
+        return "⏰" if obj.atrasada else ""
 
-    def progresso_display(self, obj):
-        return f"{obj.progresso}%"
-    progresso_display.short_description = _('Progresso')
+    # --- AÇÕES E MÉTODOS DE SALVAMENTO ---
 
     def marcar_como_concluidas(self, request, queryset):
         updated = queryset.update(status='concluida', concluida_em=timezone.now())
-        self.message_user(request, _('%d tarefas marcadas como concluídas') % updated)
-    marcar_como_concluidas.short_description = _('Marcar como concluídas')
+        self.message_user(request, _('%(count)d tarefas marcadas como concluídas.') % {'count': updated})
+    marcar_como_concluidas.short_description = _('Marcar selecionadas como concluídas')
 
     def save_model(self, request, obj, form, change):
-        if obj.duracao_prevista and obj.duracao_prevista > timedelta(days=30):
-            obj.duracao_prevista = timedelta(days=30)
-        if obj.tempo_gasto and obj.tempo_gasto > timedelta(days=30):
-            obj.tempo_gasto = timedelta(days=30)
+        """
+        Sobrescreve o método save para definir o criador da tarefa (se for nova)
+        e para anexar o usuário ao objeto para o log de histórico.
+        """
+        # CORREÇÃO CRÍTICA: Define o usuário criador na primeira vez que a tarefa é salva
+        if not obj.pk:
+            obj.usuario = request.user
+        
+        # Anexa o usuário ao objeto para ser usado no método save() do modelo
+        obj._user = request.user
         super().save_model(request, obj, form, change)
 
-@admin.register(Comentario)
-class ComentarioAdmin(admin.ModelAdmin):
-    list_display = ('tarefa_link', 'autor_link', 'texto_resumido', 'anexo_info', 'criado_em_formatado')
-    list_filter = ('autor', 'criado_em')
-    search_fields = ('texto', 'tarefa__titulo')
-    readonly_fields = ('anexo_detalhes', 'criado_em', 'atualizado_em')
+    def save_formset(self, request, form, formset, change):
+        """
+        Sobrescreve o método para definir o autor do comentário automaticamente.
+        """
+        # OTIMIZAÇÃO: Define o autor de novos comentários como o usuário logado
+        if formset.model == Comentario:
+            instances = formset.save(commit=False)
+            for instance in instances:
+                if not instance.pk and hasattr(request, 'user'):
+                    instance.autor = request.user
+                instance.save()
+            formset.save_m2m()
+        else:
+            super().save_formset(request, form, formset, change)
 
-    def tarefa_link(self, obj):
-        return format_html(
-            '<a href="{}">{}</a>',
-            reverse('admin:tarefas_tarefas_change', args=[obj.tarefa.id]),
-            obj.tarefa
-        )
-    tarefa_link.short_description = _('Tarefa')
-
-    def autor_link(self, obj):
-        return format_html(
-            '<a href="{}">{}</a>',
-            reverse('admin:auth_user_change', args=[obj.autor.id]),
-            obj.autor
-        )
-    autor_link.short_description = _('Autor')
-
-    def texto_resumido(self, obj):
-        return obj.texto[:50] + '...' if len(obj.texto) > 50 else obj.texto
-    texto_resumido.short_description = _('Comentário')
-
-    def anexo_info(self, obj):
-        if obj.anexo:
-            warning = "⚠" if obj.extensao_anexo in ['doc', 'docx'] else ""
-            return format_html(
-                "{} {} ({}MB)",
-                warning,
-                obj.nome_anexo,
-                obj.tamanho_anexo_mb
-            )
-        return "-"
-    anexo_info.short_description = _('Anexo')
-
-    def anexo_detalhes(self, obj):
-        if obj.anexo:
-            return format_html(
-                """
-                <div style="border:1px solid #eee;padding:10px;margin:10px 0">
-                    <strong>Nome:</strong> {}<br>
-                    <strong>Tipo:</strong> {}<br>
-                    <strong>Tamanho:</strong> {} MB<br>
-                    <strong style="color:red">Aviso:</strong> Verifique a procedência antes de abrir
-                </div>
-                """,
-                obj.nome_anexo,
-                obj.extensao_anexo,
-                obj.tamanho_anexo_mb
-            )
-        return _("Nenhum arquivo anexado")
-    anexo_detalhes.short_description = _('Detalhes do Anexo')
-
-    def criado_em_formatado(self, obj):
-        return obj.criado_em.strftime('%d/%m/%Y %H:%M')
-    criado_em_formatado.short_description = _('Criado em')
-
-@admin.register(HistoricoStatus)
-class HistoricoStatusAdmin(admin.ModelAdmin):
-    list_display = ('tarefa_link', 'status_anterior', 'novo_status', 'alterado_por_link', 'data_alteracao_formatada')
-    list_filter = ('novo_status', 'alterado_por')
-    search_fields = ('tarefa__titulo', 'alterado_por__username')
-    readonly_fields = ('tarefa_link', 'status_anterior', 'novo_status', 'alterado_por_link', 'data_alteracao_formatada')
-
-    def tarefa_link(self, obj):
-        return format_html(
-            '<a href="{}">{}</a>',
-            reverse('admin:tarefas_tarefas_change', args=[obj.tarefa.id]),
-            obj.tarefa
-        )
-    tarefa_link.short_description = _('Tarefa')
-
-    def alterado_por_link(self, obj):
-        return format_html(
-            '<a href="{}">{}</a>',
-            reverse('admin:auth_user_change', args=[obj.alterado_por.id]),
-            obj.alterado_por
-        )
-    alterado_por_link.short_description = _('Alterado por')
-
-    def data_alteracao_formatada(self, obj):
-        return obj.data_alteracao.strftime('%d/%m/%Y %H:%M')
-    data_alteracao_formatada.short_description = _('Data da Alteração')
-
+# --- ADMINS DOS OUTROS MODELOS ---
+# ... Seus ComentarioAdmin e HistoricoStatusAdmin podem ser mantidos, 
+# mas registrá-los separadamente não é mais necessário se você só os usa como inlines.
+# Se você quiser uma página separada para eles, mantenha o @admin.register.

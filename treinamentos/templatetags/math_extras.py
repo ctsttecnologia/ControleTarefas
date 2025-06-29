@@ -1,11 +1,15 @@
+# treinamentos/templatetags/math_extras.py
 
 from django import template
 
 register = template.Library()
 
-@register.filter
+@register.filter(name='absolute')
 def absolute(value):
+    """Retorna o valor absoluto de um número."""
     try:
-        return abs(float(value))
+        # Tenta converter o valor para um inteiro e retorna o valor absoluto
+        return abs(int(value))
     except (ValueError, TypeError):
-        return value  # ou return 0 se preferir
+        # Se a conversão falhar, retorna o valor original sem alterá-lo
+        return value

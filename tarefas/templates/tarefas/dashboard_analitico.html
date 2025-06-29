@@ -1,0 +1,185 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csstarefa/dashboard_analitico.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Dashboard Analítico de Tarefas</h1>
+        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">Ver Lista</a>
+    </header>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="chart-card">
+                <div class="card-body">
+                    <h5 class="card-title">Tendência: Criadas vs. Concluídas (por semana)</h5>
+                    <div class="chart-container"><canvas id="tendenciaChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-card">
+                <div class="card-body">
+                    <h5 class="card-title">Performance da Equipe (Ativas)</h5>
+                    <div class="chart-container"><canvas id="equipeChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="table-card card mb-4">
+        <div class="card-header"><h5 class="card-title mb-0">Resumo por Responsável</h5></div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Responsável</th><th>Tarefas Ativas</th><th>Concluídas (30d)</th></tr></thead>
+                <tbody>
+                {% for usuario in usuarios_performance %}
+                    <tr>
+                        <td>{{ usuario.username }}</td>
+                        <td><span class="badge bg-primary rounded-pill">{{ usuario.tarefas_ativas|default:0 }}</span></td>
+                        <td><span class="badge bg-success rounded-pill">{{ usuario.tarefas_concluidas_30d|default:0 }}</span></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let chartsData;
+    try {
+        chartsData = JSON.parse('{{ charts_data_json|safe }}');
+    } catch (e) {
+        console.error("Erro ao analisar os dados JSON do Django:", e);
+        chartsData = {};
+    }
+
+    const chartInstances = {};
+
+    const getThemeOptions = () => ({
+        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.85)' : '#495057',
+        gridColor: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    });
+
+    const renderAllCharts = () => {
+        Object.values(chartInstances).forEach(chart => chart.destroy());
+        const themeOpts = getThemeOptions();
+
+        // Cores em tons de azul e cinza
+        const azulPrincipal = 'rgba(54, 162, 235, 0.8)';   // Azul mais vibrante
+        const azulClaro = 'rgba(54, 162, 235, 0.3)';   // Azul mais claro para preenchimento
+        const cinzaEscuro = 'rgba(108, 117, 125, 0.8)'; // Cinza escuro
+        const cinzaClaro = 'rgba(108, 117, 125, 0.3)'; // Cinza claro para preenchimento
+
+        // =============================================================
+        // GRÁFICO 1: TENDÊNCIA CRIADAS vs. CONCLUÍDAS (LINHA)
+        // =============================================================
+        const tendenciaCtx = document.getElementById('tendenciaChart')?.getContext('2d');
+        if (tendenciaCtx && chartsData.criadas_semana && chartsData.concluidas_semana) {
+
+            const allWeeks = new Set([
+                ...chartsData.criadas_semana.map(d => d.semana),
+                ...chartsData.concluidas_semana.map(d => d.semana)
+            ]);
+
+            const labels = Array.from(allWeeks).sort().map(semana => {
+                const date = new Date(semana);
+                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+            });
+
+            const criadasData = labels.map(label => {
+                const [day, month] = label.split('/');
+                const weekStr = Array.from(allWeeks).find(w => new Date(w).getDate() == day && new Date(w).getMonth() + 1 == month);
+                return chartsData.criadas_semana.find(d => d.semana === weekStr)?.total || 0;
+            });
+
+            const concluidasData = labels.map(label => {
+                const [day, month] = label.split('/');
+                const weekStr = Array.from(allWeeks).find(w => new Date(w).getDate() == day && new Date(w).getMonth() + 1 == month);
+                return chartsData.concluidas_semana.find(d => d.semana === weekStr)?.total || 0;
+            });
+
+            chartInstances.tendenciaChart = new Chart(tendenciaCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Tarefas Criadas',
+                            data: criadasData,
+                            borderColor: azulPrincipal,
+                            backgroundColor: azulClaro,
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Tarefas Concluídas',
+                            data: concluidasData,
+                            borderColor: cinzaEscuro,
+                            backgroundColor: cinzaClaro,
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor } },
+                        y: { ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor }, beginAtZero: true }
+                    },
+                    plugins: { legend: { labels: { color: themeOpts.color } } }
+                }
+            });
+        }
+
+        // =============================================================
+        // GRÁFICO 2: PERFORMANCE DA EQUIPE (BARRAS HORIZONTAIS)
+        // =============================================================
+        const equipeCtx = document.getElementById('equipeChart')?.getContext('2d');
+        if (equipeCtx && chartsData.performance_equipe) {
+            chartInstances.equipeChart = new Chart(equipeCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartsData.performance_equipe.map(u => u.username),
+                    datasets: [
+                        {
+                            label: 'Tarefas Ativas',
+                            data: chartsData.performance_equipe.map(u => u.ativas),
+                            backgroundColor: azulPrincipal
+                        },
+                        {
+                            label: 'Concluídas (30d)',
+                            data: chartsData.performance_equipe.map(u => u.concluidas),
+                            backgroundColor: cinzaEscuro
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor } },
+                        y: { stacked: true, ticks: { color: themeOpts.color }, grid: { display: false } }
+                    },
+                    plugins: { legend: { position: 'top', labels: { color: themeOpts.color } } }
+                }
+            });
+        }
+    };
+
+    renderAllCharts();
+    window.recreateAnalyticCharts = renderAllCharts;
+});
+</script>
+{% endblock %}
