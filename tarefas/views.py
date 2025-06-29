@@ -1,19 +1,27 @@
 
+from multiprocessing import context
+from django.db import models 
+from django.db.models import Count, Q, Avg, Subquery, OuterRef # Adicionado Subquery e OuterRef
+from django.db.models.functions import TruncWeek # Adicionado TruncWeek
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.urls import reverse
 from django.conf import settings
-from django.db.models import Count, Q
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.views.generic import UpdateView
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_http_methods, require_POST
-
-# Para geração de PDF
+from django.utils.dateparse import parse_date
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.views.generic import View, TemplateView, ListView
+from django.core.mail import send_mail
+from django.urls import reverse_lazy
+from django.views.generic.edit import CreateView
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 
@@ -21,50 +29,23 @@ from xhtml2pdf import pisa
 from docx import Document
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-
-from .models import Tarefas, Comentario, HistoricoStatus
+from .models import Tarefas, User, HistoricoStatus, Comentario 
 from .forms import TarefaForm, ComentarioForm
-import logging
-
-# Outras bibliotecas
+from decimal import Decimal
 from datetime import datetime, timedelta
+from .reports import gerar_relatorio_tarefas
+from collections import defaultdict
+from .services import preparar_contexto_relatorio, gerar_pdf_relatorio, gerar_csv_relatorio, gerar_docx_relatorio
+
+import usuario
 import io
 import os
-
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import View
-from .reports import gerar_relatorio_tarefas
-
-from django.core.mail import send_mail
+import json
+import logging
 
 
 logger = logging.getLogger(__name__)
-
-# Constantes para status e cores
-STATUS_MAP = {
-    'pendente': {'label': 'Pendente', 'color': '#FFC107'},
-    'andamento': {'label': 'Andamento', 'color': '#2196F3'},
-    'concluida': {'label': 'Concluída', 'color': '#4CAF50'},
-    'cancelada': {'label': 'Cancelada', 'color': '#F44336'},
-    'pausada': {'label': 'Pausada', 'color': '#9C27B0'}
-}
-
-STATUS_COLORS = {
-    'pendente': {'cor': '#4e73df', 'cor_hover': '#2e59d9'},
-    'andamento': {'cor': '#36b9cc', 'cor_hover': '#2c9faf'},
-    'concluida': {'cor': '#1cc88a', 'cor_hover': '#17a673'},
-    'cancelada': {'cor': '#e74a3b', 'cor_hover': '#d62d1f'},
-    'pausada': {'cor': '#858796', 'cor_hover': '#6c757d'},
-}
-
-PRIORIDADE_COLORS = {
-    'alta': {'cor': '#e74a3b', 'cor_hover': '#d62d1f'},
-    'media': {'cor': '#f6c23e', 'cor_hover': '#e0a800'},
-    'baixa': {'cor': '#1cc88a', 'cor_hover': '#17a673'},
-}
-
 User = get_user_model()
-
 
 @login_required
 def tarefas(request):
@@ -76,20 +57,36 @@ def tarefas(request):
     return render(request, 'tarefas/tarefas.html', {'tarefas': tarefas})
 
 """Cria uma nova tarefa"""
-@login_required
-def criar_tarefa(request):
-    if request.method == 'POST':
-        form = TarefaForm(request.POST)
-        if form.is_valid():
-            tarefa = form.save(commit=False)
-            tarefa.usuario = request.user  # Define o usuário logado
-            tarefa.save()
-            messages.success(request, 'Tarefa criada com sucesso!')
-            return redirect('tarefas:listar_tarefas')
-    else:
-        form = TarefaForm()
-    
-    return render(request, 'tarefas/criar_tarefa.html', {'form': form})
+class TarefaCreateView(LoginRequiredMixin, CreateView):
+    model = Tarefas
+    form_class = TarefaForm
+    template_name = 'tarefas/criar_tarefa.html' # Renomeei seu template para seguir a convenção
+    success_url = reverse_lazy('tarefas:listar_tarefas') # Redireciona para a lista após sucesso
+
+    def get_form_kwargs(self):
+        """
+      
+        Envia o objeto 'request' para dentro do TarefaForm.
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
+    def form_valid(self, form):
+        """
+        Esta função é chamada quando o formulário é válido.
+        Aqui, adicionamos a mensagem de sucesso.
+        """
+        messages.success(self.request, "Tarefa criada com sucesso!")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """
+        Esta função é chamada quando o formulário é inválido.
+        Adicionamos uma mensagem de erro genérica para o usuário.
+        """
+        messages.error(self.request, "Por favor, corrija os erros no formulário.")
+        return super().form_invalid(form)
 
 """Edita uma tarefa existente"""
 @login_required
@@ -102,13 +99,17 @@ def editar_tarefa(request, pk):
             form.save()
             messages.success(request, 'Tarefa atualizada com sucesso!')
             return redirect('tarefas:tarefa_detail', pk=pk)
+        else:
+            messages.error(request, 'Não foi possível salvar. Por favor, corrija os erros abaixo.')
     else:
-        form = TarefaForm(instance=tarefa)
+        # Passando 'request' também no GET para qualquer lógica no __init__ que precise dele
+        form = TarefaForm(instance=tarefa, request=request)
     
-    return render(request, 'tarefas/editar_tarefa.html', {
+    context = {
         'form': form,
-        'tarefa': tarefa,
-    })
+        'tarefa': tarefa
+    }
+    return render(request, 'tarefas/editar_tarefa.html', context) # ou o nome do seu template
 
 @login_required
 def excluir_tarefa(request, pk):
@@ -229,241 +230,199 @@ def criar_tarefa(request):
 """
 @login_required
 def calendario_tarefas(request):
-    tarefas = Tarefas.objects.all()
+    # Vamos buscar apenas tarefas que tenham um prazo definido
+    tarefas = Tarefas.objects.filter(responsavel=request.user, prazo__isnull=False)
     eventos = []
     
     for tarefa in tarefas:
         eventos.append({
-            'title': f"{tarefa.titulo} ({tarefa.get_prioridade_display()})",
-            'start': tarefa.prazo.isoformat() if tarefa.prazo else None,
-            'color': {
-                'alta': '#ff4444',
-                'media': '#ffbb33',
-                'baixa': '#00C851'
-            }.get(tarefa.prioridade, '#33b5e5'),
-            'url': reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+            'title': tarefa.titulo,
+            'start': tarefa.prazo.isoformat(),
+            'url': reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk}),
+            
+            # MUDANÇA: Em vez de 'color', usamos 'className' para o CSS estilizar
+            'className': f'fc-event-prioridade-{tarefa.prioridade}'
         })
     
     return render(request, 'tarefas/calendario.html', {
-        'eventos': eventos
+        'eventos_json': json.dumps(eventos) # Passamos como JSON para ser mais seguro
     })
 
-@login_required
-def relatorio_tarefas(request):
-    """Gera relatório de tarefas com opção de exportação"""
-    # Filtros
-    status_filter = request.GET.get('status', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    export_format = request.GET.get('export', '')
+class RelatorioTarefasView(LoginRequiredMixin, View):
+    # Usaremos um único template para a página de relatórios
+    template_name = 'tarefas/relatorio_tarefas.html'
 
-    # Query base - filtrando por usuário logado
-    tarefas = Tarefas.objects.filter(usuario=request.user)
-
-    # Aplicar filtros adicionais
-    if status_filter:
-        tarefas = tarefas.filter(status=status_filter)
-    if date_from:
-        tarefas = tarefas.filter(data_criacao__gte=date_from)
-    if date_to:
-        tarefas = tarefas.filter(data_criacao__lte=date_to)
-
-    # Contagens por status
-    status_counts = tarefas.values('status').annotate(count=Count('id'))
-    total_tarefas = tarefas.count()
-    
-    # Preparar dados de status
-    status_data = []
-    chart_labels = []
-    chart_data = []
-    chart_colors = []
-    
-    for status_key, status_info in STATUS_MAP.items():
-        count = next((item['count'] for item in status_counts if item['status'] == status_key), 0)
-        percent = round((count / total_tarefas) * 100, 2) if total_tarefas > 0 else 0
-        
-        status_data.append({
-            'key': status_key,
-            'label': status_info['label'],
-            'count': count,
-            'percent': percent,
-            'color': status_info['color']
-        })
-        
-        chart_labels.append(status_info['label'])
-        chart_data.append(count)
-        chart_colors.append(status_info['color'])
-
-    # Contexto comum
-    context = {
-        'tarefas': tarefas,
-        'status_data': status_data,
-        'total_tarefas': total_tarefas,
-        'now': timezone.now(),
-        'chart_data': {
-            'labels': chart_labels,
-            'data': chart_data,
-            'colors': chart_colors
-        },
-        'status_filter': status_filter,
-        'date_from': date_from,
-        'date_to': date_to,
-        'status_map': {k: v['label'] for k, v in STATUS_MAP.items()},
-    }
-
-    # Exportação
-    if export_format == 'pdf':
-        return export_pdf(context)
-    elif export_format == 'docx':
-        return export_word(context)
-
-    return render(request, 'tarefas/relatorio_tarefas.html', context)
-
-def export_pdf(context):
-    """Exporta relatório para PDF"""
-    context['logo_path'] = 'midia/imagens/logo.png'  # Caminho para a logo  
-    template = get_template('tarefas/relatorio_pdf.html')
-    html = template.render(context)
-    response = HttpResponse(content_type='application/pdf')
-    filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
-    pisa_status = pisa.CreatePDF(html, dest=response)
-    if pisa_status.err:
-        return HttpResponse('Erro ao gerar PDF')
-    return response
-
-def export_word(context):
-    """Exporta relatório para DOCX"""
-    document = Document()
-    
-    # Cabeçalho
-    # Adicionar logo
-    logo_path = os.path.join(settings.BASE_DIR, 'midia', 'imagens', 'logo.png')
-    if os.path.exists(logo_path):
-        document.add_picture(logo_path, width=Inches(2.0))  # Ajuste o tamanho conforme necessár
-
-    # Centralizar o título
-    paragraph = document.add_paragraph()
-    run = paragraph.add_run('Relatório de Tarefas')
-    run.bold = True
-    run.font.size = Pt(16)
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    document.add_paragraph(f"Gerado em: {context['now'].strftime('%d/%m/%Y %H:%M')}")
-    
-    if context['date_from'] or context['date_to']:
-        periodo = f"Período: {context['date_from'] or 'Início'} a {context['date_to'] or 'Hoje'}"
-        document.add_paragraph(periodo)
-    
-    # Resumo
-    document.add_heading('Resumo', level=1)
-    table = document.add_table(rows=1, cols=3)
-    table.style = 'LightShading-Accent1'
-    hdr_cells = table.rows[0].cells
-    hdr_cells[0].text = 'Status'
-    hdr_cells[1].text = 'Quantidade'
-    hdr_cells[2].text = 'Percentual'
-    
-    for status in context['status_data']:
-        row_cells = table.add_row().cells
-        row_cells[0].text = status['label']
-        row_cells[1].text = str(status['count'])
-        row_cells[2].text = f"{status['percent']}%"
-    
-    # Total
-    row_cells = table.add_row().cells
-    row_cells[0].text = 'TOTAL'
-    row_cells[1].text = str(context['total_tarefas'])
-    row_cells[2].text = '100%'
-    
-    # Detalhes
-    document.add_heading('Detalhes das Tarefas', level=1)
-    details_table = document.add_table(rows=1, cols=5)
-    details_table.style = 'LightShading-Accent1'
-    hdr_cells = details_table.rows[0].cells
-    hdr_cells[0].text = 'Título'
-    hdr_cells[1].text = 'Status'
-    hdr_cells[2].text = 'Responsável'
-    hdr_cells[3].text = 'Data Criação'
-    hdr_cells[4].text = 'Prazo'
-    
-    for tarefa in context['tarefas']:
-        row_cells = details_table.add_row().cells
-        row_cells[0].text = tarefa.titulo
-        row_cells[1].text = context['status_map'].get(tarefa.status, tarefa.status)
-        row_cells[2].text = tarefa.responsavel.username if tarefa.responsavel else tarefa.usuario.username
-        row_cells[3].text = tarefa.data_criacao.strftime('%d/%m/%Y')
-        row_cells[4].text = tarefa.prazo.strftime('%d/%m/%Y') if tarefa.prazo else '-'
-    
-    # Salvar e retornar
-    buffer = io.BytesIO()
-    document.save(buffer)
-    buffer.seek(0)
-    
-    response = HttpResponse(
-        buffer.getvalue(),
-        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    )
-    filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    return response
-
-class RelatorioTarefasPDF(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        queryset = Tarefas.objects.filter(responsavel=request.user)
-        return gerar_relatorio_tarefas(queryset)
+        """
+        Este método agora busca os dados e exibe na tela, 
+        seja na primeira visita ou ao aplicar filtros via GET.
+        """
+        # Filtra os dados com base nos parâmetros da URL (ex: ?status=pendente)
+        queryset = Tarefas.objects.all().order_by('-data_criacao')
+        status_filter = request.GET.get('status', '')
 
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # Prepara todo o contexto para o template
+        context = preparar_contexto_relatorio(queryset)
+        context['status_choices'] = Tarefas.STATUS_CHOICES
+        context['current_filters'] = request.GET # Para manter os filtros selecionados
+        
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Este método lida APENAS com as solicitações de EXPORTAÇÃO.
+        """
+        # Pega os filtros do formulário enviado
+        status_filter = request.POST.get('status', '')
+        export_format = request.POST.get('export_format')
+        
+        # Filtra os dados novamente com base nos dados do POST
+        queryset = Tarefas.objects.all().order_by('-data_criacao')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        # Prepara o contexto para a exportação
+        context = preparar_contexto_relatorio(queryset)
+        context['request'] = request
+        
+        # Chama a função de exportação correta
+        if export_format == 'pdf':
+            return gerar_pdf_relatorio(context)
+        elif export_format == 'csv':
+            return gerar_csv_relatorio(context)
+        elif export_format == 'docx':
+            return gerar_docx_relatorio(context)
+        
+        # Se nenhum formato de exportação for válido, volta para a página
+        return redirect('tarefas:relatorio_tarefas')
+
+class DashboardAnaliticoView(LoginRequiredMixin, TemplateView):
+    template_name = 'tarefas/dashboard_analitico.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # --- 1. FILTROS E PERÍODO DE ANÁLISE ---
+        hoje = timezone.now()
+        trinta_dias_atras = hoje - timedelta(days=30)
+        
+        # --- 2. QUERIES ANALÍTICAS ---
+        
+        # A. Performance da Equipe (Tarefas Ativas e Concluídas por Responsável)
+        concluidas_30d = Tarefas.objects.filter(
+            responsavel=OuterRef('pk'),
+            status='concluida',
+            concluida_em__gte=trinta_dias_atras
+        ).values('responsavel').annotate(c=Count('pk')).values('c')
+
+        ativas = Tarefas.objects.filter(
+            responsavel=OuterRef('pk')
+        ).exclude(status__in=['concluida', 'cancelada']).values('responsavel').annotate(c=Count('pk')).values('c')
+
+        usuarios = User.objects.filter(
+            Q(tarefas_responsavel__isnull=False)
+        ).distinct().annotate(
+            tarefas_concluidas_30d=Subquery(concluidas_30d, output_field=models.IntegerField()),
+            tarefas_ativas=Subquery(ativas, output_field=models.IntegerField()),
+        ).order_by('-tarefas_ativas')
+        
+        # B. Tendência Semanal (Criadas vs. Concluídas)
+        criadas_por_semana = Tarefas.objects.annotate(
+            semana=TruncWeek('data_criacao')
+        ).values('semana').annotate(total=Count('id')).order_by('semana')
+        
+        concluidas_por_semana = Tarefas.objects.filter(concluida_em__isnull=False).annotate(
+            semana=TruncWeek('concluida_em')
+        ).values('semana').annotate(total=Count('id')).order_by('semana')
+
+        # C. Distribuição por Status e Prioridade
+        status_dist = list(Tarefas.objects.values('status').annotate(total=Count('id')))
+        prioridade_dist = list(Tarefas.objects.values('prioridade').annotate(total=Count('id')))
+
+        # --- 3. PREPARAÇÃO DO CONTEXTO ---
+        context['usuarios_performance'] = usuarios
+        
+        context['charts_data_json'] = json.dumps({
+            'criadas_semana': list(criadas_por_semana),
+            'concluidas_semana': list(concluidas_por_semana),
+            'status_dist': status_dist,
+            'prioridade_dist': prioridade_dist,
+            'performance_equipe': [
+                {'username': u.username, 'ativas': u.tarefas_ativas or 0, 'concluidas': u.tarefas_concluidas_30d or 0}
+                for u in usuarios
+            ]
+        }, default=str) # default=str lida com datas/datetimes
+        
+        return context
+
+# tarefas/views.py
+class KanbanView(LoginRequiredMixin, TemplateView):
+    template_name = 'tarefas/kanban_board.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Status que aparecerão como colunas no quadro
+        status_colunas_visiveis = ['pendente', 'andamento', 'pausada', 'atrasada']
+        
+        # Status que consideramos "ativos" para busca inicial
+        status_ativos = ['pendente', 'andamento', 'pausada', 'atrasada']
+
+        # Busca todas as tarefas que não estão finalizadas
+        tarefas = Tarefas.objects.filter(
+            responsavel=self.request.user,
+        ).exclude(status__in=['concluida', 'cancelada']).select_related('responsavel')
+        
+        # >>> INÍCIO DA NOVA LÓGICA INTELIGENTE <<<
+        tarefas_por_status = defaultdict(list)
+        now = timezone.now()
+
+        for tarefa in tarefas:
+            # Verifica se a tarefa está de fato atrasada, independentemente do status salvo
+            if tarefa.prazo and tarefa.prazo < now:
+                # Se estiver atrasada, força a entrada na coluna "Atrasada"
+                tarefas_por_status['atrasada'].append(tarefa)
+            elif tarefa.status in status_ativos:
+                # Se não estiver atrasada, usa o status salvo
+                tarefas_por_status[tarefa.status].append(tarefa)
+        # >>> FIM DA NOVA LÓGICA <<<
+
+        # Prepara a lista de colunas na ordem correta para o template
+        context['colunas'] = [
+            {
+                'id': status, 
+                'nome': dict(Tarefas.STATUS_CHOICES)[status], 
+                'tarefas': sorted(tarefas_por_status.get(status, []), key=lambda t: t.prazo or now) # Ordena por prazo
+            }
+            for status in status_colunas_visiveis
+        ]
+        
+        return context
+    
 @login_required
-def dashboard(request):
-    """Painel de controle com métricas das tarefas"""
-    # Consultas básicas
-    total_tarefas = Tarefas.objects.filter(usuario=request.user).count()
-    tarefas_concluidas = Tarefas.objects.filter(usuario=request.user, status='concluida').count()
+def update_task_status(request):
+    if request.method == 'POST' and request.is_ajax():
+        task_id = request.POST.get('task_id')
+        new_status = request.POST.get('new_status')
+        
+        try:
+            tarefa = Tarefas.objects.get(pk=task_id, responsavel=request.user)
+            
+            # Anexa o usuário que está fazendo a alteração para usar no método save()
+            tarefa._user = request.user 
+            
+            tarefa.status = new_status
+            tarefa.save()
+            
+            return JsonResponse({'success': True, 'message': 'Status atualizado com sucesso.'})
+        except Tarefas.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Tarefa não encontrada ou você não tem permissão.'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
     
-    tarefas_atrasadas = Tarefas.objects.filter(
-        usuario=request.user,
-        prazo__lt=timezone.now().date(),
-        status__in=['pendente', 'andamento', 'pausada']
-    ).count()
-    
-    tarefas_andamento = Tarefas.objects.filter(usuario=request.user, status='andamento').count()
-    
-    # Distribuição por status
-    status_dist = Tarefas.objects.filter(usuario=request.user).values('status').annotate(total=Count('id'))
-    status_dist = [
-        {
-            'status': item['status'].capitalize(),
-            'total': item['total'],
-            'cor': STATUS_COLORS.get(item['status'], {}).get('cor', '#6c757d'),
-            'cor_hover': STATUS_COLORS.get(item['status'], {}).get('cor_hover', '#5a6268')
-        }
-        for item in status_dist
-    ]
-    
-    # Distribuição por prioridade
-    prioridade_dist = Tarefas.objects.filter(usuario=request.user).values('prioridade').annotate(total=Count('id'))
-    prioridade_dist = [
-        {
-            'prioridade': item['prioridade'].capitalize(),
-            'total': item['total'],
-            'cor': PRIORIDADE_COLORS.get(item['prioridade'], {}).get('cor', '#6c757d'),
-            'cor_hover': PRIORIDADE_COLORS.get(item['prioridade'], {}).get('cor_hover', '#5a6268')
-        }
-        for item in prioridade_dist
-    ]
-    
-    # Tarefas recentes
-    tarefas_recentes = Tarefas.objects.filter(usuario=request.user).order_by('-data_criacao')[:10]
-    
-    context = {
-        'total_tarefas': total_tarefas,
-        'tarefas_concluidas': tarefas_concluidas,
-        'tarefas_atrasadas': tarefas_atrasadas,
-        'tarefas_andamento': tarefas_andamento,
-        'status_dist': status_dist,
-        'prioridade_dist': prioridade_dist,
-        'tarefas_recentes': tarefas_recentes,
-    }
-    
-    return render(request, 'tarefas/dashboard.html', context)
+    return JsonResponse({'success': False, 'message': 'Requisição inválida.'}, status=400)
+
 

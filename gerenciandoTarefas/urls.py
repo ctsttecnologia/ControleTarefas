@@ -6,6 +6,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from tarefas import views
 
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -22,7 +24,7 @@ urlpatterns = [
     path('cliente/', include('cliente.urls')),
     path('seguranca/', include('seguranca_trabalho.urls')),
     path('departamento_pessoal/', include('departamento_pessoal.urls')),
-    path('tarefas/', include('tarefas.urls')),
+    path('tarefas/', include('tarefas.urls', namespace='tarefas')),
     path('logradouro/', include('logradouro.urls')),
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
@@ -30,3 +32,8 @@ urlpatterns = [
     
     # URLs estáticas e de mídia (para desenvolvimento)
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Ele só será executado em modo de desenvolvimento (DEBUG=True)
+if settings.DEBUG:
+    # Esta linha diz ao Django para servir os arquivos que estão na sua pasta static
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / "static")

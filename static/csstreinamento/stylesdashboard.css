@@ -1,140 +1,62 @@
-/* Estilos gerais */
-.dashboard-container {
-  margin-top: 1.5rem;
+/* Define variáveis de cores para o tema claro (padrão) */
+:root {
+  --bs-body-bg-rgb: 248, 249, 250;
+  --bs-body-color-rgb: 33, 37, 41;
+  --card-bg-rgb: 255, 255, 255;
+  --card-border-color: rgba(0, 0, 0, 0.175);
+  --card-header-bg-rgb: 248, 249, 250;
 }
 
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
+/* Define variáveis para o tema escuro usando o seletor de atributo do Bootstrap */
+[data-bs-theme="dark"] {
+  --bs-body-bg-rgb: 33, 37, 41;
+  --bs-body-color-rgb: 222, 226, 230;
+  --card-bg-rgb: 43, 48, 53;
+  --card-border-color: rgba(255, 255, 255, 0.175);
+  --card-header-bg-rgb: 52, 58, 64;
 }
 
-/* Cards */
-.summary-card {
-  height: 100%;
+body {
+  background-color: rgb(var(--bs-body-bg-rgb));
+  color: rgb(var(--bs-body-color-rgb));
+  transition: background-color 0.2s linear;
 }
 
-.summary-card .card-body {
-  padding: 0.75rem;
+.card {
+  background-color: rgb(var(--card-bg-rgb));
+  border-color: var(--card-border-color);
 }
 
-.card-title {
-  font-size: 1rem;
-  margin-bottom: 0.5rem;
+.card-header {
+  background-color: rgb(var(--card-header-bg-rgb));
+  border-bottom-color: var(--card-border-color);
 }
 
-.card-text {
-  font-size: 1.5rem;
+.table {
+  --bs-table-color: rgb(var(--bs-body-color-rgb));
+  --bs-table-bg: rgb(var(--card-bg-rgb));
+  --bs-table-border-color: var(--card-border-color);
+  --bs-table-striped-color: rgb(var(--bs-body-color-rgb));
+  --bs-table-striped-bg: rgba(0, 0, 0, 0.05);
+  --bs-table-hover-color: rgb(var(--bs-body-color-rgb));
+  --bs-table-hover-bg: rgba(0, 0, 0, 0.075);
 }
 
-/* Gráficos */
+[data-bs-theme="dark"] .table {
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+}
+
+
+/* Estilos fixos dos cards de resumo */
+.summary-card { border: none; }
+.summary-card.bg-primary { background-color: #0d6efd !important; }
+.summary-card.bg-success { background-color: #198754 !important; }
+.summary-card.bg-info { background-color: #0dcaf0 !important; color: #000 !important; }
+.summary-card.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
+
 .chart-container {
   position: relative;
-  height: 220px;
+  height: 350px;
   width: 100%;
-}
-
-.chart-card {
-  height: 100%;
-}
-
-.chart-card .card-header {
-  padding: 0.75rem 1rem;
-}
-
-.chart-card .card-body {
-  padding: 0.75rem;
-}
-
-/* Tabela */
-.recent-trainings {
-  margin-bottom: 1.5rem;
-}
-
-.recent-trainings .table {
-  margin-bottom: 0;
-}
-
-/* Botão de tema */
-.btn-theme-toggle {
-  margin-left: 10px;
-}
-
-/* Estilos para tema escuro */
-body.dark-theme {
-  background-color: #1a1a1a;
-  color: #f8f9fa;
-}
-
-.dark-theme .card {
-  background-color: #2d2d2d;
-  border-color: #444;
-}
-
-.dark-theme .card-header {
-  background-color: #333 !important;
-  border-bottom-color: #444;
-}
-
-.dark-theme .table {
-  color: #f8f9fa;
-}
-
-.dark-theme .table-striped tbody tr:nth-of-type(odd) {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.dark-theme .table-hover tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.dark-theme .bg-light {
-  background-color: #333 !important;
-}
-
-/* Estilos para os badges de vencimento */
-.badge.bg-warning {
-  background-color: #ffc107 !important;
-  color: #212529;
-}
-
-.badge.bg-success {
-  background-color: #198754 !important;
-}
-
-.badge.bg-danger {
-  background-color: #dc3545 !important;
-}
-
-/* Tooltip customizado */
-[title] {
-  position: relative;
-  cursor: help;
-}
-
-[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: #fff;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 14px;
-  white-space: nowrap;
-  z-index: 1000;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .summary-card .card-text {
-    font-size: 1.25rem;
-  }
-  
-  .chart-container {
-    height: 200px;
-  }
 }

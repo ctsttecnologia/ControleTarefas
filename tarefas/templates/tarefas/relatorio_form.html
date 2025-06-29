@@ -1,0 +1,48 @@
+
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <h1 class="mb-4">Gerar Relatório de Tarefas</h1>
+            <div class="card">
+                <div class="card-body p-4">
+                    <h5 class="card-title">Selecione os Filtros</h5>
+                    
+                    <form method="post" action="{% url 'tarefas:relatorio_display' %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="status" class="form-label">Status</label>
+                                <select name="status" id="status" class="form-select">
+                                    <option value="">Todos os status</option>
+                                    {% for key, value in status_choices %}
+                                        <option value="{{ key }}">{{ value }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="card-title">Visualizar ou Exportar</h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" name="export_format" value="html" class="btn btn-primary">
+                                <i class="bi bi-display me-1"></i> Ver na Tela
+                            </button>
+                            <button type="submit" name="export_format" value="pdf" class="btn btn-danger">
+                                <i class="bi bi-file-earmark-pdf me-1"></i> Exportar para PDF
+                            </button>
+                            </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

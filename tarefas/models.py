@@ -1,7 +1,5 @@
 
 from datetime import timedelta
-import logging
-import os
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
@@ -13,136 +11,98 @@ from django.utils.html import format_html
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.db.models import F
+from django.utils.translation import gettext_lazy as _
+from django.urls import reverse
 
+
+import logging
+import os
 from datetime import timedelta
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
+
+User = settings.AUTH_USER_MODEL
 
 class Tarefas(models.Model):
-    PRIORIDADE_CHOICES = [
-        ('alta', _('Alta')),
-        ('media', _('Média')),
-        ('baixa', _('Baixa')),
-    ]
-
+    # Usando strings minúsculas para os 'choices', o que é uma prática comum
+    PRIORIDADE_CHOICES = [('alta', _('Alta')), ('media', _('Média')), ('baixa', _('Baixa'))]
     STATUS_CHOICES = [
         ('pendente', _('Pendente')),
         ('andamento', _('Em Andamento')),
+        ('pausada', _('Em Pausa')),
         ('concluida', _('Concluída')),
         ('cancelada', _('Cancelada')),
-        ('pausada', _('Em Pausa')),
-        ('arquivada', _('Arquivada')),
         ('atrasada', _('Atrasada')),
     ]
     
-    # Campos básicos
+    # ... (Seus campos 'titulo', 'descricao', etc., permanecem os mesmos) ...
     titulo = models.CharField(_('Título'), max_length=100)
     descricao = models.TextField(_('Descrição'), blank=True, null=True)
-    
-    # Datas e prazos
     data_criacao = models.DateTimeField(_('Data de Criação'), auto_now_add=True)
     data_atualizacao = models.DateTimeField(_('Última Atualização'), auto_now=True)
     data_inicio = models.DateTimeField(_('Data de Início'), default=timezone.now)
     prazo = models.DateTimeField(_('Prazo Final'), blank=True, null=True)
     concluida_em = models.DateTimeField(_('Concluída em'), blank=True, null=True)
-    
-    # Status e prioridade
-    status = models.CharField(
-        _('Status'),
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='pendente'
-    )
-    prioridade = models.CharField(
-        _('Prioridade'),
-        max_length=20,
-        choices=PRIORIDADE_CHOICES,
-        default='media'
-    )
-    
-    # Relacionamentos
-    usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='tarefas_criadas',
-        verbose_name=_('Criado por'),
-        editable=False
-    )
-    responsavel = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='tarefas_responsavel',
-        verbose_name=_('Responsável')
-    )
-    
-    # Campos adicionais
+    status = models.CharField(_('Status'), max_length=20, choices=STATUS_CHOICES, default='pendente')
+    prioridade = models.CharField(_('Prioridade'), max_length=20, choices=PRIORIDADE_CHOICES, default='media')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tarefas_criadas', verbose_name=_('Criado por'))
+    responsavel = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_responsavel', verbose_name=_('Responsável'))
     projeto = models.CharField(_('Projeto'), max_length=40, blank=True, null=True)
-    duracao_prevista = models.DurationField(null=True, blank=True)
-    tempo_gasto = models.DurationField(null=True, blank=True)
-    data_lembrete = models.DateTimeField(_('Data de Lembrete'), blank=True, null=True)
-    dias_lembrete = models.PositiveSmallIntegerField(
-        _('Dias para Lembrete'),
-        default=1,
-        validators=[MinValueValidator(1), MaxValueValidator(30)]
-    )
+    duracao_prevista = models.DurationField(_('Duração Prevista'), null=True, blank=True)
+    tempo_gasto = models.DurationField(_('Tempo Gasto'), null=True, blank=True)
+    dias_lembrete = models.PositiveSmallIntegerField(_('Dias para Lembrete'), null=True, blank=True, validators=[MinValueValidator(1)])
     data_lembrete = models.DateTimeField(_('Data de Lembrete'), blank=True, null=True)
 
     class Meta:
         verbose_name = _('Tarefa')
         verbose_name_plural = _('Tarefas')
         ordering = ['-prioridade', 'prazo']
-        indexes = [
-            models.Index(fields=['status']),
-            models.Index(fields=['prioridade']),
-            models.Index(fields=['usuario']),
-        ]
+        indexes = [models.Index(fields=['status']), models.Index(fields=['prioridade'])]
 
     def __str__(self):
-        return f"{self.titulo} ({self.get_status_display()})"
+        return self.titulo
+    
+    def get_absolute_url(self):
+        return reverse('tarefas:tarefa_detail', kwargs={'pk': self.pk})
 
-    def esta_atrasada(self):
-        return (self.prazo and self.prazo < timezone.now() and 
-                not self.esta_concluida() and 
-                not self.esta_cancelada())
-    
-    def esta_concluida(self):
-        return self.status == 'concluida'
-    
-    def esta_cancelada(self):
-        return self.status == 'cancelada'
-    
     @property
-    def dias_restantes(self):
-        if not self.prazo:
-            return None
-        return (self.prazo - timezone.now()).days
-    
-    @property
-    def progresso(self):
-        try:
-            if not all([self.duracao_prevista, self.tempo_gasto]):
-                return 0
-            progresso = (self.tempo_gasto.total_seconds() / self.duracao_prevista.total_seconds()) * 100
-            return min(100, int(progresso))
-        except Exception:
-            return 0
+    def atrasada(self):
+        if self.prazo and self.status not in ['concluida', 'cancelada']:
+            return timezone.now() > self.prazo
+        return False
 
+    # CORREÇÃO: Unificando os dois métodos save() em um só.
+    # MÉTODO SAVE UNIFICADO E LIMPO
     def save(self, *args, **kwargs):
-        if not self.pk and not hasattr(self, 'usuario'):
-            raise ValidationError("O usuário deve ser definido para novas tarefas")
+        # Captura o status antigo antes de salvar
+        old_status = None
+        if self.pk:
+            try:
+                old_status = Tarefas.objects.get(pk=self.pk).status
+            except Tarefas.DoesNotExist:
+                pass
         
-        if self.prazo and self.prazo < timezone.now() and self.status not in ['concluida', 'cancelada']:
+        # Lógica para definir o status como 'atrasada'
+        if self.prazo and self.prazo < timezone.now() and self.status not in ['concluida', 'cancelada', 'atrasada']:
             self.status = 'atrasada'
         
+        # Lógica para preencher/limpar a data de conclusão
         if self.status == 'concluida' and not self.concluida_em:
             self.concluida_em = timezone.now()
-        elif self.status != 'concluida':
+        elif self.status != 'concluida' and self.concluida_em:
             self.concluida_em = None
-            
+        
         super().save(*args, **kwargs)
+
+        # Se houve mudança de status, cria um registro de histórico
+        if old_status and old_status != self.status and hasattr(self, '_user'):
+            HistoricoStatus.objects.create(
+                tarefa=self,
+                status_anterior=old_status,
+                novo_status=self.status,
+                alterado_por=self._user,
+            )
 
     """def enviar_notificacao_prazo(self):
         if self.prazo and (self.prazo - timezone.now()).days <= 1:

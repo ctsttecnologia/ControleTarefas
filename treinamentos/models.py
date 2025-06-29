@@ -18,11 +18,18 @@ class TipoCurso(models.Model):
     ]
 
     AREA_CHOICES = [
-        ('SAU', 'Saúde'),
-        ('SEG', 'Segurança'),
         ('ADM', 'Administrativo'),
+        ('COM', 'Comportamental'),
+        ('GRA', 'Graduação'),
+        ('INT', 'Integração'),
+        ('LID', 'Liderança'),
+        ('MOT', 'Motivacional'),
         ('OPE', 'Operacional'),
+        ('PRO', 'Profissionalizante'),
+        ('SAU', 'Saúde'),
+        ('SEG', 'Segurança'),      
         ('TEC', 'Técnico'),
+        
     ]
 
     nome = models.CharField("Nome do Curso", max_length=100, unique=True)
