@@ -1,0 +1,165 @@
+
+/* static/css/global.css (VERSÃO FINAL COM HEADER CORRIGIDO) */
+
+/* --- 1. Definição de Variáveis e Tema --- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Variáveis para o TEMA CLARO (padrão) */
+[data-bs-theme="light"] {
+    --theme-bg: #f4f7f9;
+    --theme-text: #212529;
+    --theme-card-bg: #ffffff;
+    --theme-card-border: #dee2e6;
+    --theme-card-header-bg: #f8f9fa;
+    --theme-primary: #00a8c6; /* Seu azul piscina */
+    --theme-primary-dark: #008a9e;
+    --theme-link: var(--theme-primary);
+    --theme-footer-bg: #e9ecef;
+    --theme-footer-text: #6c757d;
+}
+
+/* Variáveis para o TEMA ESCURO */
+[data-bs-theme="dark"] {
+    --theme-bg: #1c1c22;
+    --theme-text: #e0e0e0;
+    --theme-card-bg: #282830;
+    --theme-card-border: #444;
+    --theme-card-header-bg: #2a2a2a;
+    --theme-primary: #00b8d4; /* Seu azul piscina (vibrante) */
+    --theme-primary-dark: #00a8c6;
+    --theme-link: var(--theme-primary);
+    --theme-footer-bg: #1e1e1e;
+    --theme-footer-text: #888;
+}
+
+
+/* --- 2. Estilos Globais --- */
+body {
+    background-color: var(--theme-bg);
+    color: var(--theme-text);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex-grow: 1;
+}
+
+a {
+    color: var(--theme-link);
+    text-decoration: none;
+}
+
+a:hover {
+    color: var(--theme-primary-dark);
+}
+
+
+/* --- 3. Componentes Bootstrap Customizados --- */
+
+/* ===== HEADER (NAVBAR) - SEÇÃO ATUALIZADA ===== */
+header.navbar {
+    background-color: var(--theme-primary) !important; /* Usa a sua cor! */
+    border-bottom: 1px solid var(--theme-primary-dark);
+}
+
+header.navbar .navbar-brand,
+header.navbar .nav-link,
+header.navbar .dropdown-toggle {
+    color: white !important; /* Texto branco para contraste */
+    opacity: 0.9;
+}
+
+header.navbar .nav-link:hover,
+header.navbar .nav-link.active {
+    opacity: 1;
+    font-weight: 700;
+}
+
+.navbar-toggler-icon {
+    /* Força o ícone do menu 'hambúrguer' a ser branco */
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 1)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+header.navbar #theme-toggle {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+header.navbar #theme-toggle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+}
+/* ===== FIM DA SEÇÃO ATUALIZADA ===== */
+
+
+/* Footer */
+footer.footer {
+    background-color: var(--theme-footer-bg);
+    color: var(--theme-footer-text);
+    border-top: 1px solid var(--theme-card-border);
+    padding: 1.5rem 0;
+}
+
+/* Cards */
+.card {
+    background-color: var(--theme-card-bg);
+    border: 1px solid var(--theme-card-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    background-color: var(--theme-card-header-bg);
+    font-weight: 600;
+    border-bottom: 1px solid var(--theme-card-border);
+}
+
+/* Botões */
+.btn-primary {
+    background-color: var(--theme-primary);
+    border-color: var(--theme-primary);
+    font-weight: 500;
+}
+.btn-primary:hover {
+    background-color: var(--theme-primary-dark);
+    border-color: var(--theme-primary-dark);
+}
+
+
+/* --- 4. Estilos Específicos de Páginas Adicionados --- */
+
+/* Estilo para o Submenu de Seção */
+.subnav {
+    background-color: var(--theme-card-bg);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--theme-card-border);
+    margin-bottom: 2rem;
+}
+.subnav .nav-pills .nav-link {
+    color: var(--theme-text);
+}
+.subnav .nav-pills .nav-link.active {
+    background-color: var(--theme-primary);
+    color: white;
+}
+
+/* Lógica para a Página de Login */
+.body-login header,
+.body-login footer {
+    display: none !important;
+}
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+.login-card {
+    border-top: 5px solid var(--theme-primary);
+}

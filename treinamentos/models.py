@@ -139,6 +139,10 @@ class Participante(models.Model):
         related_name='participantes',
         verbose_name='Treinamento'
     )
+    nome = models.CharField(
+        max_length=200, 
+        verbose_name='Nome do funcionário'
+    )
     # Usando settings.AUTH_USER_MODEL para referenciar o usuário.
     funcionario = models.ForeignKey(
         settings.AUTH_USER_MODEL,

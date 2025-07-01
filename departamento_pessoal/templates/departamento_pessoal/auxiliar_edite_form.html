@@ -1,0 +1,42 @@
+
+{% extends 'base.html' %}
+{% load static widget_tweaks %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-pencil-square me-2"></i>{{ titulo }}
+        </h2>
+        <a href="{{ url_voltar }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </header>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="form-floating mb-3">
+                        {% render_field field class+="form-control form-select" placeholder=field.label %}
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors.as_text }}</div>{% endif %}
+                    </div>
+                {% endfor %}
+                <div class="d-flex justify-content-between mt-5 border-top pt-4">
+                    <a href="{{ url_voltar }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

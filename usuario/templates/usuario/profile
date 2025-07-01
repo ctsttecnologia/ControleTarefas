@@ -1,0 +1,45 @@
+
+<img src="/midia/imagens/logocetest.png" width="200">
+<!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção-->
+
+<img src="/midia/imagens/tarefa.gif" class="icone">
+<img src="{% static 'imagens/tarefa.gif' %}" class="icone"> <!--Imagem no Django em produção-->
+
+<img src="/midia/imagens/tarefa.gif" class="icone">
+
+<img src="/midia/imagens/dp.gif" class="icone">
+<img src="{% static 'imagens/dp.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+
+<img src="/midia/imagens/tst.gif" class="icone" >
+<img src="{% static 'imagens/tst.gif' %}" class="icone">
+
+<img src="/midia/imagens/cadastro.gif" class="icone" >
+<img src="{% static 'imagens/cadastro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+
+<img src="/midia/imagens/carro.gif" class="icone" >
+<img src="{% static 'imagens/carro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
+
+<img src="/midia/imagens/reuniao.png" class="icone">
+<img src="{% static 'imagens/tarefa.gif' %}" class="icone"> <!--Imagem no Django em produção-->
+
+
+templates/
+└── usuario/
+    ├── includes/
+    │   └── submenu.html          # (O menu secundário da seção)
+    │
+    ├── password_reset/
+    │   ├── complete.html         # (Confirmação de senha alterada)
+    │   ├── confirm.html          # (Formulário para digitar a nova senha)
+    │   ├── done.html             # (Confirmação de que o e-mail foi enviado)
+    │   ├── email.html            # (O corpo do e-mail de redefinição)
+    │   └── form.html             # (Formulário para solicitar a redefinição)
+    │
+    ├── form_grupo.html           # (Formulário para criar/editar Grupo)
+    ├── form_usuario.html         # (Formulário para criar/editar Usuário)
+    ├── grupo_confirmar_exclusao.html
+    ├── grupo_lista.html
+    ├── lista_usuarios.html
+    ├── login.html
+    ├── logged_out.html           # (Página de logout que criamos)
+    └── profile.html

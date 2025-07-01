@@ -1,288 +1,92 @@
 {% extends 'base.html' %}
-{% load static widget_tweaks %}
+{% load static %}
+{% load widget_tweaks %}
 
-{% block head %}
+{% block title %}Cadastros Auxiliares{% endblock %}
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    {% block extra_css %}{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssdp/cadastro_auxiliar_styles.css' %}">
 {% endblock %}
 
+
 {% block content %}
-    <div class="container-fluid">
-        <h2 class="mb-4">Cadastros Auxiliares</h2>
-        
-        <ul class="nav nav-tabs" id="cadastroTabs" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="departamentos-tab" data-toggle="tab" href="#departamentos" role="tab">
-                    <i class="fas fa-building"></i> Departamentos
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="cbos-tab" data-toggle="tab" href="#cbos" role="tab">
-                    <i class="fas fa-id-card-alt"></i> CBOs
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="cargos-tab" data-toggle="tab" href="#cargos" role="tab">
-                    <i class="fas fa-briefcase"></i> Cargos
-                </a>
-            </li>
-        </ul>
-        
-        <div class="tab-content border-left border-right border-bottom p-4" id="cadastroTabsContent">
-            <!-- Tab Departamentos -->
-            <div class="tab-pane fade show active" id="departamentos" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>Novo Departamento</h4>
-                        <form method="post" action="{% url 'departamento_pessoal:cadastrar_departamento' %}" class="mb-4">
-                            {% csrf_token %}
-                            {% for field in departamento_form %}
-                                <div class="form-group">
-                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                    {{ field|add_class:"form-control" }}
-                                    {% if field.help_text %}
-                                        <small class="form-text text-muted">{{ field.help_text }}</small>
-                                    {% endif %}
-                                    {% for error in field.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endfor %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Salvar
-                            </button>
-                        </form>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h4>Departamentos Cadastrados</h4>
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>Sigla</th>
-                                        <th>Tipo</th>
-                                        <th>Status</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for depto in departamentos %}
-                                    <tr>
-                                        <td>{{ depto.nome }}</td>
-                                        <td>{{ depto.sigla }}</td>
-                                        <td>{{ depto.get_tipo_display }}</td>
-                                        <td>
-                                            {% if depto.ativo %}
-                                                <span class="badge badge-success">Ativo</span>
-                                            {% else %}
-                                                <span class="badge badge-secondary">Inativo</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <a href="#" class="btn btn-sm btn-primary" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-sm btn-danger" title="Excluir">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center">Nenhum departamento cadastrado</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+<div class="container py-4">
+
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-gear-wide-connected me-2"></i>Cadastros Auxiliares
+        </h2>
+        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar ao Painel DP
+        </a>
+    </header>
+
+    {# Mensagens de Alerta #}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close">             
+                </button>
             </div>
-            
-            <!-- Tab CBOs -->
-            <div class="tab-pane fade" id="cbos" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>Novo CBO</h4>
-                        <form method="post" action="{% url 'departamento_pessoal:cadastrar_cbo' %}" class="mb-4">
-                            {% csrf_token %}
-                            {% for field in cbo_form %}
-                                <div class="form-group">
-                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                    {{ field|add_class:"form-control" }}
-                                    {% if field.help_text %}
-                                        <small class="form-text text-muted">{{ field.help_text }}</small>
-                                    {% endif %}
-                                    {% for error in field.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endfor %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Salvar
-                            </button>
-                        </form>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h4>CBOs Cadastrados</h4>
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Código</th>
-                                        <th>Título</th>
-                                        <th>Descrição</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for cbo in cbos %}
-                                    <tr>
-                                        <td>{{ cbo.codigo }}</td>
-                                        <td>{{ cbo.titulo }}</td>
-                                        <td>{{ cbo.descricao|truncatechars:50 }}</td>
-                                        <td>
-                                            <a href="#" class="btn btn-sm btn-primary" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-sm btn-danger" title="Excluir">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center">Nenhum CBO cadastrado</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Estrutura de Card com Abas Integradas -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="cadastroTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="departamentos-tab" data-bs-toggle="tab" data-bs-target="#departamentos-pane" type="button" role="tab">
+                        <i class="bi bi-building me-1"></i> Departamentos
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="cargos-tab" data-bs-toggle="tab" data-bs-target="#cargos-pane" type="button" role="tab">
+                        <i class="bi bi-briefcase-fill me-1"></i> Cargos
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="cbos-tab" data-bs-toggle="tab" data-bs-target="#cbos-pane" type="button" role="tab">
+                        <i class="bi bi-journal-text me-1"></i> CBOs
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content" id="cadastroTabsContent">
+                <!-- Aba Departamentos -->
+                <div class="tab-pane fade show active" id="departamentos-pane" role="tabpanel">
+                    {% include 'departamento_pessoal/partials/tab_departamentos.html' %}
                 </div>
-            </div>
-            
-            <!-- Tab Cargos -->
-            <div class="tab-pane fade" id="cargos" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h4>Novo Cargo</h4>
-                        <form method="post" action="{% url 'departamento_pessoal:cadastrar_cargo' %}" class="mb-4">
-                            {% csrf_token %}
-                            {% for field in cargo_form %}
-                                <div class="form-group">
-                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                    {% if field.name == 'cbo' %}
-                                        <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="form-control">
-                                            {% for cbo in cbos %}
-                                                <option value="{{ cbo.pk }}">{{ cbo.codigo }} - {{ cbo.titulo }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    {% else %}
-                                        {{ field|add_class:"form-control" }}
-                                    {% endif %}
-                                    {% if field.help_text %}
-                                        <small class="form-text text-muted">{{ field.help_text }}</small>
-                                    {% endif %}
-                                    {% for error in field.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endfor %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Salvar
-                            </button>
-                        </form>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h4>Cargos Cadastrados</h4>
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Nome</th>
-                                        <th>CBO</th>
-                                        <th>Salário Base</th>
-                                        <th>Status</th>
-                                        <th>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for cargo in cargos %}
-                                    <tr>
-                                        <td>{{ cargo.nome }}</td>
-                                        <td>{{ cargo.cbo.codigo }}</td>
-                                        <td>R$ {{ cargo.salario_base }}</td>
-                                        <td>
-                                            {% if cargo.ativo %}
-                                                <span class="badge badge-success">Ativo</span>
-                                            {% else %}
-                                                <span class="badge badge-secondary">Inativo</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <a href="#" class="btn btn-sm btn-primary" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <a href="#" class="btn btn-sm btn-danger" title="Excluir">
-                                                <i class="fas fa-trash"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center">Nenhum cargo cadastrado</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <!-- Aba Cargos -->
+                <div class="tab-pane fade" id="cargos-pane" role="tabpanel">
+                    {% include 'departamento_pessoal/partials/tab_cargos.html' %}
+                </div>
+                <!-- Aba CBOs -->
+                <div class="tab-pane fade" id="cbos-pane" role="tabpanel">
+                    {% include 'departamento_pessoal/partials/tab_cbos.html' %}
                 </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
-{% block scripts %}
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    $(document).ready(function() {
-        // Ativa as tabs
-        $('#cadastroTabs a').on('click', function (e) {
-            e.preventDefault();
-            $(this).tab('show');
-        });
-        
-        // Validação dos formulários
-        $('form').submit(function(e) {
-            let isValid = true;
-            $(this).find('[required]').each(function() {
-                if ($(this).val() === '') {
-                    $(this).addClass('is-invalid');
-                    isValid = false;
-                } else {
-                    $(this).removeClass('is-invalid');
-                }
-            });
-            
-            if (!isValid) {
-                e.preventDefault();
-                $('html, body').animate({
-                    scrollTop: $(this).find('.is-invalid').first().offset().top - 100
-                }, 500);
-            }
-        });
-    });
-    </script>
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Script para reabrir o modal em caso de erro no formulário
+    const modalToOpen = '{{ open_modal|safe }}';
+    if (modalToOpen) {
+        const modalElement = document.querySelector(modalToOpen);
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+    }
+});
+</script>
 {% endblock %}
-
 

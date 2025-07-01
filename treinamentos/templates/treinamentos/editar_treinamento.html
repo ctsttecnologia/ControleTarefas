@@ -1,150 +1,206 @@
 
 {% extends 'base.html' %}
+{% load static widget_tweaks %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Treinamento{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csstreinamentos/treinamento_form_styles.css' %}">
+{% endblock %}
+
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header text-black">
-        <h2 class="mb-0"><i class="bi bi-book me-2"></i>{{ titulo }}</h2>
-    </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
+<div class="container py-4">
 
-            <div class="row g-3">
-                {% for field in form %}
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label">
-                            {{ field.label }}
-                            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
-                        </label>
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            {% if form.instance.pk %}
+                <i class="bi bi-pencil-square me-2"></i>Editar Treinamento
+            {% else %}
+                <i class="bi bi-plus-square-dotted me-2"></i>Novo Treinamento
+            {% endif %}
+        </h2>
+        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
+        </a>
+    </header>
 
-                        {# Tratamento especial para campos de data e datetime #}
-                        {% if field.name == 'data_inicio' %}
-                            <input type="datetime-local"
-                                   class="form-control"
-                                   id="{{ field.id_for_label }}"
-                                   name="{{ field.name }}"
-                                   value="{{ field.value|date:'Y-m-d\TH:i' }}">
-                        {% elif field.name == 'data_vencimento' %}
-                            <input type="date"
-                                   class="form-control"
-                                   id="{{ field.id_for_label }}"
-                                   name="{{ field.name }}"
-                                   value="{{ field.value|date:'Y-m-d' }}">
-                        {% else %}
-                            {{ field }}
-                        {% endif %}
+    {# Card que envolve o formulário #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
 
-                        {% if field.help_text %}
-                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                        {% endif %}
-                        {% if field.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ field.errors }}
-                            </div>
-                        {% endif %}
+                {% if form.non_field_errors or participantes_formset.non_form_errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors.as_ul }}
+                        {{ participantes_formset.non_form_errors.as_ul }}
+                    </div>
+                {% endif %}
+
+                <!-- Seção 1: Dados do Treinamento -->
+                <h5 class="section-title">Dados do Treinamento</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.nome class+="form-control" placeholder=form.nome.label required="required" %}
+                            <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.tipo_curso class+="form-select" required="required" %}
+                            <label for="{{ form.tipo_curso.id_for_label }}">{{ form.tipo_curso.label }}</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.data_inicio.id_for_label }}" class="form-label">{{ form.data_inicio.label }}</label>
+                        {% render_field form.data_inicio type="datetime-local" class+="form-control" required="required" %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.data_vencimento.id_for_label }}" class="form-label">{{ form.data_vencimento.label }}</label>
+                        {% render_field form.data_vencimento type="date" class+="form-control" %}
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.local class+="form-control" placeholder=form.local.label %}
+                            <label for="{{ form.local.id_for_label }}">{{ form.local.label }}</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.status class+="form-select" %}
+                            <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                        </div>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
 
-            <div class="mt-4 border-top pt-3">
-                <h4 class="mb-3"><i class="bi bi-people-fill me-2"></i>Participantes</h4>
-
+                <!-- Seção 2: Participantes -->
+                <h5 class="section-title mt-5">Participantes</h5>
                 {{ participantes_formset.management_form }}
-
-                <div class="table-responsive">
-                    <table class="table table-bordered" id="participantes-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Funcionário</th>
-                                <th>Presente</th>
-                                <th>Aproveitamento</th>
-                                <th>Certificado Emitido</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for form in participantes_formset %}
-                            <tr class="participante-form">
-                                {% for hidden in form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
-
-                                <td>{{ form.funcionario }}</td>
-                                <td>{{ form.presente }}</td>
-                                <td>{{ form.nota_avaliacao }}</td>
-                                <td>{{ form.certificado_emitido }}</td>
-                                <td>
-                                    {% if form.instance.pk %}
-                                        {{ form.DELETE }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% if form.errors %}
-                            <tr>
-                                <td colspan="5">
-                                    <div class="alert alert-danger">
-                                        {% for error in form.non_field_errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                        {% for field in form %}
-                                            {% for error in field.errors %}
-                                                <strong>{{ field.label }}:</strong> {{ error }}
-                                            {% endfor %}
-                                        {% endfor %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endif %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div id="participantes-formset">
+                    {% for form in participantes_formset %}
+                    <div class="row g-2 align-items-center participante-form mb-2">
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                        <div class="col-md-5">
+                            {% render_field form.funcionario class+="form-select form-select-sm" %}
+                        </div>
+                        <div class="col-md-2">
+                            <div class="input-group input-group-sm">
+                                {% render_field form.nota_avaliacao class+="form-control" placeholder="Nota" %}
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                {% render_field form.presente class+="form-check-input" %}
+                                <label for="{{ form.presente.id_for_label }}" class="form-check-label">Presente</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                {% render_field form.certificado_emitido class+="form-check-input" %}
+                                <label for="{{ form.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label>
+                            </div>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <div class="form-check d-none">
+                                {% render_field form.DELETE class+="form-check-input" %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                        {% if form.errors %}
+                        <div class="col-12"><div class="alert alert-danger py-1 px-2 small">{{ form.errors }}</div></div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
                 </div>
-            </div>
-
-            <div class="d-flex justify-content-between border-top pt-3 mt-4">
-                <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg"></i> Cancelar
-                </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Salvar
+                <div id="empty-form" class="d-none">
+                    <div class="row g-2 align-items-center participante-form mb-2">
+                        {% for hidden in participantes_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                        <div class="col-md-5">
+                            {% render_field participantes_formset.empty_form.funcionario class+="form-select form-select-sm" %}
+                        </div>
+                        <div class="col-md-2">
+                            <div class="input-group input-group-sm">
+                                {% render_field participantes_formset.empty_form.nota_avaliacao class+="form-control" placeholder="Nota" %}
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                {% render_field participantes_formset.empty_form.presente class+="form-check-input" %}
+                                <label for="{{ participantes_formset.empty_form.presente.id_for_label }}" class="form-check-label">Presente</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                {% render_field participantes_formset.empty_form.certificado_emitido class+="form-check-input" %}
+                                <label for="{{ participantes_formset.empty_form.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label>
+                            </div>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <div class="form-check d-none">
+                                {% render_field participantes_formset.empty_form.DELETE class+="form-check-input" %}
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="add-form" class="btn btn-outline-secondary mt-2">
+                    <i class="bi bi-plus-circle me-1"></i> Adicionar Participante
                 </button>
-            </div>
-        </form>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between mt-5 border-top pt-4">
+                    <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Treinamento
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Configuração para campos de data
-        const dateInputs = document.querySelectorAll('input[type="date"], input[type="datetime-local"]');
-        dateInputs.forEach(input => {
-            input.autocomplete = 'off';
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    const formsetContainer = document.querySelector('#participantes-formset');
+    const addButton = document.querySelector('#add-form');
+    const emptyForm = document.querySelector('#empty-form').innerHTML;
+    const totalFormsInput = document.querySelector('#id_participantes-TOTAL_FORMS');
 
-        // Adiciona estilização aos selects do formset
-        document.querySelectorAll('#participantes-table select').forEach(select => {
-            select.classList.add('form-select', 'form-select-sm');
-        });
-
-        // Adiciona estilização aos inputs do formset
-        document.querySelectorAll('#participantes-table input[type="text"], #participantes-table input[type="number"]').forEach(input => {
-            input.classList.add('form-control', 'form-control-sm');
-        });
-
-        // Adiciona estilização aos checkboxes
-        document.querySelectorAll('#participantes-table input[type="checkbox"]').forEach(checkbox => {
-            checkbox.classList.add('form-check-input');
-            checkbox.style.marginLeft = '0';
-        });
+    addButton.addEventListener('click', function() {
+        let formNum = parseInt(totalFormsInput.value);
+        let newForm = emptyForm.replace(/__prefix__/g, formNum);
+        formsetContainer.insertAdjacentHTML('beforeend', newForm);
+        totalFormsInput.value = formNum + 1;
     });
+
+    formsetContainer.addEventListener('click', function(e) {
+        if (e.target && e.target.closest('.remove-form-row')) {
+            const formRow = e.target.closest('.participante-form');
+            const deleteInput = formRow.querySelector('input[type="checkbox"][id$="-DELETE"]');
+            if (deleteInput) {
+                // Se o formulário já foi salvo, marca para deletar
+                deleteInput.checked = true;
+                formRow.style.display = 'none';
+            } else {
+                // Se for um formulário novo, apenas remove do DOM
+                formRow.remove();
+                totalFormsInput.value = parseInt(totalFormsInput.value) - 1;
+            }
+        }
+    });
+});
 </script>
 {% endblock %}
-
-

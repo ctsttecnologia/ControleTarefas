@@ -1,4 +1,3 @@
-# departamento_pessoal/views.py
 
 # --- Imports Padrão do Django ---
 from django.shortcuts import render, redirect, get_object_or_404
@@ -11,20 +10,45 @@ from django.http import HttpResponse, JsonResponse
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.db import transaction
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-
 # --- Imports de Terceiros ---
 from xhtml2pdf import pisa
 import csv
-
 # --- Imports Locais da Aplicação ---
-from .models import (Funcionarios, Admissao, Documentos, Cargos, Departamentos, Cbos)
-from .forms import (AdmissaoForm, DepartamentoForm, CboForm, CargoForm, DocumentoForm, FuncionarioForm)
+from .models import (Funcionarios, 
+                     Admissao, 
+                     Documentos, 
+                     Departamentos, 
+                     Cbos, 
+                     Cargos)
+from .forms import (AdmissaoForm, 
+                    DepartamentoForm, 
+                    CboForm, 
+                    CargoForm, 
+                    DocumentoForm, 
+                    FuncionarioForm, 
+                    )
 
-# ANÁLISE: View inicial da aplicação. Mantida como estava.
+
 @login_required
 def departamento_pessoal(request):
     """View inicial do departamento pessoal"""
-    return render(request, 'departamento_pessoal/departamento_pessoal.html')
+    # 1. Calcule cada métrica que você precisa
+    total_funcionarios_ativos = Funcionarios.objects.filter(estatus=1).count()
+    total_funcionarios_desligados = Funcionarios.objects.filter(estatus=3).count()
+    total_departamentos = Departamentos.objects.count()
+    total_cargos = Cargos.objects.count()
+
+    # 2. Crie o dicionário de contexto com os dados calculados
+    context = {
+        'total_funcionarios_ativos': total_funcionarios_ativos,
+        'total_funcionarios_desligados': total_funcionarios_desligados,
+        'total_departamentos': total_departamentos,
+        'total_cargos': total_cargos,
+    }
+
+    # 3. Renderize o template, passando o contexto para ele
+    return render(request, 'departamento_pessoal/departamento_pessoal.html', context)
+    
 
 # ANÁLISE: View de perfil. Mantida como estava.
 @login_required
@@ -178,7 +202,6 @@ class ListaDocumentosView(LoginRequiredMixin, ListView):
         return queryset
 
 # --- CRUD de Admissão ---
-
 class NovaAdmissaoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     permission_required = 'departamento_pessoal.add_admissao'
     model = Admissao
@@ -226,10 +249,8 @@ class EditarAdmissaoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMes
     def get_success_url(self):
         return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
 
-# --- Views de Cadastros Auxiliares ---
-
 class CadastroAuxiliarView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
-    # OTIMIZAÇÃO: Permissões podem ser uma tupla.
+    # Esta view continua a mesma, responsável por exibir a página principal
     permission_required = (
         'departamento_pessoal.view_departamentos', 
         'departamento_pessoal.view_cbos',
@@ -239,39 +260,104 @@ class CadastroAuxiliarView(LoginRequiredMixin, PermissionRequiredMixin, Template
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if 'departamento_form' not in context:
+            context['departamento_form'] = DepartamentoForm()
+        if 'cbo_form' not in context:
+            context['cbo_form'] = CboForm()
+        if 'cargo_form' not in context:
+            context['cargo_form'] = CargoForm()
+            
         context.update({
             'departamentos': Departamentos.objects.all().order_by('nome'),
             'cbos': Cbos.objects.all().order_by('codigo'),
             'cargos': Cargos.objects.select_related('cbo').all().order_by('nome'),
-            'departamento_form': DepartamentoForm(),
-            'cbo_form': CboForm(),
-            'cargo_form': CargoForm()
         })
         return context
 
-class CadastrarDepartamentoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
-    permission_required = 'departamento_pessoal.add_departamentos'
+    def post(self, request, *args, **kwargs):
+        # Esta lógica de POST continua a mesma, para lidar com a CRIAÇÃO via modal
+        context = self.get_context_data()
+        form_type = request.POST.get('form_type')
+        context['open_modal'] = None 
+
+        if form_type == 'departamento':
+            form = DepartamentoForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Departamento cadastrado com sucesso!")
+                return redirect('departamento_pessoal:cadastro_auxiliar')
+            else:
+                context['departamento_form'] = form
+                context['open_modal'] = '#modalNovoDepartamento'
+
+        elif form_type == 'cbo':
+            form = CboForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "CBO cadastrado com sucesso!")
+                return redirect('departamento_pessoal:cadastro_auxiliar')
+            else:
+                context['cbo_form'] = form
+                context['open_modal'] = '#modalNovoCbo'
+
+        elif form_type == 'cargo':
+            form = CargoForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Cargo cadastrado com sucesso!")
+                return redirect('departamento_pessoal:cadastro_auxiliar')
+            else:
+                context['cargo_form'] = form
+                context['open_modal'] = '#modalNovoCargo'
+        
+        messages.error(request, "Houve um erro no formulário. Por favor, corrija os campos indicados.")
+        return render(request, self.template_name, context)
+
+# --- NOVAS VIEWS PARA EDIÇÃO ---
+
+class DepartamentoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Departamentos
     form_class = DepartamentoForm
+    template_name = 'departamento_pessoal/auxiliar_edite_form.html' # Um novo template genérico
+    permission_required = 'departamento_pessoal.change_departamentos'
     success_url = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
-    success_message = "Departamento cadastrado com sucesso!"
+    success_message = "Departamento atualizado com sucesso!"
 
-class CadastrarCboView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
-    permission_required = 'departamento_pessoal.add_cbos'
-    model = Cbos
-    form_class = CboForm
-    success_url = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
-    success_message = "CBO cadastrado com sucesso!"
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar Departamento'
+        context['url_voltar'] = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
+        return context
 
-class CadastrarCargoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
-    permission_required = 'departamento_pessoal.add_cargos'
+class CargoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
     model = Cargos
     form_class = CargoForm
+    template_name = 'departamento_pessoal/auxiliar_edite_form.html'
+    permission_required = 'departamento_pessoal.change_cargos'
     success_url = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
-    success_message = "Cargo cadastrado com sucesso!"
+    success_message = "Cargo atualizado com sucesso!"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar Cargo'
+        context['url_voltar'] = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
+        return context
+
+class CboUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = Cbos
+    form_class = CboForm
+    template_name = 'departamento_pessoal/auxiliar_edite_form.html'
+    permission_required = 'departamento_pessoal.change_cbos'
+    success_url = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
+    success_message = "CBO atualizado com sucesso!"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar CBO'
+        context['url_voltar'] = reverse_lazy('departamento_pessoal:cadastro_auxiliar')
+        return context
 
 # --- Views de API / AJAX ---
-
 @login_required
 def check_email_exists(request):
     """Verifica se um e-mail já existe no banco de dados."""

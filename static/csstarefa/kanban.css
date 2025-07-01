@@ -1,72 +1,122 @@
-/* static/csstarefa/kanban.css */
+/* ==========================================================================
+   Estilos para o Quadro Kanban
+   Refatorado para ser mais visual, moderno e compatível com temas.
+   ========================================================================== */
 
-/* ... (seus outros estilos do kanban) ... */
-
+/* --- Layout Principal do Quadro --- */
 .kanban-card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-left: 5px solid transparent; /* Borda inicial transparente */
+    background-color: var(--theme-card-bg);
+    border: 1px solid var(--theme-card-border);
+    border-left: 5px solid transparent;
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     cursor: grab;
-    transition: all 0.2s ease;
+}
+
+.kanban-card.is-overdue {
+    border-left-color: var(--bs-danger);
+}
+
+/* --- Colunas do Kanban --- */
+.kanban-column {
+    flex: 1 0 320px; /* Não encolhe, não cresce, base de 320px */
+    max-width: 320px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bs-secondary-bg); /* Cor de fundo sutil que se adapta ao tema */
+    border-radius: var(--bs-border-radius-lg); /* Bordas mais arredondadas */
+    border: 1px solid var(--bs-border-color-translucent);
+}
+
+.kanban-column-header {
+    padding: 1rem 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kanban-cards-container {
+    padding: 0.75rem;
+    flex-grow: 1; /* Faz a área dos cards ocupar o espaço disponível */
+    overflow-y: auto; /* Adiciona rolagem se os cards excederem a altura */
+}
+
+/* --- Cards de Tarefa --- */
+.kanban-card {
+    background-color: var(--bs-body-bg);
+    border-radius: var(--bs-border-radius);
+    border: 1px solid var(--bs-border-color-translucent);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--bs-box-shadow-sm);
+    cursor: grab;
+    transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
+    border-left-width: 4px; /* Prepara o espaço para a borda de prioridade */
 }
 
 .kanban-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--bs-box-shadow);
     transform: translateY(-2px);
 }
 
-/* NOVO ESTILO: Destaque para tarefas atrasadas */
-.kanban-card.is-overdue {
-    border-left: 5px solid var(--danger-color, #dc3545); /* Borda lateral vermelha */
+/* CORREÇÃO APLICADA AQUI: .kanhan-card foi corrigido para .kanban-card */
+.kanban-card:last-child {
+    margin-bottom: 0;
 }
 
+/* --- Cores de Prioridade na Borda do Card --- */
+/* Adiciona uma borda colorida à esquerda do card para indicar a prioridade */
+.kanban-card[data-priority="alta"] {
+    border-left-color: var(--bs-danger);
+}
+.kanban-card[data-priority="media"] {
+    border-left-color: var(--bs-warning);
+}
+.kanban-card[data-priority="baixa"] {
+    border-left-color: var(--bs-success);
+}
+
+/* --- Destaque para Tarefas Atrasadas --- */
+.kanban-card.is-overdue {
+    background-color: var(--bs-danger-bg-subtle); /* Fundo sutilmente avermelhado */
+    border-color: var(--bs-danger-border-subtle);
+}
+
+.kanban-card.is-overdue .kanban-card-meta .text-danger {
+    color: var(--bs-danger-text-emphasis) !important; /* Garante que a data fique bem visível */
+    font-weight: 700;
+}
+
+/* --- Conteúdo do Card --- */
 .kanban-card-title {
     font-weight: 500;
-    margin-bottom: 0.75rem;
+    color: var(--bs-emphasis-color);
+    margin-bottom: 1rem;
 }
 
 .kanban-card-meta {
     font-size: 0.85rem;
-    color: var(--muted-text-color);
+    color: var(--bs-secondary-color);
 }
 
-/* ... (resto do seu css) ... */
+/* --- Estilo para o "arrastando" --- */
+.sortable-ghost {
+    opacity: 0.4;
+    background: var(--bs-primary-bg-subtle);
+    border: 2px dashed var(--bs-primary);
+}
 
-.kanban-board {
-    display: flex;
-    gap: 1.5rem;
-    overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
-    padding-bottom: 1rem;
+.sortable-chosen {
+    cursor: grabbing;
 }
-.kanban-column {
-    flex: 1 0 300px; /* Colunas flexíveis com largura mínima de 300px */
-    background-color: var(--theme-card-header-bg);
-    border-radius: 0.75rem;
-    max-width: 320px;
-}
-.kanban-column-header {
-    padding: 1rem;
-    font-weight: 600;
-    border-bottom: 1px solid var(--theme-card-border);
-}
-.kanban-cards-container {
-    padding: 0.5rem;
-    min-height: 200px; /* Altura mínima para a área de drop */
-}
-.kanban-card {
-    background-color: var(--theme-card-bg);
-    border: 1px solid var(--theme-card-border);
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    cursor: grab;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-.kanban-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-.kanban-card-title { font-weight: 500; font-size: 0.95rem; }
-.kanban-card-meta { font-size: 0.8rem; color: #888; }
-[data-bs-theme="dark"] .kanban-card-meta { color: #aaa; }
+
+
+
+
+
+

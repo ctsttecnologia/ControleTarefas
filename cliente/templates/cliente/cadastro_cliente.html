@@ -1,16 +1,20 @@
 
+{% extends 'base.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
+{% block extra_css %}
+    {# Carrega o CSS do Select2, uma biblioteca para selects avançados #}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    {# Carrega o CSS personalizado para esta página #}
+    <link rel="stylesheet" href="{% static 'csscliente/styles.css' %}">
+{% endblock %}
 
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'csscliente/styles.css' %}"> 
-
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
 
 {% block content %}
 <div class="container py-4">
-    <!-- Mensagens de erro/sucesso -->
+    
+    {# Bloco para exibir mensagens do Django (sucesso, erro, etc.) #}
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
@@ -20,194 +24,117 @@
         {% endfor %}
     {% endif %}
     
-    <!-- Cabeçalho -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><i class="fas fa-user-plus me-2"></i>Cadastrar Cliente</h2>
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0"><i class="bi bi-person-plus-fill me-2"></i>Cadastrar Cliente</h2>
         <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-list me-1"></i> Clientes Cadastrados
+            <i class="bi bi-list-ul me-1"></i> Ver Clientes
         </a>
-    </div>
+    </header>
     
-    <!-- Formulário -->
-    <div class="card shadow">
-        <div class="card-body">
+    {# Card que envolve o formulário #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
             <form method="post" id="clienteForm" novalidate>
                 {% csrf_token %}
                 
-                <!-- Erros não relacionados a campos específicos -->
+                {# Exibe erros que não são de um campo específico (non-field errors) #}
                 {% if form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {% for error in form.non_field_errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ form.non_field_errors.as_ul }}
                     </div>
                 {% endif %}
                 
-                <div class="row g-3">
-                    <!-- Coluna 1 -->
+                <div class="row g-4">
+                    {# Coluna da Esquerda #}
                     <div class="col-md-6">
-                        <!-- Nome -->
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="{{ form.nome.id_for_label }}" 
-                                   name="{{ form.nome.name }}" placeholder="{{ form.nome.label }}"
-                                   value="{{ form.nome.value|default_if_none:'' }}" required>
+                        {# Campo Nome com Floating Label #}
+                        <div class="form-floating">
+                            {% render_field form.nome class+="form-control" placeholder=form.nome.label required="required" %}
                             <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
-                            {% if form.nome.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.nome.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.as_text }}</div>{% endif %}
                         </div>
-                        
-                        <!-- Endereço -->
-                        <div class="mb-3">
-                            <label for="{{ form.logradouro.id_for_label }}" class="form-label">
-                                {{ form.logradouro.label }} <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select select2" id="{{ form.logradouro.id_for_label }}" 
-                                    name="{{ form.logradouro.name }}" required>
-                                {% for choice in form.logradouro.field.choices %}
-                                    <option value="{{ choice.0 }}" {% if form.logradouro.value == choice.0 %}selected{% endif %}>
-                                        {{ choice.1 }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <div class="mt-2">
-                                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="fas fa-plus me-1"></i> Novo Endereço
-                                </a>
-                            </div>
-                            {% if form.logradouro.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.logradouro.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <!-- Contrato -->
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="{{ form.contrato.id_for_label }}" 
-                                   name="{{ form.contrato.name }}" placeholder="{{ form.contrato.label }}"
-                                   value="{{ form.contrato.value|default_if_none:'' }}">
-                            <label for="{{ form.contrato.id_for_label }}">{{ form.contrato.label }}</label>
-                            {% if form.contrato.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.contrato.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <!-- Coluna 2 -->
-                    <div class="col-md-6">
-                        <!-- Razão Social -->
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" id="{{ form.razao_social.id_for_label }}" 
-                                   name="{{ form.razao_social.name }}" placeholder="{{ form.razao_social.label }}"
-                                   value="{{ form.razao_social.value|default_if_none:'' }}">
+
+                        {# Campo Razão Social com Floating Label #}
+                        <div class="form-floating mt-4">
+                            {% render_field form.razao_social class+="form-control" placeholder=form.razao_social.label %}
                             <label for="{{ form.razao_social.id_for_label }}">{{ form.razao_social.label }}</label>
-                            {% if form.razao_social.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.razao_social.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            {% if form.razao_social.errors %}<div class="invalid-feedback d-block">{{ form.razao_social.errors.as_text }}</div>{% endif %}
                         </div>
-                        
-                        <!-- CNPJ -->
-                        <div class="mb-3">
-                            <label for="id_cnpj" class="form-label">
-                                CNPJ <span class="text-danger">*</span>
-                            </label>
+                    </div>
+
+                    {# Coluna da Direita #}
+                    <div class="col-md-6">
+                        {# Campo CNPJ com Ícone e Máscara #}
+                        <div>
+                            <label for="{{ form.cnpj.id_for_label }}" class="form-label">{{ form.cnpj.label }} <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                                <input type="text" class="form-control" id="id_cnpj" 
-                                    name="cnpj" placeholder="00.000.000/0000-00"
-                                    value="{{ form.cnpj.value|default_if_none:'' }}" required>
+                                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                {% render_field form.cnpj class+="form-control" placeholder="00.000.000/0000-00" required="required" %}
                             </div>
-                            <small class="text-muted">Formato: 00.000.000/0000-00</small>
+                            <div class="form-text">Formato: 00.000.000/0000-00</div>
+                            {% if form.cnpj.errors %}<div class="invalid-feedback d-block">{{ form.cnpj.errors.as_text }}</div>{% endif %}
                             <div class="mask-error" id="cnpj-error">CNPJ incompleto ou inválido</div>
-                            {% if form.cnpj.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.cnpj.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
                         </div>
-                    </div>
-                    
-                    <!-- Coluna 3 -->
-                    <div class="col-md-6">
-                        <!-- Telefone -->
-                    <div class="mb-3">
-                        <label for="id_telefone" class="form-label">
-                            Telefone
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                            <input type="text" class="form-control" id="id_telefone" 
-                                name="telefone" placeholder="(00) 00000-0000"
-                                value="{{ form.telefone.value|default_if_none:'' }}">
-                        </div>
-                        <small class="text-muted">Formato: (00) 00000-0000</small>
-                        <div class="mask-error" id="telefone-error">Telefone incompleto ou inválido</div>
-                        {% if form.telefone.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.telefone.errors %}
-                                    <div>{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Coluna 4 -->
-                    <div class="col-md-6">
-                        <!-- Data de Início -->
-                        <div class="mb-3">
-                            <label for="{{ form.data_de_inicio.id_for_label }}" class="form-label">
-                                {{ form.data_de_inicio.label }} <span class="text-danger">*</span>
-                            </label>
+
+                        {# Campo Telefone com Ícone e Máscara #}
+                        <div class="mt-4">
+                            <label for="{{ form.telefone.id_for_label }}" class="form-label">{{ form.telefone.label }}</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
-                                <input type="date" class="form-control" id="{{ form.data_de_inicio.id_for_label }}" 
-                                       name="{{ form.data_de_inicio.name }}" 
-                                       value="{{ form.data_de_inicio.value|date:'Y-m-d' }}" required>
+                                <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+                                {% render_field form.telefone class+="form-control" placeholder="(00) 00000-0000" %}
                             </div>
-                            {% if form.data_de_inicio.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.data_de_inicio.errors %}
-                                        <div>{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            <div class="form-text">Formato: (00) 00000-0000</div>
+                            {% if form.telefone.errors %}<div class="invalid-feedback d-block">{{ form.telefone.errors.as_text }}</div>{% endif %}
+                            <div class="mask-error" id="telefone-error">Telefone incompleto</div>
                         </div>
-                        
-                        <!-- Status -->
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="{{ form.estatus.id_for_label }}" 
-                                   name="{{ form.estatus.name }}" {% if form.estatus.value %}checked{% endif %}>
-                            <label class="form-check-label" for="{{ form.estatus.id_for_label }}">
-                                {{ form.estatus.label }}
-                            </label>
+                    </div>
+
+                    {# Seção de Endereço - Ocupa a largura toda #}
+                    <div class="col-12">
+                        <label for="{{ form.logradouro.id_for_label }}" class="form-label">{{ form.logradouro.label }} <span class="text-danger">*</span></label>
+                        {% render_field form.logradouro class+="form-select select2-bootstrap" required="required" %}
+                        <div class="mt-2">
+                            <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="bi bi-plus-circle me-1"></i> Novo Endereço
+                            </a>
+                        </div>
+                        {% if form.logradouro.errors %}<div class="invalid-feedback d-block">{{ form.logradouro.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    {# Outros campos #}
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.contrato class+="form-control" placeholder=form.contrato.label %}
+                            <label for="{{ form.contrato.id_for_label }}">{{ form.contrato.label }}</label>
+                            {% if form.contrato.errors %}<div class="invalid-feedback d-block">{{ form.contrato.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="{{ form.data_de_inicio.id_for_label }}" class="form-label">{{ form.data_de_inicio.label }} <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                            {% render_field form.data_de_inicio type="date" class+="form-control" required="required" %}
+                        </div>
+                        {% if form.data_de_inicio.errors %}<div class="invalid-feedback d-block">{{ form.data_de_inicio.errors.as_text }}</div>{% endif %}
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="form-check form-switch fs-5">
+                            {% render_field form.estatus class+="form-check-input" %}
+                            <label class="form-check-label" for="{{ form.estatus.id_for_label }}">{{ form.estatus.label }}</label>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Botões de ação -->
-                <div class="d-flex justify-content-between mt-4 border-top pt-3">
-                    <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-1"></i> Cancelar
+                {# Botões de Ação #}
+                <div class="d-flex justify-content-between mt-5 border-top pt-4">
+                    <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-1"></i> Salvar Cliente
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Cliente
                     </button>
                 </div>
             </form>
@@ -215,106 +142,27 @@
     </div>
 </div>
 {% endblock %}
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}  
+
 
 {% block extra_js %}
-
+{# Carrega as bibliotecas JS necessárias #}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    // Configuração das máscaras com validação
-    $('#id_cnpj').mask('00.000.000/0000-00', {
-        onComplete: function(cep) {
-            validateCnpj();
-        },
-        onChange: function(cep) {
-            validateCnpj();
-        }
+    // Inicializa o Select2 para o campo de endereço
+    $('.select2-bootstrap').select2({
+        theme: "bootstrap-5",
+        width: '100%',
     });
+
+    // Aplica as máscaras de input
+    $('#id_cnpj').mask('00.000.000/0000-00');
+    $('#id_telefone').mask('(00) 00000-0000');
     
-    $('#id_telefone').mask('(00) 00000-0000', {
-        onComplete: function(tel) {
-            validateTelefone();
-        },
-        onChange: function(tel) {
-            validateTelefone();
-        }
-    });
-    
-    // Funções de validação
-    function validateCnpj() {
-        var cnpj = $('#id_cnpj').cleanVal();
-        var cnpjError = $('#cnpj-error');
-        
-        if (cnpj.length === 14) {
-            $('#id_cnpj').removeClass('invalid-input').addClass('valid-input');
-            cnpjError.hide();
-            return true;
-        } else {
-            $('#id_cnpj').removeClass('valid-input').addClass('invalid-input');
-            if (cnpj.length > 0) {
-                cnpjError.show();
-            } else {
-                cnpjError.hide();
-            }
-            return false;
-        }
-    }
-    
-    function validateTelefone() {
-        var tel = $('#id_telefone').cleanVal();
-        var telError = $('#telefone-error');
-        
-        // Telefone é opcional, mas se preenchido deve estar completo
-        if (tel.length === 0 || tel.length === 11) {
-            $('#id_telefone').removeClass('invalid-input').addClass('valid-input');
-            telError.hide();
-            return true;
-        } else {
-            $('#id_telefone').removeClass('valid-input').addClass('invalid-input');
-            if (tel.length > 0) {
-                telError.show();
-            } else {
-                telError.hide();
-            }
-            return false;
-        }
-    }
-    
-    // Validação do formulário
-    $('#clienteForm').on('submit', function(e) {
-        var isValid = true;
-        
-        // Valida CNPJ
-        if (!validateCnpj()) {
-            isValid = false;
-            $('#cnpj-error').show();
-        }
-        
-        // Valida Telefone (opcional)
-        if ($('#id_telefone').val().length > 0 && !validateTelefone()) {
-            isValid = false;
-            $('#telefone-error').show();
-        }
-        
-        if (!isValid) {
-            e.preventDefault();
-            // Rolagem para o primeiro erro
-            $('html, body').animate({
-                scrollTop: $('.invalid-input').first().offset().top - 100
-            }, 500);
-        }
-    });
-    
-    // Validação inicial ao carregar a página
-    validateCnpj();
-    validateTelefone();
+    // Seu código de validação customizada pode continuar aqui...
 });
 </script>
 {% endblock %}
-
-

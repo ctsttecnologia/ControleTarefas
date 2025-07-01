@@ -1,39 +1,53 @@
 
 
-{# usuario/login.html #}
+{% extends 'base.html' %}
 {% load static %}
+{% load widget_tweaks %}
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login</title>
-<link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-<link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
-<link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon"> 
+{% block body_class %}body-login{% endblock %}
+
+{% block title %}Login - Gerenciando Tarefas{% endblock %}
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
+{% block extra_css %}
+
+{% endblock %}
 
 {% block content %}
-<div class="painel3">
-    <div class="painel1">
-        <h1 class="titulo">Login</h1>
-    </div>
-    <div class="painel2">
-        <form method="post" class="form-login">
+<div class="login-container">
+    <div class="login-card">
+        
+        <div class="login-logo mb-4">
+            <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas">
+        </div>
+
+        <h2 class="text-center mb-4">Acessar sua Conta</h2>
+
+        {% if form.errors %}
+            <div class="alert alert-danger text-center p-2" role="alert">
+                Usuário ou senha inválidos.
+            </div>
+        {% endif %}
+
+        <form method="post" novalidate>
             {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn-login">Login</button>
+            <div class="mb-3">
+                <label for="{{ form.username.id_for_label }}" class="form-label">Usuário</label>
+                {% render_field form.username class="form-control" placeholder="Digite seu usuário" %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.password.id_for_label }}" class="form-label">Senha</label>
+                {% render_field form.password class="form-control" placeholder="Digite sua senha" %}
+            </div>
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+            </div>
         </form>
-        <p class="registro">Não tem uma conta? 
-            <a href="{% url 'usuario:cadastrar_usuario' %}" class="link-registro">
-                Registre-se
-            </a>
-        </p>
-        <p class="esqueci-senha">
-            <a href="{% url 'usuario:password_reset' %}" class="link-esqueci-senha">
-                Esqueci minha senha
-            </a>
-        </p>
-        <a href="{% url 'home' %}" class="link-home">Início</a>
-        <img src="/midia/imagens/logocetest.png" alt="Logo"> 
-        {# <img src="{% static '/midia/imagens/logo.png' %}" class="icone"> #}
+
+        <div class="login-links text-center mt-4">
+            <p class="mb-1"><a href="{% url 'usuario:password_reset' %}">Esqueceu sua senha?</a></p>
+            <p class="mb-0">Não tem uma conta? <a href="{% url 'usuario:cadastrar_usuario' %}">Registre-se</a></p>
+        </div>
+        
     </div>
 </div>
 {% endblock %}

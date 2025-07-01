@@ -83,7 +83,7 @@ ROOT_URLCONF = 'gerenciandoTarefas.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -146,15 +146,15 @@ AUTH_USER_MODEL = 'usuario.Usuario'
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
+# Mude 'en-us' para 'pt-br'
 LANGUAGE_CODE = 'pt-br'
 
-
-USE_I18N = True
-USE_L10N = True
-# Ativar suporte a time zones
-USE_TZ = False
-# Definir o fuso horário padrão (por exemplo, 'America/Sao_Paulo' para o horário de Brasília)
+# Mude 'UTC' para o fuso horário do Brasil
 TIME_ZONE = 'America/Sao_Paulo'
+
+# Garanta que estes estão como True
+USE_I18N = True
+USE_TZ = False
 
 
 #AUTH_USER_MODEL = 'usuario.Usuario'

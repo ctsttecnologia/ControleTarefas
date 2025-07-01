@@ -1,0 +1,18 @@
+/* ==========================================================================
+   Estilos para o Formulário de Tipo de Curso
+   ========================================================================== */
+
+/* --- Títulos de Seção --- */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    margin-bottom: 1rem; /* Espaço após o título */
+}
+
+/* --- Switches de Configuração --- */
+.form-switch {
+    padding-top: 0.5rem;
+}

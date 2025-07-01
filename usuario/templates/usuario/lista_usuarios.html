@@ -1,198 +1,119 @@
-
+{% extends 'base.html' %}
 {% load static %}
 
-{% include 'includes/header.html' %}
+{% block title %}Lista de Usuários{% endblock %}
 
-{% block content %}
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">{% block title %}Lista de Usuários{% endblock %}</h5>
-        {% if request.user.is_superuser %}
-        <a href="{% url 'usuario:cadastrar_usuario' %}" class="btn btn-sm btn-primary">
-            <i class="bi bi-plus-circle"></i> Novo Usuário
-        </a>
-        {% endif %}
-    </div>
-    <div class="card-body">
-        <div class="search-bar mb-3">
-            <form method="get" class="row g-2">
-                <div class="col-md-8">
-                    <input type="text" name="q" class="form-control" placeholder="Pesquisar usuários..." value="{{ request.GET.q }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-search"></i> Buscar
-                    </button>
-                </div>
-                <div class="col-md-2">
-                    <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary w-100">
-                        <i class="bi bi-arrow-counterclockwise"></i> Limpar
-                    </a>
-                </div>
-            </form>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Grupos</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for usuario in usuarios %}
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <img src="https://ui-avatars.com/api/?name={{ usuario.get_full_name|default:usuario.username }}&background=random" 
-                                     alt="Avatar" class="user-avatar">
-                                <span>{{ usuario.get_full_name|default:"---" }}</span>
-                            </div>
-                        </td>
-                        <td>{{ usuario.username }}</td>
-                        <td>{{ usuario.email|default:"---" }}</td>
-                        <td>
-                            {% for group in usuario.groups.all %}
-                                <span class="badge bg-secondary">{{ group.name }}</span>
-                            {% empty %}
-                                <span class="text-muted">Nenhum grupo</span>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% if usuario.is_active %}
-                                <span class="status-badge status-active">Ativo</span>
-                            {% else %}
-                                <span class="status-badge status-inactive">Inativo</span>
-                            {% endif %}
-                        </td>
-                        <td class="action-buttons">
-                            <!-- Botão de Editar -->
-                            {% if request.user.is_superuser or request.user == usuario %}
-                            <a href="{% url 'usuario:usuario_editar' usuario.pk %}" 
-                               class="btn btn-sm btn-outline-primary"
-                               title="Editar Usuário">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            {% endif %}
-                            
-                            <!-- Botão de Gerenciar Grupos (apenas admin) -->
-                            {% if request.user.is_superuser %}
-                            <a href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}" 
-                               class="btn btn-sm btn-outline-secondary"
-                               title="Gerenciar Grupos">
-                                <i class="bi bi-people"></i>
-                            </a>
-                            {% endif %}
-                            
-                            <!-- Botão de Alterar Senha -->
-                            {% if request.user.is_superuser or request.user == usuario %}
-                            <a href="{% url 'usuario:alterar_senha' usuario.pk %}" 
-                               class="btn btn-sm btn-outline-info"
-                               title="Alterar Senha">
-                                <i class="bi bi-key"></i>
-                            </a>
-                            {% endif %}
-                            
-                            <!-- Botão de Status (apenas admin) -->
-                            {% if request.user.is_superuser %}
-                                {% if usuario.is_active %}
-                                <form method="post" action="{% url 'usuario:desativar_usuario' usuario.pk %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Desativar Usuário">
-                                        <i class="bi bi-person-x"></i>
-                                    </button>
-                                </form>
-                                {% else %}
-                                <form method="post" action="{% url 'usuario:ativar_usuario' usuario.pk %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Ativar Usuário">
-                                        <i class="bi bi-person-check"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                            {% endif %}
-                            
-                            <!-- Link para funcionário -->
-                            {% if usuario.funcionario %}
-                            <a href="{% url 'departamento_pessoal:funcionario_detalhe' usuario.funcionario.id %}" 
-                               class="btn btn-sm btn-outline-dark"
-                               title="Ver Funcionário">
-                                <i class="bi bi-person-badge"></i>
-                            </a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center">Nenhum usuário encontrado</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        {% if is_paginated %}
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Anterior</a>
-                    </li>
-                {% endif %}
-                
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a></li>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Próxima</a>
-                    </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-    </div>
-</div>
-
-<style>
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        margin-right: 10px;
-    }
-    .status-badge {
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.8rem;
-        font-weight: 500;
-    }
-    .status-active {
-        background-color: #d1e7dd;
-        color: #0f5132;
-    }
-    .status-inactive {
-        background-color: #f8d7da;
-        color: #842029;
-    }
-    .action-buttons {
-        white-space: nowrap;
-    }
-    .action-buttons .btn {
-        margin-right: 5px;
-    }
-</style>
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario_styles.css' %}">
 {% endblock %}
 
-{% include 'includes/footer.html' %}
 
+{% block content %}
+    {% include 'usuario/includes/submenu.html' %}
+
+    <div class="container py-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="h4 mb-0">Usuários do Sistema</h2>
+                    {% if request.user.is_superuser %}
+                        <a href="{% url 'usuario:cadastrar_usuario' %}" class="btn btn-primary">
+                            <i class="bi bi-person-plus-fill me-1"></i> Novo Usuário
+                        </a>
+                    {% endif %}
+                </div>
+
+                <form method="get" class="mb-4">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" placeholder="Pesquisar..." value="{{ search_query }}">
+                        <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Grupos</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for usuario in usuarios %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name={{ usuario.get_full_name|default:usuario.username }}&background=random&color=fff&size=40" 
+                                             alt="Avatar" class="user-avatar">
+                                        <div>
+                                            <div class="fw-bold">{{ usuario.get_full_name|default:usuario.username }}</div>
+                                            <div class="text-muted small">@{{ usuario.username }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ usuario.email|default:"---" }}</td>
+                                <td>
+                                    {% for group in usuario.groups.all %}
+                                        <span class="badge fw-normal bg-secondary-subtle text-secondary-emphasis">{{ group.name }}</span>
+                                    {% empty %}
+                                        <span class="text-muted small">-</span>
+                                    {% endfor %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill {% if usuario.is_active %}text-bg-success{% else %}text-bg-danger{% endif %}">
+                                        {{ usuario.is_active|yesno:"Ativo,Inativo" }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            {% if request.user.is_superuser or request.user == usuario %}
+                                                <li><a class="dropdown-item" href="{% url 'usuario:usuario_editar' usuario.pk %}">
+                                                        <i class="bi bi-pencil-fill me-2"></i>Editar
+                                                    </a>
+                                                </li>
+                                                <li><a class="dropdown-item" href="{% url 'usuario:alterar_senha' usuario.pk %}">
+                                                        <i class="bi bi-key-fill me-2"></i>Definir Senha
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                            {% if request.user.is_superuser %}
+                                                <li><a class="dropdown-item" href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}">
+                                                        <i class="bi bi-people me-2"></i>Gerenciar Grupos
+                                                    </a>
+                                                </li>
+                                                {% if usuario != request.user %}
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <form method="post" action="{% url 'usuario:toggle_active_usuario' usuario.pk %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="dropdown-item text-{% if usuario.is_active %}warning{% else %}success{% endif %}">
+                                                            <i class="bi {% if usuario.is_active %}bi-person-x-fill{% else %}bi-person-check-fill{% endif %} me-2"></i>
+                                                            {{ usuario.is_active|yesno:"Desativar,Ativar" }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                {% endif %}
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                                <tr><td colspan="5" class="text-center py-5">Nenhum usuário encontrado.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% include 'includes/pagination.html' %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,116 +1,81 @@
 
-    
-/* Estilos personalizados */
-        .form-container {
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        .form-header {
-            border-bottom: 1px solid #eee;
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-        }
-        
-        .form-title {
-            color: #2c3e50;
-            font-weight: 600;
-        }
-        
-        .btn-action {
-            min-width: 120px;
-        }
-        
-        .input-group-btn {
-            margin-left: 8px;
-        }
-        
-        .select2-container {
-            width: 100% !important;
-        }
-        
-        /* Tratamento de erros */
-        .errorlist {
-            list-style: none;
-            padding-left: 0;
-            color: #dc3545;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-        }
-        
-        .is-invalid {
-            border-color: #dc3545 !important;
-        }
+/* ==========================================================================
+   Estilos para o Formulário de Cliente
+   Moderno, responsivo e compatível com temas Light/Dark do Bootstrap.
+   ========================================================================== */
 
+/* --- Estilos Gerais --- */
+/* A maioria dos estilos (body, container, etc.) deve vir do seu global_styles.css */
 
-    /* Estilos específicos para template cadastrar cliente */
-    .form-floating > label {
-        transform-origin: 0 0;
-        transition: all 0.2s ease-out;
-    }
-    
-    .form-floating > .form-control:focus ~ label,
-    .form-floating > .form-control:not(:placeholder-shown) ~ label,
-    .form-floating > .form-select ~ label {
-        transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
-        opacity: 0.8;
-    }
-    
-    .select2-container--default .select2-selection--single {
-        height: calc(3.5rem + 2px);
-        padding: 1rem 0.75rem;
-        border: 1px solid #ced4da;
-    }
-    
-    .select2-container--default .select2-selection--single .select2-selection__arrow {
-        height: calc(3.5rem + 2px);
-    }
-    
-    .card {
-        border-radius: 0.5rem;
-    }
-    
-    .form-control, .form-select {
-        border-radius: 0.375rem;
-    }
-        /* Estilos para as máscaras e validação */
-    .invalid-input {
-        border-color: #dc3545 !important;
-    }
-    
-    .valid-input {
-        border-color: #28a745 !important;
-    }
-    
-    .mask-error {
-        color: #dc3545;
-        font-size: 0.875em;
-        display: none;
-    }
+/* --- Card do Formulário --- */
+/* As classes .card, .shadow-sm e .border-0 do Bootstrap já cuidam do visual. */
+/* Não são necessárias regras customizadas para o card em si. */
 
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .form-container {
-                padding: 1rem;
-            }
-            
-            .btn-action {
-                width: 100%;
-                margin-bottom: 0.5rem;
-            }
-            
-            .input-group {
-                flex-wrap: wrap;
-            }
-            
-            .input-group-btn {
-                margin-left: 0;
-                margin-top: 8px;
-                width: 100%;
-            }
-        }
+/* --- Mensagens de Validação Customizada --- */
+/* Estiliza a mensagem de erro para as máscaras de CNPJ e Telefone */
+.mask-error {
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: .875em;
+    color: var(--bs-danger-text-emphasis); /* Cor de erro que se adapta ao tema */
+    display: none; /* Escondido por padrão */
+}
+
+/* --- Estilização do Select2 para combinar com o Bootstrap 5 --- */
+/* Container principal do Select2 */
+.select2-container--bootstrap-5 .select2-selection {
+    border-radius: var(--bs-border-radius);
+    border: 1px solid var(--bs-border-color);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    padding: 0.375rem 0.75rem;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    display: flex;
+    align-items: center;
+}
+
+/* Seta do dropdown */
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+    height: calc(1.5em + 0.75rem);
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 2.5rem;
+}
+
+/* Placeholder do Select2 */
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
+    color: var(--bs-secondary-color);
+}
+
+/* Aparência quando focado */
+.select2-container--bootstrap-5.select2-container--focus .select2-selection {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilo do dropdown que abre */
+.select2-container--bootstrap-5 .select2-dropdown {
+    border-color: var(--bs-border-color);
+    background-color: var(--bs-body-bg);
+}
+
+/* Estilo da barra de pesquisa dentro do dropdown */
+.select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+}
+
+/* Estilo dos resultados no dropdown */
+.select2-container--bootstrap-5 .select2-results__option {
+    color: var(--bs-body-color);
+}
+
+/* Estilo do item selecionado/hover */
+.select2-container--bootstrap-5 .select2-results__option--highlighted {
+    background-color: var(--bs-primary);
+    color: white;
+}
+
 

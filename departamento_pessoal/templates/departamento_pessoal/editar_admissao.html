@@ -1,65 +1,142 @@
+
 {% extends 'base.html' %}
-
 {% load static %}
+{% load widget_tweaks %}
 
-{% block head %}
+{% block title %}Editar Admissão{% endblock %}
 
-    {% block extra_css %}{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssdp/admissao_form_editar_styles.css' %}">
 {% endblock %}
 
-{% block content %}
-<div class="container">
-    <h2 class="mmb-2">Editar Admissão</h2><h4 class="mb-0" align="center">{{ funcionario.nome }}</h4>
-    <div class="painel">
 
-        <a href="{% url 'departamento_pessoal:lista_admissoes' %}" class="btn_cadastro">
-           <i class="fas fa-list"></i> Lista Admissão
+{% block content %}
+<div class="container py-4">
+
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-pencil-square me-2"></i>Editar Admissão
+        </h2>
+        <a href="{% url 'departamento_pessoal:detalhe_funcionario' object.funcionario.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para Funcionário
         </a>
-    </div>
-    <div class="painel1">
-        <form method="post" class="form-cadastro">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="id_funcionario" class="form-label">Funcionário</label>
-                {{ form.funcionario }}
+    </header>
+
+    {# Card que envolve o formulário #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-body-tertiary">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Funcionário: <span class="fw-normal">{{ object.funcionario.nome }}</span></h5>
+                <span class="badge text-bg-secondary">Matrícula: {{ object.matricula }}</span>
             </div>
-            
-            <div class="form-group">
-                <label for="id_matricula" class="form-label">Matrícula</label>
-                {{ form.matricula }}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_cargo" class="form-label">Cargo</label>
-                {{ form.cargo }}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_data_admissao" class="form-label">Data de Admissão</label>
-                {{ form.data_admissao }}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_salario" class="form-label">Salário</label>
-                {{ form.salario }}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_hora_entrada" class="form-label">Horário de Entrada</label>
-                {{ form.hora_entrada }}
-            </div>
-            
-            <div class="form-group">
-                <label for="id_hora_saida" class="form-label">Horário de Saída</label>
-                {{ form.hora_saida }}
-            </div>
-            
-            <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                <a href="{% url 'departamento_pessoal:lista_admissoes' %}" class="btn btn-secondary">Cancelar</a>
-            </div>
-        </form>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">{{ form.non_field_errors.as_ul }}</div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <!-- Seção 1: Dados Contratuais -->
+                    <div class="col-12">
+                        <h5 class="section-title">Dados Contratuais</h5>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label">Data de Admissão</label>
+                        <input type="text" class="form-control" value="{{ object.data_admissao|date:'d/m/Y' }}" disabled>
+                        <div class="form-text">A data de admissão não pode ser alterada.</div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-floating">
+                            {% render_field form.cargo class+="form-select" required="required" %}
+                            <label for="{{ form.cargo.id_for_label }}">{{ form.cargo.label }}</label>
+                            {% if form.cargo.errors %}<div class="invalid-feedback d-block">{{ form.cargo.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-floating">
+                            {% render_field form.departamento class+="form-select" required="required" %}
+                            <label for="{{ form.departamento.id_for_label }}">{{ form.departamento.label }}</label>
+                            {% if form.departamento.errors %}<div class="invalid-feedback d-block">{{ form.departamento.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-floating">
+                            {% render_field form.tipo_contrato class+="form-select" required="required" %}
+                            <label for="{{ form.tipo_contrato.id_for_label }}">{{ form.tipo_contrato.label }}</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-lg-4">
+                        <label for="{{ form.salario.id_for_label }}" class="form-label">{{ form.salario.label }}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            {% render_field form.salario class+="form-control" placeholder="0,00" %}
+                        </div>
+                        {% if form.salario.errors %}<div class="invalid-feedback d-block">{{ form.salario.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label for="{{ form.data_demissao.id_for_label }}" class="form-label">{{ form.data_demissao.label }}</label>
+                        {% render_field form.data_demissao type="date" class+="form-control" %}
+                        {% if form.data_demissao.errors %}<div class="invalid-feedback d-block">{{ form.data_demissao.errors.as_text }}</div>{% endif %}
+                    </div>
+
+                    <!-- Seção 2: Jornada de Trabalho -->
+                    <div class="col-12 mt-5">
+                        <h5 class="section-title">Jornada de Trabalho</h5>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.hora_entrada type="time" class+="form-control" %}
+                            <label for="{{ form.hora_entrada.id_for_label }}">{{ form.hora_entrada.label }}</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.hora_saida type="time" class+="form-control" %}
+                            <label for="{{ form.hora_saida.id_for_label }}">{{ form.hora_saida.label }}</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label mb-2">Dias da Semana</label>
+                        <div class="weekdays-selector">
+                            {% for choice in form.dias_semana.field.choices %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="dias_semana" value="{{ choice.0 }}"
+                                           id="dia_{{ choice.0 }}"
+                                           {% if choice.0 in form.dias_semana.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="dia_{{ choice.0 }}">
+                                        {{ choice.1 }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between mt-5 border-top pt-4">
+                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' object.funcionario.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -1,140 +1,115 @@
+{% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Perfil do Usuário{% endblock %}
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">     
-</head>
-<div class="container">
-    <img src="/midia/imagens/logocetest.png" width="200">
-    <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção-->
-</div> 
-{% block content %} 
-    <!--<img src="{% static 'imagens/painel1.png' %}" class="imagempainel">--> <!--Imagem no Django em produção-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+{% block extra_css %}
+    {# Carrega o CSS específico para esta página #}
+    <link rel="stylesheet" type="text/css" href="{% static 'cssprofile/styles.css' %}">
 
-    <script src="{% static 'automovel/js/scripts.js' %}"></script>
-    <script src="{% static 'automovel/js/camera.js' %}"></script>
-
-    <div class="container">
-        <div class="painel1">
-            {% if user.is_authenticated %}
-                <div>
-                    <a class="nav-link dropdown-toggle" href="{% url 'usuario:lista_usuarios' %}" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i> Olá, {{ request.user.username }}
-                    </a>
-                </div>
-            {% else %}  
-                    <a href="{% url 'home' %}" class="btn-home">Início</a>
-            {% endif %}
-        </div>
-    </div>
-    <div class="container1">        
-        <div class="painel">
-                <a href="{% url 'usuario:logout' %}" class="btn">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                </a>
-                <a href="{% url 'home' %}"  class="btn">
-                    <i class="bi bi-house"></i> Início
-                </a>    
-        </div>   
-    </div>        
-    <div class="container1">    
-            <div class="card_principal">
-                <div class="card card1">TAREFAS
-                    <div class="card1-1">
-                        <br><br>
-                        <a href="{% url 'tarefas:listar_tarefas' %}" class="link-card">Tarefas</a>
-                        <a href="{% url 'tarefas:dashboard_analitico' %}" class="link-card">Dashboard</a>
-                        <a href="{% url 'tarefas:calendario_tarefas' %}" class="link-card">Agenda</a>
-                        
-                    </div>
-                    <div class="icone_tarefa">
-                        <img src="/midia/imagens/tarefa.gif" class="icone">
-                        <img src="{% static 'imagens/tarefa.gif' %}" class="icone"> <!--Imagem no Django em produção-->
-                    </div>      
-                </div>
-                <div class="card card2">CLIENTES
-                    <div class="card1-1">
-                        <br><br>    
-                        <a href="{% url 'cliente:lista_clientes' %}" class="link-card">Lista de Clientes</a>
-                        <a href="{% url 'cliente:cadastro_cliente' %}" class="link-card">Cadastro de Clientes</a>
-                    </div>
-                    <div class="icone_tarefa">
-                        <img src="/midia/imagens/tarefa.gif" class="icone">
-                        
-                    </div>
-                </div>
-                <div class="card card3">DEPARTAMENTO PESSOAL
-                    <div class="card1-1">
-                        <br><br>
-                        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="link-card">Departamento Pessoal</a>
-                        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="link-card">Treinamentos</a>
-                        <a href="{% url 'departamento_pessoal:cadastro_auxiliar' %}" class="link-card">Cadastro Auxiliar</a> 
-                    </div>
-                    <div class="icone_tarefa">
-                        <img src="/midia/imagens/dp.gif" class="icone">
-                        <img src="{% static 'imagens/dp.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
-                    </div>
-                </div>
-                <div class="card card4">SEGURANÇA DO TRABALHO
-                    <div class="card1-1">
-                        <br><br>  <!-- Corrigido a tag br -->
-                        <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="link-card">Segurança do Trabalho</a>
-                        <a href="{% url 'epi:criar_ficha' %}" class="link-card">Cadastrar Ficha de EPI</a>
-                    </div>
-                    <div class="icone_tarefa">
-                        <img src="/midia/imagens/tst.gif" class="icone" >
-                        <img src="{% static 'imagens/tst.gif' %}" class="icone">
-                    </div>          
-                </div>
-                <div class="card card5">ENDEREÇOS
-                    <div class="card1-1">
-                        <br><br>
-                        <a href="{% url 'logradouro:listar_logradouros' %}"class="link-card">Endereço</a>
-                        <a href="{% url 'logradouro:cadastrar_logradouro' %}"class="link-card">Cadastrar Endereço</a>
-                    </div>
-                    <div class="icone_tarefa">
-                        <img src="/midia/imagens/cadastro.gif" class="icone" >
-                        <img src="{% static 'imagens/cadastro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
-                    </div>
-                </div>
-                <div class="card card6">VEÍCULO
-                    <div class="card1-1">
-                        <br><br>
-                        <a href="{% url 'automovel:carro_list' %}" class="link-card">Cadastrar Carro</a>
-                        <a href="{% url 'automovel:agendamento_list' %}" class="link-card">Agendar Carro</a>
-                        <a href="{% url 'automovel:carro_list' %}" class="link-card">Relação de Carros</a>
-                        <a href="{% url 'automovel:dashboard' %}" class="link-card">Relatorios</a>
-
-                    </div>
-                    <div class="icone_tarefa">  
-                        <img src="/midia/imagens/carro.gif" class="icone" >
-                        <img src="{% static 'imagens/carro.gif' %}" class="icone"> <!--Imagem no Django em produção--> 
-                    </div>
-                </div>    
-                <div class="card card7">GA
-                    <div class="card1-1">
-                        <br><br>
-                        <a href="{% url 'ata_reuniao_list' %}" class="link-card">Ata de Reunião</a>
-                        <a href="{% url 'ata_reuniao_create' %}" class="link-card">Criar Ata</a>      
-                    </div>
-                    <div class="icone_tarefa">
-                        <img src="/midia/imagens/reuniao.png" class="icone">
-                        <img src="{% static 'imagens/tarefa.gif' %}" class="icone"> <!--Imagem no Django em produção-->
-                    </div>      
-                </div>    
-            </div>
-        </div>
-    </div>
-    
-</body>
-</html>
+    {# A FORMA CORRETA DE DEFINIR A IMAGEM DE FUNDO #}
+    {# Usamos a tag <style> para que o Django possa gerar o caminho correto para a imagem. #}
+    <style>
+      .profile-page-background {
+        background-image: url('{% static "images/background.png" %}');
+        background-position: center center;
+        background-attachment: fixed;
+      }
+    </style>
 {% endblock %}
+
+
+{% block content %}
+{# Adicionamos a classe com a imagem de fundo aqui #}
+<div class="profile-page-background">
+    <div class="container py-5">
+
+        <div class="d-flex justify-content-end align-items-center mb-5">
+            <span class="me-3 fs-5 text-white shadow-sm">Olá, {{ user.username }}!</span>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/tarefa.gif' %}" class="card-icon" alt="Ícone de Tarefas">
+                    <h5 class="card-title">Tarefas</h5>
+                    <div class="card-links">
+                        <a href="{% url 'tarefas:listar_tarefas' %}" class="card-link">Minhas Tarefas</a>
+                        <a href="{% url 'tarefas:dashboard_analitico' %}" class="card-link">Dashboard</a>
+                        <a href="{% url 'tarefas:calendario_tarefas' %}" class="card-link">Agenda</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/cliente.gif' %}" class="card-icon" alt="Ícone de Clientes">
+                    <h5 class="card-title">Clientes</h5>
+                    <div class="card-links">
+                        <a href="{% url 'cliente:lista_clientes' %}" class="card-link">Lista de Clientes</a>
+                        <a href="{% url 'cliente:cadastro_cliente' %}" class="card-link">Cadastrar Cliente</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/dp.gif' %}" class="card-icon" alt="Ícone de DP">
+                    <h5 class="card-title">Departamento Pessoal</h5>
+                    <div class="card-links">
+                        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="card-link">Painel DP</a>
+                        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="card-link">Treinamentos</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/tst.gif' %}" class="card-icon" alt="Ícone de SST">
+                    <h5 class="card-title">Segurança do Trabalho</h5>
+                    <div class="card-links">
+                         <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="card-link">Painel SST</a>
+                         <a href="{% url 'epi:criar_ficha' %}" class="card-link">Cadastrar Ficha de EPI</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/cadastro.gif' %}" class="card-icon" alt="Ícone de Endereços">
+                    <h5 class="card-title">Endereços</h5>
+                    <div class="card-links">
+                        <a href="{% url 'logradouro:listar_logradouros' %}"class="card-link">Endereços</a>
+                        <a href="{% url 'logradouro:cadastrar_logradouro' %}"class="card-link">Cadastrar Endereço</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/carro.gif' %}" class="card-icon" alt="Ícone de Veículo">
+                    <h5 class="card-title">Veículos</h5>
+                    <div class="card-links">
+                        <a href="{% url 'automovel:carro_list' %}" class="card-link">Frota</a>
+                        <a href="{% url 'automovel:agendamento_list' %}" class="card-link">Agendamentos</a>
+                        <a href="{% url 'automovel:dashboard' %}" class="card-link">Relatórios</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-6">
+                <div class="profile-card">
+                    <img src="{% static 'images/reuniao.png' %}" class="card-icon" alt="Ícone de GA">
+                    <h5 class="card-title">GA</h5>
+                    <div class="card-links">
+                        <a href="{% url 'ata_reuniao_list' %}" class="card-link">Ata de Reunião</a>
+                        <a href="{% url 'ata_reuniao_create' %}" class="card-link">Criar Ata</a>
+                    </div>
+                </div>
+            </div>
+        </div> 
+    </div>
+</div>
+{% endblock %}
+

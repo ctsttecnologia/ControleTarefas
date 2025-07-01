@@ -1,99 +1,33 @@
+/* Estilos para as páginas de login, logout e redefinição de senha */
 
-
-/* styles LOGIN*/
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* Regra principal que esconde o header e o footer nestas páginas */
+.body-login header,
+.body-login footer {
+    display: none !important;
 }
 
-body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background-color: #cacaca;
+/* Container que centraliza o conteúdo na tela inteira */
+.login-container {
     display: flex;
+    align-items: center;
     justify-content: center;
-    align-items: center;
-    height: 100vh;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    background-color: var(--theme-bg); /* Usa a cor de fundo do tema global */
 }
 
-.painel3 {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* Card de conteúdo */
+.login-card {
     width: 100%;
-    max-width: 400px;
-    text-align: center;
+    max-width: 450px;
+    background-color: var(--theme-card-bg);
+    border: 1px solid var(--theme-card-border);
+    border-radius: 1rem;
+    box-shadow: 0 10px 40px var(--shadow-color);
+    padding: 2.5rem;
+    border-top: 5px solid var(--theme-primary); /* Usa a cor de destaque do tema global */
 }
 
-.painel1 .titulo {
-    font-size: 24px;
-    color: #333;
-    margin-bottom: 20px;
-    align-items: center;
-}
-
-.painel2 .form-login {
-    display: flex;
-    flex-direction: column;
-}
-
-.painel2 .form-login p {
-    margin-bottom: 15px;
-}
-
-.painel2 .form-login label {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 5px;
-}
-
-.painel2 .form-login input {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 14px;
-    width: 100%;
-}
-
-.painel2 .btn-login {
-    background-color: #007bff;
-    color: #fff;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
-.painel2 .btn-login:hover {
-    background-color: #007bff;
-}
-
-.painel2 .registro {
-    font-size: 14px;
-    color: #555;
-    margin-top: 15px;
-}
-
-.painel2 .link-registro {
-    color: #007bff;
-    text-decoration: none;
-}
-
-.painel2 .link-registro:hover {
-    text-decoration: underline;
-}
-
-.painel2 .link-home {
-    display: inline-block;
-    margin-top: 10px;
-    color: #007bff;
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.painel2 .link-home:hover {
-    text-decoration: underline;
-}
+.login-logo { text-align: center; }
+.login-logo img { max-width: 150px; }
+.login-links a { color: var(--theme-primary); }

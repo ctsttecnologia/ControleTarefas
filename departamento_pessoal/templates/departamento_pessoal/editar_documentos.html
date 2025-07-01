@@ -1,175 +1,153 @@
+
 {% extends 'base.html' %}
-{% load widget_tweaks %}
 {% load static %}
-
-{% block head %}
-   
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!--<link rel="stylesheet" href="{% static 'csstemplate/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'cssdp/stylesEditaDocumentos.css' %}">
-    -->
-
-    {% block extra_css %}{% endblock %}
-{% endblock %}
-
-{% extends 'Departamento_Pessoal/cadastrar_documentos.html' %}
+{% load widget_tweaks %}
 
 {% block title %}Editar Documento{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssdp/documento_form_editar_styles.css' %}">
+{% endblock %}
+
+
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-2">Editar Documento</h4><h4 class="mb-0" align="center">{{ funcionario.nome }}</h4>
-                    <p class="text-muted mb-0">Editando documento: {{ object.nome }}</p>
-                </div>
-                <div class="card-body">
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
+<div class="container py-4">
+
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-file-earmark-medical-fill me-2"></i>Editar Documento
+        </h2>
+        <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para Funcionário
+        </a>
+    </header>
+
+    {# Card que envolve o formulário #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-body-tertiary">
+            <h5 class="mb-0">Funcionário: <span class="fw-normal">{{ funcionario.nome }}</span></h5>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger" role="alert">{{ form.non_field_errors.as_ul }}</div>
+                {% endif %}
+
+                <div class="row g-4">
+                    <!-- Seção 1: Tipo de Documento -->
+                    <div class="col-12">
+                        <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }}</label>
+                        {% render_field form.tipo class+="form-select" disabled="disabled" %}
+                        <div class="form-text">O tipo de documento não pode ser alterado após o cadastro.</div>
+                    </div>
+
+                    <!-- Seção 2: Detalhes Específicos do Documento (Dinâmico) -->
+                    <div class="col-12">
+                        <h5 class="section-title">Detalhes do Documento</h5>
                         
-                        <div class="form-section">
-                            <h5 class="section-title">Informações Básicas</h5>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.funcionario.id_for_label }}" class="form-label">Funcionário</label>
-                                    {{ form.funcionario }}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.tipo.id_for_label }}" class="form-label">Tipo de Documento</label>
-                                    {{ form.tipo }}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.nome.id_for_label }}" class="form-label">Nome do Documento</label>
-                                    {{ form.nome }}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.sigla.id_for_label }}" class="form-label">Sigla</label>
-                                    {{ form.sigla }}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="{{ form.data_criacao.id_for_label }}" class="form-label">Data de Criação</label>
-                                    {{ form.data_criacao }}
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="{{ form.centro_custo.id_for_label }}" class="form-label">Centro de Custo</label>
-                                    {{ form.centro_custo }}
-                                </div>
-                                <div class="col-md-4 mb-3 d-flex align-items-end">
-                                    <div class="form-check form-switch">
-                                        {{ form.ativo }}
-                                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
-                                    </div>
-                                </div>
+                        <!-- Campo CPF -->
+                        <div id="field-group-CPF" class="document-field-group">
+                            <div class="form-floating">
+                                {% render_field form.cpf class+="form-control" placeholder=form.cpf.label %}
+                                <label for="{{ form.cpf.id_for_label }}">{{ form.cpf.label }}</label>
+                                {% if form.cpf.errors %}<div class="invalid-feedback d-block">{{ form.cpf.errors.as_text }}</div>{% endif %}
                             </div>
                         </div>
 
-                        <div class="form-section" id="documentos-section">
-                            <h5 class="section-title">Detalhes do Documento</h5>
-                            <div class="row">
-                                <div class="col-md-4 mb-3" id="cpf-field">
-                                    <label for="{{ form.cpf.id_for_label }}" class="form-label">CPF</label>
-                                    {{ form.cpf }}
-                                    {% if object.anexo_cpf %}
-                                    <small class="text-muted">
-                                        <a href="{{ object.anexo_cpf.url }}" target="_blank">Ver anexo atual</a>
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-4 mb-3" id="pis-field">
-                                    <label for="{{ form.pis.id_for_label }}" class="form-label">PIS/PASEP</label>
-                                    {{ form.pis }}
-                                    {% if object.anexo_pis %}
-                                    <small class="text-muted">
-                                        <a href="{{ object.anexo_pis.url }}" target="_blank">Ver anexo atual</a>
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-4 mb-3" id="ctps-field">
-                                    <label for="{{ form.ctps.id_for_label }}" class="form-label">CTPS</label>
-                                    {{ form.ctps }}
-                                    {% if object.anexo_ctps %}
-                                    <small class="text-muted">
-                                        <a href="{{ object.anexo_ctps.url }}" target="_blank">Ver anexo atual</a>
-                                    </small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-3 mb-3" id="rg-field">
-                                    <label for="{{ form.rg.id_for_label }}" class="form-label">RG</label>
-                                    {{ form.rg }}
-                                    {% if object.anexo_rg %}
-                                    <small class="text-muted">
-                                        <a href="{{ object.anexo_rg.url }}" target="_blank">Ver anexo atual</a>
-                                    </small>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-3 mb-3" id="uf-field">
-                                    <label for="{{ form.uf.id_for_label }}" class="form-label">UF</label>
-                                    {{ form.uf }}
-                                </div>
-                                <div class="col-md-3 mb-3" id="emissor-field">
-                                    <label for="{{ form.emissor.id_for_label }}" class="form-label">Órgão Emissor</label>
-                                    {{ form.emissor }}
-                                </div>
-                                <div class="col-md-3 mb-3" id="reservista-field">
-                                    <label for="{{ form.reservista.id_for_label }}" class="form-label">Nº Reservista</label>
-                                    {{ form.reservista }}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3" id="titulo-field">
-                                    <label for="{{ form.titulo_eleitor.id_for_label }}" class="form-label">Título de Eleitor</label>
-                                    {{ form.titulo_eleitor }}
-                                </div>
+                        <!-- Campo PIS -->
+                        <div id="field-group-PIS" class="document-field-group">
+                            <div class="form-floating">
+                                {% render_field form.pis class+="form-control" placeholder=form.pis.label %}
+                                <label for="{{ form.pis.id_for_label }}">{{ form.pis.label }}</label>
+                                {% if form.pis.errors %}<div class="invalid-feedback d-block">{{ form.pis.errors.as_text }}</div>{% endif %}
                             </div>
                         </div>
 
-                        <div class="form-section">
-                            <h5 class="section-title">Anexos</h5>
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i> Apenas faça upload de um novo arquivo se desejar substituir o anexo atual.
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3" id="anexo-cpf-field">
-                                    <label for="{{ form.anexo_cpf.id_for_label }}" class="form-label">Anexo CPF</label>
-                                    {{ form.anexo_cpf }}
-                                </div>
-                                <div class="col-md-6 mb-3" id="anexo-pis-field">
-                                    <label for="{{ form.anexo_pis.id_for_label }}" class="form-label">Anexo PIS</label>
-                                    {{ form.anexo_pis }}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3" id="anexo-ctps-field">
-                                    <label for="{{ form.anexo_ctps.id_for_label }}" class="form-label">Anexo CTPS</label>
-                                    {{ form.anexo_ctps }}
-                                </div>
-                                <div class="col-md-6 mb-3" id="anexo-rg-field">
-                                    <label for="{{ form.anexo_rg.id_for_label }}" class="form-label">Anexo RG</label>
-                                    {{ form.anexo_rg }}
-                                </div>
+                        <!-- Campo CTPS -->
+                        <div id="field-group-CTPS" class="document-field-group">
+                            <div class="form-floating">
+                                {% render_field form.ctps class+="form-control" placeholder=form.ctps.label %}
+                                <label for="{{ form.ctps.id_for_label }}">{{ form.ctps.label }}</label>
+                                {% if form.ctps.errors %}<div class="invalid-feedback d-block">{{ form.ctps.errors.as_text }}</div>{% endif %}
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'listar_documentos' %}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-submit">Atualizar Documento</button>
+                        <!-- Campos RG -->
+                        <div id="field-group-RG" class="document-field-group">
+                            <div class="row g-3">
+                                <div class="col-md-6"><div class="form-floating">{% render_field form.rg class+="form-control" placeholder=form.rg.label %}<label for="{{ form.rg.id_for_label }}">{{ form.rg.label }}</label></div></div>
+                                <div class="col-md-3"><div class="form-floating">{% render_field form.orgao_emissor_rg class+="form-control" placeholder=form.orgao_emissor_rg.label %}<label for="{{ form.orgao_emissor_rg.id_for_label }}">{{ form.orgao_emissor_rg.label }}</label></div></div>
+                                <div class="col-md-3"><div class="form-floating">{% render_field form.uf_emissor_rg class+="form-select" %}<label for="{{ form.uf_emissor_rg.id_for_label }}">{{ form.uf_emissor_rg.label }}</label></div></div>
+                            </div>
                         </div>
-                    </form>
+                        
+                        <!-- Outros campos... -->
+                        <div id="field-group-TIT" class="document-field-group"><div class="form-floating">{% render_field form.titulo_eleitor class+="form-control" placeholder=form.titulo_eleitor.label %}<label for="{{ form.titulo_eleitor.id_for_label }}">{{ form.titulo_eleitor.label }}</label></div></div>
+                        <div id="field-group-RES" class="document-field-group"><div class="form-floating">{% render_field form.reservista class+="form-control" placeholder=form.reservista.label %}<label for="{{ form.reservista.id_for_label }}">{{ form.reservista.label }}</label></div></div>
+                        <div id="field-group-OUT" class="document-field-group"><div class="form-floating">{% render_field form.nome class+="form-control" placeholder=form.nome.label %}<label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label></div></div>
+                    </div>
+
+                    <!-- Seção 3: Anexo -->
+                    <div class="col-12 mt-4">
+                        <h5 class="section-title">Anexo</h5>
+                        <div class="document-field-group" id="field-group-anexo">
+                            <label for="{{ form.anexo.id_for_label }}" class="form-label">Substituir Anexo</label>
+                            {% render_field form.anexo class+="form-control" %}
+                            {% if object.anexo %}
+                                <div class="form-text mt-2">
+                                    Anexo atual: <a href="{{ object.anexo.url }}" target="_blank">{{ object.anexo.name|cut:"documentos/" }}</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Botões de Ação -->
+                <div class="d-flex justify-content-between mt-5 border-top pt-4">
+                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('{{ form.tipo.id_for_label }}');
+    
+    function toggleDocumentFields() {
+        const selectedType = tipoSelect.value;
+        
+        // Esconde todos os grupos de campos
+        document.querySelectorAll('.document-field-group').forEach(group => {
+            group.style.display = 'none';
+        });
+
+        // Mostra o grupo de campos correspondente ao tipo selecionado
+        const groupToShow = document.getElementById('field-group-' + selectedType);
+        if (groupToShow) {
+            groupToShow.style.display = 'block';
+        }
+        
+        // Mostra sempre o campo de anexo
+        const anexoGroup = document.getElementById('field-group-anexo');
+        if(anexoGroup) {
+            anexoGroup.style.display = 'block';
+        }
+    }
+
+    // Executa a função no carregamento da página para mostrar os campos corretos
+    toggleDocumentFields();
+});
+</script>
+{% endblock %}

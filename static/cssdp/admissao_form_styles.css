@@ -1,0 +1,48 @@
+
+/* ==========================================================================
+   Estilos para o Formulário de Admissão
+   ========================================================================== */
+
+/* --- Títulos de Seção --- */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    margin-bottom: 1rem;
+}
+
+/* --- Seletor de Dias da Semana --- */
+.weekdays-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    background-color: var(--bs-tertiary-bg);
+    padding: 0.75rem;
+    border-radius: var(--bs-border-radius);
+}
+
+/* Esconde o checkbox original */
+.weekdays-selector .form-check-input {
+    display: none;
+}
+
+/* Estiliza o label para parecer um botão */
+.weekdays-selector .form-check-label {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    user-select: none; /* Impede a seleção de texto */
+    background-color: var(--bs-body-bg);
+}
+
+/* Estilo do "botão" quando o checkbox está selecionado */
+.weekdays-selector .form-check-input:checked + .form-check-label {
+    background-color: var(--bs-primary);
+    color: var(--bs-light);
+    border-color: var(--bs-primary);
+}
+

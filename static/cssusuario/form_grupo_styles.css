@@ -1,0 +1,32 @@
+/* Estilos para o formulário de criação/edição de grupos */
+
+.section-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--theme-card-border);
+}
+
+/* Container para a lista de permissões */
+#id_permissions {
+    list-style-type: none; /* Remove as bolinhas da lista */
+    padding: 0.5rem;
+    background-color: var(--theme-bg);
+    border: 1px solid var(--theme-card-border);
+    border-radius: 0.5rem;
+    max-height: 400px; /* Altura máxima com barra de rolagem */
+    overflow-y: auto;
+}
+
+#id_permissions li {
+    padding: 0.5rem 0.75rem;
+}
+
+#id_permissions li:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+#id_permissions .form-check-label {
+    width: 100%;
+    cursor: pointer;
+}

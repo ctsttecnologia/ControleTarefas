@@ -1,124 +1,81 @@
 
 {% extends 'base.html' %}
 {% load static %}
-{% load math_extras %} {# PASSO 1: Carregando a nova template tag que criamos #}
 
-{% block head %}
-  {{ block.super }}
-  <link href="{% static 'csstreinamento/stylesdashboard.css' %}" rel="stylesheet">
-  {# Adicionando ícones do Bootstrap para o botão de tema #}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-{% endblock head %}
+{% block title %}Dashboard de Treinamentos{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csstreinamento/dashboard_styles.css' %}">
+{% endblock %}
+
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Dashboard de Treinamentos</h1>
-        <div class="d-flex align-items-center">
-            <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-primary"><i class="bi bi-list me-1"></i> Lista</a>
-            <button id="theme-toggle" class="btn btn-outline-secondary ms-2" title="Alternar tema"></button>
+<div class="container py-4">
+
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard de Treinamentos
+        </h2>
+        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list-check me-1"></i> Ver Lista de Treinamentos
+        </a>
+    </header>
+
+    {# Seção de Métricas Rápidas #}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-4 mb-4">
+        <div class="col">
+            <div class="stat-card h-100 border-start border-primary border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase small">Total de Treinamentos</div>
+                    <div class="fs-2 fw-bold">{{ total_treinamentos }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card h-100 border-start border-success border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase small">Total de Participantes</div>
+                    <div class="fs-2 fw-bold">{{ total_participantes }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card h-100 border-start border-info border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase small">Em Andamento</div>
+                    <div class="fs-2 fw-bold">{{ em_andamento }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="stat-card h-100 border-start border-warning border-4 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted text-uppercase small">Investimento Total</div>
+                    <div class="fs-2 fw-bold">R$ {{ total_custo|floatformat:2 }}</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="summary-card card bg-primary text-white h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Treinamentos</h5>
-                    <p class="card-text fs-1 fw-bold">{{ total_treinamentos }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="summary-card card bg-success text-white h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Participantes</h5>
-                    <p class="card-text fs-1 fw-bold">{{ total_participantes }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="summary-card card bg-info text-dark h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Em Andamento</h5>
-                    <p class="card-text fs-1 fw-bold">{{ em_andamento }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="summary-card card bg-warning text-dark h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Investimento Total</h5>
-                    <p class="card-text fs-1 fw-bold">R$ {{ total_custo|floatformat:2 }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">Treinamentos por Área</div>
+    {# Seção de Gráficos #}
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-body-tertiary">Treinamentos por Área</div>
                 <div class="card-body"><div class="chart-container"><canvas id="chartArea"></canvas></div></div>
             </div>
         </div>
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header">Status dos Treinamentos</div>
+        <div class="col-lg-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-body-tertiary">Status dos Treinamentos</div>
                 <div class="card-body"><div class="chart-container"><canvas id="chartStatus"></canvas></div></div>
             </div>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header">Custo por Área</div>
+        <div class="col-12">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-header bg-body-tertiary">Custo por Área</div>
                 <div class="card-body"><div class="chart-container"><canvas id="chartCusto"></canvas></div></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">Treinamentos Recentes</div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Nome do Treinamento</th>
-                            <th>Início</th>
-                            <th>Vencimento</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for treinamento in treinamentos_recentes %}
-                        <tr>
-                            <td><a href="{{ treinamento.get_absolute_url }}">{{ treinamento.nome }}</a></td>
-                            <td>{{ treinamento.data_inicio|date:"d/m/Y" }}</td>
-                            <td>
-                                {% with dias=treinamento.dias_para_vencer %}
-                                    {% if dias is not None and dias != 365243 %} {# Checa por None e pelo valor de 'infinito' #}
-                                        <span class="badge {% if dias < 0 %}bg-danger{% elif dias <= 30 %}bg-warning{% else %}bg-success{% endif %}">
-                                            {{ treinamento.data_vencimento|date:"d/m/Y" }}
-                                            <span class="d-none d-sm-inline">
-                                                - {% if dias < 0 %}Vencido há {{ dias|absolute }} dias{% else %}Vence em {{ dias }} dias{% endif %}
-                                            </span>
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted">N/A</span>
-                                    {% endif %}
-                                {% endwith %}
-                            </td>
-                            <td>{{ treinamento.get_status_display }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center text-muted">Nenhum treinamento recente encontrado.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -126,128 +83,111 @@
 {% endblock content %}
 
 
-{% block scripts %}
-{{ block.super }}
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- 1. LÓGICA DO TEMA ---
-        const themeToggleButton = document.getElementById('theme-toggle');
-        if (!themeToggleButton) return; // Parar se o botão não existir
+document.addEventListener('DOMContentLoaded', () => {
+    let chartInstances = [];
+    let dashboardData;
 
-        const htmlElement = document.documentElement;
-        const sunIcon = `<i class="bi bi-sun-fill"></i>`;
-        const moonIcon = `<i class="bi bi-moon-stars-fill"></i>`;
-        let chartInstances = [];
+    // 1. Carrega e analisa os dados do Django de forma segura
+    try {
+        // CORREÇÃO: A variável do template já é uma string JSON. Usamos `|safe` para que o Django
+        // não escape as aspas, e o navegador irá interpretar a string como um objeto JavaScript.
+        dashboardData = {{ dashboard_data_json|safe }};
 
-        const setTheme = (theme) => {
-            htmlElement.setAttribute('data-bs-theme', theme);
-            localStorage.setItem('theme', theme);
-            themeToggleButton.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
-        };
-
-        const destroyCharts = () => {
-            chartInstances.forEach(chart => chart.destroy());
-            chartInstances = [];
-        };
-
-        themeToggleButton.addEventListener('click', () => {
-            const newTheme = htmlElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-            setTheme(newTheme);
-            destroyCharts();
-            initCharts();
-        });
-
-        // --- 2. LÓGICA DOS GRÁFICOS ---
-        let dashboardData;
-        try {
-            const jsonDataString = '{{ dashboard_data_json|safe }}';
-            if (!jsonDataString) {
-                console.error("A variável 'dashboard_data_json' está vazia ou não foi encontrada no template.");
-                return;
-            }
-            dashboardData = JSON.parse(jsonDataString);
-        } catch (e) {
-            console.error("Falha ao analisar os dados JSON do Django:", e);
-            return; 
+        // Verificação adicional para garantir que os dados foram carregados como um objeto válido
+        if (typeof dashboardData !== 'object' || dashboardData === null) {
+            throw new Error("Os dados do dashboard não são um objeto válido.");
         }
 
-        const getDynamicChartOptions = () => {
-            const isDarkMode = htmlElement.getAttribute('data-bs-theme') === 'dark';
-            return {
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)',
-                borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-            };
+    } catch (e) {
+        console.error("Falha ao carregar ou analisar os dados JSON do Django. Verifique se a variável 'dashboard_data_json' está sendo passada corretamente pela view.", e);
+        return; 
+    }
+
+    // 2. Função para obter as cores e fontes dinâmicas com base no tema
+    const getDynamicChartOptions = () => {
+        const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        return {
+            fontColor: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6c757d',
+            gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
         };
+    };
+    
+    // 3. Função principal para inicializar todos os gráficos
+    const initCharts = () => {
+        // Garante que gráficos antigos sejam destruídos antes de criar novos
+        chartInstances.forEach(chart => chart.destroy());
+        chartInstances = [];
+
+        const dynamicOptions = getDynamicChartOptions();
         
-        const initCharts = () => {
-            try {
-                destroyCharts(); // Garante que gráficos antigos sejam limpos
-                const dynamicOptions = getDynamicChartOptions();
-                
-                // Mapeamento de dados
-                const areaLabels = dashboardData.area.map(item => item.nome_legivel);
-                const areaValues = dashboardData.area.map(item => item.total);
+        // Mapeamento de dados
+        const areaLabels = dashboardData.area.map(item => item.nome_legivel);
+        const areaValues = dashboardData.area.map(item => item.total);
 
-                const statusLabels = dashboardData.status.map(item => item.nome_legivel);
-                const statusValues = dashboardData.status.map(item => item.total);
+        const statusLabels = dashboardData.status.map(item => item.nome_legivel);
+        const statusValues = dashboardData.status.map(item => item.total);
 
-                const custoLabels = dashboardData.custo.map(item => item.nome_legivel);
-                const custoValues = dashboardData.custo.map(item => item.total);
+        const custoLabels = dashboardData.custo.map(item => item.nome_legivel);
+        const custoValues = dashboardData.custo.map(item => item.total);
 
-                // Função para criar um gráfico de forma segura
-                const createChart = (canvasId, config) => {
-                    const ctx = document.getElementById(canvasId);
-                    if (ctx) {
-                        const chart = new Chart(ctx, config);
-                        chartInstances.push(chart);
-                    } else {
-                        console.warn(`Elemento canvas com id '${canvasId}' não encontrado.`);
-                    }
-                };
-                
-                // Gráfico 1: Por Área (Pizza)
-                createChart('chartArea', {
-                    type: 'pie',
-                    data: { labels: areaLabels, datasets: [{ data: areaValues, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'] }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.color } } } }
-                });
-
-                // Gráfico 2: Por Status (Rosquinha)
-                createChart('chartStatus', {
-                    type: 'doughnut',
-                    data: { labels: statusLabels, datasets: [{ data: statusValues, backgroundColor: ['#6c757d', '#0d6efd', '#dc3545', '#198754'] }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.color } } } }
-                });
-
-                // Gráfico 3: Custo por Área (Linha)
-                createChart('chartCusto', {
-                    type: 'line',
-                    data: {
-                        labels: custoLabels,
-                        datasets: [{ label: 'Custo (R$)', data: custoValues, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.2)', fill: true, tension: 0.1 }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: dynamicOptions.color } } },
-                        scales: {
-                            y: { beginAtZero: true, ticks: { color: dynamicOptions.color }, grid: { color: dynamicOptions.borderColor } },
-                            x: { ticks: { color: dynamicOptions.color }, grid: { color: dynamicOptions.borderColor } }
-                        }
-                    }
-                });
-
-            } catch(e) {
-                console.error("Erro durante a inicialização dos gráficos:", e);
+        const createChart = (canvasId, config) => {
+            const ctx = document.getElementById(canvasId);
+            if (ctx) {
+                chartInstances.push(new Chart(ctx, config));
             }
         };
+        
+        // Gráfico 1: Por Área (Pizza)
+        createChart('chartArea', {
+            type: 'pie',
+            data: { labels: areaLabels, datasets: [{ data: areaValues, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
+        });
 
-        // --- 3. EXECUÇÃO INICIAL ---
-        const initialTheme = localStorage.getItem('theme') || 'light';
-        setTheme(initialTheme);
-        initCharts();
+        // Gráfico 2: Por Status (Rosquinha)
+        createChart('chartStatus', {
+            type: 'doughnut',
+            data: { labels: statusLabels, datasets: [{ data: statusValues, backgroundColor: ['#6c757d', '#0d6efd', '#dc3545', '#198754'] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
+        });
+
+        // Gráfico 3: Custo por Área (Linha)
+        createChart('chartCusto', {
+            type: 'line',
+            data: {
+                labels: custoLabels,
+                datasets: [{ label: 'Custo (R$)', data: custoValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.1 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } },
+                    x: { ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } }
+                }
+            }
+        });
+    };
+
+    // 4. Observador para a mudança de tema
+    // Este observador detecta quando o atributo 'data-bs-theme' muda no <html> e recria os gráficos.
+    const themeObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'data-bs-theme') {
+                initCharts();
+            }
+        });
     });
+    
+    themeObserver.observe(document.documentElement, { attributes: true });
+
+    // 5. Execução Inicial
+    initCharts();
+});
 </script>
-{% endblock scripts %}
+{% endblock extra_js %}
+

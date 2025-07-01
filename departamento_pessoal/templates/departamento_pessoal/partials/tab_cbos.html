@@ -1,0 +1,80 @@
+
+<!-- departamento_pessoal/partials/tab_cbos.html -->
+{% load widget_tweaks %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="h5 mb-0">CBOs Cadastrados</h4>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoCbo">
+        <i class="bi bi-plus-circle me-1"></i> Novo CBO
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Título</th>
+                <th class="text-end">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cbo in cbos %}
+            <tr>
+                <td>{{ cbo.codigo }}</td>
+                <td>{{ cbo.titulo }}</td>
+                <td class="text-end">
+                    <a href="{% url 'departamento_pessoal:cbo_editar' cbo.pk %}" class="btn btn-sm btn-outline-primary" title="Editar CBOs">
+                        <i class="bi bi-pencil-fill"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3" class="text-center text-muted py-3">Nenhum CBO cadastrado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Novo CBO -->
+<div class="modal fade" id="modalNovoCbo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{% url 'departamento_pessoal:cadastro_auxiliar' %}">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="cbo">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        Novo CBO
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"> 
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% for field in cbo_form %}
+                        <div class="form-floating mb-3">
+                            {% render_field field class+="form-control" placeholder=field.label %}
+                            <label for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                            </label>
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ field.errors.as_text }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

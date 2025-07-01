@@ -1,234 +1,235 @@
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
-from django.contrib.auth.decorators import login_required, permission_required
-from django.contrib import messages
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+# usuario/views.py
+
+from django.db.models import Q
 from django.urls import reverse_lazy
-from django.contrib.auth.models import Group 
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import (
-    PasswordResetView, 
-    PasswordResetDoneView, 
-    PasswordResetConfirmView,
-    PasswordResetCompleteView
+    LoginView, LogoutView, 
+    PasswordChangeView,
+    PasswordResetView, PasswordResetDoneView, 
+    PasswordResetConfirmView, PasswordResetCompleteView
 )
+from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
+from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import UsuarioCreationForm, UsuarioChangeForm, GrupoForm
-from .models import Usuario 
-
-
-def login(request):
-    if request.method == 'POST':
-        # Instanciar AuthenticationForm com os dados do POST
-        form = AuthenticationForm(request, data=request.POST) 
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(request, username=username, password=password)
-            
-            if user is not None:
-                auth_login(request, user)
-                # CORREÇÃO: Redirecionamento após login bem-sucedido
-                return redirect('usuario:profile') 
-            # Se o usuário for None, isso não deve acontecer se form.is_valid()
-            # e authenticate() retornam None apenas para credenciais inválidas.
-            # messages.error(request, 'Credenciais inválidas') # Removido, o form.errors já lida
-        else:
-            # Se o formulário não for válido, as mensagens de erro serão exibidas pelo form.
-            messages.error(request, 'Usuário ou senha inválidos.')
-    else:
-        # Para requisições GET, instanciar um formulário de login vazio
-        form = AuthenticationForm()
-    
-    # Passar a instância do formulário para o template
-    return render(request, 'usuario/login.html', {'form': form})
-
-def logout(request):
-    auth_logout(request)
-    # Redirecionamento para a página de login após o logout
-    return redirect('usuario:login')
-
-@login_required 
-def perfil_view(request):
-    # Sua lógica de view aqui
-    return render(request, 'usuario/profile.html')
+from .models import Usuario, Group
+from .forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm
+from django.contrib.auth.forms import SetPasswordForm
+from django.views.generic import View
 
 
-def cadastrar_usuario(request):
-    if request.method == 'POST':
-        form = UsuarioCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Usuário cadastrado com sucesso!')
-            # CORREÇÃO: Redirecionamento após o cadastro para o nome de URL correto
-            return redirect('usuario:lista_usuarios') 
-    else:
-        form = UsuarioCreationForm()
-    # Seu template 'usuario/form.html' é usado para criação/edição.
-    # Se você tem um template específico para cadastro de usuário (e.g., 'usuario/cadastrar.html'), use-o aqui.
-    return render(request, 'usuario/form.html', {'form': form})
+# --- Views de Autenticação ---
 
-@login_required
-@permission_required('auth.view_user')
-def lista_usuarios(request):
-    usuarios = Usuario.objects.all()
-    return render(request, 'usuario/lista_usuarios.html', {'usuarios': usuarios})
+class CustomLoginView(LoginView):
+    template_name = 'usuario/login.html'
+    redirect_authenticated_user = True # Redireciona se o usuário já estiver logado
 
-# Alterar senha para usuário logado
+class CustomLogoutView(LogoutView):
+    next_page = reverse_lazy('usuario:login')
 
-def alterar_senha(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    
-    # Verifica se o usuário tem permissão para alterar a senha
-    if not (request.user.is_superuser or request.user == usuario):
-        messages.error(request, "Você não tem permissão para alterar esta senha.")
-        return redirect('usuario:lista_usuarios')
-    
-    if request.method == 'POST':
-        form = PasswordChangeForm(usuario, request.POST)
-        if form.is_valid():
-            user = form.save()
-            update_session_auth_hash(request, user)  # Mantém o usuário logado
-            messages.success(request, 'Senha alterada com sucesso!')
-            return redirect('usuario:lista_usuarios')
-    else:
-        form = PasswordChangeForm(usuario)
-    
-    return render(request, 'usuario/alterar_senha.html', {
-        'form': form,
-        'usuario': usuario
-    })
 
-# Esqueci a Senha
-class CustomPasswordResetView(PasswordResetView):
-    template_name = 'usuario/password_reset_form.html'
-    email_template_name = 'usuario/password_reset_email.html'
-    subject_template_name = 'usuario/password_reset_subject.txt'
-    success_url = reverse_lazy('usuario:password_reset_done')
+# --- Views de Perfil e Senha ---
 
-class CustomPasswordResetDoneView(PasswordResetDoneView):
-    template_name = 'usuario/password_reset_done.html'
-
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    template_name = 'usuario/password_reset_confirm.html'
-    success_url = reverse_lazy('usuario:password_reset_complete')
-
-class CustomPasswordResetCompleteView(PasswordResetCompleteView):
-    template_name = 'usuario/password_reset_complete.html'    
-
-@login_required
-@permission_required('auth.change_user', raise_exception=True)
-def desativar_usuario(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    
-    if request.user == usuario:
-        messages.error(request, "Você não pode desativar a si mesmo.")
-    else:
-        usuario.is_active = False
-        usuario.save()
-        messages.success(request, f"Usuário {usuario.username} desativado com sucesso.")
-    
-    return redirect('usuario:lista_usuarios')
-
-@login_required
-@permission_required('auth.change_user', raise_exception=True)
-def ativar_usuario(request, pk):
-    usuario = get_object_or_404(Usuario, pk=pk)
-    usuario.is_active = True
-    usuario.save()
-    messages.success(request, f"Usuário {usuario.username} ativado com sucesso.")
-    return redirect('usuario:lista_usuarios')
-
-class UsuarioCreateView(CreateView):
+class ProfileView(LoginRequiredMixin, DetailView):
     model = Usuario
-    form_class = UsuarioCreationForm
-    template_name = 'usuario/form.html'
-    # CORREÇÃO: success_url usando o nome de URL correto e namespace
-    success_url = reverse_lazy('usuario:lista_usuarios')
-
-class UsuarioUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model = Usuario
-    form_class = UsuarioChangeForm
-    template_name = 'usuario/form.html'
-    success_url = reverse_lazy('usuario:lista_usuarios')
+    template_name = 'usuario/profile.html'
     
+    def get_object(self, queryset=None):
+        # Retorna o usuário logado
+        return self.request.user
+
+class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    form_class = CustomPasswordChangeForm
+    template_name = 'usuario/alterar_senha.html'
+    success_url = reverse_lazy('usuario:profile')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Sua senha foi alterada com sucesso!')
+        return super().form_valid(form)
+
+
+# --- Views de CRUD de Usuários (Apenas para Staff/Superuser) ---
+
+class StaffRequiredMixin(UserPassesTestMixin):
+    """ Mixin para garantir que o usuário é staff ou superuser. """
     def test_func(self):
-        """Verifica se o usuário tem permissão para editar"""
-        usuario = self.get_object()
-        return (
-            self.request.user.is_superuser or  # Superusuário pode editar qualquer um
-            self.request.user == usuario  # Usuário pode editar a si mesmo
-        )
-    
+        return self.request.user.is_staff
+
+class UserListView(StaffRequiredMixin, ListView):
+    model = Usuario
+    template_name = 'usuario/lista_usuarios.html'
+    context_object_name = 'usuarios'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = super().get_queryset().order_by('first_name')
+        search_query = self.request.GET.get('q', '')
+        if search_query:
+            queryset = queryset.filter(
+                Q(username__icontains=search_query) |
+                Q(first_name__icontains=search_query) |
+                Q(last_name__icontains=search_query) |
+                Q(email__icontains=search_query)
+            )
+        return queryset
+
+class UserCreateView(StaffRequiredMixin, CreateView):
+    model = Usuario
+    form_class = CustomUserCreationForm
+    template_name = 'usuario/form_usuario.html'
+    success_url = reverse_lazy('usuario:lista_usuarios')
+
     def get_context_data(self, **kwargs):
-        """Adiciona contexto adicional ao template"""
         context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = f"Editar Usuário: {self.object.email}"
-        context['botao_submit'] = "Atualizar"
+        context['titulo_pagina'] = 'Cadastrar Novo Usuário'
         return context
 
-@login_required
-@permission_required('auth.change_group')
-def gerenciar_grupos_usuario(request, pk):
-    # CORREÇÃO: Importar get_object_or_404 e usá-lo corretamente
-    usuario = get_object_or_404(Usuario, pk=pk) 
-    
-    if request.method == 'POST':
-        grupo_pk = request.POST.get('grupo')
-        acao = request.POST.get('acao')
-        
-        if grupo_pk and acao:
-            # CORREÇÃO: Usar grupo_id (da request.POST) em vez de grupo_pk (inexistente)
-            grupo = get_object_or_404(Group, pk=grupo_pk) # Use get_object_or_404 para o grupo também
-            
-            if acao == 'adicionar':
-                usuario.groups.add(grupo)
-                messages.success(request, f"Grupo '{grupo.name}' adicionado ao usuário.")
-            elif acao == 'remover':
-                usuario.groups.remove(grupo)
-                messages.success(request, f"Grupo '{grupo.name}' removido do usuário.")
-            else:
-                messages.error(request, "Ação inválida.")
-        else:
-            messages.error(request, "Dados inválidos para gerenciar grupos.")
-            
-        # Após a ação, redirecione ou apenas renderize a página novamente com os dados atualizados
-        # return redirect('usuario:gerenciar_grupos_usuario', pk=pk) # Opcional: redirecionar para evitar reenvio do form
-        
-    grupos_usuario = usuario.groups.all()
-    grupos_disponiveis = Group.objects.exclude(pk__in=grupos_usuario.values_list('pk', flat=True))
-    
-    return render(request, 'usuario/gerenciar_grupos_usuario.html', {
-        'usuario': usuario,
-        'grupos_usuario': grupos_usuario,
-        'grupos_disponiveis': grupos_disponiveis
-    })
+    def form_valid(self, form):
+        messages.success(self.request, 'Usuário cadastrado com sucesso!')
+        return super().form_valid(form)
 
-class GrupoDeleteView(DeleteView):
-    model = Group
-    template_name = 'usuario/grupo_confirmar_exclusao.html'
-    success_url = reverse_lazy('usuario:grupo_lista')
+class UserUpdateView(StaffRequiredMixin, UpdateView):
+    model = Usuario
+    form_class = CustomUserChangeForm
+    template_name = 'usuario/form_usuario.html'
+    success_url = reverse_lazy('usuario:lista_usuarios')
 
-class GrupoListView(ListView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f'Editar Usuário: {self.object.username}'
+        return context
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Usuário atualizado com sucesso!')
+        return super().form_valid(form)
+
+class UserToggleActiveView(StaffRequiredMixin, View):
+    """ View para ativar ou desativar um usuário com um POST. """
+    def post(self, request, *args, **kwargs):
+        user_to_toggle = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
+        if user_to_toggle == request.user:
+            messages.error(request, "Você não pode desativar a si mesmo.")
+            return redirect('usuario:lista_usuarios')
+        
+        user_to_toggle.is_active = not user_to_toggle.is_active
+        user_to_toggle.save()
+        
+        action_text = "ativado" if user_to_toggle.is_active else "desativado"
+        messages.success(request, f"Usuário {user_to_toggle.username} {action_text} com sucesso.")
+        return redirect('usuario:lista_usuarios')
+
+
+# --- Views de CRUD de Grupos (Apenas para Superuser) ---
+
+class SuperuserRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_superuser
+
+class GroupListView(SuperuserRequiredMixin, ListView):
     model = Group
     template_name = 'usuario/grupo_lista.html'
     context_object_name = 'grupos'
 
-class GrupoCreateView(CreateView):
+class GroupCreateView(SuperuserRequiredMixin, CreateView):
     model = Group
     form_class = GrupoForm
     template_name = 'usuario/grupo_form.html'
-    # CORREÇÃO: success_url usando o nome de URL correto e namespace
     success_url = reverse_lazy('usuario:grupo_lista')
 
-class GrupoUpdateView(UpdateView):
+class GroupUpdateView(SuperuserRequiredMixin, UpdateView):
     model = Group
     form_class = GrupoForm
     template_name = 'usuario/grupo_form.html'
-    # CORREÇÃO: success_url usando o nome de URL correto e namespace
+    success_url = reverse_lazy('usuario:grupo_lista')
+
+class GroupDeleteView(SuperuserRequiredMixin, DeleteView):
+    model = Group
+    template_name = 'usuario/grupo_confirmar_exclusao.html'
     success_url = reverse_lazy('usuario:grupo_lista')
 
 
+# --- Views de Recuperação de Senha (usando as do Django com templates customizados) ---
+
+class CustomPasswordResetView(PasswordResetView):
+    template_name = 'usuario/password_reset/form.html'
+    email_template_name = 'usuario/password_reset/email.html'
+    subject_template_name = 'usuario/password_reset/subject.txt'
+    success_url = reverse_lazy('usuario:password_reset_done')
+
+class CustomPasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'usuario/password_reset/done.html'
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'usuario/password_reset/confirm.html'
+    success_url = reverse_lazy('usuario:password_reset_complete')
+
+class CustomPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'usuario/password_reset/complete.html'
+
+# --- Senha redefinidas pelo administrador ---
+
+class UserSetPasswordView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    """
+    View para um admin definir uma nova senha para outro usuário.
+    """
+    form_class = SetPasswordForm
+    template_name = 'usuario/definir_senha_form.html' # <-- CAMINHO CORRIGIDO
+    success_url = reverse_lazy('usuario:lista_usuarios')
+
+    def test_func(self):
+        # Garante que apenas superusuários podem acessar esta página
+        return self.request.user.is_superuser
+
+    def get_form_kwargs(self):
+        # Passa o usuário-alvo para o formulário
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = get_object_or_404(Usuario, pk=self.kwargs['pk'])
+        return kwargs
+
+    def form_valid(self, form):
+        # Salva a nova senha e exibe mensagem de sucesso
+        form.save()
+        messages.success(self.request, f"A senha para o usuário {form.user.username} foi definida com sucesso.")
+        return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        # Adiciona o usuário-alvo ao contexto para usar no template
+        context = super().get_context_data(**kwargs)
+        context['usuario_alvo'] = get_object_or_404(Usuario, pk=self.kwargs['pk'])
+        return context
+    
+# ---Remover usuário de um grupo ---
+
+class GerenciarGruposUsuarioView(SuperuserRequiredMixin, View):
+    template_name = 'usuario/gerenciar_grupos_usuario.html'
+
+    def get(self, request, *args, **kwargs):
+        usuario = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
+        grupos_usuario = usuario.groups.all()
+        grupos_disponiveis = Group.objects.exclude(pk__in=grupos_usuario.values_list('pk', flat=True))
+        context = {
+            'usuario_alvo': usuario,
+            'grupos_usuario': grupos_usuario,
+            'grupos_disponiveis': grupos_disponiveis
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        usuario = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
+        grupo_id = request.POST.get('grupo')
+        acao = request.POST.get('acao')
+        
+        if grupo_id and acao:
+            grupo = get_object_or_404(Group, pk=grupo_id)
+            if acao == 'adicionar':
+                usuario.groups.add(grupo)
+                messages.success(request, f"Grupo '{grupo.name}' adicionado ao usuário {usuario.username}.")
+            elif acao == 'remover':
+                usuario.groups.remove(grupo)
+                messages.success(request, f"Grupo '{grupo.name}' removido do usuário {usuario.username}.")
+        
+        return redirect('usuario:gerenciar_grupos_usuario', pk=usuario.pk)
