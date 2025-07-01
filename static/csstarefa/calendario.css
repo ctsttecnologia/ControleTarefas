@@ -1,33 +1,28 @@
-/* static/csstarefa/calendario.css */
+/* Estilos para o FullCalendar */
 
-/* Deixa o calendário com a cor de fundo do card do tema */
 #calendar {
-    --fc-page-bg-color: var(--card-bg);
-    --fc-list-event-hover-bg-color: var(--bg-color);
+    --fc-page-bg-color: var(--theme-card-bg);
+    --fc-list-event-hover-bg-color: var(--theme-bg);
 }
 
-/* Estiliza os eventos baseados na classe de prioridade que definimos na view */
 .fc-event {
     border: none !important;
     padding: 2px 4px;
     cursor: pointer;
 }
 
-/* Prioridade Alta */
 .fc-event-prioridade-alta {
     background-color: var(--bs-danger-bg-subtle) !important;
     color: var(--bs-danger-emphasis) !important;
     border-left: 3px solid var(--bs-danger) !important;
 }
 
-/* Prioridade Média */
 .fc-event-prioridade-media {
     background-color: var(--bs-warning-bg-subtle) !important;
     color: var(--bs-warning-emphasis) !important;
     border-left: 3px solid var(--bs-warning) !important;
 }
 
-/* Prioridade Baixa */
 .fc-event-prioridade-baixa {
     background-color: var(--bs-success-bg-subtle) !important;
     color: var(--bs-success-emphasis) !important;

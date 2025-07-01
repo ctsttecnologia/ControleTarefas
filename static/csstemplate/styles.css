@@ -1,71 +1,99 @@
+/* static/css/global_styles.css (VERSÃO FINAL E UNIFICADA) */
+
+/* 1. IMPORTAÇÃO DE FONTE E DEFINIÇÃO DE VARIÁVEIS DE TEMA */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* TEMA CLARO (Padrão) */
+:root {
+    /* CORREÇÃO: Fundo azul-claro, como solicitado */
+    --bg-color: #eaf2ff; /* Um tom suave de azul-claro, para não cansar a vista */
+    
+    --card-bg: #ffffff;
+    --text-color: #212529;
+    --muted-text-color: #6c757d;
+    --border-color: #dee2e6;
+    
+    /* Mantendo o "azul piscina" como cor de destaque principal */
+    --primary-accent: #0DCAF0;
+    --primary-accent-hover: #0BAAC4;
+
+    --danger-color: #dc3545;
+    --shadow-color: rgba(0, 0, 0, 0.07);
+    --font-family-base: 'Poppins', sans-serif;
+}
+
+/* TEMA ESCURO */
+[data-bs-theme="dark"] {
+    /* No tema escuro, mantemos o fundo escuro para melhor contraste */
+    --bg-color: #1c1c22; 
+    
+    --card-bg: #282830;
+    --text-color: #e9ecef;
+    --muted-text-color: #adb5bd;
+    --border-color: #495057;
+    
+    --primary-accent: #0DCAF0;
+    --primary-accent-hover: #27D5F5;
+    
+    --danger-color: #f87171;
+    --shadow-color: rgba(0, 0, 0, 0.25);
+}
 
 
-
-/* 1. Reset do body para evitar espaçamento branco */
+/* 2. ESTILOS GERAIS DO CORPO E LAYOUT */
+html {
+    height: 100%;
+}
 body {
-  margin: 0;
-  padding: 0;
-  background-color: #f5f7fa; /* Mantenha sua cor de fundo padrão */
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-family-base);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
 }
 
-/* 2. Estilização do navbar principal */
-.navbar {
-  background-color: var(--primary-color) !important;
-  padding: 0.5rem 0;
+main.flex-shrink-0 {
+    flex-grow: 1; /* Faz o conteúdo principal "empurrar" o footer para baixo */
 }
 
-/* 3. Container do navbar sem fundo branco */
-.navbar > .container {
-  background-color: transparent !important;
-  padding: 0 15px;
+
+/* 3. ESTILOS GLOBAIS PARA O HEADER (NAVBAR) */
+header.navbar {
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-/* 4. Links do navbar */
-.navbar-brand,
-.nav-link {
-  color: white !important;
-  transition: opacity 0.3s ease;
+header.navbar .navbar-brand,
+header.navbar .nav-link {
+    color: var(--text-color);
+    font-weight: 500;
+    transition: color 0.2s ease;
 }
 
-.nav-link:hover {
-  opacity: 0.8;
+header.navbar .nav-link:hover,
+header.navbar .nav-link.active {
+    color: var(--primary-accent);
 }
 
-/* 5. Dropdown menu */
-.dropdown-menu {
-  border: none;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
+header.navbar .dropdown-menu {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+header.navbar .dropdown-item {
+    color: var(--text-color);
+}
+header.navbar .dropdown-item:hover {
+    background-color: var(--bg-color);
+    color: var(--primary-accent);
 }
 
-/* 6. Toggler icon */
-.navbar-toggler {
-  border: none;
-  padding: 0.5rem;
-}
 
-.navbar-toggler:focus {
-  box-shadow: none;
-}
-
-/* 7. Active state */
-.nav-link.active {
-  font-weight: 600;
-  position: relative;
-}
-
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background-color: white;
-}
-
-/* 8. Ajuste para conteúdo abaixo do navbar */
-.main-content {
-  margin-top: 20px;
+/* 4. ESTILOS GLOBAIS PARA O FOOTER */
+footer.footer {
+    background-color: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }

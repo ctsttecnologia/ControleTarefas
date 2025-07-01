@@ -1,94 +1,90 @@
 
-
+{% extends 'base.html' %}
 {% load static %}
 
-{% block conteudo %}
-<div class="container">
-    <div class="card shadow-lg mt-4">
-        <div class="card-header bg-primary text-white">
-            <h3 class="card-title mb-0">
-                <i class="fas fa-users-cog me-2"></i>
-                Gerenciar Grupos para {{ usuario.get_full_name|default:usuario.email }}
-            </h3>
+{% block title %}Gerenciar Grupos de Usuário{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario_styles.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-people-fill me-2"></i>Gerenciar Grupos
+        </h2>
+        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para Usuários
+        </a>
+    </header>
+
+    {# Card principal que envolve as duas colunas #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-body-tertiary">
+            <h5 class="mb-0">Usuário: <span class="fw-normal">{{ usuario.get_full_name|default:usuario.username }}</span></h5>
         </div>
-        
-        <div class="card-body">
-            <!-- Grupos Atuais -->
-            <div class="mb-4">
-                <h4 class="mb-3 border-bottom pb-2">
-                    <i class="fas fa-user-check me-2"></i>Grupos Atuais
-                </h4>
-                
-                {% if grupos_usuario %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <tbody>
+        <div class="card-body p-4">
+            <div class="row g-4">
+
+                <!-- Coluna 1: Grupos Atuais do Usuário -->
+                <div class="col-md-6">
+                    <h5 class="section-title"><i class="bi bi-person-check-fill me-2 text-success"></i>Grupos Atuais</h5>
+                    {% if grupos_usuario %}
+                        <ul class="list-group">
                             {% for grupo in grupos_usuario %}
-                            <tr>
-                                <td class="align-middle">{{ grupo.name }}</td>
-                                <td class="text-end">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ grupo.name }}
                                     <form method="post" class="d-inline">
                                         {% csrf_token %}
                                         <input type="hidden" name="grupo" value="{{ grupo.pk }}">
                                         <input type="hidden" name="acao" value="remover">
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-user-minus me-1"></i> Remover
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover do grupo">
+                                            <i class="bi bi-x-lg"></i>
                                         </button>
                                     </form>
-                                </td>
-                            </tr>
+                                </li>
                             {% endfor %}
-                        </tbody>
-                    </table>
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-secondary text-center">
+                            O usuário não pertence a nenhum grupo.
+                        </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i> O usuário não pertence a nenhum grupo.
-                </div>
-                {% endif %}
-            </div>
-            
-            <!-- Grupos Disponíveis -->
-            <div class="mb-4">
-                <h4 class="mb-3 border-bottom pb-2">
-                    <i class="fas fa-user-plus me-2"></i>Adicionar a Grupos
-                </h4>
-                
-                {% if grupos_disponiveis %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <tbody>
+
+                <!-- Coluna 2: Grupos Disponíveis para Adicionar -->
+                <div class="col-md-6">
+                    <h5 class="section-title"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Grupos Disponíveis</h5>
+                    {% if grupos_disponiveis %}
+                        <ul class="list-group">
                             {% for grupo in grupos_disponiveis %}
-                            <tr>
-                                <td class="align-middle">{{ grupo.name }}</td>
-                                <td class="text-end">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ grupo.name }}
                                     <form method="post" class="d-inline">
                                         {% csrf_token %}
                                         <input type="hidden" name="grupo" value="{{ grupo.pk }}">
                                         <input type="hidden" name="acao" value="adicionar">
-                                        <button type="submit" class="btn btn-sm btn-success">
-                                            <i class="fas fa-user-plus me-1"></i> Adicionar
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Adicionar ao grupo">
+                                            <i class="bi bi-plus-lg"></i>
                                         </button>
                                     </form>
-                                </td>
-                            </tr>
+                                </li>
                             {% endfor %}
-                        </tbody>
-                    </table>
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-secondary text-center">
+                            Todos os grupos já foram adicionados.
+                        </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i> Todos os grupos já estão associados ao usuário.
-                </div>
-                {% endif %}
+
             </div>
-        </div>
-        
-        <div class="card-footer text-end">
-            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-2"></i>Voltar
-            </a>
         </div>
     </div>
 </div>
 {% endblock %}
+

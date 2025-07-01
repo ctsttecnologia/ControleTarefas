@@ -1,87 +1,55 @@
 
+{% extends 'base.html' %}
 
-{% load static %}
+{% block title %}Gerenciar Grupos de {{ usuario_alvo.username }}{% endblock %}
 
-{% include 'includes/header.html' %}
 {% block content %}
-
-<div class="container">
-    <div class="card">
-        Vincular ao tipo de grupo
-    <div>
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Grupos Disponíveis</h5>
-                </div>
-                <div class="card-body">
-                    {% if grupos_disponiveis %}
-                    <div class="list-group">
+    {% include 'usuario/includes/submenu.html' %}
+    <div class="container py-4">
+        <h2 class="mb-4">Gerenciar Grupos de <span class="text-primary">{{ usuario_alvo.username }}</span></h2>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Grupos Disponíveis</div>
+                    <ul class="list-group list-group-flush">
                         {% for grupo in grupos_disponiveis %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>{{ grupo.name }}</span>
-                            <form method="post" class="mb-0">
-                                {% csrf_token %}
-                                <input type="hidden" name="grupo" value="{{ grupo.id }}">
-                                <input type="hidden" name="acao" value="adicionar">
-                                <button type="submit" class="btn btn-sm btn-success">
-                                    <i class="bi bi-plus-circle"></i> Adicionar
-                                </button>
-                            </form>
-                        </div>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ grupo.name }}
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                    <button type="submit" name="acao" value="adicionar" class="btn btn-sm btn-outline-success">Adicionar &raquo;</button>
+                                </form>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item text-muted">Nenhum grupo disponível.</li>
                         {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info mb-0">
-                        Todos os grupos já estão atribuídos a este usuário.
-                    </div>
-                    {% endif %}
+                    </ul>
                 </div>
             </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Grupos do Usuário</h5>
-                    <span class="badge bg-primary">{{ grupos_usuario.count }}</span>
-                </div>
-                <div class="card-body">
-                    {% if grupos_usuario %}
-                    <div class="list-group">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">Grupos do Usuário</div>
+                    <ul class="list-group list-group-flush">
                         {% for grupo in grupos_usuario %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>{{ grupo.name }}</span>
-                            <form method="post" class="mb-0">
-                                {% csrf_token %}
-                                <input type="hidden" name="grupo" value="{{ grupo.id }}">
-                                <input type="hidden" name="acao" value="remover">
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash"></i> Remover
-                                </button>
-                            </form>
-                        </div>
+                             <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <form method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                    <button type="submit" name="acao" value="remover" class="btn btn-sm btn-outline-danger">&laquo; Remover</button>
+                                </form>
+                                {{ grupo.name }}
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item text-muted">O usuário não pertence a nenhum grupo.</li>
                         {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="alert alert-warning mb-0">
-                        Este usuário não pertence a nenhum grupo.
-                    </div>
-                    {% endif %}
+                    </ul>
                 </div>
             </div>
         </div>
+        <div class="mt-4">
+            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Voltar para Lista de Usuários</a>
+        </div>
     </div>
+{% endblock %}
 
-    <div class="mt-3">
-        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar para lista
-        </a>
-        <a href="{% url 'usuario:usuario_editar' usuario.pk %}" class="btn btn-outline-primary">
-            <i class="bi bi-pencil"></i> Editar usuário
-        </a>
-    </div>
-    {% endblock %}
-</div>
-{% include 'includes/footer.html' %} 

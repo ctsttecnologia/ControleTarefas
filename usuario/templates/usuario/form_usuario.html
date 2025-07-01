@@ -1,0 +1,47 @@
+
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Definir Nova Senha{% endblock %}
+
+{% block content %}
+    {% include 'usuario/includes/submenu.html' %}
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <h2 class="h3 text-center mb-4">
+                            Definir Nova Senha para <br>
+                            <strong class="text-primary">{{ usuario_alvo.username }}</strong>
+                        </h2>
+
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="{{ form.new_password1.id_for_label }}" class="form-label">Nova Senha</label>
+                                {% render_field form.new_password1 class="form-control" placeholder="Digite a nova senha" %}
+                            </div>
+                             <div class="mb-3">
+                                <label for="{{ form.new_password2.id_for_label }}" class="form-label">Confirmação da Nova Senha</label>
+                                {% render_field form.new_password2 class="form-control" placeholder="Digite a nova senha novamente" %}
+                            </div>
+
+                            {% if form.errors %}
+                                <div class="alert alert-danger mt-3">
+                                    Por favor, corrija os erros abaixo.
+                                </div>
+                            {% endif %}
+                            
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary">Salvar Nova Senha</button>
+                                <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

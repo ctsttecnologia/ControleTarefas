@@ -1,0 +1,68 @@
+
+{# templates/usuario/password_reset/confirm.html #}
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Criar Nova Senha{% endblock %}
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
+{% block extra_css %}
+    
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        
+        {% if validlink %}
+            <h2 class="text-center mb-3">Crie sua Nova Senha</h2>
+            <p class="text-muted text-center mb-4">Por favor, digite sua nova senha duas vezes.</p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger p-2 text-center">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label for="{{ form.new_password1.id_for_label }}" class="form-label">Nova Senha</label>
+                    {% render_field form.new_password1 class="form-control" placeholder="••••••••" %}
+                    {% if form.new_password1.errors %}
+                        <div class="invalid-feedback d-block">{{ form.new_password1.errors.as_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.new_password2.id_for_label }}" class="form-label">Confirme a Nova Senha</label>
+                    {% render_field form.new_password2 class="form-control" placeholder="••••••••" %}
+                    {% if form.new_password2.errors %}
+                        <div class="invalid-feedback d-block">{{ form.new_password2.errors.as_text }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Alterar Senha</button>
+                </div>
+            </form>
+
+        {% else %}
+            <div class="text-center">
+                <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                <h2 class="h3 mt-3 mb-3">Link Inválido</h2>
+                <p class="text-muted">
+                    O link de redefinição de senha é inválido ou já foi utilizado. Por favor, solicite uma nova redefinição.
+                </p>
+                <div class="d-grid mt-4">
+                    <a href="{% url 'usuario:password_reset' %}" class="btn btn-primary">Solicitar Novo Link</a>
+                </div>
+            </div>
+        {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

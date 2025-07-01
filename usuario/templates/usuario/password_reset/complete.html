@@ -1,0 +1,33 @@
+
+{# templates/usuario/password_reset/complete.html #}
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Senha Alterada{% endblock %}
+
+{% block extra_css %}
+    
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card text-center">
+        
+        <div class="login-logo mb-4">
+            <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+        </div>
+
+        <h2 class="h3 mb-3">Senha Alterada!</h2>
+        <p class="text-muted mb-4">
+            Sua senha foi redefinida com sucesso. Agora você já pode acessar sua conta com a nova senha.
+        </p>
+
+        <div class="d-grid mt-4">
+            <a href="{% url 'usuario:login' %}" class="btn btn-primary btn-lg">
+                Ir para o Login
+            </a>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

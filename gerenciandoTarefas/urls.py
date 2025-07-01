@@ -23,7 +23,7 @@ urlpatterns = [
     path('epi/', include('epi.urls')),
     path('cliente/', include('cliente.urls')),
     path('seguranca/', include('seguranca_trabalho.urls')),
-    path('departamento_pessoal/', include('departamento_pessoal.urls')),
+    path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
     path('tarefas/', include('tarefas.urls', namespace='tarefas')),
     path('logradouro/', include('logradouro.urls')),
     path('treinamentos/', include('treinamentos.urls')),

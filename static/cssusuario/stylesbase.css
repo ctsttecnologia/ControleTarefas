@@ -1,83 +1,48 @@
 
-/* Estilos adicionais para melhorar a UI */
-.select2-container {
-    width: 100% !important;
+/* ==========================================================================
+   Estilos para a Página de Perfil/Dashboard
+   Moderno, responsivo e compatível com temas Light/Dark do Bootstrap.
+   ========================================================================== */
+
+/* --- Card de Módulo --- */
+.module-card {
+    border: 1px solid var(--bs-border-color-translucent);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-.form-switch .form-check-input {
-    width: 2.5em;
-    height: 1.5em;
+.module-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--bs-box-shadow-lg) !important;
 }
 
-.form-check-input:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+/* --- Ícone do Módulo --- */
+/* Cria um círculo de fundo para o ícone, dando mais destaque */
+.module-icon {
+    font-size: 3rem; /* Tamanho do ícone */
+    width: 80px;
+    height: 80px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
 }
 
-.badge {
-    font-weight: 500;
+/* --- Título do Card --- */
+.module-card .card-title {
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
 }
 
-.list-group-item {
-    transition: all 0.2s;
-}
-
-.list-group-item:hover {
-    background-color: #f8f9fa;
-}
-
-/* Melhorias para o formulário de permissões */
-.permission-group {
-    margin-bottom: 1.5rem;
-}
-
-.permission-group h6 {
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #dee2e6;
-    margin-bottom: 1rem;
-    color: var(--secondary-color);
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .table-responsive {
-        border: 0;
-    }
-    
-    .table thead {
-        display: none;
-    }
-    
-    .table tr {
-        display: block;
-        margin-bottom: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 0.25rem;
-    }
-    
-    .table td {
-        display: block;
-        text-align: right;
-        padding-left: 50%;
-        position: relative;
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .table td::before {
-        content: attr(data-label);
-        position: absolute;
-        left: 1rem;
-        width: 45%;
-        padding-right: 1rem;
-        font-weight: 600;
-        text-align: left;
-    }
-    
-    .action-buttons {
-        text-align: center !important;
-    }
-    
-    .action-buttons .btn {
-        margin: 0.2rem;
-    }
+/* --- Botões dentro do Card --- */
+/* Garante que os botões secundários tenham um visual consistente */
+.module-card .btn-outline-secondary {
+    --bs-btn-color: var(--bs-secondary-color);
+    --bs-btn-border-color: var(--bs-border-color-translucent);
+    --bs-btn-hover-bg: var(--bs-secondary-bg-subtle);
+    --bs-btn-hover-border-color: var(--bs-border-color);
+    --bs-btn-active-bg: var(--bs-tertiary-bg);
 }

@@ -1,0 +1,68 @@
+/* static/cssusuario/form_styles.css */
+
+.form-page-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 56px); /* Altura da viewport menos o header */
+    padding: 2rem 0;
+}
+
+.form-wrapper {
+    width: 100%;
+    max-width: 900px;
+    background-color: var(--card-bg);
+    border-radius: 1rem;
+    box-shadow: 0 10px 40px var(--shadow-color);
+    overflow: hidden; /* Garante que os cantos arredondados sejam aplicados às colunas internas */
+}
+
+/* Coluna de Branding (Esquerda) */
+.form-branding-col {
+    background-color: var(--primary-accent);
+    color: #fff;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+.form-branding-col .icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+/* Coluna do Formulário (Direita) */
+.form-col {
+    padding: 3rem;
+}
+
+/* Ajustes no formulário */
+.form-control {
+    padding: 0.8rem 1rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary-accent);
+    box-shadow: 0 0 0 0.25rem rgba(var(--primary-accent-rgb, 13, 202, 240), 0.25);
+}
+
+.btn-primary {
+    background-color: var(--primary-accent);
+    border-color: var(--primary-accent);
+    font-weight: 600;
+    padding: 0.75rem;
+}
+
+/* Em telas menores, a coluna de branding ganha cantos arredondados no topo */
+@media (max-width: 767.98px) {
+    .form-branding-col {
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        border-bottom-left-radius: 0;
+    }
+    .form-col {
+        padding: 2rem;
+    }
+}

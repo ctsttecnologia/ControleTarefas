@@ -1,100 +1,103 @@
 
+{% extends 'base.html' %}
 {% load static %}
 
 {% block extra_css %}
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {# Carrega apenas o CSS específico para esta página #}
+    <link rel="stylesheet" href="{% static 'csscliente/stylescliente.css' %}">
 {% endblock %}
 
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
 
 {% block content %}
-<div class="container mt-4">  
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Lista de Clientes</h2>
-        <div>   
-            <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Voltar
-            </a>
-            <a href="{% url 'cliente:exportar_excel' %}" class="btn btn-success ms-2">
-                <i class="fas fa-file-excel"></i> Exportar
-            </a>
-        </div>          
-    </div>
+<div class="container py-4">
     
-    <div class="card shadow">
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0"><i class="bi bi-people-fill me-2"></i>Lista de Clientes</h2>
+        <div>
+            <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Novo Cliente
+            </a>
+            <a href="{% url 'cliente:exportar_excel' %}" class="btn btn-outline-secondary ms-2">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar
+            </a>
+        </div>
+    </header>
+
+    {# Card principal que envolve a tabela #}
+    <div class="card border-0 shadow-sm">
         <div class="card-body">
+            
+            {# Alerta opcional para resultados de pesquisa #}
             {% if pesquisa %}
-            <div class="alert alert-info mb-4">
-                Resultados da pesquisa:
-                {% if termo_nome %}Nome: "{{ termo_nome }}"{% endif %}
-                {% if termo_cnpj %}CNPJ: "{{ termo_cnpj }}"{% endif %}
-                <a href="{% url 'cliente:lista_clientes' %}" class="float-end">
-                    <i class="fas fa-times"></i> Limpar pesquisa
-                </a>
+            <div class="alert alert-secondary d-flex justify-content-between align-items-center mb-4">
+                <span>
+                    Resultados para: 
+                    {% if termo_nome %}<strong>Nome:</strong> "{{ termo_nome }}"{% endif %}
+                    {% if termo_cnpj %}<strong>CNPJ:</strong> "{{ termo_cnpj }}"{% endif %}
+                </span>
+                <a href="{% url 'cliente:lista_clientes' %}" class="btn-close" aria-label="Limpar pesquisa"></a>
             </div>
             {% endif %}
             
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle">
+                    <thead>
                         <tr>
-                            <th>Nome</th>
-                            <th>Endereço</th>
-                            <th>Contrato</th>
-                            <th>CNPJ</th>
-                            <th>Data Cadastro</th>
-                            <th>Data Encerramento</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th scope="col">Nome</th>
+                            <th scope="col">Endereço</th>
+                            <th scope="col">Contrato</th>
+                            <th scope="col">CNPJ</th>
+                            <th scope="col">Data Cadastro</th>
+                            <th scope="col">Data Encerramento</th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for cliente in clientes %}
                         <tr>
                             <td>{{ cliente.nome }}</td>
-                            <td>{{ cliente.logradouro.endereco|truncatechars:20 }}</td>
-                            <td>{{ cliente.contrato }}</td>
+                            <td>{{ cliente.logradouro.endereco|truncatechars:30 }}</td>
+                            <td>{{ cliente.contrato|default:"-" }}</td>
                             <td>{{ cliente.cnpj_formatado }}</td>
                             <td>{{ cliente.data_cadastro|date:"d/m/Y" }}</td>
                             <td>{{ cliente.data_encerramento|date:"d/m/Y"|default:"-" }}</td>
                             <td>
-                                <span class="badge bg-{% if cliente.estatus %}success{% else %}danger{% endif %}">
+                                <span class="badge {% if cliente.estatus %}text-bg-success{% else %}text-bg-danger{% endif %}">
                                     {{ cliente.estatus|yesno:"Ativo,Inativo" }}
                                 </span>
                             </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'cliente:editar_cliente' cliente.id %}" class="btn btn-primary" title="Editar">
-                                        <i class="fas fa-edit"></i>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'cliente:editar_cliente' cliente.id %}" class="btn btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
                                     </a>
-                                    <button class="btn btn-danger" data-bs-toggle="modal" 
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" 
                                             data-bs-target="#modalExcluir{{ cliente.id }}" title="Excluir">
-                                        <i class="fas fa-trash-alt"></i>
+                                        <i class="bi bi-trash3-fill"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
-                                                  
-                        <!-- Modal de Confirmação -->
-                        <div class="modal fade" id="modalExcluir{{ cliente.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog">
+                        
+                        <!-- Modal de Confirmação de Exclusão -->
+                        <div class="modal fade" id="modalExcluir{{ cliente.id }}" tabindex="-1" aria-labelledby="modalExcluirLabel{{cliente.id}}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content">
                                     <div class="modal-header bg-danger text-white">
-                                        <h5 class="modal-title">Confirmar Exclusão</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <h5 class="modal-title" id="modalExcluirLabel{{cliente.id}}"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <p>Tem certeza que deseja excluir o cliente <strong>{{ cliente.nome }}</strong>?</p>
+                                        <p>Tem certeza que deseja excluir permanentemente o cliente <strong>{{ cliente.nome }}</strong>?</p>
+                                        <p class="text-danger small">Esta ação não pode ser desfeita.</p>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                         <form method="post" action="{% url 'cliente:excluir_cliente' cliente.id %}">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                            <button type="submit" class="btn btn-danger">Sim, Excluir</button>
                                         </form>
                                     </div>
                                 </div>
@@ -102,11 +105,15 @@
                         </div>
                         {% empty %}
                         <tr>
-                            <td colspan="8" class="text-center py-4">
-                                Nenhum cliente encontrado.
-                                <a href="{% url 'cliente:cadastro_cliente' %}" class="ms-2">
-                                    Cadastrar novo cliente
-                                </a>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="py-3">
+                                    <i class="bi bi-people fs-1 text-secondary"></i>
+                                    <h5 class="mt-3">Nenhum cliente encontrado.</h5>
+                                    <p class="text-muted">Comece cadastrando um novo cliente.</p>
+                                    <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-primary mt-2">
+                                        <i class="bi bi-plus-circle me-1"></i> Cadastrar Cliente
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -116,12 +123,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}  
-{% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="{% static 'js/cliente/base.js' %}"></script>
 {% endblock %}

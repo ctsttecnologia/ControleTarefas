@@ -1,0 +1,16 @@
+
+/* ==========================================================================
+   Estilos para o Formulário de Funcionário
+   ========================================================================== */
+
+/* --- Títulos de Seção --- */
+/* Adiciona um pouco de espaço e uma borda para separar visualmente as seções do formulário */
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--bs-emphasis-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    margin-bottom: 1rem; /* Espaço após o título */
+}
+

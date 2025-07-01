@@ -2,10 +2,10 @@
 
 from django.urls import path
 from .views import (
-    CadastrarCargoView,
-    CadastrarCboView,
-    CadastrarDepartamentoView,
     CadastroAuxiliarView,
+    CargoUpdateView,
+    CboUpdateView,
+    DepartamentoUpdateView,
     DetalhesAdmissaoView,
     buscar_funcionario_por_matricula,
     check_email_exists,
@@ -49,10 +49,10 @@ urlpatterns = [
 
     # --- URLs de Cadastro Auxiliar (classes) ---
     path('cadastro-auxiliar/', CadastroAuxiliarView.as_view(), name='cadastro_auxiliar'),
-    path('cadastro-auxiliar/departamentos/', CadastrarDepartamentoView.as_view(), name='cadastrar_departamento'),
-    path('cadastro-auxiliar/cbos/', CadastrarCboView.as_view(), name='cadastrar_cbo'),
-    path('cadastro-auxiliar/cargos/', CadastrarCargoView.as_view(), name='cadastrar_cargo'),
-    
+    path('departamentos/<int:pk>/editar/', DepartamentoUpdateView.as_view(), name='departamento_editar'),
+    path('cargos/<int:pk>/editar/', CargoUpdateView.as_view(), name='cargo_editar'),
+    path('cbos/<int:pk>/editar/', CboUpdateView.as_view(), name='cbo_editar'), 
+
     # --- URLs de API / AJAX (baseadas em função) ---
     path('api/buscar-funcionario/', buscar_funcionario_por_matricula, name='buscar_funcionario'),
     path('api/check-email/', check_email_exists, name='check_email'), # Adicionando um nome para a URL de checagem de email

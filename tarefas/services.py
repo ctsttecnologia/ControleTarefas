@@ -18,58 +18,62 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
+
 def preparar_contexto_relatorio(queryset):
-    """Prepara o dicionário de contexto com dados agregados a partir de um queryset."""
+    """Prepara o dicionário de contexto com dados agregados (versão de depuração final)."""
     status_map = {choice[0]: choice[1] for choice in queryset.model.STATUS_CHOICES}
     prioridade_map = {choice[0]: choice[1] for choice in queryset.model.PRIORIDADE_CHOICES}
     total_tarefas = queryset.count()
-
-    # >>> INÍCIO DA CORREÇÃO <<<
-    # Calcula as durações médias PRIMEIRO e guarda em um dicionário para fácil acesso.
-    duracao_por_status = queryset.exclude(tempo_gasto__isnull=True).values('status').annotate(avg_duracao=Avg('tempo_gasto'))
-    duracao_media_map = {item['status']: item['avg_duracao'] for item in duracao_por_status}
-    
-    # Análise por status
+ 
+    # ... (A lógica de status continua a mesma) ...
     status_data = []
     if total_tarefas > 0:
         for status_key, status_label in status_map.items():
-            count = Counter(queryset.values_list('status', flat=True)).get(status_key, 0)
-            percent = (count / total_tarefas * 100)
-            
-            # Adiciona a duração média diretamente ao dicionário do status
-            avg_duration = duracao_media_map.get(status_key)
-
+            # ...
             status_data.append({
-                'label': status_label, 
-                'count': count, 
-                'percent': round(percent, 2), 
-                'key': status_key,
-                'avg_duration': avg_duration  # <-- NOVA CHAVE ADICIONADA AQUI
+                'label': str(status_label), 'count': Counter(queryset.values_list('status', flat=True)).get(status_key, 0),
+                'percent': round((Counter(queryset.values_list('status', flat=True)).get(status_key, 0) / total_tarefas * 100), 2),
+                'key': status_key, 'avg_duration': None
             })
-   
-    # Análise por prioridade (continua igual)
+
+    # --- INÍCIO DA DEPURAÇÃO DE PRIORIDADE ---
+    #print("\n--- INÍCIO DA DEPURAÇÃO DE PRIORIDADE ---")
+    
+    # DEBUG 1: Verificando a fonte de dados
+    choices_list = queryset.model.PRIORIDADE_CHOICES
+    #print("DEBUG 1 (Fonte): A lista de CHOICES é:", choices_list)
+
     prioridade_counts = Counter(queryset.values_list('prioridade', flat=True))
-    # ... (o resto da lógica de prioridade continua como estava) ...
     prioridade_data = []
-    if total_tarefas > 0:
-        prioridade_order_keys = [p[0] for p in queryset.model.PRIORIDADE_CHOICES]
-        for prioridade_key in prioridade_order_keys:
-            label = prioridade_map.get(prioridade_key)
+    
+    if choices_list:
+        for prioridade_key, prioridade_label in choices_list:
             count = prioridade_counts.get(prioridade_key, 0)
-            percent = (count / total_tarefas * 100)
-            prioridade_data.append({'label': label, 'count': count, 'percent': round(percent, 2), 'key': prioridade_key})
+            percent = (count / total_tarefas * 100) if total_tarefas > 0 else 0
+            prioridade_data.append({
+                'label': str(prioridade_label), 'count': count,
+                'percent': round(percent, 2), 'key': prioridade_key
+            })
 
+    # DEBUG 2: Verificando o resultado do loop
+    #print("DEBUG 2 (Resultado do Loop): A lista prioridade_data é:", prioridade_data)
 
+    # Montagem do contexto
     context = {
         'tarefas': queryset,
         'total_tarefas': total_tarefas,
         'status_data': sorted(status_data, key=lambda x: x['label']),
-        'prioridade_data': prioridade_data,
+        'prioridade_data': prioridade_data,  # ESTA É A VERSÃO CORRIGIDA. VERIFIQUE SE A SUA ESTÁ IGUAL.
         'status_map': status_map,
         'prioridade_map': prioridade_map,
         'now': datetime.now(),
         'logo_path': finders.find('imagens/logocetest.png'),
     }
+
+    # DEBUG 3: Verificando o valor final no contexto
+    #print("DEBUG 3 (Contexto Final): O valor em context['prioridade_data'] é:", context.get('prioridade_data'))
+    #print("--- FIM DA DEPURAÇÃO ---\n")
+    
     return context
 
 def gerar_pdf_relatorio(context):

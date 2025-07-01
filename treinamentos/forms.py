@@ -33,7 +33,7 @@ class TreinamentoForm(forms.ModelForm):
 class ParticipanteForm(forms.ModelForm):
     class Meta:
         model = Participante
-        fields = ['funcionario', 'presente', 'nota_avaliacao', 'certificado_emitido']
+        fields = ['nome', 'funcionario', 'presente', 'nota_avaliacao', 'certificado_emitido']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

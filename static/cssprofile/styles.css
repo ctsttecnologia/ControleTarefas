@@ -1,316 +1,175 @@
-body {
-    background-image: url('/midia/imagens/painel1.png');
+/* static/cssprofile/styles.css (VERSÃO REFINADA E FINAL) */
+
+/* 1. IMAGEM DE FUNDO RESPONSIVA =============================== */
+/* Esta classe, aplicada no template, garante que o fundo sempre preencha a tela */
+.profile-page-background {
+    background-image: url('../images/background.png'); /* Verifique se o nome do arquivo está correto */
     background-size: cover;
-    background-position: center;
+    background-position: center center;
     background-attachment: fixed;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh; /* Faz o container ter no mínimo a altura da tela */
+    padding: 2rem 0; /* Adiciona um respiro no topo e na base */
 }
 
-/* Reset e Estilos Globais */
-:root {
-    --primary-color: #2c3e50;
-    --secondary-color: #3498db;
-    --accent-color: #e74c3c;
-    --light-color: #ecf0f1;
-    --dark-color: #2c3e50;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --border-radius: 8px;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-body {
-    background-color: #f5f7fa;
-    color: var(--dark-color);
-    line-height: 1.6;
-    padding: 20px;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Header e Logo */
-header {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-}
-
-header img {
-    max-width: 200px;
-    height: auto;
-    margin: 0 auto;
-}
-
-/* Container Principal */
-.container1 {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-.container {
-    width: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: left;
-}
-
-/* Barra de Navegação Superior */
-.nav-link.dropdown-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--primary-color);
-    font-weight: 600;
-    text-decoration: none;
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    transition: all 0.3s ease;
-}
-
-.nav-link.dropdown-toggle:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-.bi-person-circle {
-    font-size: 1.2rem; /* Reduzido */
-}
-
-.btn-home {
-    display: inline-block;
-    padding: 8px 16px; /* Reduzido */
-    background-color: var(--secondary-color);
-    color: white;
-    text-decoration: none;
-    border-radius: var(--border-radius);
-    transition: all 0.3s ease;
-    font-weight: 500;
-    font-size: 0.9rem; /* Reduzido */
-}
-
-.btn-home:hover {
-    background-color: #2980b9;
-    transform: translateY(-2px);
-}
-
-/* Ajuste para os botões no painel superior */
-.painel {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    width: 100%;
-}
-
-/* Versão com Flexbox */
-.card_principal {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-    justify-content: center; /* Centraliza os cards */
-}
-
-.card_principal > * {
-    flex: 0 1 calc(25% - 20px); /* 4 colunas (25% menos o gap) */
-    min-width: 200px; /* Largura mínima de cada card */
-}
-
-.card {
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.profile-page-background > .container {
     position: relative;
-    overflow: hidden;
-    min-height: 250px; /* Altura fixa para todos */
-    width: 400px; /* Largura igual */
-    max-width: 350px; /* Largura máxima */
+    z-index: 2;
+}
+
+/* 2. CARD PRINCIPAL (COM TODAS AS MUDANÇAS) ==================== */
+.profile-card {
+    /* Efeito de vidro fosco */
+    background-color: rgba(var(--card-bg-rgb, 255, 255, 255), 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--border-color-rgb, 222, 226, 230), 0.5);
     
-}
+    /* MUDANÇA: Faixa sólida na borda esquerda usando a cor de destaque */
+    border-left: 6px solid var(--primary-accent);
 
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 5px;
+    border-radius: 0.75rem;
+    padding: 1.5rem 2rem;
     height: 100%;
-    background-color: var(--secondary-color);
+    transition: all 0.3s ease-in-out;
+    position: relative; /* Necessário para posicionar o ícone internamente */
+    overflow: hidden; /* Garante que nada "vaze" do card */
 }
 
-/* Cores dos cards */
-.card1::before { background-color: #3498db; }
-.card2::before { background-color: #2ecc71; }
-.card3::before { background-color: #9b59b6; }
-.card4::before { background-color: #e74c3c; }
-.card5::before { background-color: #f39c12; }
-.card6::before { background-color: #1abc9c; }
-.card7::before { background-color: #bc1aa6; }
+.profile-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px var(--shadow-color);
+}
 
-/* Título do card com fonte reduzida */
-.card > div:first-child {
-    font-size: 1.2rem; /* Reduzido */
+/* 3. CONTEÚDO DO CARD (TÍTULO, LINKS E ÍCONE) ===================== */
+
+/* MUDANÇA: Título no topo */
+.profile-card .card-title {
     font-weight: 700;
-    margin-bottom: 15px;
-    color: var(--primary-color);
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+    text-align: left; /* Alinha o título à esquerda */
 }
 
-.card1-1 {
+.profile-card .card-links {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    flex-grow: 1;
+    gap: 0.75rem;
+    text-align: left; /* MUDANÇA: Alinha os links à esquerda */
 }
 
-/* Links dos cards com fonte reduzida */
-.link-card {
-    display: block;
-    padding: 8px 12px;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-radius: 5px;
-    color: var(--dark-color);
+.profile-card .card-link {
     text-decoration: none;
-    transition: all 0.3s ease;
+    color: var(--muted-text-color);
     font-weight: 500;
-    font-size: 0.9rem; /* Reduzido */
+    padding: 5px 0;
+    transition: all 0.25s ease; /* MUDANÇA: Transição para a animação */
 }
 
-.link-card:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    transform: translateX(5px);
+/* MUDANÇA: Animação nos links ao passar o mouse */
+.profile-card .card-link:hover {
+    color: var(--primary-accent);
+    transform: translateX(8px); /* Efeito de deslocamento para a direita */
 }
-
-.icone_tarefa {
-    text-align: right;
-    margin-top: 15px;
+.profile-card .card-link::before {
+    content: '»';
+    margin-right: 8px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
 }
-
-.icone {
-    width: 60px; /* Reduzido */
-    height: auto;
-    opacity: 0.8;
-    transition: transform 0.3s ease;
-}
-
-.card:hover .icone {
-    transform: scale(1.05);
+.profile-card .card-link:hover::before {
     opacity: 1;
 }
 
-/* Botões com fonte reduzida */
-.btn {
-    font-size: 0.85rem; /* Reduzido */
-    padding: 7px 14px; /* Ajustado */
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background-color: var(--primary-color);
-    color: white;
-    text-decoration: none;
-    border-radius: var(--border-radius);
+/* MUDANÇA: Ícone no canto inferior direito */
+.profile-card .card-icon {
+    position: absolute;
+    bottom: -15px; /* Posição no canto */
+    right: -10px;
+    width: 90px; /* Tamanho do ícone */
+    height: 90px;
+    opacity: 0.1; /* Deixa o ícone sutil, como uma marca d'água */
     transition: all 0.3s ease;
-    font-weight: 500;
-    border: none;
-    cursor: pointer;
+    z-index: -1; /* Coloca o ícone atrás do texto */
 }
 
-.btn:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
+/* Efeito sutil no ícone quando o mouse passa sobre o card */
+.profile-card:hover .card-icon {
+    opacity: 0.2;
+    transform: scale(1.1) rotate(-10deg);
 }
 
-/* Responsividade */
-@media (max-width: 1200px) {
-    .card_principal {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    }
+
+/* 4. VARIÁVEIS DE COR (sem mudanças aqui) ====================== */
+:root {
+    --card-bg-rgb: 255, 255, 255;
+    --border-color-rgb: 222, 226, 230;
+    --primary-accent-rgb: 13, 202, 240; /* Usando o "azul piscina" */
+}
+[data-bs-theme="dark"] {
+    --card-bg-rgb: 40, 40, 48;
+    --border-color-rgb: 73, 80, 87;
+    --primary-accent-rgb: 13, 202, 240;
 }
 
-@media (max-width: 768px) {
-    .card_principal {
-        grid-template-columns: 1fr;
-        max-width: 500px;
-    }
-    
-    .card {
-        max-width: 100%;
-    }
-    
-    .painel {
-        justify-content: center;
-    }
-    
-    .nav-link.dropdown-toggle {
-        justify-content: center;
-    }
+/* Estilos para a página de perfil com os cards de módulo */
+
+/* Classe aplicada no template para definir a imagem de fundo */
+.profile-page-background {
+    min-height: calc(100vh - 56px); /* Altura da tela menos o header */
+    padding: 2rem 0;
 }
 
-@media (max-width: 480px) {
-    body {
-        padding: 10px;
-    }
-    
-    .btn, .link-card {
-        padding: 6px 10px;
-        font-size: 0.8rem;
-    }
-    
-    .card {
-        padding: 15px;
-        min-height: 220px;
-    }
-    
-    .card > div:first-child {
-        font-size: 1.1rem;
-    }
-    
-    .icone {
-        width: 50px;
-    }
+/* Efeito de sobreposição para legibilidade */
+.profile-page-background > .container {
+    position: relative;
+    z-index: 2;
 }
 
-/* Efeitos Especiais */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Estilo do Card "Frosted Glass" */
+.profile-card {
+    background-color: rgba(var(--card-bg-rgb, 255, 255, 255), 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(var(--border-color-rgb, 222, 226, 230), 0.5);
+    border-left: 6px solid var(--theme-primary);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    height: 100%;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+    overflow: hidden;
 }
 
-.card {
-    animation: fadeIn 0.5s ease forwards;
+.profile-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px var(--shadow-color);
 }
 
-.card:nth-child(1) { animation-delay: 0.1s; }
-.card:nth-child(2) { animation-delay: 0.2s; }
-.card:nth-child(3) { animation-delay: 0.3s; }
-.card:nth-child(4) { animation-delay: 0.4s; }
-.card:nth-child(5) { animation-delay: 0.5s; }
-.card:nth-child(6) { animation-delay: 0.6s; }
-.card:nth-child(7) { animation-delay: 0.7s; }
+/* Conteúdo do card */
+.profile-card .card-icon {
+    position: absolute;
+    bottom: -15px;
+    right: -10px;
+    width: 90px;
+    height: 90px;
+    opacity: 0.1;
+    transition: all 0.3s ease;
+    z-index: -1;
+}
+.profile-card:hover .card-icon {
+    opacity: 0.2;
+    transform: scale(1.1) rotate(-10deg);
+}
+.profile-card .card-title {
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+.profile-card .card-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.profile-card .card-link:hover {
+    color: var(--theme-primary);
+    transform: translateX(8px);
+}
+

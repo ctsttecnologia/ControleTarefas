@@ -1,248 +1,155 @@
-{% extends 'base.html' %}
 
+{% extends 'base.html' %}
 {% load static %}
 
-{% block head %}
+{% block title %}Detalhes do Funcionário{% endblock %}
 
-    {% block extra_css %}{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssdp/detalhe_funcionario_styles.css' %}">
 {% endblock %}
+
 
 {% block content %}
-<div class="container">
-    <!-- Mensagens -->
+<div class="container py-4">
+
+    {# Mensagens de Alerta #}
     {% if messages %}
-    <div class="mt-3">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         {% endfor %}
-    </div>
     {% endif %}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Detalhes do Funcionário</h2>
-        <div>
-            <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="btn btn-outline-primary">
-                <i class="fas fa-home"></i> Departamento Pessoal
-            </a>
-            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-list"></i> Lista de Funcionários
-            </a>
-        </div>
-    </div>
-
-    <!-- Informações Pessoais -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h4><i class="fas fa-user"></i> Informações Pessoais</h4>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Nome:</strong> {{ funcionario.nome }}</p>
-                    <p><strong>Data de Nascimento:</strong> {{ funcionario.data_nascimento|date:"d/m/Y" }}</p>
-                    <p><strong>Idade:</strong> {{ funcionario.idade }} anos</p>
-                    <p><strong>Naturalidade:</strong> {{ funcionario.naturalidade|default:"-" }}</p>
-                    <p><strong>Sexo:</strong> {{ funcionario.get_sexo_display }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Telefone:</strong> {{ funcionario.telefone_formatado|default:"-" }}</p>
-                    <p><strong>Email:</strong> {{ funcionario.email|default:"-" }}</p>
-                    <p><strong>Status:</strong> 
-                        <span class="badge 
-                            {% if funcionario.estatus == 1 %}bg-success
-                            {% elif funcionario.estatus == 2 %}bg-warning
-                            {% elif funcionario.estatus == 3 %}bg-danger
-                            {% else %}bg-secondary{% endif %}">
-                            {{ funcionario.get_estatus_display }}
-                        </span>
-                    </p>
-                    <p><strong>Data de Cadastro:</strong> {{ funcionario.data_cadastro|date:"d/m/Y H:i" }}</p>
-                </div>
+    {# Cabeçalho da página #}
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div class="d-flex align-items-center">
+            <img src="https://ui-avatars.com/api/?name={{ funcionario.nome }}&background=random&color=fff&size=64" 
+                 alt="Avatar de {{ funcionario.nome }}" class="user-avatar-lg me-3">
+            <div>
+                <h2 class="h3 mb-0">{{ funcionario.nome }}</h2>
+                <p class="text-muted mb-0">{{ funcionario.admissao.cargo.nome|default:"Cargo não definido" }}</p>
             </div>
         </div>
-    </div>
-
-    <!-- Seção de Admissão -->
-    <div class="card mb-4">
-        <div class="card-header bg-success text-white">
-            <h4><i class="fas fa-briefcase"></i> Dados de Admissão</h4>
-        </div>
-        <div class="card-body">
-            {% if funcionario.admissao %}
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Matrícula:</strong> {{ funcionario.admissao.matricula }}</p>
-                    <p><strong>Cargo:</strong> {{ funcionario.admissao.cargo.nome }}</p>
-                    <p><strong>Departamento:</strong> {{ funcionario.admissao.departamento.nome }}</p>
-                    <p><strong>Tipo de Contrato:</strong> {{ funcionario.admissao.get_tipo_contrato_display }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Data de Admissão:</strong> {{ funcionario.admissao.data_admissao|date:"d/m/Y" }}</p>
-                    <p><strong>Salário:</strong> R$ {{ funcionario.admissao.salario|floatformat:2 }}</p>
-                    <p><strong>Horário:</strong> 
-                        {% if funcionario.admissao.hora_entrada and funcionario.admissao.hora_saida %}
-                            {{ funcionario.admissao.hora_entrada|time:"H:i" }} às {{ funcionario.admissao.hora_saida|time:"H:i" }}
-                        {% else %}
-                            Não definido
-                        {% endif %}
-                    </p>
-                    <p><strong>Dias Trabalhados:</strong> {{ funcionario.admissao.get_dias_semana_display }}</p>
-                </div>
-            </div>
-            {% else %}
-            <div class="alert alert-warning">
-                Nenhuma admissão registrada para este funcionário.
-                <!--<a href="{% url 'departamento_pessoal:nova_admissao' funcionario.pk %}" 
-                class="btn btn-sm btn-primary ms-3">
-                Cadastrar Admissão
-                </a>-->
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Seção de Documentos -->
-    <div class="card mb-4">
-        <div class="card-header bg-info text-white">
-            <h4><i class="fas fa-id-card"></i> Documentos Pessoais</h4>
-        </div>
-        <div class="card-body">
-            {% if funcionario.documentos %}
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>CPF:</strong> {{ funcionario.documentos.cpf_formatado }}</p>
-                    <p><strong>RG:</strong> {{ funcionario.documentos.rg_formatado }}</p>
-                    <p><strong>Órgão Emissor:</strong> {{ funcionario.documentos.emissor|default:"-" }}</p>
-                    <p><strong>UF Emissor:</strong> {{ funcionario.documentos.get_uf_display|default:"-" }}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>PIS/PASEP:</strong> {{ funcionario.documentos.pis_formatado|default:"-" }}</p>
-                    <p><strong>CTPS:</strong> {{ funcionario.documentos.ctps|default:"-" }}</p>
-                    <p><strong>Título Eleitor:</strong> {{ funcionario.documentos.titulo_eleitor|default:"-" }}</p>
-                    <p><strong>Certificado Reservista:</strong> {{ funcionario.documentos.reservista|default:"-" }}</p>
-                </div>
-            </div>
-            
-            <!-- Anexos -->
-            <div class="mt-4">
-                <h5><i class="fas fa-paperclip"></i> Anexos</h5>
-                <div class="row">
-                    <div class="col-md-3">
-                        <p><strong>CPF:</strong> 
-                            {% if funcionario.documentos.anexo_cpf %}
-                            <a href="{{ funcionario.documentos.anexo_cpf.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i> Visualizar
-                            </a>
-                            {% else %}
-                            Não enviado
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>RG:</strong> 
-                            {% if funcionario.documentos.anexo_rg %}
-                            <a href="{{ funcionario.documentos.anexo_rg.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i> Visualizar
-                            </a>
-                            {% else %}
-                            Não enviado
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>PIS:</strong> 
-                            {% if funcionario.documentos.anexo_pis %}
-                            <a href="{{ funcionario.documentos.anexo_pis.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i> Visualizar
-                            </a>
-                            {% else %}
-                            Não enviado
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="col-md-3">
-                        <p><strong>CTPS:</strong> 
-                            {% if funcionario.documentos.anexo_ctps %}
-                            <a href="{{ funcionario.documentos.anexo_ctps.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye"></i> Visualizar
-                            </a>
-                            {% else %}
-                            Não enviado
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="alert alert-warning">
-                Nenhum documento cadastrado para este funcionário.
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Botões de Ação -->
-    <div class="d-flex justify-content-between mt-4">
-        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
         </a>
-        <div>
-            {% if funcionario.documentos.pk %}
-                <a href="{% url 'departamento_pessoal:editar_documentos' funcionario_pk=funcionario.pk pk=funcionario.documentos.pk %}"
-                    class="btn btn-primary" title="Editar Documentos">
-                    <i class="fas fa-file-edit"></i> Editar Documentos
-                </a>
-            {% else %}
-                <a href="{% url 'departamento_pessoal:cadastrar_documentos' funcionario.pk %}" 
-                    class="btn btn-primary" title="Cadastrar Documentos">
-                    <i class="fas fa-file-alt"></i> Cadastrar Documentos
-                </a>
-            {% endif %}
-            
-            {% if funcionario.admissao.pk %}
-                <a href="{% url 'departamento_pessoal:editar_admissao' funcionario_pk=funcionario.pk pk=funcionario.admissao.pk %}" 
-                    class="btn btn-primary" title="Editar Admissão">
-                    <i class="fas fa-edit"></i> Editar Admissão
-                </a>
-            {% else %}
-                <a href="{% url 'departamento_pessoal:nova_admissao' funcionario.pk %}" 
-                    class="btn btn-primary" title="Cadastrar Admissão">
-                    <i class="fas fa-file-alt"></i> Cadastrar Admissão
-                </a>
-            {% endif %}
-            <a href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}" class="btn btn-primary">
-                <i class="fas fa-edit"></i> Editar Funcionário
-            </a>
-            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">
-                <i class="fas fa-trash"></i> Excluir
-            </button>
-        </div>
-    </div>
-</div>
+    </header>
 
-<!-- Modal de Confirmação de Exclusão -->
-<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Tem certeza que deseja excluir o funcionário <strong>{{ funcionario.nome }}</strong>? Esta ação não pode ser desfeita.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="post" action="{% url 'departamento_pessoal:confirmar_exclusao' funcionario.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
-                </form>
+    {# Card principal com abas (tabs) #}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" id="funcionarioTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pessoal-tab" data-bs-toggle="tab" data-bs-target="#pessoal-tab-pane" type="button" role="tab" aria-controls="pessoal-tab-pane" aria-selected="true">
+                        <i class="bi bi-person-fill me-1"></i> Dados Pessoais
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="admissao-tab" data-bs-toggle="tab" data-bs-target="#admissao-tab-pane" type="button" role="tab" aria-controls="admissao-tab-pane" aria-selected="false">
+                        <i class="bi bi-briefcase-fill me-1"></i> Admissão
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos-tab-pane" type="button" role="tab" aria-controls="documentos-tab-pane" aria-selected="false">
+                        <i class="bi bi-file-earmark-text-fill me-1"></i> Documentos
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content" id="funcionarioTabContent">
+                
+                <!-- Aba: Dados Pessoais -->
+                <div class="tab-pane fade show active" id="pessoal-tab-pane" role="tabpanel" aria-labelledby="pessoal-tab" tabindex="0">
+                    <dl class="row">
+                        <dt class="col-sm-3">Nome Completo</dt><dd class="col-sm-9">{{ funcionario.nome }}</dd>
+                        <dt class="col-sm-3">Data de Nascimento</dt><dd class="col-sm-9">{{ funcionario.data_nascimento|date:"d/m/Y" }} ({{ funcionario.idade }} anos)</dd>
+                        <dt class="col-sm-3">Sexo</dt><dd class="col-sm-9">{{ funcionario.get_sexo_display }}</dd>
+                        <dt class="col-sm-3">Naturalidade</dt><dd class="col-sm-9">{{ funcionario.naturalidade|default:"-" }}</dd>
+                        <dt class="col-sm-3">Email</dt><dd class="col-sm-9">{{ funcionario.email|default:"-" }}</dd>
+                        <dt class="col-sm-3">Telefone</dt><dd class="col-sm-9">{{ funcionario.telefone_formatado }}</dd>
+                        <dt class="col-sm-3">Endereço</dt><dd class="col-sm-9">{{ funcionario.logradouro.endereco_completo|default:"Não cadastrado" }}</dd>
+                        <dt class="col-sm-3">Status</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge {% if funcionario.estatus == 1 %}text-bg-success{% elif funcionario.estatus == 2 %}text-bg-warning{% elif funcionario.estatus == 3 %}text-bg-danger{% else %}text-bg-secondary{% endif %}">
+                                {{ funcionario.get_estatus_display }}
+                            </span>
+                        </dd>
+                    </dl>
+                    <div class="text-end mt-4">
+                        <a href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}" class="btn btn-primary"><i class="bi bi-pencil-square me-1"></i> Editar Dados Pessoais</a>
+                    </div>
+                </div>
+
+                <!-- Aba: Admissão -->
+                <div class="tab-pane fade" id="admissao-tab-pane" role="tabpanel" aria-labelledby="admissao-tab" tabindex="0">
+                    {% if funcionario.admissao %}
+                        <dl class="row">
+                            <dt class="col-sm-3">Matrícula</dt><dd class="col-sm-9">{{ funcionario.admissao.matricula }}</dd>
+                            <dt class="col-sm-3">Cargo</dt><dd class="col-sm-9">{{ funcionario.admissao.cargo.nome }}</dd>
+                            <dt class="col-sm-3">Departamento</dt><dd class="col-sm-9">{{ funcionario.admissao.departamento.nome }}</dd>
+                            <dt class="col-sm-3">Tipo de Contrato</dt><dd class="col-sm-9">{{ funcionario.admissao.get_tipo_contrato_display }}</dd>
+                            <dt class="col-sm-3">Data de Admissão</dt><dd class="col-sm-9">{{ funcionario.admissao.data_admissao|date:"d/m/Y" }}</dd>
+                            <dt class="col-sm-3">Salário</dt><dd class="col-sm-9">R$ {{ funcionario.admissao.salario|floatformat:2 }}</dd>
+                            <dt class="col-sm-3">Horário</dt><dd class="col-sm-9">{{ funcionario.admissao.hora_entrada|time:"H:i"|default:"-" }} às {{ funcionario.admissao.hora_saida|time:"H:i"|default:"-" }}</dd>
+                            <dt class="col-sm-3">Dias da Semana</dt>
+                            <dd class="col-sm-9">
+                                {% for dia in funcionario.admissao.get_dias_semana_display %}<span class="badge text-bg-light me-1">{{ dia }}</span>{% empty %}-{% endfor %}
+                            </dd>
+                        </dl>
+                        <div class="text-end mt-4">
+                            <a href="{% url 'departamento_pessoal:editar_admissao' funcionario.admissao.pk %}" class="btn btn-primary"><i class="bi bi-pencil-square me-1"></i> Editar Admissão</a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-file-earmark-x fs-1 text-secondary"></i>
+                            <h5 class="mt-3">Nenhuma admissão encontrada.</h5>
+                            <p class="text-muted">Este funcionário ainda não possui um registro de admissão.</p>
+                            <a href="{% url 'departamento_pessoal:nova_admissao' funcionario.pk %}" class="btn btn-primary mt-2">
+                                <i class="bi bi-plus-circle me-1"></i> Cadastrar Admissão
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Aba: Documentos -->
+                <div class="tab-pane fade" id="documentos-tab-pane" role="tabpanel" aria-labelledby="documentos-tab" tabindex="0">
+                    {% if funcionario.documentos.all %}
+                        <ul class="list-group list-group-flush">
+                        {% for doc in funcionario.documentos.all %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ doc.get_tipo_display }}</strong>
+                                    <span class="text-muted ms-2">
+                                        {% if doc.tipo == 'CPF' %}{{ doc.cpf }}{% elif doc.tipo == 'RG' %}{{ doc.rg }}{% elif doc.tipo == 'PIS' %}{{ doc.pis }}{% else %}{{ doc.nome|default:"-" }}{% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    {% if doc.anexo %}
+                                        <a href="{{ doc.anexo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver Anexo"><i class="bi bi-eye-fill"></i></a>
+                                    {% endif %}
+                                    <a href="{% url 'departamento_pessoal:editar_documentos' pk=doc.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-file-earmark-x fs-1 text-secondary"></i>
+                            <h5 class="mt-3">Nenhum documento encontrado.</h5>
+                            <p class="text-muted">Não há documentos cadastrados para este funcionário.</p>
+                            <a href="#" class="btn btn-primary mt-2">
+                                <i class="bi bi-plus-circle me-1"></i> Cadastrar Documentos
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}
-

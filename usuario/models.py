@@ -1,71 +1,51 @@
+# usuario/models.py
+
+# usuario/models.py
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser, Group, Permission
-from django.utils.translation import gettext_lazy as _ # Para tradução de strings
-
-
-
-# ==============================================================================
-# Modelo de Usuário Customizado
-# Herda de AbstractUser para incluir todos os campos e funcionalidades padrão
-# do usuário do Django (username, password, email, is_staff, is_active, etc.)
-# ==============================================================================
-class CustomUser(AbstractUser):
-    # seus campos personalizados
-    pass
+from django.utils.translation import gettext_lazy as _
 
 class Usuario(AbstractUser):
-    # Campo 'nome' customizado, conforme a tabela auth_user fornecida.
-    # Adicionamos este campo, pois ele não é padrão no AbstractUser.
-    nome = models.CharField(_('nome completo'), max_length=150, blank=True, null=True)
-    email = models.EmailField(_('endereço de email'), unique=True, blank=False, null=False)
+    """
+    Este é o seu modelo de usuário customizado.
+    Ele herda todos os campos de AbstractUser, incluindo 'groups' e 'user_permissions'.
+    Nós apenas adicionamos ou modificamos o que é estritamente necessário.
+    """
+    
+    # Tornamos o email único e obrigatório.
+    email = models.EmailField(_('endereço de e-mail'), unique=True)
 
-    # Definindo 'email' como o campo de login principal.
-    # O campo 'username' ainda existirá, mas não será usado para login.
+    # Definindo o email como o campo de login principal.
     USERNAME_FIELD = 'email'
-    # Os campos em REQUIRED_FIELDS serão solicitados quando criar um superusuário
-    # se USERNAME_FIELD não for 'username'.
-    REQUIRED_FIELDS = ['username'] # 'username' ainda é requerido para AbstractUser,
- 
-    groups = models.ManyToManyField(
-        Group,
-        verbose_name=_('grupos'),
-        blank=True,
-        help_text=_('Os grupos aos quais este usuário pertence. Um usuário terá todas as permissões concedidas a cada um de seus grupos.'),
-        related_query_name="usuario", # Usado para consultas reversas
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        verbose_name=_('permissões de usuário'),
-        blank=True,
-        help_text=_('Permissões específicas para este usuário.'),
-        related_query_name="usuario", # Usado para consultas reversas
-    )
+    
+    # Campos requeridos ao criar um superusuário via linha de comando.
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+
+    #
+    # OS CAMPOS 'groups' E 'user_permissions' FORAM REMOVIDOS DAQUI
+    # PORQUE JÁ SÃO HERDADOS DE AbstractUser.
+    #
 
     class Meta:
-
-        db_table = 'usuario'
         verbose_name = _('usuário')
         verbose_name_plural = _('usuários')
-        ordering = ['-date_joined'] # Ordem padrão para listagens
+        ordering = ['first_name', 'last_name']
 
     def __str__(self):
-        # Retorna uma representação em string do objeto Usuario.
-        # Como USERNAME_FIELD é 'email', usar self.email faz mais sentido.
-        # Se 'nome' for preferível e sempre preenchido, pode ser 'self.nome'.
-        return self.email or self.username # Retorna o email, ou o username se o email for vazio
+        return self.get_full_name() or self.username
 
-# Modelo Proxy para Grupo (refere-se ao modelo Group padrão do Django)
+#
+# Seus modelos Proxy continuam aqui, eles estão corretos.
+#
 class GrupoProxy(Group):
     class Meta:
-        proxy = True # Define que este é um modelo proxy
-        verbose_name = _('grupo')
-        verbose_name_plural = _('grupos')
+        proxy = True
+        verbose_name = 'Grupo de Permissões'
+        verbose_name_plural = 'Grupos de Permissões'
 
-# Modelo Proxy para Permissão (refere-se ao modelo Permission padrão do Django)
 class PermissaoProxy(Permission):
     class Meta:
-        proxy = True # Define que este é um modelo proxy
-        verbose_name = _('permissão')
-        verbose_name_plural = _('permissões')
-
+        proxy = True
+        verbose_name = 'Permissão'
+        verbose_name_plural = 'Permissões'

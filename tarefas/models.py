@@ -25,18 +25,21 @@ logger = logging.getLogger(__name__)
 User = settings.AUTH_USER_MODEL
 
 class Tarefas(models.Model):
-    # Usando strings minúsculas para os 'choices', o que é uma prática comum
-    PRIORIDADE_CHOICES = [('alta', _('Alta')), ('media', _('Média')), ('baixa', _('Baixa'))]
+    
+    PRIORIDADE_CHOICES = [
+        ('alta', _('Alta')), 
+        ('media', _('Média')), 
+        ('baixa', _('Baixa')),
+    ]
     STATUS_CHOICES = [
         ('pendente', _('Pendente')),
-        ('andamento', _('Em Andamento')),
-        ('pausada', _('Em Pausa')),
+        ('andamento', _('Andamento')),
+        ('pausada', _('Pausada')),
         ('concluida', _('Concluída')),
         ('cancelada', _('Cancelada')),
         ('atrasada', _('Atrasada')),
     ]
     
-    # ... (Seus campos 'titulo', 'descricao', etc., permanecem os mesmos) ...
     titulo = models.CharField(_('Título'), max_length=100)
     descricao = models.TextField(_('Descrição'), blank=True, null=True)
     data_criacao = models.DateTimeField(_('Data de Criação'), auto_now_add=True)
@@ -45,7 +48,12 @@ class Tarefas(models.Model):
     prazo = models.DateTimeField(_('Prazo Final'), blank=True, null=True)
     concluida_em = models.DateTimeField(_('Concluída em'), blank=True, null=True)
     status = models.CharField(_('Status'), max_length=20, choices=STATUS_CHOICES, default='pendente')
-    prioridade = models.CharField(_('Prioridade'), max_length=20, choices=PRIORIDADE_CHOICES, default='media')
+    prioridade = models.CharField(
+        max_length=10,
+        choices=PRIORIDADE_CHOICES,
+        default='baixo', # ou qualquer outro padrão
+        verbose_name="Prioridade"
+    )
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tarefas_criadas', verbose_name=_('Criado por'))
     responsavel = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_responsavel', verbose_name=_('Responsável'))
     projeto = models.CharField(_('Projeto'), max_length=40, blank=True, null=True)
@@ -72,7 +80,7 @@ class Tarefas(models.Model):
             return timezone.now() > self.prazo
         return False
 
-    # CORREÇÃO: Unificando os dois métodos save() em um só.
+    # Unificando os dois métodos save() em um só.
     # MÉTODO SAVE UNIFICADO E LIMPO
     def save(self, *args, **kwargs):
         # Captura o status antigo antes de salvar

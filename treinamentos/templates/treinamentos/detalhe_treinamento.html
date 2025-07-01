@@ -1,115 +1,165 @@
 
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Detalhes do Treinamento: {{ treinamento.nome }}{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csstreinamentos/detalhe_treinamento_styles.css' %}">
+{% endblock %}
+
+
 {% block content %}
-<div class="container mt-4">
-    <h1>{{ treinamento.nome }}</h1>
+<div class="container py-4">
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h4>Informações do Treinamento</h4>
+    {# Cabeçalho da página #}
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="h3 mb-1">{{ treinamento.nome }}</h2>
+            <p class="text-muted mb-2 mb-md-0">Detalhes do treinamento e lista de participantes.</p>
+        </div>
+        <div class="btn-toolbar" role="toolbar">
+            <div class="btn-group me-2" role="group">
+                <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Voltar
+                </a>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-primary">
+                    <i class="bi bi-pencil-square me-1"></i> Editar Treinamento
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <div class="row g-4">
+        <!-- Coluna da Esquerda: Detalhes e Participantes -->
+        <div class="col-lg-8">
+            <!-- Card de Informações Gerais -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-body-tertiary">
+                    <h5 class="mb-0"><i class="bi bi-info-circle-fill me-2"></i>Informações Gerais</h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>Tipo de Curso:</strong> {{ treinamento.tipo_curso }}</p>
-                    <p><strong>Data de Início:</strong> {{ treinamento.data_inicio|date:"d/m/Y H:i" }}</p>
-                    <p><strong>Data de Vencimento:</strong> {{ treinamento.data_vencimento|date:"d/m/Y" }}</p>
-                    <p><strong>Duração:</strong> {{ treinamento.duracao }} horas</p>
-                    {% if treinamento.atividade %}
-                        <p><strong>Atividade Relacionada:</strong> {{ treinamento.atividade }}</p>
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Tipo de Curso</dt>
+                        <dd class="col-sm-8">{{ treinamento.tipo_curso }}</dd>
+
+                        <dt class="col-sm-4">Data de Início</dt>
+                        <dd class="col-sm-8">{{ treinamento.data_inicio|date:"d/m/Y H:i" }}</dd>
+
+                        <dt class="col-sm-4">Data de Vencimento</dt>
+                        <dd class="col-sm-8">{{ treinamento.data_vencimento|date:"d/m/Y"|default:"N/A" }}</dd>
+
+                        <dt class="col-sm-4">Duração</dt>
+                        <dd class="col-sm-8">{{ treinamento.duracao }} horas</dd>
+
+                        <dt class="col-sm-4">Local</dt>
+                        <dd class="col-sm-8">{{ treinamento.local }}</dd>
+
+                        <dt class="col-sm-4">Responsável</dt>
+                        <dd class="col-sm-8">{{ treinamento.responsavel|default:"Não definido" }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Card da Lista de Participantes -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-body-tertiary">
+                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Lista de Participantes</h5>
+                </div>
+                <div class="card-body">
+                    {% if participantes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Funcionário</th>
+                                        <th class="text-center">Presença</th>
+                                        <th class="text-center">Aproveitamento</th>
+                                        <th class="text-center">Certificado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for participante in participantes %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="https://ui-avatars.com/api/?name={{ participante.funcionario.nome }}&background=random&color=fff" 
+                                                     alt="Avatar" class="user-avatar">
+                                                <span>{{ participante.funcionario.nome }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if participante.presente %}
+                                                <i class="bi bi-check-circle-fill text-success" title="Presente"></i>
+                                            {% else %}
+                                                <i class="bi bi-x-circle-fill text-danger" title="Ausente"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">{{ participante.nota_avaliacao|default:"-" }}%</td>
+                                        <td class="text-center">
+                                            {% if participante.certificado_emitido %}
+                                                <i class="bi bi-patch-check-fill text-primary" title="Emitido"></i>
+                                            {% else %}
+                                                <i class="bi bi-circle text-secondary" title="Não Emitido"></i>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <p><i class="bi bi-person-x fs-2"></i></p>
+                            <p class="mb-0">Nenhum participante registrado neste treinamento.</p>
+                        </div>
                     {% endif %}
-                    <p><strong>Responsável:</strong> {{ treinamento.responsavel|default:"Não definido" }}</p>
-                    {% if treinamento.cm %}
-                        <p><strong>CM:</strong> {{ treinamento.cm }}</p>
-                    {% endif %}
-                    <p><strong>Palestrante/Instrutor:</strong> {{ treinamento.palestrante }}</p>
-                    <p><strong>HxH:</strong> {{ treinamento.hxh }}</p>
-                    <p><strong>Status:</strong> {{ treinamento.get_status_display }}</p>
-                    <p><strong>Local:</strong> {{ treinamento.local }}</p>
-                    <p><strong>Custo Total:</strong> R$ {{ treinamento.custo }}</p>
-                    <p><strong>Participantes Previstos:</strong> {{ treinamento.participantes_previstos }}</p>
-                    <p><strong>Data de Cadastro:</strong> {{ treinamento.data_cadastro|date:"d/m/Y H:i" }}</p>
-                    <p><strong>Última Atualização:</strong> {{ treinamento.data_atualizacao|date:"d/m/Y H:i" }}</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h4>Descrição Detalhada</h4>
+
+        <!-- Coluna da Direita: Painel de Resumo -->
+        <div class="col-lg-4">
+            <div class="summary-panel">
+                <div class="summary-header">
+                    <i class="bi bi-clipboard-data-fill"></i>
+                    <h3>Resumo do Treinamento</h3>
                 </div>
-                <div class="card-body">
-                    <p>{{ treinamento.descricao|linebreaksbr }}</p>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>Status</span>
+                            <span class="badge 
+                                {% if treinamento.status == 'agendado' %}text-bg-info
+                                {% elif treinamento.status == 'em_andamento' %}text-bg-primary
+                                {% elif treinamento.status == 'concluido' %}text-bg-success
+                                {% elif treinamento.status == 'cancelado' %}text-bg-danger
+                                {% else %}text-bg-secondary{% endif %}">
+                                {{ treinamento.get_status_display }}
+                            </span>
+                        </div>
+                    </li>
+                    <li class="list-group-item">
+                        <span>Participantes Previstos</span>
+                        <span class="fw-bold">{{ treinamento.participantes_previstos }}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <span>Participantes Registrados</span>
+                        <span class="fw-bold">{{ participantes.count }}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <span>Custo Total</span>
+                        <span class="fw-bold">R$ {{ treinamento.custo|floatformat:2 }}</span>
+                    </li>
+                </ul>
+                <div class="summary-footer">
+                    <p><strong>Descrição:</strong></p>
+                    <p class="mb-0">{{ treinamento.descricao|linebreaksbr|default:"Nenhuma descrição fornecida." }}</p>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header bg-light">
-            <h4>Lista de Participantes</h4>
-        </div>
-        <div class="card-body">
-            {% if participantes %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Funcionário</th>
-                            <th>Presença</th>
-                            <th>Nota da Avaliação</th>
-                            <th>Certificado Emitido</th>
-                            <th>Data de Registro</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for participante in participantes %}
-                            <tr>
-                                <td>{{ participante.funcionario.get_full_name|default:participante.funcionario.email }} ({{ participante.funcionario.username }})</td>
-                                <td>
-                                    {% if participante.presente %}
-                                        Sim
-                                    {% else %}
-                                        Não
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if participante.nota_avaliacao %}
-                                        {{ participante.nota_avaliacao }}
-                                    {% else %}
-                                        Não Avaliado
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if participante.certificado_emitido %}
-                                        Sim
-                                    {% else %}
-                                        Não
-                                    {% endif %}
-                                </td>
-                                <td>{{ participante.data_registro|date:"d/m/Y H:i" }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>Nenhum participante registrado neste treinamento ainda.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="mb-3">
-        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-primary">
-            <i class="bi bi-list"></i> Listar Treinamentos
-        </a>
-        <a href="{% url 'treinamentos:relatorio_treinamentos' %}?ano={{ treinamento.data_inicio|date:'Y' }}&tipo_curso={{ treinamento.tipo_curso.pk }}" class="btn btn-info">
-            <i class="bi bi-bar-chart-line"></i> Relatório de Treinamentos
-        </a>
-        <a href="{% url 'treinamentos:relatorio_treinamento_word' pk=treinamento.pk %}" class="btn btn-primary">
-            <i class="fas fa-file-word"></i> Gerar Relatório - Word
-        </a>
     </div>
 </div>
 {% endblock %}

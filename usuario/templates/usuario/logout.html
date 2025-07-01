@@ -1,16 +1,31 @@
+{# templates/usuario/logged_out.html #}
 {% extends 'base.html' %}
-
 {% load static %}
 
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'cssglobal/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}"> <title>Logout</title>
+{% block title %}Desconectado{% endblock %}
 
-    <h1>Você foi desconectado com sucesso.</h1>
-    
-    <a href="{% url 'usuario:login' %}">Fazer login novamente</a>
-    <img src="/midia/imagens/logocetest.png">
-    <!--<img src="{% static '/midia/imagens/logo.png' %}" class="icone">--> <!--Imagem no Django em produção--> 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
+{% endblock %}
 
 
+{% block content %}
+<div class="login-container">
+    <div class="login-card text-center"> {# Reutilizando a classe .login-card #}
+        
+        <div class="login-logo mb-4">
+            <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas">
+        </div>
+
+        <h2 class="h3 mb-3">Você foi desconectado.</h2>
+        <p class="text-muted mb-4">Sessão encerrada com segurança. Obrigado por utilizar o sistema.</p>
+
+        <div class="d-grid">
+            <a href="{% url 'usuario:login' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Fazer login novamente
+            </a>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

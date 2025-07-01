@@ -3,22 +3,26 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstarefa/relatorio.css' %}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{% static 'csstarefa/relatorioexportacao.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2">Relatório de Tarefas</h1>
-        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Voltar
-        </a>
+        <div>
+            <button class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" aria-controls="offcanvasFilters">
+                <i class="bi bi-funnel-fill me-1"></i> Filtros e Ações
+            </button>
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
 
     <div class="report-container">
-
         <div class="results-section">
+            
             <div class="card mb-4">
                 <div class="card-header fw-bold">
                     Resultados ({{ total_tarefas|default:0 }})
@@ -74,20 +78,9 @@
                     Análise de Status
                 </div>
                 <div class="card-body">
-                    <canvas id="statusChart" width="400" height="200"></canvas>
-                    <ul class="list-unstyled mt-3">
-                        {% for item in status_data %}
-                        <li>
-                            {{ item.label }}: {{ item.count }} ({{ item.percent }}%)
-                            
-                            {% if item.avg_duration %}
-                                - Duração Média: {{ item.avg_duration|floatformat:"2" }}
-                            {% endif %}
-                        </li>
-                        {% empty %}
-                        <li>Nenhum dado de status disponível.</li>
-                        {% endfor %}
-                    </ul>
+                    <div class="chart-container">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -96,163 +89,171 @@
                     Análise de Prioridade
                 </div>
                 <div class="card-body">
-                    <canvas id="priorityChart" width="400" height="200"></canvas>
-                    <ul class="list-unstyled mt-3">
-                        {% for item in prioridade_data %}
-                        <li>{{ item.label }}: {{ item.count }} ({{ item.percent }}%)</li>
-                        {% empty %}
-                        <li>Nenhum dado de prioridade disponível.</li>
-                        {% endfor %}
-                    </ul>
+                    <div class="chart-container">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
                 </div>
             </div>
+            
         </div>
-
-        <aside>
-            <div class="filters-card">
-                <form method="get" action="{% url 'tarefas:relatorio_tarefas' %}">
-                    <h5 class="mb-3">Filtros</h5>
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        <select name="status" id="status" class="form-select form-select-sm">
-                            <option value="">Todos</option>
-                            {% for key, value in status_choices %}
-                            <option value="{{ key }}" {% if current_filters.status == key %}selected{% endif %}>{{ value }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
-                        <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">Limpar</a>
-                    </div>
-                </form>
-
-                <hr class="my-4">
-
-                <form method="post" action="{% url 'tarefas:relatorio_tarefas' %}">
-                    {% csrf_token %}
-                    <h5 class="mb-3">Exportar</h5>
-                    <input type="hidden" name="status" value="{{ request.GET.status|default:'' }}">
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" name="export_format" value="pdf" class="btn btn-danger">PDF</button>
-                        <button type="submit" name="export_format" value="docx" class="btn btn-info text-white">Word</button>
-                        <button type="submit" name="export_format" value="csv" class="btn btn-success">CSV</button>
-                    </div>
-               </form>
-            </div>
-        </aside>
-
     </div>
 </div>
 
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasFilters" aria-labelledby="offcanvasFiltersLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="offcanvasFiltersLabel">Filtros e Exportação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        
+        <div class="filters-card-offcanvas">
+            <form method="get" action="{% url 'tarefas:relatorio_tarefas' %}">
+                <h5 class="mb-3">Filtros</h5>
+                <div class="mb-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        {% for key, value in status_choices %}
+                            <option value="{{ key }}" {% if current_filters.status == key %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">Aplicar Filtros</button>
+                    <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">Limpar</a>
+                </div>
+            </form>
+
+            <hr class="my-4">
+
+            <form method="post" action="{% url 'tarefas:relatorio_tarefas' %}">
+                {% csrf_token %}
+                <h5 class="mb-3">Exportar</h5>
+                <input type="hidden" name="status" value="{{ request.GET.status|default:'' }}">
+                <div class="d-grid gap-2">
+                    <button type="submit" name="export_format" value="pdf" class="btn btn-danger">PDF</button>
+                    <button type="submit" name="export_format" value="docx" class="btn btn-info text-white">Word</button>
+                    <button type="submit" name="export_format" value="csv" class="btn btn-success">CSV</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const statusData = {{ status_data|safe }};
-    const priorityData = {{ prioridade_data|safe }};
+document.addEventListener('DOMContentLoaded', function() {
+    // ... seu código dos gráficos aqui ...
 
-    // Gráfico de Status
-    const statusLabels = statusData.map(item => item.label);
-    const statusCounts = statusData.map(item => item.count);
+    // 1. DADOS VINDOS DO DJANGO (essas linhas são essenciais)
+    const statusData = {{ status_data_json|safe }};
+    const priorityData = {{ priority_data_json|safe }};
 
-    const statusCtx = document.getElementById('statusChart').getContext('2d');
-    const statusChart = new Chart(statusCtx, {
-        type: 'pie',
-        data: {
-            labels: statusLabels,
-            datasets: [{
-                data: statusCounts,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(54, 162, 235, 0.7)',
-                    'rgba(255, 206, 86, 0.7)',
-                    'rgba(75, 192, 192, 0.7)',
-                    'rgba(153, 102, 255, 0.7)',
-                    'rgba(255, 159, 64, 0.7)',
-                    'rgba(128, 128, 128, 0.7)', // Cinza para atrasada (exemplo)
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(128, 128, 128, 1)',
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                },
-                title: {
-                    display: true,
-                    text: 'Distribuição de Tarefas por Status'
-                }
-            }
-        }
-    });
+    // Linhas de depuração para verificar os dados no console do navegador (F12)
+    console.log("Dados de Status recebidos:", statusData);
+    console.log("Dados de Prioridade recebidos:", priorityData);
 
-    // Gráfico de Prioridade
-    const priorityLabels = priorityData.map(item => item.label);
-    const priorityCounts = priorityData.map(item => item.count);
-    const priorityOrder = ['alta', 'media', 'baixa'];
-    const orderedPriorityLabels = [];
-    const orderedPriorityCounts = [];
+    // --- GRÁFICO DE STATUS (DOUGHNUT) ---
+    const statusCtx = document.getElementById('statusChart');
+    
+    // 2. VERIFICA SE PODE CRIAR O GRÁFICO DE STATUS
+    if (statusCtx && statusData && Array.isArray(statusData) && statusData.length > 0) {
+        
+        // TODA a lógica para o gráfico de status vai AQUI DENTRO
+        const statusColorMap = {
+            'pendente': 'rgba(255, 206, 86, 0.8)',
+            'andamento': 'rgba(54, 162, 235, 0.8)', // Corrigido de 'em_andamento' para 'andamento' para bater com seu view
+            'concluida': 'rgba(75, 192, 192, 0.8)',
+            'atrasada': 'rgba(255, 99, 132, 0.8)',
+            'cancelada': 'rgba(128, 128, 128, 0.8)', // Alterado para cinza
+            'pausada': 'rgba(153, 102, 255, 0.8)'    // Roxo
+        };
+        
+        const statusLabels = statusData.map(item => `${item.label} (${item.percent}%)`);
+        const statusCounts = statusData.map(item => item.count);
+        const statusColors = statusData.map(item => statusColorMap[item.key] || 'rgba(201, 203, 207, 0.8)');
 
-    priorityOrder.forEach(p => {
-        const found = priorityData.find(item => item.key === p);
-        if (found) {
-            orderedPriorityLabels.push(found.label);
-            orderedPriorityCounts.push(found.count);
-        }
-    });
-
-    const priorityCtx = document.getElementById('priorityChart').getContext('2d');
-    const priorityChart = new Chart(priorityCtx, {
-        type: 'bar',
-        data: {
-            labels: orderedPriorityLabels,
-            datasets: [{
-                label: 'Número de Tarefas',
-                data: orderedPriorityCounts,
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.7)',
-                    'rgba(255, 206, 86, 0.7)',
-                    'rgba(75, 192, 192, 0.7)'
-                ],
-                borderColor: [
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(255, 206, 86, 1)',
-                    'rgba(75, 192, 192, 1)'
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    precision: 0
-                }
+        new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    label: 'Tarefas',
+                    data: statusCounts,
+                    backgroundColor: statusColors,
+                    borderColor: statusColors.map(color => color.replace('0.8', '1')),
+                    borderWidth: 1
+                }]
             },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: 'Distribuição de Tarefas por Prioridade'
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Distribuição de Tarefas por Status', font: { size: 16 } }
                 }
             }
-        }
-    });
+        });
+
+    } else {
+        // Este é o lugar correto para o 'else'
+        console.error("Gráfico de Status: Dados inválidos ou não encontrados para renderizar.");
+    }
+
+    // --- GRÁFICO DE PRIORIDADE (BAR) ---
+    const priorityCtx = document.getElementById('priorityChart');
+
+    // 3. VERIFICA SE PODE CRIAR O GRÁFICO DE PRIORIDADE
+    if (priorityCtx && priorityData && Array.isArray(priorityData) && priorityData.length > 0) {
+        
+        // TODA a lógica para o gráfico de prioridade vai AQUI DENTRO
+        const priorityColorMap = {
+            'alta': 'rgba(255, 99, 132, 0.7)',
+            'media': 'rgba(255, 206, 86, 0.7)',
+            'baixa': 'rgba(75, 192, 192, 0.7)'
+        };
+
+        const priorityOrder = ['alta', 'media', 'baixa'];
+        const orderedLabels = [], orderedCounts = [], orderedColors = [];
+
+        priorityOrder.forEach(pKey => {
+            const found = priorityData.find(item => item.key === pKey);
+            if (found) {
+                orderedLabels.push(found.label);
+                orderedCounts.push(found.count);
+                orderedColors.push(priorityColorMap[pKey]);
+            }
+        });
+
+        new Chart(priorityCtx, {
+            type: 'bar',
+            data: {
+                labels: orderedLabels,
+                datasets: [{
+                    label: 'Número de Tarefas',
+                    data: orderedCounts,
+                    backgroundColor: orderedColors,
+                    borderColor: orderedColors.map(color => color.replace('0.7', '1')),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Distribuição de Tarefas por Prioridade', font: { size: 16 } }
+                }
+            }
+        });
+
+    } else {
+        // E este é o lugar correto para o 'else' do segundo gráfico
+        console.error("Gráfico de Prioridade: Dados inválidos ou não encontrados para renderizar.");
+    }
+});
 </script>
 {% endblock %}
-
