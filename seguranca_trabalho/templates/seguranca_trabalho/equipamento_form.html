@@ -1,75 +1,85 @@
 
-{% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Editar Equipamentos</title>
-    <link rel="stylesheet" href="{% static 'cssseguranca/styleslistaequipamento.css' %}">
+{% extends 'base.html' %}
+{% load widget_tweaks %}
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-</head>
-<body>
-    <h1>Editar Equipamentos</h1>
-    
-    <div class="nav-links">
-        <a href="{% url 'seguranca_trabalho:cadastrar_equipamento' %}">
-            <i class="fas fa-plus-circle"></i> Cadastrar Novo Equipamento
-        </a>
-        <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}">
-            <i class="fas fa-home"></i> Início
-        </a>
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2">{{ titulo_pagina }}</h1>
+                <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
+                </a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>
+                                {% render_field form.nome class+="form-control" %}
+                                {% if form.nome.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.nome.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.certificado_aprovacao.id_for_label }}" class="form-label">{{ form.certificado_aprovacao.label }}</label>
+                                {% render_field form.certificado_aprovacao class+="form-control" %}
+                                {% if form.certificado_aprovacao.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.certificado_aprovacao.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.vida_util_dias.id_for_label }}" class="form-label">{{ form.vida_util_dias.label }}</label>
+                                {% render_field form.vida_util_dias class+="form-control" %}
+                                <small class="form-text text-muted">{{ form.vida_util_dias.help_text }}</small>
+                                {% if form.vida_util_dias.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.vida_util_dias.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label">{{ form.estoque_minimo.label }}</label>
+                                {% render_field form.estoque_minimo class+="form-control" %}
+                                {% if form.estoque_minimo.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.estoque_minimo.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check form-switch mt-3">
+                                    {% render_field form.ativo class+="form-check-input" %}
+                                    <label for="{{ form.ativo.id_for_label }}" class="form-check-label">{{ form.ativo.label }}</label>
+                                </div>
+                                {% if form.ativo.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.ativo.errors|striptags }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-4">
+                            <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-        <a href="{% url 'seguranca_trabalho:exportar_equipamentos_excel' %}" class="export-btn">
-            <i class="fas fa-file-excel"></i> Exportar para Excel
-        </a>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Nome do Equipamento</th>
-                    <th>Tipo</th>
-                    <th>Código CA</th>
-                    <th>Descrição</th>
-                    <th>Quantidade em Estoque</th>
-                    <th>Data de Validade</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for equipamento in equipamentos %}
-                <tr>
-                    <td>{{ equipamento.nome_equipamento }}</td>
-                    <td>{{ equipamento.get_tipo_display }}</td>
-                    <td>{{ equipamento.codigo_ca }}</td>
-                    <td>{{ equipamento.descricao|truncatechars:50 }}</td>
-                    <td>
-                        <span class="{% if equipamento.quantidade_estoque < equipamento.estoque_minimo %}low-stock{% endif %}">
-                            {{ equipamento.quantidade_estoque }}
-                        </span>
-                    </td>
-                    <td>{{ equipamento.data_validade|date:"d/m/Y"|default:"-" }}</td>
-                    <td class="ativo-{{ equipamento.ativo }}">
-                        {% if equipamento.ativo %}Ativo{% else %}Inativo{% endif %}
-                    </td>
-                    <td class="actions">
-                        <a href="{% url 'seguranca_trabalho:editar_equipamento' equipamento.id %}">
-                            <i class="fas fa-edit"></i> Editar
-                        </a>
-                        <a href="{% url 'seguranca_trabalho:excluir_equipamento' equipamento.id %}">
-                            <i class="fas fa-trash-alt"></i> Excluir
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</body>
-    {% include 'includes/footer.html' %}
-</html>
+</div>
+{% endblock %}

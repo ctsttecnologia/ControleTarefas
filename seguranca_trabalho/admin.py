@@ -1,207 +1,164 @@
+# seguranca_trabalho/admin.py (CORRIGIDO E OTIMIZADO)
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import (EPIEquipamentoSeguranca)
-from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from .models import ItemEquipamentoSeguranca
+from .models import Equipamento, MatrizEPI, FichaEPI, EntregaEPI, MovimentacaoEstoque, Funcao
 
-@admin.register(EPIEquipamentoSeguranca)
-class EquipamentosSegurancaAdmin(admin.ModelAdmin):
-    list_display = (
-        'nome_equipamento',
-        'tipo_formatado',
-        'codigo_ca',
-        'estoque_status',
-        'estoque_minimo',
-        'validade_status',
-        'status_badge',
-        'acoes_personalizadas',
-        'quantidade_estoque',
-        
-    )
+# --- Filtros Customizados ---
+class TipoEquipamentoFilter(admin.SimpleListFilter):
+    title = _('tipo de equipamento')
+    parameter_name = 'tipo'
+
+    def lookups(self, request, model_admin):
+        return Equipamento.TIPO_CHOICES
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(tipo=self.value())
+        return queryset
+
+# CORREÇÃO para E116 em FichaEPIAdmin: Filtro customizado para status
+class FichaStatusFilter(admin.SimpleListFilter):
+    title = _('status da ficha')
+    parameter_name = 'status'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('ativo', _('Ativa')),
+            ('inativo', _('Inativa')),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'ativo':
+            return queryset.filter(data_demissao__isnull=True)
+        if self.value() == 'inativo':
+            return queryset.filter(data_demissao__isnull=False)
+        return queryset
+
+# --- Inlines ---
+class MatrizEPIInline(admin.TabularInline):
+    model = MatrizEPI
+    extra = 1
+    autocomplete_fields = ['equipamento']
+    verbose_name = "EPI Necessário"
+    verbose_name_plural = "EPIs Necessários para este Cargo"
+
+class EntregaEPIInline(admin.TabularInline):
+    model = EntregaEPI
+    extra = 0
+    fields = ('equipamento', 'quantidade', 'data_entrega', 'status', 'validade')
+    readonly_fields = ('status', 'validade')
+    autocomplete_fields = ['equipamento']
     
-    list_filter = (
-        'tipo',
-        'ativo',
-    )
+    @admin.display(description='Validade do Uso')
+    def validade(self, obj):
+        return obj.data_vencimento_uso.date() if obj.data_vencimento_uso else '-'
+
+# --- ModelAdmins ---
+@admin.register(Funcao)
+class FuncaoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'descricao_resumida', 'ativo')
+    search_fields = ('nome', 'descricao')
+    list_editable = ('ativo',)
+    list_filter = ('ativo',)
+    inlines = [MatrizEPIInline]
     
-    search_fields = (
-        'nome_equipamento',
-        'codigo_ca',
-        'descricao'
-    )
+    @admin.display(description='Descrição')
+    def descricao_resumida(self, obj):
+        if obj.descricao and len(obj.descricao) > 100:
+            return obj.descricao[:100] + '...'
+        return obj.descricao or '-'
+
+@admin.register(Equipamento)
+class EquipamentoAdmin(admin.ModelAdmin):
+    list_display = ('nome', 'certificado_aprovacao','estoque_minimo', 'precisa_repor_display', 'ativo')
+    list_filter = ('ativo', TipoEquipamentoFilter)
+    search_fields = ('nome', 'certificado_aprovacao')
     
-    list_editable = (
-        'quantidade_estoque',
-        'estoque_minimo',
-    )
-    
-    readonly_fields = (
-        'data_cadastro',
-        'data_atualizacao',
-        'status_formatado',
-        'tipo_formatado',
-    )
-    
+    list_editable = ('estoque_minimo', 'ativo')
     fieldsets = (
-        (_('Identificação'), {
-            'fields': (
-                'nome_equipamento',
-                'tipo',
-                'codigo_ca',
-                'descricao'
-            )
-        }),
-        (_('Estoque'), {
-            'fields': (
-                'quantidade_estoque',
-                'estoque_minimo',
-                'precisa_repor'
-            )
-        }),
-        (_('Validade'), {
-            'fields': (
-                'data_validade',
-                'validade_status'
-            )
-        }),
-        (_('Status'), {
-            'fields': (
-                'ativo',
-                'status_formatado'
-            )
-        }),
-        (_('Auditoria'), {
-            'fields': (
-                'data_cadastro',
-                'data_atualizacao'
-            ),
-            'classes': ('collapse',)
-        }),
+        (None, {'fields': ('nome', 'tipo', 'certificado_aprovacao', 'ativo')}),
+        ('Detalhes e Vida Útil', {'fields': ('descricao', 'vida_util_dias')}),
+        ('Controle de Estoque', {'fields': ('estoque_minimo', 'estoque_atual')}),
     )
-    
-    actions = [
-        'ativar_equipamentos',
-        'desativar_equipamentos',
-        'repor_estoque_minimo',
-    ]
-    
-    # Métodos de exibição
-    def tipo_formatado(self, obj):
-        return obj.tipo_formatado
-    tipo_formatado.short_description = _('Tipo')
-    
-    def estoque_status(self, obj):
-        if obj.precisa_repor:
-            color = 'red'
-            text = f"{obj.quantidade_estoque}/{obj.estoque_minimo}"
-        else:
-            color = 'green'
-            text = f"{obj.quantidade_estoque}"
-        return format_html(
-            '<span style="color: white; background-color: {}; padding: 2px 6px; border-radius: 10px;">{}</span>',
-            color, text
-        )
-    estoque_status.short_description = _('Estoque')
-    estoque_status.admin_order_field = 'quantidade_estoque'
-    
-    def validade_status(self, obj):
-        if obj.data_validade:
-            if obj.data_validade < timezone.now().date():
-                color = 'red'
-                status = _('Vencido')
-            else:
-                color = 'blue'
-                status = obj.data_validade.strftime('%d/%m/%Y')
-            return format_html(
-                '<span style="color: white; background-color: {}; padding: 2px 6px; border-radius: 10px;">{}</span>',
-                color, status
-            )
-        return _("Não informado")
-    validade_status.short_description = _('Validade')
-    
-    def status_badge(self, obj):
-        color = 'green' if obj.ativo == 1 else 'red'
-        text = _('Ativo') if obj.ativo == 1 else _('Inativo')
-        return format_html(
-            '<span style="color: white; background-color: {}; padding: 2px 6px; border-radius: 10px;">{}</span>',
-            color, text
-        )
-    status_badge.short_description = _('Status')
-    status_badge.admin_order_field = 'ativo'
-    
-    def acoes_personalizadas(self, obj):
-        return format_html(
-            '<a href="/admin/equipamentos/itensequipamentoseguranca/?equipamento__id__exact={}" class="button">Ver Entregas</a>',
-            obj.id
-        )
-    acoes_personalizadas.short_description = _('Ações')
-    
-    # Ações personalizadas
-    def ativar_equipamentos(self, request, queryset):
-        updated = queryset.update(ativo=1)
-        self.message_user(request, _('%d equipamentos ativados') % updated)
-    ativar_equipamentos.short_description = _('Ativar equipamentos selecionados')
-    
-    def desativar_equipamentos(self, request, queryset):
-        updated = queryset.update(ativo=0)
-        self.message_user(request, _('%d equipamentos desativados') % updated)
-    desativar_equipamentos.short_description = _('Desativar equipamentos selecionados')
-    
-    def repor_estoque_minimo(self, request, queryset):
-        for equipamento in queryset:
-            equipamento.quantidade_estoque = equipamento.estoque_minimo
-            equipamento.save()
-        self.message_user(request, _('Estoque reposto para os equipamentos selecionados'))
-    repor_estoque_minimo.short_description = _('Repor estoque mínimo')
 
+    @admin.display(boolean=True, description='Precisa Repor?', ordering='estoque_atual')
+    def precisa_repor_display(self, obj):
+        return obj.precisa_repor
 
-@admin.register(ItemEquipamentoSeguranca)
-class ItemEquipamentoSegurancaAdmin(admin.ModelAdmin):
-    list_display = (
-        'equipamento',
-        'ficha_link',
-        'quantidade',
-        'data_entrega_formatada',
-        'status_entrega',
-        'responsavel_entrega'
-    )
+@admin.register(FichaEPI)
+class FichaEPIAdmin(admin.ModelAdmin):
+    # CORREÇÃO para E108: 'ativo' foi substituído por 'status_display'
+    list_display = ('colaborador', 'funcao', 'data_admissao', 'total_epis', 'atualizado_em', 'status_display')
+    # CORREÇÃO para E116: 'ativo' foi substituído por FichaStatusFilter
+    list_filter = ('funcao', 'data_admissao', FichaStatusFilter)
+    search_fields = ('colaborador__first_name', 'colaborador__last_name', 'colaborador__username')
+    autocomplete_fields = ['colaborador', 'funcao']
+    inlines = [EntregaEPIInline]
+    date_hierarchy = 'data_admissao'
     
+    @admin.display(description='Total de Entregas')
+    def total_epis(self, obj):
+        return obj.entregas.count()
+
+    @admin.display(description='Status', ordering='data_demissao')
+    def status_display(self, obj):
+        if obj.data_demissao is None:
+            return format_html('<span style="color: green;">● Ativa</span>')
+        return format_html('<span style="color: red;">● Inativa</span>')
+
+@admin.register(EntregaEPI)
+class EntregaEPIAdmin(admin.ModelAdmin):
+    list_display = ('ficha_colaborador', 'equipamento', 'quantidade', 'data_entrega', 'validade', 'status_display')
     list_filter = (
-        'equipamento__tipo',
-        'data_entrega',
+        'equipamento',
+        ('data_entrega', admin.DateFieldListFilter),
+        ('data_devolucao', admin.DateFieldListFilter),
     )
-    
-    search_fields = (
-        'equipamento__nome_equipamento',
-        'ficha__empregado__first_name',
-        'ficha__empregado__last_name',
-    )
-    
-    raw_id_fields = ('ficha', 'equipamento')
-    
+    search_fields = ('ficha__colaborador__first_name', 'ficha__colaborador__last_name', 'equipamento__nome')
+    autocomplete_fields = ['ficha', 'equipamento']
+    readonly_fields = ('status_display', 'data_vencimento_uso')
     date_hierarchy = 'data_entrega'
-    
-    def ficha_link(self, obj):
-        url = reverse('admin:epi_fichaepi_change', args=[obj.ficha.id])
-        return format_html('<a href="{}">{}</a>', url, obj.ficha)
-    ficha_link.short_description = _('Ficha EPI')
-    
-    def data_entrega_formatada(self, obj):
-        return obj.data_entrega.strftime('%d/%m/%Y')
-    data_entrega_formatada.short_description = _('Data de Entrega')
-    
-    def status_entrega(self, obj):
-        if obj.data_devolucao:
-            color = 'gray'
-            text = _('Devolvido')
-        else:
-            color = 'blue'
-            text = _('Ativo')
-        return format_html(
-            '<span style="color: white; background-color: {}; padding: 2px 6px; border-radius: 10px;">{}</span>',
-            color, text
-        )
-    status_entrega.short_description = _('Status')
+    list_select_related = ('ficha__colaborador', 'equipamento')
 
+    @admin.display(description='Colaborador', ordering='ficha__colaborador__first_name')
+    def ficha_colaborador(self, obj):
+        return obj.ficha.colaborador.get_full_name()
     
+    @admin.display(description='Validade do Uso', ordering='data_entrega')
+    def validade(self, obj):
+        return obj.data_vencimento_uso.date() if obj.data_vencimento_uso else '-'
+    
+    @admin.display(description='Status', ordering='data_devolucao')
+    def status_display(self, obj):
+        status = obj.status
+        if status == "Devolvido":
+            color = 'gray'
+        elif status == "Vencido":
+            color = 'red'
+        elif status == "Aguardando Assinatura":
+            color = 'orange'
+        else: # Ativo com Colaborador
+            color = 'green'
+        return format_html('<span style="color: {};">● {}</span>', color, status)
+
+@admin.register(MovimentacaoEstoque)
+class MovimentacaoEstoqueAdmin(admin.ModelAdmin):
+    list_display = ('data', 'equipamento', 'tipo_formatado', 'quantidade', 'responsavel', 'justificativa_resumida')
+    list_filter = ('tipo', 'data', 'equipamento')
+    search_fields = ('equipamento__nome', 'justificativa', 'responsavel__username')
+    autocomplete_fields = ['equipamento', 'responsavel']
+    date_hierarchy = 'data'
+    
+    @admin.display(description='Tipo', ordering='tipo')
+    def tipo_formatado(self, obj):
+        return dict(MovimentacaoEstoque.TIPO_MOVIMENTACAO).get(obj.tipo, obj.tipo)
+    
+    @admin.display(description='Justificativa')
+    def justificativa_resumida(self, obj):
+        if obj.justificativa and len(obj.justificativa) > 50:
+            return obj.justificativa[:50] + '...'
+        return obj.justificativa
+
+
+

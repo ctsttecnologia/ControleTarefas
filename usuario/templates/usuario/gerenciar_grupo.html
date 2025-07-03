@@ -2,86 +2,78 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Gerenciar Grupos de Usuário{% endblock %}
+{% block title %}Gerenciar Grupos de {{ usuario.get_full_name|default:usuario.username }}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario_styles.css' %}">
+    {# Este CSS não é mais necessário para esta página, pois todos os estilos
+       foram substituídos por utilitários do Bootstrap. #}
 {% endblock %}
 
 
 {% block content %}
 <div class="container py-4">
 
-    {# Cabeçalho da página #}
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <h2 class="h3 mb-0">
-            <i class="bi bi-people-fill me-2"></i>Gerenciar Grupos
+            <i class="bi bi-people-fill me-2"></i>
+            Gerenciar Grupos de <span class="text-primary">{{ usuario.get_full_name|default:usuario.username }}</span>
         </h2>
-        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Voltar para Usuários
+        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-light">
+            <i class="bi bi-arrow-left-circle me-1"></i>
+            Voltar
         </a>
     </header>
 
-    {# Card principal que envolve as duas colunas #}
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-body-tertiary">
-            <h5 class="mb-0">Usuário: <span class="fw-normal">{{ usuario.get_full_name|default:usuario.username }}</span></h5>
+    <div class="row g-4">
+        <div class="col-lg-6 d-flex flex-column">
+            <h6 class="text-uppercase small fw-bold text-muted mb-3">Grupos Atuais do Usuário</h6>
+            <div class="card shadow-sm flex-grow-1">
+                <div class="list-group list-group-flush">
+                    {% for grupo in grupos_usuario %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">{{ grupo.name }}</span>
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                <input type="hidden" name="acao" value="remover">
+                                <button type="submit" class="btn btn-link text-danger p-0" title="Remover {{ grupo.name }}">
+                                    <i class="bi bi-trash3 fs-5"></i>
+                                </button>
+                            </form>
+                        </div>
+                    {% empty %}
+                        <div class="d-flex flex-column justify-content-center align-items-center text-center text-muted p-5 h-100">
+                            <i class="bi bi-person-fill-slash fs-1"></i>
+                            <p class="mb-0 mt-3">O usuário não pertence a nenhum grupo.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
-        <div class="card-body p-4">
-            <div class="row g-4">
 
-                <!-- Coluna 1: Grupos Atuais do Usuário -->
-                <div class="col-md-6">
-                    <h5 class="section-title"><i class="bi bi-person-check-fill me-2 text-success"></i>Grupos Atuais</h5>
-                    {% if grupos_usuario %}
-                        <ul class="list-group">
-                            {% for grupo in grupos_usuario %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    {{ grupo.name }}
-                                    <form method="post" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="grupo" value="{{ grupo.pk }}">
-                                        <input type="hidden" name="acao" value="remover">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover do grupo">
-                                            <i class="bi bi-x-lg"></i>
-                                        </button>
-                                    </form>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="alert alert-secondary text-center">
-                            O usuário não pertence a nenhum grupo.
+        <div class="col-lg-6 d-flex flex-column">
+            <h6 class="text-uppercase small fw-bold text-muted mb-3">Grupos Disponíveis para Adicionar</h6>
+            <div class="card shadow-sm flex-grow-1">
+                <div class="list-group list-group-flush">
+                    {% for grupo in grupos_disponiveis %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ grupo.name }}</span>
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                <input type="hidden" name="acao" value="adicionar">
+                                <button type="submit" class="btn btn-link text-success p-0" title="Adicionar {{ grupo.name }}">
+                                    <i class="bi bi-arrow-right-circle-fill fs-5"></i>
+                                </button>
+                            </form>
                         </div>
-                    {% endif %}
-                </div>
-
-                <!-- Coluna 2: Grupos Disponíveis para Adicionar -->
-                <div class="col-md-6">
-                    <h5 class="section-title"><i class="bi bi-plus-circle-fill me-2 text-primary"></i>Grupos Disponíveis</h5>
-                    {% if grupos_disponiveis %}
-                        <ul class="list-group">
-                            {% for grupo in grupos_disponiveis %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    {{ grupo.name }}
-                                    <form method="post" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="grupo" value="{{ grupo.pk }}">
-                                        <input type="hidden" name="acao" value="adicionar">
-                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Adicionar ao grupo">
-                                            <i class="bi bi-plus-lg"></i>
-                                        </button>
-                                    </form>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <div class="alert alert-secondary text-center">
-                            Todos os grupos já foram adicionados.
+                    {% empty %}
+                        <div class="d-flex flex-column justify-content-center align-items-center text-center text-muted p-5 h-100">
+                            <i class="bi bi-check2-all fs-1"></i>
+                            <p class="mb-0 mt-3">Não há mais grupos para adicionar.</p>
                         </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
-
             </div>
         </div>
     </div>

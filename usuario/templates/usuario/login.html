@@ -1,53 +1,61 @@
 
-
 {% extends 'base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
+{# Define a classe para o 'body', usada para ocultar o header/footer #}
 {% block body_class %}body-login{% endblock %}
 
 {% block title %}Login - Gerenciando Tarefas{% endblock %}
-    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
-{% block extra_css %}
 
+{# O local CORRETO para adicionar links de CSS específicos da página #}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssusuario/styles.css' %}">
 {% endblock %}
 
+
 {% block content %}
-<div class="login-container">
-    <div class="login-card">
-        
-        <div class="login-logo mb-4">
-            <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas">
+{# 1. SUBSTITUIÇÃO do .login-container por classes utilitárias do Bootstrap 5 #}
+<div class="d-flex align-items-center justify-content-center min-vh-100 p-3">
+
+    {# 2. MELHORIA do .login-card, combinando com a classe .card do Bootstrap #}
+    <div class="card login-card shadow-lg">
+        <div class="card-body">
+
+            <div class="login-logo text-center mb-4">
+                <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas">
+            </div>
+
+            {# 3. ADIÇÃO da classe .card-title para consistência com o Bootstrap #}
+            <h2 class="card-title text-center mb-4">Acessar sua Conta</h2>
+
+            {% if form.errors %}
+                <div class="alert alert-danger text-center p-2" role="alert">
+                    Usuário ou senha inválidos.
+                </div>
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-bold">Usuário</label>
+                    {% render_field form.username class="form-control form-control-lg" placeholder="Digite seu usuário" %}
+                </div>
+                <div class="mb-3">
+                    <label for="{{ form.password.id_for_label }}" class="form-label fw-bold">Senha</label>
+                    {% render_field form.password class="form-control form-control-lg" placeholder="Digite sua senha" %}
+                </div>
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                </div>
+            </form>
+
+            <div class="login-links text-center mt-4">
+                <p class="mb-1"><a href="{% url 'usuario:password_reset' %}">Esqueceu sua senha?</a></p>
+                <p class="mb-0">Não tem uma conta? <a href="{% url 'usuario:cadastrar_usuario' %}">Registre-se</a></p>
+            </div>
+            
         </div>
-
-        <h2 class="text-center mb-4">Acessar sua Conta</h2>
-
-        {% if form.errors %}
-            <div class="alert alert-danger text-center p-2" role="alert">
-                Usuário ou senha inválidos.
-            </div>
-        {% endif %}
-
-        <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="{{ form.username.id_for_label }}" class="form-label">Usuário</label>
-                {% render_field form.username class="form-control" placeholder="Digite seu usuário" %}
-            </div>
-            <div class="mb-3">
-                <label for="{{ form.password.id_for_label }}" class="form-label">Senha</label>
-                {% render_field form.password class="form-control" placeholder="Digite sua senha" %}
-            </div>
-            <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
-            </div>
-        </form>
-
-        <div class="login-links text-center mt-4">
-            <p class="mb-1"><a href="{% url 'usuario:password_reset' %}">Esqueceu sua senha?</a></p>
-            <p class="mb-0">Não tem uma conta? <a href="{% url 'usuario:cadastrar_usuario' %}">Registre-se</a></p>
-        </div>
-        
     </div>
 </div>
 {% endblock %}

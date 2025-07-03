@@ -1,0 +1,58 @@
+
+/* static/cssseguranca/dashboard_sst.css */
+
+/* Cabeçalho da Página */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Garante que os botões quebrem a linha em telas menores */
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--theme-card-border);
+}
+
+/* Cards de KPI (Indicadores) */
+.kpi-card {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    background-color: var(--theme-card-bg);
+    border: 1px solid var(--theme-card-border);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-color) 0px 4px 12px;
+    transition: all 0.2s ease-in-out;
+}
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-color) 0px 8px 25px;
+}
+
+.kpi-card .icon-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+}
+
+/* Cores dos ícones dos KPIs usando classes de utilidade do Bootstrap */
+.kpi-card .icon-primary { background-color: var(--bs-primary-bg-subtle); color: var(--bs-primary-emphasis); }
+.kpi-card .icon-warning { background-color: var(--bs-warning-bg-subtle); color: var(--bs-warning-emphasis); }
+.kpi-card .icon-danger  { background-color: var(--bs-danger-bg-subtle);  color: var(--bs-danger-emphasis); }
+.kpi-card .icon-info    { background-color: var(--bs-info-bg-subtle);    color: var(--bs-info-emphasis); }
+
+
+.kpi-card h3 { font-size: 2rem; font-weight: 700; }
+.kpi-card p { font-size: 0.9rem; margin-bottom: 0; }
+
+
+/* Contêiner dos Gráficos */
+.chart-container {
+    position: relative;
+    min-height: 350px; /* Garante que os cards de gráfico tenham uma altura mínima */
+    height: 100%;
+}

@@ -4,7 +4,8 @@
 {% block title %}Lista de Usuários{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario_styles.css' %}">
+    {# Este link pode até ser removido se o CSS acima for movido para o global.css #}
+    <link rel="stylesheet" href="{% static 'css/lista_usuario_styles.css' %}">
 {% endblock %}
 
 
@@ -12,9 +13,10 @@
     {% include 'usuario/includes/submenu.html' %}
 
     <div class="container py-4">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+        {# MUDANÇA 1: Card com sombra mais pronunciada e estrutura de cabeçalho #}
+        <div class="card shadow">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
                     <h2 class="h4 mb-0">Usuários do Sistema</h2>
                     {% if request.user.is_superuser %}
                         <a href="{% url 'usuario:cadastrar_usuario' %}" class="btn btn-primary">
@@ -22,17 +24,19 @@
                         </a>
                     {% endif %}
                 </div>
-
+            </div>
+            <div class="card-body">
                 <form method="get" class="mb-4">
                     <div class="input-group">
-                        <input type="text" name="q" class="form-control" placeholder="Pesquisar..." value="{{ search_query }}">
+                        <input type="text" name="q" class="form-control" placeholder="Pesquisar por nome ou username..." value="{{ search_query }}">
                         <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
                     </div>
                 </form>
 
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        {# MUDANÇA 2: Aplicando a nova classe customizada do CSS #}
+                        <thead class="thead-custom">
                             <tr>
                                 <th>Nome</th>
                                 <th>Email</th>
@@ -46,8 +50,11 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
+                                        {# MUDANÇA 3: Avatar usando classes do Bootstrap, sem CSS customizado #}
                                         <img src="https://ui-avatars.com/api/?name={{ usuario.get_full_name|default:usuario.username }}&background=random&color=fff&size=40" 
-                                             alt="Avatar" class="user-avatar">
+                                             alt="Avatar" 
+                                             class="rounded-circle me-3" 
+                                             width="40" height="40">
                                         <div>
                                             <div class="fw-bold">{{ usuario.get_full_name|default:usuario.username }}</div>
                                             <div class="text-muted small">@{{ usuario.username }}</div>
@@ -57,7 +64,7 @@
                                 <td>{{ usuario.email|default:"---" }}</td>
                                 <td>
                                     {% for group in usuario.groups.all %}
-                                        <span class="badge fw-normal bg-secondary-subtle text-secondary-emphasis">{{ group.name }}</span>
+                                        <span class="badge fw-normal bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">{{ group.name }}</span>
                                     {% empty %}
                                         <span class="text-muted small">-</span>
                                     {% endfor %}
@@ -69,25 +76,17 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                        {# MUDANÇA 4: Botão de ações com estilo mais limpo #}
+                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             {% if request.user.is_superuser or request.user == usuario %}
-                                                <li><a class="dropdown-item" href="{% url 'usuario:usuario_editar' usuario.pk %}">
-                                                        <i class="bi bi-pencil-fill me-2"></i>Editar
-                                                    </a>
-                                                </li>
-                                                <li><a class="dropdown-item" href="{% url 'usuario:alterar_senha' usuario.pk %}">
-                                                        <i class="bi bi-key-fill me-2"></i>Definir Senha
-                                                    </a>
-                                                </li>
+                                                <li><a class="dropdown-item" href="{% url 'usuario:usuario_editar' usuario.pk %}"><i class="bi bi-pencil-fill me-2"></i>Editar</a></li>
+                                                <li><a class="dropdown-item" href="{% url 'usuario:alterar_senha' usuario.pk %}"><i class="bi bi-key-fill me-2"></i>Definir Senha</a></li>
                                             {% endif %}
                                             {% if request.user.is_superuser %}
-                                                <li><a class="dropdown-item" href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}">
-                                                        <i class="bi bi-people me-2"></i>Gerenciar Grupos
-                                                    </a>
-                                                </li>
+                                                <li><a class="dropdown-item" href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}"><i class="bi bi-people-fill me-2"></i>Gerenciar Grupos</a></li>
                                                 {% if usuario != request.user %}
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li>

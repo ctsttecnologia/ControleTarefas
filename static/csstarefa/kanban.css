@@ -1,18 +1,15 @@
 /* ==========================================================================
-   Estilos para o Quadro Kanban
-   Refatorado para ser mais visual, moderno e compatível com temas.
+   Contêiner Principal do Quadro Kanban
+   Centraliza as colunas e adiciona rolagem horizontal para telas menores.
    ========================================================================== */
-
-/* --- Layout Principal do Quadro --- */
-.kanban-card {
-    background-color: var(--theme-card-bg);
-    border: 1px solid var(--theme-card-border);
-    border-left: 5px solid transparent;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    cursor: grab;
+.kanban-board-container {
+    display: flex;
+    justify-content: center; /* <<< A MÁGICA ACONTECE AQUI */
+    gap: 1.5rem;             /* Espaçamento consistente entre as colunas */
+    padding: 1.5rem;         /* Espaçamento ao redor do quadro inteiro */
+    overflow-x: auto;        /* Adiciona barra de rolagem se as colunas não couberem */
 }
+
 
 .kanban-card.is-overdue {
     border-left-color: var(--bs-danger);

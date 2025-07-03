@@ -1,25 +1,25 @@
+# seguranca_trabalho/urls.py (NOVO)
+
 from django.urls import path
-from . import views
-from django.views.decorators.csrf import csrf_exempt
-from seguranca_trabalho import views
-from .views import exportar_equipamentos_excel
+from . import views 
 
 app_name = 'seguranca_trabalho'
 
 urlpatterns = [
-    path('', views.seguranca_trabalho, name='seguranca_trabalho'),
-    path('pesquisar_ficha/', views.pesquisar_ficha, name='pesquisar_ficha'),
-    path('ficha-epi/gerar-pdf/', views.gerar_pdf, name='gerar_pdf'),
-    path('ficha-epi/gerar-excel/', views.gerar_excel, name='gerar_excel'),
+    path('', views.DashboardSSTView.as_view(), name='dashboard'),
+    
+    # Fichas de EPI
+    path('fichas/', views.FichaEPIListView.as_view(), name='ficha_lista'),
+    path('fichas/nova/', views.FichaEPICreateView.as_view(), name='ficha_criar_form'),
+    path('fichas/<int:pk>/', views.FichaEPIDetailView.as_view(), name='ficha_detalhe'),
+    path('fichas/<int:pk>/gerar-relatorio/', views.gerar_relatorio_ficha, name='gerar_relatorio'),
+    
+    # Entregas e Assinaturas
+    path('fichas/<int:ficha_pk>/adicionar-entrega/', views.adicionar_entrega, name='adicionar_entrega'),
+    path('entregas/<int:pk>/assinar-recebimento/', views.assinar_entrega_recebimento, name='assinar_recebimento'),
+    path('entregas/<int:pk>/registrar-devolucao/', views.registrar_devolucao, name='registrar_devolucao'),
 
-    path('', views.seguranca_trabalho, name='seguranca_trabalho'),
-    path('equipamentos/', views.listar_equipamentos, name='listar_equipamentos'),
-    path('equipamentos/cadastrar/', views.cadastrar_equipamento, name='cadastrar_equipamento'),
-    path('equipamentos/editar/<int:id>/', views.editar_equipamento, name='editar_equipamento'),
-    path('equipamentos/excluir/<int:id>/', views.excluir_equipamento, name='excluir_equipamento'),
-    path('verificar-codigo-ca/', csrf_exempt(views.verificar_codigo_ca), name='verificar_codigo_ca'),
-    path('equipamentos/exportar-excel/', exportar_equipamentos_excel, name='exportar_equipamentos_excel'),
-      
-
+    path('equipamentos/', views.EquipamentoListView.as_view(), name='equipamento_list'),
+    path('equipamentos/novo/', views.EquipamentoCreateView.as_view(), name='equipamento_create'),
+    path('equipamentos/editar/<int:pk>/', views.EquipamentoUpdateView.as_view(), name='equipamento_update'),
 ]
-

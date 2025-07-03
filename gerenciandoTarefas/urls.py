@@ -20,7 +20,7 @@ urlpatterns = [
     
     # Outros apps
     path('profile/', views.profile_view, name='profile'),
-    path('epi/', include('epi.urls')),
+    path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),
     path('cliente/', include('cliente.urls')),
     path('seguranca/', include('seguranca_trabalho.urls')),
     path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
