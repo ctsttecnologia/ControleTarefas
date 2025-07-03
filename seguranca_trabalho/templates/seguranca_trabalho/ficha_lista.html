@@ -1,0 +1,60 @@
+
+{% extends "base.html" %}
+
+{% block title %}Fichas de EPI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Cabeçalho -->
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <h1 class="h2 mb-0">Fichas de EPI</h1>
+        <a href="{% url 'seguranca_trabalho:ficha_criar' %}" class="btn btn-primary btn-glow">
+            <i class="bi bi-file-earmark-plus-fill me-1"></i> Nova Ficha
+        </a>
+    </header>
+
+    <!-- Tabela de Fichas -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Colaborador</th>
+                        <th>Cargo</th>
+                        <th>Data de Admissão</th>
+                        <th>Status</th>
+                        <th class="pe-4"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ficha in fichas %}
+                        <tr>
+                            <td class="ps-4 fw-semibold">{{ ficha.colaborador.get_full_name }}</td>
+                            <td>{{ ficha.cargo }}</td>
+                            <td>{{ ficha.data_admissao|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if ficha.ativo %}
+                                    <span class="badge text-bg-success">Ativa</span>
+                                {% else %}
+                                    <span class="badge text-bg-danger">Inativa</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ ficha.get_absolute_url }}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center p-5 text-muted">Nenhuma ficha de EPI encontrada.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Paginação -->
+    {% include 'includes/pagination.html' %} {# Assumindo que você tem um template de paginação #}
+</div>
+{% endblock %}
+

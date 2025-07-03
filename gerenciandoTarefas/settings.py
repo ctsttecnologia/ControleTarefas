@@ -58,7 +58,7 @@ INSTALLED_APPS = [
     'tarefas.apps.TarefasConfig',
     'rest_framework',
     'logradouro',
-    'epi',
+    'gestao_riscos',
     'widget_tweaks',
     'automovel.apps.AutomovelConfig',
     'treinamentos.apps.TreinamentosConfig',

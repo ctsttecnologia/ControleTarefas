@@ -1,243 +1,145 @@
 
+# seguranca_trabalho/models.py (VERSÃO PROFISSIONAL SST)
+
+
+from datetime import timedelta
 from django.db import models
-from django.core.validators import MinValueValidator, RegexValidator
-from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
+from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
-from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 
-from epi.models import FichaEPI
+# --- Modelos de Catálogo e Estrutura ---
 
-User = get_user_model()
-
-class EPIEquipamentoSeguranca(models.Model):
-
-    # Validadores reutilizáveis
-    CODIGO_CA_VALIDATOR = RegexValidator(
-        regex=r'^[A-Z]{2}-\d{4}$',
-        message=_('Formato do CA deve ser AA-1234 (ex: AB-1234)')
-    )
-    
-    # Constantes
-    TIPO_EQUIPAMENTO_CHOICES = [
-        ('EPI', 'Equipamento de Proteção Individual'),
-        ('EPC', 'Equipamento de Proteção Coletiva'),
-        ('INC', 'Incêndio'),
-        ('SOC', 'Socorro'),
-        ('OUT', 'Outros'),
-    ]
-
-    STATUS_CHOICES = [
-        (1, 'Ativo'),
-        (0, 'Inativo'),
-    ]
-
-    # Campos
-    nome_equipamento = models.CharField(
-        max_length=100,
-        verbose_name=_('Nome do Equipamento'),
-        help_text=_('Nome completo do equipamento'),
-        error_messages={
-            'max_length': _('O nome não pode exceder 100 caracteres'),
-            'required': _('Este campo é obrigatório')
-        }
-    )
-    
-    tipo = models.CharField(
-        max_length=3,
-        choices=TIPO_EQUIPAMENTO_CHOICES,
-        default='EPI',
-        verbose_name=_('Tipo de Equipamento')
-    )
-    
-    codigo_ca = models.CharField(
-        db_column='codigo_CA',
-        max_length=10,
-        unique=True,
-        validators=[CODIGO_CA_VALIDATOR],
-        verbose_name=_('Código CA'),
-        help_text=_('Código de aprovação no formato AA-1234'),
-        error_messages={
-            'unique': _('Já existe um equipamento com este código CA'),
-            'invalid': _('Formato inválido para código CA')
-        }
-    )
-    
-    descricao = models.TextField(
-        verbose_name=_('Descrição'),
-        help_text=_('Descrição detalhada do equipamento'),
-        blank=True,
-        null=True
-    )
-    
-    quantidade_estoque = models.PositiveIntegerField(
-        default=0,
-        verbose_name=_('Quantidade em Estoque'),
-        validators=[MinValueValidator(0)],
-        error_messages={
-            'invalid': _('Digite um número válido'),
-            'min_value': _('O valor não pode ser negativo')
-        }
-    )
-    
-    estoque_minimo = models.PositiveIntegerField(
-        default=5,
-        verbose_name=_('Estoque Mínimo'),
-        help_text=_('Quantidade mínima para alerta de reposição'),
-        validators=[MinValueValidator(1)]
-    )
-    
-    data_validade = models.DateField(
-        verbose_name=_('Data de Validade'),
-        help_text=_('Validade do certificado de aprovação'),
-        null=True,
-        blank=True
-    )
-    
-    ativo = models.IntegerField(
-        choices=STATUS_CHOICES,
-        default=1,
-        verbose_name=_('Status')
-    )
-    
-    # Campos de auditoria
-    data_cadastro = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('Data de Cadastro')
-    )
-    
-    data_atualizacao = models.DateTimeField(
-        auto_now=True,
-        verbose_name=_('Última Atualização')
-    )
-
-    # Métodos de validação
-    def clean(self):
-        """Validações personalizadas"""
-        super().clean()
-        errors = {}
-        
-        # Valida data de validade
-        if self.data_validade and self.data_validade < timezone.now().date():
-            errors['data_validade'] = _('Data de validade não pode ser no passado')
-        
-        # Valida estoque mínimo
-        if self.estoque_minimo < 1:
-            errors['estoque_minimo'] = _('Estoque mínimo deve ser pelo menos 1')
-        
-        # Valida quantidade em estoque
-        if self.quantidade_estoque < 0:
-            errors['quantidade_estoque'] = _('Quantidade não pode ser negativa')
-        
-        if errors:
-            raise ValidationError(errors)
-    
-    # Métodos de negócio
-    @property
-    def precisa_repor(self):
-        """Verifica se precisa repor estoque"""
-        return self.quantidade_estoque < self.estoque_minimo
-    
-    @property
-    def status_formatado(self):
-        """Retorna status formatado"""
-        return dict(self.STATUS_CHOICES).get(self.ativo, _('Desconhecido'))
-    
-    @property
-    def tipo_formatado(self):
-        """Retorna tipo formatado"""
-        return dict(self.TIPO_EQUIPAMENTO_CHOICES).get(self.tipo, self.tipo)
-    
-    @property
-    def validade_status(self):
-        """Retorna status da validade"""
-        if not self.data_validade:
-            return _('Não informado')
-        return _('Vencido') if self.data_validade < timezone.now().date() else self.data_validade.strftime('%d/%m/%Y')
-
-    # Métodos padrão
-    def __str__(self):
-        return f"{self.nome_equipamento} ({self.codigo_ca})"
-    
-    def save(self, *args, **kwargs):
-        """Garante validações antes de salvar"""
-        self.full_clean()
-        super().save(*args, **kwargs)
+#  Nome da classe em CamelCase (Funcao)
+class Funcao(models.Model):
+    """Representa um cargo ou função na empresa."""
+    nome = models.CharField(max_length=100, unique=True, verbose_name=_("Nome da Função"))
+    descricao = models.TextField(blank=True, verbose_name=_("Descrição das Atividades"))
+    ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
 
     class Meta:
-        db_table = 'epi_equipamentoseguranca'  # Usa a tabela existente
-        managed = False  # Indica que o Django não gerencia a criação/alteração da tabeladb_table = 'equipamentos_seguranca'
-        verbose_name = _('Equipamento de Segurança')
-        verbose_name_plural = _('Equipamentos de Segurança')
-        ordering = ['tipo', 'nome_equipamento']
-        indexes = [
-            models.Index(fields=['tipo'], name='idx_tipo_equipamento'),
-            models.Index(fields=['codigo_ca'], name='idx_codigo_ca'),
-            models.Index(fields=['ativo'], name='idx_status_equipamento'),
-        ]
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(quantidade_estoque__gte=0),
-                name='check_quantidade_estoque_positiva'
-            ),
-            models.CheckConstraint(
-                check=models.Q(estoque_minimo__gte=1),
-                name='check_estoque_minimo_positivo'
-            ),
-        ]
+        db_table = 'funcao'
+        verbose_name = _("Função")
+        # Plural correto
+        verbose_name_plural = _("Funções")
+        ordering = ['nome']
+
     def __str__(self):
-            return f"{self.nome_equipamento} (CA: {self.codigo_CA or 'N/A'})"
+        return self.nome
+
+class Equipamento(models.Model):
+   
+    nome = models.CharField(max_length=150, verbose_name=_("Nome do Equipamento"))
+    certificado_aprovacao = models.CharField(max_length=50, unique=True, verbose_name=_("Certificado de Aprovação (CA)"))
+    vida_util_dias = models.PositiveIntegerField(verbose_name=_("Vida Útil (dias)"), help_text=_("Vida útil em dias após a entrega, conforme fabricante."))
+    estoque_minimo = models.PositiveIntegerField(default=5, verbose_name=_("Estoque Mínimo"))
+    ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
+
+    class Meta:
+        db_table = 'equipamento'
+        verbose_name = _("Equipamento (EPI)")
+        verbose_name_plural = _("Equipamentos (EPIs)")
+        ordering = ['nome']
+
+    def __str__(self):
+        return f"{self.nome} (CA: {self.certificado_aprovacao})"
+    
+    # ... (outros métodos e propriedades) ...
+
+class MatrizEPI(models.Model):
+    """Define quais EPIs são necessários para cada Função (Matriz de Risco)."""
+    # Apontando para o novo nome da classe 'Funcao'
+    funcao = models.ForeignKey(Funcao, on_delete=models.CASCADE, related_name='matriz_epis')
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='matriz_funcoes')
+    quantidade_padrao = models.PositiveIntegerField(default=1, verbose_name=_("Quantidade Padrão"))
+
+    class Meta:
+        db_table = 'matrizepi'
+        verbose_name = _("Matriz de EPI por Função")
+        verbose_name_plural = _("Matrizes de EPI por Função")
+        unique_together = ('funcao', 'equipamento')
+
+    def __str__(self):
+        # Usando o nome correto do campo 'funcao'
+        return f"{self.funcao.nome} -> {self.equipamento.nome}"
+
+# --- Modelos Operacionais ---
+
+class FichaEPI(models.Model):
+    """A ficha principal que agrupa todas as entregas para um colaborador."""
+    colaborador = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='fichas_epi', verbose_name=_("Colaborador"))
+    # Apontando para o novo nome da classe 'Funcao'
+    funcao = models.ForeignKey(Funcao, on_delete=models.PROTECT, verbose_name=_("Função na Ficha"))
+    data_admissao = models.DateField(verbose_name=_("Data de Admissão"))
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'fichaepi'
+        verbose_name = _("Ficha de EPI")
+        verbose_name_plural = _("Fichas de EPI")
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"Ficha de {self.colaborador.get_full_name()}"
+
+    def get_absolute_url(self):
+        return reverse('seguranca_trabalho:ficha_detalhe', args=[self.pk])
+
+class EntregaEPI(models.Model):
+    """Registra uma entrega (ou devolução) específica de um EPI para um colaborador."""
+    ficha = models.ForeignKey(FichaEPI, on_delete=models.PROTECT, related_name='entregas')
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT)
+    quantidade = models.PositiveIntegerField(default=1)
+    
+    data_entrega = models.DateTimeField(default=timezone.now, verbose_name=_("Data de Entrega"))
+    assinatura_recebimento = models.TextField(blank=True, verbose_name=_("Assinatura de Recebimento (Base64)"))
+    
+    data_devolucao = models.DateTimeField(null=True, blank=True, verbose_name=_("Data de Devolução"))
+    assinatura_devolucao = models.TextField(blank=True, verbose_name=_("Assinatura de Devolução (Base64)"))
+
+    class Meta:
+       
+        verbose_name = _("Entrega de EPI")
+        verbose_name_plural = _("Entregas de EPI")
+        ordering = ['-data_entrega']
+        
+    def __str__(self):
+        return f"{self.quantidade}x {self.equipamento.nome} para {self.ficha.colaborador.get_full_name()}"
 
     @property
-    def precisa_repor(self):
-        return self.quantidade_estoque < self.estoque_minimo
+    def data_vencimento_uso(self):
+        if self.equipamento.vida_util_dias:
+            return self.data_entrega + timedelta(days=self.equipamento.vida_util_dias)
+        return None
 
+    @property
+    def status(self):
+        if self.data_devolucao:
+            return "Devolvido"
+        if self.data_vencimento_uso and timezone.now() > self.data_vencimento_uso:
+            return "Vencido"
+        if not self.assinatura_recebimento:
+            return "Aguardando Assinatura"
+        return "Ativo com Colaborador"
 
-class ItemEquipamentoSeguranca(models.Model):
-    ficha = models.ForeignKey(
-        FichaEPI,
-        on_delete=models.CASCADE,
-        verbose_name=_('Ficha EPI')
-    )
+class MovimentacaoEstoque(models.Model):
+    """Audita todas as entradas e saídas de estoque de forma atômica."""
+    TIPO_MOVIMENTACAO = [('ENTRADA', 'Entrada'), ('SAIDA', 'Saída')]
     
-    equipamento = models.ForeignKey(
-        EPIEquipamentoSeguranca,
-        on_delete=models.CASCADE,
-        verbose_name=_('Equipamento')
-    )
-    
-    quantidade = models.PositiveIntegerField(
-        default=1,
-        verbose_name=_('Quantidade'),
-        validators=[MinValueValidator(1)]
-    )
-    
-    data_entrega = models.DateField(
-        verbose_name=_('Data de Entrega'),
-        default=timezone.now
-    )
-    
-    data_devolucao = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name=_('Data de Devolução')
-    )
-    
-    responsavel_entrega = models.CharField(
-        max_length=100,
-        verbose_name=_('Responsável pela Entrega')
-    )
-    
-    observacoes = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name=_('Observações')
-    )
-    
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT, related_name='movimentacoes_estoque')
+    tipo = models.CharField(max_length=7, choices=TIPO_MOVIMENTACAO)
+    quantidade = models.PositiveIntegerField()
+    data = models.DateTimeField(default=timezone.now)
+    responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    justificativa = models.CharField(max_length=255)
+    entrega_associada = models.ForeignKey(EntregaEPI, on_delete=models.SET_NULL, null=True, blank=True)
+
     class Meta:
-        db_table = 'itens_equipamento_seguranca'
-        verbose_name = _('Item de Equipamento de Segurança')
-        verbose_name_plural = _('Itens de Equipamentos de Segurança')
-        unique_together = ('ficha', 'equipamento')
+        db_table = 'movimentacaoestoque'
+        verbose_name = _("Movimentação de Estoque")
+        verbose_name_plural = _("Movimentações de Estoque")
+        ordering = ['-data']
 
         

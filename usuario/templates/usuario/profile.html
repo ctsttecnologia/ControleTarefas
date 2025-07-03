@@ -69,8 +69,11 @@
                     <img src="{% static 'images/tst.gif' %}" class="card-icon" alt="Ícone de SST">
                     <h5 class="card-title">Segurança do Trabalho</h5>
                     <div class="card-links">
-                         <a href="{% url 'seguranca_trabalho:seguranca_trabalho' %}" class="card-link">Painel SST</a>
-                         <a href="{% url 'epi:criar_ficha' %}" class="card-link">Cadastrar Ficha de EPI</a>
+                        
+                        <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card-link">Painel SST</a>
+                        <a href="{% url 'seguranca_trabalho:ficha_criar_form' %}" class="card-link">Cadastrar Ficha de EPI</a>
+                        <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="card-link">Registrar Incidente</a>
+                        <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card-link"> Agendar Inspeção</a>
                     </div>
                 </div>
             </div>

@@ -1,32 +1,49 @@
-/* Estilos para o formulário de criação/edição de grupos */
+/* =================================================================
+   ARQUIVO: form_grupo_styles.css (VERSÃO OTIMIZADA)
+   ================================================================= */
 
-.section-title {
-    font-weight: 600;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--theme-card-border);
-}
+/* A classe .section-title foi removida e substituída por utilitários
+   do Bootstrap diretamente no template HTML. */
 
-/* Container para a lista de permissões */
+
+/* Container para a lista de permissões do Django */
 #id_permissions {
-    list-style-type: none; /* Remove as bolinhas da lista */
+    list-style-type: none;
     padding: 0.5rem;
-    background-color: var(--theme-bg);
-    border: 1px solid var(--theme-card-border);
+    /* Usando uma cor de fundo sutil do tema para diferenciar a área */
+    background-color: var(--bs-tertiary-bg); 
+    border: 1px solid var(--bs-border-color); /* CORRIGIDO */
     border-radius: 0.5rem;
-    max-height: 400px; /* Altura máxima com barra de rolagem */
+    max-height: 400px;
     overflow-y: auto;
+    transition: background-color 0.3s ease; /* Transição suave para tema escuro/claro */
 }
 
-#id_permissions li {
-    padding: 0.5rem 0.75rem;
-}
-
+/* Efeito de hover nas linhas da lista de permissões */
 #id_permissions li:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    background-color: rgba(var(--bs-primary-rgb), 0.1); /* JÁ ESTAVA CORRETO */
 }
 
-#id_permissions .form-check-label {
+/* Melhora a área de clique de cada permissão */
+#id_permissions li label {
     width: 100%;
     cursor: pointer;
+}
+
+/* =================================================================
+   ESTILO DE BOTÃO MODERNO (REUTILIZÁVEL)
+   ================================================================= */
+
+/* Adicione a classe .btn-glow em qualquer botão para ativar este efeito */
+.btn-primary.btn-glow {
+    /* Sombra inicial para dar profundidade */
+    box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.2);
+    transition: all 0.3s ease-out;
+}
+
+.btn-primary.btn-glow:hover {
+    /* Efeito de "elevar" o botão */
+    transform: translateY(-2px);
+    /* Sombra mais forte e colorida para o efeito de "brilho" */
+    box-shadow: 0 7px 25px rgba(var(--bs-primary-rgb), 0.3);
 }

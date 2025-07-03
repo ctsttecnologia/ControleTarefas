@@ -1,0 +1,78 @@
+/* =================================================================
+   ARQUIVO: login.css
+   Descrição: Estilos exclusivos para as páginas de login,
+              logout e redefinição de senha.
+   ================================================================= */
+
+/* 1. Oculta o header e o footer globais nesta página */
+.body-login header,
+.body-login footer {
+    display: none !important;
+}
+
+/* 2. Estiliza o card de login */
+/*
+   O container (.login-container) agora é controlado por classes
+   utilitárias do Bootstrap diretamente no HTML para maior flexibilidade.
+   Veja o exemplo de HTML abaixo.
+*/
+
+.login-card {
+    width: 100%;
+    max-width: 450px;
+    padding: 2.5rem;
+    /* Adiciona a borda superior de destaque */
+    border-top: 5px solid var(--bs-primary);
+}
+
+.login-logo img {
+    max-width: 150px;
+}
+/* =================================================================
+   ARQUIVO: login.css (Adicionar no final do arquivo)
+   Seção: Estilo Moderno para Botão de Ação
+   ================================================================= */
+
+/* --- Estilo Base do Botão --- */
+.login-card .btn-primary {
+    /* Desativa a imagem de fundo padrão do Bootstrap para usarmos nosso gradiente */
+    background-image: none;
+    
+    /* Cria um gradiente sutil usando a cor primária do tema */
+    background-color: var(--bs-primary);
+    background-image: linear-gradient(45deg, var(--bs-primary) 0%, #0ab0ce 100%);
+    
+    border: none;
+    color: white; /* Garante que o texto seja branco e legível */
+    font-weight: 700; /* Deixa a fonte mais forte */
+    letter-spacing: 1px; /* Aumenta o espaçamento entre as letras */
+    text-transform: uppercase; /* Deixa o texto em maiúsculas */
+
+    /* Sombra sutil para dar profundidade */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+    /* A mágica da animação: qualquer mudança será suave */
+    transition: all 0.3s ease-out;
+}
+
+/* --- Efeito HOVER (passar o mouse por cima) --- */
+.login-card .btn-primary:hover {
+    /* Eleva o botão e aumenta a sombra para um efeito "flutuante" */
+    transform: translateY(-3px);
+    box-shadow: 0 7px 25px rgba(var(--bs-primary-rgb), 0.25); /* Sombra colorida com base no tema */
+}
+
+/* --- Efeito ACTIVE (quando o botão é clicado) --- */
+.login-card .btn-primary:active {
+    /* Empurra o botão "para dentro" da tela */
+    transform: translateY(1px);
+    
+    /* Remove a sombra externa e adiciona uma sombra interna, simulando o clique */
+    box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Efeito FOCUS (para acessibilidade ao navegar com teclado) --- */
+.login-card .btn-primary:focus-visible {
+    /* Mantém o anel de foco padrão do Bootstrap, garantindo acessibilidade */
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.5);
+}

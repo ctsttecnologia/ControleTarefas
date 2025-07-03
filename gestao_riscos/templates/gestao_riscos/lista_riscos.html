@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard de Gestão de Riscos{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <h1 class="h2 mb-0">Gestão de Riscos</h1>
+        <div class="btn-group">
+            <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-danger btn-glow">
+                <i class="bi bi-exclamation-octagon-fill me-1"></i> Registrar Incidente
+            </a>
+            <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split btn-glow" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Mais Ações</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                    <a class="dropdown-item" href="{% url 'gestao_riscos:agendar_inspecao' %}">
+                        <i class="bi bi-calendar-plus me-2"></i>Agendar Inspeção
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow h-100">
+                <div class="card-header text-bg-danger bg-opacity-75">
+                    <h5 class="mb-0 fw-semibold"><i class="bi bi-exclamation-octagon-fill me-2"></i>Últimos Incidentes Registrados</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Descrição</th>
+                                <th scope="col">Setor</th>
+                                <th scope="col" class="text-center">Tipo</th>
+                                <th scope="col">Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for incidente in incidentes %}
+                                <tr>
+                                    <td class="fw-semibold">{{ incidente.descricao }}</td>
+                                    <td>{{ incidente.get_setor_display }}</td>
+                                    <td class="text-center">
+                                        {% with tipo=incidente.get_tipo_incidente_display %}
+                                            <span class="badge rounded-pill 
+                                                {% if 'Grave' in tipo %} text-bg-danger 
+                                                {% elif 'Moderado' in tipo %} text-bg-warning
+                                                {% else %} text-bg-secondary {% endif %}">
+                                                {{ tipo }}
+                                            </span>
+                                        {% endwith %}
+                                    </td>
+                                    <td>{{ incidente.data_ocorrencia|date:"d/m/Y H:i" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center p-5">
+                                        <div class="text-muted">
+                                            <i class="bi bi-shield-check fs-1"></i>
+                                            <h5 class="mt-3">Nenhum incidente recente!</h5>
+                                            <p class="small">Continue mantendo o ambiente de trabalho seguro.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow h-100">
+                <div class="card-header text-bg-warning bg-opacity-75 text-dark">
+                    <h5 class="mb-0 fw-semibold"><i class="bi bi-clipboard2-pulse-fill me-2"></i>Inspeções Pendentes</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <tbody>
+                            {% for inspecao in inspecoes %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ inspecao.equipamento_inspecionado.nome_equipamento }}</div>
+                                        <div class="small text-muted">Inspetor: {{ inspecao.inspetor.get_full_name|default:"Não atribuído" }}</div>
+                                    </td>
+                                    <td class="text-end {% if inspecao.data_agendada.date < data_atual.date %} text-danger fw-bold {% endif %}">
+                                        {{ inspecao.data_agendada|date:"d/m/Y" }}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="2" class="text-center p-5">
+                                        <div class="text-muted">
+                                            <i class="bi bi-calendar2-check-fill fs-1"></i>
+                                            <h5 class="mt-3">Nenhuma inspeção pendente!</h5>
+                                            <p class="small">Tudo em dia.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
