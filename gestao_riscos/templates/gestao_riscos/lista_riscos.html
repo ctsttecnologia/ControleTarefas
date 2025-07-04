@@ -9,15 +9,18 @@
     <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <h1 class="h2 mb-0">Gestão de Riscos</h1>
         <div class="btn-group">
-            <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-danger btn-glow">
+            <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Dashboard
+            </a>            
+            <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-danger btn-glow" title="Registrar Incidente">
                 <i class="bi bi-exclamation-octagon-fill me-1"></i> Registrar Incidente
             </a>
-            <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split btn-glow" data-bs-toggle="dropdown" aria-expanded="false">
+            <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split btn-glow" data-bs-toggle="dropdown" aria-expanded="false" title="Agendar inspeção">
                 <span class="visually-hidden">Mais Ações</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 <li>
-                    <a class="dropdown-item" href="{% url 'gestao_riscos:agendar_inspecao' %}">
+                    <a class="dropdown-item" href="{% url 'gestao_riscos:agendar_inspecao' %}" title="Agendar inspeção">
                         <i class="bi bi-calendar-plus me-2"></i>Agendar Inspeção
                     </a>
                 </li>

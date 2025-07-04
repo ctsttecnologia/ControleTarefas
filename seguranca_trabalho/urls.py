@@ -19,7 +19,23 @@ urlpatterns = [
     path('entregas/<int:pk>/assinar-recebimento/', views.assinar_entrega_recebimento, name='assinar_recebimento'),
     path('entregas/<int:pk>/registrar-devolucao/', views.registrar_devolucao, name='registrar_devolucao'),
 
+    # Equipamentos
     path('equipamentos/', views.EquipamentoListView.as_view(), name='equipamento_list'),
     path('equipamentos/novo/', views.EquipamentoCreateView.as_view(), name='equipamento_create'),
-    path('equipamentos/editar/<int:pk>/', views.EquipamentoUpdateView.as_view(), name='equipamento_update'),
+    path('equipamentos/<int:pk>/', views.EquipamentoDetailView.as_view(), name='equipamento_detail'),
+    path('equipamentos/<int:pk>/editar/', views.EquipamentoUpdateView.as_view(), name='equipamento_update'),
+    path('equipamentos/<int:pk>/excluir/', views.EquipamentoDetailView.as_view(), name='equipamento_delete'),
+
+    # URLs de Fabricante
+    path('fabricantes/', views.FabricanteListView.as_view(), name='fabricante_list'),
+    path('fabricantes/novo/', views.FabricanteCreateView.as_view(), name='fabricante_create'),
+    path('fabricantes/<int:pk>/', views.FabricanteDetailView.as_view(), name='fabricante_detail'),
+    path('fabricantes/<int:pk>/editar/', views.FabricanteUpdateView.as_view(), name='fabricante_update'),
+    
+    # URLs de Fornecedor
+    path('fornecedores/', views.FornecedorListView.as_view(), name='fornecedor_list'),
+    path('fornecedores/novo/', views.FornecedorCreateView.as_view(), name='fornecedor_create'),
+    path('fornecedores/<int:pk>/', views.FornecedorDetailView.as_view(), name='fornecedor_detail'),
+    path('fornecedores/<int:pk>/editar/', views.FornecedorUpdateView.as_view(), name='fornecedor_update'),
+
 ]

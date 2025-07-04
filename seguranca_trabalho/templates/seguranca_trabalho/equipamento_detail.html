@@ -1,0 +1,89 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalhes: {{ equipamento.nome }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2">Detalhes do Equipamento</h1>
+            <p class="text-muted">{{ equipamento.nome }} {{ equipamento.modelo }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
+            </a>
+            <a href="{% url 'seguranca_trabalho:equipamento_update' equipamento.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil-fill me-1"></i> Editar
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <div class="row g-4">
+                <div class="col-md-4 text-center">
+                    {% if equipamento.foto %}
+                        <img src="{{ equipamento.foto.url }}" alt="Foto de {{ equipamento.nome }}" class="img-fluid rounded border mb-3" style="max-height: 250px;">
+                    {% else %}
+                        <div class="bg-light-subtle border rounded d-flex align-items-center justify-content-center mb-3" style="height: 250px;">
+                            <i class="bi bi-image-alt text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-8">
+                    <dl class="row">
+                        <dt class="col-sm-4">Nome do Equipamento</dt>
+                        <dd class="col-sm-8">{{ equipamento.nome }}</dd>
+
+                        <dt class="col-sm-4">Modelo</dt>
+                        <dd class="col-sm-8">{{ equipamento.modelo|default:"Não informado" }}</dd>
+
+                        <dt class="col-sm-4">Fabricante</dt>
+                        <dd class="col-sm-8">{{ equipamento.fabricante.nome|default:"Não informado" }}</dd>
+                        
+                        <dt class="col-sm-4">Fornecedor Padrão</dt>
+                        <dd class="col-sm-8">{{ equipamento.fornecedor_padrao|default:"Não informado" }}</dd>
+
+                        <hr class="my-3">
+
+                        <dt class="col-sm-4">Certificado de Aprovação (CA)</dt>
+                        <dd class="col-sm-8">{{ equipamento.certificado_aprovacao|default:"Não aplicável" }}</dd>
+
+                        <dt class="col-sm-4">Validade do CA</dt>
+                        <dd class="col-sm-8">{{ equipamento.data_validade_ca|date:"d/m/Y"|default:"Não aplicável" }}</dd>
+                        
+                        <dt class="col-sm-4">Vida Útil em Uso</dt>
+                        <dd class="col-sm-8">{{ equipamento.vida_util_dias }} dias</dd>
+                        
+                        <dt class="col-sm-4">Estoque Mínimo</dt>
+                        <dd class="col-sm-8">{{ equipamento.estoque_minimo }} unidades</dd>
+
+                        <hr class="my-3">
+
+                        <dt class="col-sm-4">Requer Rastreamento por Série?</dt>
+                        <dd class="col-sm-8">{{ equipamento.requer_numero_serie|yesno:"Sim,Não" }}</dd>
+                        
+                        <dt class="col-sm-4">Status no Catálogo</dt>
+                        <dd class="col-sm-8">
+                             {% if equipamento.ativo %}
+                                <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">Inativo</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+                 <div class="col-12">
+                    <h5 class="mt-4">Observações</h5>
+                    <div class="p-3 bg-light-subtle rounded border">
+                        {{ equipamento.observacoes|linebreaksbr|default:"Nenhuma observação cadastrada." }}
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

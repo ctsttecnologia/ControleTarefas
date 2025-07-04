@@ -7,19 +7,19 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import ListView, CreateView, UpdateView, DetailView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, DeleteView
 from django.http import HttpResponse
 
-from .models import Equipamento, FichaEPI, EntregaEPI, MovimentacaoEstoque
-from .forms import EquipamentoForm, FichaEPIForm, EntregaEPIForm, AssinaturaForm
+from .models import Equipamento, FichaEPI, EntregaEPI, MovimentacaoEstoque, Fabricante, Fornecedor
+from .forms import EquipamentoForm, FichaEPIForm, EntregaEPIForm, AssinaturaForm, FabricanteForm, FornecedorForm
 
 
 
 class EquipamentoListView(LoginRequiredMixin, ListView):
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_list.html'
-    context_object_name = 'equipamentos'
-    paginate_by = 10
+    context_object_name = 'object_list'
+    paginate_by = 10 # Opcional: para adicionar paginação
 
 class EquipamentoCreateView(LoginRequiredMixin, CreateView):
     model = Equipamento
@@ -50,6 +50,81 @@ class EquipamentoUpdateView(LoginRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Equipamento: {self.object.nome}"
         return context
+
+class EquipamentoDetailView(LoginRequiredMixin, DeleteView):
+    model = Equipamento
+    success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
+    # O template de confirmação é o modal no equipamento_list.html,
+    # esta view apenas processa a exclusão via POST.
+
+
+# --- VIEWS PARA FABRICANTE ---
+
+class FabricanteListView(LoginRequiredMixin, ListView):
+    model = Fabricante
+    template_name = 'seguranca_trabalho/fabricante_list.html'
+    context_object_name = 'object_list'
+
+class FabricanteDetailView(LoginRequiredMixin, DetailView):
+    model = Fabricante
+    template_name = 'seguranca_trabalho/fabricante_detail.html'
+
+class FabricanteCreateView(LoginRequiredMixin, CreateView):
+    model = Fabricante
+    form_class = FabricanteForm
+    template_name = 'seguranca_trabalho/fabricante_form.html'
+    success_url = reverse_lazy('seguranca_trabalho:fabricante_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Adicionar Novo Fabricante'
+        return context
+
+class FabricanteUpdateView(LoginRequiredMixin, UpdateView):
+    model = Fabricante
+    form_class = FabricanteForm
+    template_name = 'seguranca_trabalho/fabricante_form.html'
+    success_url = reverse_lazy('seguranca_trabalho:fabricante_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f'Editar Fabricante: {self.object.nome}'
+        return context
+
+
+# --- VIEWS PARA FORNECEDOR ---
+
+class FornecedorListView(LoginRequiredMixin, ListView):
+    model = Fornecedor
+    template_name = 'seguranca_trabalho/fornecedor_list.html'
+    context_object_name = 'object_list'
+
+class FornecedorDetailView(LoginRequiredMixin, DetailView):
+    model = Fornecedor
+    template_name = 'seguranca_trabalho/fornecedor_detail.html'
+
+class FornecedorCreateView(LoginRequiredMixin, CreateView):
+    model = Fornecedor
+    form_class = FornecedorForm
+    template_name = 'seguranca_trabalho/fornecedor_form.html'
+    success_url = reverse_lazy('seguranca_trabalho:fornecedor_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Adicionar Novo Fornecedor'
+        return context
+
+class FornecedorUpdateView(LoginRequiredMixin, UpdateView):
+    model = Fornecedor
+    form_class = FornecedorForm
+    template_name = 'seguranca_trabalho/fornecedor_form.html'
+    success_url = reverse_lazy('seguranca_trabalho:fornecedor_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f'Editar Fornecedor: {self.object}'
+        return context
+
 
 class DashboardSSTView(LoginRequiredMixin, ListView):
     model = FichaEPI
