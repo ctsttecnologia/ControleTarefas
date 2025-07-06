@@ -106,7 +106,12 @@
                             <label for="{{ form.estatus.id_for_label }}">{{ form.estatus.label }}</label>
                         </div>
                     </div>
-
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            {% render_field form.usuario class+="form-select" required="required" %}
+                            <label for="{{ form.usuario.id_for_label }}">{{ form.usuario.label }}</label>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Botões de Ação -->

@@ -1,0 +1,28 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'cssseguranca/styles.css' %}">
+    {% block sst_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="subnav-sst">
+    <div class="container-fluid">
+        <ul class="nav nav-pills">
+            <li class="nav-item"><a href="#" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">Dashboard</a></li>
+            <li class="nav-item"><a href="{% url 'seguranca_trabalho:ficha_lista' %}" class="nav-link {% if 'ficha_' in request.resolver_match.view_name %}active{% endif %}">Fichas de EPI</a></li>
+            <li class="nav-item"><a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-link {% if 'equipamento_' in request.resolver_match.view_name %}active{% endif %}">Equipamentos</a></li>
+        </ul>
+    </div>
+</div>
+
+<main class="container-fluid py-4">
+    {% block sst_content %}{% endblock %}
+</main>
+{% endblock %}
+
+{% block extra_js %}
+    {% block sst_extra_js %}{% endblock %}
+{% endblock %}

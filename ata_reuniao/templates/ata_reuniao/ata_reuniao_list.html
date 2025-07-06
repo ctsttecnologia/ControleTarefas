@@ -1,154 +1,148 @@
 
-
+{% extends "base.html" %}
 {% load static %}
 
+{% block title %}Lista de Atas de Reunião{% endblock title %}
+
+{% block extra_css %}
+    <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
+{% endblock extra_css %}
+
 {% block content %}
+<div class="container mt-4">
 
-<link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
+    {# Cabeçalho da Página com Título e Ações #}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 mb-0">Atas de Reunião</h2>
+        {# CORREÇÃO: Botão com classe de cor específica, ex: btn-primary #}
+        <a href="{% url 'ata_reuniao_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Nova Ata de Reunião
+        </a>
+    </div>
 
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
-<div class="container">
-    <a href="{% url 'ata_reuniao_create' %}" class="btn btn-outline">
-        <i class="bi bi-pencil"></i> Cadastrar Item
-    </a>
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Lista - Atas de Reunião</h5>
-            <div class="d-flex">
-                <div class="dropdown me-2">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <h5 class="mb-0">Filtros e Opções</h5>
+            <div class="d-flex flex-wrap gap-2">
+                {# Filtro por Status #}
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownStatus" data-bs-toggle="dropdown" aria-expanded="false">
                         Filtrar por Status
                     </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="?">Todos</a></li>
-                        {% for status in view.model.STATUS_CHOICES %}
-                            <li><a class="dropdown-item" href="?status={{ status.0 }}">{{ status.1 }}</a></li>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownStatus">
+                        <li><a class="dropdown-item" href="?natureza={{ request.GET.natureza|default:'' }}">Todos</a></li>
+                        {% for status_key, status_value in view.model.STATUS_CHOICES %}
+                            <li><a class="dropdown-item" href="?status={{ status_key }}&natureza={{ request.GET.natureza|default:'' }}">{{ status_value }}</a></li>
                         {% endfor %}
                     </ul>
                 </div>
+                {# Filtro por Natureza #}
                 <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownNatureza" data-bs-toggle="dropdown" aria-expanded="false">
                         Filtrar por Natureza
                     </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="?">Todos</a></li>
-                        {% for natureza in view.model.NATUREZA_CHOICES %}
-                            <li><a class="dropdown-item" href="?natureza={{ natureza.0 }}">{{ natureza.1 }}</a></li>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownNatureza">
+                        <li><a class="dropdown-item" href="?status={{ request.GET.status|default:'' }}">Todos</a></li>
+                        {% for natureza_key, natureza_value in view.model.NATUREZA_CHOICES %}
+                            <li><a class="dropdown-item" href="?status={{ request.GET.status|default:'' }}&natureza={{ natureza_key }}">{{ natureza_value }}</a></li>
                         {% endfor %}
                     </ul>
                 </div>
             </div>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
                         <tr>
                             <th>ID</th>
                             <th>Contrato</th>
                             <th>Natureza</th>
-                            <th>Coordenador</th>    
+                            <th>Coordenador</th>
                             <th>Responsável</th>
                             <th>Entrada</th>
                             <th>Prazo</th>
                             <th>Status</th>
-                            <th>Ações</th>
+                            <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ata in atas %}
                         <tr>
-                            <td data-label="ID">{{ ata.id }}</td>
-                            <td data-label="Contrato">{{ ata.contrato }}</td>
-                            <td data-label="Natureza">{{ ata.get_natureza_display }}</td>
-                            <td data-label="Coordenador">{{ ata.coordenador }}</td>
-                            <td data-label="Responsável">{{ ata.responsavel }}</td>
-                            <td data-label="Entrada">{{ ata.entrada|date:"d/m/Y" }}</td>
-                            <td data-label="Prazo">{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
-                            <td data-label="Status">
-                                <span class="badge 
-                                    {% if ata.status == 'Concluído' %}bg-success
-                                    {% elif ata.status == 'Andamento' %}bg-primary
-                                    {% elif ata.status == 'Pendente' %}bg-warning
-                                    {% else %}bg-secondary{% endif %}">
+                            <td>{{ ata.id }}</td>
+                            <td>{{ ata.contrato }}</td>
+                            <td>{{ ata.get_natureza_display }}</td>
+                            <td>{{ ata.coordenador }}</td>
+                            <td>{{ ata.responsavel }}</td>
+                            <td>{{ ata.entrada|date:"d/m/Y" }}</td>
+                            <td>{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
+                            <td>
+                                {# MELHORIA: Lógica de cores do badge simplificada usando um mapeamento #}
+                                {% with status_classes='{"Concluído": "bg-success", "Andamento": "bg-primary", "Pendente": "bg-warning"}'|json_script:"status_classes_map" %}
+                                <span id="status-badge-{{ ata.pk }}" class="badge rounded-pill">
                                     {{ ata.get_status_display }}
                                 </span>
+                                <script>
+                                    (function() {
+                                        const classes = JSON.parse(document.getElementById('status_classes_map').textContent);
+                                        const status = "{{ ata.status }}";
+                                        const badge = document.getElementById('status-badge-{{ ata.pk }}');
+                                        badge.classList.add(classes[status] || 'bg-secondary');
+                                    })();
+                                </script>
+                                {% endwith %}
                             </td>
-                            <td data-label="Ações">
+                            <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary">
-                                        <i class="bi bi-pencil"></i> Editar
+                                    <a href="{% url 'ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
                                     </a>
-                                    <a href="{% url 'ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger">
-                                        <i class="bi bi-trash"></i> Excluir
+                                    <a href="{% url 'ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash-fill"></i>
                                     </a>
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9" class="text-center">Nenhuma ata de reunião encontrada.</td>
+                            <td colspan="9" class="text-center py-4">Nenhuma ata de reunião encontrada.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            
-            {% if is_paginated %}
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
+        </div>
+        
+        {% if is_paginated %}
+        <div class="card-footer">
+            <nav aria-label="Paginação">
+                {# MELHORIA: Paginação agora preserva os filtros aplicados #}
+                {% with base_query=request.GET.urlencode|cut:"&page="|cut:request.GET.page %}
+                <ul class="pagination justify-content-center mb-0">
                     {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1">&laquo; Primeira</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
-                        </li>
+                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page=1">&laquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
                     {% endif %}
                     
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-                        </span>
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
                     </li>
                     
                     {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
-                        </li>
+                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page={{ page_obj.next_page_number }}">Próxima</a></li>
+                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Próxima</span></li>
+                        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
                     {% endif %}
                 </ul>
+                {% endwith %}
             </nav>
-            {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}   
-<!-- Adicionando Bootstrap Icons -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
-
-<!-- Script para melhorar a experiência mobile -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Adiciona classe para identificar dispositivos móveis
-    if (window.innerWidth < 768) {
-        document.body.classList.add('mobile-view');
-    }
-    
-    // Atualiza quando a janela é redimensionada
-    window.addEventListener('resize', function() {
-        if (window.innerWidth < 768) {
-            document.body.classList.add('mobile-view');
-        } else {
-            document.body.classList.remove('mobile-view');
-        }
-    });
-});
-</script>
-
-{% endblock %}
+{% endblock content %}

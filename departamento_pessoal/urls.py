@@ -1,59 +1,31 @@
-# documents_app/urls.py
-
+# departamento_pessoal/urls.py
 from django.urls import path
 from .views import (
-    CadastroAuxiliarView,
-    CargoUpdateView,
-    CboUpdateView,
-    DepartamentoUpdateView,
-    DetalhesAdmissaoView,
-    buscar_funcionario_por_matricula,
-    check_email_exists,
-    departamento_pessoal,
-    lista_funcionarios,
-    cadastrar_funcionario,
-    FuncionarioDetailView,
-    editar_funcionario,
-    confirmar_exclusao_funcionario,
-    cadastrar_documentos,
-    editar_documentos,
-    NovaAdmissaoView,
-    EditarAdmissaoView,
-    ListaAdmissoesView,
-
+    FuncionarioListView, FuncionarioDetailView, FuncionarioCreateView, 
+    FuncionarioUpdateView, FuncionarioDeleteView,
+    DepartamentoListView, DepartamentoCreateView, DepartamentoUpdateView,
+    CargoListView, CargoCreateView, CargoUpdateView,
 )
 
 app_name = 'departamento_pessoal'
 
 urlpatterns = [
-    # --- Views Principais (baseadas em função) ---
-    path('', departamento_pessoal, name='departamento_pessoal'),
+    # A rota principal da app agora será a lista de funcionários
+    path('', FuncionarioListView.as_view(), name='funcionario_list'),
     
-    # --- URLs de Funcionários ---
-    path('funcionarios/', lista_funcionarios, name='lista_funcionarios'),
-    path('funcionarios/novo/', cadastrar_funcionario, name='cadastrar_funcionario'),
-    path('funcionarios/<int:pk>/', FuncionarioDetailView.as_view(), name='detalhe_funcionario'), # É uma classe, usa .as_view()
-    path('funcionarios/<int:pk>/editar/', editar_funcionario, name='editar_funcionario'),
-    path('funcionarios/<int:pk>/excluir/', confirmar_exclusao_funcionario, name='confirmar_exclusao_funcionario'),
-    
-    # --- URLs de Documentos (baseadas em função) ---
-    path('funcionarios/<int:funcionario_pk>/documentos/novo/', cadastrar_documentos, name='cadastrar_documentos'),
-    path('funcionarios/<int:funcionario_pk>/documentos/<int:pk>/editar/', editar_documentos, name='editar_documentos'),
-    
-    # --- URLs de Admissão (aqui usamos classes) ---
-    # CORREÇÃO: Aplicando .as_view() na sua nova URL
-    path('admissoes/', ListaAdmissoesView.as_view(), name='lista_admissoes'),
-    path('admissoes/<int:pk>/', DetalhesAdmissaoView.as_view(), name='detalhes_admissao'),
-    path('funcionarios/<int:funcionario_pk>/admissao/nova/', NovaAdmissaoView.as_view(), name='nova_admissao'),
-    path('admissoes/<int:pk>/editar/', EditarAdmissaoView.as_view(), name='editar_admissao'), # CORREÇÃO: Mantive uma URL mais simples, ajuste se necessário
+    # Rotas para o CRUD de Funcionários
+    path('funcionarios/novo/', FuncionarioCreateView.as_view(), name='funcionario_create'),
+    path('funcionarios/<int:pk>/', FuncionarioDetailView.as_view(), name='funcionario_detail'),
+    path('funcionarios/<int:pk>/editar/', FuncionarioUpdateView.as_view(), name='funcionario_update'),
+    path('funcionarios/<int:pk>/excluir/', FuncionarioDeleteView.as_view(), name='funcionario_delete'),
 
-    # --- URLs de Cadastro Auxiliar (classes) ---
-    path('cadastro-auxiliar/', CadastroAuxiliarView.as_view(), name='cadastro_auxiliar'),
-    path('departamentos/<int:pk>/editar/', DepartamentoUpdateView.as_view(), name='departamento_editar'),
-    path('cargos/<int:pk>/editar/', CargoUpdateView.as_view(), name='cargo_editar'),
-    path('cbos/<int:pk>/editar/', CboUpdateView.as_view(), name='cbo_editar'), 
-
-    # --- URLs de API / AJAX (baseadas em função) ---
-    path('api/buscar-funcionario/', buscar_funcionario_por_matricula, name='buscar_funcionario'),
-    path('api/check-email/', check_email_exists, name='check_email'), # Adicionando um nome para a URL de checagem de email
+    # Rotas para o CRUD de Departamentos
+    path('departamentos/', DepartamentoListView.as_view(), name='departamento_list'),
+    path('departamentos/novo/', DepartamentoCreateView.as_view(), name='departamento_create'),
+    path('departamentos/<int:pk>/editar/', DepartamentoUpdateView.as_view(), name='departamento_update'),
+    
+    # Rotas para o CRUD de Cargos
+    path('cargos/', CargoListView.as_view(), name='cargo_list'),
+    path('cargos/novo/', CargoCreateView.as_view(), name='cargo_create'),
+    path('cargos/<int:pk>/editar/', CargoUpdateView.as_view(), name='cargo_update'),
 ]

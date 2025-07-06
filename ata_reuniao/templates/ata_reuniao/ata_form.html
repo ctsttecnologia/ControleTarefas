@@ -1,151 +1,88 @@
+{% extends "base.html" %}
+{% load static widget_tweaks %}
 
+{% block title %}
+    {% if object %}Editar Ata de Reunião{% else %}Criar Nova Ata de Reunião{% endif %}
+{% endblock title %}
 
-{% load static %}
-{% load widget_tweaks %}  <!-- Adicione esta linha para usar o filtro add_class -->
+{% block extra_css %}
+    {# Mantemos os estilos específicos para este formulário, se houver #}
+    <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
+{% endblock extra_css %}
 
 {% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10 col-xl-8">
 
-<link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
-
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
-
-<h2>Ata de Reunião</h2>
-
-<!-- Botões de navegação no topo -->
-<div class="d-flex justify-content-between mb-3">
-    <div>
-        <a href="{% url 'ata_reuniao_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </a>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">
-            {% if object %}Editar Ata de Reunião{% else %}Criar Nova Ata de Reunião{% endif %}
-        </h5>
-    </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">
-                    {% for error in form.non_field_errors %}
-                        {{ error }}
-                    {% endfor %}
-                </div>
-            {% endif %}
-            
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="{{ form.contrato.id_for_label }}" class="form-label">Contrato</label>
-                    {{ form.contrato|add_class:"form-select" }}  <!-- Adicionado form-select -->
-                    {% if form.contrato.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.contrato.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.natureza.id_for_label }}" class="form-label">Natureza *</label>
-                    {{ form.natureza|add_class:"form-select" }}  <!-- Adicionado form-select -->
-                    {% if form.natureza.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.natureza.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label for="{{ form.coordenador.id_for_label }}" class="form-label">Coordenador</label>
-                    {{ form.coordenador|add_class:"form-select" }}  <!-- Adicionado form-select -->
-                    {% if form.coordenador.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.coordenador.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="col-md-6">
-                    <label for="{{ form.responsavel.id_for_label }}" class="form-label">Responsável</label>
-                    {{ form.responsavel|add_class:"form-select" }}  <!-- Adicionado form-select -->
-                    {% if form.responsavel.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.responsavel.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="mb-3">
-                <label for="{{ form.acao.id_for_label }}" class="form-label">Ação/Proposta</label>
-                {{ form.acao|add_class:"form-control" }}  <!-- Adicionado form-control para textarea -->
-                {% if form.acao.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in form.acao.errors %}
-                            {{ error }}
-                        {% endfor %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-light py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h4 mb-0 fw-light">
+                            <i class="bi bi-pencil-square text-primary me-2"></i>
+                            {% if object %}
+                                Editar Ata de Reunião #{{ object.id }}
+                            {% else %}
+                                Criar Nova Ata de Reunião
+                            {% endif %}
+                        </h2>
+                        <a href="{% url 'ata_reuniao_list' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
+                        </a>
                     </div>
-                {% endif %}
-            </div>
-            
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <label for="{{ form.entrada.id_for_label }}" class="form-label">Data de Entrada</label>
-                    {{ form.entrada|add_class:"form-control" }}  <!-- Adicionado form-control -->
-                    {% if form.entrada.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.entrada.errors %}
-                                {{ error }}
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {# Exibe erros que não são específicos de um campo (non-field errors) #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {# --- MELHORIA: Loop para renderizar todos os campos do formulário --- #}
+                        {# Este loop cria a estrutura para cada campo, evitando repetição. #}
+                        <div class="row g-3">
+                            {% for field in form %}
+                                <div class="col-12 {% if field.name in 'contrato,natureza,coordenador,responsavel' %}col-md-6{% elif field.name in 'entrada,prazo,status' %}col-md-4{% endif %}">
+                                    <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                                    
+                                    {# Adiciona a classe 'form-select' para campos de escolha e 'form-control' para os outros #}
+                                    {% if 'Select' in field.field.widget|stringformat:"s" %}
+                                        {% render_field field class+="form-select is-invalid"|if:field.errors %}
+                                    {% else %}
+                                        {% render_field field class+="form-control is-invalid"|if:field.errors %}
+                                    {% endif %}
+                                        
+                                    {% if field.help_text %}
+                                        <div class="form-text text-muted small mt-1">{{ field.help_text|safe }}</div>
+                                    {% endif %}
+                                    
+                                    {% if field.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in field.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             {% endfor %}
                         </div>
-                    {% endif %}
-                </div>
-                <div class="col-md-4">
-                    <label for="{{ form.prazo.id_for_label }}" class="form-label">Prazo</label>
-                    {{ form.prazo|add_class:"form-control" }}  <!-- Adicionado form-control -->
-                    {% if form.prazo.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.prazo.errors %}
-                                {{ error }}
-                            {% endfor %}
+
+                        {# --- Botões de Ação --- #}
+                        <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">
+                            <a href="{% url 'ata_reuniao_list' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i>
+                                {% if object %}Atualizar{% else %}Criar{% endif %}
+                            </button>
                         </div>
-                    {% endif %}
-                </div>
-                <div class="col-md-4">
-                    <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-                    {{ form.status|add_class:"form-select" }}  <!-- Adicionado form-select -->
-                    {% if form.status.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in form.status.errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    </form>
                 </div>
             </div>
-            
-            <div class="d-flex justify-content-between">
-                <a href="{% url 'ata_reuniao_list' %}" class="btn btn-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-primary">
-                    {% if object %}Atualizar{% else %}Criar{% endif %}
-                </button>
-            </div>
-        </form>
+
+        </div>
     </div>
 </div>
-{% endblock %}
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}   
+{% endblock content %}

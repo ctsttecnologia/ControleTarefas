@@ -1,12 +1,15 @@
 
+{% comment %} templates/includes/footer.html {% endcomment %}
 {% load static %}
 
-<footer class="footer-custom"  >
+<footer class="footer mt-auto py-3">
     <div class="container text-center">
-        <p class="mb-0">
+        
+        {# CORREÇÃO: O atributo 'class' foi movido para fora do 'style' #}
+        <p class="mb-0" style="font-size: 0.85rem;">
             &copy; {% now "Y" %} Gerenciando Tarefas. Todos os direitos reservados.<br>
             Desenvolvido por Emerson Gonçalves
         </p>
+        
     </div>
 </footer>
-

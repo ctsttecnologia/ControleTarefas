@@ -1,60 +1,42 @@
 
-{% extends "base.html" %}
-
+{% extends "seguranca_trabalho/_base_sst.html" %}
 {% block title %}Fichas de EPI{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <!-- Cabeçalho -->
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <h1 class="h2 mb-0">Fichas de EPI</h1>
-        <a href="{% url 'seguranca_trabalho:ficha_criar' %}" class="btn btn-primary btn-glow">
-            <i class="bi bi-file-earmark-plus-fill me-1"></i> Nova Ficha
-        </a>
-    </header>
-
-    <!-- Tabela de Fichas -->
-    <div class="card shadow-sm">
+{% block sst_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2">Fichas de EPI</h1>
+    <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nova Ficha
+    </a>
+</div>
+<div class="card shadow-sm">
+    <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="table table-hover">
+                <thead>
                     <tr>
-                        <th class="ps-4">Colaborador</th>
-                        <th>Cargo</th>
-                        <th>Data de Admissão</th>
-                        <th>Status</th>
-                        <th class="pe-4"></th>
+                        <th>Colaborador</th><th>Cargo</th><th>Data Admissão</th><th>Criado Em</th><th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for ficha in fichas %}
-                        <tr>
-                            <td class="ps-4 fw-semibold">{{ ficha.colaborador.get_full_name }}</td>
-                            <td>{{ ficha.cargo }}</td>
-                            <td>{{ ficha.data_admissao|date:"d/m/Y" }}</td>
-                            <td>
-                                {% if ficha.ativo %}
-                                    <span class="badge text-bg-success">Ativa</span>
-                                {% else %}
-                                    <span class="badge text-bg-danger">Inativa</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end pe-4">
-                                <a href="{{ ficha.get_absolute_url }}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td><a href="{{ ficha.get_absolute_url }}">{{ ficha.funcionario.nome_completo }}</a></td>
+                        <td>{{ ficha.funcionario.cargo.nome|default:"-" }}</td>
+                        <td>{{ ficha.data_admissao|date:"d/m/Y" }}</td>
+                        <td>{{ ficha.criado_em|date:"d/m/Y" }}</td>
+                        <td class="text-end">
+                            <a href="{{ ficha.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">Ver Detalhes</a>
+                        </td>
+                    </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center p-5 text-muted">Nenhuma ficha de EPI encontrada.</td>
-                        </tr>
+                    <tr><td colspan="5" class="text-center py-4">Nenhuma ficha de EPI cadastrada.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% include 'includes/pagination.html' %}
     </div>
-    
-    <!-- Paginação -->
-    {% include 'includes/pagination.html' %} {# Assumindo que você tem um template de paginação #}
 </div>
 {% endblock %}
 

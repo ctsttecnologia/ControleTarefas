@@ -36,7 +36,7 @@
                     <h5 class="card-title">Tarefas</h5>
                     <div class="card-links">
                         <a href="{% url 'tarefas:listar_tarefas' %}" class="card-link">Minhas Tarefas</a>
-                        <a href="{% url 'tarefas:dashboard_analitico' %}" class="card-link">Dashboard</a>
+                        <a href="{% url 'tarefas:dashboard_analitico' %}" class="card-link">Dashboard Analítico</a>
                         <a href="{% url 'tarefas:calendario_tarefas' %}" class="card-link">Agenda</a>
                     </div>
                 </div>
@@ -58,8 +58,9 @@
                     <img src="{% static 'images/dp.gif' %}" class="card-icon" alt="Ícone de DP">
                     <h5 class="card-title">Departamento Pessoal</h5>
                     <div class="card-links">
-                        <a href="{% url 'departamento_pessoal:departamento_pessoal' %}" class="card-link">Painel DP</a>
-                        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="card-link">Treinamentos</a>
+                        <a href="{% url 'departamento_pessoal:funcionario_list' %}" class="card-link">Funcionários</a>
+                        <a href="{% url 'departamento_pessoal:cargo_list' %}" class="card-link">Cargos</a>
+                        <a href="{% url 'departamento_pessoal:departamento_list' %}" class="card-link">Departamentos</a>
                     </div>
                 </div>
             </div>
@@ -69,10 +70,9 @@
                     <img src="{% static 'images/tst.gif' %}" class="card-icon" alt="Ícone de SST">
                     <h5 class="card-title">Segurança do Trabalho</h5>
                     <div class="card-links">
-                        
                         <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card-link">Painel SST</a>
-                        <a href="{% url 'seguranca_trabalho:ficha_criar_form' %}" class="card-link">Cadastrar Ficha de EPI</a>
-                        <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="card-link">Registrar Incidente</a>
+                        <a href="{% url 'seguranca_trabalho:ficha_lista' %}" class="card-link">Fichas de EPI</a>
+                        <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="card-link">Catálogo de EPIs</a>
                         <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card-link"> Agendar Inspeção</a>
                     </div>
                 </div>

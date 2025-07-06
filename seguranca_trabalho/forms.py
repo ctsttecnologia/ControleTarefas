@@ -3,6 +3,11 @@
 
 from django import forms
 from .models import Equipamento, Funcao, FichaEPI, EntregaEPI, Fabricante, Fornecedor
+from departamento_pessoal.models import Funcionario
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
 
 # --- FORMULÁRIO DE FABRICANTE  ---
 class FabricanteForm(forms.ModelForm):
@@ -53,12 +58,22 @@ class EquipamentoForm(forms.ModelForm):
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-
 class FichaEPIForm(forms.ModelForm):
     class Meta:
         model = FichaEPI
         fields = ['colaborador', 'funcao', 'data_admissao']
-        widgets = {'data_admissao': forms.DateInput(attrs={'type': 'date'})}
+        widgets = {
+            'colaborador': forms.Select(attrs={'class': 'form-select'}),
+            'funcao': forms.Select(attrs={'class': 'form-select'}),
+            'data_admissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtra o dropdown de 'colaborador' para mostrar apenas usuários
+        # que existem na tabela de Funcionarios.
+        colaborador_ids = Funcionario.objects.values_list('usuario_id', flat=True)
+        self.fields['colaborador'].queryset = User.objects.filter(pk__in=colaborador_ids)
 
 class EntregaEPIForm(forms.ModelForm):
     class Meta:
