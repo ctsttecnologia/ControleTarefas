@@ -1,8 +1,7 @@
-
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}{{ titulo_pagina|default:"Formulário" }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Formulário de Ficha de EPI" }}{% endblock %}
 
 {% block content %}
 <main class="container py-5">
@@ -12,7 +11,7 @@
                 <div class="card-header bg-white py-3 border-bottom">
                     <h2 class="h4 mb-0 fw-semibold">
                         <i class="bi bi-pencil-square text-primary me-2"></i>
-                        {{ titulo_pagina|default:"Formulário" }}
+                        {{ titulo_pagina|default:"Formulário de Ficha de EPI" }}
                     </h2>
                 </div>
                 <div class="card-body p-4 p-md-5">
@@ -60,5 +59,54 @@
         </div>
     </div>
 </main>
-{% endblock %}
+{% endblock content %}
+
+{% block javascript %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const colaboradorSelect = document.querySelector('#id_colaborador');
+    const funcaoSelect = document.querySelector('#id_funcao');
+
+    if (!colaboradorSelect || !funcaoSelect) {
+        console.error("AVISO: Campos de formulário #id_colaborador ou #id_funcao não encontrados.");
+        return;
+    }
+
+    function atualizarFuncao() {
+        const colaboradorId = colaboradorSelect.value;
+        if (!colaboradorId) {
+            funcaoSelect.value = '';
+            return;
+        }
+
+        // CORREÇÃO: Monta a URL da API correta
+        const url = `{% url 'seguranca_trabalho:api_get_funcao_colaborador' 0 %}`.replace('0', colaboradorId);
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    funcaoSelect.value = '';
+                    return null;
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && data.funcao_id) {
+                    // Define o valor do dropdown para o ID da função retornado
+                    funcaoSelect.value = data.funcao_id;
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar função:', error);
+            });
+    }
+
+    colaboradorSelect.addEventListener('change', atualizarFuncao);
+
+    if (colaboradorSelect.value) {
+        atualizarFuncao();
+    }
+});
+</script>
+{% endblock javascript %}
 

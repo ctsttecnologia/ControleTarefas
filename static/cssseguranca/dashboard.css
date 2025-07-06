@@ -1,0 +1,71 @@
+
+/* static/cssseguranca/dashboard.css */
+
+/* Cabeçalho da Página */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--theme-card-border);
+}
+
+/* Cards de KPI (Indicadores) */
+.kpi-card {
+    background-color: var(--theme-card-bg);
+    border: 1px solid var(--theme-card-border);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    transition: all 0.2s ease-in-out;
+}
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px var(--shadow-color);
+}
+.kpi-card .icon-circle {
+    width: 50px; height: 50px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem; flex-shrink: 0;
+}
+.kpi-card .icon-primary { background-color: var(--bs-primary-bg-subtle); color: var(--bs-primary-emphasis); }
+.kpi-card h3 { font-size: 2.25rem; font-weight: 700; }
+.kpi-card p { font-size: 0.9rem; margin-bottom: 0; color: var(--muted-text-color); }
+
+/* Cards de Navegação */
+.nav-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    border-radius: 1rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    text-decoration: none;
+    color: var(--text-color);
+    height: 100%;
+    transition: all 0.2s ease-in-out;
+}
+.nav-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px var(--shadow-color);
+    border-color: var(--theme-primary);
+}
+.nav-card .nav-icon {
+    font-size: 3rem;
+    color: var(--theme-primary);
+    margin-bottom: 1rem;
+}
+.nav-card .nav-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+.nav-card .nav-text {
+    font-size: 0.9rem;
+    color: var(--muted-text-color);
+}

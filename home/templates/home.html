@@ -33,9 +33,10 @@
         <!--<img src="{% static 'imagens/painel1.png' %}" class="imagempainel">--> <!--Imagem no Django em produção-->
         
 <div class="rodape">
-    <footer>
-        <p style="font-size: 12px;">&copy; 2025 Gerenciando Tarefas. Todos os direitos reservados. Cetest Minas by Emerson Gonçalves</p>
-    </footer>
+        <p style="font-size: 12px; class="mb-0">
+            &copy; {% now "Y" %} Gerenciando Tarefas. Todos os direitos reservados.<br>
+            Desenvolvido por Emerson Gonçalves
+        </p>
 </div>
 
 </body>
