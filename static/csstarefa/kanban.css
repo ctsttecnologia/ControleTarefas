@@ -1,29 +1,26 @@
 /* ==========================================================================
-   Contêiner Principal do Quadro Kanban
-   Centraliza as colunas e adiciona rolagem horizontal para telas menores.
+   Quadro Kanban
    ========================================================================== */
+
+/* Contêiner principal que organiza as colunas horizontalmente */
 .kanban-board-container {
     display: flex;
-    justify-content: center; /* <<< A MÁGICA ACONTECE AQUI */
-    gap: 1.5rem;             /* Espaçamento consistente entre as colunas */
-    padding: 1.5rem;         /* Espaçamento ao redor do quadro inteiro */
-    overflow-x: auto;        /* Adiciona barra de rolagem se as colunas não couberem */
+    gap: 1.5rem;          /* Espaçamento consistente entre as colunas */
+    padding: 1.5rem 0;    /* Espaçamento vertical */
+    overflow-x: auto;     /* Adiciona rolagem horizontal em telas menores */
+    align-items: flex-start; /* Alinha as colunas no topo */
 }
 
-
-.kanban-card.is-overdue {
-    border-left-color: var(--bs-danger);
-}
-
-/* --- Colunas do Kanban --- */
+/* Colunas do Kanban (Ex: "A Fazer", "Em Andamento") */
 .kanban-column {
     flex: 1 0 320px; /* Não encolhe, não cresce, base de 320px */
     max-width: 320px;
     display: flex;
     flex-direction: column;
-    background-color: var(--bs-secondary-bg); /* Cor de fundo sutil que se adapta ao tema */
-    border-radius: var(--bs-border-radius-lg); /* Bordas mais arredondadas */
+    background-color: var(--bs-secondary-bg);
+    border-radius: var(--bs-border-radius-lg);
     border: 1px solid var(--bs-border-color-translucent);
+    max-height: 80vh; /* Limita a altura para evitar colunas muito longas */
 }
 
 .kanban-column-header {
@@ -32,28 +29,30 @@
     font-weight: 600;
     color: var(--bs-emphasis-color);
     border-bottom: 1px solid var(--bs-border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-shrink: 0; /* Impede que o cabeçalho encolha */
 }
 
+/* Área onde os cards são inseridos e arrastados */
 .kanban-cards-container {
     padding: 0.75rem;
-    flex-grow: 1; /* Faz a área dos cards ocupar o espaço disponível */
+    flex-grow: 1;
     overflow-y: auto; /* Adiciona rolagem se os cards excederem a altura */
 }
 
-/* --- Cards de Tarefa --- */
+/* ==========================================================================
+   Cards de Tarefa
+   ========================================================================== */
 .kanban-card {
     background-color: var(--bs-body-bg);
-    border-radius: var(--bs-border-radius);
     border: 1px solid var(--bs-border-color-translucent);
+    border-radius: var(--bs-border-radius);
     padding: 1rem;
     margin-bottom: 1rem;
     box-shadow: var(--bs-box-shadow-sm);
     cursor: grab;
     transition: box-shadow 0.2s ease-in-out, transform 0.2s ease-in-out;
-    border-left-width: 4px; /* Prepara o espaço para a borda de prioridade */
+    border-left-width: 5px; /* Prepara o espaço para a borda de prioridade */
+    border-left-style: solid;
 }
 
 .kanban-card:hover {
@@ -61,13 +60,12 @@
     transform: translateY(-2px);
 }
 
-/* CORREÇÃO APLICADA AQUI: .kanhan-card foi corrigido para .kanban-card */
 .kanban-card:last-child {
     margin-bottom: 0;
 }
 
 /* --- Cores de Prioridade na Borda do Card --- */
-/* Adiciona uma borda colorida à esquerda do card para indicar a prioridade */
+/* Usa o atributo data-priority adicionado no HTML */
 .kanban-card[data-priority="alta"] {
     border-left-color: var(--bs-danger);
 }
@@ -80,16 +78,16 @@
 
 /* --- Destaque para Tarefas Atrasadas --- */
 .kanban-card.is-overdue {
-    background-color: var(--bs-danger-bg-subtle); /* Fundo sutilmente avermelhado */
+    background-color: var(--bs-danger-bg-subtle);
     border-color: var(--bs-danger-border-subtle);
 }
 
-.kanban-card.is-overdue .kanban-card-meta .text-danger {
-    color: var(--bs-danger-text-emphasis) !important; /* Garante que a data fique bem visível */
+.kanban-card.is-overdue .kanban-card-meta span:first-child {
+    color: var(--bs-danger-text-emphasis) !important; /* Garante que a data fique visível */
     font-weight: 700;
 }
 
-/* --- Conteúdo do Card --- */
+/* --- Conteúdo Interno do Card --- */
 .kanban-card-title {
     font-weight: 500;
     color: var(--bs-emphasis-color);
@@ -101,7 +99,7 @@
     color: var(--bs-secondary-color);
 }
 
-/* --- Estilo para o "arrastando" --- */
+/* --- Estilos para o SortableJS (arrastar e soltar) --- */
 .sortable-ghost {
     opacity: 0.4;
     background: var(--bs-primary-bg-subtle);
@@ -110,10 +108,8 @@
 
 .sortable-chosen {
     cursor: grabbing;
+    transform: scale(1.02);
+    box-shadow: var(--bs-box-shadow-lg);
 }
-
-
-
-
 
 
