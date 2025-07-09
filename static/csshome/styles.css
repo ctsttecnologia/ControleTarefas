@@ -7,140 +7,73 @@
 
 body {
     background-image: url('/midia/imagens/painel1.png');
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
     margin: 0;
     padding: 0;
-    height: 100%;
-    font-family: Arial, sans-serif;
-    line-height: 1.6;
-    color: #000000;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden; /* Evita barras de rolagem desnecessárias */
+}
+
+/* Esconde o header e footer padrão APENAS nesta página */
+.body-home header,
+.body-home footer {
+    display: none;
+}
+
+/* Container principal da página home */
+.home-container {
     display: flex;
-    flex-direction: column;
-}
-
-/* Estilo do logo */
-.logo {
-    text-align: center;
-    padding: 0px 0;
-}
-
-.logo img {
-    max-width: 80%;
-    height: auto;
-}
-
-/* Cabeçalho e navegação */
-.header {
-    background-color: #00a2ff;
-    color: white;
-    text-align: center;
-    padding: 10px 0;
-    position: relative;
-}
-
-.header nav ul {
-    list-style: none;
-    display: flex;
+    align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    padding: 0;
-    gap: 15px;
-}
-
-.header nav ul li {
-    margin: 0;
-}
-
-.header nav ul li a {
-    color: #fff;
-    text-decoration: none;
-    font-weight: bold;
-    padding: 8px 15px;
-    border-radius: 5px;
-    transition: background-color 0.3s;
-    display: inline-block;
-}
-
-.header nav ul li a:hover {
-    background-color: #047ae0;
-}
-
-/* Imagem do painel */
-.imagempainel {
-    width: 100%;
-    max-width: 1500px;
-    height: 50%;
-    display: block;
-    margin: 0 auto;
-}
-
-/* Conteúdo principal */
-main {
-    flex: 1;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Rodapé */
-.rodape {
-    background-color: #00a2ff;
-    color: white;
+    height: 100vh; /* Ocupa a tela inteira */
     text-align: center;
-    padding: 15px 0;
-    width: 100%;
-    margin-top: auto;
+    color: white;
+    
+    /* Fundo gradiente profissional */
+    background: linear-gradient(-45deg, #003f5c, #2f4b7c, #665191, #a05195, #d45087, #f95d6a, #ff7c43, #ffa600);
+    background-size: 400% 400%;
+    animation: gradient-animation 15s ease infinite;
 }
 
-.rodape footer p {
-    margin: 0;
+@keyframes gradient-animation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-/* Responsividade */
-@media (max-width: 768px) {
-    .header nav ul {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .header nav ul li a {
-        padding: 6px 10px;
-    }
-
-    .logo {
-        padding: 5px 0;
-    }
+.home-content {
+    max-width: 600px;
+    padding: 2rem;
+    background-color: rgba(0, 0, 0, 0.3); /* Fundo semi-transparente para legibilidade */
+    border-radius: 1rem;
+    backdrop-filter: blur(5px);
 }
 
-@media (max-width: 480px) {
-    .header {
-        padding: 5px 0;
-    }
-
-    .header nav ul li a {
-        padding: 5px 8px;
-        font-size: 14px;
-    }
-
-    .rodape {
-        padding: 10px 0;
-        font-size: 14px;
-    }
+.home-logo img {
+    max-width: 250px;
+    margin-bottom: 1.5rem;
 }
 
+.home-content h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
 
+.home-content p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
 
+.btn-login-home {
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: 0.8rem 2.5rem;
+    border-radius: 50px; /* Botão arredondado */
+    background-color: var(--theme-primary, #0DCAF0);
+    border: none;
+    transition: all 0.3s ease;
+}
 
-/*Largura do main: Adicionei width: 100%; ao main para garantir que ele não ultrapasse a largura da tela em dispositivos menores.
-
-Ajustes no painel: No painel, adicionei padding: 10px; para dispositivos muito pequenos (480px) para garantir que o conteúdo não fique muito próximo das bordas.
-
-Posicionamento do btn-home: Ajustei o posicionamento do botão "Voltar para Home" para que ele fique mais compacto em telas menores.
-
-Rodapé Fixo: Em telas menores, o rodapé foi ajustado para position: static; para que ele não fique fixo e não sobreponha o conteúdo.
-
-Flexibilidade no painel: O painel agora tem height: auto; em telas menores para que ele se ajuste ao conteúdo.
+.btn-login-home:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}

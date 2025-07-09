@@ -1,11 +1,11 @@
-
-{% extends "base.html" %}
+{% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
 
 {% block title %}Dashboard de Segurança{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssseguranca/dashboard.css' %}">
+    {# Esta linha é crucial para carregar os estilos #}
+    <link rel="stylesheet" href="{% static 'cssseguranca/painelSST.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -16,41 +16,41 @@
             <p class="text-muted mb-0">Visão geral e acesso rápido aos módulos de SST.</p>
         </div>
         <div class="action-buttons">
-            <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-primary">
+            <a href="{% url 'seguranca_trabalho:ficha_criar_form' %}" class="btn btn-primary">
                 <i class="bi bi-file-earmark-plus me-1"></i> Nova Ficha EPI
             </a>
         </div>
     </div>
 
     <div class="row g-4 mb-5">
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-4 col-md-6">
             <div class="kpi-card">
-                <div class="icon-circle icon-primary"><i class="bi bi-shield-check"></i></div>
+                <div class="icon-circle"><i class="bi bi-shield-check"></i></div>
                 <div class="ms-3">
-                    <h3 class="mb-0">{{ total_equipamentos|default:"0" }}</h3>
-                    <p>Equipamentos Ativos</p>
+                    <h3 class="kpi-value">{{ total_equipamentos|default:"0" }}</h3>
+                    <p class="kpi-label">Equipamentos Ativos</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-4 col-md-6">
             <div class="kpi-card">
-                <div class="icon-circle icon-primary"><i class="bi bi-file-person-fill"></i></div>
+                <div class="icon-circle"><i class="bi bi-file-person-fill"></i></div>
                 <div class="ms-3">
-                    <h3 class="mb-0">{{ fichas_ativas|default:"0" }}</h3>
-                    <p>Fichas de EPI Ativas</p>
+                    <h3 class="kpi-value">{{ fichas_ativas|default:"0" }}</h3>
+                    <p class="kpi-label">Fichas de EPI Ativas</p>
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6">
+        <div class="col-lg-4 col-md-6">
             <div class="kpi-card">
-                <div class="icon-circle icon-primary"><i class="bi bi-pen-fill"></i></div>
+                <div class="icon-circle"><i class="bi bi-pen-fill"></i></div>
                 <div class="ms-3">
-                    <h3 class="mb-0">{{ entregas_pendentes|default:"0" }}</h3>
-                    <p>Entregas p/ Assinar</p>
+                    <h3 class="kpi-value">{{ entregas_pendentes|default:"0" }}</h3>
+                    <p class="kpi-label">Entregas p/ Assinar</p>
                 </div>
             </div>
         </div>
-        </div>
+    </div>
 
     <div class="row g-4">
         <div class="col-lg-4 col-md-6">
@@ -68,13 +68,27 @@
             </a>
         </div>
         <div class="col-lg-4 col-md-6">
-            <a href="#" class="nav-card">
+            <a href="{% url 'seguranca_trabalho:dashboard_geral' %}" class="nav-card">
                 <div class="nav-icon"><i class="bi bi-graph-up-arrow"></i></div>
                 <h5 class="nav-title">Relatórios</h5>
                 <p class="nav-text">Exporte dados e visualize informações consolidadas da área.</p>
             </a>
         </div>
+        <div class="col-lg-4 col-md-6">
+            <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="nav-card">
+                <div class="nav-icon"><i class="bi bi-buildings"></i></div>
+                <h5 class="nav-title">Fabricantes</h5>
+                <p class="nav-text">Gerencie os fabricantes dos equipamentos de proteção.</p>
+            </a>
         </div>
-
+        <div class="col-lg-4 col-md-6">
+            <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="nav-card">
+                <div class="nav-icon"><i class="bi bi-truck"></i></div>
+                <h5 class="nav-title">Fornecedores</h5>
+                <p class="nav-text">Cadastre os fornecedores e distribuidores de EPIs.</p>
+            </a>
+        </div>
+    </div>
 </div>
 {% endblock %}
+

@@ -3,6 +3,14 @@
    Descrição: Estilos exclusivos para as páginas de login,
               logout e redefinição de senha.
    ================================================================= */
+body {
+    background-image: url('/midia/imagens/painel1.png');
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden; /* Evita barras de rolagem desnecessárias */
+}
+
 
 /* 1. Oculta o header e o footer globais nesta página */
 .body-login header,

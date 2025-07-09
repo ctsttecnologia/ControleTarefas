@@ -1,7 +1,9 @@
-{% extends 'base.html' %}
+{% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
 {% block head %} 
-    {% block extra_css %}{% endblock %}
+    {% block extra_css %}
+        <link rel="stylesheet" href="{% static 'cssdp/confirm_delete_styles.css' %}">
+    {% endblock %}
 {% endblock %}
 
 {% block content %}  
@@ -15,11 +17,8 @@
         {% endif %}
                 
         <div class="painel">
-   
-            <a href="{% url 'usuario:logout' %}" class="btn_logout">Sair</a>
-            <a href="{% url 'departamento_pessoal:cadastrar_funcionario' %}" class="btn_cadastro">Cadastro de Funcionário</a>
-            <a href="{% url 'profile' %}" class="btn_profile">Menu</a> 
-        
+            <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn_cadastro">Cadastro de Funcionário</a>
+            <a href="{% url 'usuario:profile' %}" class="btn_profile">Menu</a> 
         </div>
 
         <p>Tem certeza que deseja excluir o funcionário <strong>{{ funcionario.nome }}</strong>?</p>

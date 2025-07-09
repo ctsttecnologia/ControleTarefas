@@ -28,20 +28,24 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
 
+# usuario/forms.py
+
 class GrupoForm(forms.ModelForm):
     class Meta:
         model = Group
         fields = ['name', 'permissions']
         labels = {
             'name': 'Nome do Grupo',
-            'permissions': 'Permissões Associadas'
+            'permissions': 'Permissões do Grupo'
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Define o widget para o campo 'permissions' como checkboxes
-        self.fields['permissions'].widget = forms.CheckboxSelectMultiple()
+        # AQUI ESTÁ A MUDANÇA: Adicionamos uma classe ao widget
+        self.fields['permissions'].widget = forms.CheckboxSelectMultiple(
+            attrs={'class': 'permissions-list'}
+        )
         
-        # Opcional: Ordena as permissões para melhor visualização no formulário
         self.fields['permissions'].queryset = self.fields['permissions'].queryset.order_by('content_type__app_label', 'name')
+

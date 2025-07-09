@@ -1,104 +1,99 @@
 /* =================================================================
-   ARQUIVO: global.css (VERSÃO CORRIGIDA)
+   ARQUIVO DE ESTILO GLOBAL E ÚNICO DO PROJETO
    ================================================================= */
 
-/* 1. IMPORTAÇÃO DE FONTE */
+/* 1. FONTES E VARIÁVEIS DE TEMA */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* 2. CUSTOMIZAÇÃO DO TEMA BOOTSTRAP (SOBRESCRITA DE VARIÁVEIS) */
+/* TEMA CLARO */
+:root, [data-bs-theme="light"] {
+    --bs-primary: #00a8c6; /* Seu azul piscina */
+    --bs-primary-rgb: 0, 168, 198;
+    --bs-primary-text-emphasis: #005c6e;
+    --bs-primary-bg-subtle: #cceef3;
 
-/* TEMA CLARO (Padrão) */
-:root {
-    /* Cores principais */
-    --bs-primary: #00899e;
-    --bs-primary-rgb: 0, 137, 158; /* CORRIGIDO */
-    --bs-danger: #dc3545;
-    --bs-danger-rgb: 220, 53, 69;
-
-    /* Fundo e Texto */
-    --bs-body-bg: #eef5f9; /* Fundo um pouco mais suave que o azul-claro */
+    --bs-secondary: #6c757d;
+    --bs-body-bg: #f4f7f9;
     --bs-body-color: #212529;
-    --bs-secondary-color: #6c757d;
-    
-    /* Componentes (Cards, Bordas, etc.) */
-    --bs-card-bg: #ffffff;
+    --bs-tertiary-bg: #ffffff; /* Para cards e navbar no tema claro */
     --bs-border-color: #dee2e6;
-    --bs-border-radius: 0.75rem;
-    
-    /* Fontes */
     --bs-font-sans-serif: 'Poppins', sans-serif;
-
-    /* Sombras */
-    --bs-box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-
-    /* Variáveis customizadas para componentes que mudam de cor */
-    --header-bg: var(--bs-primary);
-    --submenu-bg: var(--bs-white);
 }
 
 /* TEMA ESCURO */
 [data-bs-theme="dark"] {
-    /* Cores principais */
-    --bs-primary: #00899e;
-    --bs-primary-rgb: 0, 137, 158; /* CORRIGIDO */
-    --bs-danger: #f87171;
-    --bs-danger-rgb: 248, 113, 113;
+    --bs-primary: #00b8d4; /* Azul piscina (vibrante) */
+    --bs-primary-rgb: 0, 184, 212;
+    --bs-primary-text-emphasis: #67dff0;
+    --bs-primary-bg-subtle: #003640;
 
-    /* Fundo e Texto */
+    --bs-secondary: #adb5bd;
     --bs-body-bg: #1c1c22;
     --bs-body-color: #e9ecef;
-    --bs-secondary-color: #adb5bd;
-
-    /* Componentes */
-    --bs-card-bg: #282830;
+    --bs-tertiary-bg: #282830; /* Para cards e navbar no tema escuro */
     --bs-border-color: #495057;
-
-    /* Sombras */
-    --bs-box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-
-    /* Variáveis customizadas para componentes que mudam de cor */
-    --header-bg: #212529; /* NOVO: Cor escura para o header */
-    --submenu-bg: var(--bs-card-bg); /* NOVO: Cor do card para o submenu */
 }
 
-/* 3. ESTILOS GLOBAIS ADICIONAIS (Nenhuma mudança aqui) */
+
+/* 2. ESTILOS GLOBAIS DE BASE */
 body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-family: var(--bs-font-sans-serif);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    background-color: var(--bs-body-bg); /* Garante que a cor do body seja aplicada */
-    color: var(--bs-body-color);
 }
 main { flex-grow: 1; }
-a { text-decoration: none; }
-
-
-/* 4. CUSTOMIZAÇÃO DE COMPONENTES ESPECÍFICOS */
-
-/* ===== HEADER (NAVBAR) - SEÇÃO ATUALIZADA ===== */
-/* Agora o header usa a variável que troca de cor */
-header .navbar {
-    background-color: var(--header-bg) !important;
+.card {
+    background-color: var(--bs-tertiary-bg);
+    border-radius: var(--bs-border-radius);
 }
 
-/* Garante que o texto do header fique branco em ambos os temas */
-header .navbar .navbar-brand,
-header .navbar .nav-link,
-header .navbar .dropdown-toggle {
-    color: white !important;
+
+/* 3. ESTILOS PARA COMPONENTES GLOBAIS (HEADER, FOOTER, SUBNAV) */
+header.navbar {
+    background-color: var(--bs-tertiary-bg) !important;
+    border-bottom: 1px solid var(--bs-border-color);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
-/* ... (outros estilos do seu header) ... */
+[data-bs-theme="dark"] header.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
 
-
-/* Submenu de Seção - ATUALIZADO */
 .subnav {
-    background-color: var(--submenu-bg); /* Usa a nova variável que troca de cor */
+    background-color: var(--bs-card-bg);
     padding: 0.5rem 0;
     border-bottom: 1px solid var(--bs-border-color);
     margin-bottom: 2rem;
 }
-/* ... (resto do CSS) ... */
+.subnav .nav-pills .nav-link {
+    color: var(--bs-secondary-color);
+    font-weight: 500;
+}
+.subnav .nav-pills .nav-link.active {
+    background-color: var(--bs-primary);
+}
 
-   
 
+/* 4. ESTILOS PARA PÁGINAS ESPECÍFICAS (LOGIN) */
+.body-login header,
+.body-login footer {
+    display: none !important;
+}
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+.login-card {
+    border-top: 5px solid var(--bs-primary);
+}
 
+/* ESTILO DO FOOTER */
+footer.footer {
+    background-color: var(--bs-tertiary-bg); /* Usa uma cor de fundo sutil do tema */
+    border-top: 1px solid var(--bs-border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}

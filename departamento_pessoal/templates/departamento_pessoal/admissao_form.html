@@ -1,0 +1,82 @@
+
+{% extends "departamento_pessoal/_base_dp.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block dp_content %}
+<div class="container py-4">
+    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h3 mb-0">
+            <i class="bi bi-file-person-fill me-2"></i>{{ titulo_pagina }}
+        </h2>
+        <a href="{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar para Funcionário
+        </a>
+    </header>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Funcionário: <span class="fw-normal">{{ object.nome_completo }}</span></h5>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.matricula.label }}</label>
+                        {% render_field form.matricula class+="form-control" %}
+                        {% if form.matricula.help_text %}<small class="form-text text-muted">{{ form.matricula.help_text }}</small>{% endif %}
+                        {% for error in form.matricula.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.data_admissao.label }}</label>
+                        {% render_field form.data_admissao class+="form-control" %}
+                        {% for error in form.data_admissao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.departamento.label }}</label>
+                        {% render_field form.departamento class+="form-select" %}
+                        {% for error in form.departamento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ form.cargo.label }}</label>
+                        {% render_field form.cargo class+="form-select" %}
+                        {% for error in form.cargo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.salario.label }}</label>
+                         <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            {% render_field form.salario class+="form-control" placeholder="0.00" %}
+                        </div>
+                        {% for error in form.salario.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.status.label }}</label>
+                        {% render_field form.status class+="form-select" %}
+                        {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.data_demissao.label }}</label>
+                        {% render_field form.data_demissao class+="form-control" %}
+                        {% if form.data_demissao.help_text %}<small class="form-text text-muted">{{ form.data_demissao.help_text }}</small>{% endif %}
+                        {% for error in form.data_demissao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-4">
+                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-lg me-1"></i> Salvar Dados
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

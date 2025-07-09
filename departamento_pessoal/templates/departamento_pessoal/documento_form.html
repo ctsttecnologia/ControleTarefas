@@ -1,0 +1,103 @@
+
+{% extends "departamento_pessoal/_base_dp.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% comment %}
+Este template foi corrigido para:
+1. Resolver o erro 'NoReverseMatch' com um link de "Cancelar" dinâmico.
+2. Usar os campos corretos do DocumentoForm ('funcionario', 'tipo', 'numero', 'anexo'),
+   removendo os campos específicos (cpf, rg, pis) que não existem mais no modelo atual.
+3. Funcionar tanto para criar um novo documento (genérico ou para um funcionário específico)
+   quanto para editar um documento existente.
+{% endcomment %}
+
+{% block title %}{{ titulo_pagina|default:"Formulário de Documento" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">
+                            <i class="bi bi-file-earmark-text-fill me-2"></i>
+                            {{ titulo_pagina|default:"Formulário de Documento" }}
+                        </h4>
+                        
+                        {# LÓGICA DO BOTÃO CORRIGIDA #}
+                        {% if object %}
+                            {# Se 'object' existe, estamos na página de EDIÇÃO. #}
+                            {# O link de cancelar volta para o detalhe do funcionário associado a este documento. #}
+                            <a href="{% url 'departamento_pessoal:detalhe_funcionario' pk=object.funcionario.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-x-lg me-1"></i> Cancelar
+                            </a>
+                        {% elif funcionario %}
+                            {# Se 'object' não existe mas 'funcionario' existe, estamos na página de CRIAÇÃO para um funcionário específico. #}
+                            <a href="{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-x-lg me-1"></i> Cancelar
+                            </a>
+                        {% else %}
+                            {# Caso geral: vai para a lista de todos os documentos. #}
+                            <a href="{% url 'departamento_pessoal:lista_documentos' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        {# Renderiza os campos do formulário CORRETO #}
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.funcionario.label }}</label>
+                            {% render_field form.funcionario class+="form-select" %}
+                            {% for error in form.funcionario.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.tipo.label }}</label>
+                            {% render_field form.tipo class+="form-select" %}
+                            {% for error in form.tipo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.numero.label }}</label>
+                            {% render_field form.numero class+="form-control" placeholder="Digite o número ou código do documento" %}
+                            {% for error in form.numero.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.anexo.label }}</label>
+                            {% render_field form.anexo class+="form-control" %}
+                            {% if object.anexo %}
+                                <small class="form-text text-muted mt-1 d-block">
+                                    Arquivo atual: <a href="{{ object.anexo.url }}" target="_blank">{{ object.anexo.name }}</a>
+                                </small>
+                            {% endif %}
+                            {% for error in form.anexo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mt-4 pt-4 border-top text-end">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-circle-fill me-1"></i> Salvar Documento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}

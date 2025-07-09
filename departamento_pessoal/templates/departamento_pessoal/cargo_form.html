@@ -1,0 +1,46 @@
+
+{% extends "departamento_pessoal/_base_dp.html" %}
+{% load widget_tweaks %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+    
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card shadow-sm">
+                    <div class="card-header"><h2 class="h4 mb-0">{{ titulo_pagina }}</h2></div>
+                    <div class="card-body p-4">
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="{{ form.nome.id_for_label }}" class="form-label">Nome do Cargo</label>
+                                {% render_field form.nome class+="form-control" %}
+                                {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors|striptags }}</div>{% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.cbo.id_for_label }}" class="form-label">Código CBO</label>
+                                {% render_field form.cbo class+="form-control" %}
+                                {% if form.cbo.errors %}<div class="invalid-feedback d-block">{{ form.cbo.errors|striptags }}</div>{% endif %}
+                            </div>
+                             <div class="mb-3">
+                                <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição Sumária</label>
+                                {% render_field form.descricao class+="form-control" rows="4" %}
+                                {% if form.descricao.errors %}<div class="invalid-feedback d-block">{{ form.descricao.errors|striptags }}</div>{% endif %}
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                {% render_field form.ativo class+="form-check-input" %}
+                                <label for="{{ form.ativo.id_for_label }}" class="form-check-label">{{ form.ativo.label }}</label>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+                                <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-primary px-4">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

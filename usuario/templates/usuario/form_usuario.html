@@ -1,65 +1,55 @@
+{# templates/usuario/form_usuario.html (VERSÃO CORRETA) #}
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Definir Nova Senha{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Usuário{% else %}Cadastrar Novo Usuário{% endif %}{% endblock %}
 
 {% block content %}
+    {# Inclui o submenu da seção de usuários, se aplicável #}
     {% include 'usuario/includes/submenu.html' %}
-
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="card shadow">
-                    <div class="card-header text-center bg-white py-4">
-                        <i class="bi bi-key-fill fs-1 text-primary"></i>
-                        <h2 class="h3 mt-2 mb-0">
-                            Definir Nova Senha
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h2 class="h4 mb-0">
+                            {% if form.instance.pk %}
+                                Editar Usuário: {{ form.instance.username }}
+                            {% else %}
+                                Cadastrar Novo Usuário
+                            {% endif %}
                         </h2>
-                        <p class="text-muted mb-0">para o usuário <strong class="text-dark">{{ usuario_alvo.username }}</strong></p>
                     </div>
                     <div class="card-body p-4 p-md-5">
                         <form method="post" novalidate>
                             {% csrf_token %}
 
                             {% if form.non_field_errors %}
-                                <div class="alert alert-danger">
-                                    {% for error in form.non_field_errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
+                                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
                             {% endif %}
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.new_password1.id_for_label }}" class="form-label fw-bold">Nova Senha</label>
-                                {% render_field form.new_password1 class+="form-control form-control-lg" placeholder="Digite a nova senha" %}
-                                {% if form.new_password1.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.new_password1.errors %}
-                                            <span>{{ error }}</span>
+
+                            <div class="row g-3">
+                                {% for field in form %}
+                                    <div class="col-12 {% if field.name in 'first_name,last_name' %}col-md-6{% endif %}">
+                                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+
+                                        {# O render_field vai criar o input/select/etc. correto #}
+                                        {% render_field field class+="form-control" %}
+                                        
+                                        {% if field.help_text %}
+                                            <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+                                        {% endif %}
+                                        {% for error in field.errors %}
+                                            <div class="invalid-feedback d-block">{{ error }}</div>
                                         {% endfor %}
                                     </div>
-                                {% endif %}
-                                <div class="form-text">
-                                    {{ form.new_password1.help_text|safe }}
-                                </div>
+                                {% endfor %}
                             </div>
-                            <div class="mb-4">
-                                <label for="{{ form.new_password2.id_for_label }}" class="form-label fw-bold">Confirmação da Nova Senha</label>
-                                {% render_field form.new_password2 class+="form-control form-control-lg" placeholder="Digite a nova senha novamente" %}
-                                {% if form.new_password2.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.new_password2.errors %}
-                                            <span>{{ error }}</span>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">
-                                <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-light btn-lg">Cancelar</a>
-                                <button type="submit" class="btn btn-primary btn-lg btn-glow">
-                                    <i class="bi bi-check-lg me-1"></i>
-                                    Salvar Nova Senha
+
+                            <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+                                <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="bi bi-check-lg me-1"></i> Salvar
                                 </button>
                             </div>
                         </form>
@@ -69,3 +59,5 @@
         </div>
     </div>
 {% endblock %}
+
+

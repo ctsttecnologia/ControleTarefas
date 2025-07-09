@@ -5,8 +5,11 @@
 {% block sst_content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="h2">Fichas de EPI</h1>
-    <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-primary">
+    <a href="{% url 'seguranca_trabalho:ficha_criar_form' %}" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i> Nova Ficha
+    </a>
+    <a href="{% url 'seguranca_trabalho:painel_de_bordo' %}" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-1"></i> Voltar para Painel SST
     </a>
 </div>
 <div class="card shadow-sm">
@@ -15,7 +18,11 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
-                        <th>Colaborador</th><th>Cargo</th><th>Data Admissão</th><th>Criado Em</th><th></th>
+                        <th>Colaborador</th>
+                        <th>Cargo</th>
+                        <th>Data Admissão</th>
+                        <th>Criado Em</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>

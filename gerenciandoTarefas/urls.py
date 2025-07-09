@@ -1,39 +1,32 @@
+
+# seu_projeto/urls.py (ex: gerenciandoTarefas/urls.py)
+
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth.views import LoginView, LogoutView
-from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
-from tarefas import views
-
-
+from usuario.views import CustomLoginView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
-    # URLs de autenticação, Apps principais 
-    path('login/', LoginView.as_view(template_name='login.html'), name='login'),
-    path('logout/', LogoutView.as_view(template_name='logout.html'), name='logout'),
-    path('', include('home.urls')),  # Inclui as URLs do app home
-    path('accounts/', include('usuario.urls')),
-    path('usuario/', include(('usuario.urls', 'usuario'), namespace='usuariouse')),
-    
-    # Outros apps
-    path('profile/', views.profile_view, name='profile'),
+
+    # Rota raiz ('/') aponta para a página de Login.
+    path('', CustomLoginView.as_view(), name='home'),
+
+    # Rotas das apps com seus prefixos
+    path('contas/', include('usuario.urls', namespace='usuario')),
+    path('tarefas/', include('tarefas.urls', namespace='tarefas')),
+    path('seguranca/', include('seguranca_trabalho.urls', namespace='seguranca_trabalho')),
+    path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
     path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),
     path('cliente/', include('cliente.urls')),
-    path('seguranca/', include('seguranca_trabalho.urls')),
-    path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
-    path('tarefas/', include('tarefas.urls', namespace='tarefas')),
     path('logradouro/', include('logradouro.urls')),
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
-    
-    # URLs estáticas e de mídia (para desenvolvimento)
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+]
 
-# Ele só será executado em modo de desenvolvimento (DEBUG=True)
+# Configuração para servir arquivos de mídia e estáticos
 if settings.DEBUG:
-    # Esta linha diz ao Django para servir os arquivos que estão na sua pasta static
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.BASE_DIR / "static")
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

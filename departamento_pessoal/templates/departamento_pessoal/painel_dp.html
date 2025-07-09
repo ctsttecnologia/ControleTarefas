@@ -1,0 +1,140 @@
+{% extends "departamento_pessoal/_base_dp.html" %}
+{% load static %}
+
+{% block title %}Painel de Departamento Pessoal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-5">
+        <h1 class="h2 fw-bold">Painel de Departamento Pessoal</h1>
+        <p class="text-muted mb-0">Visão geral, análises e acesso rápido aos módulos de RH.</p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-4 col-md-6">
+            <div class="kpi-card">
+                <i class="bi bi-people-fill kpi-card-icon"></i>
+                <div>
+                    <div class="kpi-card-value">{{ total_funcionarios_ativos }}</div>
+                    <div class="kpi-card-label">Funcionários Ativos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="kpi-card">
+                <i class="bi bi-building kpi-card-icon"></i>
+                <div>
+                    <div class="kpi-card-value">{{ total_departamentos }}</div>
+                    <div class="kpi-card-label">Departamentos</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="kpi-card">
+                <i class="bi bi-person-badge kpi-card-icon"></i>
+                <div>
+                    <div class="kpi-card-value">{{ total_cargos }}</div>
+                    <div class="kpi-card-label">Cargos</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="h4 fw-bold mb-3">Análises Rápidas</h3>
+    <div class="row">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><i class="bi bi-bar-chart-line-fill me-2"></i>Funcionários por Departamento</div>
+                <div class="card-body">
+                    <canvas id="deptoChart" style="min-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Distribuição por Status</div>
+                <div class="card-body">
+                    <canvas id="statusChart" style="min-height: 250px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="h4 fw-bold mb-3 mt-4">Gerenciar</h3>
+    <div class="row g-4">
+        <div class="col-lg-4 col-md-6">
+            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="nav-card">
+                <div class="nav-icon"><i class="bi bi-people"></i></div>
+                <h5 class="nav-title">Funcionários</h5>
+                <p class="nav-text">Gerencie os dados cadastrais, admissões e documentos dos colaboradores.</p>
+            </a>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="nav-card">
+                <div class="nav-icon"><i class="bi bi-briefcase"></i></div>
+                <h5 class="nav-title">Cargos</h5>
+                <p class="nav-text">Cadastre e organize os cargos e suas descrições.</p>
+            </a>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <a href="{% url 'departamento_pessoal:lista_departamento' %}" class="nav-card">
+                <div class="nav-icon"><i class="bi bi-diagram-3"></i></div>
+                <h5 class="nav-title">Departamentos</h5>
+                <p class="nav-text">Estruture os centros de custo e os departamentos da empresa.</p>
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- GRÁFICO 1: DEPARTAMENTOS ---
+        const deptoCtx = document.getElementById('deptoChart').getContext('2d');
+        if (deptoCtx) {
+            new Chart(deptoCtx, {
+                type: 'bar',
+                data: {
+                    labels: {{ depto_labels|safe }},
+                    datasets: [{
+                        label: 'Funcionários Ativos',
+                        data: {{ depto_data|safe }},
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+            });
+        }
+
+        // --- GRÁFICO 2: STATUS ---
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        if (statusCtx) {
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: {{ status_labels|safe }},
+                    datasets: [{
+                        label: 'Total',
+                        data: {{ status_data|safe }},
+                        backgroundColor: [
+                            'rgba(40, 167, 69, 0.8)',
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(220, 53, 69, 0.8)',
+                            'rgba(108, 117, 125, 0.8)'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    });
+</script>
+{% endblock %}
