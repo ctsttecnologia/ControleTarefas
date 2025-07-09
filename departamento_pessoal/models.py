@@ -82,6 +82,7 @@ class Funcionario(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = ('departamento_pessoal_funcionario')
         verbose_name = _("Funcionário")
         verbose_name_plural = _("Funcionários")
         ordering = ['nome_completo']
@@ -113,3 +114,6 @@ class Documento(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} de {self.funcionario.nome_completo}"
+    
+
+

@@ -1,0 +1,108 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-g">
+    <title>Relatório de Funcionários</title>
+    <style>
+        /* CSS para estilizar o PDF. Embutido para facilidade de uso. */
+        @page {
+            size: A4;
+            margin: 1.5cm;
+
+            /* Adiciona o número da página no rodapé */
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: 'Helvetica', 'Arial', sans-serif;
+                font-size: 10pt;
+                color: #555;
+            }
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            font-size: 11pt;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22pt;
+            color: #333;
+        }
+        .header p {
+            margin: 5px 0 0;
+            font-size: 10pt;
+            color: #6c757d;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .report-table th {
+            background-color: #f0f4f8;
+            font-weight: bold;
+            color: #333;
+            font-size: 12pt;
+        }
+        .report-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .footer {
+            position: fixed;
+            bottom: -1cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9pt;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Relatório de Colaboradores</h1>
+        <p>Documento gerado em: {{ data_emissao }}</p>
+    </div>
+
+    <h3>Lista de Funcionários Ativos</h3>
+
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Nome Completo</th>
+                <th>Cargo</th>
+                <th>Departamento</th>
+                <th>Data de Admissão</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for funcionario in funcionarios %}
+            <tr>
+                <td>{{ funcionario.nome_completo }}</td>
+                <td>{{ funcionario.cargo.nome|default:'-' }}</td>
+                <td>{{ funcionario.departamento.nome|default:'-' }}</td>
+                <td>{{ funcionario.data_admissao|date:"d/m/Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center;">Nenhum funcionário encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Gerenciado Tarefas - Relatório Interno
+    </div>
+</body>
+</html>

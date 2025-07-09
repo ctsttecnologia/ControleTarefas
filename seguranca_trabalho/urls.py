@@ -1,7 +1,9 @@
 # seguranca_trabalho/urls.py
 
 from django.urls import path
+
 from .views import (
+    DashboardGeralView,
     DashboardSSTView,
     EquipamentoListView, EquipamentoCreateView, EquipamentoUpdateView, 
     EquipamentoDetailView, EquipamentoDeleteView,
@@ -16,11 +18,12 @@ app_name = 'seguranca_trabalho'
 
 urlpatterns = [
     # Dashboard
-    path('', DashboardSSTView.as_view(), name='dashboard'),
+    path('', DashboardSSTView.as_view(), name='painel_de_bordo'),
+    path('', DashboardGeralView.as_view(), name='dashboard_geral'),
     
     # CRUD de Fichas de EPI
     path('fichas/', FichaEPIListView.as_view(), name='ficha_lista'),
-    path('fichas/nova/', FichaEPICreateView.as_view(), name='ficha_criar'),
+    path('fichas/nova/', FichaEPICreateView.as_view(), name='ficha_criar_form'),
     path('fichas/<int:pk>/', FichaEPIDetailView.as_view(), name='ficha_detalhe'),
     
     # Ações dentro de uma Ficha
@@ -48,3 +51,4 @@ urlpatterns = [
     # API
     path('api/get-funcao-colaborador/<int:colaborador_id>/', FuncaoDoColaboradorAPIView.as_view(), name='api_get_funcao_colaborador'),
 ]
+

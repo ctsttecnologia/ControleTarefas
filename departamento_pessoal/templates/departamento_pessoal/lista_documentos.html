@@ -1,31 +1,23 @@
-{% extends 'base.html' %}
-{% load static %}
+
+{% extends "departamento_pessoal/_base_dp.html" %}
 
 {% block title %}Documentos dos Funcionários{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssdp/lista_documentos_styles.css' %}">
-{% endblock %}
-
-
-{% block content %}
+{% block dp_content %}
 <div class="container py-4">
 
-    {# Cabeçalho da página #}
     <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <h2 class="h3 mb-0">
             <i class="bi bi-file-earmark-text-fill me-2"></i>Documentos de Funcionários
         </h2>
-        <a href="{% url 'departamento_pessoal:cadastrar_documentos' %}" class="btn btn-primary">
+        <a href="{% url 'departamento_pessoal:documento_create' %}" class="btn btn-primary">
             <i class="bi bi-file-earmark-plus-fill me-1"></i> Novo Documento
         </a>
     </header>
 
-    {# Card principal que envolve a busca e a tabela #}
     <div class="card border-0 shadow-sm">
         <div class="card-body">
-            <!-- Barra de Filtros -->
-            <div class="filter-bar mb-4">
+            <div class="mb-4">
                 <form method="get" class="row g-2 align-items-center">
                     <div class="col">
                         <div class="input-group">
@@ -41,17 +33,16 @@
                         </div>
                     </div>
                     <div class="col-auto">
-                        <button type="submit" class="btn btn-outline-primary w-100">Filtrar</button>
+                        <button type="submit" class="btn btn-outline-primary">Filtrar</button>
                     </div>
                     <div class="col-auto">
-                        <a href="{% url 'departamento_pessoal:lista_documentos' %}" class="btn btn-outline-secondary w-100" title="Limpar filtro">
+                        <a href="{% url 'departamento_pessoal:lista_documentos' %}" class="btn btn-outline-secondary" title="Limpar filtro">
                             <i class="bi bi-arrow-counterclockwise"></i>
                         </a>
                     </div>
                 </form>
             </div>
 
-            <!-- Tabela de Documentos -->
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead>
@@ -59,7 +50,7 @@
                             <th scope="col">Funcionário</th>
                             <th scope="col">Tipo de Documento</th>
                             <th scope="col">Número</th>
-                            <th scope="col">Data de Atualização</th>
+                            <th scope="col" class="text-center">Anexo</th>
                             <th scope="col" class="text-end">Ações</th>
                         </tr>
                     </thead>
@@ -67,43 +58,33 @@
                         {% for documento in documentos %}
                         <tr>
                             <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="https://ui-avatars.com/api/?name={{ documento.funcionario.nome }}&background=random&color=fff" 
-                                         alt="Avatar de {{ documento.funcionario.nome }}" class="user-avatar">
-                                    <span>{{ documento.funcionario.nome }}</span>
-                                </div>
+                                <a href="{% url 'departamento_pessoal:detalhe_funcionario' documento.funcionario.pk %}">
+                                    {{ documento.funcionario.nome_completo }}
+                                </a>
                             </td>
                             <td>{{ documento.get_tipo_display }}</td>
-                            <td>
-                                {% if documento.tipo == 'CPF' %}{{ documento.cpf }}
-                                {% elif documento.tipo == 'RG' %}{{ documento.rg }}
-                                {% elif documento.tipo == 'CTPS' %}{{ documento.ctps }}
-                                {% elif documento.tipo == 'PIS' %}{{ documento.pis }}
-                                {% elif documento.tipo == 'TIT' %}{{ documento.titulo_eleitor }}
-                                {% elif documento.tipo == 'RES' %}{{ documento.reservista }}
-                                {% else %}{{ documento.nome|default:"-" }}
+                            <td>{{ documento.numero|default:"-" }}</td>
+                            <td class="text-center">
+                                {% if documento.anexo %}
+                                    <a href="{{ documento.anexo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver Anexo">
+                                        <i class="bi bi-paperclip"></i> Ver
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted fst-italic">Nenhum</span>
                                 {% endif %}
                             </td>
-                            <td>{{ documento.data_atualizacao|date:"d/m/Y H:i" }}</td>
                             <td class="text-end">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'departamento_pessoal:editar_documentos' pk=documento.pk %}" class="btn btn-outline-primary" title="Editar Documento">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
-                                    <a href="{{ documento.anexo.url }}" target="_blank" class="btn btn-outline-secondary {% if not documento.anexo %}disabled{% endif %}" title="Ver Anexo">
-                                        <i class="bi bi-eye-fill"></i>
-                                    </a>
-                                </div>
+                                <a href="{% url 'departamento_pessoal:editar_documentos' pk=documento.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Documento">
+                                    <i class="bi bi-pencil-fill"></i> Editar
+                                </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
                             <td colspan="5" class="text-center py-5">
-                                <div class="py-3">
-                                    <i class="bi bi-file-earmark-x fs-1 text-secondary"></i>
-                                    <h5 class="mt-3">Nenhum documento encontrado.</h5>
-                                    <p class="text-muted">Comece cadastrando um novo documento para um funcionário.</p>
-                                </div>
+                                <i class="bi bi-file-earmark-x fs-1 text-secondary"></i>
+                                <h5 class="mt-3">Nenhum documento encontrado.</h5>
+                                <p class="text-muted">Comece cadastrando um novo documento para um funcionário.</p>
                             </td>
                         </tr>
                         {% endfor %}
@@ -111,25 +92,8 @@
                 </table>
             </div>
 
-            <!-- Paginação -->
             {% if is_paginated %}
-            <nav aria-label="Paginação de documentos" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page=1{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">&laquo;</a></li>
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">Anterior</a></li>
-                    {% endif %}
-                    
-                    <li class="page-item active" aria-current="page">
-                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-                    </li>
-                    
-                    {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">Próxima</a></li>
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}">&raquo;</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
+                {% include 'includes/pagination.html' %}
             {% endif %}
         </div>
     </div>

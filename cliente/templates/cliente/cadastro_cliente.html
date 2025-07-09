@@ -73,8 +73,14 @@
                                 {% render_field form.cnpj class+="form-control" placeholder="00.000.000/0000-00" required="required" %}
                             </div>
                             <div class="form-text">Formato: 00.000.000/0000-00</div>
-                            {% if form.cnpj.errors %}<div class="invalid-feedback d-block">{{ form.cnpj.errors.as_text }}</div>{% endif %}
-                            <div class="mask-error" id="cnpj-error">CNPJ incompleto ou inválido</div>
+                            {% if form.cnpj.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.cnpj.errors.as_text }}
+                                </div>
+                            {% endif %}
+                             <div class="mask-error" id="cnpj-error">
+                                CNPJ incompleto ou inválido
+                            </div>
                         </div>
 
                         {# Campo Telefone com Ícone e Máscara #}
@@ -85,8 +91,14 @@
                                 {% render_field form.telefone class+="form-control" placeholder="(00) 00000-0000" %}
                             </div>
                             <div class="form-text">Formato: (00) 00000-0000</div>
-                            {% if form.telefone.errors %}<div class="invalid-feedback d-block">{{ form.telefone.errors.as_text }}</div>{% endif %}
-                            <div class="mask-error" id="telefone-error">Telefone incompleto</div>
+                            {% if form.telefone.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.telefone.errors.as_text }}
+                                </div>
+                            {% endif %}
+                                <div class="mask-error" id="telefone-error">
+                                    Telefone incompleto
+                                </div>
                         </div>
                     </div>
 

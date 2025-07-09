@@ -1,0 +1,48 @@
+/*
+* =================================================================================================
+* ESTADOS DO LINK: HOVER E ACTIVE
+* =================================================================================================
+*/
+
+/* NOVO: Estilo para o botão que deve ficar SEMPRE elevado */
+.subnav .nav-pills .nav-link.btn-elevado {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px var(--shadow-color);
+    /* Opcional: pode ter uma cor de fundo diferente se não estiver ativo */
+    /* background-color: #e9ecef; */
+}
+
+/* NOVO: Efeito de hover para o botão que já está elevado (feedback extra) */
+.subnav .nav-pills .nav-link.btn-elevado:hover {
+    transform: translateY(-3px) scale(1.02); /* Aumenta um pouco para dar feedback */
+}
+
+/* ALTERADO: Efeito de hover para TODOS OS OUTROS botões */
+/* A regra :not(.btn-elevado) garante que o botão "Painel DP" seja ignorado aqui */
+.subnav .nav-pills .nav-link:not(.btn-elevado):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+/* Estilo do botão ativo (página atual) - controla APENAS a cor */
+.subnav .nav-pills .nav-link.active {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    /* Removemos a sombra estática daqui para não conflitar */
+    box-shadow: none; 
+}
+
+/* Garante que o botão ativo e elevado (Painel DP na sua página) tenha a cor correta */
+.subnav .nav-pills .nav-link.btn-elevado.active {
+    background-color: var(--primary-color);
+    color: var(--light-text);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Devolve uma sombra forte */
+}
+
+/* Efeito de hover em um botão que está ativo (como o "Departamentos") */
+.subnav .nav-pills .nav-link.active:not(.btn-elevado):hover {
+    background-color: var(--primary-color-hover);
+    transform: translateY(-3px); /* Garante que ele se eleve no hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.22);
+}
+

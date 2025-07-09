@@ -58,9 +58,10 @@
                     <img src="{% static 'images/dp.gif' %}" class="card-icon" alt="Ícone de DP">
                     <h5 class="card-title">Departamento Pessoal</h5>
                     <div class="card-links">
-                        <a href="{% url 'departamento_pessoal:funcionario_list' %}" class="card-link">Funcionários</a>
-                        <a href="{% url 'departamento_pessoal:cargo_list' %}" class="card-link">Cargos</a>
-                        <a href="{% url 'departamento_pessoal:departamento_list' %}" class="card-link">Departamentos</a>
+                        <a href="{% url 'departamento_pessoal:painel_dp' %}" class="card-link">Painel DP</a>
+                        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="card-link">Funcionários</a>
+                        <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="card-link">Cargos</a>
+                        <a href="{% url 'departamento_pessoal:lista_departamento' %}" class="card-link">Departamentos</a>
                     </div>
                 </div>
             </div>
@@ -70,7 +71,7 @@
                     <img src="{% static 'images/tst.gif' %}" class="card-icon" alt="Ícone de SST">
                     <h5 class="card-title">Segurança do Trabalho</h5>
                     <div class="card-links">
-                        <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card-link">Painel SST</a>
+                        <a href="{% url 'seguranca_trabalho:painel_de_bordo' %}" class="card-link">Painel SST</a>
                         <a href="{% url 'seguranca_trabalho:ficha_lista' %}" class="card-link">Fichas de EPI</a>
                         <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="card-link">Catálogo de EPIs</a>
                         <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card-link"> Agendar Inspeção</a>
@@ -108,6 +109,7 @@
                     <div class="card-links">
                         <a href="{% url 'ata_reuniao_list' %}" class="card-link">Ata de Reunião</a>
                         <a href="{% url 'ata_reuniao_create' %}" class="card-link">Criar Ata</a>
+                        <a href="{% url 'treinamentos:dashboard' %}" class="card-link">Treinamentos</a>
                     </div>
                 </div>
             </div>

@@ -45,13 +45,13 @@ ALLOWED_HOSTS = [
 INSTALLED_APPS = [
     'django.contrib.admin', # Mova para cima
     'usuario', # Agora 'usuario' vem DEPOIS de 'auth' e 'contenttypes'
+    'home',
     'django.contrib.auth', # Mova para cima
     'django.contrib.contenttypes', # Mova para cima
     'django.contrib.sessions', # Mova para cima
     'django.contrib.messages', # Mova para cima
     'django.contrib.staticfiles', # Mova para cima
     'django.contrib.humanize',
-    'home',
     'cliente',
     'seguranca_trabalho',
     'departamento_pessoal',

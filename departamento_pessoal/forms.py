@@ -45,9 +45,18 @@ class FuncionarioForm(forms.ModelForm):
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {
-            'data_nascimento': forms.DateInput(attrs={'type': 'date'}),
-            'data_admissao': forms.DateInput(attrs={'type': 'date'}),
-            'data_demissao': forms.DateInput(attrs={'type': 'date'}),
+            'data_nascimento': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date'}
+            ),
+            'data_admissao': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date'}
+            ),
+            'data_demissao': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date'}
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -79,5 +88,52 @@ class FuncionarioForm(forms.ModelForm):
 class DocumentoForm(forms.ModelForm):
     class Meta:
         model = Documento
-        # O campo 'funcionario' será preenchido automaticamente na view
-        fields = ['tipo', 'numero', 'anexo']
+        # Adicionamos 'funcionario' à lista de campos
+        fields = ['funcionario', 'tipo', 'numero', 'anexo']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Deixa o campo de funcionário mais amigável
+        self.fields['funcionario'].queryset = Funcionario.objects.order_by('nome_completo')
+        self.fields['funcionario'].empty_label = "Selecione um funcionário"
+
+        # Aplica classes do bootstrap para um visual consistente
+        self.fields['funcionario'].widget.attrs.update({'class': 'form-select'})
+        self.fields['tipo'].widget.attrs.update({'class': 'form-select'})
+        self.fields['numero'].widget.attrs.update({'class': 'form-control'})
+        self.fields['anexo'].widget.attrs.update({'class': 'form-control'})
+
+        # Se o formulário for instanciado para um funcionário específico,
+        # podemos esconder e pré-selecionar o campo.
+        if 'initial' in kwargs and 'funcionario' in kwargs['initial']:
+            self.fields['funcionario'].widget = forms.HiddenInput()
+
+# NOVO FORMULÁRIO PARA O PROCESSO DE ADMISSÃO
+class AdmissaoForm(forms.ModelForm):
+    """
+    Formulário focado em adicionar/editar os dados contratuais de um Funcionário.
+    """
+    class Meta:
+        model = Funcionario
+        # Campos específicos do processo de admissão/contrato
+        fields = [
+            'matricula', 'cargo', 'departamento', 'data_admissao', 
+            'salario', 'status', 'data_demissao'
+        ]
+        widgets = {
+            'data_admissao': forms.DateInput(attrs={'type': 'date'}),
+            'data_demissao': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Aplica classes do Bootstrap para consistência
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs.update({'class': 'form-select'})
+            elif not isinstance(field.widget, forms.DateInput):
+                field.widget.attrs.update({'class': 'form-control'})
+
+        # Adiciona help_text para campos importantes
+        self.fields['data_demissao'].help_text = "Preencha apenas se o status do funcionário for 'Inativo'."
+        self.fields['matricula'].help_text = "Pode ser deixado em branco para geração automática (requer lógica na view ou model)."

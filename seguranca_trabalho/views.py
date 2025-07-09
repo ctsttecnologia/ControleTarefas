@@ -9,11 +9,24 @@ from django.shortcuts import get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.utils import timezone
-
-from .models import Equipamento, FichaEPI, EntregaEPI, Fabricante, Fornecedor, Funcao, MatrizEPI, MovimentacaoEstoque
+from django.db.models import Count, Q
+from seguranca_trabalho.models import (Equipamento, 
+                                       FichaEPI, 
+                                       EntregaEPI, 
+                                       Fabricante, 
+                                       Fornecedor, 
+                                       Funcao, 
+                                       MatrizEPI, 
+                                       MovimentacaoEstoque,
+)
+from tarefas.models import Tarefas
 from .forms import EquipamentoForm, FichaEPIForm, EntregaEPIForm, AssinaturaForm, FabricanteForm, FornecedorForm
 from departamento_pessoal.models import Funcionario
 import json
+
+
+from datetime import timedelta
+
 
 
 class SSTPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
@@ -64,10 +77,12 @@ class EquipamentoDeleteView(SSTPermissionMixin, DeleteView):
 
 # --- CRUD DE FICHAS DE EPI ---
 class FichaEPIListView(SSTPermissionMixin, ListView):
-    model = FichaEPI; template_name = 'seguranca_trabalho/ficha_lista.html'; context_object_name = 'fichas'; queryset = FichaEPI.objects.select_related('funcionario__cargo')
+    model = FichaEPI; template_name = 'seguranca_trabalho/ficha_lista.html'; 
+    context_object_name = 'fichas'; 
+    queryset = FichaEPI.objects.select_related('funcionario__cargo')
 
 class FichaEPICreateView(SSTPermissionMixin, CreateView):
-    model = FichaEPI; form_class = FichaEPIForm; template_name = 'seguranca_trabalho/ficha_form.html'
+    model = FichaEPI; form_class = FichaEPIForm; template_name = 'seguranca_trabalho/ficha_criar_form.html'
     def get_success_url(self): return reverse_lazy('seguranca_trabalho:ficha_detalhe', kwargs={'pk': self.object.pk})
 
 class FichaEPIDetailView(SSTPermissionMixin, DetailView):
@@ -116,7 +131,7 @@ class FuncaoDoColaboradorAPIView(LoginRequiredMixin, View):
         return JsonResponse({})# seguranca_trabalho/views.py
     
 class DashboardSSTView(LoginRequiredMixin, TemplateView):
-    template_name = 'seguranca_trabalho/dashboard.html'
+    template_name = 'seguranca_trabalho/painel_de_bordo.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -138,3 +153,42 @@ class DashboardSSTView(LoginRequiredMixin, TemplateView):
         })
         
         return context
+class DashboardGeralView(LoginRequiredMixin, TemplateView):
+    template_name = 'seguranca_trabalho/dashboard_geral.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        um_mes_atras = timezone.now() - timedelta(days=30)
+
+        # --- MÉTRICAS DE FUNCIONÁRIOS (DEPARTAMENTO PESSOAL) ---
+        context['total_funcionarios_ativos'] = Funcionario.objects.filter(status='ATIVO').count()
+        context['novas_contratacoes_mes'] = Funcionario.objects.filter(data_admissao__gte=um_mes_atras).count()
+
+        # --- MÉTRICAS DE SEGURANÇA DO TRABALHO ---
+        context['total_epis_ativos'] = Equipamento.objects.filter(ativo=True).count()
+        # Supondo que seu modelo EntregaEPI tenha a propriedade `data_vencimento_uso`
+        # context['epis_vencendo_30d'] = EntregaEPI.objects.filter(data_vencimento_uso__lte=timezone.now() + timedelta(days=30)).count()
+
+        # --- MÉTRICAS DE TAREFAS ---
+        tarefas_usuario = Tarefas.objects.filter(responsavel=self.request.user)
+        context['tarefas_pendentes_usuario'] = tarefas_usuario.filter(status__in=['pendente', 'andamento']).count()
+        context['tarefas_atrasadas_usuario'] = tarefas_usuario.filter(status='atrasada').count()
+        
+        # --- DADOS PARA GRÁFICOS ---
+        # Gráfico 1: Tarefas por Status (geral)
+        tarefas_por_status = list(Tarefas.objects.values('status').annotate(total=Count('status')).order_by('status'))
+        status_map = dict(Tarefas.STATUS_CHOICES)
+        context['tarefas_status_json'] = json.dumps({
+            'labels': [status_map.get(s['status'], s['status']) for s in tarefas_por_status],
+            'data': [s['total'] for s in tarefas_por_status],
+        })
+        
+        # Gráfico 2: Funcionários por Departamento
+        funcionarios_por_dpto = list(Funcionario.objects.values('departamento__nome').annotate(total=Count('id')).order_by('-total'))
+        context['funcionarios_dpto_json'] = json.dumps({
+            'labels': [d['departamento__nome'] for d in funcionarios_por_dpto],
+            'data': [d['total'] for d in funcionarios_por_dpto],
+        })
+
+        return context
+

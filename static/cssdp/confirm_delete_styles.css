@@ -1,0 +1,115 @@
+
+/* static/css/confirm_delete_styles.css */
+
+/* Importa uma fonte limpa do Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+/* Estilos Gerais */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f7f6;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* Container Principal */
+.container {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    max-width: 550px;
+    width: 100%;
+    text-align: center;
+    border-top: 5px solid #ffc107; /* Amarelo de alerta no topo */
+}
+
+/* Título */
+h2 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #212529;
+    margin-bottom: 1.5rem;
+}
+
+/* Parágrafos e Texto de Confirmação */
+p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+p strong {
+    color: #0d6efd; /* Azul para destacar o nome do funcionário */
+    font-weight: 500;
+}
+
+/* Painel de Navegação (se houver) */
+.painel {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    padding: 1rem 0;
+    margin-bottom: 1.5rem;
+    border-top: 1px solid #e9ecef;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Estilo Base para Botões */
+.btn_cadastro, .btn_profile, .btn_excluir, .btn_cancelar, .btn-home {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn_cadastro:hover, .btn_profile:hover, .btn_excluir:hover, .btn_cancelar:hover, .btn-home:hover {
+    transform: translateY(-2px);
+}
+
+/* Botões de Navegação */
+.btn_cadastro, .btn_profile, .btn-home {
+    background-color: #6c757d;
+    color: #ffffff;
+}
+.btn_cadastro:hover, .btn_profile:hover, .btn-home:hover {
+    background-color: #5a6268;
+}
+
+/* Formulário de Confirmação */
+form {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem; /* Espaçamento entre os botões */
+}
+
+/* Botão de Excluir (Ação Destrutiva) */
+.btn_excluir {
+    background-color: #dc3545; /* Vermelho perigo */
+    color: #ffffff;
+}
+
+.btn_excluir:hover {
+    background-color: #c82333;
+}
+
+/* Botão de Cancelar (Ação Secundária) */
+.btn_cancelar {
+    background-color: #e9ecef;
+    color: #333;
+    border: 1px solid #dee2e6;
+}
+
+.btn_cancelar:hover {
+    background-color: #ced4da;
+}
