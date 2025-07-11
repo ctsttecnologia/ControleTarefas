@@ -1,0 +1,117 @@
+{% extends "seguranca_trabalho/_base_sst.html" %}
+
+{% block title %}Ficha de EPI de {{ ficha.funcionario.nome_completo }}{% endblock %}
+
+{% block sst_content %}
+<div id="ficha-imprimivel">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h2">Ficha de Controle de EPIs</h1>
+            <p class="text-muted">Funcionário: <strong>{{ ficha.funcionario.nome_completo }}</strong></p>
+        </div>
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer me-1"></i> Imprimir
+        </button>
+    </div>
+
+    <h4 class="mt-4">CONTROLE DE EPIs</h4>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-bordered table-hover align-middle">
+                <tbody>
+                    {% for entrega in ficha.entregas.all %}
+                    <tr>
+                        <td>{{ entrega.data_entrega|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ entrega.quantidade }}</td>
+                        <td>{{ entrega.equipamento.nome }}</td>
+                        <td>{{ entrega.equipamento.certificado_aprovacao }}</td>
+                        <td class="text-center">
+                            {% if entrega.assinatura_recebimento %}
+                                <img src="{{ entrega.assinatura_recebimento }}" alt="Assinatura" style="height: 40px;">
+                            {% else %}
+                                <button class="btn btn-warning btn-sm" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#assinaturaModal"
+                                        data-entrega-id="{{ entrega.id }}"
+                                        data-url-assinatura="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}">
+                                    <i class="bi bi-pen-fill"></i> Assinar
+                                </button>
+                            {% endif %}
+                        </td>
+                        <td>{{ entrega.data_devolucao|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ entrega.recebedor_devolucao.get_full_name|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{# Incluindo o modal a partir do arquivo parcial #}
+{% include 'seguranca_trabalho/partials/_modal_assinatura.html' %}
+
+{% endblock sst_content %}
+
+
+{% block extra_js %}
+{# Biblioteca para a captura da assinatura #}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signature-pad');
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(248, 249, 250)'
+    });
+
+    const modalElement = document.getElementById('assinaturaModal');
+    const formAssinatura = document.getElementById('formAssinatura');
+    const hiddenInput = document.getElementById('assinatura_base64');
+    const saveButton = document.getElementById('save-signature');
+    const clearButton = document.getElementById('clear-signature');
+    
+    // Quando o modal for aberto, ajustamos a action do formulário
+    modalElement.addEventListener('show.bs.modal', function (event) {
+        // Limpa a assinatura anterior
+        signaturePad.clear();
+
+        // Pega o botão que abriu o modal
+        const button = event.relatedTarget;
+        
+        // Pega a URL do atributo data-* do botão
+        const urlAssinatura = button.getAttribute('data-url-assinatura');
+        
+        // Define a action do formulário do modal com a URL correta
+        formAssinatura.setAttribute('action', urlAssinatura);
+    });
+
+    // Limpa o canvas
+    clearButton.addEventListener('click', function () {
+        signaturePad.clear();
+    });
+
+    // Salva a assinatura
+    saveButton.addEventListener('click', function (event) {
+        if (signaturePad.isEmpty()) {
+            alert("Por favor, forneça uma assinatura.");
+            event.preventDefault(); // Impede o envio do formulário
+        } else {
+            // Pega a assinatura como uma imagem Base64 e a coloca no campo escondido
+            hiddenInput.value = signaturePad.toDataURL('image/png');
+        }
+    });
+
+    // Redimensiona o canvas se a janela mudar de tamanho
+    function resizeCanvas() {
+        const ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        signaturePad.clear(); // Limpa ao redimensionar
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+});
+</script>
+{% endblock extra_js %}

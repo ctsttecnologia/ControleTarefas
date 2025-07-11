@@ -1,0 +1,17 @@
+
+
+/* Em seu arquivo de CSS */
+@media print {
+  /* Esconde o corpo inteiro e mostra apenas a área da ficha */
+  body * {
+    visibility: hidden;
+  }
+  #ficha-imprimivel, #ficha-imprimivel * {
+    visibility: visible;
+  }
+  #ficha-imprimivel {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}

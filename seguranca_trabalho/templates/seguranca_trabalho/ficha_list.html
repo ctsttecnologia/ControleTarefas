@@ -1,0 +1,60 @@
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% block title %}Fichas de EPI{% endblock %}
+
+{% block sst_content %}
+<div class="page-header mb-4">
+    <div>
+        <h1 class="h2">Fichas de EPI de Colaboradores</h1>
+        <p class="text-muted">Lista de todas as fichas de Equipamentos de Proteção Individual.</p>
+    </div>
+    <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nova Ficha
+    </a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Colaborador</th>
+                        <th scope="col">Cargo</th>
+                        <th scope="col">Data de Admissão</th>
+                        <th scope="col">Ficha Criada em</th>
+                        <th scope="col" class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ficha in fichas %}
+                    <tr>
+                        <td>
+                            <a href="{{ ficha.get_absolute_url }}" class="fw-bold text-decoration-none">{{ ficha.funcionario.nome_completo }}</a>
+                        </td>
+                        <td>{{ ficha.funcionario.cargo.nome|default:"-" }}</td>
+                        <td>{{ ficha.data_admissao|date:"d/m/Y" }}</td>
+                        <td>{{ ficha.criado_em|date:"d/m/Y H:i" }}</td>
+                        <td class="text-end">
+                            <a href="{{ ficha.get_absolute_url }}" class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                <i class="bi bi-eye me-1"></i> Ver Detalhes
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <p class="mb-1">Nenhuma ficha de EPI encontrada.</p>
+                            <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-sm btn-primary">Crie a primeira!</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer">
+        {% include 'includes/pagination.html' %}
+    </div>
+</div>
+{% endblock %}
+
