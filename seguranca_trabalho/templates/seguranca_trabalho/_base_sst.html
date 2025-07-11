@@ -1,28 +1,34 @@
-
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssseguranca/styles.css' %}">
-    {% block sst_extra_css %}{% endblock %}
-{% endblock %}
+{# Adiciona "SST" ao título da página, mantendo o título original do site #}
+{% block title %}SST - {{ block.super }}{% endblock %}
 
+{# Preenche o bloco de conteúdo principal do base.html #}
 {% block content %}
-<div class="subnav-sst">
-    <div class="container-fluid">
+<div class="container-fluid mt-4">
+    
+    <div class="subnav-sst mb-4 p-3 bg-body-tertiary rounded-3 border">
         <ul class="nav nav-pills">
-            <li class="nav-item"><a href="#" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">Dashboard</a></li>
-            <li class="nav-item"><a href="{% url 'seguranca_trabalho:ficha_lista' %}" class="nav-link {% if 'ficha_' in request.resolver_match.view_name %}active{% endif %}">Fichas de EPI</a></li>
-            <li class="nav-item"><a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-link {% if 'equipamento_' in request.resolver_match.view_name %}active{% endif %}">Equipamentos</a></li>
-        </ul>
+            <li class="nav-item">
+                <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">
+                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="nav-link {% if 'ficha_' in request.resolver_match.view_name %}active{% endif %}">
+                    <i class="bi bi-file-person me-1"></i> Fichas de EPI
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-link {% if 'equipamento_' in request.resolver_match.view_name %}active{% endif %}">
+                    <i class="bi bi-hdd-stack me-1"></i> Equipamentos
+                </a>
+            </li>
+            </ul>
     </div>
+
+    {% block sst_content %}{% endblock sst_content %}
+
 </div>
-
-<main class="container-fluid py-4">
-    {% block sst_content %}{% endblock %}
-</main>
-{% endblock %}
-
-{% block extra_js %}
-    {% block sst_extra_js %}{% endblock %}
-{% endblock %}
+{% endblock content %}

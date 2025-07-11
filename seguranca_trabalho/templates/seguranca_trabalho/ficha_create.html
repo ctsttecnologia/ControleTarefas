@@ -1,0 +1,80 @@
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Nova Ficha de EPI - {{ block.super }}{% endblock %}
+
+{% block sst_content %}
+<div class="page-header mb-4">
+    <div>
+        <h1 class="h2">Criar Nova Ficha de EPI</h1>
+        <p class="text-muted">Selecione o funcionário para criar uma nova ficha de controle de EPI.</p>
+    </div>
+    <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-secondary">
+        <i class="bi bi-x-lg me-1"></i> Cancelar
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {# Exibe erros gerais do formulário, se houver #}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.funcionario.id_for_label }}" class="form-label">{{ form.funcionario.label }}</label>
+                        
+                        {# Renderiza o campo do formulário. Usando widget_tweaks para adicionar classe #}
+                        {% render_field form.funcionario class="form-select" %}
+                        
+                        {# Exibe erros específicos do campo #}
+                        {% if form.funcionario.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.funcionario.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Apenas funcionários ativos e sem ficha aparecerão na lista. A função e data de admissão serão preenchidas automaticamente.
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Criar Ficha
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-light-subtle border">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-info-circle-fill me-2"></i>Próximos Passos</h5>
+                <p class="card-text">
+                    Após criar a ficha, você será redirecionado para a página de detalhes, onde poderá:
+                </p>
+                <ul>
+                    <li>Registrar a entrega de novos EPIs.</li>
+                    <li>Visualizar o histórico de entregas.</li>
+                    <li>Coletar assinaturas digitais.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock sst_content %}

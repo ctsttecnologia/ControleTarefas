@@ -1,26 +1,20 @@
-
-# seguranca_trabalho/forms.py 
+# seguranca_trabalho/forms.py
 
 from django import forms
-from .models import Equipamento, Funcao, FichaEPI, EntregaEPI, Fabricante, Fornecedor
+from django.utils.translation import gettext_lazy as _
+from .models import Equipamento, FichaEPI, EntregaEPI, Fabricante, Fornecedor
 from departamento_pessoal.models import Funcionario
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
-
-
-# --- FORMULÁRIO DE FABRICANTE  ---
 class FabricanteForm(forms.ModelForm):
     class Meta:
         model = Fabricante
         fields = ['nome', 'cnpj', 'ativo']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'cnpj': forms.TextInput(attrs={'class': 'form-control'}),
+            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-# --- FORMULÁRIO DE FORNECEDOR  ---
 class FornecedorForm(forms.ModelForm):
     class Meta:
         model = Fornecedor
@@ -28,13 +22,12 @@ class FornecedorForm(forms.ModelForm):
         widgets = {
             'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
             'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
-            'cnpj': forms.TextInput(attrs={'class': 'form-control'}),
+            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-# --- FORMULÁRIO DE EQUIPAMENTO  ---
 class EquipamentoForm(forms.ModelForm):
     class Meta:
         model = Equipamento
@@ -58,30 +51,48 @@ class EquipamentoForm(forms.ModelForm):
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+
 class FichaEPIForm(forms.ModelForm):
     class Meta:
         model = FichaEPI
-        fields = ['colaborador', 'funcao', 'data_admissao']
+        fields = ['funcionario'] # Apenas o funcionário é necessário, o resto é preenchido no model/view
         widgets = {
-            'colaborador': forms.Select(attrs={'class': 'form-select'}),
-            'funcao': forms.Select(attrs={'class': 'form-select'}),
-            'data_admissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
         }
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtra o dropdown de 'colaborador' para mostrar apenas usuários
-        # que existem na tabela de Funcionarios.
-        colaborador_ids = Funcionario.objects.values_list('usuario_id', flat=True)
-        self.fields['colaborador'].queryset = User.objects.filter(pk__in=colaborador_ids)
+        # Filtra para mostrar apenas funcionários ativos que ainda não têm ficha
+        funcionarios_com_ficha = FichaEPI.objects.values_list('funcionario_id', flat=True)
+        self.fields['funcionario'].queryset = Funcionario.objects.filter(status='ATIVO').exclude(id__in=funcionarios_com_ficha)
+        self.fields['funcionario'].label_from_instance = lambda obj: f"{obj.nome_completo} (Mat. {obj.id})"
+
+    def clean_funcionario(self):
+        funcionario = self.cleaned_data['funcionario']
+        if not hasattr(funcionario, 'cargo') or not funcionario.cargo:
+            raise forms.ValidationError(
+                _("O funcionário selecionado não possui um cargo definido. Por favor, atualize o cadastro no Departamento Pessoal."),
+                code='sem_cargo'
+            )
+        return funcionario
+
 
 class EntregaEPIForm(forms.ModelForm):
     class Meta:
         model = EntregaEPI
-        fields = ['equipamento', 'quantidade']
-
+        fields = ['equipamento', 'quantidade', 'lote', 'numero_serie']
+        widgets = {
+            'equipamento': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'lote': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_serie': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['equipamento'].queryset = Equipamento.objects.filter(ativo=True)
+        # Campos de lote/série podem ser escondidos com JS no front-end se não forem necessários
+        
 class AssinaturaForm(forms.Form):
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput())
-
-
 

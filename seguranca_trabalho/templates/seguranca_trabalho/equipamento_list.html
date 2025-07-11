@@ -1,109 +1,97 @@
-
-{% extends 'base.html' %}
-{% load static %}
-
+{% extends "seguranca_trabalho/_base_sst.html" %}
 {% block title %}Catálogo de Equipamentos (EPIs){% endblock %}
 
-{% block content %}
-<div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2">Catálogo de Equipamentos (EPIs)</h1>
-            <p class="text-muted">Gerencie os tipos de equipamentos disponíveis no sistema.</p>
-        </div>
-            <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Adicionar Equipamento
-            </a>
-            <a href="{% url 'seguranca_trabalho:painel_de_bordo' %}" class="btn btn-primary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar para Painel SST
-            </a>
+{% block sst_content %}
+<div class="page-header mb-4">
+    <div>
+        <h1 class="h2">Catálogo de Equipamentos (EPIs)</h1>
+        <p class="text-muted">Gerencie os tipos de equipamentos disponíveis no sistema.</p>
     </div>
+    <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Adicionar Equipamento
+    </a>
+</div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col">Nome / Modelo</th>
-                            <th scope="col">Fabricante</th>
-                            <th scope="col">CA</th>
-                            <th scope="col">Validade CA</th>
-                            <th scope="col" class="text-center">Status</th>
-                            <th scope="col" class="text-end">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for equipamento in object_list %}
-                        <tr>
-                            <td>
-                                <a href="{{ equipamento.get_absolute_url }}" class="fw-bold text-decoration-none">
-                                    {{ equipamento.nome }}
-                                </a>
-                                <small class="d-block text-muted">{{ equipamento.modelo|default:"-" }}</small>
-                            </td>
-                            <td>{{ equipamento.fabricante.nome|default:"N/A" }}</td>
-                            <td>{{ equipamento.certificado_aprovacao|default:"-" }}</td>
-                            <td>
-                                {% if equipamento.data_validade_ca %}
-                                    {{ equipamento.data_validade_ca|date:"d/m/Y" }}
-                                {% else %}
-                                    <span class="text-muted">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if equipamento.ativo %}
-                                    <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Ativo</span>
-                                {% else %}
-                                    <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">Inativo</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{{ equipamento.get_absolute_url }}" class="btn btn-sm btn-outline-secondary" title="Ver Detalhes">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'seguranca_trabalho:equipamento_update' equipamento.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
-                                    <i class="bi bi-pencil-fill"></i>
-                                </a>
-                                <a href="#" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ equipamento.pk }}" title="Excluir">
-                                    <i class="bi bi-trash-fill"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        
-                        <div class="modal fade" id="deleteModal{{ equipamento.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ equipamento.pk }}" aria-hidden="true">
-                          <div class="modal-dialog">
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Nome / Modelo</th>
+                        <th scope="col">Fabricante</th>
+                        <th scope="col">CA</th>
+                        <th scope="col">Validade do CA</th>
+                        <th scope="col" class="text-center">Status</th>
+                        <th scope="col" class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for equipamento in equipamentos %}
+                    <tr>
+                        <td>
+                            <a href="{{ equipamento.get_absolute_url }}" class="fw-bold text-decoration-none">{{ equipamento.nome }}</a>
+                            <small class="d-block text-muted">{{ equipamento.modelo|default:"" }}</small>
+                        </td>
+                        <td>{{ equipamento.fabricante.nome|default:"N/A" }}</td>
+                        <td>{{ equipamento.certificado_aprovacao|default:"-" }}</td>
+                        <td>
+                            {% if equipamento.data_validade_ca %}
+                                {{ equipamento.data_validade_ca|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if equipamento.ativo %}
+                                <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ equipamento.get_absolute_url }}" class="btn btn-sm btn-outline-secondary" title="Ver Detalhes"><i class="bi bi-eye"></i></a>
+                            <a href="{% url 'seguranca_trabalho:equipamento_update' equipamento.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-{{ equipamento.pk }}" title="Excluir"><i class="bi bi-trash-fill"></i></button>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="deleteModal-{{ equipamento.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel-{{ equipamento.pk }}" aria-hidden="true">
+                        <div class="modal-dialog">
                             <div class="modal-content">
-                              <div class="modal-header">
-                                <h5 class="modal-title" id="deleteModalLabel{{ equipamento.pk }}">Confirmar Exclusão</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                              </div>
-                              <div class="modal-body">
-                                Tem certeza de que deseja excluir o equipamento <strong>"{{ equipamento }}"</strong>? Esta ação não pode ser desfeita.
-                              </div>
-                              <div class="modal-footer">
-                                <form method="post" action="{% url 'seguranca_trabalho:equipamento_delete' equipamento.pk %}">
-                                    {% csrf_token %}
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-danger">Sim, Excluir</button>
-                                </form>
-                              </div>
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="deleteModalLabel-{{ equipamento.pk }}">Confirmar Exclusão</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Tem certeza de que deseja excluir o equipamento <strong>"{{ equipamento }}"</strong>? Esta ação não pode ser desfeita.
+                                </div>
+                                <div class="modal-footer">
+                                    <form method="post" action="{% url 'seguranca_trabalho:equipamento_delete' equipamento.pk %}">
+                                        {% csrf_token %}
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+                                    </form>
+                                </div>
                             </div>
-                          </div>
                         </div>
-
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4">
-                                <p class="mb-1">Nenhum equipamento cadastrado ainda.</p>
-                                <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="btn btn-sm btn-primary">Cadastre o primeiro!</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <p class="mb-1">Nenhum equipamento cadastrado.</p>
+                            <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="btn btn-sm btn-primary">Cadastre o primeiro!</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+    </div>
+    <div class="card-footer">
+        {% include 'includes/pagination.html' %}
     </div>
 </div>
 {% endblock %}
+
+
