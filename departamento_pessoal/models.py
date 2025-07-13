@@ -8,6 +8,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from datetime import date
 
+from cliente.models import Cliente # Supondo que o app se chame 'cliente'
+
 # --- Modelos de Apoio / Catálogos ---
 
 class Departamento(models.Model):
@@ -57,7 +59,15 @@ class Funcionario(models.Model):
         related_name='funcionario',
         verbose_name=_("Usuário do Sistema")
     )
-    
+
+    cliente = models.ForeignKey(
+        'cliente.Cliente', # Aponta para o seu modelo Cliente
+        on_delete=models.PROTECT,  # Impede a exclusão de um cliente se houver funcionários ligados
+        related_name='funcionarios',
+        verbose_name="Cliente/Contrato",
+        null=True,  # Permite que funcionários antigos não tenham um cliente/contrato associado
+        blank=True
+    )
     # Informações Pessoais
     nome_completo = models.CharField(max_length=255, verbose_name=_("Nome Completo"))
     data_nascimento = models.DateField(null=True, blank=True, verbose_name=_("Data de Nascimento"))

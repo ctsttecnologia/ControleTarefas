@@ -1,48 +1,35 @@
-/*
-* =================================================================================================
-* ESTADOS DO LINK: HOVER E ACTIVE
-* =================================================================================================
-*/
 
-/* NOVO: Estilo para o botão que deve ficar SEMPRE elevado */
-.subnav .nav-pills .nav-link.btn-elevado {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px var(--shadow-color);
-    /* Opcional: pode ter uma cor de fundo diferente se não estiver ativo */
-    /* background-color: #e9ecef; */
-}
+    /*
+    * =================================================================================================
+    * ESTILOS DA SUBNAVEGAÇÃO DO DEPARTAMENTO PESSOAL
+    * =================================================================================================
+    */
 
-/* NOVO: Efeito de hover para o botão que já está elevado (feedback extra) */
-.subnav .nav-pills .nav-link.btn-elevado:hover {
-    transform: translateY(-3px) scale(1.02); /* Aumenta um pouco para dar feedback */
-}
+    /* Estilo base para todos os links da subnavegação */
+    .subnav .nav-pills .nav-link {
+        transition: transform 0.25s ease-in-out, box-shadow 0.25s ease-in-out, background-color 0.2s ease;
+        border-radius: 0.5rem; /* Bordas arredondadas */
+    }
 
-/* ALTERADO: Efeito de hover para TODOS OS OUTROS botões */
-/* A regra :not(.btn-elevado) garante que o botão "Painel DP" seja ignorado aqui */
-.subnav .nav-pills .nav-link:not(.btn-elevado):hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 8px var(--shadow-color);
-}
+    /* Efeito de elevação para QUALQUER botão ao passar o mouse (hover) */
+    .subnav .nav-pills .nav-link:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        z-index: 2;
+    }
 
-/* Estilo do botão ativo (página atual) - controla APENAS a cor */
-.subnav .nav-pills .nav-link.active {
-    background-color: var(--primary-color);
-    color: var(--light-text);
-    /* Removemos a sombra estática daqui para não conflitar */
-    box-shadow: none; 
-}
+    /* Estilo do botão ATIVO (página atual) */
+    .subnav .nav-pills .nav-link.active {
+        background-color: var(--primary-color, #0d6efd); /* Cor primária do seu tema */
+        color: var(--light-text, #fff);
+        transform: translateY(-4px); /* Mantém o botão ativo elevado */
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada para o ativo */
+        font-weight: 600;
+    }
 
-/* Garante que o botão ativo e elevado (Painel DP na sua página) tenha a cor correta */
-.subnav .nav-pills .nav-link.btn-elevado.active {
-    background-color: var(--primary-color);
-    color: var(--light-text);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Devolve uma sombra forte */
-}
-
-/* Efeito de hover em um botão que está ativo (como o "Departamentos") */
-.subnav .nav-pills .nav-link.active:not(.btn-elevado):hover {
-    background-color: var(--primary-color-hover);
-    transform: translateY(-3px); /* Garante que ele se eleve no hover */
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.22);
-}
-
+    /* Efeito de hover em um botão que já está ativo */
+    .subnav .nav-pills .nav-link.active:hover {
+        background-color: var(--primary-color-hover, #0b5ed7); /* Cor primária um pouco mais escura */
+        transform: translateY(-4px) scale(1.02); /* Aumenta um pouco para dar feedback */
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+    }

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-lg-6 col-md-8 col-sm-10">
+        <div class="card border-danger shadow-lg rounded-3">
+            <div class="card-header bg-danger text-white d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                <h4 class="mb-0">Confirmar Exclusão</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <p class="fs-5">Tem certeza que deseja excluir permanentemente o cliente <strong>"{{ object.nome }}"</strong>?</p>
+                    <p class="text-danger fw-bold"><i class="bi bi-exclamation-circle me-1"></i>Esta ação não pode ser desfeita.</p>
+                    
+                    <div class="d-flex justify-content-end mt-4 pt-3 border-top">
+                        <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-secondary me-2 px-4">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-trash3-fill me-1"></i>Sim, Excluir
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

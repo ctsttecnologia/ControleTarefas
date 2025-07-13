@@ -1,0 +1,171 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lista de Clientes{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+    <!-- Cabeçalho da Página -->
+    <header class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
+        <h2 class="h3 mb-3 mb-md-0"><i class="bi bi-people-fill me-2"></i>Lista de Clientes ({{ total_clientes }})</h2>
+        <div class="d-flex">
+            <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-primary flex-grow-1 flex-md-grow-0">
+                <i class="bi bi-plus-circle me-1"></i> 
+                Novo Cliente
+            </a>
+            <a href="{% url 'cliente:exportar_excel' %}" class="btn btn-outline-success ms-2 flex-grow-1 flex-md-grow-0">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> 
+                Exportar
+            </a>
+        </div>
+    </header>
+
+    <!-- Card da Tabela -->
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body">
+            <!-- Formulário de Pesquisa -->
+            <div class="p-3 bg-light rounded-top">
+                <form method="get">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control form-control-lg" placeholder="Pesquisar por nome, CNPJ, contrato..." value="{{ termo_pesquisa }}">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tabela Responsiva -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col" class="py-3 px-3">Nome / Razão Social</th>
+                            <th scope="col" class="py-3 px-3">CNPJ</th>
+                            <th scope="col" class="py-3 px-3">Contrato</th>
+                            <th scope="col" class="py-3 px-3">Telefone</th>
+                            <th scope="col" class="py-3 px-3">Status</th>
+                            <th scope="col" class="text-end py-3 px-3">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cliente in object_list %}
+                        <tr>
+                            <td class="px-3">
+                                <div class="fw-bold">{{ cliente.nome }}</div>
+                                <small class="text-muted">{{ cliente.razao_social }}</small>
+                            </td>
+                            <td class="px-3">{{ cliente.cnpj_formatado }}</td>
+                            <td class="px-3">{{ cliente.contrato }}</td>
+                            <td class="px-3">{{ cliente.telefone|default:"—" }}</td>
+                            <td class="px-3">
+                                <span class="badge rounded-pill {% if cliente.estatus %}bg-success-subtle text-success-emphasis{% else %}bg-danger-subtle text-danger-emphasis{% endif %}">
+                                    {{ cliente.estatus|yesno:"Ativo,Inativo" }}
+                                </span>
+                            </td>
+                            <td class="text-end px-3">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'cliente:editar_cliente' cliente.pk %}" class="btn btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil-fill"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-cliente-pk="{{ cliente.pk }}" data-cliente-nome="{{ cliente.nome }}" title="Excluir">
+                                        <i class="bi bi-trash3-fill"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="text-center text-muted">
+                                    <i class="bi bi-search fs-1"></i>
+                                    <h5 class="mt-3">Nenhum cliente encontrado.</h5>
+                                    <p>Tente ajustar sua busca ou <a href="{% url 'cliente:cadastro_cliente' %}">adicione um novo cliente</a>.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if is_paginated %}
+            <nav class="mt-3 p-3 border-top" aria-label="Paginação de clientes">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">&laquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                    {% endif %}
+
+                    {% for i in paginator.page_range %}
+                        <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                            <a class="page-link" href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">&raquo;</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir o cliente <strong id="clienteNomeModal"></strong>?</p>
+        <p class="text-danger fw-bold">Esta ação não pode ser desfeita.</p>
+      </div>
+      <div class="modal-footer">
+        <form id="deleteForm" method="post">
+            {% csrf_token %}
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-danger">Sim, Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var deleteModal = document.getElementById('deleteModal');
+    deleteModal.addEventListener('show.bs.modal', function (event) {
+        // Botão que acionou o modal
+        var button = event.relatedTarget;
+        
+        // Extrai informações dos atributos data-*
+        var clientePk = button.getAttribute('data-cliente-pk');
+        var clienteNome = button.getAttribute('data-cliente-nome');
+        
+        // Atualiza o conteúdo do modal
+        var modalTitle = deleteModal.querySelector('.modal-title');
+        var modalBodyNome = deleteModal.querySelector('#clienteNomeModal');
+        var deleteForm = deleteModal.querySelector('#deleteForm');
+
+        modalBodyNome.textContent = `"${clienteNome}"`;
+        // ATENÇÃO: A URL de exclusão precisa ser definida dinamicamente.
+        // O ideal é ter uma URL base e adicionar o PK.
+        // Ex: /clientes/excluir/1/
+        deleteForm.action = `/clientes/excluir/${clientePk}/`; 
+    });
+});
+</script>
+{% endblock %}
+

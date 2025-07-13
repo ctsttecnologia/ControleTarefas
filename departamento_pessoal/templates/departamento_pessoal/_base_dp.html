@@ -1,9 +1,7 @@
-
 {% extends "base.html" %}
 {% load static %}
 
 {% block extra_css %}
-
 <link rel="stylesheet" href="{% static 'cssdp/dp_base.css' %}">
 
 {% endblock %}
@@ -12,34 +10,35 @@
     <div class="subnav">
         <div class="container-fluid">
             <ul class="nav nav-pills">
-                <li class="nav-item">
-                    <a class="nav-link btn-elevado {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}"
-                       href="{% url 'departamento_pessoal:painel_dp' %}">
-                       <i class="bi bi-speedometer2 me-1"></i> Painel DP
-                    </a>
-                </li>
+
                 <li class="nav-item">
                     <a class="nav-link {% if 'funcionario' in request.resolver_match.view_name %}active{% endif %}"
                        href="{% url 'departamento_pessoal:lista_funcionarios' %}">
-                       <i class="bi bi-people me-1"></i> Funcionários
+                        <i class="bi bi-people me-1"></i> Funcionários
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'documento' in request.resolver_match.view_name %}active{% endif %}"
                        href="{% url 'departamento_pessoal:lista_documentos' %}">
-                       <i class="bi bi-briefcase me-1"></i> documentos
+                        <i class="bi bi-briefcase me-1"></i> Documentos
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'cargo' in request.resolver_match.view_name %}active{% endif %}"
                        href="{% url 'departamento_pessoal:lista_cargo' %}">
-                       <i class="bi bi-briefcase me-1"></i> Cargos
+                        <i class="bi bi-briefcase me-1"></i> Cargos
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'departamento' in request.resolver_match.view_name %}active{% endif %}"
                        href="{% url 'departamento_pessoal:lista_departamento' %}">
-                       <i class="bi bi-diagram-3 me-1"></i> Departamentos
+                        <i class="bi bi-diagram-3 me-1"></i> Departamentos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}"
+                       href="{% url 'departamento_pessoal:painel_dp' %}">
+                        <i class="bi bi-speedometer2 me-1"></i> Painel DP
                     </a>
                 </li>
             </ul>

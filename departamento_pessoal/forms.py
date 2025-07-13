@@ -41,7 +41,7 @@ class FuncionarioForm(forms.ModelForm):
         # Lista todos os campos que o usuário pode preencher no formulário
         fields = [
             'usuario', 'nome_completo', 'email_pessoal', 'telefone', 'data_nascimento', 'sexo',
-            'matricula', 'departamento', 'cargo', 'data_admissao', 'salario', 'status', 'data_demissao'
+            'matricula', 'departamento', 'cargo', 'data_admissao', 'salario', 'status', 'data_demissao', 'cliente',
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {

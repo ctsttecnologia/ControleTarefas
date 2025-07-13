@@ -31,7 +31,7 @@ class CargoAdmin(admin.ModelAdmin):
 class FuncionarioAdmin(admin.ModelAdmin):
     inlines = [DocumentoInline]  # <-- Inclui o formulário de documentos aqui
     
-    list_display = ('nome_completo', 'matricula', 'cargo', 'departamento', 'status', 'idade')
+    list_display = ('nome_completo', 'matricula', 'cargo', 'departamento', 'status', 'idade', 'cliente')
     list_filter = ('status', 'departamento', 'cargo')
     search_fields = ('nome_completo', 'matricula', 'usuario__username', 'usuario__email')
     
