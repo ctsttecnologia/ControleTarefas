@@ -1,4 +1,5 @@
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load widget_tweaks %}
 
 {% block title %}Ficha de EPI de {{ ficha.funcionario.nome_completo }}{% endblock %}
 
@@ -7,39 +8,104 @@
     <div class="page-header mb-4 d-flex justify-content-between align-items-center">
         <div>
             <h1 class="h2">Ficha de Controle de EPIs</h1>
-            <p class="text-muted">Funcionário: <strong>{{ ficha.funcionario.nome_completo }}</strong></p>
+            <p class="text-muted mb-0">
+                Funcionário: <strong>{{ ficha.funcionario.nome_completo }}</strong><br>
+                Cargo: <strong>{{ ficha.funcionario.cargo.nome }}</strong>
+            </p>
         </div>
-        <button class="btn btn-outline-secondary" onclick="window.print()">
-            <i class="bi bi-printer me-1"></i> Imprimir
-        </button>
+        <div>
+            <a href="{% url 'seguranca_trabalho:ficha_pdf' ficha.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">Gerar PDF</a>
+            <a href="{% url 'seguranca_trabalho:ficha_delete' ficha.pk %}" class="btn btn-outline-danger btn-sm">Excluir Ficha</a>
+        </div>
     </div>
 
-    <h4 class="mt-4">CONTROLE DE EPIs</h4>
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Registrar Nova Entrega</h5>
+        </div>
         <div class="card-body">
-            <table class="table table-bordered table-hover align-middle">
+            <form method="post" action="{% url 'seguranca_trabalho:entrega_create' ficha.pk %}">
+                {% csrf_token %}
+                <div class="row align-items-end g-2">
+                    <div class="col-md-7">
+                        <label for="{{ entrega_form.equipamento.id_for_label }}" class="form-label">Equipamento (EPI)</label>
+                        {% render_field entrega_form.equipamento class="form-select" %}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ entrega_form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
+                        {% render_field entrega_form.quantidade class="form-control" %}
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            Adicionar à Ficha
+                        </button>
+                    </div>
+                </div>
+                 {% if entrega_form.errors %}
+                    <div class="alert alert-danger mt-3 small p-2">
+                        <strong>Erro ao adicionar:</strong>
+                        {{ entrega_form.non_field_errors }}
+                        {{ entrega_form.equipamento.errors }}
+                        {{ entrega_form.quantidade.errors }}
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <h4 class="mt-4">Histórico de Entregas</h4>
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Equipamento (EPI)</th>
+                        <th scope="col">Data Entrega</th>
+                        <th scope="col">Data Devolução</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-end">Ações</th>
+                    </tr>
+                </thead>
                 <tbody>
                     {% for entrega in ficha.entregas.all %}
                     <tr>
-                        <td>{{ entrega.data_entrega|date:"d/m/Y"|default:"-" }}</td>
-                        <td>{{ entrega.quantidade }}</td>
-                        <td>{{ entrega.equipamento.nome }}</td>
-                        <td>{{ entrega.equipamento.certificado_aprovacao }}</td>
-                        <td class="text-center">
-                            {% if entrega.assinatura_recebimento %}
-                                <img src="{{ entrega.assinatura_recebimento }}" alt="Assinatura" style="height: 40px;">
-                            {% else %}
-                                <button class="btn btn-warning btn-sm" 
-                                        data-bs-toggle="modal" 
+                        <td>
+                            <strong>{{ entrega.equipamento.nome }}</strong><br>
+                            <small class="text-muted">CA: {{ entrega.equipamento.certificado_aprovacao }}</small>
+                        </td>
+                        <td>{{ entrega.data_entrega|date:"d/m/Y"|default:"—" }}</td>
+                        <td>{{ entrega.data_devolucao|date:"d/m/Y"|default:"—" }}</td>
+                        
+                        {% if not entrega.assinatura_recebimento and not entrega.assinatura_imagem %}
+                            <td><span class="badge bg-warning text-dark">Pendente Assinatura</span></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-warning btn-sm"
+                                        data-bs-toggle="modal"
                                         data-bs-target="#assinaturaModal"
-                                        data-entrega-id="{{ entrega.id }}"
-                                        data-url-assinatura="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}">
+                                        data-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}">
                                     <i class="bi bi-pen-fill"></i> Assinar
                                 </button>
-                            {% endif %}
-                        </td>
-                        <td>{{ entrega.data_devolucao|date:"d/m/Y"|default:"-" }}</td>
-                        <td>{{ entrega.recebedor_devolucao.get_full_name|default:"-" }}</td>
+                            </td>
+                        {% elif not entrega.data_devolucao %}
+                            <td><span class="badge bg-success">Entregue</span></td>
+                            <td class="text-end">
+                                <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline" onsubmit="return confirm('Deseja realmente registrar a devolução deste item?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-info btn-sm">
+                                        <i class="bi bi-arrow-return-left"></i> Devolver
+                                    </button>
+                                </form>
+                            </td>
+                        {% else %}
+                            <td><span class="badge bg-secondary">Devolvido</span></td>
+                            <td class="text-end">
+                                <span class="text-muted fst-italic">Concluído</span>
+                            </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">Nenhuma entrega registrada para esta ficha ainda.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -48,70 +114,9 @@
     </div>
 </div>
 
-{# Incluindo o modal a partir do arquivo parcial #}
 {% include 'seguranca_trabalho/partials/_modal_assinatura.html' %}
-
 {% endblock sst_content %}
 
-
 {% block extra_js %}
-{# Biblioteca para a captura da assinatura #}
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const canvas = document.getElementById('signature-pad');
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(248, 249, 250)'
-    });
-
-    const modalElement = document.getElementById('assinaturaModal');
-    const formAssinatura = document.getElementById('formAssinatura');
-    const hiddenInput = document.getElementById('assinatura_base64');
-    const saveButton = document.getElementById('save-signature');
-    const clearButton = document.getElementById('clear-signature');
-    
-    // Quando o modal for aberto, ajustamos a action do formulário
-    modalElement.addEventListener('show.bs.modal', function (event) {
-        // Limpa a assinatura anterior
-        signaturePad.clear();
-
-        // Pega o botão que abriu o modal
-        const button = event.relatedTarget;
-        
-        // Pega a URL do atributo data-* do botão
-        const urlAssinatura = button.getAttribute('data-url-assinatura');
-        
-        // Define a action do formulário do modal com a URL correta
-        formAssinatura.setAttribute('action', urlAssinatura);
-    });
-
-    // Limpa o canvas
-    clearButton.addEventListener('click', function () {
-        signaturePad.clear();
-    });
-
-    // Salva a assinatura
-    saveButton.addEventListener('click', function (event) {
-        if (signaturePad.isEmpty()) {
-            alert("Por favor, forneça uma assinatura.");
-            event.preventDefault(); // Impede o envio do formulário
-        } else {
-            // Pega a assinatura como uma imagem Base64 e a coloca no campo escondido
-            hiddenInput.value = signaturePad.toDataURL('image/png');
-        }
-    });
-
-    // Redimensiona o canvas se a janela mudar de tamanho
-    function resizeCanvas() {
-        const ratio =  Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio, ratio);
-        signaturePad.clear(); // Limpa ao redimensionar
-    }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-});
-</script>
+    {% include 'seguranca_trabalho/includes/script_assinatura.js' %}
 {% endblock extra_js %}

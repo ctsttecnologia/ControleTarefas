@@ -1,187 +1,71 @@
-
 from django.contrib import admin
+from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Cliente, ClienteCliente
+from .models import Cliente
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
     list_display = (
-        'nome', 
-        'cnpj_formatado', 
-        'email',
-        'logradouro_link', 
-        'tempo_contrato_meses', 
-        'status_badge',
-        'data_de_inicio'
-    )
-    list_filter = (
-        'estatus', 
-        'data_de_inicio', 
-        ('logradouro', admin.RelatedOnlyFieldListFilter)
-    )
-    search_fields = (
-        'nome', 
-        'razao_social', 
-        'cnpj', 
-        'contrato',
-        'logradouro__endereco',
-        'email',
-        'inscricao_estadual',
-        'inscricao_municipal'
-    )
-    raw_id_fields = ('logradouro',)
-    list_editable = ('data_de_inicio', 'email')
-    date_hierarchy = 'data_de_inicio'
-    readonly_fields = (
-        'data_cadastro', 
-        'data_atualizacao', 
+        'nome',
         'cnpj_formatado',
-        'tempo_contrato_meses'
+        'contrato',
+        'logradouro_link',
+        'status_badge',
     )
+    list_filter = ('estatus', 'logradouro__cidade', 'data_de_inicio')
+    search_fields = ('nome', 'razao_social', 'cnpj', 'contrato')
+    readonly_fields = ('data_cadastro', 'data_atualizacao')
     actions = ['ativar_clientes', 'desativar_clientes']
+    
     fieldsets = (
-        (_('Informações Básicas'), {
-            'fields': (
-                'nome', 
-                'razao_social',
-                'cnpj',
-                'cnpj_formatado',
-                'contrato',
-                'unidade'
-            )
+        (None, {
+            'fields': ('nome', 'razao_social', 'estatus')
         }),
-        (_('Endereço'), {
-            'fields': ('logradouro',)
+        (_('Contrato e Documentos'), {
+            'fields': ('cnpj', 'contrato', 'inscricao_estadual', 'inscricao_municipal')
         }),
-        (_('Contato'), {
-            'fields': (
-                'telefone',
-                'email'
-            )
+        (_('Localização e Contato'), {
+            'fields': ('logradouro', 'telefone', 'email')
         }),
-        (_('Documentos'), {
-            'fields': (
-                'inscricao_estadual',
-                'inscricao_municipal'
-            )
-        }),
-        (_('Informações Adicionais'), {
-            'fields': (
-                'observacoes',
-                'data_de_inicio',
-                'data_encerramento',
-                'tempo_contrato_meses',
-                'estatus'
-            )
+        (_('Datas Importantes'), {
+            'fields': ('data_de_inicio', 'data_encerramento')
         }),
         (_('Auditoria'), {
-            'fields': (
-                'data_cadastro',
-                'data_atualizacao'
-            ),
+            'fields': ('data_cadastro', 'data_atualizacao'),
             'classes': ('collapse',)
         }),
     )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('logradouro')
+
+    @admin.display(description=_('CNPJ'), ordering='cnpj')
     def cnpj_formatado(self, obj):
         return obj.cnpj_formatado
-    cnpj_formatado.short_description = _('CNPJ Formatado')
 
-    def tempo_contrato_meses(self, obj):
-        return f"{obj.tempo_contrato} meses"
-    tempo_contrato_meses.short_description = _('Tempo de Contrato')
-
+    @admin.display(description=_('Status'), ordering='estatus')
     def status_badge(self, obj):
         color = 'green' if obj.estatus else 'red'
         text = _('Ativo') if obj.estatus else _('Inativo')
         return format_html(
-            '<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 10px;">{}</span>',
+            '<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 5px;">{}</span>',
             color, text
         )
-    status_badge.short_description = _('Status')
-    status_badge.admin_order_field = 'estatus'
 
+    @admin.display(description=_('Endereço'))
     def logradouro_link(self, obj):
         if obj.logradouro:
-            url = f"/admin/logradouro/logradouro/{obj.logradouro.id}/change/"
+            url = reverse("admin:logradouro_logradouro_change", args=[obj.logradouro.pk])
             return format_html('<a href="{}">{}</a>', url, obj.logradouro)
-        return "-"
-    logradouro_link.short_description = _('Endereço')
-    logradouro_link.allow_tags = True
+        return "—"
 
+    @admin.action(description=_('Ativar clientes selecionados'))
     def ativar_clientes(self, request, queryset):
         updated = queryset.update(estatus=True)
-        self.message_user(request, _('{} clientes ativados com sucesso.').format(updated))
-    ativar_clientes.short_description = _('Ativar clientes selecionados')
+        self.message_user(request, _(f'{updated} clientes foram ativados com sucesso.'))
 
+    @admin.action(description=_('Desativar clientes selecionados'))
     def desativar_clientes(self, request, queryset):
         updated = queryset.update(estatus=False)
-        self.message_user(request, _('{} clientes desativados com sucesso.').format(updated))
-    desativar_clientes.short_description = _('Desativar clientes selecionados')
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('logradouro')
-
-@admin.register(ClienteCliente)
-class ClienteClienteAdmin(admin.ModelAdmin):
-    list_display = (
-        'nome_completo',
-        'cliente_link',
-        'codigo',
-        'status_badge',
-        'data_criacao', 
-        'ativa'
-        
-    )
-    list_filter = (
-        'ativa',
-        'cliente',
-        'data_criacao'
-    )
-    search_fields = (
-        'nome',
-        'codigo',
-        'cliente__nome',
-        'cliente__razao_social'
-    )
-    raw_id_fields = ('cliente',)
-    list_editable = ('codigo', 'ativa')
-    date_hierarchy = 'data_criacao'
-    readonly_fields = ('data_criacao', 'nome_completo')
-    actions = ['ativar_unidades', 'desativar_unidades']
-
-    def nome_completo(self, obj):
-        return obj.nome_completo
-    nome_completo.short_description = _('Unidade')
-
-    def cliente_link(self, obj):
-        url = f"/admin/clientes/cliente/{obj.cliente.id}/change/"
-        return format_html('<a href="{}">{}</a>', url, obj.cliente.nome)
-    cliente_link.short_description = _('Cliente Matriz')
-    cliente_link.allow_tags = True
-
-    def status_badge(self, obj):
-        color = 'green' if obj.ativa else 'red'
-        text = _('Ativa') if obj.ativa else _('Inativa')
-        return format_html(
-            '<span style="color: white; background-color: {}; padding: 3px 8px; border-radius: 10px;">{}</span>',
-            color, text
-        )
-    status_badge.short_description = _('Status')
-    status_badge.admin_order_field = 'ativa'
-
-    def ativar_unidades(self, request, queryset):
-        updated = queryset.update(ativa=True)
-        self.message_user(request, _('{} unidades ativadas com sucesso.').format(updated))
-    ativar_unidades.short_description = _('Ativar unidades selecionadas')
-
-    def desativar_unidades(self, request, queryset):
-        updated = queryset.update(ativa=False)
-        self.message_user(request, _('{} unidades desativadas com sucesso.').format(updated))
-    desativar_unidades.short_description = _('Desativar unidades selecionadas')
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('cliente')
-
-pass
+        self.message_user(request, _(f'{updated} clientes foram desativados com sucesso.'))

@@ -141,10 +141,22 @@ class EntregaEPI(models.Model):
     quantidade = models.PositiveIntegerField(default=1, verbose_name=_("Quantidade"))
     lote = models.CharField(max_length=100, blank=True, verbose_name=_("Lote de Fabricação"))
     numero_serie = models.CharField(max_length=100, blank=True, verbose_name=_("Número de Série"))
-    data_entrega = models.DateField(null=True, blank=True, verbose_name=_("Data de Recebimento")) # <-- AJUSTE: Mudei para DateField e ajustei o nome.
+    data_entrega = models.DateField(null=True, blank=True, verbose_name=_("Data de Recebimento")) 
     assinatura_recebimento = models.TextField(blank=True, null=True, verbose_name=_("Assinatura de Recebimento"))
-    data_devolucao = models.DateField(null=True, blank=True, verbose_name=_("Data de Devolução")) # <-- AJUSTE: Mudei para DateField.
-    recebedor_devolucao = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Recebedor")) # <-- AJUSTE: Campo adicionado.
+    assinatura_imagem = models.ImageField(
+        verbose_name="Assinatura (Arquivo)", 
+        upload_to='assinaturas/%Y/%m/', 
+        null=True, 
+        blank=True
+    )
+    data_devolucao = models.DateField(null=True, blank=True, verbose_name=_("Data de Devolução")) 
+    recebedor_devolucao = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name=_("Recebedor")
+    ) 
     criado_em = models.DateTimeField(default=timezone.now, verbose_name=_("Data do Registro"))
 
     class Meta:

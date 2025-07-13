@@ -1,0 +1,158 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ficha de EPI - {{ ficha.funcionario.nome_completo }}</title>
+    <style>
+        @page { size: A4; margin: 2cm; }
+        
+        #logo {
+            position: absolute;
+            top: 0.5cm; /* Ajustado para respeitar a margem */
+            right: 0.5cm; /* Ajustado para respeitar a margem */
+            width: 150px; /* Definindo uma largura para a logo */
+        }
+        
+        body { font-family: "Helvetica", "sans-serif"; font-size: 10pt; }
+        h1 { text-align: center; font-size: 14pt; margin-top: 50px; } /* Adicionado margem para não ficar sob a logo */
+        h3 { margin-top: 25px; margin-bottom: 5px; }
+        p { text-align: justify; line-height: 1.4; margin: 5px 0; }
+        ol { padding-left: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid black; padding: 5px; text-align: left; font-size: 9pt; vertical-align: middle; }
+        th { background-color: #f2f2f2; }
+        .signature-img { max-width: 90px; max-height: 35px; }
+    </style>
+</head>
+<body>
+    <div id="logo">
+        <img src="{{ logo_path }}" alt="Logomarca" style="width: 100%;">
+    </div>
+    
+    <h1>FICHA DE CONTROLE DE EPIs</h1>
+    
+    <h3>Dados de Identificação</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Empregado:</strong> {{ ficha.funcionario.nome_completo }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Cargo:</strong> {{ ficha.funcionario.cargo.nome }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Contrato:</strong> {{ ficha.funcionario.cliente.contrato|default:"Não informado" }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Registro:</strong> {{ ficha.funcionario.matricula }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Contrato:</strong> {{ ficha.funcionario.cliente.contrato|default:"Não informado" }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Admissão:</strong> {{ ficha.funcionario.data_admissao|date:"d/m/Y" }}</p>
+        </div>
+        <div class="col-md-6">
+            <p class="mb-1"><strong>Demissão:</strong> {% if ficha.funcionario.data_demissao %}{{ ficha.funcionario.data_demissao|date:"d/m/Y" }}{% else %}—{% endif %}</p>
+        </div>
+    </div>
+
+    <h3>TERMO DE COMPROMISSO</h3>
+    <p>
+        Eu, {{ ficha.funcionario.nome_completo }}, declaro que recebi de CETEST MINAS ENGENHARIA E SERVIÇOS S/A, 
+        os Equipamentos de Proteção Individual - EPIs - abaixo relacionados, comprometendo-me a:
+    </p>
+    <ol>
+        <li>Usá-los em trabalho, zelando pela sua guarda e conservação, 
+            devolvendo-os quando se tornarem impróprios para o uso e/ou meu desligamento da 
+            CETEST MINAS ou do seu respectivo contrato;
+        </li>
+        <li>Em caso de perda, mau uso, 
+            extravio ou inutilização proposital do EPI recebido, 
+            assumo a responsabilidade quanto à restituição do seu valor atualizado, 
+            conforme autorização de débito por mim assinada.
+        </li>
+    </ol>
+    <p>
+        Declaro ainda ter recebido no ato de minha admissão e no ato do recebimento: 
+        Treinamento básico e instruções prévias sobre a forma de utilização e guarda dos EPIs recebido; 
+        Instruções sobre os riscos a que estou exposto em minha área de trabalho, bem como sua prevenção.
+        <div style="color: #d80000;"> 
+            Estou ciente de que o não uso dos EPIs, constitui ato faltoso conforme artigo 158 da CLT.
+        </div> 
+        Local e Data :             /               Assinatura: {% if entrega.assinatura_recebimento %}
+                                                                            <img src="{{ entrega.assinatura_recebimento }}" class="signature-img">
+                                                                         {% elif entrega.assinatura_imagem %}
+                                                                            <img src="{{ entrega.assinatura_imagem.path }}" class="signature-img">
+                                                                         {% endif %}  
+    </p>
+    
+    <h3>RECEBIMENTO</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Qtde.</th>
+                <th>Un.</th>
+                <th>Descrição EPI</th>
+                <th style="width: 100px;">Assinatura Recebimento</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entrega in ficha.entregas.all %}
+            <tr>
+                <td>{{ entrega.data_entrega|date:"d/m/Y"|default:"Pendente" }}</td>
+                <td>{{ entrega.quantidade }}</td>
+                <td>UN</td>
+                <td>{{ entrega.equipamento.nome }} (CA: {{ entrega.equipamento.certificado_aprovacao }})</td>
+                <td style="text-align: center;">
+                    {% if entrega.assinatura_recebimento %}
+                        <img src="{{ entrega.assinatura_recebimento }}" class="signature-img">
+                    {% elif entrega.assinatura_imagem %}
+                        <img src="{{ entrega.assinatura_imagem.path }}" class="signature-img">
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h3>DEVOLUÇÃO</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Data Devolução</th>
+                <th>Descrição EPI</th>
+                <th>Recebedor</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entrega in ficha.entregas.all %}
+                {% if entrega.data_devolucao %}
+                <tr>
+                    <td>{{ entrega.data_devolucao|date:"d/m/Y" }}</td>
+                    <td>{{ entrega.equipamento.nome }}</td>
+                    <td>{{ entrega.recebedor_devolucao.get_full_name|default:"-" }}</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="background-color: #f0f0f0; color: #333; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-top: 20px; font-size: 10pt;">
+        <div style="background-color: #f0f0f0; color: #d80000; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-top: 20px;">
+            <p align="center" style="margin-top: 0;"><strong>CONSOLIDAÇÃO DAS LEIS DO TRABALHO - Art. 158</strong></p>
+            <p style="margin-bottom: 0; text-align: left;">
+                Cabe aos empregados:<br> 
+                I - Observar as normas de segurança e medicina do trabalho, 
+                inclusive as instruções de que trata o item II do artigo anterior; 
+                II - Colaborar com a empresa na aplicação dos dispositivos deste capítulo. 
+                Parágrafo único: Constitui ato faltoso do empregado a recusa injustificada:<br> 
+                a) .........................<br> 
+                b) ao uso dos equipamentos de proteção individual fornecidos pela empresa.
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

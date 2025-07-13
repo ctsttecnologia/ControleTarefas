@@ -1,0 +1,50 @@
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
+
+{% block title %}Confirmar Exclusão de Ficha de EPI{% endblock %}
+
+{% block sst_content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="h4 mb-0">Confirmar Exclusão</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <p class="fs-5">
+                            Você tem certeza que deseja excluir permanentemente a Ficha de EPI do funcionário <strong>{{ object.funcionario.nome_completo }}</strong>?
+                        </p>
+                        
+                        <div class="alert alert-danger mt-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Atenção:</strong> Esta ação não pode ser desfeita. Todos os registros de entrega e devolução associados a esta ficha serão permanentemente removidos do sistema.
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            {# Botão para cancelar e voltar para a página de detalhes da ficha #}
+                            <a href="{% url 'seguranca_trabalho:ficha_detail' object.pk %}" class="btn btn-secondary me-2">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Cancelar
+                            </a>
+                            
+                            {# Botão que envia o formulário (POST) para confirmar a exclusão #}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill me-1"></i>
+                                Sim, Excluir Permanentemente
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

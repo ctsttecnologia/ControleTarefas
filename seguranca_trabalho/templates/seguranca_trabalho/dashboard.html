@@ -1,108 +1,115 @@
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load static %}
+{% load i18n %}
+{% load humanize %}
 
 {% block title %}Dashboard de Segurança do Trabalho{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'cssseguranca/dashboard.css' %}">
+{% endblock %}
+
 {% block sst_content %}
-<div class="container-fluid">
-    <div class="page-header mb-4">
+<div class="container-fluid py-4">
+    <div class="page-header mb-4 border-bottom pb-3">
         <div>
             <h1 class="h2 fw-bold">Segurança do Trabalho</h1>
             <p class="text-muted mb-0">Visão geral e acesso rápido aos módulos de SST.</p>
         </div>
         <div class="action-buttons">
-
+            <!-- Espaço para botões de ação, se necessário -->
         </div>
     </div>
 
+    <!-- Cards de KPI (Indicadores Chave de Desempenho) -->
     <div class="row g-4 mb-5">
         <div class="col-lg-3 col-md-6">
-            <div class="card kpi-card border-0 shadow-sm">
+            <div class="card kpi-card h-100 border-0 shadow-sm rounded-3">
                 <div class="card-body d-flex align-items-center">
                     <div class="icon-circle bg-primary-subtle text-primary"><i class="bi bi-shield-check"></i></div>
                     <div class="ms-3">
-                        <h3 class="kpi-value">{{ total_equipamentos_ativos|default:"0" }}</h3>
-                        <p class="kpi-label text-muted">Equipamentos Ativos</p>
+                        <h3 class="kpi-value fw-bold">{{ total_equipamentos_ativos|default:"0" }}</h3>
+                        <p class="kpi-label text-muted mb-0">Equipamentos Ativos</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card kpi-card border-0 shadow-sm">
+            <div class="card kpi-card h-100 border-0 shadow-sm rounded-3">
                 <div class="card-body d-flex align-items-center">
                     <div class="icon-circle bg-success-subtle text-success"><i class="bi bi-file-person-fill"></i></div>
                     <div class="ms-3">
-                        <h3 class="kpi-value">{{ fichas_ativas|default:"0" }}</h3>
-                        <p class="kpi-label text-muted">Fichas de EPI Ativas</p>
+                        <h3 class="kpi-value fw-bold">{{ fichas_ativas|default:"0" }}</h3>
+                        <p class="kpi-label text-muted mb-0">Fichas de EPI Ativas</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card kpi-card border-0 shadow-sm">
+            <div class="card kpi-card h-100 border-0 shadow-sm rounded-3">
                 <div class="card-body d-flex align-items-center">
                     <div class="icon-circle bg-warning-subtle text-warning"><i class="bi bi-pen-fill"></i></div>
                     <div class="ms-3">
-                        <h3 class="kpi-value">{{ entregas_pendentes_assinatura|default:"0" }}</h3>
-                        <p class="kpi-label text-muted">Entregas p/ Assinar</p>
+                        <h3 class="kpi-value fw-bold">{{ entregas_pendentes_assinatura|default:"0" }}</h3>
+                        <p class="kpi-label text-muted mb-0">Entregas p/ Assinar</p>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="card kpi-card border-0 shadow-sm">
+            <div class="card kpi-card h-100 border-0 shadow-sm rounded-3">
                 <div class="card-body d-flex align-items-center">
                     <div class="icon-circle bg-danger-subtle text-danger"><i class="bi bi-calendar-x"></i></div>
                     <div class="ms-3">
-                        <h3 class="kpi-value">{{ epis_vencendo_em_30_dias|default:"0" }}</h3>
-                        <p class="kpi-label text-muted">EPIs Vencendo (30d)</p>
+                        <h3 class="kpi-value fw-bold">{{ epis_vencendo_em_30_dias|default:"0" }}</h3>
+                        <p class="kpi-label text-muted mb-0">EPIs Vencendo (30d)</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Cards de Navegação (Acesso Rápido) -->
     <div class="row g-4">
         <div class="col-12">
-            <h4 class="mb-3">Acesso Rápido</h4>
+            <h4 class="mb-3 fw-bold">Acesso Rápido</h4>
         </div>
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="nav-card card text-decoration-none shadow-sm">
-                <div class="card-body text-center">
-                    <div class="nav-icon text-primary"><i class="bi bi-person-lines-fill fs-2"></i></div>
-                    <h5 class="nav-title mt-3">Fichas de EPI</h5>
-                    <p class="nav-text text-muted">Gerenciar fichas e entregas de EPIs para cada colaborador.</p>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="nav-card card text-decoration-none h-100 shadow-sm rounded-3">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
+                    <div class="nav-icon text-primary"><i class="bi bi-person-lines-fill fs-1"></i></div>
+                    <h5 class="nav-title mt-3 fw-bold">Fichas de EPI</h5>
+                    <p class="nav-text text-muted small mb-0">Gerenciar fichas e entregas de EPIs para cada colaborador.</p>
                 </div>
             </a>
         </div>
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-card card text-decoration-none shadow-sm">
-                <div class="card-body text-center">
-                    <div class="nav-icon text-primary"><i class="bi bi-hdd-stack fs-2"></i></div>
-                    <h5 class="nav-title mt-3">Catálogo de Equipamentos</h5>
-                    <p class="nav-text text-muted">Cadastrar e gerenciar todos os tipos de EPIs, CAs e validades.</p>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-card card text-decoration-none h-100 shadow-sm rounded-3">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
+                    <div class="nav-icon text-primary"><i class="bi bi-hdd-stack fs-1"></i></div>
+                    <h5 class="nav-title mt-3 fw-bold">Catálogo de Equipamentos</h5>
+                    <p class="nav-text text-muted small mb-0">Cadastrar e gerenciar todos os tipos de EPIs, CAs e validades.</p>
                 </div>
             </a>
         </div>
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="nav-card card text-decoration-none shadow-sm">
-                 <div class="card-body text-center">
-                    <div class="nav-icon text-primary"><i class="bi bi-buildings fs-2"></i></div>
-                    <h5 class="nav-title mt-3">Fabricantes</h5>
-                    <p class="nav-text text-muted">Gerenciar os fabricantes dos equipamentos de proteção.</p>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="nav-card card text-decoration-none h-100 shadow-sm rounded-3">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
+                    <div class="nav-icon text-primary"><i class="bi bi-buildings fs-1"></i></div>
+                    <h5 class="nav-title mt-3 fw-bold">Fabricantes</h5>
+                    <p class="nav-text text-muted small mb-0">Gerenciar os fabricantes dos equipamentos de proteção.</p>
                 </div>
             </a>
         </div>
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="nav-card card text-decoration-none shadow-sm">
-                <div class="card-body text-center">
-                    <div class="nav-icon text-primary"><i class="bi bi-truck fs-2"></i></div>
-                    <h5 class="nav-title mt-3">Fornecedores</h5>
-                    <p class="nav-text text-muted">Cadastrar fornecedores e distribuidores de EPIs.</p>
+        <div class="col-lg-3 col-md-6">
+            <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="nav-card card text-decoration-none h-100 shadow-sm rounded-3">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
+                    <div class="nav-icon text-primary"><i class="bi bi-truck fs-1"></i></div>
+                    <h5 class="nav-title mt-3 fw-bold">Fornecedores</h5>
+                    <p class="nav-text text-muted small mb-0">Cadastrar fornecedores e distribuidores de EPIs.</p>
                 </div>
             </a>
         </div>
-        </div>
+    </div>
 </div>
 {% endblock %}
-
