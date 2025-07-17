@@ -1,65 +1,56 @@
-{% extends 'automovel/base.html' %}
-{% load static %}
-
-{% block title %}Lista de Carros{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'csscarro/carro.css' %}">
-{% endblock %}
+{% extends "base.html" %}
+{% load static %} 
+{% block title %}Lista de Veículos{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Carros</h1>
-        <a href="{% url 'automovel:carro_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Adicionar Carro
-        </a>
-    </div>
+<link rel="stylesheet" href="{% static 'csscarro/carro_list.css' %}">
 
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Todos os Veículos</h5>
-                <form method="get" class="form-inline">
-                    <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="Pesquisar..." 
-                               value="{{ request.GET.search }}">
-                        <button class="btn btn-outline-secondary" type="submit">
-                            <i class="bi bi-search"></i>
-                        </button>
+{% include "automovel/partials/_page_header.html" with title="Veículos" button_url=request.path|add:"novo/" button_text="Adicionar Veículo" %}
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <form method="get" class="d-flex">
+            <input type="text" name="search" class="form-control me-2" placeholder="Pesquisar por placa, modelo, marca..." value="{{ request.GET.search }}">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+            {% for carro in carros %}
+                <a href="{% url 'automovel:carro_detail' carro.id %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ carro.marca }} {{ carro.modelo }}</h5>
+                        <small>
+                            <span class="badge rounded-pill {% if carro.disponivel %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+                                {% if carro.disponivel %}Disponível{% else %}Indisponível{% endif %}
+                            </span>
+                        </small>
                     </div>
-                </form>
-            </div>
-        </div>
-        <div class="card-body">
-            {% if carros %}
-                <div class="list-group">
-                    {% for carro in carros %}
-                    <a href="{% url 'automovel:carro_detail' carro.id %}" class="list-group-item list-group-item-action">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <img src="{% static 'automovel/img/car-placeholder.png' %}" 
-                                     alt="{{ carro.modelo }}" class="carro-list-image">
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <div class="d-flex justify-content-between">
-                                    <h5 class="mb-1">{{ carro.marca }} {{ carro.modelo }}</h5>
-                                    <span class="badge {% if carro.disponivel %}bg-success{% else %}bg-danger{% endif %}">
-                                        {% if carro.disponivel %}Disponível{% else %}Indisponível{% endif %}
-                                    </span>
-                                </div>
-                                <p class="mb-1"><strong>Placa:</strong> {{ carro.placa }}</p>
-                                <small class="text-muted"><strong>Ano:</strong> {{ carro.ano }}</small>
-                            </div>
-                        </div>
-                    </a>
-                    {% endfor %}
+                    <p class="mb-1"><strong>Placa:</strong> {{ carro.placa }} | <strong>Ano:</strong> {{ carro.ano }}</p>
+                    <small class="text-muted">Próxima manutenção em: {{ carro.data_proxima_manutencao|date:"d/m/Y"|default:"Não definida" }}</small>
+                </a>
+            {% empty %}
+                <div class="list-group-item">
+                    <p class="text-center mb-0">Nenhum carro encontrado.</p>
                 </div>
-            {% else %}
-                <div class="alert alert-info">Nenhum carro cadastrado.</div>
-            {% endif %}
+            {% endfor %}
         </div>
     </div>
+    {% if is_paginated %}
+    <div class="card-footer">
+        <nav aria-label="Paginação">
+            <ul class="pagination justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Anterior</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Próxima</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 

@@ -1,492 +1,141 @@
-{% extends 'automovel/base.html' %}
+{% extends "base.html" %}
 {% load static crispy_forms_tags %}
 
 {% block title %}Checklist de Veículo{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
 <style>
-    .camera-preview {
-        width: 100%;
-        height: 200px;
-        border: 2px dashed #ccc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
-        background-size: cover;
-        background-position: center;
-        background-color: #f8f9fa;
+    /* Seus estilos aqui... (mantidos da resposta anterior) */
+    .photo-uploader {
+        border: 2px dashed #ccc; border-radius: .375rem; padding: 1rem; text-align: center; cursor: pointer;
+        background-color: #f8f9fa; min-height: 150px; display: flex; align-items: center;
+        justify-content: center; position: relative; overflow: hidden;
     }
-    .camera-options {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-    .signature-container {
-        margin: 20px 0;
-        padding: 15px;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-    }
-    #signatureCanvas {
-        border: 1px solid #ddd;
-        background-color: #f9f9f9;
-        width: 100%;
-        height: 200px;
-    }
-    .btn-camera {
-        width: 100%;
-    }
-    .card-header h5 {
-        margin-bottom: 0;
-    }
-    .invalid-feedback {
-        display: block;
-    }
-    .card-section {
-        margin-bottom: 20px;
-    }
-    .file-info {
-        margin-top: 10px;
-        padding: 8px;
-        background: #f8f9fa;
-        border-radius: 4px;
-        display: none;
-    }
-    .preview-image {
-        max-width: 100%;
-        max-height: 200px;
-        margin-top: 10px;
-        display: none;
-    }
-        .file-preview-container {
-        margin-top: 10px;
-        position: relative;
-    }
-    .file-preview {
-        max-width: 100%;
-        max-height: 200px;
-        display: block;
-        margin-top: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-    .file-info {
-        margin-top: 8px;
-        padding: 8px;
-        background: #f8f9fa;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .file-info .bi {
-        font-size: 1.2rem;
-    }
-    .empty-preview {
-        color: #6c757d;
-        font-style: italic;
-    }
+    .photo-uploader:hover { background-color: #e9ecef; border-color: #adb5bd; }
+    .photo-uploader .upload-text { color: #6c757d; }
+    .photo-uploader .upload-icon { font-size: 2.5rem; color: #6c757d; }
+    .photo-uploader img.preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+    #signatureCanvas { border: 1px solid #dee2e6; width: 100%; height: 200px; touch-action: none; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <!-- Mensagens -->
-    {% if messages %}
-    <div class="mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">Checklist de Veículo</h3>
-            <p class="mb-0">Agendamento: {{ agendamento.funcionario }} - {{ agendamento.carro.placa }}</p>
-        </div>
-        
+{% include "automovel/partials/_page_header.html" with title="Checklist de Veículo: "|add:agendamento.carro.placa %}
+
+<form method="post" enctype="multipart/form-data" id="checklistForm" novalidate>
+    {% csrf_token %}
+
+    <div class="card shadow-sm">
         <div class="card-body">
-            <form method="post" enctype="multipart/form-data" id="checklistForm">
-                {% csrf_token %}
-                {{ form.agendamento }}
-                {{ form.usuario }}
-                
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        {{ form.tipo|as_crispy_field }}
-                    </div>
-                    <div class="col-md-3">
-                        {{ form.data_hora|as_crispy_field }}
-                    </div>
-                    <div class="col-md-3">
-                        {{ form.km_inicial|as_crispy_field }}
-                    </div>
-                    <div class="col-md-3">
-                        {{ form.km_final|as_crispy_field }}
-                    </div>
-                </div>
+            <div class="row mb-4">
+                <div class="col-md-3">{{ form.tipo|as_crispy_field }}</div>
+                <div class="col-md-3">{{ form.data_hora|as_crispy_field }}</div>
+                <div class="col-md-3">{{ form.km_inicial|as_crispy_field }}</div>
+                <div class="col-md-3">{{ form.km_final|as_crispy_field }}</div>
+            </div>
 
-                <h4 class="mb-3">Vistoria do Veículo</h4>
+            <div class="accordion" id="vistoriaAccordion">
                 
-               <!-- Parte Frontal -->
-
-                <div class="card card-section">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Parte Frontal</h5>
-                    </div>
-                    <div class="card-body">
-                        {{ form.revisao_frontal_status|as_crispy_field }}
-                        
-                        <div class="camera-options">
-                            <button type="button" class="btn btn-outline-primary btn-camera" 
-                                onclick="document.getElementById('id_foto_frontal').click()">
-                                <i class="bi bi-camera"></i> Câmera
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-camera" 
-                                onclick="document.getElementById('id_foto_frontal').click()">
-                                <i class="bi bi-images"></i> Galeria
-                            </button>
-                        </div>
-                        
-                        <input type="file" id="id_foto_frontal" name="foto_frontal" accept="image/*" capture="environment" style="display: none;">
-                                           
-                        <div id="foto_frontal-preview">
-                            <span class="text-muted">Nenhuma foto selecionada</span>
-                            <img id="foto_frontal-preview-image" class="preview-image" src="#" alt="Pré-visualização">
-                        </div>
-                        
-                        <div id="foto_frontal-info" class="file-info">
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                            <span id="foto_frontal-filename"></span>
-                        </div>
-                        
-                        <div id="foto_frontal-error" class="invalid-feedback d-none">
-                            Não foi possível acessar a câmera. Por favor, use a galeria.
-                        </div>
-                    </div>
-                </div>
-                    
-                <!-- Parte Trazeira -->
-                <div class="card card-section">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Parte Trazeira</h5>
-                    </div>
-                    <div class="card-body">
-                        {{ form.revisao_trazeira_status|as_crispy_field }}
-                        
-                        <div class="camera-options">
-                            <button type="button" class="btn btn-outline-primary btn-camera" 
-                                onclick="document.getElementById('id_foto_trazeira').click()">
-                                <i class="bi bi-camera"></i> Câmera
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-camera" 
-                                onclick="document.getElementById('id_foto_trazeira').click()">
-                                <i class="bi bi-images"></i> Galeria
-                            </button>
-                        </div>
-                        
-                        <input type="file" id="id_foto_trazeira" name="foto_trazeira" accept="image/*" capture="environment" style="display: none;">
-                        
-                        <div id="foto_trazeira-preview">
-                            <span class="text-muted">Nenhuma foto selecionada</span>
-                            <img id="foto_trazeira-preview-image" class="preview-image" src="#" alt="Pré-visualização">
-                        </div>
-                        
-                        <div id="foto_trazeira-info" class="file-info">
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                            <span id="foto_trazeira-filename"></span>
-                        </div>
-                        
-                        <div id="foto_trazeira-error" class="invalid-feedback d-none">
-                            Não foi possível acessar a câmera. Por favor, use a galeria.
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Lado Motorista -->
-                <div class="card card-section">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Lado Motorista</h5>
-                    </div>
-                    <div class="card-body">
-                        {{ form.revisao_lado_motorista_status|as_crispy_field }}
-                        
-                        <div class="camera-options">
-                            <button type="button" class="btn btn-outline-primary btn-camera" 
-                                onclick="document.getElementById('id_foto_lado_motorista').click()">
-                                <i class="bi bi-camera"></i> Câmera
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-camera" 
-                                onclick="document.getElementById('id_foto_lado_motorista').click()">
-                                <i class="bi bi-images"></i> Galeria
-                            </button>
-                        </div>
-                        
-                        <input type="file" id="id_foto_lado_motorista" name="foto_lado_motorista" accept="image/*" capture="environment" style="display: none;">
-                        
-                        <div id="foto_lado_motorista-preview">
-                            <span class="text-muted">Nenhuma foto selecionada</span>
-                            <img id="foto_lado_motorista-preview-image" class="preview-image" src="#" alt="Pré-visualização">
-                        </div>
-                        
-                        <div id="foto_lado_motorista-info" class="file-info">
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                            <span id="foto_lado_motorista-filename"></span>
-                        </div>
-                        
-                        <div id="foto_lado_motorista-error" class="invalid-feedback d-none">
-                            Não foi possível acessar a câmera. Por favor, use a galeria.
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Lado Passageiro -->
-                <div class="card card-section">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Lado Passageiro</h5>
-                    </div>
-                    <div class="card-body">
-                        {{ form.revisao_lado_passageiro_status|as_crispy_field }}
-                        
-                        <div class="camera-options">
-                            <button type="button" class="btn btn-outline-primary btn-camera" 
-                                onclick="document.getElementById('id_foto_lado_passageiro').click()">
-                                <i class="bi bi-camera"></i> Câmera
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary btn-camera" 
-                                onclick="document.getElementById('id_foto_lado_passageiro').click()">
-                                <i class="bi bi-images"></i> Galeria
-                            </button>
-                        </div>
-                        
-                        <input type="file" id="id_foto_lado_passageiro" name="foto_lado_passageiro" accept="image/*" capture="environment" style="display: none;">
-                        
-                        <div id="foto_lado_passageiro-preview">
-                            <span class="text-muted">Nenhuma foto selecionada</span>
-                            <img id="foto_lado_passageiro-preview-image" class="preview-image" src="#" alt="Pré-visualização">
-                        </div>
-                        
-                        <div id="foto_lado_passageiro-info" class="file-info">
-                            <i class="bi bi-check-circle-fill text-success"></i>
-                            <span id="foto_lado_passageiro-filename"></span>
-                        </div>
-                        
-                        <div id="foto_lado_passageiro-error" class="invalid-feedback d-none">
-                            Não foi possível acessar a câmera. Por favor, use a galeria.
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Observações e Ocorrências -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        {{ form.observacoes_gerais|as_crispy_field }}  
-                        {{ form.anexo_ocorrencia|as_crispy_field }}
-                    </div>
-                </div>
-                
-                <!-- Assinatura Digital -->
-                <div class="card card-section">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Assinatura Digital</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> Por favor, assine no quadro abaixo usando o mouse ou o dedo (em dispositivos touch).
-                        </div>
-                        
-                        <div class="signature-container">
-                            <canvas id="signatureCanvas"></canvas>
-                            <div class="d-flex justify-content-between mt-2">
-                                <button type="button" class="btn btn-outline-danger" id="clearSignature">
-                                    <i class="bi bi-eraser"></i> Limpar Assinatura
-                                </button>
-                                <small class="text-muted">Assine dentro da área acima</small>
+                {% for section in form_sections %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-{{ section.id }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ section.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse-{{ section.id }}">
+                            {{ section.title }}
+                        </button>
+                    </h2>
+                    <div id="collapse-{{ section.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading-{{ section.id }}" data-bs-parent="#vistoriaAccordion">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    {{ section.status_field|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Foto</label>
+                                    <div class="photo-uploader" data-input-id="{{ section.photo_field.id_for_label }}">
+                                        <div class="upload-text">
+                                            <i class="bi bi-camera-fill upload-icon"></i>
+                                            <p>Toque para adicionar foto</p>
+                                        </div>
+                                        <img class="preview d-none" />
+                                    </div>
+                                    <div class="d-none">{{ section.photo_field }}</div>
+                                    {% for error in section.photo_field.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
-                        {{ form.assinatura }}
                     </div>
                 </div>
-                
-                <div class="d-flex justify-content-between mt-4">
-                    <!-- Botões de ação atualizados -->
-                    <div class="d-flex justify-content-between mt-4">
-                    <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" 
-                    class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Cancelar
-                    </a>
-                    <div>
-                        {% if agendamento.status == 'em_andamento' %}
-                        <button type="submit" name="finalizar" class="btn btn-success">
-                            <i class="bi bi-check-circle"></i> Finalizar Agendamento
-                        </button>
-                        {% else %}
-                        <button type="submit" name="salvar" class="btn btn-primary">
-                            <i class="bi bi-save"></i> Salvar Checklist
-                        </button>
-                        {% endif %}
-                    </div>
-                
-                </div>
-            </form>
+                {% endfor %}
+
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-12">{{ form.observacoes_gerais|as_crispy_field }}</div>
+            </div>
+
+            <div class="mt-4">
+                <h5>Assinatura do Responsável</h5>
+                <canvas id="signatureCanvas"></canvas>
+                <input type="hidden" name="assinatura" id="id_assinatura">
+                <button type="button" id="clearSignature" class="btn btn-sm btn-outline-danger mt-2"><i class="bi bi-eraser"></i> Limpar</button>
+            </div>
+        </div>
+
+        <div class="card-footer text-end">
+            <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar Checklist</button>
         </div>
     </div>
-</div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
-// Funções para acionar câmera/galeria
-    function triggerCamera(inputId) {
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.photo-uploader').forEach(uploader => {
+        const inputId = uploader.dataset.inputId;
         const input = document.getElementById(inputId);
-        input.setAttribute('capture', 'environment');
-        input.click();
-    }
-
-    function triggerGallery(inputId) {
-        const input = document.getElementById(inputId);
-        input.removeAttribute('capture');
-        input.click();
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-
+        if (!input) return;
         
-    // Configuração da assinatura
-    const canvas = document.getElementById('signatureCanvas');
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(255, 255, 255)',
-        penColor: 'rgb(0, 0, 0)',
-        minWidth: 1,
-        maxWidth: 3,
-        throttle: 16
+        const previewImg = uploader.querySelector('img.preview');
+        const uploadText = uploader.querySelector('.upload-text');
+        
+        uploader.addEventListener('click', () => input.click());
+
+        input.addEventListener('change', event => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    previewImg.src = e.target.result;
+                    previewImg.classList.remove('d-none');
+                    uploadText.classList.add('d-none');
+                }
+                reader.readAsDataURL(file);
+            }
+        });
     });
 
+    const canvas = document.getElementById('signatureCanvas');
+    const signaturePad = new SignaturePad(canvas, { penColor: "rgb(0, 0, 0)" });
     function resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext('2d').scale(ratio, ratio);
+        canvas.getContext("2d").scale(ratio, ratio);
         signaturePad.clear();
     }
-
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
-
-    document.getElementById('clearSignature').addEventListener('click', function() {
-        signaturePad.clear();
-        document.getElementById('id_assinatura').value = '';
-    });
-
-    // Atualizar campo hidden da assinatura continuamente
-    canvas.addEventListener('endStroke', function() {
-        updateSignature();
-    });
-
-    function updateSignature() {
-        if (!signaturePad.isEmpty()) {
-            const signatureData = signaturePad.toDataURL('image/png');
-            document.getElementById('id_assinatura').value = signatureData;
-        }
-    }
-
-    // Configuração melhorada do preview de imagens
-    function setupImagePreview(inputId) {
-    const input = document.getElementById(inputId);
-    const previewContainer = input.closest('.card-body').querySelector('.file-preview-container');
-    const emptyPreview = previewContainer.querySelector('.empty-preview');
-    const previewImage = previewContainer.querySelector('.file-preview');
-    const fileInfo = previewContainer.querySelector('.file-info');
-    const filenameSpan = fileInfo ? fileInfo.querySelector('span') : null;
-
-    // Mostrar imagem existente se houver
-    if (input.dataset.existingFile) {
-        emptyPreview.style.display = 'none';
-        previewImage.src = input.dataset.existingFile;
-        previewImage.style.display = 'block';
-        if (fileInfo) {
-            fileInfo.style.display = 'flex';
-            if (filenameSpan) filenameSpan.textContent = 'Imagem carregada';
-        }
-    }
-
-    input.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-            const file = this.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                emptyPreview.style.display = 'none';
-                previewImage.src = e.target.result;
-                previewImage.style.display = 'block';
-                
-                if (fileInfo) {
-                    fileInfo.style.display = 'flex';
-                    if (filenameSpan) filenameSpan.textContent = file.name;
-                }
-            }
-            
-            reader.readAsDataURL(file);
-        } else if (!input.dataset.existingFile) {
-            // Resetar se não houver arquivo
-            emptyPreview.style.display = 'block';
-            previewImage.style.display = 'none';
-            if (fileInfo) fileInfo.style.display = 'none';
-        }
-    });
-}
-    
-    // Configurar todos os inputs de imagem
-    setupImagePreview('id_foto_frontal');
-    setupImagePreview('id_foto_trazeira');
-    setupImagePreview('id_foto_lado_motorista');
-    setupImagePreview('id_foto_lado_passageiro');
-        
-    // Validação do formulário
+    document.getElementById('clearSignature').addEventListener('click', () => signaturePad.clear());
     document.getElementById('checklistForm').addEventListener('submit', function(e) {
-        // Verificar assinatura
-        if (signaturePad.isEmpty()) {
-            e.preventDefault();
-            showAlert('Por favor, forneça uma assinatura digital.', 'danger');
-            return;
+        if (!signaturePad.isEmpty()) {
+            document.getElementById('id_assinatura').value = signaturePad.toDataURL('image/png');
         }
-        
-        // Verificar fotos obrigatórias
-        const tipoChecklist = document.getElementById('id_tipo').value;
-        const fotosObrigatorias = ['id_foto_frontal', 'id_foto_trazeira'];
-        
-        fotosObrigatorias.forEach(function(id) {
-            const input = document.getElementById(id);
-            if (!input.files.length && !input.value) { // Nenhum arquivo novo nem existente
-                e.preventDefault();
-                showAlert('Por favor, adicione todas as fotos obrigatórias.', 'warning');
-                return;
-            }
-        });
     });
-    
-    function showAlert(message, type) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        
-        const container = document.querySelector('.container');
-        container.insertBefore(alertDiv, container.firstChild);
-        
-        setTimeout(() => {
-            alertDiv.classList.remove('show');
-            setTimeout(() => alertDiv.remove(), 150);
-        }, 5000);
-    }
 });
 </script>
 {% endblock %}
