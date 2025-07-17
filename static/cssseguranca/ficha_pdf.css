@@ -1,0 +1,33 @@
+
+
+@page { size: A4; margin: 2cm; }
+body { font-family: "Helvetica", "sans-serif"; font-size: 10pt; }
+h1 { text-align: center; font-size: 14pt; margin-top: 20px; margin-bottom: 20px; }
+h3 { margin-top: 25px; margin-bottom: 10px; }
+
+/* 1. Controle direto sobre a logomarca */
+#logo {
+    text-align: left; /* Alinha a imagem à esquerda, se necessário */
+    margin-bottom: 15px;
+}
+#logo img {
+    width: 10px; /* Define uma largura máxima para a logo. Ajuste conforme necessário. */
+    height: 80px;     /* Mantém a proporção da imagem */
+}
+
+/* 2. Tabela para os dados de identificação */
+.info-table {
+    width: 100%;
+    border-collapse: collapse; /* Remove espaçamento entre células */
+    margin-bottom: 20px;
+}
+
+.info-table td {
+    width: 50%; /* Garante que as duas colunas sejam uniformes */
+    border: none; /* Deixa a tabela sem bordas */
+    padding: 3px 0; /* Adiciona um pequeno espaçamento vertical */
+    vertical-align: top; /* Alinha o conteúdo no topo da célula */
+}
+.info-table td p {
+        margin: 0; /* Remove a margem padrão dos parágrafos dentro da tabela */
+}

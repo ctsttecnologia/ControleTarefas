@@ -9,52 +9,50 @@
         
         #logo {
             position: absolute;
-            top: 0.5cm; /* Ajustado para respeitar a margem */
+            top: 0.3cm; /* Ajustado para respeitar a margem */
             right: 0.5cm; /* Ajustado para respeitar a margem */
-            width: 150px; /* Definindo uma largura para a logo */
+            width: 170px; /* Definindo uma largura para a logo */
         }
         
         body { font-family: "Helvetica", "sans-serif"; font-size: 10pt; }
-        h1 { text-align: center; font-size: 14pt; margin-top: 50px; } /* Adicionado margem para não ficar sob a logo */
+        h1 { text-align: center; font-size: 14pt; margin-top: 30px; } /* Adicionado margem para não ficar sob a logo */
         h3 { margin-top: 25px; margin-bottom: 5px; }
         p { text-align: justify; line-height: 1.4; margin: 5px 0; }
         ol { padding-left: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid black; padding: 5px; text-align: left; font-size: 9pt; vertical-align: middle; }
+        th, td { border: 1px solid black; padding: 5px; text-align: left; font-size: 10pt; vertical-align: middle; }
         th { background-color: #f2f2f2; }
         .signature-img { max-width: 90px; max-height: 35px; }
     </style>
 </head>
 <body>
     <div id="logo">
-        <img src="{{ logo_path }}" alt="Logomarca" style="width: 100%;">
+        
+        <img src="{{ logo_path }}" alt="Logomarca">
     </div>
+ 
+    <div class="row">
     
     <h1>FICHA DE CONTROLE DE EPIs</h1>
     
-    <h3>Dados de Identificação</h3>
-    <div class="row">
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Empregado:</strong> {{ ficha.funcionario.nome_completo }}</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Cargo:</strong> {{ ficha.funcionario.cargo.nome }}</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Contrato:</strong> {{ ficha.funcionario.cliente.contrato|default:"Não informado" }}</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Registro:</strong> {{ ficha.funcionario.matricula }}</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Contrato:</strong> {{ ficha.funcionario.cliente.contrato|default:"Não informado" }}</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Admissão:</strong> {{ ficha.funcionario.data_admissao|date:"d/m/Y" }}</p>
-        </div>
-        <div class="col-md-6">
-            <p class="mb-1"><strong>Demissão:</strong> {% if ficha.funcionario.data_demissao %}{{ ficha.funcionario.data_demissao|date:"d/m/Y" }}{% else %}—{% endif %}</p>
-        </div>
+    <h3>DADOS DE IDENTIFICAÇÃO</h3>
+
+    <table class="info-table">
+        <tbody>
+            <tr>
+                <td><p><strong>Empregado:</strong> {{ ficha.funcionario.nome_completo }}</p></td>
+                <td><p><strong>Cargo:</strong> {{ ficha.funcionario.cargo.nome }}</p></td>
+            </tr>
+            <tr>
+                <td><p><strong>Registro:</strong> {{ ficha.funcionario.matricula }}</p></td>
+                <td><p><strong>Admissão:</strong> {{ ficha.funcionario.data_admissao|date:"d/m/Y" }}</p></td>
+            </tr>
+            <tr>
+                <td><p><strong>Contrato:</strong> {{ ficha.funcionario.cliente.contrato|default:"Não informado" }}</p></td>
+                <td><p><strong>Demissão:</strong> {% if ficha.funcionario.data_demissao %}{{ ficha.funcionario.data_demissao|date:"d/m/Y" }}{% else %}—{% endif %}</p></td>
+            </tr>
+        </tbody>
+    </table>
     </div>
 
     <h3>TERMO DE COMPROMISSO</h3>
@@ -80,11 +78,7 @@
         <div style="color: #d80000;"> 
             Estou ciente de que o não uso dos EPIs, constitui ato faltoso conforme artigo 158 da CLT.
         </div> 
-        Local e Data :             /               Assinatura: {% if entrega.assinatura_recebimento %}
-                                                                            <img src="{{ entrega.assinatura_recebimento }}" class="signature-img">
-                                                                         {% elif entrega.assinatura_imagem %}
-                                                                            <img src="{{ entrega.assinatura_imagem.path }}" class="signature-img">
-                                                                         {% endif %}  
+        Local e Data:______________, __/___/_______ - Assinatura:___________________________________ 
     </p>
     
     <h3>RECEBIMENTO</h3>

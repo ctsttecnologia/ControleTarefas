@@ -1,7 +1,6 @@
 # seguranca_trabalho/views.py
 
 
-
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.shortcuts import render
@@ -15,10 +14,9 @@ from django.shortcuts import get_object_or_404, redirect
 from django.http import Http404, HttpResponseForbidden
 from django.db import transaction, IntegrityError
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Count, Q, ProtectedError
 from django.contrib.staticfiles import finders
-# Seus mixins e modelos
-# from .permissions import SSTPermissionMixin 
+
 from io import BytesIO
 from datetime import timedelta
 from .models import (
@@ -281,11 +279,30 @@ class FichaEPIUpdateView(SSTPermissionMixin, SuccessMessageMixin, UpdateView):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
 
 
-class FichaEPIDeleteView(SSTPermissionMixin, SuccessDeleteMessageMixin, DeleteView):
+class FichaEPIDeleteView(DeleteView): # Se você usa um Mixin de permissão, adicione-o aqui também
     model = FichaEPI
-    template_name = 'seguranca_trabalho/ficha_confirm_delete.html'
-    success_url = reverse_lazy('seguranca_trabalho:ficha_list')
-    success_message = "Ficha de EPI excluída com sucesso."
+    template_name = 'seguranca_trabalho/ficha_delete.html'  # Certifique-se que este template existe
+    success_url = reverse_lazy('seguranca_trabalho:ficha_list')  # Mude 'ficha_list' para o nome da sua URL da lista de fichas
+
+    def post(self, request, *args, **kwargs):
+        """
+        Sobrescreve o método post para tratar o ProtectedError.
+        """
+        self.object = self.get_object()
+        try:
+            # Tenta deletar o objeto normalmente
+            response = self.object.delete()
+            messages.success(request, f"A Ficha de EPI para '{self.object.funcionario}' foi excluída com sucesso.")
+            return redirect(self.success_url)
+
+        except ProtectedError:
+            # Se a exclusão for bloqueada, entra aqui
+            messages.error(
+                request, 
+                "Exclusão não permitida. Esta ficha possui um histórico de entregas de EPIs associado. Por favor, contate o administrador do sistema."
+            )
+            # Redireciona de volta para a página de detalhes da ficha que falhou em ser excluída
+            return redirect('seguranca_trabalho:ficha_detail', pk=self.object.pk) # Mude 'ficha_detail' para o nome da sua URL de detalhes
 
 
 # --- VIEWS DE AÇÃO (Entregas, Assinaturas, Devoluções) ---
