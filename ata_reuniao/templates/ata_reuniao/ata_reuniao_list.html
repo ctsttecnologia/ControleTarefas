@@ -1,148 +1,125 @@
 
 {% extends "base.html" %}
-{% load static %}
+{% load static widget_tweaks %}
+{% load ata_extras %}
 
-{% block title %}Lista de Atas de Reunião{% endblock title %}
+{% block title %}Lista de Atas de Reunião{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
-{% endblock extra_css %}
-
-{% block content %}
-<div class="container mt-4">
-
-    {# Cabeçalho da Página com Título e Ações #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h3 mb-0">Atas de Reunião</h2>
-        {# CORREÇÃO: Botão com classe de cor específica, ex: btn-primary #}
-        <a href="{% url 'ata_reuniao_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Nova Ata de Reunião
-        </a>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
-            <h5 class="mb-0">Filtros e Opções</h5>
-            <div class="d-flex flex-wrap gap-2">
-                {# Filtro por Status #}
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownStatus" data-bs-toggle="dropdown" aria-expanded="false">
-                        Filtrar por Status
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownStatus">
-                        <li><a class="dropdown-item" href="?natureza={{ request.GET.natureza|default:'' }}">Todos</a></li>
-                        {% for status_key, status_value in view.model.STATUS_CHOICES %}
-                            <li><a class="dropdown-item" href="?status={{ status_key }}&natureza={{ request.GET.natureza|default:'' }}">{{ status_value }}</a></li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {# Filtro por Natureza #}
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownNatureza" data-bs-toggle="dropdown" aria-expanded="false">
-                        Filtrar por Natureza
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownNatureza">
-                        <li><a class="dropdown-item" href="?status={{ request.GET.status|default:'' }}">Todos</a></li>
-                        {% for natureza_key, natureza_value in view.model.NATUREZA_CHOICES %}
-                            <li><a class="dropdown-item" href="?status={{ request.GET.status|default:'' }}&natureza={{ natureza_key }}">{{ natureza_value }}</a></li>
-                        {% endfor %}
-                    </ul>
-                </div>
+{% block content %}<br>
+<div class="container">
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+            <h1 class="h2">Atas de Reunião</h1>
+            <div>
+                <a href="{% url 'ata_reuniao_create' %}" class="btn btn-primary shadow-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Nova Ata
+                </a>
+                <a href="{% url 'ata_reuniao_dashboard' %}" class="btn btn-info shadow-sm text-white">
+                    <i class="bi bi-bar-chart-line me-1"></i> Painel
+                </a>
             </div>
         </div>
-        <div class="card-body p-0">
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <form method="get" class="d-flex flex-wrap align-items-center gap-3">
+                    <h5 class="mb-0 me-2"><i class="bi bi-filter"></i> Filtros</h5>
+                    
+                    <div class="flex-grow-1">
+                        <select name="contrato" class="form-select form-select-sm">
+                            <option value="">Todos os Contratos</option>
+                            {% for contrato in contratos %}
+                                <option value="{{ contrato.id }}" {% if current_contrato == contrato.id|stringformat:"s" %}selected{% endif %}>{{ contrato.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="flex-grow-1">
+                        <select name="status" class="form-select form-select-sm">
+                            <option value="">Todos os Status</option>
+                            {% for key, value in view.model.Status.choices %}
+                                <option value="{{ key }}" {% if current_status == key %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex-grow-1">
+                        <select name="natureza" class="form-select form-select-sm">
+                            <option value="">Todas as Naturezas</option>
+                            {% for key, value in view.model.Natureza.choices %}
+                                <option value="{{ key }}" {% if current_natureza == key %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-dark">Aplicar</button>
+                    <a href="{% url 'ata_reuniao_list' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+                </form>
+            </div>
+
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0">
-                    <thead class="table-dark">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-light">
                         <tr>
                             <th>ID</th>
                             <th>Contrato</th>
                             <th>Natureza</th>
-                            <th>Coordenador</th>
                             <th>Responsável</th>
                             <th>Entrada</th>
                             <th>Prazo</th>
-                            <th>Status</th>
+                            <th class="text-center">Status</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for ata in atas %}
                         <tr>
-                            <td>{{ ata.id }}</td>
-                            <td>{{ ata.contrato }}</td>
+                            <td>#{{ ata.id }}</td>
+                            <td>{{ ata.contrato.nome|truncatechars:25 }}</td>
                             <td>{{ ata.get_natureza_display }}</td>
-                            <td>{{ ata.coordenador }}</td>
-                            <td>{{ ata.responsavel }}</td>
+                            <td>{{ ata.responsavel.nome_completo|truncatechars:20 }}</td>
                             <td>{{ ata.entrada|date:"d/m/Y" }}</td>
                             <td>{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
-                            <td>
-                                {# MELHORIA: Lógica de cores do badge simplificada usando um mapeamento #}
-                                {% with status_classes='{"Concluído": "bg-success", "Andamento": "bg-primary", "Pendente": "bg-warning"}'|json_script:"status_classes_map" %}
-                                <span id="status-badge-{{ ata.pk }}" class="badge rounded-pill">
-                                    {{ ata.get_status_display }}
-                                </span>
-                                <script>
-                                    (function() {
-                                        const classes = JSON.parse(document.getElementById('status_classes_map').textContent);
-                                        const status = "{{ ata.status }}";
-                                        const badge = document.getElementById('status-badge-{{ ata.pk }}');
-                                        badge.classList.add(classes[status] || 'bg-secondary');
-                                    })();
-                                </script>
-                                {% endwith %}
+                            <td class="text-center">
+                                <span class="badge rounded-pill {% status_badge ata.status %}">{{ ata.get_status_display }}</span>
                             </td>
                             <td class="text-end">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary" title="Editar">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
-                                    <a href="{% url 'ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger" title="Excluir">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'ata_reuniao_update' ata.pk %}" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
+                                    <a href="{% url 'ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger" title="Excluir"><i class="bi bi-trash-fill"></i></a>
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="9" class="text-center py-4">Nenhuma ata de reunião encontrada.</td>
+                            <td colspan="8" class="text-center py-5">
+                                <h5 class="text-muted">Nenhuma ata encontrada.</h5>
+                                <p>Tente ajustar os filtros ou <a href="{% url 'ata_reuniao_create' %}">crie uma nova ata</a>.</p>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+             {% if is_paginated %}
+            <div class="card-footer bg-white">
+                <nav aria-label="Paginação">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page=1&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">&laquo;</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">Anterior</a></li>
+                        {% endif %}
+                        
+                        <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">Próxima</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">&raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
         </div>
-        
-        {% if is_paginated %}
-        <div class="card-footer">
-            <nav aria-label="Paginação">
-                {# MELHORIA: Paginação agora preserva os filtros aplicados #}
-                {% with base_query=request.GET.urlencode|cut:"&page="|cut:request.GET.page %}
-                <ul class="pagination justify-content-center mb-0">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page=1">&laquo;</a></li>
-                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page={{ page_obj.previous_page_number }}">Anterior</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-                        <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-                    {% endif %}
-                    
-                    <li class="page-item active" aria-current="page">
-                        <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-                    </li>
-                    
-                    {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page={{ page_obj.next_page_number }}">Próxima</a></li>
-                        <li class="page-item"><a class="page-link" href="?{{ base_query }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">Próxima</span></li>
-                        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-                    {% endif %}
-                </ul>
-                {% endwith %}
-            </nav>
-        </div>
-        {% endif %}
     </div>
 </div>
-{% endblock content %}
+{% endblock %}

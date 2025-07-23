@@ -1,7 +1,12 @@
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
 {% load widget_tweaks %}
 
 {% block title %}Nova Ficha de EPI - {{ block.super }}{% endblock %}
+{% block extra_css %}
+    {# Carrega a folha de estilos dedicada para os formulários desta aplicação #}
+    <link rel="stylesheet" href="{% static 'css/seguranca_trabalho/forms.css' %}">
+{% endblock %}
 
 {% block sst_content %}
 <div class="page-header mb-4">

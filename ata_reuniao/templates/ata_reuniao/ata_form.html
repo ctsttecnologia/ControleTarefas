@@ -1,88 +1,108 @@
 {% extends "base.html" %}
-{% load static widget_tweaks %}
+{% load static widget_tweaks i18n %}
 
 {% block title %}
-    {% if object %}Editar Ata de Reunião{% else %}Criar Nova Ata de Reunião{% endif %}
-{% endblock title %}
+    {% if object %}{% trans "Editar Ata de Reunião" %}{% else %}{% trans "Nova Ata de Reunião" %}{% endif %}
+{% endblock %}
 
 {% block extra_css %}
-    {# Mantemos os estilos específicos para este formulário, se houver #}
-    <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
-{% endblock extra_css %}
+<style>
+    .history-timeline { list-style: none; padding-left: 0; }
+    .history-item { 
+        position: relative; 
+        padding-left: 30px; 
+        padding-bottom: 20px;
+        border-left: 2px solid #e9ecef;
+    }
+    .history-item::before {
+        content: '';
+        position: absolute;
+        left: -9px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        border: 2px solid #fff;
+    }
+    .history-item:last-child { border-left: 2px solid transparent; }
+</style>
+{% endblock %}
+
 
 {% block content %}
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-10 col-xl-8">
-
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-xl-9">
+        <form method="post" novalidate>
+            {% csrf_token %}
             <div class="card shadow-sm">
-                <div class="card-header bg-light py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h2 class="h4 mb-0 fw-light">
-                            <i class="bi bi-pencil-square text-primary me-2"></i>
-                            {% if object %}
-                                Editar Ata de Reunião #{{ object.id }}
-                            {% else %}
-                                Criar Nova Ata de Reunião
-                            {% endif %}
-                        </h2>
-                        <a href="{% url 'ata_reuniao_list' %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
-                        </a>
-                    </div>
+                
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <h2 class="h4 mb-0 fw-light">
+                        <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                        {% if object %}Editar Ata #{{ object.id }}{% else %}Nova Ata de Reunião{% endif %}
+                    </h2>
+                    <a href="{% url 'ata_reuniao_list' %}" class="btn-close" title="Fechar" aria-label="Close"></a>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-
-                        {# Exibe erros que não são específicos de um campo (non-field errors) #}
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger" role="alert">
-                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    <div class="row g-4">
+                        {% for field in form.visible_fields %}
+                            {# Renderiza todos os campos EXCETO o nosso campo customizado de comentário #}
+                            {% if field.name != 'comentario' %}
+                            <div class="col-12 {% if field.name in 'contrato,coordenador,responsavel,natureza,status' %}col-md-6{% elif field.name in 'entrada,prazo' %}col-md-6{% endif %}">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {% render_field field class+=" is-invalid"|if:field.errors %}
+                                {% if field.help_text %}<div class="form-text small text-muted">{{ field.help_text }}</div>{% endif %}
+                                {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
                             </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {# Seção visível apenas na EDIÇÃO de uma ata existente #}
+                {% if object %}
+                <div class="card-footer bg-white p-4 p-md-5">
+                    <h5 class="mb-3">Histórico de Atualizações</h5>
+                    {% with historico=object.historico.all %}
+                        {% if historico %}
+                            <ul class="history-timeline">
+                                {% for item in historico %}
+                                <li class="history-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-primary">{{ item.usuario.get_full_name|default:item.usuario.username }}</strong>
+                                        <small class="text-muted">{{ item.timestamp|date:"d/m/Y H:i" }}</small>
+                                    </div>
+                                    <p class="mb-0 mt-1">{{ item.comentario|linebreaksbr }}</p>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted">Nenhum comentário no histórico ainda.</p>
                         {% endif %}
+                    {% endwith %}
 
-                        {# --- MELHORIA: Loop para renderizar todos os campos do formulário --- #}
-                        {# Este loop cria a estrutura para cada campo, evitando repetição. #}
-                        <div class="row g-3">
-                            {% for field in form %}
-                                <div class="col-12 {% if field.name in 'contrato,natureza,coordenador,responsavel' %}col-md-6{% elif field.name in 'entrada,prazo,status' %}col-md-4{% endif %}">
-                                    <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                                    
-                                    {# Adiciona a classe 'form-select' para campos de escolha e 'form-control' para os outros #}
-                                    {% if 'Select' in field.field.widget|stringformat:"s" %}
-                                        {% render_field field class+="form-select is-invalid"|if:field.errors %}
-                                    {% else %}
-                                        {% render_field field class+="form-control is-invalid"|if:field.errors %}
-                                    {% endif %}
-                                        
-                                    {% if field.help_text %}
-                                        <div class="form-text text-muted small mt-1">{{ field.help_text|safe }}</div>
-                                    {% endif %}
-                                    
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback">
-                                            {% for error in field.errors %}{{ error }}{% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
-                        </div>
+                    <div class="mt-4">
+                        <label for="{{ form.comentario.id_for_label }}" class="form-label fw-bold">{{ form.comentario.label }}</label>
+                        {% render_field form.comentario class+="form-control" %}
+                        {% if form.comentario.help_text %}<div class="form-text small text-muted">{{ form.comentario.help_text }}</div>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
 
-                        {# --- Botões de Ação --- #}
-                        <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">
-                            <a href="{% url 'ata_reuniao_list' %}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-lg me-1"></i>
-                                {% if object %}Atualizar{% else %}Criar{% endif %}
-                            </button>
-                        </div>
-                    </form>
+                <div class="border-top p-3 d-flex justify-content-end gap-2">
+                    <a href="{% url 'ata_reuniao_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-circle me-1"></i> 
+                        {% if object %}Atualizar{% else %}Criar Ata{% endif %}
+                    </button>
                 </div>
             </div>
-
-        </div>
+        </form>
     </div>
 </div>
-{% endblock content %}
+{% endblock %}
+
+
+

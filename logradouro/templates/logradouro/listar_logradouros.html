@@ -1,66 +1,67 @@
-{% extends 'base.html' %}
+{# templates/logradouro/lista_logradouros.html #}
+{% extends 'logradouro/base_logradouro.html' %}
+{% load i18n %}
 
-{% load static %}
-
-{% block title %}Lista de Logradouros{% endblock %}
-
-{% block content %}
-<div class="contaniner">
- 
-    <h2>Endereços Cadastrados</h2>
-
-    <div class="painel">
-            <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Novo Endereço
+{% block logradouro_content %}
+    {# Cabeçalho da Página #}
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2">{% trans "Gestão de Endereços" %}</h1>
+            <p class="text-muted mb-0">{% blocktrans %}Total de endereços cadastrados: {{ total_logradouros }}{% endblocktrans %}</p>
+        </div>
+        <div class="btn-toolbar">
+            <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-primary me-2">
+                <i class="bi bi-plus-circle me-1"></i> {% trans "Novo Endereço" %}
             </a>
-            <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-excel">
-                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
-            </a>    
+            <a href="{% url 'logradouro:exportar_excel' %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel me-1"></i> {% trans "Exportar Excel" %}
+            </a>
+        </div>
     </div>
 
-    <p>Total de endereços cadastrados: {{ total_logradouros }}</p>
-    {% if logradouros %}
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Endereço</th>
-                    <th>Número</th>
-                    <th>CEP</th>
-                    <th>Bairro</th>
-                    <th>Cidade/UF</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for logradouro in logradouros %}
-                <tr>
-                    <td>{{ logradouro.endereco }}</td>
-                    <td>{{ logradouro.numero }}</td>
-                    <td>{{ logradouro.cep_formatado }}</td>
-                    <td>{{ logradouro.bairro }}</td>
-                    <td>{{ logradouro.cidade }}/{{ logradouro.estado }}</td>
-                    <td>
-                        <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}" class="btn btn-warning btn-sm">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <a href="{% url 'logradouro:excluir_logradouro' logradouro.pk %}" class="btn btn-danger btn-sm">
-                            <i class="bi bi-trash"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-       
+    {# Card com a tabela de endereços #}
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if logradouros %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans 'Endereço' %}</th>
+                                <th>{% trans 'Número' %}</th>
+                                <th>{% trans 'CEP' %}</th>
+                                <th>{% trans 'Bairro' %}</th>
+                                <th>{% trans 'Cidade/UF' %}</th>
+                                <th class="text-end">{% trans 'Ações' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for logradouro in logradouros %}
+                            <tr>
+                                <td>{{ logradouro.endereco }}</td>
+                                <td>{{ logradouro.numero }}</td>
+                                <td>{{ logradouro.cep_formatado }}</td>
+                                <td>{{ logradouro.bairro }}</td>
+                                <td>{{ logradouro.cidade }}/{{ logradouro.estado }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'logradouro:confirmar_exclusao' logradouro.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info mb-0">
+                    {% trans "Nenhum endereço cadastrado." %}
+                </div>
+            {% endif %}
+        </div>
     </div>
-
-    {% else %}
-    <div class="alert alert-info">
-        Nenhum endereço cadastrado.
-    </div>
-    {% endif %}
-    
-</div>
-{% endblock %}
+{% endblock logradouro_content %}
 

@@ -1,10 +1,10 @@
-{% extends 'automovel/base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{{ carro.marca }} {{ carro.modelo }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'csscarro/carro.css' %}">
+<link rel="stylesheet" href="{% static 'csscarro/carro_list.css' %}">
 {% endblock %}
 
 {% block content %}

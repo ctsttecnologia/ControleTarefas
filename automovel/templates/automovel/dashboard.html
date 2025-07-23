@@ -3,110 +3,113 @@
 {% block title %}Painel - Gestão de Veículos{% endblock %}
 
 {% block content %}
-{% include "automovel/partials/_page_header.html" with title="Painel" %}
 
-<div class="row">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Veículos</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_carros }}</div>
+
+<div class="container">
+    {% include "automovel/partials/_page_header.html" with title="Painel" %}
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Veículos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_carros }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-truck fs-2 text-gray-300"></i>
+                        </div>
                     </div>
-                    <div class="col-auto">
-                        <i class="bi bi-truck fs-2 text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Veículos Disponíveis</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ carros_disponiveis }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle-fill fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Agendamentos Hoje</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ agendamentos_hoje }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-check fs-2 text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Manutenções Próximas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ manutencao_proxima }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-tools fs-2 text-gray-300"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Veículos Disponíveis</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ carros_disponiveis }}</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="bi bi-check-circle-fill fs-2 text-gray-300"></i>
-                    </div>
-                </div>
+    <div class="card shadow-sm">
+        <div class="card-header"><i class="bi bi-clock-history me-2"></i>Últimos Agendamentos</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Carro</th>
+                            <th>Funcionário</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agendamento in ultimos_agendamentos %}
+                        <tr>
+                            <td>{{ agendamento.carro }}</td>
+                            <td>{{ agendamento.funcionario }}</td>
+                            <td>{{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</td>
+                            <td><span class="badge rounded-pill text-bg-info">{{ agendamento.get_status_display }}</span></td>
+                            <td>
+                                <a href="{% url 'automovel:agendamento_detail' agendamento.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i> Detalhes
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Nenhum agendamento recente.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Agendamentos Hoje</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ agendamentos_hoje }}</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="bi bi-calendar-check fs-2 text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Manutenções Próximas</div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ manutencao_proxima }}</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="bi bi-tools fs-2 text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card shadow-sm">
-    <div class="card-header"><i class="bi bi-clock-history me-2"></i>Últimos Agendamentos</div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Carro</th>
-                        <th>Funcionário</th>
-                        <th>Data</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for agendamento in ultimos_agendamentos %}
-                    <tr>
-                        <td>{{ agendamento.carro }}</td>
-                        <td>{{ agendamento.funcionario }}</td>
-                        <td>{{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</td>
-                        <td><span class="badge rounded-pill text-bg-info">{{ agendamento.get_status_display }}</span></td>
-                        <td>
-                            <a href="{% url 'automovel:agendamento_detail' agendamento.pk %}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-eye"></i> Detalhes
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">Nenhum agendamento recente.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+</div>    
 {% endblock %}
 

@@ -59,7 +59,7 @@ class Agendamento(models.Model):
     class Meta:
         verbose_name = "Agendamento"
         verbose_name_plural = "Agendamentos"
-        ordering = ['-data_hora_agenda']
+        ordering = ['-data_hora_agenda', 'data_hora_devolucao']
 
 class Checklist(models.Model):
     TIPO_CHOICES = [('saida', 'Saída'), ('retorno', 'Retorno'), ('vistoria', 'Vistoria')]

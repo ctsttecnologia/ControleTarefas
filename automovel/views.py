@@ -98,6 +98,7 @@ class AgendamentoListView(LoginRequiredMixin, ListView):
     template_name = 'automovel/agendamento_list.html'
     context_object_name = 'agendamentos'
     paginate_by = 10
+    
 
 class AgendamentoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     model = Agendamento

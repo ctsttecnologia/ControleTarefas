@@ -2,9 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.db import models
-
-from logradouro.constant import ESTADOS_BRASIL
+from .constant import ESTADOS_BRASIL
 
 class Logradouro(models.Model):
     # Validadores
@@ -103,6 +101,7 @@ class Logradouro(models.Model):
     # Métodos
     def clean(self):
         super().clean()
+        # Exemplo de validação customizada
         if self.estado == 'SP' and 'São Paulo' not in self.cidade:
             raise ValidationError({
                 'cidade': _('Cidades de SP devem conter "São Paulo" no nome')
@@ -112,7 +111,7 @@ class Logradouro(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
     
-    @property
+    # CORREÇÃO: Convertido de @property para um método normal para ser chamado explicitamente.
     def cep_formatado(self):
         return f"{self.cep[:5]}-{self.cep[5:]}" if self.cep else ""
     
@@ -127,7 +126,7 @@ class Logradouro(models.Model):
         return (
             f"{self.endereco}, {self.numero}{complemento} - "
             f"{self.bairro}, {self.cidade}/{self.estado} - "
-            f"{self.cep_formatado}"
+            f"{self.cep_formatado()}" # Chamado como método
         )
     
     def __str__(self):

@@ -1,51 +1,16 @@
+{# templates/logradouro/base_logradouro.html #}
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema de Logradouros{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
 
-    <link rel="stylesheet" href="{% static 'csslogradouro/styles.css' %}">
-    
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
+{% block extra_css %}
+{# Adiciona um CSS específico para esta secção, se necessário #}
+<link rel="stylesheet" href="{% static 'csslogradouro/styles.css' %}">
+{% endblock %}
 
-<!-- Barra de Navegação Principal -->
-{% include 'includes/header.html' %}
-
-    {% block extra_js %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Seleciona todas as mensagens de sucesso
-            const successMessages = document.querySelectorAll('.alert-success');
-            
-            // Para cada mensagem de sucesso, configura o timeout para desaparecer
-            successMessages.forEach(function(message) {
-                // Verifica se a mensagem contém o texto de atualização bem-sucedida
-                if (message.textContent.includes('Endereço atualizado com sucesso!')) {
-                    setTimeout(function() {
-                        message.style.transition = 'opacity 1s ease-out';
-                        message.style.opacity = '0';
-                        
-                        // Remove completamente o elemento após a transição
-                        setTimeout(function() {
-                            message.remove();
-                        }, 1000);
-                    }, 10000); // 10 segundos = 10000 milissegundos
-                }
-            });
-        });
-    </script>
-    {% endblock %}
-    <div class="container">
-        {% block content %}
-        <!-- Conteúdo será inserido aqui pelos templates filhos -->
-        {% endblock %}
-    </div>
-<!-- Rodapé -->
-{% include 'includes/footer.html' %}    
-</body>
-</html>
+{% block content %}
+<div class="container py-4">
+    {% block logradouro_content %}
+    {# O conteúdo específico de cada página (lista, formulário, etc.) virá aqui #}
+    {% endblock logradouro_content %}
+</div>
+{% endblock content %}

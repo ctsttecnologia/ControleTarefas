@@ -1,0 +1,32 @@
+
+{% comment %}
+Este partial renderiza um campo de formulário completo com rótulo,
+estilização de erro do Bootstrap e texto de ajuda.
+{% endcomment %}
+
+{% load widget_tweaks %}
+
+<div class="col-{{ col_size|default:'12' }} mb-3">
+    <label for="{{ field.id_for_label }}" class="form-label">
+        {{ field.label }}
+        {% if field.field.required %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+
+    {% if field.errors %}       
+        {% render_field field class+="form-control is-invalid" placeholder=field.label %}
+    {% else %}
+        {% render_field field class+="form-control" placeholder=field.label %}
+    {% endif %}
+
+    {% for error in field.errors %}
+        <div class="invalid-feedback">
+            {{ error }}
+        </div>
+    {% endfor %}
+
+    {% if field.help_text %}
+        <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+    {% endif %}
+</div>

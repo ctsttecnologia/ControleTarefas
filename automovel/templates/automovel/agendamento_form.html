@@ -1,11 +1,11 @@
-{% extends 'automovel/base.html' %}
+{% extends 'base.html' %}
 {% load static crispy_forms_tags %}
 
 
 {% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container"><br>
     <div class="card">
         <div class="card-header">
             <h3>{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento</h3>

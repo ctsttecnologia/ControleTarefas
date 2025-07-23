@@ -43,30 +43,36 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin', # Mova para cima
-    'usuario', # Agora 'usuario' vem DEPOIS de 'auth' e 'contenttypes'
-    'home',
-    'django.contrib.auth', # Mova para cima
-    'django.contrib.contenttypes', # Mova para cima
-    'django.contrib.sessions', # Mova para cima
-    'django.contrib.messages', # Mova para cima
-    'django.contrib.staticfiles', # Mova para cima
+    # 1. Aplicativos do Framework Django (em ordem)
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'cliente',
-    'seguranca_trabalho',
-    'departamento_pessoal',
-    'tarefas.apps.TarefasConfig',
+
+    # 2. Aplicativos de Terceiros
     'rest_framework',
-    'logradouro',
-    'gestao_riscos',
     'widget_tweaks',
-    'automovel.apps.AutomovelConfig',
-    'treinamentos.apps.TreinamentosConfig',
     'crispy_forms',
     'crispy_bootstrap5',
-    'ata_reuniao',
     'localflavor',
+
+    # 3. Seus Aplicativos Locais (em ordem de dependência)
+    'home',
+    'logradouro',             # É uma dependência, deve vir cedo
+    'usuario',                # Relacionado ao usuário
+    'cliente',                # Depende de 'logradouro'
+    'departamento_pessoal',   # Depende de 'cliente'
+    'automovel.apps.AutomovelConfig',
+    'seguranca_trabalho',
+    'tarefas.apps.TarefasConfig',
+    'treinamentos.apps.TreinamentosConfig',
+    'gestao_riscos',
+    'ata_reuniao',            # Depende de 'cliente' e 'departamento_pessoal', vem por último na cadeia de dependência
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -203,7 +209,7 @@ REST_FRAMEWORK = {
 }
 
 # LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
-# Corrija o LOGIN_REDIRECT_URL se 'profile' não for um nome de URL existente
+
 LOGIN_URL = 'usuario:login'
 LOGIN_REDIRECT_URL = 'usuario:profile'
 LOGOUT_REDIRECT_URL = 'usuario:login'

@@ -1,14 +1,29 @@
+# logradouro/urls.py
+
 from django.urls import path
-from . import views
+from .views import (
+    LogradouroListView, 
+    LogradouroCreateView, 
+    LogradouroUpdateView, 
+    LogradouroDeleteView,
+    LogradouroExportExcelView
+)
 
 app_name = 'logradouro'
 
 urlpatterns = [
-    path('logradouro/', views.listar_logradouros, name='listar_logradouros'),
-    path('cadastrar/', views.cadastrar_logradouro, name='cadastrar_logradouro'),
-    path('editar/<int:pk>/', views.editar_logradouro, name='editar_logradouro'),
-    path('excluir/<int:pk>/', views.excluir_logradouro, name='excluir_logradouro'),
-    path('exportar-excel/', views.exportar_excel, name='exportar_excel'),
+    # Caminho para a lista de logradouros (página principal)
+    path('', LogradouroListView.as_view(), name='listar_logradouros'),
+    
+    # Caminho para o formulário de cadastro
+    path('cadastrar/', LogradouroCreateView.as_view(), name='cadastrar_logradouro'),
+    
+    # Caminho para editar um logradouro específico
+    path('editar/<int:pk>/', LogradouroUpdateView.as_view(), name='editar_logradouro'),
+    
+    # Caminho para a página de confirmação de exclusão
+    path('excluir/<int:pk>/', LogradouroDeleteView.as_view(), name='confirmar_exclusao'),
+    
+    # Caminho para a funcionalidade de exportar para Excel
+    path('exportar-excel/', LogradouroExportExcelView.as_view(), name='exportar_excel'),
 ]
-
-

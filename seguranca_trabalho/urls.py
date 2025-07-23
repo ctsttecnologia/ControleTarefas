@@ -5,6 +5,7 @@ from django.urls import path
 # Importando todas as views necessárias para um CRUD completo e ações.
 from .views import (
     # Dashboards
+    ControleEPIPorFuncaoView,
     DashboardSSTView,
 
     # CRUD de Equipamentos
@@ -38,6 +39,7 @@ from .views import (
     AssinarEntregaView,
     GerarFichaPDFView,
     RegistrarDevolucaoView,
+    RelatorioSSTPDFView,
 )
 
 # O app_name é crucial para o namespacing das URLs.
@@ -49,7 +51,7 @@ urlpatterns = [
     # ========================================================================
     # URL principal do módulo de SST.
     path('', DashboardSSTView.as_view(), name='dashboard'),
-
+    path('relatório',RelatorioSSTPDFView.as_view(), name='relatorio_pdf_template'),
 
     # ========================================================================
     # FICHAS DE EPI E ENTREGAS
@@ -58,9 +60,7 @@ urlpatterns = [
     path('fichas/', FichaEPIListView.as_view(), name='ficha_list'),
     path('fichas/nova/', FichaEPICreateView.as_view(), name='ficha_create'),
     path('fichas/<int:pk>/', FichaEPIDetailView.as_view(), name='ficha_detail'),
-    # Nota: Rotas de Update e Delete para FichaEPI podem ser adicionadas se necessário.
-    # path('fichas/<int:pk>/editar/', FichaEPIUpdateView.as_view(), name='ficha_update'),
-    # path('fichas/<int:pk>/excluir/', FichaEPIDeleteView.as_view(), name='ficha_delete'),
+    path('controle-epi-funcao/', ControleEPIPorFuncaoView.as_view(), name='controle_epi_por_funcao'),  
 
     # Ações relacionadas a uma entrega de EPI específica.
     path('fichas/<int:ficha_pk>/adicionar-entrega/', AdicionarEntregaView.as_view(), name='entrega_create'),

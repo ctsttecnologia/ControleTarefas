@@ -1,56 +1,71 @@
 {% extends "base.html" %}
-{% load static %} 
+{% load static %}
+{% load widget_tweaks %}
+
 {% block title %}Lista de Veículos{% endblock %}
 
+{% block extra_css %}
+    {# Carrega a folha de estilos dedicada para a aplicação automóvel #}
+    <link rel="stylesheet" href="{% static 'css/automovel/automovel_styles.css' %}">
+{% endblock %}
+
 {% block content %}
-<link rel="stylesheet" href="{% static 'csscarro/carro_list.css' %}">
+<div class="automovel-container">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h2 mb-0">Gerenciar Veículos</h1>
+            {# Botão para adicionar novo veículo, um padrão comum em listas #}
+            <a href="{% url 'automovel:carro_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Adicionar Veículo
+            </a>
+        </div>
 
-{% include "automovel/partials/_page_header.html" with title="Veículos" button_url=request.path|add:"novo/" button_text="Adicionar Veículo" %}
-
-<div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <form method="get" class="d-flex">
-            <input type="text" name="search" class="form-control me-2" placeholder="Pesquisar por placa, modelo, marca..." value="{{ request.GET.search }}">
-            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
-        </form>
-    </div>
-    <div class="card-body p-0">
-        <div class="list-group list-group-flush">
-            {% for carro in carros %}
-                <a href="{% url 'automovel:carro_detail' carro.id %}" class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ carro.marca }} {{ carro.modelo }}</h5>
-                        <small>
-                            <span class="badge rounded-pill {% if carro.disponivel %}text-bg-success{% else %}text-bg-secondary{% endif %}">
-                                {% if carro.disponivel %}Disponível{% else %}Indisponível{% endif %}
-                            </span>
-                        </small>
-                    </div>
-                    <p class="mb-1"><strong>Placa:</strong> {{ carro.placa }} | <strong>Ano:</strong> {{ carro.ano }}</p>
-                    <small class="text-muted">Próxima manutenção em: {{ carro.data_proxima_manutencao|date:"d/m/Y"|default:"Não definida" }}</small>
-                </a>
-            {% empty %}
-                <div class="list-group-item">
-                    <p class="text-center mb-0">Nenhum carro encontrado.</p>
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <form method="get" class="d-flex">
+                    <input type="text" name="search" class="form-control me-2" placeholder="Pesquisar por placa, modelo, marca..." value="{{ request.GET.search }}">
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                </form>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for carro in carros %}
+                        <a href="{% url 'automovel:carro_detail' carro.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ carro.marca }} {{ carro.modelo }}</h5>
+                                <small>
+                                    <span class="badge rounded-pill {% if carro.disponivel %}text-bg-success{% else %}text-bg-secondary{% endif %}">
+                                        {% if carro.disponivel %}Disponível{% else %}Indisponível{% endif %}
+                                    </span>
+                                </small>
+                            </div>
+                            <p class="mb-1"><strong>Placa:</strong> {{ carro.placa }} | <strong>Ano:</strong> {{ carro.ano }}</p>
+                            <small class="text-muted">Próxima manutenção: {{ carro.data_proxima_manutencao|date:"d/m/Y"|default:"Não definida" }}</small>
+                        </a>
+                    {% empty %}
+                        <div class="list-group-item">
+                            <p class="text-center mb-0 py-4">Nenhum carro encontrado.</p>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
+            </div>
+            {% if is_paginated %}
+            <div class="card-footer">
+                <nav aria-label="Paginação">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Anterior</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+                        {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Próxima</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
         </div>
     </div>
-    {% if is_paginated %}
-    <div class="card-footer">
-        <nav aria-label="Paginação">
-            <ul class="pagination justify-content-center mb-0">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Anterior</a></li>
-                {% endif %}
-                <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Próxima</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
 
