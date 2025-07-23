@@ -1,12 +1,17 @@
 
 {% extends "base.html" %}
 {% load static %}
+{% load widget_tweaks %}
+
 
 {% block title %}Detalhes do Agendamento #{{ agendamento.id }}{% endblock %}
-
+{% block extra_css %}
+    {# Carrega a folha de estilos dedicada para a aplicação automóvel #}
+    <link rel="stylesheet" href="{% static 'css/automovel/automovel_styles.css' %}">
+{% endblock %}
 {% block content %}
-{% include "automovel/partials/_page_header.html" with title="Detalhes do Agendamento #"|add:agendamento.id %}
-
+{% include "automovel/partials/_messages.html" %}
+<h1>Agendamento</h1>
 <div class="row">
     <div class="col-lg-9">
         
@@ -27,7 +32,7 @@
                     </div>
                     <div class="col-md-6">
                         <p><strong>Saída:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
-                        <p><strong>Retorno Previsto:</strong> {{ agendamento.data_hora_devolucao|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Retorno Previsto:</strong> {{ agendamento.data_hora_devolucao|date:"d/m/Y H:i"  }}</p>
                         <p><strong>KM Inicial:</strong> {{ agendamento.km_inicial }} km</p>
                         <p class="mb-0"><strong>KM Final:</strong> {{ agendamento.km_final|default:"Não registrado" }}</p>
                     </div>
@@ -119,8 +124,12 @@
                     {% if checklist_retorno %}
                         <p class="small text-muted mb-2">Realizado em {{ checklist_retorno.data_hora|date:"d/m/Y H:i" }}</p>
                         <div class="btn-group btn-group-sm w-100">
-                            <a href="#" class="btn btn-outline-secondary"><i class="bi bi-eye"></i> Ver</a>
-                            <a href="{% url 'automovel:checklist_export_word' checklist_retorno.pk %}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-word"></i> Word</a>
+                            <a href="#" class="btn btn-outline-secondary" title="Ver agenda">
+                                <i class="bi bi-eye"></i> Ver
+                            </a>
+                            <a href="{% url 'automovel:checklist_export_word' checklist_retorno.pk %}" class="btn btn-outline-primary" title="exportar">
+                                <i class="bi bi-file-earmark-word"></i> Word
+                            </a>
                         </div>
                     {% else %}
                         {% if agendamento.status == 'em_andamento' %}

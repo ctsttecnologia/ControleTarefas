@@ -1,4 +1,5 @@
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
 {% load widget_tweaks %}
 
 {% block title %}Ficha de EPI de {{ ficha.funcionario.nome_completo }}{% endblock %}
@@ -118,5 +119,5 @@
 {% endblock sst_content %}
 
 {% block extra_js %}
-    {% include 'seguranca_trabalho/includes/script_assinatura.js' %}
+    <script src="{% static 'js/script_assinatura.js' %}"></script>
 {% endblock extra_js %}

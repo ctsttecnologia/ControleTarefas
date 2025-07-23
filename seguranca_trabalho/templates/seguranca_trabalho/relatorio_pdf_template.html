@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Segurança do Trabalho</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+            @frame header_frame {
+                -pdf-frame-content: page-header;
+                margin-top: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 1cm;
+            }
+            @frame footer_frame {
+                -pdf-frame-content: page-footer;
+                bottom: 1cm;
+                margin-left: 2cm;
+                margin-right: 2cm;
+                height: 1cm;
+            }
+        }
+
+        body {
+            font-family: "Helvetica", "Arial", sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 18pt;
+            color: #1a237e; /* Azul escuro */
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            font-size: 14pt;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        p {
+            line-height: 1.4;
+        }
+
+        /* Estilos para os KPIs */
+        .kpi-container {
+            width: 100%;
+            margin-bottom: 20px;
+            border-spacing: 10px;
+            border-collapse: separate;
+        }
+        .kpi-card {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            width: 23%; /* Aproximadamente 4 colunas */
+        }
+        .kpi-value {
+            font-size: 22pt;
+            font-weight: bold;
+            color: #1a237e;
+            margin: 0;
+        }
+        .kpi-label {
+            font-size: 9pt;
+            color: #6c757d;
+            margin: 0;
+        }
+
+        /* Estilos para os gráficos */
+        .graph-container {
+            text-align: center;
+            margin-top: 20px;
+            page-break-inside: avoid; /* Tenta não quebrar o gráfico entre páginas */
+        }
+        .graph-container img {
+            max-width: 90%;
+            height: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+        }
+
+        /* Cabeçalho e Rodapé */
+        #page-header {
+            text-align: right;
+            font-size: 9pt;
+            color: #888;
+        }
+        #page-footer {
+            text-align: center;
+            font-size: 9pt;
+            color: #888;
+        }
+        #page-footer .page-number:before {
+            content: "Página " counter(page);
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Conteúdo do Cabeçalho -->
+    <div id="page-header">
+        Relatório Gerado em: {{ today|date:"d/m/Y" }}
+    </div>
+
+    <!-- Conteúdo do Rodapé -->
+    <div id="page-footer">
+        <span class="page-number"></span>
+    </div>
+
+    <!-- Corpo do Relatório -->
+    <h1>Relatório de Gestão de SST</h1>
+    <p style="text-align: center; color: #666;">Visão geral dos indicadores e riscos de Segurança do Trabalho.</p>
+
+    <h2>Indicadores Chave (KPIs)</h2>
+    <table class="kpi-container">
+        <tr>
+            <td class="kpi-card">
+                <p class="kpi-value">{{ total_equipamentos_ativos|default:"0" }}</p>
+                <p class="kpi-label">Equipamentos Ativos</p>
+            </td>
+            <td class="kpi-card">
+                <p class="kpi-value">{{ fichas_ativas|default:"0" }}</p>
+                <p class="kpi-label">Fichas Ativas</p>
+            </td>
+            <td class="kpi-card">
+                <p class="kpi-value">{{ entregas_pendentes_assinatura|default:"0" }}</p>
+                <p class="kpi-label">Entregas p/ Assinar</p>
+            </td>
+            <td class="kpi-card">
+                <p class="kpi-value">{{ epis_vencendo_em_30_dias|default:"0" }}</p>
+                <p class="kpi-label">EPIs Vencendo (30d)</p>
+            </td>
+        </tr>
+    </table>
+
+    <h2>Análise Gráfica</h2>
+    
+    <div class="graph-container">
+        <h3>Situação Geral dos Equipamentos</h3>
+        {% if grafico_status_imagem_path %}
+            <img src="{{ grafico_status_imagem_path }}" alt="Gráfico de Status dos Equipamentos">
+        {% else %}
+            <p class="text-muted">Gráfico de status não disponível.</p>
+        {% endif %}
+    </div>
+
+    <div class="graph-container">
+        <h3>EPIs a Vencer nos Próximos 6 Meses</h3>
+        {% if grafico_vencimentos_imagem_path %}
+            <img src="{{ grafico_vencimentos_imagem_path }}" alt="Gráfico de Vencimentos de EPIs">
+        {% else %}
+            <p class="text-muted">Gráfico de vencimentos não disponível.</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>
+

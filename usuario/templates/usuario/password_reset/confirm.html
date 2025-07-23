@@ -1,13 +1,12 @@
-
 {# templates/usuario/password_reset/confirm.html #}
 {% extends 'base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
 {% block title %}Criar Nova Senha{% endblock %}
-    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
+
 {% block extra_css %}
-    
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -16,13 +15,13 @@
         
         {% if validlink %}
             <h2 class="text-center mb-3">Crie sua Nova Senha</h2>
-            <p class="text-muted text-center mb-4">Por favor, digite sua nova senha duas vezes.</p>
+            <p class="text-muted text-center mb-4">Por favor, digite sua nova senha duas vezes para confirmar.</p>
 
             <form method="post">
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                    <div class="alert alert-danger p-2 text-center">
+                    <div class="alert alert-danger p-2 text-center small">
                         {% for error in form.non_field_errors %}
                             {{ error }}
                         {% endfor %}
@@ -33,7 +32,7 @@
                     <label for="{{ form.new_password1.id_for_label }}" class="form-label">Nova Senha</label>
                     {% render_field form.new_password1 class="form-control" placeholder="••••••••" %}
                     {% if form.new_password1.errors %}
-                        <div class="invalid-feedback d-block">{{ form.new_password1.errors.as_text }}</div>
+                        <div class="invalid-feedback d-block small">{{ form.new_password1.errors.as_ul }}</div>
                     {% endif %}
                 </div>
 
@@ -41,7 +40,7 @@
                     <label for="{{ form.new_password2.id_for_label }}" class="form-label">Confirme a Nova Senha</label>
                     {% render_field form.new_password2 class="form-control" placeholder="••••••••" %}
                     {% if form.new_password2.errors %}
-                        <div class="invalid-feedback d-block">{{ form.new_password2.errors.as_text }}</div>
+                        <div class="invalid-feedback d-block small">{{ form.new_password2.errors.as_ul }}</div>
                     {% endif %}
                 </div>
 

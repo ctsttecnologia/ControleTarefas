@@ -1,21 +1,31 @@
+
+{# templates/logradouro/confirmar_exclusao.html #}
 {% extends 'logradouro/base_logradouro.html' %}
-{% load static %}
 {% load i18n %}
 
 {% block logradouro_content %}
-<h2>{% trans 'Confirmar Exclusão' %}</h2>
-
-<div class="confirmation-box">
-    <p>{% trans 'Tem certeza que deseja excluir o endereço?' %}</p>
-    <p><strong>{{ logradouro.get_endereco_completo }}</strong></p>
-    
-    <form method="post">
-        {% csrf_token %}
-        <div class="form-actions">
-            <button type="submit" class="btn btn-delete">{% trans 'Sim, excluir' %}</button>
-            <a href="{% url 'logradouro:listar' %}" class="btn btn-cancel">{% trans 'Cancelar' %}</a>
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card text-center shadow-sm">
+            <div class="card-header">
+                <h2 class="h4 mb-0">{% trans "Confirmar Exclusão" %}</h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">{% trans "Tem certeza que deseja excluir permanentemente o seguinte endereço?" %}</p>
+                <div class="alert alert-warning">
+                    <strong>{{ logradouro.get_endereco_completo }}</strong>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-center mt-4">
+                        <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-secondary me-3">{% trans "Cancelar" %}</a>
+                        <button type="submit" class="btn btn-danger">{% trans "Sim, Excluir" %}</button>
+                    </div>
+                </form>
+            </div>
         </div>
-    </form>
+    </div>
 </div>
-{% endblock %}
+{% endblock logradouro_content %}
 

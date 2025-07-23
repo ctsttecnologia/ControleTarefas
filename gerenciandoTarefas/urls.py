@@ -1,5 +1,7 @@
-
-# seu_projeto/urls.py (ex: gerenciandoTarefas/urls.py)
+# Ficheiro 1: O seu urls.py PRINCIPAL (gerenciandoTarefas/urls.py)
+#
+# Este ficheiro está CORRETO. Ele define o prefixo 'logradouro/'
+# e inclui as URLs da sua aplicação.
 
 from django.contrib import admin
 from django.urls import path, include
@@ -20,7 +22,7 @@ urlpatterns = [
     path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
     path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),
     path('cliente/', include('cliente.urls')),
-    path('logradouro/', include('logradouro.urls')),
+    path('logradouro/', include('logradouro.urls')), # <-- Esta linha está correta
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),

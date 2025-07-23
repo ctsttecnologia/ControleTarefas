@@ -49,6 +49,8 @@ class Funcionario(models.Model):
     Modelo unificado que representa um funcionário, seus dados pessoais e de contratação.
     Este modelo agora contém os campos que antes estavam em Admissao.
     """
+
+
     STATUS_CHOICES = [('ATIVO', 'Ativo'), ('INATIVO', 'Inativo'), ('FERIAS', 'Férias'), ('AFASTADO', 'Afastado')]
     SEXO_CHOICES = [('M', 'Masculino'), ('F', 'Feminino'), ('O', 'Outro')]
 

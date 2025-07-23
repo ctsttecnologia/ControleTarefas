@@ -36,6 +36,16 @@
                     <i class="bi bi-hdd-stack me-1"></i> Equipamentos
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{% url 'gestao_riscos:lista_riscos' %}" class="nav-link {% if 'gestao_' in request.resolver_match.view_name %}active{% endif %}">
+                    <i class="bi bi-hdd-stack me-1"></i> Gestão de Riscos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="nav-link {% if 'controle_' in request.resolver_match.view_name %}active{% endif %}">
+                    <i class="bi bi-speedometer2 me-1"></i> Controle de EPIs por Função
+                </a>
+            </li>
             </ul>
     </div>
 

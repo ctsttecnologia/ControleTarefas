@@ -63,7 +63,7 @@ class Funcao(models.Model):
 
 
 class Equipamento(models.Model):
-    nome = models.CharField(max_length=150, verbose_name=_("Descrição EPI")) # <-- AJUSTE: Nome do campo igual ao da ficha de papel.
+    nome = models.CharField(max_length=150, verbose_name=_("Descrição EPI"))
     modelo = models.CharField(max_length=100, blank=True, verbose_name=_("Modelo"))
     fabricante = models.ForeignKey(Fabricante, on_delete=models.PROTECT, related_name='equipamentos', null=True, blank=True)
     fornecedor_padrao = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Fornecedor Padrão"))
@@ -75,7 +75,7 @@ class Equipamento(models.Model):
     requer_numero_serie = models.BooleanField(default=False, verbose_name=_("Requer Rastreamento por Nº de Série?"), help_text=_("Marque se cada item individual precisa ser rastreado."))
     foto = models.ImageField(upload_to='epi_fotos/', null=True, blank=True, verbose_name=_("Foto do Equipamento"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
-
+ 
     class Meta:
         verbose_name = _("Equipamento (EPI)")
         verbose_name_plural = _("Equipamentos (EPIs)")
@@ -96,6 +96,12 @@ class MatrizEPI(models.Model):
     funcao = models.ForeignKey(Funcao, on_delete=models.CASCADE, related_name='matriz_epis')
     equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='matriz_funcoes')
     quantidade_padrao = models.PositiveIntegerField(default=1, verbose_name=_("Quantidade Padrão"))
+    # --- CAMPO ADICIONADO ---
+    frequencia_troca_meses = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name=_("Frequência de Troca (Meses)"),
+        help_text=_("Deixe em branco para 'Quando Necessário' (QN).")
+    )
     
     class Meta:
         verbose_name = _("Matriz de EPI por Função")
@@ -103,7 +109,8 @@ class MatrizEPI(models.Model):
         unique_together = ('funcao', 'equipamento')
 
     def __str__(self):
-        return f"{self.funcao.nome} -> {self.equipamento.nome}"
+        freq = f"({self.frequencia_troca_meses} meses)" if self.frequencia_troca_meses else "(QN)"
+        return f"{self.funcao.nome} -> {self.equipamento.nome} {freq}"
 
 
 # --- Modelos Operacionais ---
@@ -167,18 +174,16 @@ class EntregaEPI(models.Model):
     @property
     def data_vencimento_uso(self):
         if self.data_entrega and self.equipamento.vida_util_dias:
-            # Precisa converter data para datetime para somar com timedelta se data_entrega for DateField
-            data_entrega_dt = timezone.make_aware(datetime.combine(self.data_entrega, datetime.min.time()))
-            return data_entrega_dt + timedelta(days=self.equipamento.vida_util_dias)
+            return self.data_entrega + timedelta(days=self.equipamento.vida_util_dias)
         return None
 
     @property
     def status(self):
         if self.data_devolucao:
             return "Devolvido"
-        if not self.assinatura_recebimento:
+        if not self.assinatura_recebimento and not self.assinatura_imagem:
             return "Pendente Assinatura"
-        if self.data_vencimento_uso and timezone.now() > self.data_vencimento_uso:
+        if self.data_vencimento_uso and timezone.now().date() > self.data_vencimento_uso:
             return "Vencido"
         return "Ativo"
 
@@ -201,3 +206,4 @@ class MovimentacaoEstoque(models.Model):
         verbose_name = _("Movimentação de Estoque")
         verbose_name_plural = _("Movimentações de Estoque")
         ordering = ['-data']
+

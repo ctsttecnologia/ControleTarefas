@@ -1,28 +1,40 @@
 {% extends "base.html" %}
 {% load static %} 
+{% load widget_tweaks %}
+
 {% load crispy_forms_tags %} {% block title %}{% if object %}Editar Veículo{% else %}Adicionar Veículo{% endif %}{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/automovel/automovel_styles.css' %}!important">
+    {% block form_extra_css %}{% endblock %}
+{% endblock %}
+
 {% block content %}
-<link rel="stylesheet" href="{% static 'csscarro/carro_list.css' %}">
-{% include "automovel/partials/_page_header.html" with title=object|yesno:"Editar Veículo,Adicionar Veículo" %}
+{% include "automovel/partials/_messages.html" %}
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            
-            {{ form|crispy }}
+<div class="automovel-container"><br>
+    <h1 class="h2 mb-0">Cadastrar Veículo</h1>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                {{ form|crispy }}
 
-            <div class="mt-4">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle me-1"></i> Salvar
-                </button>
-                <a href="{% url 'automovel:carro_list' %}" class="btn btn-secondary">
-                    Cancelar
-                </a>
-            </div>
-        </form>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-1"></i> Salvar
+                    </button>
+                    <a href="{% url 'automovel:carro_list' %}" class="btn btn-secondary">
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
+</div>    
+{% endblock %}
+{% block extra_js %}
+    {% block form_extra_js %}{% endblock %}
 {% endblock %}
 

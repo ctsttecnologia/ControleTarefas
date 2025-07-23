@@ -1,4 +1,4 @@
-
+{# templates/usuario/password_reset/form.html #}
 {% extends 'base.html' %}
 {% load static %}
 {% load widget_tweaks %}
@@ -6,7 +6,7 @@
 {% block title %}Redefinir Senha{% endblock %}
 
 {% block extra_css %}
-    
+    <link rel="stylesheet" href="{% static 'csslogin/styles.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -17,11 +17,22 @@
         
         <form method="post">
             {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger p-2 text-center small">
+                    {{ form.non_field_errors.as_text }}
+                </div>
+            {% endif %}
+
             <div class="mb-3">
+                <label for="{{ form.email.id_for_label }}" class="form-label visually-hidden">E-mail</label>
                 {% render_field form.email class="form-control" placeholder="Seu e-mail de cadastro" %}
+                {% if form.email.errors %}
+                    <div class="invalid-feedback d-block">{{ form.email.errors.as_text }}</div>
+                {% endif %}
             </div>
             <div class="d-grid mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">Enviar Link</button>
+                <button type="submit" class="btn btn-primary btn-lg">Enviar Link de Redefinição</button>
             </div>
         </form>
 
@@ -31,3 +42,4 @@
     </div>
 </div>
 {% endblock %}
+

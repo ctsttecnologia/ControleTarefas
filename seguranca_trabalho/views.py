@@ -1,6 +1,6 @@
 # seguranca_trabalho/views.py
-
-
+from turtle import pd
+from django.forms import DurationField
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django.shortcuts import render
@@ -14,26 +14,33 @@ from django.shortcuts import get_object_or_404, redirect
 from django.http import Http404, HttpResponseForbidden
 from django.db import transaction, IntegrityError
 from django.utils import timezone
-from django.db.models import Count, Q, ProtectedError
+from django.db.models.expressions import RawSQL
 from django.contrib.staticfiles import finders
+from django.db.models.functions import TruncMonth, Coalesce, Cast
+from django.db.models.deletion import ProtectedError
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q, Count, Case, When, Value, F, ExpressionWrapper
+from django.db.models.functions import Least, Cast
+from django.db.models import DateField, Func, DurationField
 
 from io import BytesIO
-from datetime import timedelta
-from .models import (
-    Equipamento, FichaEPI, EntregaEPI, Fabricante, Fornecedor, Funcao,
-    MatrizEPI, MovimentacaoEstoque
-)
-from .forms import (
-    EquipamentoForm, FichaEPIForm, EntregaEPIForm, AssinaturaForm,
-    FabricanteForm, FornecedorForm
-)
+from datetime import timedelta, date
+from .models import (Equipamento, FichaEPI, EntregaEPI, Fabricante, Fornecedor, Funcao, MatrizEPI, MovimentacaoEstoque)
+from .forms import (EquipamentoForm, FichaEPIForm, EntregaEPIForm, AssinaturaForm, FabricanteForm, FornecedorForm)
 from departamento_pessoal.models import Funcionario
-# Supondo que você queira manter isso no dashboard
-from tarefas.models import Tarefas
 from xhtml2pdf import pisa
+from collections import defaultdict
+from plotly.subplots import make_subplots
+
+import plotly.graph_objects as go
+import plotly.offline as opy
+import plotly.express as px
+import pandas as pd
+
+
+
+
 # --- MIXINS E CLASSES BASE ---
-
-
 class SSTPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
     """
     Mixin para verificar se o usuário tem permissão para acessar a área de SST.
@@ -60,52 +67,273 @@ class SuccessDeleteMessageMixin:
     def form_valid(self, form):
         messages.success(self.request, self.success_message)
         return super().form_valid(form)
+    
+class ControleEPIPorFuncaoView(LoginRequiredMixin, TemplateView):
+    """
+    Exibe e processa a matriz de EPIs por Função, permitindo
+    definir a frequência de troca para cada combinação.
+    """
+    template_name = 'seguranca_trabalho/controle_epi_por_funcao.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        funcoes = Funcao.objects.filter(ativo=True).order_by('nome')
+        equipamentos = Equipamento.objects.filter(ativo=True).order_by('nome')
+        
+        # Estrutura os dados existentes num dicionário aninhado para acesso eficiente no template.
+        matriz_existente = MatrizEPI.objects.all()
+        matriz_data = defaultdict(dict)
+        for item in matriz_existente:
+            matriz_data[item.funcao_id][item.equipamento_id] = item.frequencia_troca_meses
+        
+        context['funcoes'] = funcoes
+        context['equipamentos'] = equipamentos
+        context['matriz_data'] = matriz_data
+        context['titulo_pagina'] = "Controle de EPI por Função"
+        return context
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        """
+        Processa o formulário de forma otimizada, minimizando as consultas à base de dados.
+        """
+        # 1. Busca todos os registos existentes e organiza-os para consulta rápida.
+        matriz_existente = {
+            (item.funcao_id, item.equipamento_id): item
+            for item in MatrizEPI.objects.all()
+        }
+        
+        # 2. Prepara listas para as operações em massa (bulk operations).
+        entradas_para_criar = []
+        entradas_para_atualizar = []
+        pks_para_apagar = []
+
+        # 3. Itera sobre os dados enviados no formulário.
+        for key, value in request.POST.items():
+            if key.startswith('freq_'):
+                try:
+                    # Extrai os IDs da chave do input (ex: 'freq_1_15')
+                    _, funcao_id_str, equipamento_id_str = key.split('_')
+                    funcao_id = int(funcao_id_str)
+                    equipamento_id = int(equipamento_id_str)
+                    
+                    # Converte o valor para inteiro, ou None se estiver vazio.
+                    frequencia = int(value) if value else None
+                    
+                    chave = (funcao_id, equipamento_id)
+                    item_existente = matriz_existente.get(chave)
+
+                    # Se a frequência for nula ou zero, o registo deve ser apagado.
+                    if not frequencia or frequencia <= 0:
+                        if item_existente:
+                            pks_para_apagar.append(item_existente.pk)
+                    
+                    # Se a frequência for um número positivo...
+                    else:
+                        # ...e o registo já existe, verifica se o valor mudou para o atualizar.
+                        if item_existente:
+                            if item_existente.frequencia_troca_meses != frequencia:
+                                item_existente.frequencia_troca_meses = frequencia
+                                entradas_para_atualizar.append(item_existente)
+                        # ...e o registo não existe, prepara-o para ser criado.
+                        else:
+                            entradas_para_criar.append(
+                                MatrizEPI(
+                                    funcao_id=funcao_id,
+                                    equipamento_id=equipamento_id,
+                                    frequencia_troca_meses=frequencia
+                                )
+                            )
+                except (ValueError, TypeError):
+                    # Ignora chaves ou valores mal formatados, garantindo a robustez.
+                    continue
+        
+        # 4. Executa as operações na base de dados de forma otimizada.
+        if pks_para_apagar:
+            MatrizEPI.objects.filter(pk__in=pks_para_apagar).delete()
+        
+        if entradas_para_atualizar:
+            MatrizEPI.objects.bulk_update(entradas_para_atualizar, ['frequencia_troca_meses'])
+            
+        if entradas_para_criar:
+            MatrizEPI.objects.bulk_create(entradas_para_criar)
+
+        messages.success(request, "Matriz de EPIs atualizada com sucesso!")
+        return redirect('seguranca_trabalho:controle_epi_por_funcao')
+
 
 # --- VIEWS DO DASHBOARD ---
-class DashboardSSTView(SSTPermissionMixin, TemplateView):
+# IMPLEMENTADO: Adicionado o LoginRequiredMixin à classe da view.
+# A ordem é importante: o mixin deve vir antes da classe base (TemplateView).
+class DashboardSSTView(LoginRequiredMixin, TemplateView):
     template_name = 'seguranca_trabalho/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = 'Dashboard de Segurança do Trabalho'
-
-        hoje = timezone.now().date()
-        trinta_dias_frente = hoje + timezone.timedelta(days=30)
-
-        # KPIs de SST - Agora todos são consultas diretas e eficientes
-        context['total_equipamentos_ativos'] = Equipamento.objects.filter(
-            ativo=True).count()
-        context['fichas_ativas'] = FichaEPI.objects.filter(
-            funcionario__status='ATIVO').count()
+        today = timezone.now().date()
+        
+        # --- KPIs ---
+        context['total_equipamentos_ativos'] = Equipamento.objects.filter(ativo=True).count()
+        context['fichas_ativas'] = FichaEPI.objects.filter(funcionario__status='ATIVO').count()
         context['entregas_pendentes_assinatura'] = EntregaEPI.objects.filter(
-            assinatura_recebimento__isnull=True).count()
-
-        # KPI Otimizado: Filtra e conta tudo diretamente no banco de dados
-        # Acessando o campo de data através do relacionamento com Equipamento
-        context['epis_vencendo_em_30_dias'] = EntregaEPI.objects.filter(
-            data_devolucao__isnull=True,
-            assinatura_recebimento__isnull=False,
-            # Use o caminho: 'campo_de_relacionamento__campo_no_outro_modelo'
-            equipamento__data_validade_ca__gte=hoje,
-            equipamento__data_validade_ca__lte=trinta_dias_frente
+            (Q(assinatura_recebimento__isnull=True) | Q(assinatura_recebimento='')),
+            (Q(assinatura_imagem__isnull=True) | Q(assinatura_imagem='')),
+            data_devolucao__isnull=True
         ).count()
 
-        # Outras métricas (ex: de Tarefas, se aplicável)
-        if 'tarefas' in settings.INSTALLED_APPS:
-            try:
-                # Adicionar filtro por categoria, se houver
-                tarefas_sst = Tarefas.objects.filter(
-                    responsavel=self.request.user)
-                context['tarefas_pendentes_usuario'] = tarefas_sst.filter(
-                    status__in=['pendente', 'andamento']).count()
-            except:
-                # Caso o modelo Tarefas não exista ou dê erro, evita quebrar o dashboard
-                context['tarefas_pendentes_usuario'] = 0
+        # --- DADOS PARA GRÁFICOS ---
+        future_date = date(2099, 12, 31)
+
+        # Consulta compatível com MySQL
+        entregas_ativas = EntregaEPI.objects.filter(
+            data_entrega__isnull=False, 
+            data_devolucao__isnull=True
+        ).annotate(
+            vida_util_dias_cast=Cast(F('equipamento__vida_util_dias'), output_field=DurationField()),
+            vencimento_vida_util=Case(
+                When(
+                    equipamento__vida_util_dias__isnull=False,
+                    then=ExpressionWrapper(
+                        F('data_entrega') + F('vida_util_dias_cast'),
+                        output_field=DateField()
+                    )
+                ),
+                default=Value(future_date),
+                output_field=DateField()
+            ),
+            validade_ca_definida=Case(
+                When(equipamento__data_validade_ca__isnull=False, 
+                     then=F('equipamento__data_validade_ca')),
+                default=Value(future_date),
+                output_field=DateField()
+            )
+        ).annotate(
+            vencimento_final=Least('vencimento_vida_util', 'validade_ca_definida')
+        )
+        
+        # --- GRÁFICO DE RISCO (PIZZA MODERNA) ---
+        trinta_dias_frente = today + timedelta(days=30)
+        cento_e_oitenta_dias_frente = today + timedelta(days=180)
+        
+        risco_counts = entregas_ativas.aggregate(
+            vencidos=Count('id', filter=Q(vencimento_final__lt=today)),
+            vencendo_30d=Count('id', filter=Q(vencimento_final__gte=today, vencimento_final__lte=trinta_dias_frente)),
+            vencendo_180d=Count('id', filter=Q(vencimento_final__gt=trinta_dias_frente, vencimento_final__lte=cento_e_oitenta_dias_frente)),
+            validos=Count('id', filter=Q(vencimento_final__gt=cento_e_oitenta_dias_frente))
+        )
+        
+        if sum(risco_counts.values()) > 0:
+            fig_risco = px.pie(
+                names=['Vencidos', 'Vencendo (30d)', 'Alerta (31-180d)', 'Válidos (>180d)'],
+                values=[risco_counts['vencidos'], risco_counts['vencendo_30d'], 
+                       risco_counts['vencendo_180d'], risco_counts['validos']],
+                hole=0.4,
+                color_discrete_sequence=['#FF5252', '#FFAB40', '#FFD600', '#4CAF50'],
+                title='Status de Validade dos EPIs em Uso'
+            )
+            fig_risco.update_traces(
+                textposition='inside', 
+                textinfo='percent+label',
+                marker=dict(line=dict(color='#FFFFFF', width=1))
+            )
+            fig_risco.update_layout(
+                uniformtext_minsize=12,
+                uniformtext_mode='hide',
+                margin=dict(t=40, b=20, l=20, r=20),
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2)
+            )
+            context['grafico_status_html'] = opy.plot(fig_risco, auto_open=False, output_type='div')
+
+        # --- GRÁFICO DE VENCIMENTOS (BARRAS HORIZONTAIS) ---
+        vencimentos_por_equipamento = entregas_ativas.filter(
+            vencimento_final__gte=today, 
+            vencimento_final__lte=cento_e_oitenta_dias_frente
+        ).values('equipamento__nome').annotate(total=Count('id')).order_by('-total')[:10]
+
+        if vencimentos_por_equipamento:
+            df_vencimentos = pd.DataFrame(list(vencimentos_por_equipamento))
+            fig_vencimentos = px.bar(
+                df_vencimentos,
+                y='equipamento__nome',
+                x='total',
+                orientation='h',
+                text='total',
+                title='Top 10 EPIs com Vencimentos Próximos (6 meses)',
+                color='total',
+                color_continuous_scale='OrRd'
+            )
+            fig_vencimentos.update_traces(
+                textposition='outside',
+                marker_line_color='rgba(0,0,0,0.2)',
+                marker_line_width=1
+            )
+            fig_vencimentos.update_layout(
+                xaxis_title="Quantidade",
+                yaxis_title="Tipo de EPI",
+                margin=dict(t=40, b=20, l=20, r=20),
+                coloraxis_showscale=False,
+                height=400
+            )
+            context['grafico_vencimentos_html'] = opy.plot(fig_vencimentos, auto_open=False, output_type='div')
+
+        # --- GRÁFICO DE EPI POR FUNÇÃO (BARRAS HORIZONTAIS) ---
+        funcoes_por_epi = MatrizEPI.objects.filter(
+            funcao__ativo=True
+        ).values('funcao__nome').annotate(total_epis=Count('equipamento')).order_by('-total_epis')[:10]
+
+        if funcoes_por_epi:
+            df_funcoes = pd.DataFrame(list(funcoes_por_epi))
+            fig_funcao_epi = px.bar(
+                df_funcoes,
+                y='funcao__nome',
+                x='total_epis',
+                orientation='h',
+                text='total_epis',
+                title='Top 10 Funções por Quantidade de EPIs',
+                color='total_epis',
+                color_continuous_scale='Blues'
+            )
+            fig_funcao_epi.update_traces(
+                textposition='outside',
+                marker_line_color='rgba(0,0,0,0.2)',
+                marker_line_width=1
+            )
+            fig_funcao_epi.update_layout(
+                xaxis_title="Nº de Tipos de EPIs",
+                yaxis_title="Função",
+                margin=dict(t=40, b=20, l=20, r=20),
+                coloraxis_showscale=False,
+                height=400
+            )
+            context['grafico_funcao_epi_html'] = opy.plot(fig_funcao_epi, auto_open=False, output_type='div')
 
         return context
 
-# --- CRUDs DE CATÁLOGO (Equipamento, Fabricante, Fornecedor) ---
+class RelatorioSSTPDFView(LoginRequiredMixin, TemplateView):
+    template_name = 'seguranca_trabalho/relatorio_pdf_template.html'
 
+    def get(self, request, *args, **kwargs):
+        # Reutiliza a lógica da DashboardSSTView para obter todos os dados
+        dashboard_view = DashboardSSTView()
+        dashboard_view.request = request
+        context = dashboard_view.get_context_data()
+
+        # Opcional: Converter gráficos Plotly em imagens para o PDF
+        # Esta é uma tarefa avançada que requer a biblioteca 'kaleido' (pip install kaleido)
+        # fig_status = go.Figure(context['grafico_status_html'])
+        # fig_status.write_image("static/graficos/status.png")
+        # context['grafico_status_imagem_path'] = finders.find('graficos/status.png')
+
+        template = get_template(self.template_name)
+        html = template.render(context)
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        if not pdf.err:
+            return HttpResponse(result.getvalue(), content_type='application/pdf')
+        return HttpResponse("Erro ao gerar PDF", status=400)
+
+# --- CRUDs DE CATÁLOGO (Equipamento, Fabricante, Fornecedor) ---
 # Fabricante
 class FabricanteListView(SSTPermissionMixin, PaginationMixin, ListView):
     model = Fabricante

@@ -1,0 +1,276 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos para os cards de indicadores (KPIs) */
+    .kpi-card {
+        border-left: 5px solid;
+        transition: transform 0.2s ease-in-out;
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+    }
+    .kpi-card-icon {
+        font-size: 2.5rem;
+        opacity: 0.3;
+    }
+    .border-primary-subtle { border-left-color: var(--bs-primary) !important; }
+    .border-success-subtle { border-left-color: var(--bs-success) !important; }
+    .border-danger-subtle { border-left-color: var(--bs-danger) !important; }
+    .border-secondary-subtle { border-left-color: var(--bs-secondary) !important; }
+    
+    /* Estilos para o Quadro Kanban */
+    .kanban-board-container {
+        background-color: var(--bs-light-bg-subtle, #f8f9fa);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+    .kanban-board {
+        display: flex;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        gap: 1rem;
+        scrollbar-width: thin;
+    }
+    .kanban-column {
+        flex: 0 0 320px;
+        min-width: 320px;
+        background-color: var(--bs-tertiary-bg, #f1f1f1);
+        border-radius: 0.5rem;
+        border-top: 4px solid;
+    }
+    .kanban-column-header {
+        padding: 0.75rem;
+        font-weight: 600;
+    }
+    .kanban-cards {
+        padding: 0 0.5rem 0.5rem;
+        min-height: 200px;
+        max-height: 60vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .kanban-card {
+        cursor: pointer;
+        transition: box-shadow 0.2s ease-in-out;
+    }
+    .kanban-card:hover {
+        box-shadow: 0 .25rem .75rem rgba(0,0,0,.1);
+    }
+
+    /* Cores das colunas do Kanban */
+    .kanban-column[data-status="Pendente"] { border-top-color: #ffc107; }
+    .kanban-column[data-status="Em Andamento"] { border-top-color: #0dcaf0; }
+    .kanban-column[data-status="Concluído"] { border-top-color: #198754; }
+    .kanban-column[data-status="Cancelado"] { border-top-color: #6c757d; }
+
+    .kanban-column[data-status="Cancelado"] .kanban-card {
+        opacity: 0.7;
+        text-decoration: line-through;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+ 
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h1 class="h2">📊 Dashboard de Atas</h1>
+            <p class="text-muted mb-0">Performance e fluxo de trabalho das atividades.</p>
+        </div>
+        <a href="{% url 'ata_reuniao_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-list-ul me-1"></i> Ver Lista Completa
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm kpi-card border-success-subtle h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-success">{{ total_concluido }}</h5>
+                        <p class="card-text text-muted mb-0">Total Concluído</p>
+                    </div>
+                    <i class="bi bi-check2-circle kpi-card-icon text-success"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm kpi-card border-primary-subtle h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-primary">{{ concluido_no_prazo }}</h5>
+                        <p class="card-text text-muted mb-0">Concluído no Prazo</p>
+                    </div>
+                    <i class="bi bi-calendar2-check kpi-card-icon text-primary"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm kpi-card border-danger-subtle h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-danger">{{ concluido_com_atraso }}</h5>
+                        <p class="card-text text-muted mb-0">Concluído com Atraso</p>
+                    </div>
+                    <i class="bi bi-calendar2-x kpi-card-icon text-danger"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm kpi-card border-secondary-subtle h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title text-secondary">{{ total_cancelado }}</h5>
+                        <p class="card-text text-muted mb-0">Total Cancelado</p>
+                    </div>
+                    <i class="bi bi-x-circle kpi-card-icon text-secondary"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Pendências por Responsável</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="pendenciasChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Qualidade das Conclusões</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="qualidadeChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4 pb-2 border-bottom">
+        <h2 class="h3">📋 Quadro Kanban de Atividades</h2>
+    </div>
+    <div class="kanban-board-container shadow-sm">
+        <div class="kanban-board">
+            {% for status_label, tasks in kanban_items.items %}
+            <div class="kanban-column" data-status="{{ status_label }}">
+                <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                    <span>{{ status_label }}</span>
+                    <span class="badge bg-dark-subtle text-dark-emphasis rounded-pill">{{ tasks|length }}</span>
+                </div>
+                <div class="kanban-cards">
+                    {% for task in tasks %}
+                    <a href="{% url 'ata_reuniao_update' task.pk %}" class="card kanban-card text-decoration-none text-dark shadow-sm">
+                        <div class="card-body p-3">
+                            <p class="card-text fw-bold mb-2">{{ task.acao|truncatewords:20 }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted" title="{{ task.responsavel.nome_completo }}">
+                                    <i class="bi bi-person-circle me-1"></i>{{ task.responsavel.nome_completo|truncatechars:20 }}
+                                </small>
+                                {% if task.prazo %}
+                                <span class="badge {% if task.is_overdue %}bg-danger-subtle text-danger-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}" title="Prazo">
+                                    <i class="bi bi-calendar-event me-1"></i>{{ task.prazo|date:"d/m/y" }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-center text-muted p-4" style="font-size: 0.9rem;">Nenhuma ata neste status.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>    
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const chartTextColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+
+    // Gráfico de Barras: Pendências
+    const pendenciasCtx = document.getElementById('pendenciasChart');
+    if (pendenciasCtx) {
+        new Chart(pendenciasCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ pendencias_labels|safe }},
+                datasets: [{
+                    label: 'Nº de Pendências',
+                    data: {{ pendencias_data|safe }},
+                    backgroundColor: 'rgba(255, 193, 7, 0.6)',
+                    borderColor: 'rgba(255, 193, 7, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                scales: {
+                    x: { 
+                        beginAtZero: true, 
+                        ticks: { precision: 0, color: chartTextColor } 
+                    },
+                    y: {
+                        ticks: { color: chartTextColor }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    // Gráfico de Rosca: Qualidade
+    const qualidadeCtx = document.getElementById('qualidadeChart');
+    if (qualidadeCtx) {
+        new Chart(qualidadeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ qualidade_labels|safe }},
+                datasets: [{
+                    data: {{ qualidade_data|safe }},
+                    backgroundColor: ['rgba(25, 135, 84, 0.7)', 'rgba(220, 53, 69, 0.7)'],
+                    borderColor: ['#FFFFFF', '#FFFFFF'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: { color: chartTextColor }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Performance de Conclusão',
+                        color: chartTextColor
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

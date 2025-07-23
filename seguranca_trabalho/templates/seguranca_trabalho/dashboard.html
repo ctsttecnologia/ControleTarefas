@@ -20,7 +20,7 @@
             <!-- Espaço para botões de ação, se necessário -->
         </div>
     </div>
-
+    
     <!-- Cards de KPI (Indicadores Chave de Desempenho) -->
     <div class="row g-4 mb-5">
         <div class="col-lg-3 col-md-6">
@@ -68,6 +68,44 @@
             </div>
         </div>
     </div>
+    <!-- Gráficos indicadores -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    {% if grafico_status_html %}
+                        {{ grafico_status_html|safe }}
+                    {% else %}
+                        <p class="text-center text-muted">Não há dados suficientes para gerar o gráfico de situação.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    {% if grafico_vencimentos_html %}
+                        {{ grafico_vencimentos_html|safe }}
+                    {% else %}
+                        <p class="text-center text-muted">Nenhum EPI vencendo nos próximos 6 meses.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    {% if grafico_funcao_epi_html %}
+                        {{ grafico_funcao_epi_html|safe }}
+                    {% else %}
+                        <p class="text-center text-muted">Não há dados na Matriz de EPI por Função para gerar o gráfico.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Cards de Navegação (Acesso Rápido) -->
     <div class="row g-4">
@@ -107,6 +145,15 @@
                     <div class="nav-icon text-primary"><i class="bi bi-truck fs-1"></i></div>
                     <h5 class="nav-title mt-3 fw-bold">Fornecedores</h5>
                     <p class="nav-text text-muted small mb-0">Cadastrar fornecedores e distribuidores de EPIs.</p>
+                </div>
+            </a>
+        </div>
+                <div class="col-lg-3 col-md-6">
+            <a href="{% url 'seguranca_trabalho:relatorio_pdf_template' %}" class="nav-card card text-decoration-none h-100 shadow-sm rounded-3">
+                <div class="card-body text-center d-flex flex-column justify-content-center p-4">
+                    <div class="nav-icon text-primary"><i class="bi bi-book fs-1"></i></div>
+                    <h5 class="nav-title mt-3 fw-bold">Relatório</h5>
+                    <p class="nav-text text-muted small mb-0">Relatório geral.</p>
                 </div>
             </a>
         </div>
