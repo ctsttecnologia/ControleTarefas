@@ -1,0 +1,124 @@
+/* =================================================================
+   ARQUIVO DE ESTILO GLOBAL (VERSÃO REFINADA)
+   ================================================================= */
+
+/* 1. CONFIGURAÇÃO E TEMA
+/* ================================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* Define as variáveis de cor para os temas */
+:root, [data-bs-theme="light"] {
+    /* ALTERADO: Cor primária azul piscina */
+    --bs-primary: #00b8d4;
+    --bs-primary-rgb: 0, 184, 212;
+
+    /* ALTERADO: Fundo do corpo com tom azulado */
+    --bs-body-bg: #f0f4f8; 
+    
+    /* Cor do texto principal (preto/cinza escuro) */
+    --bs-body-color: #212529;
+
+    /* Cor de fundo para componentes como cards e modais (branco) */
+    --bs-tertiary-bg: #ffffff; 
+    
+    --bs-border-color: #dee2e6;
+    --bs-font-sans-serif: 'Poppins', sans-serif;
+}
+
+[data-bs-theme="dark"] {
+    /* ALTERADO: Cor primária azul piscina */
+    --bs-primary: #00b8d4;
+    --bs-primary-rgb: 0, 184, 212;
+
+    /* ALTERADO: Fundo do corpo escuro com tom azulado */
+    --bs-body-bg: #1a202c; 
+    
+    /* Cor do texto principal (branco/cinza claro) */
+    --bs-body-color: #e9ecef;
+
+    /* Cor de fundo para componentes como cards (cinza escuro) */
+    --bs-tertiary-bg: #283040;
+    
+    --bs-border-color: #404a5a;
+}
+
+
+/* 2. LAYOUT DE BASE
+/* ================================================================= */
+body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    font-family: var(--bs-font-sans-serif);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+
+/* 3. COMPONENTES GLOBAIS
+/* ================================================================= */
+
+/* Estilo do Header Global */
+#global-header {
+    background-color: var(--bs-primary);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Garante que a navbar dentro do header seja transparente */
+#global-header .navbar {
+    background-color: transparent !important; 
+    box-shadow: none;
+}
+
+/* Estilo do Footer Global */
+#global-footer {
+    background-color: var(--bs-tertiary-bg);
+    border-top: 1px solid var(--bs-border-color);
+    font-size: 0.85rem;
+    padding: 1rem 0;
+}
+
+/* Estilo genérico para cards, usado em todo o sistema */
+.card {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+}
+
+/* Estilo para a sub-navegação (abas como "Usuários", "Grupos") */
+.subnav {
+    background-color: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    margin-bottom: 1.5rem;
+    padding: 0.5rem 0;
+}
+
+
+/* 4. PADRÕES DE PÁGINA (EX: LOGIN)
+/* ================================================================= */
+.body-login #global-header,
+.body-login #global-footer {
+    display: none;
+}
+
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+
+/* 5. ESTILOS DE IMPRESSÃO (PADRÃO SEGURO)
+/* ================================================================= */
+@media print {
+    #global-header,
+    #global-footer,
+    .no-print {
+        display: none !important;
+    }
+    .print-mode #main-content > *:not(.printable-section) {
+        display: none;
+    }
+    .print-mode .printable-section {
+        display: block !important;
+        width: 100%; margin: 0; padding: 0;
+    }
+}

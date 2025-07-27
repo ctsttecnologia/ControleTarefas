@@ -1,0 +1,48 @@
+/*
+ * CSS dedicado para formulários da aplicação 'seguranca_trabalho'
+ */
+
+.form-container-custom .card {
+    border: none;
+    border-radius: 0.75rem;
+    /* NOVA LINHA - Cor de fundo azul-claro */
+    background-color: #eef7ff;
+}
+
+/* Garante que o corpo do card não tenha fundo branco por cima */
+.form-container-custom .card .card-body {
+    background-color: transparent;
+}
+
+.form-container-custom .form-label {
+    font-weight: 500;
+    color: #343a40;
+}
+
+.form-container-custom .form-control,
+.form-container-custom .form-select {
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+}
+
+.form-container-custom .form-control:focus,
+.form-container-custom .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.2);
+}
+
+/* Container para os botões de ação */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    border-top: 1px solid #e9ecef;
+    padding-top: 1.5rem;
+    margin-top: 1rem; /* Espaço antes da linha */
+}
+
+.form-actions .btn {
+    min-width: 120px;
+    font-weight: 500;
+}

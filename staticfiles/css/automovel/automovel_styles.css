@@ -1,0 +1,87 @@
+/*
+ * Tema CSS dedicado para a aplicação "Automóvel"
+ * VERSÃO CORRIGIDA COM !IMPORTANT PARA GARANTIR PRIORIDADE
+ */
+
+/* Variáveis de Cor para fácil customização */
+:root {
+    --automovel-bg: #f8f9fa;
+    --automovel-card-bg: #eef7ff;
+    --automovel-card-border: #d1e8ff;
+    --automovel-primary: #0d6efd;
+    --automovel-text-dark: #212529;
+    --automovel-text-muted: #6c757d;
+    --automovel-input-bg: #ffffff;
+    --automovel-input-border: #ced4da;
+}
+
+/* Estilo Geral do Container */
+.automovel-container {
+    background-color: var(--automovel-bg) !important;
+    min-height: calc(100vh - 56px);
+}
+
+/* CORREÇÃO: Força a cor escura em todos os títulos e textos principais */
+.automovel-container h1,
+.automovel-container h2,
+.automovel-container h3,
+.automovel-container h5,
+.automovel-container p,
+.automovel-container label {
+    color: var(--automovel-text-dark) !important;
+}
+
+/* Card Principal */
+.automovel-container .card {
+    border: 1px solid var(--automovel-card-border) !important;
+    border-radius: 0.75rem !important;
+    background-color: var(--automovel-card-bg) !important;
+    overflow: hidden !important;
+    color: var(--automovel-text-dark) !important; /* Cor de texto padrão para o card */
+}
+
+/* Cabeçalho e Rodapé do Card */
+.automovel-container .card-header,
+.automovel-container .card-footer {
+    background-color: transparent !important;
+    border-color: var(--automovel-card-border) !important;
+}
+
+/* Itens da Lista */
+.automovel-container .list-group-item {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--automovel-card-border) !important;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.automovel-container .list-group-item:last-child {
+    border-bottom: none !important;
+}
+
+.automovel-container .list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* CORREÇÃO: Garante a cor correta para textos específicos */
+.automovel-container .list-group-item small.text-muted {
+    color: var(--automovel-text-muted) !important;
+}
+
+
+/* Estilos para Formulários */
+.automovel-container .form-control {
+    border-radius: 0.5rem !important;
+    background-color: var(--automovel-input-bg) !important;
+    color: var(--automovel-text-dark) !important;
+    border: 1px solid var(--automovel-input-border) !important;
+}
+
+.automovel-container .form-control:focus {
+    border-color: var(--automovel-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+}
+
+/* Botões */
+.automovel-container .btn-primary {
+    border-radius: 0.5rem !important;
+}
