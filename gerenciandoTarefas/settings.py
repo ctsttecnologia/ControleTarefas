@@ -21,17 +21,18 @@ SECRET_KEY = 'django-insecure-wt$exc#ld^38(f66)^zde_&=sd5c_xkx9n0r)^t7x67v0g!2*o
 
 #  DEBUG deve ser False em produção para evitar expor informações sensíveis.
 # O cast=bool garante que 'True' ou 'False' no .env sejam convertidos corretamente.
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = True #config('DEBUG', default=False, cast=bool)
 
 #  Especifique exatamente os domínios que servirão seu site.
 # No seu arquivo .env, você pode ter: ALLOWED_HOSTS=.pythonanywhere.com,www.seudominio.com
 
-#ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
-ALLOWED_HOSTS = ( 
-    'localhost',
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
+ALLOWED_HOSTS = (     'localhost',
     '127.0.0.1',
     'https://esgemerson.pythonanywhere.com/'
 )
+
+#ALLOWED_HOSTS = ( '*' )
 
 # --- Application definition ---
 

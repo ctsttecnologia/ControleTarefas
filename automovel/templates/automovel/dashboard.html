@@ -5,8 +5,14 @@
 {% block content %}
 
 
-<div class="container">
+<div class="container"><br>
     {% include "automovel/partials/_page_header.html" with title="Painel" %}
+
+    <div class="btn-toolbar mb-2">
+        <a class="nav-link" href="{% url 'automovel:calendario' %}">
+            <i class="fas fa-calendar-alt"></i> Calendário
+        </a>
+    </div>
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">

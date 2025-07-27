@@ -58,7 +58,8 @@ class AtaReuniaoForm(forms.ModelForm):
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        # Agora que os modelos corretos estão importados, este código vai funcionar.
+        # Define o queryset para os campos de seleção
+        # Isso garante que apenas os funcionários ativos sejam exibidos
         self.fields['contrato'].queryset = Cliente.objects.all().order_by('nome')
         self.fields['coordenador'].queryset = Funcionario.objects.filter(status='ATIVO').order_by('nome_completo')
         self.fields['responsavel'].queryset = Funcionario.objects.filter(status='ATIVO').order_by('nome_completo')
@@ -100,7 +101,6 @@ class AtaReuniaoForm(forms.ModelForm):
         if coordenador and responsavel and coordenador == responsavel:
             self.add_error('responsavel', _('O responsável não pode ser a mesma pessoa que o coordenador.'))
         
-        # CORREÇÃO CRÍTICA: O 'return' deve estar fora de qualquer 'if'.
         # Um método 'clean' DEVE sempre retornar o dicionário cleaned_data.
         return cleaned_data
     

@@ -25,7 +25,14 @@ urlpatterns = [
     path('checklists/<int:pk>/export/word/', views.ChecklistExportWordView.as_view(), name='checklist_export_word'),
     # Relatórios
     path('relatorios/carros/<str:format>/', views.CarroReportView.as_view(), name='relatorio_carros'),
+
+    # Calendário
+    path('calendario/', views.CalendarioView.as_view(), name='calendario'),
+
     # APIs
     path('api/carros-disponiveis/', views.CarrosDisponiveisAPIView.as_view(), name='api_carros_disponiveis'),
     path('api/proxima-manutencao/', views.ProximaManutencaoAPIView.as_view(), name='api_proxima_manutencao'),
+    path('api/agendamentos/', views.CalendarioAPIView.as_view(), name='api_agendamentos'),
+
+
 ]

@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.staticfiles import finders
+from django.views.generic import TemplateView
 
 from datetime import datetime, timedelta
 from openpyxl import Workbook
@@ -22,6 +23,8 @@ from .forms import CarroForm, AgendamentoForm, ChecklistForm, FotoForm
 import base64
 from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+
 
 
 
@@ -52,6 +55,53 @@ class DashboardView(LoginRequiredMixin, ListView):
         context['agendamentos_hoje'] = Agendamento.objects.filter(data_hora_agenda__date=hoje, status='agendado').count()
         context['manutencao_proxima'] = carros_qs.filter(data_proxima_manutencao__lte=hoje + timedelta(days=7), data_proxima_manutencao__gte=hoje).count()
         return context
+
+
+class CalendarioView(LoginRequiredMixin, TemplateView):
+    """
+    View para renderizar a página HTML que conterá o calendário.
+    """
+    template_name = 'automovel/calendario.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = "Calendário de Agendamentos"
+        return context
+
+
+class CalendarioAPIView(LoginRequiredMixin, View):
+    """
+    API que fornece os dados dos agendamentos em formato JSON para o FullCalendar.
+    """
+    def get(self, request, *args, **kwargs):
+        agendamentos = Agendamento.objects.filter(cancelar_agenda=False)
+
+        # Mapeia o status do agendamento para uma cor do Bootstrap
+        status_colors = {
+            'agendado': '#0d6efd',     # Primary (Azul)
+            'em_andamento': '#ffc107', # Warning (Amarelo)
+            'finalizado': '#198754',   # Success (Verde)
+            'cancelado': '#dc3545',    # Danger (Vermelho) - Mesmo filtrado, é bom ter
+        }
+
+        eventos = []
+        for agendamento in agendamentos:
+            eventos.append({
+                'id': agendamento.id,
+                'title': f"{agendamento.carro.placa} - {agendamento.funcionario}",
+                'start': agendamento.data_hora_agenda.isoformat(),
+                'end': agendamento.data_hora_devolucao.isoformat(),
+                'url': reverse('automovel:agendamento_detail', kwargs={'pk': agendamento.id}),
+                'color': status_colors.get(agendamento.status, '#6c757d'), # Cinza padrão
+                'extendedProps': {
+                    'carro': str(agendamento.carro),
+                    'responsavel': agendamento.responsavel,
+                    'status': agendamento.get_status_display(),
+                }
+            })
+
+        return JsonResponse(eventos, safe=False)
+
 
 # --- Carro CRUD ---
 class CarroListView(LoginRequiredMixin, ListView):

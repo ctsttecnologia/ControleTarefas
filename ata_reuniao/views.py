@@ -13,12 +13,15 @@ from django.template.loader import get_template
 from django.views.generic import (
     ListView, CreateView, UpdateView, DeleteView, TemplateView, View
 )
+
+from gerenciandoTarefas.settings import AUTH_USER_MODEL
 from .models import AtaReuniao, HistoricoAta
 from xhtml2pdf import pisa
 
-from .models import AtaReuniao
 from .forms import AtaReuniaoForm
+from django.contrib.auth import get_user_model # Melhor forma de pegar o modelo User
 
+User = get_user_model() # Carrega a classe do usuário
 
 
 # --- Mixin Base para Evitar Repetição ---
@@ -34,48 +37,57 @@ class AtaReuniaoBaseMixin(LoginRequiredMixin):
 
 # --- Views de CRUD (List, Create, Update, Delete) ---
 
-class AtaReuniaoListView(AtaReuniaoBaseMixin, ListView):
-    """
-    Lista e filtra todas as Atas de Reunião.
-    """
+class AtaReuniaoListView(LoginRequiredMixin, ListView):
+    model = AtaReuniao
     template_name = 'ata_reuniao/ata_reuniao_list.html'
-    paginate_by = 15
     context_object_name = 'atas'
+    paginate_by = 10
 
-    def get_queryset(self) -> QuerySet[Any]:
-        # Este método já está correto e não precisa de alterações.
-        queryset = super().get_queryset().select_related('contrato', 'coordenador', 'responsavel')
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Define os atributos de filtro a partir dos parâmetros GET.
+        Usa nomes consistentes que serão usados em outros métodos.
+        """
+        # ✅ Padronizando os nomes dos atributos
+        self.current_contrato = request.GET.get('contrato', '')
+        self.current_status = request.GET.get('status', '')
+        self.current_coordenador = request.GET.get('coordenador', '')
         
-        self.status = self.request.GET.get('status', '')
-        self.natureza = self.request.GET.get('natureza', '')
-        self.contrato_id = self.request.GET.get('contrato', '')
+        return super().dispatch(request, *args, **kwargs)
 
-        if self.status:
-            queryset = queryset.filter(status=self.status)
-        if self.natureza:
-            queryset = queryset.filter(natureza=self.natureza)
-        if self.contrato_id:
-            queryset = queryset.filter(contrato_id=self.contrato_id)
-            
-        return queryset
+    def get_queryset(self):
+        """
+        Usa os atributos consistentes definidos no dispatch() para filtrar.
+        """
+        queryset = super().get_queryset()
 
-    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        # ✅ Usando os nomes padronizados para filtrar
+        if self.current_contrato:
+            queryset = queryset.filter(contrato_id=self.current_contrato)
+        if self.current_status:
+            queryset = queryset.filter(status=self.current_status)
+        if self.current_coordenador:
+            queryset = queryset.filter(coordenador_id=self.current_coordenador)
+
+        return queryset.order_by('-entrada')
+
+    def get_context_data(self, **kwargs):
+        """
+        Adiciona os filtros e outras informações ao contexto do template.
+        """
         context = super().get_context_data(**kwargs)
+
+        coordenador_ids = AtaReuniao.objects.order_by().values_list('coordenador_id', flat=True).distinct()
+        context['coordenadores'] = User.objects.filter(id__in=coordenador_ids).order_by('first_name', 'last_name')
         
-        context['current_status'] = self.status
-        context['current_natureza'] = self.natureza
-        context['current_contrato'] = self.contrato_id
-        
-        
-        # Acessa dinamicamente o modelo relacionado ao campo 'contrato'.
-        # Isso evita o ModuleNotFoundError, pois não depende da estrutura de pastas.
-        # self.model aqui é a classe AtaReuniao.
         ContratoModel = self.model._meta.get_field('contrato').related_model
-        
-        # Usa o modelo que acabamos de encontrar para buscar todos os contratos.
         context['contratos'] = ContratoModel.objects.all().order_by('nome')
         
-    
+        # ✅ Passando os valores com os nomes corretos e consistentes para o template
+        context['current_contrato'] = self.current_contrato
+        context['current_status'] = self.current_status
+        context['current_coordenador'] = self.current_coordenador
+
         return context
 
 class AtaReuniaoCreateView(AtaReuniaoBaseMixin, SuccessMessageMixin, CreateView):

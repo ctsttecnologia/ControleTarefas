@@ -1,0 +1,117 @@
+
+{% extends "base.html" %}  {% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+    <style>
+        .fc-popover {
+            z-index: 1056; /* Garante que o popover fique acima de outros elementos do Bootstrap */
+        }
+        .event-details-list {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+        .event-details-list li {
+            padding: 2px 0;
+        }
+        .event-details-list strong {
+            color: #333;
+        }
+    </style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>{{ title }}</h4>
+        </div>
+            <a href="{% url 'automovel:carro_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        <div class="card-body">
+            <div id="calendar"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.14/index.global.min.js"></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/locales/pt-br.global.min.js'></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+
+    // Inicializa o plugin de Popover do Bootstrap para ser usado pelo calendário
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+      return new bootstrap.Popover(popoverTriggerEl)
+    })
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        // --- Configuração Visual ---
+        themeSystem: 'bootstrap5',
+        locale: 'pt-br', // Define o idioma para Português do Brasil
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+        },
+        
+        // --- Configuração de Eventos ---
+        events: "{% url 'automovel:api_agendamentos' %}", // URL da nossa API
+        
+        // --- Interatividade ---
+        navLinks: true, // Permite clicar nos dias/semanas para navegar
+        dayMaxEvents: true, // Ativa o link "+mais" quando há muitos eventos
+        
+        // --- Callbacks ---
+        eventDidMount: function(info) {
+            // Cria um popover do Bootstrap ao passar o mouse sobre um evento
+            var props = info.event.extendedProps;
+            var popoverContent = `
+                <ul class="event-details-list">
+                    <li><strong>Veículo:</strong> ${props.carro}</li>
+                    <li><strong>Responsável:</strong> ${props.responsavel}</li>
+                    <li><strong>Status:</strong> ${props.status}</li>
+                </ul>
+            `;
+            
+            info.el.setAttribute('data-bs-toggle', 'popover');
+            info.el.setAttribute('data-bs-trigger', 'hover');
+            info.el.setAttribute('data-bs-placement', 'top');
+            info.el.setAttribute('data-bs-content', popoverContent);
+            info.el.setAttribute('data-bs-html', 'true');
+            new bootstrap.Popover(info.el);
+        },
+
+        // Redireciona para a página de detalhes ao clicar no evento
+        eventClick: function(info) {
+            info.jsEvent.preventDefault(); // Evita que o navegador siga o 'href' padrão
+            if (info.event.url) {
+                window.location.href = info.event.url;
+            }
+        },
+
+        loading: function(isLoading) {
+            if (isLoading) {
+                // Opcional: mostrar um spinner de carregamento
+                calendarEl.style.opacity = '0.5';
+            } else {
+                // Opcional: esconder o spinner
+                calendarEl.style.opacity = '1';
+            }
+        }
+    });
+
+    calendar.render();
+});
+</script>
+{% endblock %}
