@@ -43,10 +43,12 @@
                         </select>
                     </div>
                     <div class="flex-grow-1">
-                        <select name="natureza" class="form-select form-select-sm">
-                            <option value="">Todas as Naturezas</option>
-                            {% for key, value in view.model.Natureza.choices %}
-                                <option value="{{ key }}" {% if current_natureza == key %}selected{% endif %}>{{ value }}</option>
+                        <select name="coordenador" class="form-select form-select-sm">
+                            <option value="">Todos os Coordenadores</option>
+                            {% for coord in coordenadores %}
+                                <option value="{{ coord.id }}" {% if current_coordenador == coord.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ coord.get_full_name|default:coord.username }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -61,6 +63,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Contrato</th>
+                            <th>Coordenador</th>
                             <th>Natureza</th>
                             <th>Responsável</th>
                             <th>Entrada</th>
@@ -69,34 +72,25 @@
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for ata in atas %}
-                        <tr>
-                            <td>#{{ ata.id }}</td>
-                            <td>{{ ata.contrato.nome|truncatechars:25 }}</td>
-                            <td>{{ ata.get_natureza_display }}</td>
-                            <td>{{ ata.responsavel.nome_completo|truncatechars:20 }}</td>
-                            <td>{{ ata.entrada|date:"d/m/Y" }}</td>
-                            <td>{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
-                            <td class="text-center">
-                                <span class="badge rounded-pill {% status_badge ata.status %}">{{ ata.get_status_display }}</span>
-                            </td>
-                            <td class="text-end">
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'ata_reuniao_update' ata.pk %}" class="btn btn-outline-secondary" title="Editar"><i class="bi bi-pencil-fill"></i></a>
-                                    <a href="{% url 'ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger" title="Excluir"><i class="bi bi-trash-fill"></i></a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center py-5">
-                                <h5 class="text-muted">Nenhuma ata encontrada.</h5>
-                                <p>Tente ajustar os filtros ou <a href="{% url 'ata_reuniao_create' %}">crie uma nova ata</a>.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+                        <tbody>
+                            {% for ata in atas %}
+                            <tr>
+                                <td>#{{ ata.id }}</td>
+                                <td>{{ ata.contrato.nome|truncatechars:25 }}</td>
+                                <td>{{ ata.coordenador|truncatechars:20 }}</td>
+                                <td>{{ ata.get_natureza_display }}</td>
+                                <td>{{ ata.responsavel|truncatechars:20 }}</td>
+                                <td>{{ ata.entrada|date:"d/m/Y" }}</td>
+                                <td>{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
+                                <td class="text-center">
+                                    <span class="badge rounded-pill {% status_badge ata.status %}">{{ ata.get_status_display }}</span>
+                                </td>
+                                <td class="text-end">
+                                </td>
+                            </tr>
+                            {% empty %}
+                            {% endfor %}
+                        </tbody>
                 </table>
             </div>
 

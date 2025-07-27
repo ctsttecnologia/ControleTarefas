@@ -13,7 +13,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Rota raiz ('/') aponta para a página de Login.
-    path('/', CustomLoginView.as_view(), name='home'),
+    path('', CustomLoginView.as_view(), name='home'),
 
     # Rotas das apps com seus prefixos
     path('contas/', include('usuario.urls', namespace='usuario')),
