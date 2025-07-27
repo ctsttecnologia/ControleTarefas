@@ -1,0 +1,115 @@
+/* static/cssprofile/styles.css (Corrigido para o Tema Claro/Escuro) */
+
+/* 💡 REMOVEMOS AS VARIÁVEIS DE COR FIXAS DAQUI.
+  Agora vamos usar as variáveis do próprio Bootstrap que mudam com o tema.
+*/
+
+.profile-page-background {
+  min-height: 100vh;
+  width: 100%;
+  /* A imagem de fundo é definida no template, o que está correto. */
+}
+
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+
+  /*
+   * EFEITO VIDRO FOSCO (Glassmorphism) para o Tema Claro
+  */
+  background-color: rgba(255, 255, 255, 0.75); /* Branco com 75% de opacidade */
+  backdrop-filter: blur(8px); /* Desfoca a imagem de fundo atrás do card */
+  -webkit-backdrop-filter: blur(8px); /* Suporte para Safari */
+  
+  border-radius: 16px; /* Aumentei um pouco para um visual mais suave */
+  padding: 1.5rem;
+  
+  /* Sombra sutil para dar profundidade */
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  
+  /* Borda gradiente (mantida) */
+  border-left: 5px solid;
+  border-image-source: linear-gradient(to top, #0d6efd, #6f42c1);
+  border-image-slice: 1;
+  border-right: 0;
+  border-top: 0;
+  border-bottom: 0;
+}
+
+/*
+ * AJUSTE AUTOMÁTICO PARA O TEMA ESCURO
+*/
+[data-bs-theme="dark"] .profile-card {
+  /* No tema escuro, o fundo do card será cinza-escuro semitransparente */
+  background-color: rgba(33, 37, 41, 0.75); /* Cinza-escuro do Bootstrap com 75% de opacidade */
+}
+
+
+.profile-card:hover {
+  transform: translateY(-5px);
+}
+
+.card-icon {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.5rem;
+  max-width: 80px;
+  opacity: 0.1; /* Opacidade reduzida para funcionar bem em ambos os temas */
+  z-index: 0;
+  margin: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+/* Ajuste sutil para a opacidade do ícone no tema escuro */
+[data-bs-theme="dark"] .card-icon {
+  opacity: 0.05;
+}
+
+.card-title {
+  /*
+   * ALTERAÇÃO PRINCIPAL: Usando a variável de cor de texto principal do Bootstrap.
+   * --bs-body-color: Muda de preto para branco automaticamente com o tema.
+  */
+  color: var(--bs-body-color);
+
+  font-weight: 600;
+  font-size: 1.5rem;
+  z-index: 1;
+  text-align: center; 
+  margin-bottom: 1.5rem; 
+}
+
+.card-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 1;
+  width: 100%;
+}
+
+.card-link {
+  /* Usando a variável de cor de texto principal também para os links */
+  color: var(--bs-body-color);
+
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.6rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 500;
+  display: block;
+  text-align: left;
+}
+
+.card-link:hover {
+  /* A cor do hover pode ser mantida, pois usa a cor primária que não muda */
+  background-color: rgba(13, 110, 253, 0.1);
+  color: var(--bs-primary);
+}
