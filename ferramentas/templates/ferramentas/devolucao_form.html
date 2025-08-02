@@ -1,0 +1,76 @@
+
+
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">Checklist de Devolução: {{ movimentacao.ferramenta.nome }}</h4>
+                    <p class="mb-0 text-muted">Retirado por: {{ movimentacao.retirado_por.get_full_name|default:movimentacao.retirado_por.username }}</p>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {{ form.as_p }}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Assinatura (quem recebe de volta):</label>
+                            <div class="signature-pad-container">
+                                <canvas id="signature-pad" class="signature-pad"></canvas>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar</button>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{{ movimentacao.ferramenta.get_absolute_url }}" class="btn btn-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-warning">Confirmar Devolução</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById('signature-pad');
+    // Ajusta o canvas para responsividade
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)'
+    });
+
+    const form = canvas.closest('form');
+    // Usa o input hidden gerado pelo Django
+    const signatureDataInput = document.getElementById('id_assinatura_base64');
+
+    form.addEventListener('submit', function (event) {
+        if (signaturePad.isEmpty()) {
+            alert("Por favor, forneça uma assinatura para confirmar a devolução.");
+            event.preventDefault();
+        } else {
+            signatureDataInput.value = signaturePad.toDataURL('image/png');
+        }
+    });
+
+    document.getElementById('clear-signature').addEventListener('click', function () {
+        signaturePad.clear();
+    });
+});
+</script>
+{% endblock %}

@@ -26,6 +26,8 @@ urlpatterns = [
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
+    path('ferramentas/', include('ferramentas.urls')),
+    path('core/', include('core.urls')),
 ]
 
 # Configuração para servir arquivos de mídia e estáticos

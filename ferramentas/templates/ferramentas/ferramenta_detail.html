@@ -1,0 +1,204 @@
+{% extends 'ferramentas/ferramentas_base.html' %}
+
+{% block content %}
+<div class="container-fluid p-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Painel de Controle: {{ ferramenta.nome }}</h1>
+            <p class="text-muted mb-0">Patrimônio: {{ ferramenta.patrimonio|default:"N/A" }} | Código: {{ ferramenta.codigo_identificacao }}</p>
+        </div>
+        <div>
+            <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Dashboard
+            </a>
+            <a href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}" class="btn btn-outline-secondary">
+                <i class="fas fa-pencil-alt me-1"></i> Editar
+            </a>
+        </div>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+
+        <div class="col-lg-4 mb-4">
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-bold {% if ferramenta.status == 'disponivel' %}border-bottom-success{% elif ferramenta.status == 'em_uso' %}border-bottom-warning{% elif ferramenta.status == 'em_manutencao' %}border-bottom-info{% else %}border-bottom-danger{% endif %}">
+                    Status e Ações
+                </div>
+                <div class="card-body">
+                    <form method="post" class="d-grid gap-2">
+                        {% csrf_token %}
+                        
+                        {% if ferramenta.status == 'disponivel' %}
+                            <div class="text-center mb-3">
+                                <h4 class="text-success"><i class="fas fa-check-circle fa-2x mb-2"></i><br>Disponível</h4>
+                                <p class="text-muted small">Pronta para retirada ou manutenção.</p>
+                            </div>
+                            <a href="{% url 'ferramentas:ferramenta_retirar' ferramenta_pk=ferramenta.pk %}" class="btn btn-primary"><i class="fas fa-sign-out-alt me-2"></i>Realizar Retirada</a>
+                            <button type="submit" formaction="{% url 'ferramentas:iniciar_manutencao' pk=ferramenta.pk %}" class="btn btn-outline-secondary"><i class="fas fa-wrench me-2"></i>Iniciar Manutenção</button>
+
+                        {% elif ferramenta.status == 'em_uso' %}
+                             <div class="text-center mb-3">
+                                <h4 class="text-warning"><i class="fas fa-user-clock fa-2x mb-2"></i><br>Em Uso</h4>
+                                {% if movimentacao_ativa %}
+                                    <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_username }}</strong></p>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'ferramentas:ferramenta_devolver' pk=movimentacao_ativa.pk %}" class="btn btn-success"><i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução</a>
+
+                        {% elif ferramenta.status == 'em_manutencao' %}
+                            <div class="text-center mb-3">
+                                <h4 class="text-info"><i class="fas fa-tools fa-2x mb-2"></i><br>Em Manutenção</h4>
+                                <p class="text-muted small">Ferramenta indisponível para uso.</p>
+                            </div>
+                            <button type="submit" formaction="{% url 'ferramentas:finalizar_manutencao' pk=ferramenta.pk %}" class="btn btn-info"><i class="fas fa-check-double me-2"></i>Finalizar Manutenção</button>
+
+                        {% elif ferramenta.status == 'descartada' %}
+                            <div class="text-center mb-3">
+                                <h4 class="text-danger"><i class="fas fa-times-circle fa-2x mb-2"></i><br>Descartada</h4>
+                                <p class="text-muted small">Fora de operação permanente.</p>
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-bold"><i class="fas fa-info-circle me-2"></i>Ficha Técnica</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Fabricante:</strong> {{ ferramenta.fabricante|default:"N/D" }}</li>
+                        <li class="list-group-item"><strong>Localização:</strong> {{ ferramenta.localizacao_padrao }}</li>
+                        <li class="list-group-item"><strong>Aquisição:</strong> {{ ferramenta.data_aquisicao|date:"d/m/Y" }}</li>
+                        <li class="list-group-item"><strong>Próxima Manutenção:</strong> <span class="fw-bold">{{ ferramenta.proxima_manutencao|date:"d/m/Y"|default:"Não agendada" }}</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold"><i class="fas fa-qrcode me-2"></i>Etiqueta QR Code</div>
+                <div class="card-body text-center">
+                    {% if ferramenta.qr_code %}
+                        <img src="{{ ferramenta.qr_code.url }}" alt="QR Code" class="img-fluid mb-3 border p-2 bg-white" style="max-width: 180px;">
+                        <a href="{{ ferramenta.qr_code.url }}" download="qrcode-{{ ferramenta.codigo_identificacao }}.png" class="btn btn-outline-primary w-100"><i class="fas fa-download me-2"></i>Baixar QR Code</a>
+                    {% else %}
+                        <p class="text-muted">QR Code não gerado.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-lg-8">
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-bold"><i class="fas fa-history me-2"></i>Histórico de Movimentações</div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover small">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Retirado por</th>
+                                    <th>Data Retirada</th>
+                                    <th>Recebido por</th>
+                                    <th>Data Devolução</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mov in movimentacoes %}
+                                <tr>
+                                    <td>
+                                        {% if mov.esta_ativa %}<span class="badge bg-warning">Em Uso</span>
+                                        {% else %}<span class="badge bg-secondary">Concluída</span>{% endif %}
+                                    </td>
+                                    <td>{{ mov.retirado_por.get_username }}</td>
+                                    <td>{{ mov.data_retirada|date:"d/m/y H:i" }}</td>
+                                    <td>{{ mov.recebido_por.get_username|default:"-" }}</td>
+                                    <td>{{ mov.data_devolucao|date:"d/m/y H:i"|default:"-" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted">Nenhuma movimentação registrada.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-bold"><i class="fas fa-chart-bar me-2"></i>Análise de Uso Mensal</div>
+                <div class="card-body">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header fw-bold"><i class="fas fa-clipboard-list me-2"></i>Log de Atividades do Sistema</div>
+                <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                    <ul class="list-group list-group-flush small">
+                        {% for atividade in atividades %}
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong>{{ atividade.get_tipo_atividade_display }}</strong>
+                                <p class="mb-0 text-muted">{{ atividade.descricao }}</p>
+                            </div>
+                            <span class="badge bg-light text-dark ms-2 text-nowrap">{{ atividade.timestamp|date:"d/m/y H:i" }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-center text-muted">Nenhum registro de atividade.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('usageChart').getContext('2d');
+    
+    const chart_labels = {{ chart_labels|safe|default:'[]' }};
+    const chart_data = {{ chart_data|safe|default:'[]' }};
+
+    if (chart_labels.length > 0) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chart_labels,
+                datasets: [{
+                    label: 'Nº de Movimentações',
+                    data: chart_data,
+                    backgroundColor: 'rgba(0, 123, 255, 0.6)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    } else {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#999";
+        ctx.textAlign = "center";
+        ctx.fillText("Não há dados de uso para exibir no gráfico.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+    }
+});
+</script>
+{% endblock %}
+

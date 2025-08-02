@@ -1,0 +1,16 @@
+/* static/css/global_styles.css */
+
+/* Adicionar estas variáveis de cor ao bloco :root */
+:root {
+    /* ... suas outras variáveis de cor ... */
+    --status-disponivel-bg: lab(62.79% 1.23 -57.96);
+    --status-em_uso-bg: hsl(195, 100%, 41%);
+    --status-em_manutencao-bg: hsl(190, 80%, 55%);
+    --status-descartada-bg: hsl(201, 100%, 77%);
+}
+
+/* Adicionar estas regras junto com as outras de .status-badge */
+.status-badge.status-disponivel { background-color: var(--status-disponivel-bg); }
+.status-badge.status-em_uso { background-color: var(--status-em_uso-bg); color: #212529; /* Texto escuro para melhor contraste */ }
+.status-badge.status-em_manutencao { background-color: var(--status-em_manutencao-bg); }
+.status-badge.status-descartada { background-color: var(--status-descartada-bg); }

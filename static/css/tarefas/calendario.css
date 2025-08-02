@@ -1,0 +1,143 @@
+
+/*
+ * calendario.css
+ * Estilos modernos e responsivos para o FullCalendar v6
+ */
+
+/* 1. Variáveis de Cores e Tema Geral */
+/* =================================== */
+
+/* Define as cores vibrantes para as prioridades das tarefas */
+:root {
+    --fc-event-alta-bg: hsl(350, 85%, 60%);
+    --fc-event-alta-border: hsl(350, 85%, 50%);
+    --fc-event-media-bg: hsl(38, 100%, 60%);
+    --fc-event-media-border: hsl(38, 100%, 50%);
+    --fc-event-baixa-bg: hsl(195, 80%, 50%);
+    --fc-event-baixa-border: hsl(195, 80%, 40%);
+    --fc-event-text-color: #ffffff; /* Cor do texto para todos os eventos */
+}
+
+/* Ajustes finos nas variáveis padrão do FullCalendar */
+#calendar {
+    /* Usa uma cor de borda mais suave, alinhada com o tema Bootstrap */
+    --fc-border-color: var(--bs-border-color-translucent);
+    /* Define um fundo sutil para o dia atual */
+    --fc-today-bg-color: rgba(var(--bs-primary-rgb), 0.08);
+    font-size: 0.9rem; /* Ajusta o tamanho da fonte base do calendário */
+}
+
+
+/* 2. Estilo do Cabeçalho (Toolbar) */
+/* =================================== */
+#calendar .fc-header-toolbar {
+    padding: 0.5rem 0;
+    margin-bottom: 1.5rem !important; /* Adiciona mais espaço abaixo do cabeçalho */
+}
+
+#calendar .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Garante que os botões do calendário herdem o estilo moderno do Bootstrap */
+#calendar .fc-button {
+    text-transform: capitalize;
+    transition: all 0.2s ease-in-out;
+}
+#calendar .fc-button-primary:not(:disabled).fc-button-active,
+#calendar .fc-button-primary:not(:disabled):active {
+    transform: scale(0.95);
+}
+
+
+/* 3. Estilo dos Eventos (Cores por Prioridade) */
+/* =================================== */
+
+/* Base para todos os eventos personalizados */
+.fc-event {
+    border-width: 1px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efeito de hover para destacar o evento */
+.fc-event:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Evento de Prioridade ALTA */
+.fc-event-prioridade-alta,
+.fc-event-prioridade-alta .fc-event-main {
+    background-color: var(--fc-event-alta-bg);
+    border-color: var(--fc-event-alta-border);
+    color: var(--fc-event-text-color);
+}
+
+/* Evento de Prioridade MÉDIA */
+.fc-event-prioridade-media,
+.fc-event-prioridade-media .fc-event-main {
+    background-color: var(--fc-event-media-bg);
+    border-color: var(--fc-event-media-border);
+    color: var(--fc-event-text-color);
+}
+
+/* Evento de Prioridade BAIXA */
+.fc-event-prioridade-baixa,
+.fc-event-prioridade-baixa .fc-event-main {
+    background-color: var(--fc-event-baixa-bg);
+    border-color: var(--fc-event-baixa-border);
+    color: var(--fc-event-text-color);
+}
+
+/* Remove o ponto colorido na visualização de lista para um visual mais limpo */
+.fc-list-event-dot {
+    border-color: transparent !important;
+}
+
+
+/* 4. Melhorias Visuais (Hoje, Popover) */
+/* =================================== */
+
+/* Destaque mais forte para o dia de hoje */
+#calendar .fc-day-today {
+    background-color: var(--fc-today-bg-color) !important;
+    border-top: 3px solid var(--bs-primary);
+}
+
+/* Estilo do popover de "+ mais eventos" */
+#calendar .fc-popover {
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+}
+
+
+/* 5. Responsividade */
+/* =================================== */
+
+@media (max-width: 767px) {
+    #calendar .fc-header-toolbar {
+        /* Empilha os controles do cabeçalho em telas pequenas */
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch !important;
+    }
+
+    #calendar .fc-header-toolbar .fc-toolbar-chunk {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    #calendar .fc-toolbar-title {
+        font-size: 1.2rem;
+        text-align: center;
+    }
+
+    .fc-event-title {
+        white-space: normal !important; /* Permite quebra de linha no título do evento */
+    }
+}

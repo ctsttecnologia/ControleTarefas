@@ -122,3 +122,10 @@ body {
         width: 100%; margin: 0; padding: 0;
     }
 }
+
+/* Ativa o menu dropdown do Bootstrap ao passar o mouse */
+.dropdown:hover .dropdown-menu {
+    display: block;
+    margin-top: 0; /* Corrige um pequeno espaçamento que pode aparecer */
+}
+
