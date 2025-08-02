@@ -1,0 +1,90 @@
+
+/*
+ * home_styles.css
+ * Estilos específicos para a página inicial, com escopo para evitar conflitos globais.
+ */
+
+/* 1. Wrapper Principal e Fundo */
+/* =================================== */
+.home-wrapper {
+    /* Usa Flexbox para centralizar o conteúdo verticalmente e horizontalmente */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Garante que o wrapper ocupe toda a altura da tela */
+    padding: 1rem; /* Espaçamento para telas muito pequenas */
+
+    /* Fundo gradiente profissional e sutil */
+    background-color: #1a1a2e;
+    background-image: radial-gradient(circle at top right, rgba(23, 162, 184, 0.15), transparent 40%),
+                      radial-gradient(circle at bottom left, rgba(67, 56, 202, 0.15), transparent 40%);
+    background-attachment: fixed;
+}
+
+/* 2. Card de Conteúdo */
+/* =================================== */
+.home-wrapper .home-content-card {
+    /* Efeito de "vidro fosco" (Glassmorphism) */
+    background-color: rgba(33, 37, 41, 0.6); /* Fundo semi-transparente do tema dark */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px); /* Suporte para Safari */
+    
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem; /* Bordas mais arredondadas */
+    padding: 2.5rem 2rem;
+    
+    /* Sombra sutil para dar profundidade */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* 3. Logo */
+/* =================================== */
+.home-wrapper .home-logo img {
+    max-width: 120px; /* Tamanho máximo do logo */
+    height: auto;
+}
+
+/* 4. Botão Principal */
+/* =================================== */
+.home-wrapper .btn-login-home {
+    /* Adiciona uma transição suave para o efeito de hover */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.home-wrapper .btn-login-home:hover {
+    /* Efeito de "levantar" o botão ao passar o mouse */
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.35);
+}
+
+/* 5. Links Secundários */
+/* =================================== */
+.home-wrapper .secondary-links a {
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+.home-wrapper .secondary-links a:hover {
+    color: var(--bs-light) !important; /* Usa variáveis do Bootstrap para consistência */
+    text-decoration: underline;
+}
+
+
+/* 6. Responsividade */
+/* =================================== */
+/* Para telas menores que 576px (celulares em modo retrato) */
+@media (max-width: 575.98px) {
+    .home-wrapper .home-content-card {
+        padding: 2rem 1.5rem; /* Reduz o padding interno no card */
+    }
+
+    .home-wrapper h1.display-5 {
+        font-size: 2.5rem; /* Reduz um pouco o tamanho do título */
+    }
+
+    .home-wrapper .d-grid.col-8 {
+        /* O botão passa a ocupar 100% da largura do contêiner */
+        --bs-gutter-x: 0;
+        width: 100%;
+    }
+}

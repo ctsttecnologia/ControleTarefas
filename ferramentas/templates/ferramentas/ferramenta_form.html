@@ -1,0 +1,63 @@
+
+{% extends 'ferramentas/ferramentas_base.html' %}
+
+{% block ferramentas_title %}
+    {# Coloque o título do formulário aqui, ex: "Cadastrar Nova Ferramenta" #}
+    {% if form.instance.pk %}Editar Ferramenta{% else %}Adicionar Ferramenta{% endif %}
+{% endblock %}
+
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Voltar à Lista
+    </a>
+{% endblock %}
+
+{% block ferramentas_content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {# Renderiza os campos não visíveis (ex: IDs) e erros gerais do formulário #}
+                        {{ form.non_field_errors }}
+
+                        {# Itera sobre cada campo para ter controle total do HTML #}
+                        {% for field in form.visible_fields %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            
+                            {# O widget do campo (ex: <input>, <select>) #}
+                            {{ field }}
+
+                            {# Mostra erros de validação específicos do campo #}
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ field.errors|striptags }}
+                                </div>
+                            {% endif %}
+
+                            {# Mostra o texto de ajuda, se houver #}
+                            {% if field.help_text %}
+                                <div id="{{ field.id_for_label }}_help" class="form-text text-muted">
+                                    {{ field.help_text|safe }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-grid d-md-flex justify-content-md-end mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-lg px-4">
+                                <i class="fas fa-save me-2"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

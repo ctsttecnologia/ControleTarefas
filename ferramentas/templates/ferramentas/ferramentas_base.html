@@ -1,0 +1,41 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{# Este bloco sobrescreve o título da página para adicionar um prefixo padrão #}
+{% block title %}
+    Controle de Ferramentas | {{ block.super }}
+{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/ferramentas/ferramentas.css' %}">
+{% endblock %}
+
+
+{# Este é o bloco de conteúdo principal herdado do base.html #}
+{% block content %}
+<div class="container py-4">
+    
+    <header class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        
+        {# Bloco para o título da página específica (ex: "Lista de Ferramentas") #}
+        <h1 class="h2 mb-0">
+            {% block ferramentas_title %}
+                Controle de Ferramentas
+            {% endblock ferramentas_title %}
+        </h1>
+        
+        {# Bloco para os botões de ação da página (ex: "Nova Ferramenta") #}
+        <div class="btn-group">
+            {% block ferramentas_actions %}
+                {# Botões de ação específicos da página irão aqui #}
+            {% endblock ferramentas_actions %}
+        </div>
+    </header>
+
+    <div class="page-content">
+        {# O conteúdo da página (tabela, formulário, etc.) será inserido aqui #}
+        {% block ferramentas_content %}
+        {% endblock ferramentas_content %}
+    </div>
+</div>
+{% endblock content %}

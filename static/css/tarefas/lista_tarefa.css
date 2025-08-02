@@ -1,0 +1,139 @@
+
+/*
+ * lista_tarefa.css
+ * Estilos modernos e responsivos para a tabela de listagem de tarefas.
+ */
+
+/* 1. Variáveis de Cores e Tema Geral */
+/* =================================== */
+:root {
+    --table-header-bg: rgba(var(--bs-primary-rgb), 0.1);
+    --table-row-border: var(--bs-border-color-translucent);
+    --table-hover-bg: rgba(var(--bs-primary-rgb), 0.05);
+    
+    /* Cores para os Badges de Status */
+    --status-pendente-bg: hsl(210, 15%, 55%);
+    --status-andamento-bg: hsl(210, 85%, 55%);
+    --status-pausada-bg: hsl(45, 100%, 60%);
+    --status-concluida-bg: hsl(134, 61%, 41%);
+    --status-cancelada-bg: hsl(210, 10%, 30%);
+    --status-atrasada-bg: hsl(354, 70%, 54%);
+
+    /* Cores para os Badges de Prioridade */
+    --priority-baixa-bg: hsl(152, 58%, 45%);
+    --priority-media-bg: hsl(38, 92%, 50%);
+    --priority-alta-bg: hsl(12, 88%, 52%);
+}
+
+/* 2. Cabeçalho da Página */
+/* =================================== */
+header h1 {
+    font-weight: 600;
+}
+
+header .btn {
+    font-weight: 500;
+}
+
+/* 3. Card da Tabela */
+/* =================================== */
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    background-color: var(--bs-tertiary-bg);
+}
+
+/* 4. Estilo da Tabela */
+/* =================================== */
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead {
+    background-color: var(--table-header-bg);
+    color: var(--bs-heading-color);
+}
+
+.table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+    border-bottom-width: 1px;
+}
+
+.table td {
+    border-top: 1px solid var(--table-row-border);
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+.table-hover > tbody > tr:hover {
+    background-color: var(--table-hover-bg);
+    transform: scale(1.015);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 10;
+}
+
+/* 5. Badges de Status e Prioridade */
+/* =================================== */
+.status-badge,
+.priority-badge {
+    display: inline-block;
+    padding: 0.4em 0.8em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem; /* pill shape */
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Aplicando as cores de status */
+.status-badge.status-pendente { background-color: var(--status-pendente-bg); }
+.status-badge.status-andamento { background-color: var(--status-andamento-bg); }
+.status-badge.status-pausada { background-color: var(--status-pausada-bg); color: #212529; }
+.status-badge.status-concluida { background-color: var(--status-concluida-bg); }
+.status-badge.status-cancelada { background-color: var(--status-cancelada-bg); }
+.status-badge.status-atrasada { background-color: var(--status-atrasada-bg); }
+
+/* Aplicando as cores de prioridade */
+.priority-badge.priority-baixa { background-color: var(--priority-baixa-bg); }
+.priority-badge.priority-media { background-color: var(--priority-media-bg); color: #212529; }
+.priority-badge.priority-alta { background-color: var(--priority-alta-bg); }
+
+/* 6. Barra de Progresso e Botões de Ação */
+/* =================================== */
+.progress {
+    background-color: var(--bs-secondary-bg);
+}
+
+.btn-group-sm .btn {
+    padding: 0.2rem 0.6rem;
+    font-size: 0.9rem;
+}
+
+/* 7. Responsividade */
+/* =================================== */
+@media (max-width: 767px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
+}

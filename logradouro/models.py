@@ -100,12 +100,8 @@ class Logradouro(models.Model):
 
     # Métodos
     def clean(self):
+        # Apenas chamamos o clean da classe pai, sem a validação customizada.
         super().clean()
-        # Exemplo de validação customizada
-        if self.estado == 'SP' and 'São Paulo' not in self.cidade:
-            raise ValidationError({
-                'cidade': _('Cidades de SP devem conter "São Paulo" no nome')
-            })
     
     def save(self, *args, **kwargs):
         self.full_clean()

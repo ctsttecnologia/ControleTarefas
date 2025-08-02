@@ -1,0 +1,95 @@
+
+/*
+ * dashboard.css
+ * Estilos modernos para o dashboard analítico
+ */
+
+/* 1. Variáveis de Cores e Tema Geral */
+/* =================================== */
+:root {
+    --dashboard-bg: hsl(220, 15%, 12%);
+    --dashboard-card-bg: rgba(33, 37, 41, 0.6);
+    --dashboard-border-color: rgba(255, 255, 255, 0.1);
+    
+    /* Paleta de cores vibrantes para os gráficos */
+    --chart-color-1: rgba(0, 123, 255, 0.8);  /* Azul Primário */
+    --chart-color-1-light: rgba(0, 123, 255, 0.3);
+    --chart-color-2: rgba(23, 162, 184, 0.8);  /* Ciano/Teal */
+    --chart-color-2-light: rgba(23, 162, 184, 0.3);
+    --chart-color-3: rgba(40, 167, 69, 0.8);   /* Verde */
+    --chart-color-3-light: rgba(40, 167, 69, 0.3);
+}
+
+[data-bs-theme="light"] {
+    --dashboard-bg: hsl(220, 25%, 96%);
+    --dashboard-card-bg: rgba(255, 255, 255, 0.6);
+    --dashboard-border-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Aplica um fundo gradiente sutil para complementar o efeito de vidro */
+body {
+    background-color: var(--dashboard-bg);
+}
+
+
+/* 2. Estilo dos Cards (Gráficos e Tabela) */
+/* =================================== */
+.chart-card,
+.table-card {
+    background-color: var(--dashboard-card-bg);
+    border: 1px solid var(--dashboard-border-color);
+    border-radius: 1rem; /* Bordas mais arredondadas */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    height: 100%; /* Garante que os cards na mesma linha tenham a mesma altura */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chart-card:hover,
+.table-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.25);
+}
+
+.card-title {
+    font-weight: 600;
+    color: var(--bs-heading-color);
+}
+
+.chart-card .card-body,
+.table-card .card-header {
+    padding: 1.5rem;
+}
+
+
+/* 3. Estilo dos Gráficos e Tabela */
+/* =================================== */
+
+/* Garante que o gráfico ocupe o espaço disponível e não quebre o layout */
+.chart-container {
+    position: relative;
+    height: 350px;
+}
+
+/* Melhorias na tabela */
+.table-card .table {
+    --bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.08);
+}
+
+.table-card th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+
+/* 4. Responsividade */
+/* =================================== */
+
+@media (max-width: 991.98px) {
+    .chart-container {
+        height: 300px; /* Reduz a altura dos gráficos em telas menores */
+    }
+}

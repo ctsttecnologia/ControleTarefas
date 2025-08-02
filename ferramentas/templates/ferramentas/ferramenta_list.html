@@ -1,0 +1,129 @@
+{% extends 'ferramentas/ferramentas_base.html' %}
+
+{% block ferramentas_title %}
+    Lista de Ferramentas
+{% endblock ferramentas_title %}
+
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-chart-bar me-1"></i> Dashboard
+    </a>
+    <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Adicionar Ferramenta
+    </a>
+{% endblock ferramentas_actions %}
+
+{% block ferramentas_content %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Código</th>
+                    <th>Status</th>
+                    <th>Localização</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ferramenta in object_list %} {# ListView passa os dados como 'object_list' #}
+                <tr>
+                    <td>
+                        <a href="{{ ferramenta.get_absolute_url }}" class="fw-bold">{{ ferramenta.nome }}</a>
+                        <p class="small text-muted mb-0">Patrimônio: {{ ferramenta.patrimonio|default:"-" }}</p>
+                    </td>
+                    <td>{{ ferramenta.codigo_identificacao|default:"-" }}</td>
+                    <td>
+                        <span class="badge 
+                            {% if ferramenta.status == 'disponivel' %}text-bg-success
+                            {% elif ferramenta.status == 'em_uso' %}text-bg-warning
+                            {% elif ferramenta.status == 'em_manutencao' %}text-bg-info
+                            {% elif ferramenta.status == 'descartada' %}text-bg-danger
+                            {% else %}text-bg-secondary{% endif %}">
+                            {{ ferramenta.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ ferramenta.localizacao_padrao|default:"-" }}</td>
+                    <td class="text-center">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Ações
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ ferramenta.get_absolute_url }}"><i class="fas fa-eye me-2"></i>Ver Painel</a></li>
+                                <li><a class="dropdown-item" href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}"><i class="fas fa-pencil-alt me-2"></i>Editar</a></li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+
+                                {% if ferramenta.status == 'disponivel' %}
+                                <li>
+                                    <button type="button" class="dropdown-item text-danger btn-inativar" 
+                                            data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
+                                            data-url="{% url 'ferramentas:ferramenta_inativar' pk=ferramenta.pk %}"
+                                            data-nome="{{ ferramenta.nome }}">
+                                        <i class="fas fa-trash-alt me-2"></i>Inativar
+                                    </button>
+                                </li>
+                                {% else %}
+                                <li><span class="dropdown-item disabled text-muted"><i class="fas fa-trash-alt me-2"></i>Inativar</span></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4">Nenhuma ferramenta encontrada.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmInativarModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Confirmar Inativação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja inativar a ferramenta <strong id="ferramentaNomeModal"></strong>?
+                <p class="text-danger small mt-2">Esta ação não poderá ser desfeita facilmente.</p>
+            </div>
+            <div class="modal-footer">
+                <form id="inativarForm" method="post">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Sim, Inativar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock ferramentas_content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const confirmModal = document.getElementById('confirmInativarModal');
+    confirmModal.addEventListener('show.bs.modal', function (event) {
+        // Botão que acionou o modal
+        const button = event.relatedTarget;
+        
+        // Extrai as informações dos atributos data-*
+        const ferramentaNome = button.getAttribute('data-nome');
+        const formActionUrl = button.getAttribute('data-url');
+        
+        // Atualiza o conteúdo do modal
+        const modalBody = confirmModal.querySelector('#ferramentaNomeModal');
+        const inativarForm = confirmModal.querySelector('#inativarForm');
+        
+        modalBody.textContent = ferramentaNome;
+        inativarForm.action = formActionUrl;
+    });
+});
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,105 @@
+
+/*
+ * criar_tarefa.css (Refatorado)
+ * Estilos aprimorados para o formulário de criação de tarefas.
+ */
+
+/* 1. Estrutura e Card Principal */
+/* =================================== */
+.form-task-wrapper {
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color-translucent);
+    transition: box-shadow 0.3s ease;
+}
+
+/* 2. Cabeçalhos de Seção */
+/* =================================== */
+.form-section-header {
+    position: relative;
+    font-size: 0.9rem; /* Levemente menor para um look mais refinado */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--bs-secondary-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* NOVO: Adiciona uma linha de destaque nos cabeçalhos */
+.form-section-header::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -1px; /* Alinha com a borda inferior */
+    width: 50px;
+    height: 2px;
+    background-color: var(--bs-primary);
+}
+
+/* 3. Estilo dos Campos do Formulário */
+/* =================================== */
+.form-label.fw-bold {
+    font-size: 0.875rem; /* Tamanho padrão de labels */
+}
+
+/* NOVO: Adiciona transições suaves para o efeito de foco */
+.form-control,
+.form-select {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* NOVO: Estilo para campos desabilitados */
+.form-control:disabled,
+.form-select:disabled {
+    background-color: var(--bs-secondary-bg);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* CORREÇÃO: Usa :focus-within no grupo para um efeito de foco mais robusto */
+.form-field-group:focus-within .form-label {
+    color: var(--bs-primary);
+}
+
+/* Mantém o destaque do Bootstrap, apenas garantindo a robustez */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.2);
+}
+
+/* Garante que a mensagem de erro seja visível e clara */
+.invalid-feedback.d-block {
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+}
+
+/* 4. Componentes Específicos */
+/* =================================== */
+
+/* Ajusta o tamanho da fonte do Título da Tarefa para dar mais destaque */
+.form-control-lg {
+    font-size: 1.25rem;
+}
+
+/* NOVO: Melhora o visual do switch de recorrência */
+.form-switch .form-check-input {
+    cursor: pointer;
+}
+.form-switch .form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+/* 5. Botão de Ação */
+/* =================================== */
+.btn-primary {
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(var(--bs-primary-rgb), 0.3);
+}
