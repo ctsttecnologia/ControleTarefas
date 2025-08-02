@@ -9,13 +9,17 @@
 
     {# A FORMA CORRETA DE DEFINIR A IMAGEM DE FUNDO #}
     {# Usamos a tag <style> para que o Django possa gerar o caminho correto para a imagem. #}
-    <style>
-      .profile-page-background {
-        background-image: url('{% static "images/background.png" %}');
-        background-position: center center;
-        background-attachment: fixed;
-      }
-    </style>
+<style>
+  .profile-page-background {
+    background-image: url('{% static "images/background.png" %}');
+    background-position: center center;
+    background-attachment: fixed;
+    
+    /* ✨ ADICIONE ESTAS DUAS LINHAS ✨ */
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+</style>
 {% endblock %}
 
 
