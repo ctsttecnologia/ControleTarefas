@@ -14,7 +14,7 @@ from django.utils.html import strip_tags
 from django.db.models import F
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
-
+from dateutil.relativedelta import relativedelta
 
 import logging
 import os
@@ -39,6 +39,32 @@ class Tarefas(models.Model):
         ('cancelada', _('Cancelada')),
         ('atrasada', _('Atrasada')),
     ]
+
+    FREQUENCIA_CHOICES = [
+        ('diaria', _('Diária')),
+        ('semanal', _('Semanal')),
+        ('quinzenal', _('Quinzenal')),
+        ('mensal', _('Mensal')),
+        ('anual', _('Anual')),
+    ]
+
+    recorrente = models.BooleanField(_('É uma tarefa recorrente?'), default=False)
+    frequencia_recorrencia = models.CharField(
+        _('Frequência'),
+        max_length=10,
+        choices=FREQUENCIA_CHOICES,
+        blank=True,
+        null=True
+    )
+    data_fim_recorrencia = models.DateField(_('Repetir até'), blank=True, null=True)
+    tarefa_pai = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recorrencias_filhas',
+        verbose_name=_('Tarefa Original da Recorrência')
+    )
     
     titulo = models.CharField(_('Título'), max_length=100)
     descricao = models.TextField(_('Descrição'), blank=True, null=True)
@@ -82,6 +108,7 @@ class Tarefas(models.Model):
 
     # Unificando os dois métodos save() em um só.
     # MÉTODO SAVE UNIFICADO E LIMPO
+    # MÉTODO SAVE FINAL E CENTRALIZADO
     def save(self, *args, **kwargs):
         # Captura o status antigo antes de salvar
         old_status = None
@@ -91,50 +118,63 @@ class Tarefas(models.Model):
             except Tarefas.DoesNotExist:
                 pass
         
-        # Lógica para definir o status como 'atrasada'
-        if self.prazo and self.prazo < timezone.now() and self.status not in ['concluida', 'cancelada', 'atrasada']:
+        # --- LÓGICA DE NEGÓCIO AUTOMÁTICA ---
+        # 1. Atualiza status para 'atrasada' se necessário
+        if self.prazo and self.prazo < timezone.now() and self.status not in ['concluida', 'cancelada']:
             self.status = 'atrasada'
         
-        # Lógica para preencher/limpar a data de conclusão
+        # 2. Preenche/limpa a data de conclusão
         if self.status == 'concluida' and not self.concluida_em:
             self.concluida_em = timezone.now()
         elif self.status != 'concluida' and self.concluida_em:
             self.concluida_em = None
-        
+
+        # 3. CRIA TAREFA RECORRENTE (LÓGICA CENTRALIZADA AQUI)
+        # Se o status mudou para 'concluida' e a tarefa é recorrente...
+        if old_status != 'concluida' and self.status == 'concluida' and self.recorrente:
+            self._criar_proxima_recorrencia()
+
         super().save(*args, **kwargs)
 
-        # Se houve mudança de status, cria um registro de histórico
+        # 4. Cria registro de histórico se houve mudança de status
         if old_status and old_status != self.status and hasattr(self, '_user'):
             HistoricoStatus.objects.create(
-                tarefa=self,
-                status_anterior=old_status,
-                novo_status=self.status,
+                tarefa=self, status_anterior=old_status, novo_status=self.status,
                 alterado_por=self._user,
             )
 
-    """def enviar_notificacao_prazo(self):
-        if self.prazo and (self.prazo - timezone.now()).days <= 1:
-            assunto = f"[Urgente] Tarefa {self.titulo} com prazo próximo"
-            html_message = render_to_string('emails/notificacao_prazo.html', {
-                'tarefa': self,
-                'dias_restantes': (self.prazo - timezone.now()).days
-            })
-            plain_message = strip_tags(html_message)
-            
-            send_mail(
-                subject=assunto,
-                message=plain_message,
-                html_message=html_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[self.responsavel.email],
-                fail_silently=False
-            )
+    def _criar_proxima_recorrencia(self):
+        """Cria a próxima ocorrência de uma tarefa recorrente."""
+        from dateutil.relativedelta import relativedelta # Import local
+        
+        if not self.data_fim_recorrencia or timezone.now().date() >= self.data_fim_recorrencia:
+            return
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.prazo:
-            self.enviar_notificacao_prazo()
-"""
+        frequencia = self.frequencia_recorrencia
+        if frequencia == 'diaria': delta = relativedelta(days=1)
+        elif frequencia == 'semanal': delta = relativedelta(weeks=1)
+        elif frequencia == 'quinzenal': delta = relativedelta(weeks=2)
+        elif frequencia == 'mensal': delta = relativedelta(months=1)
+        else: return
+
+        novo_inicio = self.data_inicio + delta
+        if novo_inicio.date() > self.data_fim_recorrencia:
+            return
+            
+        novo_prazo = (self.prazo + delta) if self.prazo else None
+
+        # Cria a nova tarefa (sem o 'pk' para garantir que é um novo objeto)
+        self.pk = None
+        self.id = None
+        self.status = 'pendente'
+        self.concluida_em = None
+        self.data_inicio = novo_inicio
+        self.prazo = novo_prazo
+        # Vincula à tarefa original (se já não estiver vinculada)
+        self.tarefa_pai = self.tarefa_pai or self
+        
+        # Salva a nova instância da tarefa recorrente
+        super().save()
 
 class HistoricoStatus(models.Model):
     tarefa = models.ForeignKey(

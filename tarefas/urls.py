@@ -6,8 +6,11 @@ from .api import TarefaViewSet
 from .views import (KanbanView, 
                     DashboardAnaliticoView, 
                     RelatorioTarefasView, 
-                    TarefaCreateView, 
-                    update_task_status)
+                    TarefaCreateView,
+                    TarefaDeleteView,
+                    TarefaUpdateView, 
+                    update_task_status
+                )
 
 
 router = routers.DefaultRouter()
@@ -20,11 +23,11 @@ urlpatterns = [
    
     path('', views.listar_tarefas, name='listar_tarefas'),
     path('criar/', TarefaCreateView.as_view(), name='criar_tarefa'),
-    path('editar/<int:pk>/', views.editar_tarefa, name='editar_tarefa'),
-    path('excluir/<int:pk>/', views.excluir_tarefa, name='excluir_tarefa'),
+    path('<int:pk>/editar/', TarefaUpdateView.as_view(), name='editar_tarefa'),  
+    path('<int:pk>/excluir/', TarefaDeleteView.as_view(), name='excluir_tarefa'),
     path('dashboard/analitico/', DashboardAnaliticoView.as_view(), name='dashboard_analitico'),
     path('tarefa/<int:pk>/', views.tarefa_detail, name='tarefa_detail'),
-    path('tarefa/<int:pk>/atualizar_status/', views.atualizar_status, name='atualizar_status'),
+ 
     path('calendario/', views.calendario_tarefas, name='calendario_tarefas'),
 
     path('api/', include(router.urls)),

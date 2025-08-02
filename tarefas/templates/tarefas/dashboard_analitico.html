@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstarefa/dashboard_analitico.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tarefas/dashboard.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -66,104 +66,86 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const chartInstances = {};
 
-    const getThemeOptions = () => ({
-        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.85)' : '#495057',
-        gridColor: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-    });
+    // FUNÇÃO MELHORADA: Agora lê as cores diretamente das variáveis CSS
+    const getThemeOptions = () => {
+        const rootStyles = getComputedStyle(document.documentElement);
+        return {
+            color: rootStyles.getPropertyValue('--bs-body-color').trim(),
+            gridColor: rootStyles.getPropertyValue('--bs-border-color-translucent').trim(),
+            // Cores dos gráficos
+            chartColor1: rootStyles.getPropertyValue('--chart-color-1').trim(),
+            chartColor1Light: rootStyles.getPropertyValue('--chart-color-1-light').trim(),
+            chartColor2: rootStyles.getPropertyValue('--chart-color-2').trim(),
+            chartColor2Light: rootStyles.getPropertyValue('--chart-color-2-light').trim(),
+        };
+    };
 
     const renderAllCharts = () => {
         Object.values(chartInstances).forEach(chart => chart.destroy());
         const themeOpts = getThemeOptions();
 
-        // Cores em tons de azul e cinza
-        const azulPrincipal = 'rgba(54, 162, 235, 0.8)';   // Azul mais vibrante
-        const azulClaro = 'rgba(54, 162, 235, 0.3)';   // Azul mais claro para preenchimento
-        const cinzaEscuro = 'rgba(108, 117, 125, 0.8)'; // Cinza escuro
-        const cinzaClaro = 'rgba(108, 117, 125, 0.3)'; // Cinza claro para preenchimento
-
-        // =============================================================
         // GRÁFICO 1: TENDÊNCIA CRIADAS vs. CONCLUÍDAS (LINHA)
-        // =============================================================
         const tendenciaCtx = document.getElementById('tendenciaChart')?.getContext('2d');
         if (tendenciaCtx && chartsData.criadas_semana && chartsData.concluidas_semana) {
-
-            const allWeeks = new Set([
-                ...chartsData.criadas_semana.map(d => d.semana),
-                ...chartsData.concluidas_semana.map(d => d.semana)
-            ]);
-
-            const labels = Array.from(allWeeks).sort().map(semana => {
-                const date = new Date(semana);
-                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-            });
-
-            const criadasData = labels.map(label => {
-                const [day, month] = label.split('/');
-                const weekStr = Array.from(allWeeks).find(w => new Date(w).getDate() == day && new Date(w).getMonth() + 1 == month);
-                return chartsData.criadas_semana.find(d => d.semana === weekStr)?.total || 0;
-            });
-
-            const concluidasData = labels.map(label => {
-                const [day, month] = label.split('/');
-                const weekStr = Array.from(allWeeks).find(w => new Date(w).getDate() == day && new Date(w).getMonth() + 1 == month);
-                return chartsData.concluidas_semana.find(d => d.semana === weekStr)?.total || 0;
-            });
+            const allWeeks = new Set([...chartsData.criadas_semana.map(d => d.semana), ...chartsData.concluidas_semana.map(d => d.semana)]);
+            const labels = Array.from(allWeeks).sort().map(semana => new Date(semana).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+            
+            const getDataForWeek = (weekLabel, dataSet) => {
+                const [day, month] = weekLabel.split('/');
+                const weekStr = Array.from(allWeeks).find(w => {
+                    const d = new Date(w);
+                    return d.getDate() == day && (d.getMonth() + 1) == month;
+                });
+                return dataSet.find(d => d.semana === weekStr)?.total || 0;
+            };
 
             chartInstances.tendenciaChart = new Chart(tendenciaCtx, {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            label: 'Tarefas Criadas',
-                            data: criadasData,
-                            borderColor: azulPrincipal,
-                            backgroundColor: azulClaro,
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Tarefas Concluídas',
-                            data: concluidasData,
-                            borderColor: cinzaEscuro,
-                            backgroundColor: cinzaClaro,
-                            fill: true,
-                            tension: 0.3
-                        }
-                    ]
+                    datasets: [{
+                        label: 'Tarefas Criadas',
+                        data: labels.map(label => getDataForWeek(label, chartsData.criadas_semana)),
+                        borderColor: themeOpts.chartColor1,
+                        backgroundColor: themeOpts.chartColor1Light,
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Tarefas Concluídas',
+                        data: labels.map(label => getDataForWeek(label, chartsData.concluidas_semana)),
+                        borderColor: themeOpts.chartColor2,
+                        backgroundColor: themeOpts.chartColor2Light,
+                        fill: true,
+                        tension: 0.4
+                    }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     scales: {
                         x: { ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor } },
-                        y: { ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor }, beginAtZero: true }
+                        y: { ticks: { color: themeOpts.color, stepSize: 1 }, grid: { color: themeOpts.gridColor }, beginAtZero: true }
                     },
                     plugins: { legend: { labels: { color: themeOpts.color } } }
                 }
             });
         }
 
-        // =============================================================
         // GRÁFICO 2: PERFORMANCE DA EQUIPE (BARRAS HORIZONTAIS)
-        // =============================================================
         const equipeCtx = document.getElementById('equipeChart')?.getContext('2d');
         if (equipeCtx && chartsData.performance_equipe) {
             chartInstances.equipeChart = new Chart(equipeCtx, {
                 type: 'bar',
                 data: {
                     labels: chartsData.performance_equipe.map(u => u.username),
-                    datasets: [
-                        {
-                            label: 'Tarefas Ativas',
-                            data: chartsData.performance_equipe.map(u => u.ativas),
-                            backgroundColor: azulPrincipal
-                        },
-                        {
-                            label: 'Concluídas (30d)',
-                            data: chartsData.performance_equipe.map(u => u.concluidas),
-                            backgroundColor: cinzaEscuro
-                        }
-                    ]
+                    datasets: [{
+                        label: 'Tarefas Ativas',
+                        data: chartsData.performance_equipe.map(u => u.ativas),
+                        backgroundColor: themeOpts.chartColor1
+                    }, {
+                        label: 'Concluídas (30d)',
+                        data: chartsData.performance_equipe.map(u => u.concluidas),
+                        backgroundColor: themeOpts.chartColor2
+                    }]
                 },
                 options: {
                     indexAxis: 'y',
@@ -179,7 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     renderAllCharts();
-    window.recreateAnalyticCharts = renderAllCharts;
+
+    // Observa mudanças no tema (dark/light) e recria os gráficos
+    const themeObserver = new MutationObserver(renderAllCharts);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
 });
 </script>
 {% endblock %}

@@ -4,13 +4,60 @@
 <header id="global-header">
     <nav class="navbar navbar-expand-lg shadow-sm" data-bs-theme="dark">
         <div class="container-fluid">
+
+            <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas"  width="130px" height="auto">
+
             <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'usuario:profile' %}{% else %}{% url 'home' %}{% endif %}">
-                <i class="bi bi-check2-square me-2"></i>Gerenciando Tarefas
+                | <i class="bi bi-check2-square me-2"></i>Gerenciando Tarefas
             </a>
             
             <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    </ul>
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    
+                    {# O seletor de filial como um item da navegação #}
+                    {% if user.is_superuser and available_filiais %}
+                        <li class="nav-item dropdown mx-lg-3">
+                            <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                <strong>{% if active_filial %}{{ active_filial.nome }}{% else %}Todas{% endif %}</strong>
+                            </a>
+                            
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                <li>
+                                    <form action="{% url 'core:selecionar_filial' %}" method="post" class="d-grid">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="filial_id" value="0">
+                                        <button type="submit" class="dropdown-item {% if not active_filial %}active{% endif %}">
+                                            -- Todas as Filiais --
+                                        </button>
+                                    </form>
+                                </li>
+                                
+                                <li><hr class="dropdown-divider"></li>
+
+                                {% for filial in available_filiais %}
+                                <li>
+                                    <form action="{% url 'core:selecionar_filial' %}" method="post" class="d-grid">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="filial_id" value="{{ filial.pk }}">
+                                        <button type="submit" class="dropdown-item {% if active_filial.pk == filial.pk %}active{% endif %}">
+                                            {{ filial.nome }}
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+
+                    {% elif user.filial %}
+                        <li class="nav-item mx-lg-3">
+                            <span class="navbar-text text-white">
+                                <i class="fas fa-map-marker-alt me-1"></i> Filial: <strong>{{ user.filial.nome }}</strong>
+                            </span>
+                        </li>
+                    {% endif %}
+
+                </ul>
             </div>
 
             <div class="d-flex align-items-center">
