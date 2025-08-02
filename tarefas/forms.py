@@ -7,94 +7,255 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.forms import DurationField
 
 from tarefas.admin import Comentario
-from .models import Tarefas, User
+from .models import Tarefas, Comentario, User
+
+from dateutil.relativedelta import relativedelta
+
 
 
 class TarefaForm(forms.ModelForm):
+    # Campos para a funcionalidade de recorrência
+    recorrente = forms.BooleanField(
+        required=False, 
+        label="Tornar esta tarefa recorrente?",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    frequencia_recorrencia = forms.ChoiceField(
+        choices=[('', '---------')] + Tarefas.FREQUENCIA_CHOICES,
+        required=False,
+        label="Repetir a cada",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    data_fim_recorrencia = forms.DateField(
+        required=False,
+        label="Repetir até a data",
+        widget=forms.DateInput(attrs={'class': 'form-control date-picker', 'type': 'date'})
+    )
+
     class Meta:
         model = Tarefas
         fields = [
             'titulo', 'descricao', 'status', 'prioridade',
             'data_inicio', 'prazo', 'responsavel', 'projeto',
-            'duracao_prevista', 'tempo_gasto', 'dias_lembrete', 'data_lembrete'
-        ]
-        
-        widgets = {
-            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
-            'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'status': forms.Select(attrs={'class': 'form-control'}),
-            'prioridade': forms.Select(attrs={'class': 'form-control'}),
-            'data_inicio': forms.DateTimeInput(
-                attrs={'class': 'form-control datetime-picker'},
-                format='%Y-%m-%dT%H:%M'
-            ),
-            'prazo': forms.DateTimeInput(
-                attrs={'class': 'form-control datetime-picker'},
-                format='%Y-%m-%dT%H:%M'
-            ),
-            'responsavel': forms.Select(attrs={'class': 'form-control'}),
-            'projeto': forms.TextInput(attrs={'class': 'form-control'}),
-            'duracao_prevista': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'DD HH:MM:SS'
-            }),
-            'tempo_gasto': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'DD HH:MM:SS'
-            }),
-            'dias_lembrete': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': 1,
-                'max': 30
-            }),
-            'data_lembrete': forms.DateTimeInput(
-                attrs={'class': 'form-control datetime-picker'},
-                format='%Y-%m-%dT%H:%M'
-            ),
-        }
-        
-        help_texts = {
-            'duracao_prevista': 'Formato: dias HH:MM:SS (ex: 1 02:30:00 para 1 dia e 2 horas e 30 minutos)',
-            'tempo_gasto': 'Formato: dias HH:MM:SS',
-        }
-
-class TarefaForm(forms.ModelForm):
-    # ... (sua class Meta e outros métodos continuam iguais) ...
-    # modelo e quais campos ele está associado.
-    class Meta:
-        model = Tarefas
-        fields = [
-            'titulo', 'descricao', 'status', 'prioridade',
-            'data_inicio', 'prazo', 'responsavel', 'projeto',
-            'duracao_prevista', 'tempo_gasto', 'dias_lembrete', 'data_lembrete'
+            'duracao_prevista', 'tempo_gasto',
+            # Adicionando os campos de recorrência ao formulário
+            'recorrente', 'frequencia_recorrencia', 'data_fim_recorrencia'
         ]
         widgets = {
-            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
+            'titulo': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'status': forms.Select(attrs={'class': 'form-select'}), # Usar form-select para consistência com Bootstrap
+            'status': forms.Select(attrs={'class': 'form-select'}),
             'prioridade': forms.Select(attrs={'class': 'form-select'}),
-            'data_inicio': forms.DateTimeInput(
-                attrs={'class': 'form-control datetime-picker'},
-                format='%Y-%m-%dT%H:%M'
-            ),
-            'prazo': forms.DateTimeInput(
-                attrs={'class': 'form-control datetime-picker'},
-                format='%Y-%m-%dT%H:%M'
-            ),
+            'data_inicio': forms.DateTimeInput(attrs={'class': 'form-control datetime-picker'}, format='%Y-%m-%dT%H:%M'),
+            'prazo': forms.DateTimeInput(attrs={'class': 'form-control datetime-picker'}, format='%Y-%m-%dT%H:%M'),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'projeto': forms.TextInput(attrs={'class': 'form-control'}),
             'duracao_prevista': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'DD HH:MM:SS'}),
             'tempo_gasto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'DD HH:MM:SS'}),
-            'dias_lembrete': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 30}),
-            'data_lembrete': forms.DateTimeInput(
-                attrs={'class': 'form-control datetime-picker'},
-                format='%Y-%m-%dT%H:%M'
-            ),
         }
         help_texts = {
-            'duracao_prevista': 'Formato: dias HH:MM:SS (ex: 1 02:30:00 para 1 dia, 2 horas e 30 minutos)',
+            'duracao_prevista': 'Formato: dias HH:MM:SS (ex: 1 02:30:00)',
             'tempo_gasto': 'Formato: dias HH:MM:SS',
         }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk:
+            self.fields['recorrente'].initial = self.instance.recorrente
+            self.fields['frequencia_recorrencia'].initial = self.instance.frequencia_recorrencia
+            self.fields['data_fim_recorrencia'].initial = self.instance.data_fim_recorrencia
+            self.fields['data_inicio'].disabled = True
+            self.fields['data_inicio'].help_text = 'Data de início não pode ser alterada após criação.'
+
+        if self.request and hasattr(self.request.user, 'equipe'):
+            self.fields['responsavel'].queryset = User.objects.filter(equipe=self.request.user.equipe)
+
+        for field_name, field in self.fields.items():
+            if self.errors.get(field_name):
+                existing_classes = field.widget.attrs.get('class', '')
+                field.widget.attrs['class'] = f'{existing_classes} is-invalid'.strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        recorrente = cleaned_data.get('recorrente')
+        frequencia = cleaned_data.get('frequencia_recorrencia')
+        data_fim = cleaned_data.get('data_fim_recorrencia')
+
+        if recorrente and (not frequencia or not data_fim):
+            raise forms.ValidationError(
+                "Se a tarefa é recorrente, a frequência e a data final da recorrência são obrigatórias."
+            )
+
+        prazo = cleaned_data.get('prazo')
+        data_inicio = cleaned_data.get('data_inicio')
+
+        if prazo and data_inicio and prazo < data_inicio:
+            self.add_error('prazo', "O prazo final não pode ser anterior à data de início.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        # O método save fica MUITO mais simples agora!
+        instance = super().save(commit=False)
+
+        if not instance.pk and self.request and self.request.user.is_authenticated:
+            instance.usuario = self.request.user
+        
+        if self.request and self.request.user.is_authenticated:
+            instance._user = self.request.user
+
+        # Transfere os dados dos campos de formulário para os campos do modelo
+        instance.recorrente = self.cleaned_data.get('recorrente', False)
+        instance.frequencia_recorrencia = self.cleaned_data.get('frequencia_recorrencia')
+        instance.data_fim_recorrencia = self.cleaned_data.get('data_fim_recorrencia')
+
+        if commit:
+            instance.save() # O método save() do MODELO agora faz todo o trabalho pesado
+            self.save_m2m()
+            
+        return instance
+
+    def _criar_proxima_recorrencia(self, tarefa_atual):
+        """Cria a próxima ocorrência de uma tarefa recorrente."""
+        if not tarefa_atual.recorrente or not tarefa_atual.data_fim_recorrencia:
+            return
+
+        # Verifica se a data final da recorrência já passou
+        if timezone.now().date() >= tarefa_atual.data_fim_recorrencia:
+            return
+
+        # Calcula o intervalo da próxima tarefa
+        frequencia = tarefa_atual.frequencia_recorrencia
+        if frequencia == 'diaria': delta = relativedelta(days=1)
+        elif frequencia == 'semanal': delta = relativedelta(weeks=1)
+        elif frequencia == 'quinzenal': delta = relativedelta(weeks=2)
+        elif frequencia == 'mensal': delta = relativedelta(months=1)
+        else: return
+
+        # Calcula as novas datas
+        novo_inicio = tarefa_atual.data_inicio + delta
+        novo_prazo = (tarefa_atual.prazo + delta) if tarefa_atual.prazo else None
+        
+        # Para a criação se a nova data de início ultrapassar o fim da recorrência
+        if novo_inicio.date() > tarefa_atual.data_fim_recorrencia:
+            return
+
+        # Cria a nova tarefa copiando os dados da atual
+        Tarefas.objects.create(
+            titulo=tarefa_atual.titulo,
+            descricao=tarefa_atual.descricao,
+            prioridade=tarefa_atual.prioridade,
+            responsavel=tarefa_atual.responsavel,
+            projeto=tarefa_atual.projeto,
+            usuario=tarefa_atual.usuario,
+            status='pendente', # A nova tarefa começa como pendente
+            data_inicio=novo_inicio,
+            prazo=novo_prazo,
+            duracao_prevista=tarefa_atual.duracao_prevista,
+            # Mantém os dados da recorrência
+            recorrente=True,
+            frequencia_recorrencia=tarefa_atual.frequencia_recorrencia,
+            data_fim_recorrencia=tarefa_atual.data_fim_recorrencia,
+            # Vincula à tarefa original
+            tarefa_pai=tarefa_atual.tarefa_pai or tarefa_atual,
+        )
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+
+        # Preenche os campos de recorrência se a instância já existir
+        if self.instance and self.instance.pk:
+            self.fields['recorrente'].initial = self.instance.recorrente
+            self.fields['frequencia_recorrencia'].initial = self.instance.frequencia_recorrencia
+            self.fields['data_fim_recorrencia'].initial = self.instance.data_fim_recorrencia
+
+        for field_name, field in self.fields.items():
+            if self.errors.get(field_name):
+                existing_classes = field.widget.attrs.get('class', '')
+                field.widget.attrs['class'] = f'{existing_classes} is-invalid'.strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        recorrente = cleaned_data.get('recorrente')
+        frequencia = cleaned_data.get('frequencia_recorrencia')
+        data_fim = cleaned_data.get('data_fim_recorrencia')
+
+        if recorrente and (not frequencia or not data_fim):
+            raise forms.ValidationError(
+                "Se a tarefa é recorrente, a frequência e a data final da recorrência são obrigatórias."
+            )
+        return cleaned_data
+    
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        # Define o criador da tarefa se for uma nova instância
+        if not instance.pk and self.request and self.request.user.is_authenticated:
+            instance.usuario = self.request.user
+        
+        # Anexa o usuário para o log de histórico
+        if self.request and self.request.user.is_authenticated:
+            instance._user = self.request.user
+
+        # Lógica para criar a próxima recorrência
+        status_anterior = self.initial.get('status')
+        novo_status = self.cleaned_data.get('status')
+        
+        if status_anterior != 'concluida' and novo_status == 'concluida':
+            self._criar_proxima_recorrencia(instance)
+            
+        if commit:
+            instance.save()
+            
+        return instance
+
+    def _criar_proxima_recorrencia(self, tarefa_atual):
+        """Cria a próxima ocorrência de uma tarefa recorrente."""
+        if not tarefa_atual.recorrente or not tarefa_atual.data_fim_recorrencia:
+            return
+
+        # Verifica se a data final da recorrência já passou
+        if timezone.now().date() >= tarefa_atual.data_fim_recorrencia:
+            return
+
+        # Calcula o intervalo da próxima tarefa
+        frequencia = tarefa_atual.frequencia_recorrencia
+        if frequencia == 'diaria': delta = relativedelta(days=1)
+        elif frequencia == 'semanal': delta = relativedelta(weeks=1)
+        elif frequencia == 'quinzenal': delta = relativedelta(weeks=2)
+        elif frequencia == 'mensal': delta = relativedelta(months=1)
+        else: return
+
+        # Calcula as novas datas
+        novo_inicio = tarefa_atual.data_inicio + delta
+        novo_prazo = (tarefa_atual.prazo + delta) if tarefa_atual.prazo else None
+        
+        # Para a criação se a nova data de início ultrapassar o fim da recorrência
+        if novo_inicio.date() > tarefa_atual.data_fim_recorrencia:
+            return
+
+        # Cria a nova tarefa copiando os dados da atual
+        Tarefas.objects.create(
+            titulo=tarefa_atual.titulo,
+            descricao=tarefa_atual.descricao,
+            prioridade=tarefa_atual.prioridade,
+            responsavel=tarefa_atual.responsavel,
+            projeto=tarefa_atual.projeto,
+            usuario=tarefa_atual.usuario,
+            status='pendente', # A nova tarefa começa como pendente
+            data_inicio=novo_inicio,
+            prazo=novo_prazo,
+            duracao_prevista=tarefa_atual.duracao_prevista,
+            # Mantém os dados da recorrência
+            recorrente=True,
+            frequencia_recorrencia=tarefa_atual.frequencia_recorrencia,
+            data_fim_recorrencia=tarefa_atual.data_fim_recorrencia,
+            # Vincula à tarefa original
+            tarefa_pai=tarefa_atual.tarefa_pai or tarefa_atual,
+        )
         
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)

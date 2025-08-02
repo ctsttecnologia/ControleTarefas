@@ -3,8 +3,8 @@
 
 {% block head %}
         {% block extra_css %}
-            <link rel="stylesheet" href="{% static 'csstarefa/tarefastyles.css' %}">
             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+            <link rel="stylesheet" href="{% static 'css/tarefas/lista_tarefa.css' %}">
         {% endblock extra_css %}
 {% endblock %}
 
@@ -16,6 +16,7 @@
              <h1 class="mb-0"><i class="fas fa-list"></i>Lista de Tarefas</h1>
             </div>
             <div>
+                <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-outline-secondary">Calendário</a>
                 <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-secondary">
                     <i class="fas fa-list"></i> Kanban
                 </a>
@@ -55,8 +56,8 @@
                                 <td>{{ tarefa.usuario.username }}</td>
                                 <td>{{ tarefa.responsavel.username|default:"-" }}</td>
                                 <td>
-                                    {# CORREÇÃO AQUI: Usando if/elif para mapear o status para uma classe Bootstrap válida #}
-                                    <span class="badge rounded-pill 
+                                    {# Usando if/elif para mapear o status para uma classe Bootstrap válida #}
+                                    <span class="status-badge status- 
                                         {% if tarefa.status == 'P' %}bg-secondary
                                         {% elif tarefa.status == 'A' %}bg-primary
                                         {% elif tarefa.status == 'C' %}bg-danger
@@ -66,8 +67,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    {# CORREÇÃO AQUI: Mapeando a prioridade para uma classe Bootstrap válida #}
-                                    <span class="badge rounded-pill
+                                    {# Mapeando a prioridade para uma classe Bootstrap válida #}
+                                    <span class="priority-badge priority-
                                         {% if tarefa.prioridade == 'B' %}bg-success
                                         {% elif tarefa.prioridade == 'M' %}bg-warning text-dark
                                         {% elif tarefa.prioridade == 'A' %}bg-danger

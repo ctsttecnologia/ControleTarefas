@@ -3,7 +3,8 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstarefa/relatorio.css' %}">
+    {# REUTILIZANDO o CSS da lista de tarefas para manter a consistência #}
+    <link rel="stylesheet" href="{% static 'css/tarefas/lista_tarefa.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -15,40 +16,49 @@
         </a>
     </div>
 
-    <div class="card">
-        <div class="card-header">
+    {# Usando a mesma classe de card da lista de tarefas #}
+    <div class="card shadow-sm">
+        <div class="card-header fw-bold bg-transparent border-bottom-0 pt-3 px-3">
             Resultados ({{ total_tarefas }})
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead> 
-                    <tr>
-                        <th>Título</th>
-                        <th>Responsável</th>
-                        <th>Status</th>
-                        <th>Criação</th>
-                        <th>Prazo</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for tarefa in tarefas %}
+        <div class="card-body pt-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead> 
                         <tr>
-                            <td>{{ tarefa.titulo }}</td>
-                            <td>{{ tarefa.responsavel.username|default:"-" }}</td>
-                            <td>
-                                <span class="status-badge badge-{{ tarefa.status }}">{{ tarefa.get_status_display }}</span>
-                            </td>
-                            <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                            <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                            <th>Título</th>
+                            <th>Responsável</th>
+                            <th>Status</th>
+                            <th>Criação</th>
+                            <th>Prazo</th>
                         </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5">Nenhuma tarefa encontrada.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for tarefa in tarefas %}
+                            <tr class="align-middle">
+                                <td>{{ tarefa.titulo }}</td>
+                                <td>{{ tarefa.responsavel.username|default:"-" }}</td>
+                                <td>
+                                    {# CORREÇÃO: Classe ajustada para bater com o CSS #}
+                                    <span class="status-badge status-{{ tarefa.status }}">
+                                        {{ tarefa.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                                <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-5">
+                                    <div class="alert alert-info mb-0">Nenhuma tarefa encontrada para os filtros selecionados.</div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+

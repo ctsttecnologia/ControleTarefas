@@ -3,36 +3,37 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="{% static 'csstarefa/criar_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tarefas/criar_tarefa.css' %}">
 {% endblock %}
-
 
 {% block content %}
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-lg-8">
+        <div class="col-lg-9 col-xl-8">
 
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2">Criar Nova Tarefa</h1>
+                <h1 class="h2 mb-0">{% if form.instance.pk %}Editar Tarefa{% else %}Criar Nova Tarefa{% endif %}</h1>
                 <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-arrow-left me-1"></i> Voltar para Lista
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
                 </a>
             </div>
 
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <div class="card">
-                <div class="card-body p-4">
+            <div class="card form-task-wrapper border-0 shadow-sm">
+                <div class="card-body p-4 p-md-5">
                     <form method="post" novalidate>
                         {% csrf_token %}
 
+                        {# Bloco para exibir mensagens do Django (ex: 'Tarefa criada com sucesso!') #}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+
+                        {# Bloco para exibir erros que não são de um campo específico #}
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">
                                 {% for error in form.non_field_errors %}
@@ -41,33 +42,115 @@
                             </div>
                         {% endif %}
 
-                        <div class="row g-3">
-                            {% for field in form %}
-                                <div class="col-12 {% if field.name == 'descricao' %}{% else %}col-md-6{% endif %}">
-                                    <label for="{{ field.id_for_label }}" class="form-label">
-                                        {{ field.label }}
-                                        {% if field.field.required %}
-                                            <span class="text-danger">*</span>
-                                        {% endif %}
-                                    </label>
-                                    
-                                    {{ field }}
-                                    
-                                    {% if field.help_text %}
-                                        <div class="form-text">{{ field.help_text }}</div>
-                                    {% endif %}
-                                    
-                                    {% for error in field.errors %}
-                                        <div class="invalid-feedback d-block"> {{ error }}
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% endfor %}
+                        <div class="form-section">
+                            <h2 class="form-section-header">Informações da Tarefa</h2>
+                            <div class="mb-4">
+                                <label for="{{ form.titulo.id_for_label }}" class="form-label fw-bold">Título {% if form.titulo.field.required %}<span class="text-danger">*</span>{% endif %}</label>
+                                {{ form.titulo }}
+                                <div class="invalid-feedback d-block">{{ form.titulo.errors|first }}</div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="{{ form.descricao.id_for_label }}" class="form-label fw-bold">Descrição</label>
+                                {{ form.descricao }}
+                                <div class="invalid-feedback d-block">{{ form.descricao.errors|first }}</div>
+                            </div>
                         </div>
 
-                        <div class="text-end mt-4">
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="fas fa-save me-1"></i> Salvar Tarefa
+                        <div class="form-section">
+                            <h2 class="form-section-header">Organização e Prazos</h2>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-bold">Responsável</label>
+                                        {{ form.responsavel }}
+                                        <div class="invalid-feedback d-block">{{ form.responsavel.errors|first }}</div>
+                                        <div class="form-field-group">    
+                                    </div>
+                                </div>    
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.projeto.id_for_label }}" class="form-label fw-bold">Projeto</label>
+                                        {{ form.projeto }}
+                                        <div class="invalid-feedback d-block">{{ form.projeto.errors|first }}</div>
+                                    </div>
+                                </div>    
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.status.id_for_label }}" class="form-label fw-bold">Status</label>
+                                        {{ form.status }}
+                                        <div class="invalid-feedback d-block">{{ form.status.errors|first }}</div>
+                                    </div>
+                                </div>    
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.prioridade.id_for_label }}" class="form-label fw-bold">Prioridade</label>
+                                        {{ form.prioridade }}
+                                        <div class="invalid-feedback d-block">{{ form.prioridade.errors|first }}</div>
+                                    </div>
+                                </div>    
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.data_inicio.id_for_label }}" class="form-label fw-bold">Data de Início</label>
+                                        {{ form.data_inicio }}
+                                        {% if form.data_inicio.help_text %}<div class="form-text mt-1">{{ form.data_inicio.help_text }}</div>{% endif %}
+                                        <div class="invalid-feedback d-block">{{ form.data_inicio.errors|first }}</div>
+                                    </div>
+                                </div>    
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.prazo.id_for_label }}" class="form-label fw-bold">Prazo Final</label>
+                                        {{ form.prazo }}
+                                        <div class="invalid-feedback d-block">{{ form.prazo.errors|first }}</div>
+                                    </div>
+                                </div>    
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h2 class="form-section-header">Estimativas de Tempo</h2>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.duracao_prevista.id_for_label }}" class="form-label fw-bold">Duração Prevista</label>
+                                        {{ form.duracao_prevista }}
+                                        {% if form.duracao_prevista.help_text %}<div class="form-text mt-1">{{ form.duracao_prevista.help_text }}</div>{% endif %}
+                                        <div class="invalid-feedback d-block">{{ form.duracao_prevista.errors|first }}</div>
+                                    </div>
+                                </div>    
+                                <div class="col-md-6">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.tempo_gasto.id_for_label }}" class="form-label fw-bold">Tempo Gasto</label>
+                                        {{ form.tempo_gasto }}
+                                        {% if form.tempo_gasto.help_text %}<div class="form-text mt-1">{{ form.tempo_gasto.help_text }}</div>{% endif %}
+                                        <div class="invalid-feedback d-block">{{ form.tempo_gasto.errors|first }}</div>
+                                    </div>
+                                </div>    
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h2 class="form-section-header">Recorrência</h2>
+                            <div class="form-check form-switch mb-3">
+                                {{ form.recorrente }}
+                                <label class="form-check-label" for="{{ form.recorrente.id_for_label }}">{{ form.recorrente.label }}</label>
+                            </div>
+                            <div class="row g-3" id="campos-recorrencia" style="display: none;">
+                                <div class="col-md-6">
+                                    <label for="{{ form.frequencia_recorrencia.id_for_label }}" class="form-label fw-bold">{{ form.frequencia_recorrencia.label }}</label>
+                                    {{ form.frequencia_recorrencia }}
+                                    <div class="invalid-feedback d-block">{{ form.frequencia_recorrencia.errors|first }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="{{ form.data_fim_recorrencia.id_for_label }}" class="form-label fw-bold">{{ form.data_fim_recorrencia.label }}</label>
+                                    {{ form.data_fim_recorrencia }}
+                                    <div class="invalid-feedback d-block">{{ form.data_fim_recorrencia.errors|first }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-5">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save me-2"></i> Salvar
                             </button>
                         </div>
                     </form>
@@ -78,19 +161,47 @@
 </div>
 {% endblock %}
 
-
 {% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializa os seletores de data/hora
+        flatpickr(".datetime-picker", {
+            enableTime: true,
+            dateFormat: "d/m/Y H:i",
+            locale: "pt",
+            time_24hr: true
+        });
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 3. GARANTE WIDGETS DE DATETIME FUNCIONAIS
-    flatpickr(".datetime-picker", {
-        enableTime: true,
-        dateFormat: "Y-m-d H:i",
-        locale: "pt", // Ativa a tradução
-        time_24hr: true
+        // --- INÍCIO DA CORREÇÃO ---
+
+        // CORREÇÃO: Usamos a tag do Django para pegar o ID dinamicamente.
+        // Isso garante que o script sempre encontre o elemento certo.
+        const recorrenteToggle = document.getElementById('{{ form.recorrente.id_for_label }}');
+        
+        const camposRecorrencia = document.getElementById('campos-recorrencia');
+
+        // A função que mostra/esconde os campos (continua a mesma)
+        function toggleRecorrenciaFields() {
+            // Garante que os elementos existem antes de tentar manipulá-los
+            if (camposRecorrencia) {
+                if (recorrenteToggle && recorrenteToggle.checked) {
+                    camposRecorrencia.style.display = 'flex';
+                } else {
+                    camposRecorrencia.style.display = 'none';
+                }
+            }
+        }
+        
+        // Garante que o 'interruptor' foi encontrado antes de adicionar o evento
+        if (recorrenteToggle) {
+            // Chama a função uma vez no carregamento para definir o estado inicial
+            toggleRecorrenciaFields(); 
+            // Adiciona o 'escutador' de eventos para cliques futuros
+            recorrenteToggle.addEventListener('change', toggleRecorrenciaFields);
+        }
     });
-});
-</script>
+    </script>
 {% endblock %}
 
