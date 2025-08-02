@@ -7,7 +7,9 @@ from .views import (
     CustomLoginView, CustomLogoutView, ProfileView, CustomPasswordChangeView,
     UserListView, UserCreateView, UserUpdateView, UserSetPasswordView, UserToggleActiveView,
     GerenciarGruposUsuarioView, GroupListView, GroupCreateView, GroupUpdateView, GroupDeleteView,
-    CustomPasswordResetView, CustomPasswordResetDoneView, CustomPasswordResetConfirmView, CustomPasswordResetCompleteView,
+    CustomPasswordResetView, CustomPasswordResetDoneView, CustomPasswordResetConfirmView, 
+    CustomPasswordResetCompleteView,
+    FilialListView, FilialCreateView, FilialUpdateView, FilialDeleteView
 )
 
 app_name = 'usuario'
@@ -42,4 +44,10 @@ urlpatterns = [
     path('password_reset/done/', CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('reset/done/', CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+
+    # --- URLs para Gestão de Filiais ---
+    path('filiais/', FilialListView.as_view(), name='filial_list'),
+    path('filiais/adicionar/', FilialCreateView.as_view(), name='filial_create'),
+    path('filiais/<int:pk>/editar/', FilialUpdateView.as_view(), name='filial_update'),
+    path('filiais/<int:pk>/excluir/', FilialDeleteView.as_view(), name='filial_delete'),
 ]

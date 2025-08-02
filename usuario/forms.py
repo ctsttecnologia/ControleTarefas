@@ -4,7 +4,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, PasswordChangeForm
 from django.contrib.auth.models import Group
-from .models import Usuario
+from .models import Filial, Usuario
 
 
 
@@ -48,4 +48,12 @@ class GrupoForm(forms.ModelForm):
         )
         
         self.fields['permissions'].queryset = self.fields['permissions'].queryset.order_by('content_type__app_label', 'name')
+
+class FilialForm(forms.ModelForm):
+    class Meta:
+        model = Filial
+        fields = ['nome']
+        widgets = {
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: São Paulo'}),
+        }
 

@@ -16,11 +16,11 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Usuario, Group
-from .forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm
+from .models import Usuario, Group, Filial
+from .forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
 from django.contrib.auth.forms import SetPasswordForm
 from django.views.generic import View
-
+from django.db.models import ProtectedError
 
 # --- Views de Autenticação ---
 
@@ -233,3 +233,56 @@ class GerenciarGruposUsuarioView(SuperuserRequiredMixin, View):
                 messages.success(request, f"Grupo '{grupo.name}' removido do usuário {usuario.username}.")
         
         return redirect('usuario:gerenciar_grupos_usuario', pk=usuario.pk)
+    
+    # =============================================================================
+# == VIEWS DE CRUD DE FILIAIS (Apenas para Superuser)
+# =============================================================================
+
+class FilialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
+    model = Filial
+    template_name = 'usuario/filial_list.html'
+    context_object_name = 'filiais'
+
+class FilialCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
+    model = Filial
+    form_class = FilialForm
+    template_name = 'usuario/filial_form.html'
+    success_url = reverse_lazy('usuario:filial_list')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Adicionar Nova Filial'
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Filial cadastrada com sucesso!')
+        return super().form_valid(form)
+
+class FilialUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
+    model = Filial
+    form_class = FilialForm
+    template_name = 'usuario/filial_form.html'
+    success_url = reverse_lazy('usuario:filial_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f'Editar Filial: {self.object.nome}'
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Filial atualizada com sucesso!')
+        return super().form_valid(form)
+
+class FilialDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
+    model = Filial
+    template_name = 'usuario/filial_confirm_delete.html'
+    success_url = reverse_lazy('usuario:filial_list')
+
+    def post(self, request, *args, **kwargs):
+        try:
+            response = super().post(request, *args, **kwargs)
+            messages.success(request, 'Filial excluída com sucesso!')
+            return response
+        except ProtectedError:
+            messages.error(self.request, 'Esta filial não pode ser excluída, pois existem usuários ou ferramentas associados a ela.')
+            return redirect('usuario:filial_list')
