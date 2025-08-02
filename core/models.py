@@ -1,0 +1,6 @@
+from django.db import models
+from core.managers import FilialManager 
+class Ferramenta(models.Model):
+    # ...
+    objects = FilialManager()
+    # ...
