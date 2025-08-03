@@ -1,9 +1,12 @@
+
 # automovel/models.py
 
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.core.validators import FileExtensionValidator
+from core.managers import FilialManager
+from usuario.models import Filial
 
 class Carro(models.Model):
     placa = models.CharField(max_length=10, unique=True)
@@ -17,10 +20,15 @@ class Carro(models.Model):
     ativo = models.BooleanField(default=True)
     observacoes = models.TextField(blank=True, null=True)
     disponivel = models.BooleanField(default=True)
-    
+    # CORREÇÃO: related_name único e campo obrigatório.
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='carros', null=True, blank=False)
+
+    # Manager Padrão
+    objects = FilialManager()
+
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placa}"
-    
+
     class Meta:
         verbose_name = "Carro"
         verbose_name_plural = "Carros"
@@ -33,7 +41,7 @@ class Agendamento(models.Model):
         ('finalizado', 'Finalizado'),
         ('cancelado', 'Cancelado'),
     ]
-    
+
     funcionario = models.CharField(max_length=100)
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     carro = models.ForeignKey(Carro, on_delete=models.PROTECT, related_name='agendamentos')
@@ -52,14 +60,19 @@ class Agendamento(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='agendado')
     cancelar_agenda = models.BooleanField(default=False)
     motivo_cancelamento = models.TextField(blank=True, null=True)
-    
+    # CORREÇÃO: related_name único e campo obrigatório.
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='agendamentos', null=True, blank=False)
+
+    # Manager Padrão
+    objects = FilialManager()
+
     def __str__(self):
         return f"Agendamento #{self.id} - {self.carro.placa} para {self.funcionario}"
-    
+
     class Meta:
         verbose_name = "Agendamento"
         verbose_name_plural = "Agendamentos"
-        ordering = ['-data_hora_agenda', 'data_hora_devolucao']
+        ordering = ['-data_hora_agenda']
 
 class Checklist(models.Model):
     TIPO_CHOICES = [('saida', 'Saída'), ('retorno', 'Retorno'), ('vistoria', 'Vistoria')]
@@ -83,6 +96,11 @@ class Checklist(models.Model):
     anexo_ocorrencia = models.TextField(blank=True, null=True)
     assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
+    # CORREÇÃO: related_name único e campo obrigatório.
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='checklists', null=True, blank=False)
+    
+    # Manager Padrão
+    objects = FilialManager()
 
     def __str__(self):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
@@ -91,17 +109,24 @@ class Checklist(models.Model):
         verbose_name = "Checklist"
         verbose_name_plural = "Checklists"
         ordering = ['-data_hora']
-        unique_together = ('agendamento', 'tipo') # Impede checklists duplicados (saída/retorno) para o mesmo agendamento
+        unique_together = ('agendamento', 'tipo')
 
 class Foto(models.Model):
     agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='fotos')
     imagem = models.ImageField(upload_to='fotos/')
     data_criacao = models.DateTimeField(default=timezone.now)
     observacao = models.TextField(blank=True, null=True)
-    
+    # CORREÇÃO: related_name único e campo obrigatório.
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='fotos', null=True, blank=False)
+
+    # Manager Padrão
+    objects = FilialManager()
+
     def __str__(self):
         return f"Foto #{self.id} - {self.agendamento}"
-    
+
     class Meta:
         verbose_name = "Foto"
         verbose_name_plural = "Fotos"
+        ordering = ['-data_criacao']
+

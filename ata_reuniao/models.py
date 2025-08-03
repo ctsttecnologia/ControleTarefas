@@ -4,6 +4,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone 
 from django.conf import settings
+from core.managers import FilialManager
+from usuario.models import Filial
 
 
 class AtaReuniao(models.Model):
@@ -68,7 +70,10 @@ class AtaReuniao(models.Model):
     )
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
     atualizado_em = models.DateTimeField(auto_now=True, verbose_name=_("Atualizado em"))
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='atareuniao', null=True, blank=False)
 
+    # Manager Padrão
+    objects = FilialManager()
     # --- META CLASS DEPOIS DOS CAMPOS ---
     
     class Meta:
@@ -116,6 +121,10 @@ class HistoricoAta(models.Model):
     comentario = models.TextField(
         verbose_name=_("Comentário")
     )
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='hitoricoata', null=True, blank=False)
+
+    # Manager Padrão
+    objects = FilialManager()    
 
     class Meta:
         db_table = 'historico_ata'

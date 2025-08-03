@@ -4,89 +4,92 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-{% include "automovel/partials/_page_header.html" with title=title %}
-{% include "automovel/partials/_messages.html" %}
-<div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Resumo da Vistoria</h5>
-        <a href="{% url 'automovel:checklist_export_word' checklist.pk %}" class="btn btn-sm btn-primary">
-            <i class="bi bi-file-earmark-word me-1"></i> Exportar para Word
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="row border-bottom pb-3 mb-3">
-            <div class="col-md-4">
-                <p class="mb-1"><strong>Veículo:</strong> {{ checklist.agendamento.carro }}</p>
-                <p class="mb-0"><strong>Funcionário:</strong> {{ checklist.agendamento.funcionario }}</p>
-            </div>
-            <div class="col-md-4">
-                <p class="mb-1"><strong>Data/Hora:</strong> {{ checklist.data_hora|date:"d/m/Y H:i" }}</p>
-                <p class="mb-0"><strong>Tipo:</strong> <span class="badge text-bg-info">{{ checklist.get_tipo_display }}</span></p>
-            </div>
-            <div class="col-md-4">
-                <p class="mb-1"><strong>KM Inicial:</strong> {{ checklist.km_inicial|default:"N/A" }} km</p>
-                <p class="mb-0"><strong>KM Final:</strong> {{ checklist.km_final|default:"N/A" }} km</p>
-            </div>
+
+{% include "partials/_messages.html" %}
+<div class="container">
+    {% include "partials/_page_header.html" with title=title %}
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Resumo da Vistoria</h5>
+            <a href="{% url 'automovel:checklist_export_word' checklist.pk %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-file-earmark-word me-1"></i> Exportar para Word
+            </a>
         </div>
+        <div class="card-body">
+            <div class="row border-bottom pb-3 mb-3">
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Veículo:</strong> {{ checklist.agendamento.carro }}</p>
+                    <p class="mb-0"><strong>Funcionário:</strong> {{ checklist.agendamento.funcionario }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Data/Hora:</strong> {{ checklist.data_hora|date:"d/m/Y H:i" }}</p>
+                    <p class="mb-0"><strong>Tipo:</strong> <span class="badge text-bg-info">{{ checklist.get_tipo_display }}</span></p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>KM Inicial:</strong> {{ checklist.km_inicial|default:"N/A" }} km</p>
+                    <p class="mb-0"><strong>KM Final:</strong> {{ checklist.km_final|default:"N/A" }} km</p>
+                </div>
+            </div>
 
-        <h5 class="mt-4">Itens Vistoriados</h5>
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                Parte Frontal
-                <span class="badge rounded-pill text-bg-{% if checklist.revisao_frontal_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_frontal_status_display }}</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                Parte Traseira
-                <span class="badge rounded-pill text-bg-{% if checklist.revisao_trazeira_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_trazeira_status_display }}</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                Lado do Motorista
-                <span class="badge rounded-pill text-bg-{% if checklist.revisao_lado_motorista_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_lado_motorista_status_display }}</span>
-            </li>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                Lado do Passageiro
-                <span class="badge rounded-pill text-bg-{% if checklist.revisao_lado_passageiro_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_lado_passageiro_status_display }}</span>
-            </li>
-        </ul>
+            <h5 class="mt-4">Itens Vistoriados</h5>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Parte Frontal
+                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_frontal_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_frontal_status_display }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Parte Traseira
+                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_trazeira_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_trazeira_status_display }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Lado do Motorista
+                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_lado_motorista_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_lado_motorista_status_display }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Lado do Passageiro
+                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_lado_passageiro_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_lado_passageiro_status_display }}</span>
+                </li>
+            </ul>
 
-        {% if checklist.observacoes_gerais %}
-        <h5 class="mt-4">Observações Gerais</h5>
-        <p class="text-muted">{{ checklist.observacoes_gerais|linebreaksbr }}</p>
-        {% endif %}
+            {% if checklist.observacoes_gerais %}
+            <h5 class="mt-4">Observações Gerais</h5>
+            <p class="text-muted">{{ checklist.observacoes_gerais|linebreaksbr }}</p>
+            {% endif %}
 
-        <h5 class="mt-4">Evidências Fotográficas</h5>
-        <div class="row">
-            <div class="col-md-3 text-center">
-                <h6>Frontal</h6>
-                <a href="{{ checklist.foto_frontal.url }}" target="_blank"><img src="{{ checklist.foto_frontal.url }}" class="img-fluid rounded border" alt="Foto Frontal"></a>
+            <h5 class="mt-4">Evidências Fotográficas</h5>
+            <div class="row">
+                <div class="col-md-3 text-center">
+                    <h6>Frontal</h6>
+                    <a href="{{ checklist.foto_frontal.url }}" target="_blank"><img src="{{ checklist.foto_frontal.url }}" class="img-fluid rounded border" alt="Foto Frontal"></a>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h6>Traseira</h6>
+                    <a href="{{ checklist.foto_trazeira.url }}" target="_blank"><img src="{{ checklist.foto_trazeira.url }}" class="img-fluid rounded border" alt="Foto Traseira"></a>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h6>Lado do Motorista</h6>
+                    <a href="{{ checklist.foto_lado_motorista.url }}" target="_blank"><img src="{{ checklist.foto_lado_motorista.url }}" class="img-fluid rounded border" alt="Foto Lado do Motorista"></a>
+                </div>
+                <div class="col-md-3 text-center">
+                    <h6>Lado do Passageiro</h6>
+                    <a href="{{ checklist.foto_lado_passageiro.url }}" target="_blank"><img src="{{ checklist.foto_lado_passageiro.url }}" class="img-fluid rounded border" alt="Foto Lado do Passageiro"></a>
+                </div>
             </div>
-            <div class="col-md-3 text-center">
-                <h6>Traseira</h6>
-                <a href="{{ checklist.foto_trazeira.url }}" target="_blank"><img src="{{ checklist.foto_trazeira.url }}" class="img-fluid rounded border" alt="Foto Traseira"></a>
+            
+            {% if checklist.assinatura %}
+            <h5 class="mt-4">Assinatura do Responsável</h5>
+            <div class="border p-2 d-inline-block bg-light">
+                <img src="{{ checklist.assinatura }}" alt="Assinatura" style="max-width: 300px;">
             </div>
-            <div class="col-md-3 text-center">
-                <h6>Lado do Motorista</h6>
-                <a href="{{ checklist.foto_lado_motorista.url }}" target="_blank"><img src="{{ checklist.foto_lado_motorista.url }}" class="img-fluid rounded border" alt="Foto Lado do Motorista"></a>
-            </div>
-            <div class="col-md-3 text-center">
-                <h6>Lado do Passageiro</h6>
-                <a href="{{ checklist.foto_lado_passageiro.url }}" target="_blank"><img src="{{ checklist.foto_lado_passageiro.url }}" class="img-fluid rounded border" alt="Foto Lado do Passageiro"></a>
-            </div>
+            {% endif %}
+
         </div>
-        
-        {% if checklist.assinatura %}
-        <h5 class="mt-4">Assinatura do Responsável</h5>
-        <div class="border p-2 d-inline-block bg-light">
-             <img src="{{ checklist.assinatura }}" alt="Assinatura" style="max-width: 300px;">
+        <div class="card-footer text-end">
+            <a href="{% url 'automovel:dashboard' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Agendamento
+            </a>
         </div>
-        {% endif %}
-
     </div>
-    <div class="card-footer text-end">
-        <a href="{% url 'automovel:dashboard' %}" class="btn btn-secondary">
-             <i class="bi bi-arrow-left"></i> Voltar para Agendamento
-        </a>
-    </div>
-</div>
+</div>    
 {% endblock %}
 

@@ -1,3 +1,17 @@
-.venv/
-.env
-.settings
+# Django
+*.log
+settings.py
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos gerados pelo projeto
+/media/
+/staticfiles/
+
+# Ambiente Virtual
+/venv/
+/env/
+.env    

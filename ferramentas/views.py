@@ -34,10 +34,11 @@ class FilialScopedMixin:
     pela filial do usuário logado. Garante a segregação de dados.
     """
     def get_queryset(self):
-        # Pega a queryset original definida no 'model' da view
         qs = super().get_queryset()
-        # Aplica o filtro inteligente do nosso manager
-        return Ferramenta.objects.for_request(self.request).exclude(status=Ferramenta.Status.DESCARTADA)
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'filial'):
+            # CORREÇÃO: Aplica o filtro do manager na queryset da view.
+            return qs.for_request(self.request)
+        return qs.none() # Impede acesso a usuários sem filial ou não logados.
 
 class AtividadeLogMixin:
     """
