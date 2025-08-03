@@ -22,75 +22,77 @@
 {% endblock %}
 
 {% block content %}
-{% include "automovel/partials/_page_header.html" with title="Checklist de Veículo: "|add:agendamento.carro.placa %}
-{% include "automovel/partials/_messages.html" %}
-<form method="post" enctype="multipart/form-data" id="checklistForm" novalidate>
-    {% csrf_token %}
+<div class="container">
+    {% include "partials/_page_header.html" with title="Checklist de Veículo: "|add:agendamento.carro.placa %}
+    {% include "partials/_messages.html" %}
+    <form method="post" enctype="multipart/form-data" id="checklistForm" novalidate>
+        {% csrf_token %}
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <div class="row mb-4">
-                <div class="col-md-3">{{ form.tipo|as_crispy_field }}</div>
-                <div class="col-md-3">{{ form.data_hora|as_crispy_field }}</div>
-                <div class="col-md-3">{{ form.km_inicial|as_crispy_field }}</div>
-                <div class="col-md-3">{{ form.km_final|as_crispy_field }}</div>
-            </div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-3">{{ form.tipo|as_crispy_field }}</div>
+                    <div class="col-md-3">{{ form.data_hora|as_crispy_field }}</div>
+                    <div class="col-md-3">{{ form.km_inicial|as_crispy_field }}</div>
+                    <div class="col-md-3">{{ form.km_final|as_crispy_field }}</div>
+                </div>
 
-            <div class="accordion" id="vistoriaAccordion">
-                
-                {% for section in form_sections %}
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading-{{ section.id }}">
-                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ section.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse-{{ section.id }}">
-                            {{ section.title }}
-                        </button>
-                    </h2>
-                    <div id="collapse-{{ section.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading-{{ section.id }}" data-bs-parent="#vistoriaAccordion">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    {{ section.status_field|as_crispy_field }}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Foto</label>
-                                    <div class="photo-uploader" data-input-id="{{ section.photo_field.id_for_label }}">
-                                        <div class="upload-text">
-                                            <i class="bi bi-camera-fill upload-icon"></i>
-                                            <p>Toque para adicionar foto</p>
-                                        </div>
-                                        <img class="preview d-none" />
+                <div class="accordion" id="vistoriaAccordion">
+                    
+                    {% for section in form_sections %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-{{ section.id }}">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ section.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse-{{ section.id }}">
+                                {{ section.title }}
+                            </button>
+                        </h2>
+                        <div id="collapse-{{ section.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading-{{ section.id }}" data-bs-parent="#vistoriaAccordion">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        {{ section.status_field|as_crispy_field }}
                                     </div>
-                                    <div class="d-none">{{ section.photo_field }}</div>
-                                    {% for error in section.photo_field.errors %}
-                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                    {% endfor %}
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Foto</label>
+                                        <div class="photo-uploader" data-input-id="{{ section.photo_field.id_for_label }}">
+                                            <div class="upload-text">
+                                                <i class="bi bi-camera-fill upload-icon"></i>
+                                                <p>Toque para adicionar foto</p>
+                                            </div>
+                                            <img class="preview d-none" />
+                                        </div>
+                                        <div class="d-none">{{ section.photo_field }}</div>
+                                        {% for error in section.photo_field.errors %}
+                                            <div class="invalid-feedback d-block">{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    {% endfor %}
+
                 </div>
-                {% endfor %}
 
+                <div class="row mt-4">
+                    <div class="col-md-12">{{ form.observacoes_gerais|as_crispy_field }}</div>
+                </div>
+
+                <div class="mt-4">
+                    <h5>Assinatura do Responsável</h5>
+                    <canvas id="signatureCanvas"></canvas>
+                    <input type="hidden" name="assinatura" id="id_assinatura">
+                    <button type="button" id="clearSignature" class="btn btn-sm btn-outline-danger mt-2"><i class="bi bi-eraser"></i> Limpar</button>
+                </div>
             </div>
 
-            <div class="row mt-4">
-                <div class="col-md-12">{{ form.observacoes_gerais|as_crispy_field }}</div>
-            </div>
-
-            <div class="mt-4">
-                <h5>Assinatura do Responsável</h5>
-                <canvas id="signatureCanvas"></canvas>
-                <input type="hidden" name="assinatura" id="id_assinatura">
-                <button type="button" id="clearSignature" class="btn btn-sm btn-outline-danger mt-2"><i class="bi bi-eraser"></i> Limpar</button>
+            <div class="card-footer text-end">
+                <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar Checklist</button>
             </div>
         </div>
-
-        <div class="card-footer text-end">
-            <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar Checklist</button>
-        </div>
-    </div>
-</form>
+    </form>
+</div>    
 {% endblock %}
 
 {% block extra_js %}

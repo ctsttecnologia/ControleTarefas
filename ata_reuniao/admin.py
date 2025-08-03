@@ -3,15 +3,16 @@
 
 from django.contrib import admin
 from .models import AtaReuniao
+from core.admin import FilialAdminMixin
 
 # --------------------------------------------------------------------------
 # PASSO 1: REGISTRAR O ADMIN PARA OS MODELOS RELACIONADOS
 # --------------------------------------------------------------------------
 
 @admin.register(AtaReuniao)
-class AtaReuniaoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'contrato', 'coordenador', 'responsavel', 'natureza', 'entrada', 'prazo', 'status')
-    list_filter = ('status', 'natureza', 'entrada', 'prazo')
+class AtaReuniaoAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('id', 'contrato', 'filial', 'coordenador', 'responsavel', 'natureza', 'entrada', 'prazo', 'status')
+    list_filter = ('status', 'filial', 'natureza', 'entrada', 'prazo')
     
     # Refinado para buscas mais eficientes e direcionadas
     search_fields = (

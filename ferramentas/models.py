@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.core.files import File
 from io import BytesIO
 import qrcode
-from core.managers import FilialManager # 👈 Importe o manager do app 'core'
+from core.managers import FilialManager 
 from usuario.models import Filial, Usuario
 
 # Não há necessidade de importar Image da PIL diretamente no modelo se o qrcode a utiliza internamente.

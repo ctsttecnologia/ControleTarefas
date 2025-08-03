@@ -24,6 +24,17 @@ from django.contrib.auth import get_user_model # Melhor forma de pegar o modelo 
 User = get_user_model() # Carrega a classe do usuário
 
 
+class FilialScopedMixin:
+    """
+    Mixin que automaticamente filtra a queryset principal de uma View
+    pela filial do usuário logado. Garante a segregação de dados.
+    """
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'filial'):
+            return qs.for_request(self.request)
+        return qs.none() # Impede acesso a usuários sem filial ou não logados.
+
 # --- Mixin Base para Evitar Repetição ---
 class AtaReuniaoBaseMixin(LoginRequiredMixin):
     """
@@ -37,7 +48,7 @@ class AtaReuniaoBaseMixin(LoginRequiredMixin):
 
 # --- Views de CRUD (List, Create, Update, Delete) ---
 
-class AtaReuniaoListView(LoginRequiredMixin, ListView):
+class AtaReuniaoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
     model = AtaReuniao
     template_name = 'ata_reuniao/ata_reuniao_list.html'
     context_object_name = 'atas'
@@ -90,7 +101,7 @@ class AtaReuniaoListView(LoginRequiredMixin, ListView):
 
         return context
 
-class AtaReuniaoCreateView(AtaReuniaoBaseMixin, SuccessMessageMixin, CreateView):
+class AtaReuniaoCreateView(AtaReuniaoBaseMixin, FilialScopedMixin, SuccessMessageMixin, CreateView):
     """
     Cria uma nova Ata de Reunião.
     """
@@ -103,7 +114,7 @@ class AtaReuniaoCreateView(AtaReuniaoBaseMixin, SuccessMessageMixin, CreateView)
         return kwargs
 
 
-class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, SuccessMessageMixin, UpdateView):
+class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, FilialScopedMixin, SuccessMessageMixin, UpdateView):
     """
     Atualiza uma Ata de Reunião existente e salva um registro no histórico.
     """
