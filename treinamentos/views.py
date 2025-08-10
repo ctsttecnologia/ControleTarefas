@@ -29,6 +29,16 @@ from treinamentos import treinamento_generators
 from .models import Treinamento, TipoCurso, Participante
 from .forms import (BaseParticipanteFormSet, ParticipanteForm, TipoCursoForm, TreinamentoForm, ParticipanteFormSet)
 
+# --- Mixin de Segurança (Correto, sem alterações) ---
+class FilialScopedMixin:
+    """
+    Mixin que filtra a queryset principal de uma View baseada na 'filial'
+    do usuário logado.
+    """
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # A delegação para o manager customizado do modelo é a abordagem correta.
+        return qs.model.objects.for_request(self.request)
 
 class TreinamentoFormsetMixin:
     def get_context_data(self, **kwargs):
@@ -82,7 +92,7 @@ class CriarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin,
 
 # --- Visualizações para Treinamento (CRUD) ---
 
-class TreinamentoListView(LoginRequiredMixin, ListView):
+class TreinamentoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
     """Lista todos os treinamentos com filtros de busca."""
     model = Treinamento
     template_name = 'treinamentos/lista_treinamentos.html'
@@ -174,7 +184,7 @@ class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, Succes
     success_message = "Treinamento excluído com sucesso!"
 
 
-class TipoCursoListView(LoginRequiredMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
     model = TipoCurso
     template_name = 'treinamentos/lista_tipo_curso.html'
@@ -249,7 +259,7 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
 
 # --- Visualizações para Relatórios ---
 
-class RelatorioTreinamentosView(LoginRequiredMixin, ListView):
+class RelatorioTreinamentosView(LoginRequiredMixin, FilialScopedMixin, ListView):
     """
     Gera um relatório de treinamentos com base em filtros.
     Agora herda de ListView para buscar e listar os treinamentos.
@@ -345,7 +355,7 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
             # Redireciona de volta para a página de detalhes do treinamento
             return redirect('treinamentos:detalhe_treinamento', pk=self.kwargs.get('pk'))
 
-class RelatorioGeralExcelView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class RelatorioGeralExcelView(LoginRequiredMixin, FilialScopedMixin, PermissionRequiredMixin, View):
     """
     Gera e oferece para download um relatório geral de treinamentos em .xlsx.
     """

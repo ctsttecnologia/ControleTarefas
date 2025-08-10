@@ -1,0 +1,171 @@
+
+/* static/css/tarefas/detalhe.css */
+/* Versão refatorada para suportar temas claro e escuro dinamicamente. */
+
+/* --- Variáveis de Cor --- */
+.task-detail-page {
+    /* TEMA CLARO (Padrão) */
+    --azul-royal: #00529B;
+    --fundo-pagina: #f4f7f9;
+    --fundo-card: #ffffff;
+    --texto-principal: #212529;
+    --texto-secundario: #6c757d;
+    --borda-suave: #dee2e6;
+    --sombra-card: 0 4px 8px rgba(0, 0, 0, 0.05);
+    --fundo-comentario: #f8f9fa;
+    --fundo-input: #ffffff;
+    --cor-input: #212529;
+}
+
+/* TEMA ESCURO (Ativado quando o atributo data-bs-theme="dark" está presente) */
+[data-bs-theme="dark"] .task-detail-page {
+    --azul-royal: #0d6efd;
+    --fundo-pagina: #212529;
+    --fundo-card: #2c3034;
+    --texto-principal: #dee2e6;
+    --texto-secundario: #adb5bd;
+    --borda-suave: #495057;
+    --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.2);
+    --fundo-comentario: #343a40;
+    --fundo-input: #343a40;
+    --cor-input: #dee2e6;
+}
+
+/* --- Estilos Gerais (usam as variáveis) --- */
+
+.task-detail-page {
+    color: var(--texto-principal);
+}
+
+.task-detail-page .page-header-detail {
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--borda-suave);
+}
+
+.task-detail-page .task-title {
+    color: var(--texto-principal);
+    font-weight: 700;
+}
+
+.task-detail-page .task-meta-subtitle {
+    color: var(--texto-secundario);
+}
+
+.task-detail-page .btn-primary {
+    background-color: var(--azul-royal);
+    border-color: var(--azul-royal);
+}
+
+/* --- Cards --- */
+.task-detail-page .card {
+    background-color: var(--fundo-card);
+    color: var(--texto-principal);
+    border: 1px solid var(--borda-suave);
+    border-radius: 12px;
+    box-shadow: var(--sombra-card);
+}
+
+.task-detail-page .section-title {
+    color: var(--azul-royal);
+    border-bottom-color: var(--borda-suave);
+    font-weight: 600;
+}
+
+.task-detail-page .task-description {
+    color: var(--texto-principal);
+}
+
+/* --- Barra Lateral (Sidebar) --- */
+.task-detail-page .task-sidebar .card {
+    position: sticky;
+    top: 20px;
+}
+
+.task-detail-page .meta-group,
+.task-detail-page .meta-group-progress {
+    padding: 0.85rem 0;
+}
+
+.task-detail-page .meta-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-detail-page .meta-label {
+    color: var(--texto-secundario);
+    font-weight: 600;
+}
+
+.task-detail-page .meta-value {
+    color: var(--texto-principal);
+}
+
+.task-detail-page .meta-value .fas {
+    color: var(--texto-secundario);
+}
+
+.task-detail-page hr {
+    border-color: var(--borda-suave);
+    margin: 0.5rem 0;
+}
+
+/* --- Seção de Comentários --- */
+.task-detail-page .comment-form textarea {
+    background-color: var(--fundo-input);
+    border-color: var(--borda-suave);
+    color: var(--cor-input);
+}
+
+.task-detail-page .comment-form textarea::placeholder {
+    color: var(--texto-secundario);
+}
+
+.task-detail-page .comment-form textarea:focus {
+    border-color: var(--azul-royal);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.task-detail-page .comment-card {
+    background-color: var(--fundo-comentario);
+    border-left: 4px solid var(--azul-royal);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.task-detail-page .comment-author {
+    color: var(--texto-principal);
+    font-weight: 600;
+}
+
+.task-detail-page .comment-date {
+    color: var(--texto-secundario);
+}
+
+.task-detail-page .comment-text {
+    color: var(--texto-principal);
+}
+
+/* --- Badges de Status e Prioridade --- */
+/* (Estes usam as classes do Bootstrap, então não precisam de muitas variáveis) */
+.task-detail-page .badge {
+    font-size: 0.9rem !important;
+    padding: 0.5em 0.8em;
+}
+
+/* --- Barra de Progresso --- */
+.task-detail-page .progress {
+    background-color: var(--borda-suave);
+}
+
+.task-detail-page .progress-bar {
+    background-color: var(--azul-royal);
+}
+
+@media (max-width: 991.98px) {
+    .task-detail-page .task-sidebar .card {
+        position: static;
+    }
+}

@@ -3,6 +3,7 @@
 
 from django.contrib import admin
 from .models import Departamento, Cargo, Funcionario, Documento
+from core.admin import FilialAdminMixin
 
 # --- Inlines para a Visão de Funcionário ---
 
@@ -16,23 +17,24 @@ class DocumentoInline(admin.TabularInline):
 # --- Configurações dos Admins Principais ---
 
 @admin.register(Departamento)
-class DepartamentoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'ativo')
+class DepartamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'filial', 'ativo')
     search_fields = ('nome',)
     list_editable = ('ativo',)
 
 @admin.register(Cargo)
-class CargoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'cbo', 'ativo')
+class CargoAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'filial', 'cbo', 'ativo')
+    list_filter = ('nome', 'filial',)
     search_fields = ('nome', 'cbo')
-    list_editable = ('ativo',)
+    list_editable = ('ativo', 'filial',)
 
 @admin.register(Funcionario)
-class FuncionarioAdmin(admin.ModelAdmin):
+class FuncionarioAdmin(FilialAdminMixin, admin.ModelAdmin):
     inlines = [DocumentoInline]  # <-- Inclui o formulário de documentos aqui
     
-    list_display = ('nome_completo', 'matricula', 'cargo', 'departamento', 'status', 'idade', 'cliente')
-    list_filter = ('status', 'departamento', 'cargo')
+    list_display = ('nome_completo', 'filial', 'matricula', 'cargo', 'departamento', 'status', 'idade', 'cliente')
+    list_filter = ('status', 'filial', 'departamento', 'cargo')
     search_fields = ('nome_completo', 'matricula', 'usuario__username', 'usuario__email')
     
     # Otimiza a busca, carregando os dados relacionados de uma só vez
@@ -55,3 +57,5 @@ class FuncionarioAdmin(admin.ModelAdmin):
     )
     # Campos que são calculados e não devem ser editáveis
     readonly_fields = ('idade',)
+
+    

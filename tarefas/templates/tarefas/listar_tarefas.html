@@ -43,6 +43,7 @@
                                 <th>Responsável</th>
                                 <th>Status</th>
                                 <th>Prioridade</th>
+                                <th>Data de Criação</th>
                                 <th>Prazo</th>
                                 <th>Progresso</th>
                                 <th>Ações</th>
@@ -76,16 +77,17 @@
                                         {{ tarefa.get_prioridade_display }}
                                     </span>
                                 </td>
+                                <td>{{ tarefa.data_inicio|date:"d/m/Y"|default:"-" }}</td>
                                 <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
                                 <td>
-                                    <div class="progress" style="height: 20px;" title="{{ tarefa.progresso }}% Concluído">
+                                    <div class="progress" style="height: 20px;" title="{{ tarefa.progresso|default:0 }}% Concluído">
                                         <div class="progress-bar bg-success" 
                                             role="progressbar" 
-                                            style="width: {{ tarefa.progresso }}%" 
-                                            aria-valuenow="{{ tarefa.progresso }}" 
+                                            style="width: {{ tarefa.progresso|default:0 }}%;" 
+                                            aria-valuenow="{{ tarefa.progresso|default:0 }}" 
                                             aria-valuemin="0" 
                                             aria-valuemax="100">
-                                            {{ tarefa.progresso }}%
+                                            {{ tarefa.progresso|default:0 }}%
                                         </div>
                                     </div>
                                 </td>

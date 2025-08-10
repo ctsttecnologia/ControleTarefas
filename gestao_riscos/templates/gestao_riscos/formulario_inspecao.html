@@ -1,6 +1,4 @@
-
 {% extends "base.html" %}
-{% load static widget_tweaks %}
 
 {% block title %}{{ titulo_pagina|default:"Formulário" }}{% endblock %}
 
@@ -21,44 +19,26 @@
 
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">
-                                {% for error in form.non_field_errors %}
-                                    {{ error }}
-                                {% endfor %}
+                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
                             </div>
                         {% endif %}
 
                         {% for field in form %}
-                            {# Lógica para lidar com checkboxes de forma diferente #}
-                            {% if field.field.widget.input_type == 'checkbox' %}
-                                <div class="form-check mb-3">
-                                    {% render_field field class+="form-check-input"|add_class:"is-invalid"|if:field.errors %}
-                                    <label for="{{ field.id_for_label }}" class="form-check-label">{{ field.label }}</label>
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback d-block">
-                                            {% for error in field.errors %}{{ error }}{% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            {% else %}
-                                {# Lógica para campos de texto, select, textarea, etc. #}
-                                <div class="mb-3">
-                                    <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                                    
-                                    {# A mágica: aplica a classe .is-invalid automaticamente se houver erros #}
-                                    {% render_field field class+="form-control form-control-lg"|add_class:"is-invalid"|if:field.errors %}
-                                    
-                                    {% if field.help_text %}
-                                        <div class="form-text text-muted small mt-1">{{ field.help_text|safe }}</div>
-                                    {% endif %}
-                                    
-                                    {# Usa a classe .invalid-feedback do Bootstrap para exibir o erro #}
-                                    {% if field.errors %}
-                                        <div class="invalid-feedback">
-                                            {% for error in field.errors %}{{ error }}{% endfor %}
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            {% endif %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                                
+                                {{ field }}
+                                
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted small mt-1">{{ field.help_text|safe }}</div>
+                                {% endif %}
+                                
+                                {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in field.errors %}{{ error }}{% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
                         {% endfor %}
 
                         <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">

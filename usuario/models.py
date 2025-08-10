@@ -1,4 +1,3 @@
-# usuario/models.py
 
 # usuario/models.py
 
@@ -27,31 +26,31 @@ class Filial(models.Model):
     def __str__(self):
         return self.nome
 
+# =============================================================================
+# == MODELO USUARIO CORRIGIDO
+# =============================================================================
 class Usuario(AbstractUser):
-    """
-    Este é o seu modelo de usuário customizado.
-    Ele herda todos os campos de AbstractUser, incluindo 'groups' e 'user_permissions'.
-    Nós apenas adicionamos ou modificamos o que é estritamente necessário.
-    """
-    
-    # Tornamos o email único e obrigatório.
     email = models.EmailField(_('endereço de e-mail'), unique=True)
-
-    # Definindo o email como o campo de login principal.
     USERNAME_FIELD = 'email'
-    
-    # Campos requeridos ao criar um superusuário via linha de comando.
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
-    # NOVO CAMPO: Associa o usuário a uma filial.
-    # on_delete=models.PROTECT impede que uma filial seja deletada se houver usuários nela.
-    filial = models.ForeignKey(
-        Filial, 
-        on_delete=models.PROTECT, 
-        related_name='usuarios', 
-        verbose_name="Filial",
-        null=True, # Provisoriamente True para permitir migrações em bancos existentes. Mude para False depois.
-        blank=True # Provisoriamente True.
+    # CAMPO 1: Define a QUAIS filiais o usuário tem permissão de acesso.
+    filiais_permitidas = models.ManyToManyField(
+        Filial,
+        verbose_name="Filiais Permitidas",
+        help_text="Selecione as filiais que este usuário pode acessar.",
+        blank=True,
+        related_name="usuarios_permitidos"
+    )
+
+    # CAMPO 2: Define qual filial o usuário está usando no momento.
+    filial_ativa = models.ForeignKey(
+        Filial,
+        verbose_name="Filial Ativa",
+        help_text="A filial que está atualmente selecionada para este usuário.",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
     )
 
     class Meta:

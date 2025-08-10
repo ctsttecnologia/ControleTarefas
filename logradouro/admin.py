@@ -3,18 +3,20 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import Logradouro
 from .constant import ESTADOS_BRASIL
+from core.admin import FilialAdminMixin
 
 @admin.register(Logradouro)
-class LogradouroAdmin(admin.ModelAdmin):
+class LogradouroAdmin(FilialAdminMixin, admin.ModelAdmin):
     list_display = (
         'endereco_completo',
+        'filial',
         'bairro_cidade_uf',
         'cep_formatado',
         'coordenadas_link',
         'data_cadastro_formatada'
     )
     
-    list_filter = ('estado', 'cidade', 'bairro')
+    list_filter = ('estado', 'filial', 'cidade', 'bairro')
     search_fields = ('endereco', 'numero', 'cep', 'bairro', 'cidade')
     readonly_fields = ('data_cadastro', 'data_atualizacao', 'coordenadas_admin')
     

@@ -15,10 +15,11 @@ from django.db.models import F
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
 from dateutil.relativedelta import relativedelta
-
+from core.managers import FilialManager
+from usuario.models import Filial
 import logging
 import os
-from datetime import timedelta
+
 
 logger = logging.getLogger(__name__)
 
@@ -85,8 +86,36 @@ class Tarefas(models.Model):
     projeto = models.CharField(_('Projeto'), max_length=40, blank=True, null=True)
     duracao_prevista = models.DurationField(_('Duração Prevista'), null=True, blank=True)
     tempo_gasto = models.DurationField(_('Tempo Gasto'), null=True, blank=True)
-    dias_lembrete = models.PositiveSmallIntegerField(_('Dias para Lembrete'), null=True, blank=True, validators=[MinValueValidator(1)])
-    data_lembrete = models.DateTimeField(_('Data de Lembrete'), blank=True, null=True)
+    dias_lembrete = models.PositiveSmallIntegerField(
+        _('Lembrar-me quantos dias antes do prazo?'), 
+        null=True, 
+        blank=True, 
+        validators=[MinValueValidator(1)],
+        help_text=_('Deixe em branco se não desejar um lembrete automático.')
+    )
+    data_lembrete = models.DateTimeField(
+        _('Data de Lembrete'), 
+        blank=True, 
+        null=True, 
+        editable=False # Impede que este campo apareça no ModelForm e no admin
+    )
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='tarefas',
+        verbose_name="Filial",
+        null=True
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
+    tarefa_pai = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subtarefas',
+        verbose_name='Tarefa Principal'
+    )
 
     class Meta:
         verbose_name = _('Tarefa')
@@ -105,9 +134,7 @@ class Tarefas(models.Model):
         if self.prazo and self.status not in ['concluida', 'cancelada']:
             return timezone.now() > self.prazo
         return False
-
-    # Unificando os dois métodos save() em um só.
-    # MÉTODO SAVE UNIFICADO E LIMPO
+ 
     # MÉTODO SAVE FINAL E CENTRALIZADO
     def save(self, *args, **kwargs):
         # Captura o status antigo antes de salvar
@@ -118,6 +145,13 @@ class Tarefas(models.Model):
             except Tarefas.DoesNotExist:
                 pass
         
+        # Lógica para calcular a data do lembrete automaticamente
+        if self.prazo and self.dias_lembrete:
+            self.data_lembrete = self.prazo - timedelta(days=self.dias_lembrete)
+        else:
+            # Garante que a data do lembrete seja nula se não houver prazo ou dias
+            self.data_lembrete = None
+
         # --- LÓGICA DE NEGÓCIO AUTOMÁTICA ---
         # 1. Atualiza status para 'atrasada' se necessário
         if self.prazo and self.prazo < timezone.now() and self.status not in ['concluida', 'cancelada']:
@@ -142,6 +176,28 @@ class Tarefas(models.Model):
                 tarefa=self, status_anterior=old_status, novo_status=self.status,
                 alterado_por=self._user,
             )
+            
+    @property
+    def progresso(self):
+        """
+        Calcula o progresso da tarefa.
+        - Se for uma tarefa principal, calcula com base nas subtarefas concluídas.
+        - Se for uma subtarefa ou uma tarefa sem subtarefas, o progresso é 0% ou 100%.
+        """
+        # Verifica se é uma tarefa principal com subtarefas
+        if self.subtarefas.exists():
+            total_subtarefas = self.subtarefas.count()
+            subtarefas_concluidas = self.subtarefas.filter(status='concluida').count()
+            if total_subtarefas > 0:
+                # Retorna a porcentagem como um número inteiro
+                return int((subtarefas_concluidas / total_subtarefas) * 100)
+            return 0 # Caso não hajam subtarefas (embora exists() já verifique)
+
+        # Se não tiver subtarefas, o progresso é binário
+        elif self.status == 'concluida':
+            return 100
+        else:
+            return 0
 
     def _criar_proxima_recorrencia(self):
         """Cria a próxima ocorrência de uma tarefa recorrente."""
@@ -192,6 +248,16 @@ class HistoricoStatus(models.Model):
     )
     data_alteracao = models.DateTimeField(_('Data da Alteração'), auto_now_add=True)
     observacao = models.TextField(_('Observação'), blank=True, null=True)
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='historicos_status', 
+        verbose_name="Filial",
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _('Histórico de Status')
@@ -234,6 +300,16 @@ class Comentario(models.Model):
     )
     criado_em = models.DateTimeField(_('Criado em'), auto_now_add=True)
     atualizado_em = models.DateTimeField(_('Atualizado em'), auto_now=True)
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='comentarios',
+        verbose_name="Filial",
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _('Comentário')

@@ -78,7 +78,7 @@
         <div style="color: #d80000;"> 
             Estou ciente de que o não uso dos EPIs, constitui ato faltoso conforme artigo 158 da CLT.
         </div> 
-        Local e Data:______________, __/___/_______ - Assinatura:___________________________________ 
+        Local e Data:___________, __/___/_______ - Assinatura:_______________________
     </p>
     
     <h3>RECEBIMENTO</h3>
@@ -99,11 +99,18 @@
                 <td>{{ entrega.quantidade }}</td>
                 <td>UN</td>
                 <td>{{ entrega.equipamento.nome }} (CA: {{ entrega.equipamento.certificado_aprovacao }})</td>
+         
                 <td style="text-align: center;">
-                    {% if entrega.assinatura_recebimento %}
-                        <img src="{{ entrega.assinatura_recebimento }}" class="signature-img">
-                    {% elif entrega.assinatura_imagem %}
-                        <img src="{{ entrega.assinatura_imagem.path }}" class="signature-img">
+                    {# Primeiro, verifica se o campo de imagem tem um arquivo associado #}
+                    {% if entrega.assinatura_imagem %}
+                        {# USA O NOVO MÉTODO PARA OBTER A URI CORRETA #}
+                        <img src="{{ entrega.get_assinatura_imagem_path_for_pdf }}" style="max-height: 40px; width: auto;">
+                    {# Se não tiver imagem, verifica se tem a assinatura desenhada #}
+                    {% elif entrega.assinatura_recebimento %}
+                        <img src="{{ entrega.assinatura_recebimento }}" style="max-height: 40px; width: auto;">
+                    {# Se não tiver nenhuma das duas, mostra o traço #}
+                    {% else %}
+                        <span>-</span>
                     {% endif %}
                 </td>
             </tr>
@@ -133,20 +140,19 @@
         </tbody>
     </table>
 
-    <div style="background-color: #f0f0f0; color: #333; border: 1px solid #ddd; border-radius: 4px; padding: 10px; margin-top: 20px; font-size: 10pt;">
+
         <div style="background-color: #f0f0f0; color: #d80000; border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-top: 20px;">
             <p align="center" style="margin-top: 0;"><strong>CONSOLIDAÇÃO DAS LEIS DO TRABALHO - Art. 158</strong></p>
             <p style="margin-bottom: 0; text-align: left;">
                 Cabe aos empregados:<br> 
                 I - Observar as normas de segurança e medicina do trabalho, 
-                inclusive as instruções de que trata o item II do artigo anterior; 
+                inclusive as instruções de que trata o item II do artigo anterior;<br> 
                 II - Colaborar com a empresa na aplicação dos dispositivos deste capítulo. 
                 Parágrafo único: Constitui ato faltoso do empregado a recusa injustificada:<br> 
-                a) .........................<br> 
+                a) ...<br> 
                 b) ao uso dos equipamentos de proteção individual fornecidos pela empresa.
             </p>
         </div>
-    </div>
-
+    
 </body>
 </html>

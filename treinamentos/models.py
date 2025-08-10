@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.conf import settings # Melhor prática para referenciar o User model
 from django.utils import timezone
 
+from core.managers import FilialManager
+from usuario.models import Filial
 from datetime import timedelta
 
 class TipoCurso(models.Model):
@@ -42,6 +44,15 @@ class TipoCurso(models.Model):
     ativo = models.BooleanField("Ativo", default=True)
     data_cadastro = models.DateTimeField("Data de Cadastro", auto_now_add=True)
     data_atualizacao = models.DateTimeField("Data de Atualização", auto_now=True)
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='tipocursos',
+        verbose_name="Filial",
+        null=True
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         db_table = 'tipocurso'
@@ -104,6 +115,15 @@ class Treinamento(models.Model):
     participantes_previstos = models.IntegerField("Nº de Participantes Previstos")
     data_cadastro = models.DateTimeField(auto_now_add=True)
     data_atualizacao = models.DateTimeField(auto_now=True)
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='treinamentos',
+        verbose_name="Filial",
+        null=True
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         db_table = 'Treinamento'
@@ -168,6 +188,15 @@ class Participante(models.Model):
         auto_now_add=True,
         verbose_name='Data de Registro'
     )
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='participantes',
+        verbose_name="Filial",
+        null=True
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         db_table = 'participante'
