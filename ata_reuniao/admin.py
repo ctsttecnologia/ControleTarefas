@@ -3,14 +3,14 @@
 
 from django.contrib import admin
 from .models import AtaReuniao
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 # --------------------------------------------------------------------------
-# PASSO 1: REGISTRAR O ADMIN PARA OS MODELOS RELACIONADOS
+# REGISTRAR O ADMIN PARA OS MODELOS RELACIONADOS
 # --------------------------------------------------------------------------
 
 @admin.register(AtaReuniao)
-class AtaReuniaoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class AtaReuniaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('id', 'contrato', 'filial', 'coordenador', 'responsavel', 'natureza', 'entrada', 'prazo', 'status')
     list_filter = ('status', 'filial', 'natureza', 'entrada', 'prazo')
     

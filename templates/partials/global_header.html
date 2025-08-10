@@ -82,9 +82,10 @@
                             {% if notification_tasks %}
                                 {% for task in notification_tasks %}
                                     <li>
-                                        <a class="dropdown-item" href="#"> {# Coloque o URL da tarefa aqui, ex: {% url 'tarefas:detalhe' task.id %} #}
+                                        <a class="dropdown-item" href="{% url 'tarefas:tarefa_detail' task.pk %}">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span class="small">{{ task.titulo|truncatechars:25 }}</span>
+                                                
                                                 {% if task.prazo and task.prazo < now %}
                                                     <span class="badge bg-danger-subtle text-danger-emphasis">Atrasada</span>
                                                 {% elif task.data_lembrete and task.data_lembrete.date == now.date %}

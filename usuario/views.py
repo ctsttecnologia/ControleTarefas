@@ -22,20 +22,6 @@ from django.contrib.auth.forms import SetPasswordForm
 from django.db.models import ProtectedError
 
 
-# --- Mixin de Segurança (Correto, sem alterações) ---
-class FilialScopedMixin:
-    """
-    Mixin que filtra a queryset principal de uma View baseada na 'filial'
-    do usuário logado.
-    """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        # A delegação para o manager customizado do modelo é a abordagem correta.
-        return qs.model.objects.for_request(self.request)
-    
-# =============================================================================
-# == MIXINS DE PERMISSÃO (SEM ALTERAÇÕES SIGNIFICATIVAS)
-# =============================================================================
 
 class StaffRequiredMixin(UserPassesTestMixin):
     def test_func(self):

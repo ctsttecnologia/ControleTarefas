@@ -6,7 +6,7 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from .models import Tarefas, Comentario, HistoricoStatus
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 # --- INLINES ---
 class ComentarioInline(admin.TabularInline):
@@ -20,12 +20,11 @@ class HistoricoStatusInline(admin.TabularInline):
 # --- ADMIN PRINCIPAL DE TAREFAS (Refatorado) ---
 
 @admin.register(Tarefas)
-class TarefasAdmin(FilialAdminMixin, admin.ModelAdmin):
+class TarefasAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     """
     Administração customizada para o modelo de Tarefas.
     Foco em performance, UX e organização.
     """
-    
     # --- Configurações da LIST VIEW ---
     list_display = (
         'titulo',

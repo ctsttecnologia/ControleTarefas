@@ -28,7 +28,7 @@ from seguranca_trabalho.forms import EntregaEPIForm, EquipamentoForm, Fabricante
 from seguranca_trabalho.models import EntregaEPI, Equipamento, Fabricante, FichaEPI, Fornecedor, MatrizEPI
 from django.conf import settings
 from weasyprint import default_url_fetcher # Importe o default_url_fetcher
-
+from core.mixins import FilialScopedQuerysetMixin
 
 # Adicione esta função no topo do seu arquivo de views
 def custom_url_fetcher(url):
@@ -44,19 +44,6 @@ def custom_url_fetcher(url):
     # Para todas as outras URLs (http, https, etc.), usa o comportamento padrão
     return default_url_fetcher(url)
 
-
-# --- Mixins ---
-class FilialScopedMixin:
-    """
-    Mixin que filtra a queryset principal de uma View baseada na 'filial'
-    do usuário logado, usando um custom manager no modelo.
-    """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        # Delegação para o manager é a abordagem correta e limpa.
-        if hasattr(qs.model.objects, 'for_request'):
-            return qs.model.objects.for_request(self.request)
-        return qs
     
 class StaffRequiredMixin(PermissionRequiredMixin):
     """
@@ -76,7 +63,7 @@ class SSTPermissionMixin(PermissionRequiredMixin):
 
 # --- VIEWS PARA FUNCIONÁRIOS ---
 
-class FuncionarioListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Funcionario
     template_name = 'departamento_pessoal/lista_funcionarios.html'
     context_object_name = 'funcionarios'
@@ -94,7 +81,7 @@ class FuncionarioListView(FilialScopedMixin, StaffRequiredMixin, ListView):
             )
         return queryset
 
-class FuncionarioDetailView(FilialScopedMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/detalhe_funcionario.html'
     context_object_name = 'funcionario'
@@ -103,7 +90,7 @@ class FuncionarioDetailView(FilialScopedMixin, StaffRequiredMixin, DetailView):
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
 
-class FuncionarioCreateView(StaffRequiredMixin, CreateView): # CORREÇÃO: Removido FilialScopedMixin inútil
+class FuncionarioCreateView(FilialScopedQuerysetMixin, CreateView): # CORREÇÃO: Removido FilialScopedMixin inútil
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
@@ -123,7 +110,7 @@ class FuncionarioCreateView(StaffRequiredMixin, CreateView): # CORREÇÃO: Remov
         context['titulo_pagina'] = "Cadastrar Novo Funcionário"
         return context
 
-class FuncionarioUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView): # CORREÇÃO: Adicionado FilialScopedMixin
+class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView): # CORREÇÃO: Adicionado FilialScopedMixin
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
@@ -140,7 +127,7 @@ class FuncionarioUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView): 
         context['titulo_pagina'] = f"Editar: {self.object.nome_completo}"
         return context
 
-class FuncionarioDeleteView(FilialScopedMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDeleteView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'funcionario'
@@ -162,7 +149,7 @@ class FuncionarioDeleteView(FilialScopedMixin, StaffRequiredMixin, DetailView):
 
 # --- VIEWS PARA O PROCESSO DE ADMISSÃO ---
 
-class FuncionarioAdmissaoView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
     form_class = AdmissaoForm
     template_name = 'departamento_pessoal/admissao_form.html'
@@ -180,12 +167,12 @@ class FuncionarioAdmissaoView(FilialScopedMixin, StaffRequiredMixin, UpdateView)
         return context
 
 # --- VIEWS PARA DEPARTAMENTO ---
-class DepartamentoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class DepartamentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Departamento
     template_name = 'departamento_pessoal/lista_departamento.html'
     context_object_name = 'departamentos'
 
-class DepartamentoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
+class DepartamentoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -197,7 +184,7 @@ class DepartamentoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class DepartamentoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class DepartamentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -214,12 +201,12 @@ class DepartamentoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
 
 
 # --- VIEWS PARA CARGOS ---
-class CargoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class CargoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
 
-class CargoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
+class CargoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
@@ -230,7 +217,7 @@ class CargoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
         messages.success(self.request, "Cargo criado com sucesso.")
         return super().form_valid(form)
 
-class CargoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
@@ -248,7 +235,7 @@ class CargoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
 
 # --- VIEWS PARA DOCUMENTOS (ADICIONADAS) ---
 
-class DocumentoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class DocumentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Documento
     template_name = 'departamento_pessoal/lista_documentos.html'
     context_object_name = 'documentos'
@@ -295,7 +282,7 @@ class DocumentoCreateView(StaffRequiredMixin, CreateView): # CORREÇÃO: Removid
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.kwargs['funcionario_pk']})
 
 
-class DocumentoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class DocumentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
@@ -320,7 +307,7 @@ class SSTPermissionMixin(PermissionRequiredMixin):
     raise_exception = True
 
 # --- CRUD de Equipamentos ---
-class EquipamentoListView(FilialScopedMixin, SSTPermissionMixin, ListView):
+class EquipamentoListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_list.html'
     context_object_name = 'equipamentos'
@@ -397,7 +384,7 @@ class FornecedorUpdateView(SSTPermissionMixin, UpdateView):
 # CRUD DE FICHAS DE EPI E AÇÕES
 # ========================================================================
 
-class FichaEPIListView(FilialScopedMixin, SSTPermissionMixin, ListView):
+class FichaEPIListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
@@ -645,7 +632,7 @@ class DateAdd(Func):
         )
         super().__init__(date_expression, interval_expression, **extra)
 
-class DashboardSSTView(FilialScopedMixin, SSTPermissionMixin, TemplateView):
+class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateView):
     template_name = 'seguranca_trabalho/dashboard.html'
 
     def get_context_data(self, **kwargs):

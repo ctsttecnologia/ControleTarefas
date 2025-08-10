@@ -19,12 +19,12 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.views.generic.edit import FormMixin
+from django.core.serializers.json import DjangoJSONEncoder
 from requests import request
 
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from .utils import enviar_email_notificacao_status # Importa a função
-
+from .utils import enviar_email_tarefa 
 
 # Imports Locais
 from .models import Tarefas, Comentario, HistoricoStatus
@@ -92,21 +92,50 @@ class TarefaDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
 class TarefaCreateView(LoginRequiredMixin, CreateView):
     model = Tarefas
     form_class = TarefaForm
-    template_name = 'tarefas/criar_tarefa.html'
-    success_url = reverse_lazy('tarefas:listar_tarefas')
+    template_name = 'tarefas/criar_tarefa.html' # Renomeado para seguir um padrão
+    success_url = reverse_lazy('tarefas:kanban') # Sugestão: redirecionar para o Kanban
 
     def get_form_kwargs(self):
+        """
+        Passa o objeto 'request' para o formulário.
+        Isso é útil se o formulário precisar acessar dados da sessão ou do usuário.
+        """
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
         return kwargs
 
     def form_valid(self, form):
-        tarefa = form.save(commit=False)
-        tarefa.usuario = self.request.user
-        tarefa.filial_id = self.request.session.get('active_filial_id')
-        tarefa.save()
+        """
+        Este método é chamado após a validação bem-sucedida do formulário.
+        """
+        # 1. Define os campos que não vêm do formulário antes de salvar.
+        form.instance.usuario = self.request.user
+        filial_id = self.request.session.get('active_filial_id')
+        if filial_id:
+            form.instance.filial_id = filial_id
+        
+        # 2. Deixa a classe pai (super) salvar o objeto e retornar a resposta de redirecionamento.
+        #    Isso é mais limpo do que chamar form.save() e redirect() manualmente.
+        response = super().form_valid(form)
+        
+        # 3. 'self.object' agora contém a tarefa recém-criada e salva.
+        tarefa_criada = self.object
+
+        # 4. (Opcional, mas recomendado) Envia e-mail de notificação para o responsável.
+        if tarefa_criada.responsavel:
+            enviar_email_tarefa(
+                assunto=f"Nova tarefa atribuída a você: '{tarefa_criada.titulo}'",
+                template_texto='tarefas/emails/email_nova_tarefa.txt',
+                template_html='tarefas/emails/email_nova_tarefa.html',
+                contexto={'tarefa': tarefa_criada, 'criador': self.request.user},
+                destinatarios=[tarefa_criada.responsavel.email]
+            )
+
+        # 5. Adiciona a mensagem de sucesso.
         messages.success(self.request, "Tarefa criada com sucesso!")
-        return redirect(self.success_url)
+        
+        # 6. Retorna a resposta de redirecionamento criada pelo 'super()'.
+        return response
 
 class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, UpdateView):
     model = Tarefas
@@ -123,33 +152,53 @@ class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
     def form_valid(self, form):
         """
         Este método é chamado quando o formulário é válido.
-        É o local perfeito para nossa lógica de notificação.
         """
-        # 1. Captura o objeto da tarefa *antes* de qualquer alteração ser salva.
         tarefa_antes_da_edicao = self.get_object()
         status_anterior = tarefa_antes_da_edicao.get_status_display()
-
-        # 2. Verifica se o campo 'status' realmente mudou.
-        if 'status' in form.changed_data:
-            novo_status = form.cleaned_data['status']
-            novo_status_display = dict(Tarefas.STATUS_CHOICES).get(novo_status)
-            
-            # Chama a função para enviar o e-mail, se o status mudou.
-            # Notifica o responsável pela tarefa.
-            if status_anterior != novo_status_display and tarefa_antes_da_edicao.responsavel:
-                enviar_email_notificacao_status(
-                    tarefa=tarefa_antes_da_edicao,
-                    usuario_notificado=tarefa_antes_da_edicao.responsavel,
-                    status_anterior=status_anterior,
-                    novo_status=novo_status_display,
-                    request=self.request
-                )
         
-        # 3. Adiciona uma mensagem de sucesso para o usuário.
-        messages.success(self.request, f"Tarefa '{self.get_object().titulo}' atualizada com sucesso!")
+        # Deixa a classe pai salvar o objeto primeiro
+        response = super().form_valid(form)
+        
+        # 'self.object' agora contém a tarefa já atualizada
+        tarefa_atualizada = self.object
+        novo_status_display = tarefa_atualizada.get_status_display()
 
-        # 4. Chama o método original da classe pai para salvar o objeto e redirecionar.
-        return super().form_valid(form)
+        # Verifica se o status realmente mudou para evitar e-mails desnecessários
+        if status_anterior != novo_status_display:
+            
+            # --- PREPARA OS ARGUMENTOS PARA A FUNÇÃO DE E-MAIL ---
+            
+            # 1. Define o assunto
+            assunto = f"Status da tarefa '{tarefa_atualizada.titulo}' foi alterado"
+            
+            # 2. Monta o dicionário de contexto para os templates
+            contexto = {
+                'tarefa': tarefa_atualizada,
+                'status_anterior': status_anterior,
+                'novo_status': novo_status_display,
+                'alterado_por': self.request.user,
+                'request': self.request,
+            }
+            
+            # 3. Define a lista de destinatários (criador e responsável)
+            destinatarios = set()
+            if tarefa_atualizada.usuario and tarefa_atualizada.usuario.email:
+                destinatarios.add(tarefa_atualizada.usuario.email)
+            if tarefa_atualizada.responsavel and tarefa_atualizada.responsavel.email:
+                destinatarios.add(tarefa_atualizada.responsavel.email)
+
+            # 4. Chama a função utilitária com os argumentos CORRETOS
+            if destinatarios:
+                enviar_email_tarefa(
+                    assunto=assunto,
+                    template_texto='tarefas/emails/email_notificacao_status.txt',
+                    template_html='tarefas/emails/email_notificacao_status.html',
+                    contexto=contexto,
+                    destinatarios=list(destinatarios)
+                )
+
+        messages.success(self.request, f"Tarefa '{tarefa_atualizada.titulo}' atualizada com sucesso!")
+        return response
 
 class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPassesTestMixin, DeleteView):
     model = Tarefas
@@ -177,7 +226,7 @@ class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermission
         """Filtra apenas as tarefas ativas para o quadro Kanban."""
         # Adicionei 'concluida' para ter a coluna "Feito", que é comum em Kanbans.
         # Se não quiser, pode remover.
-        active_statuses = ['pendente', 'andamento', 'pausada', 'atrasada', 'concluida']
+        active_statuses = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
         return super().get_queryset().filter(status__in=active_statuses)
 
     def get_context_data(self, **kwargs):
@@ -196,7 +245,7 @@ class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermission
             
         # 2. Define a ordem e o conteúdo das colunas
         # A ordem aqui define a ordem de exibição na tela.
-        colunas_ordenadas = ['pendente', 'andamento', 'pausada', 'atrasada', 'concluida']
+        colunas_ordenadas = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
         status_nomes = dict(Tarefas.STATUS_CHOICES)
 
         colunas_finais = []
@@ -235,7 +284,7 @@ def enviar_email_notificacao(tarefa, usuario, status_anterior, novo_status, requ
     email = EmailMultiAlternatives(
         subject=assunto,
         body=corpo_texto,
-        from_email='seu-email@seudominio.com',
+        from_email='esg@cetestsp.com',
         to=[usuario.email]
     )
     email.attach_alternative(corpo_html, "text/html")
@@ -335,56 +384,91 @@ class RelatorioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListVi
         
         return redirect('tarefas:relatorio_tarefas')
 
+
 class DashboardAnaliticoView(LoginRequiredMixin, TemplateView):
-    """
-    Exibe o dashboard analítico com gráficos e métricas sobre as tarefas da filial.
-    """
     template_name = 'tarefas/dashboard_analitico.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 1. Obtém a queryset base de tarefas já filtrada pela filial.
-        #    Usamos o manager diretamente, pois TemplateView não tem `self.model`.
-        try:
-            tarefas_da_filial = Tarefas.objects.for_request(self.request)
-        except AttributeError:
-            # Fallback caso o manager .for_request não exista, evitando crashes.
-            tarefas_da_filial = Tarefas.objects.none()
+        active_filial_id = self.request.session.get('active_filial_id')
 
-        hoje = timezone.now()
-        trinta_dias_atras = hoje - timedelta(days=30)
+        # --- Querysets Base (já corrigidos) ---
+        base_queryset = Tarefas.objects.all()
+        if active_filial_id:
+            base_queryset = base_queryset.filter(filial_id=active_filial_id)
         
-        # 2. As queries agora partem da queryset já filtrada
-        concluidas_30d = tarefas_da_filial.filter(
-            responsavel=OuterRef('pk'),
-            status='concluida',
-            concluida_em__gte=trinta_dias_atras
-        ).values('responsavel').annotate(c=Count('pk')).values('c')
+        usuarios = User.objects.all()
+        if active_filial_id:
+            usuarios = usuarios.filter(filiais_permitidas__id=active_filial_id)
 
-        ativas = tarefas_da_filial.filter(
-            responsavel=OuterRef('pk')
-        ).exclude(status__in=['concluida', 'cancelada']).values('responsavel').annotate(c=Count('pk')).values('c')
+        # --- DADOS PARA A TABELA (sem alteração) ---
+        usuarios_performance = []
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        for usuario in usuarios:
+            ativas = base_queryset.filter(responsavel=usuario, status__in=['pendente', 'andamento', 'atrasada']).count()
+            concluidas = base_queryset.filter(responsavel=usuario, status='concluida', concluida_em__gte=thirty_days_ago).count()
+            if ativas > 0 or concluidas > 0:
+                usuarios_performance.append({
+                    'username': usuario.username, 'tarefas_ativas': ativas, 'tarefas_concluidas_30d': concluidas
+                })
+        context['usuarios_performance'] = usuarios_performance
+        
+        # --- DADOS PARA OS GRÁFICOS ---
+        charts_data = {}
+        
+        # =========================================================================
+        # REFATORAÇÃO DO GRÁFICO DE TENDÊNCIA
+        # =========================================================================
 
-        # Agora a variável 'User' está definida corretamente no escopo do módulo.
-        usuarios = User.objects.filter(
-            Q(tarefas_criadas__in=tarefas_da_filial) | Q(tarefas_responsavel__in=tarefas_da_filial)
-        ).distinct().annotate(
-            tarefas_concluidas_30d=Subquery(concluidas_30d, output_field=IntegerField(default=0)),
-            tarefas_ativas=Subquery(ativas, output_field=IntegerField(default=0)),
-        ).order_by('-tarefas_ativas')
+        # 1. Pega os dados brutos do banco de dados
+        six_weeks_ago_dt = timezone.now() - timedelta(weeks=6)
         
-        # O resto das queries também deve usar a queryset filtrada
-        status_dist = list(tarefas_da_filial.values('status').annotate(total=Count('id')))
-        prioridade_dist = list(tarefas_da_filial.values('prioridade').annotate(total=Count('id')))
+        criadas_por_semana_qs = base_queryset.filter(data_criacao__gte=six_weeks_ago_dt)\
+            .annotate(semana=TruncWeek('data_criacao'))\
+            .values('semana')\
+            .annotate(total=Count('id'))\
+            .order_by('semana')
+
+        concluidas_por_semana_qs = base_queryset.filter(concluida_em__gte=six_weeks_ago_dt, status='concluida')\
+            .annotate(semana=TruncWeek('concluida_em'))\
+            .values('semana')\
+            .annotate(total=Count('id'))\
+            .order_by('semana')
         
-        context['usuarios_performance'] = usuarios
-        context['charts_data_json'] = json.dumps({
-            'status_dist': status_dist,
-            'prioridade_dist': prioridade_dist,
-            # ... adicione outros dados de gráfico aqui
-        }, default=str)
+        # 2. Converte os dados brutos para dicionários para busca rápida
+        dados_criadas = {item['semana'].date(): item['total'] for item in criadas_por_semana_qs}
+        dados_concluidas = {item['semana'].date(): item['total'] for item in concluidas_por_semana_qs}
+
+        # 3. Gera um intervalo completo de semanas (as últimas 6)
+        hoje = timezone.now().date()
+        semana_inicial = hoje - timedelta(weeks=5)
         
+        labels_semanas = []
+        dados_finais_criadas = []
+        dados_finais_concluidas = []
+        
+        # Garante que a primeira semana comece no início da semana (ex: segunda-feira)
+        current_week = semana_inicial - timedelta(days=semana_inicial.weekday())
+
+        while current_week <= hoje:
+            labels_semanas.append(current_week)
+            dados_finais_criadas.append(dados_criadas.get(current_week, 0))
+            dados_finais_concluidas.append(dados_concluidas.get(current_week, 0))
+            current_week += timedelta(weeks=1)
+
+        # 4. Adiciona os dados completos e formatados ao dicionário do gráfico
+        charts_data['tendencia_labels'] = labels_semanas
+        charts_data['tendencia_criadas'] = dados_finais_criadas
+        charts_data['tendencia_concluidas'] = dados_finais_concluidas
+        
+        # --- Gráfico de Performance (sem alteração na lógica, apenas na passagem de dados) ---
+        charts_data['performance_equipe'] = usuarios_performance
+
+        # Converte para JSON
+        context['charts_data_json'] = json.dumps(charts_data, cls=DjangoJSONEncoder)
+
         return context
+    
 # =============================================================================
 # == VIEW DE ADMIN (SUPERUSER)
 # =============================================================================

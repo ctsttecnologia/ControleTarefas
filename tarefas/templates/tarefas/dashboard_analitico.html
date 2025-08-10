@@ -86,33 +86,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // GRÁFICO 1: TENDÊNCIA CRIADAS vs. CONCLUÍDAS (LINHA)
         const tendenciaCtx = document.getElementById('tendenciaChart')?.getContext('2d');
-        if (tendenciaCtx && chartsData.criadas_semana && chartsData.concluidas_semana) {
-            const allWeeks = new Set([...chartsData.criadas_semana.map(d => d.semana), ...chartsData.concluidas_semana.map(d => d.semana)]);
-            const labels = Array.from(allWeeks).sort().map(semana => new Date(semana).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        // CORREÇÃO: Verifica as novas chaves no JSON
+        if (tendenciaCtx && chartsData.tendencia_labels) {
+            // CORREÇÃO: Usa os dados já processados pela view
+            const labels = chartsData.tendencia_labels.map(semana => 
+                new Date(semana).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+            );
             
-            const getDataForWeek = (weekLabel, dataSet) => {
-                const [day, month] = weekLabel.split('/');
-                const weekStr = Array.from(allWeeks).find(w => {
-                    const d = new Date(w);
-                    return d.getDate() == day && (d.getMonth() + 1) == month;
-                });
-                return dataSet.find(d => d.semana === weekStr)?.total || 0;
-            };
-
             chartInstances.tendenciaChart = new Chart(tendenciaCtx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
                         label: 'Tarefas Criadas',
-                        data: labels.map(label => getDataForWeek(label, chartsData.criadas_semana)),
+                        data: chartsData.tendencia_criadas, // << USA DIRETAMENTE
                         borderColor: themeOpts.chartColor1,
                         backgroundColor: themeOpts.chartColor1Light,
                         fill: true,
                         tension: 0.4
                     }, {
                         label: 'Tarefas Concluídas',
-                        data: labels.map(label => getDataForWeek(label, chartsData.concluidas_semana)),
+                        data: chartsData.tendencia_concluidas, // << USA DIRETAMENTE
                         borderColor: themeOpts.chartColor2,
                         backgroundColor: themeOpts.chartColor2Light,
                         fill: true,
@@ -136,14 +130,15 @@ document.addEventListener('DOMContentLoaded', () => {
             chartInstances.equipeChart = new Chart(equipeCtx, {
                 type: 'bar',
                 data: {
+                    // CORREÇÃO: Adapta para a nova estrutura de dados
                     labels: chartsData.performance_equipe.map(u => u.username),
                     datasets: [{
                         label: 'Tarefas Ativas',
-                        data: chartsData.performance_equipe.map(u => u.ativas),
+                        data: chartsData.performance_equipe.map(u => u.tarefas_ativas),
                         backgroundColor: themeOpts.chartColor1
                     }, {
                         label: 'Concluídas (30d)',
-                        data: chartsData.performance_equipe.map(u => u.concluidas),
+                        data: chartsData.performance_equipe.map(u => u.tarefas_concluidas_30d),
                         backgroundColor: themeOpts.chartColor2
                     }]
                 },

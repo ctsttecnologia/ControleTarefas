@@ -5,16 +5,30 @@
     <meta charset="UTF-8">
     <title>Relatório de Tarefas</title>
     <style>
-        body { font-family: 'DejaVu Sans', sans-serif; font-size: 10pt; }
+        /* ==== ALTERAÇÃO 1: Página em modo Paisagem ==== */
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm;
+        }
+
+        body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; }
         h1 { text-align: center; margin-bottom: 20px; }
         h2 { margin-top: 20px; margin-bottom: 10px; }
         .logo { text-align: center; margin-bottom: 10px; }
-        .logo img { max-width: 200px; height: auto; }
-        .table-container { overflow: auto; }
+        .logo img { max-width: 150px; height: auto; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 0.9em; }
+
+        /* ==== ALTERAÇÃO 2: Estilo de célula mais compacto e com quebra de linha ==== */
+        th, td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: left;
+            font-size: 0.8em;
+            word-wrap: break-word;
+        }
+
         th { background-color: #f2f2f2; font-weight: bold; }
-        .status-badge { display: inline-block; padding: 2px 5px; border-radius: 5px; font-size: 0.8em; color: white; }
+        .status-badge { display: inline-block; padding: 2px 5px; border-radius: 5px; font-size: 0.9em; color: white; border: 1px solid #555; }
         .badge-pendente { background-color: #ffc107; }
         .badge-andamento { background-color: #007bff; }
         .badge-pausada { background-color: #6c757d; }
@@ -39,45 +53,42 @@
     <h1>Relatório de Tarefas</h1>
 
     <h2>Detalhes das Tarefas</h2>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Título</th>
-                    <th>Responsável</th>
-                    <th>Status</th>
-                    <th>Prioridade</th>
-                    <th>Projeto</th>
-                    <th>Criação</th>
-                    <th>Prazo</th>
-                    <th>Duração Prevista</th>
-                    <th>Tempo Gasto</th>
-                    <th>Lembrete (Dias)</th>
-                    <th>Data Lembrete</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for tarefa in tarefas %}
-                <tr>
-                    <td>{{ tarefa.titulo }}</td>
-                    <td>{{ tarefa.responsavel.username|default:"-" }}</td>
-                    <td><span class="status-badge badge-{{ tarefa.status }}">{{ tarefa.get_status_display }}</span></td>
-                    <td>{{ tarefa.get_prioridade_display }}</td>
-                    <td>{{ tarefa.projeto|default:"-" }}</td>
-                    <td>{{ tarefa.data_criacao|date:"d/m/Y H:i" }}</td>
-                    <td>{{ tarefa.prazo|date:"d/m/Y H:i"|default:"-" }}</td>
-                    <td>{{ tarefa.duracao_prevista|default:"-" }}</td>
-                    <td>{{ tarefa.tempo_gasto|default:"-" }}</td>
-                    <td>{{ tarefa.dias_lembrete|default:"-" }}</td>
-                    <td>{{ tarefa.data_lembrete|date:"d/m/Y"|default:"-" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="11" style="text-align: center;">Nenhum dado para exibir.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <table>
+        <thead>
+            <tr>
+                {# ==== ALTERAÇÃO 3: Cabeçalhos abreviados ==== #}
+                <th>Título</th>
+                <th>Responsável</th>
+                <th>Status</th>
+                <th>Prior.</th> {# Abreviado #}
+                <th>Projeto</th>
+                <th>Criação</th>
+                <th>Prazo</th>
+                <th>Dur. Prev.</th> {# Abreviado #}
+                <th>T. Gasto</th>   {# Abreviado #}
+            </tr>
+        </thead>
+        <tbody>
+            {% for tarefa in tarefas %}
+            <tr>
+                <td>{{ tarefa.titulo }}</td>
+                <td>{{ tarefa.responsavel.username|default:"-" }}</td>
+                <td><span class="status-badge badge-{{ tarefa.status }}">{{ tarefa.get_status_display }}</span></td>
+                <td>{{ tarefa.get_prioridade_display|slice:":3" }}</td> {# Exibe apenas as 3 primeiras letras #}
+                <td>{{ tarefa.projeto|default:"-" }}</td>
+                {# ==== ALTERAÇÃO 4: Formato de data mais conciso ==== #}
+                <td>{{ tarefa.data_criacao|date:"d/m/y" }}</td>
+                <td>{{ tarefa.prazo|date:"d/m/y"|default:"-" }}</td>
+                <td>{{ tarefa.duracao_prevista|default:"-" }}</td>
+                <td>{{ tarefa.tempo_gasto|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" style="text-align: center;">Nenhum dado para exibir.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 
+    {# Opcional: Removi colunas da tabela, mas mantive na análise, ou vice-versa #}
     <div class="analysis-section">
         <h3>Análise de Status</h3>
         <ul class="analysis-list">
@@ -93,8 +104,7 @@
             <li>Nenhum dado de status disponível.</li>
             {% endfor %}
         </ul>
-        </div>
-
+        
         <h3>Análise de Prioridade</h3>
         <ul class="analysis-list">
             {% for item in prioridade_data %}
@@ -103,10 +113,11 @@
             <li>Nenhum dado de prioridade disponível.</li>
             {% endfor %}
         </ul>
-    </div>
+        </div>
 
     <div class="footer">
         Relatório gerado em {{ now|date:"d/m/Y H:i:s" }}
     </div>
 </body>
 </html>
+

@@ -8,7 +8,7 @@ from .models import Incidente, Inspecao, User
 # -----------------------------------------------------------------------------
 # ADMIN MIXIN PARA SEGURANÇA DE FILIAL
 # -----------------------------------------------------------------------------
-class FilialScopedAdmin(admin.ModelAdmin):
+class FilialScopedQuerysetMixin(admin.ModelAdmin):
     """
     Um ModelAdmin base que garante que superusuários vejam tudo, mas outros
     usuários do admin vejam e editem apenas os dados de sua própria filial.
@@ -50,18 +50,18 @@ class FilialScopedAdmin(admin.ModelAdmin):
 # -----------------------------------------------------------------------------
 
 @admin.register(Incidente)
-class IncidenteAdmin(FilialAdminMixin, FilialScopedAdmin):
+class IncidenteAdmin(FilialAdminMixin, FilialScopedQuerysetMixin):
     """Admin para Incidentes, protegido pelo escopo de filial."""
     # Adiciona os campos específicos do modelo ao list_display herdado
-    list_display = ('descricao', 'setor', 'tipo_incidente', 'data_ocorrencia', 'registrado_por') + FilialScopedAdmin.list_display
-    list_filter = ('setor', 'tipo_incidente', 'data_ocorrencia') + FilialScopedAdmin.list_filter
+    list_display = ('descricao', 'setor', 'tipo_incidente', 'data_ocorrencia', 'registrado_por') + FilialScopedQuerysetMixin.list_display
+    list_filter = ('setor', 'tipo_incidente', 'data_ocorrencia') + FilialScopedQuerysetMixin.list_filter
     search_fields = ('descricao', 'detalhes', 'setor')
     date_hierarchy = 'data_ocorrencia'
 
 @admin.register(Inspecao)
-class InspecaoAdmin(FilialScopedAdmin):
+class InspecaoAdmin(FilialScopedQuerysetMixin):
     """Admin para Inspeções, protegido pelo escopo de filial."""
-    list_display = ('__str__', 'data_agendada', 'status', 'inspetor') + FilialScopedAdmin.list_display
-    list_filter = ('status', 'data_agendada') + FilialScopedAdmin.list_filter
+    list_display = ('__str__', 'data_agendada', 'status', 'inspetor') + FilialScopedQuerysetMixin.list_display
+    list_filter = ('status', 'data_agendada') + FilialScopedQuerysetMixin.list_filter
     search_fields = ('equipamento__nome', 'inspetor__username') # Corrigido para o lookup correto
     autocomplete_fields = ['equipamento', 'inspetor']

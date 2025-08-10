@@ -9,27 +9,30 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <!-- Cabeçalho -->
-        <header class="d-flex justify-content-between align-items-center mb-4">
-            <div class="painel-controles">
-             <h1 class="mb-0"><i class="fas fa-list"></i>Lista de Tarefas</h1>
-            </div>
-            <div>
-                <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-outline-secondary">Calendário</a>
-                <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-secondary">
-                    <i class="fas fa-list"></i> Kanban
-                </a>
-                <a href="{% url 'tarefas:dashboard_analitico' %}" class="btn btn-secondary">
-                    <i class="bi bi-speedometer2"></i> Dashboard</a>
-                <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">
-                    <i class="fas fa-list"></i> Relatórios
-                </a>
-                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Nova Tarefa
-                </a>
-            </div>
-        </header>
+<div class="container mt-4">
+    <!-- Cabeçalho -->
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <div class="painel-controles">
+            <h1 class="mb-0"><i class="fas fa-list"></i>Lista de Tarefas</h1>
+            <th>Lembrete</th> <td>{{ tarefa.data_lembrete|date:"d/m/Y"|default:"-" }}</td>
+        </div>
+        <div>
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-outline-secondary">Calendário</a>
+            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Kanban
+            </a>
+            <a href="{% url 'tarefas:dashboard_analitico' %}" class="btn btn-secondary">
+                <i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Relatórios
+            </a>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nova Tarefa
+            </a>
+        </div>
+    </header>
+</div>
+    <div class="containerlist">
         <!-- Tabela de Tarefas -->
         <div class="card shadow-sm">
             <div class="card-body">
@@ -44,7 +47,10 @@
                                 <th>Status</th>
                                 <th>Prioridade</th>
                                 <th>Data de Criação</th>
+                                <th>data_inicio</th>
                                 <th>Prazo</th>
+                                <th>data_atualizacao</th>
+                                <th>concluida_em</th>
                                 <th>Progresso</th>
                                 <th>Ações</th>
                             </tr>
@@ -77,8 +83,11 @@
                                         {{ tarefa.get_prioridade_display }}
                                     </span>
                                 </td>
+                                <td>{{ tarefa.data_criacao|date:"d/m/Y"|default:"-" }}</td>
                                 <td>{{ tarefa.data_inicio|date:"d/m/Y"|default:"-" }}</td>
                                 <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                                <td>{{ tarefa.data_atualizacao|date:"d/m/Y"|default:"-" }}</td>
+                                <td>{{ tarefa.concluida_em|date:"d/m/Y"|default:"-" }}</td>
                                 <td>
                                     <div class="progress" style="height: 20px;" title="{{ tarefa.progresso|default:0 }}% Concluído">
                                         <div class="progress-bar bg-success" 

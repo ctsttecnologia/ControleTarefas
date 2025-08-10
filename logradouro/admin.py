@@ -3,10 +3,10 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import Logradouro
 from .constant import ESTADOS_BRASIL
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 @admin.register(Logradouro)
-class LogradouroAdmin(FilialAdminMixin, admin.ModelAdmin):
+class LogradouroAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = (
         'endereco_completo',
         'filial',

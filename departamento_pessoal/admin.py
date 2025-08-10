@@ -3,7 +3,7 @@
 
 from django.contrib import admin
 from .models import Departamento, Cargo, Funcionario, Documento
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 # --- Inlines para a Visão de Funcionário ---
 
@@ -17,20 +17,20 @@ class DocumentoInline(admin.TabularInline):
 # --- Configurações dos Admins Principais ---
 
 @admin.register(Departamento)
-class DepartamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class DepartamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('nome', 'filial', 'ativo')
     search_fields = ('nome',)
     list_editable = ('ativo',)
 
 @admin.register(Cargo)
-class CargoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class CargoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('nome', 'filial', 'cbo', 'ativo')
     list_filter = ('nome', 'filial',)
     search_fields = ('nome', 'cbo')
     list_editable = ('ativo', 'filial',)
 
 @admin.register(Funcionario)
-class FuncionarioAdmin(FilialAdminMixin, admin.ModelAdmin):
+class FuncionarioAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     inlines = [DocumentoInline]  # <-- Inclui o formulário de documentos aqui
     
     list_display = ('nome_completo', 'filial', 'matricula', 'cargo', 'departamento', 'status', 'idade', 'cliente')
