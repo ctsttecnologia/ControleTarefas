@@ -3,10 +3,10 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import Cliente
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 @admin.register(Cliente)
-class ClienteAdmin(FilialAdminMixin, admin.ModelAdmin):
+class ClienteAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = (
         'nome',
         'cnpj_formatado',

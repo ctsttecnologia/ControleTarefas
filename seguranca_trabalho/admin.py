@@ -7,7 +7,7 @@ from .models import (
     Fabricante, Fornecedor, Funcao, Equipamento,
     MatrizEPI, FichaEPI, EntregaEPI, MovimentacaoEstoque
 )
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 # =============================================================================
 # ADMIN ACTIONS
@@ -54,7 +54,7 @@ class EntregaEPIInline(admin.TabularInline):
 # =============================================================================
 
 @admin.register(Fabricante)
-class FabricanteAdmin(FilialAdminMixin, admin.ModelAdmin):
+class FabricanteAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('nome', 'filial','cnpj', 'ativo')
     list_filter = ('ativo', 'filial')
     search_fields = ('nome', 'cnpj')
@@ -62,7 +62,7 @@ class FabricanteAdmin(FilialAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Fornecedor)
-class FornecedorAdmin(FilialAdminMixin, admin.ModelAdmin):
+class FornecedorAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('nome_fantasia', 'filial', 'razao_social', 'cnpj', 'ativo')
     list_filter = ('ativo', 'filial')
     search_fields = ('nome_fantasia', 'razao_social', 'cnpj')
@@ -70,7 +70,7 @@ class FornecedorAdmin(FilialAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Funcao)
-class FuncaoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class FuncaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     inlines = [MatrizEPIInline]
     list_display = ('nome', 'filial', 'ativo')
     list_filter = ('ativo', 'filial')
@@ -78,7 +78,7 @@ class FuncaoAdmin(FilialAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(Equipamento)
-class EquipamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class EquipamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('nome', 'filial', 'modelo', 'fabricante', 'certificado_aprovacao', 'data_validade_ca', 'ativo')
     list_filter = ('ativo', 'filial', 'fabricante', 'requer_numero_serie')
     search_fields = ('nome', 'modelo', 'certificado_aprovacao', 'fabricante__nome')
@@ -100,7 +100,7 @@ class EquipamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(FichaEPI)
-class FichaEPIAdmin(FilialAdminMixin, admin.ModelAdmin):
+class FichaEPIAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     inlines = [EntregaEPIInline]
     list_display = ('funcionario', 'filial', 'get_funcionario_cargo', 'data_admissao', 'atualizado_em')
     list_select_related = ('funcionario', 'funcionario__cargo') # Otimiza a busca
@@ -127,7 +127,7 @@ class FichaEPIAdmin(FilialAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(EntregaEPI)
-class EntregaEPIAdmin(FilialAdminMixin, admin.ModelAdmin):
+class EntregaEPIAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('ficha', 'filial', 'equipamento', 'data_entrega', 'status_da_entrega', 'data_devolucao')
     list_filter = ('equipamento', 'filial', 'data_entrega', 'data_devolucao')
     search_fields = ('equipamento__nome', 'ficha__funcionario__nome_completo')
@@ -154,7 +154,7 @@ class EntregaEPIAdmin(FilialAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(MovimentacaoEstoque)
-class MovimentacaoEstoqueAdmin(FilialAdminMixin, admin.ModelAdmin):
+class MovimentacaoEstoqueAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('data', 'filial', 'equipamento', 'tipo', 'quantidade', 'responsavel', 'justificativa')
     list_filter = ('tipo', 'filial', 'equipamento', 'responsavel')
     search_fields = ('equipamento__nome', 'responsavel__username', 'justificativa', 'lote')

@@ -6,7 +6,6 @@ import io
 import pandas as pd
 from docx import Document as PyDocxDocument
 from weasyprint import HTML
-
 # Módulos Django
 from django.db.models import Q, Count
 from django.http import HttpResponse
@@ -18,11 +17,10 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.template.loader import render_to_string
 from django.utils import timezone
-
 # Módulos Locais
 from .models import Funcionario, Departamento, Cargo, Documento
 from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
-
+from core.mixins import FilialScopedQuerysetMixin
 # --- MIXINS ---
 
 class FilialScopedMixin:
@@ -52,7 +50,7 @@ class StaffRequiredMixin(PermissionRequiredMixin):
 
 # --- VIEWS PARA FUNCIONÁRIOS ---
 
-class FuncionarioListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Funcionario
     template_name = 'departamento_pessoal/lista_funcionarios.html'
     context_object_name = 'funcionarios'
@@ -70,7 +68,7 @@ class FuncionarioListView(FilialScopedMixin, StaffRequiredMixin, ListView):
             )
         return queryset
 
-class FuncionarioDetailView(FilialScopedMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/detalhe_funcionario.html'
     context_object_name = 'funcionario'
@@ -83,7 +81,7 @@ class FuncionarioDetailView(FilialScopedMixin, StaffRequiredMixin, DetailView):
         """
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
-class FuncionarioCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
+class FuncionarioCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
@@ -97,7 +95,7 @@ class FuncionarioCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
         context['titulo_pagina'] = "Cadastrar Novo Funcionário"
         return context
 
-class FuncionarioUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
@@ -111,7 +109,7 @@ class FuncionarioUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
         context['titulo_pagina'] = f"Editar: {self.object.nome_completo}"
         return context
 
-class FuncionarioDeleteView(FilialScopedMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDeleteView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'funcionario' # Adicionado para clareza no template
@@ -144,7 +142,7 @@ class FuncionarioDeleteView(FilialScopedMixin, StaffRequiredMixin, DetailView):
 
 # --- VIEWS PARA O PROCESSO DE ADMISSÃO (NOVAS) ---
 
-class FuncionarioAdmissaoView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     """
     View para preencher os dados de admissão de um funcionário.
     Usa o formulário focado 'AdmissaoForm'.
@@ -167,12 +165,12 @@ class FuncionarioAdmissaoView(FilialScopedMixin, StaffRequiredMixin, UpdateView)
         return context
 
 # --- VIEWS PARA DEPARTAMENTO ---
-class DepartamentoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class DepartamentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Departamento
     template_name = 'departamento_pessoal/lista_departamento.html'
     context_object_name = 'departamentos'
 
-class DepartamentoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
+class DepartamentoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -184,7 +182,7 @@ class DepartamentoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class DepartamentoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class DepartamentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -201,12 +199,12 @@ class DepartamentoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
 
 
 # --- VIEWS PARA CARGOS ---
-class CargoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class CargoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
 
-class CargoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
+class CargoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
@@ -217,7 +215,7 @@ class CargoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
         messages.success(self.request, "Cargo criado com sucesso.")
         return super().form_valid(form)
 
-class CargoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
@@ -235,7 +233,7 @@ class CargoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
 
 # --- VIEWS PARA DOCUMENTOS (ADICIONADAS) ---
 
-class DocumentoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
+class DocumentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Documento
     template_name = 'departamento_pessoal/lista_documentos.html'
     context_object_name = 'documentos'
@@ -258,7 +256,7 @@ class DocumentoListView(FilialScopedMixin, StaffRequiredMixin, ListView):
 
 # departamento_pessoal/views.py
 
-class DocumentoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
+class DocumentoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
@@ -281,7 +279,7 @@ class DocumentoCreateView(FilialScopedMixin, StaffRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.kwargs['funcionario_pk']})
 
-class DocumentoUpdateView(FilialScopedMixin, StaffRequiredMixin, UpdateView):
+class DocumentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
@@ -361,7 +359,7 @@ class ExportarFuncionariosExcelView(BaseExportView):
         df.to_excel(response, index=False)
         return response
     
-class ExportarFuncionariosPDFView(FilialScopedMixin, StaffRequiredMixin, View):
+class ExportarFuncionariosPDFView(FilialScopedQuerysetMixin, StaffRequiredMixin, View):
     """
     Gera um relatório de funcionários em formato PDF usando um template HTML.
     """

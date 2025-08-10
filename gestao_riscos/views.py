@@ -4,28 +4,12 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.views.generic import TemplateView, CreateView
-
 from .models import Incidente, Inspecao
 from .forms import IncidenteForm, InspecaoForm
 
 # -----------------------------------------------------------------------------
-# MIXIN DE SEGURANÇA (Opcional para ListViews, mas bom de ter)
-# -----------------------------------------------------------------------------
-class FilialScopedMixin:
-    """
-    Mixin que filtra a queryset principal de uma View (ListView, DetailView)
-    pela filial do usuário logado.
-    """
-    def get_queryset(self):
-        # Chama o get_queryset da classe pai (ex: ListView)
-        qs = super().get_queryset()
-        # Usa o manager customizado para filtrar pela request
-        return qs.for_request(self.request)
-
-# -----------------------------------------------------------------------------
 # VIEWS REATORADAS
 # -----------------------------------------------------------------------------
-
 class GestaoRiscosDashboardView(LoginRequiredMixin, TemplateView):
     """
     View principal que exibe um dashboard de incidentes e inspeções,

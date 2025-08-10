@@ -3,7 +3,7 @@
 from django.contrib import admin
 from treinamentos.forms import ParticipanteForm
 from .models import TipoCurso, Treinamento, Participante
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 @admin.register(TipoCurso)
 class TipoCursoAdmin(admin.ModelAdmin):
@@ -28,7 +28,7 @@ class ParticipanteInline(admin.TabularInline):
 
 
 @admin.register(Treinamento)
-class TreinamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class TreinamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     """Configuração da interface de admin para o modelo Treinamento."""
     # Adiciona o inline de participantes
     inlines = [ParticipanteInline]

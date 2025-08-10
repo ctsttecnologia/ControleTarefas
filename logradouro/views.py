@@ -5,29 +5,17 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
 from django.http import HttpResponse
 from django.utils.translation import gettext_lazy as _
-
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
-
 from .models import Logradouro
 from .forms import LogradouroForm
 from .constant import ESTADOS_BRASIL
+from core.mixins import FilialScopedQuerysetMixin
 
-# --- Mixin de Segurança (Correto, sem alterações) ---
-class FilialScopedMixin:
-    """
-    Mixin que filtra a queryset principal de uma View baseada na 'filial'
-    do usuário logado.
-    """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        # A delegação para o manager customizado do modelo é a abordagem correta.
-        return qs.model.objects.for_request(self.request)
 
-# --- Views de Logradouro (CRUD) Corrigidas ---
-
-class LogradouroListView(FilialScopedMixin, LoginRequiredMixin, ListView):
+# --- Views de Logradouro (CRUD)
+class LogradouroListView(FilialScopedQuerysetMixin, LoginRequiredMixin, ListView):
     """
     Lista os logradouros cadastrados, respeitando o escopo da filial.
     """
@@ -67,7 +55,7 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
         return super().form_invalid(form)
 
 # Nenhuma alteração necessária aqui, o mixin já garante a segurança.
-class LogradouroUpdateView(FilialScopedMixin, LoginRequiredMixin, UpdateView):
+class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
     model = Logradouro
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
@@ -78,7 +66,7 @@ class LogradouroUpdateView(FilialScopedMixin, LoginRequiredMixin, UpdateView):
         return super().form_valid(form)
 
 # Nenhuma alteração necessária aqui, o mixin já garante a segurança.
-class LogradouroDeleteView(FilialScopedMixin, LoginRequiredMixin, DeleteView):
+class LogradouroDeleteView(FilialScopedQuerysetMixin, LoginRequiredMixin, DeleteView):
     model = Logradouro
     template_name = 'logradouro/confirmar_exclusao.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')

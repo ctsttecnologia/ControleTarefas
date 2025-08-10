@@ -151,7 +151,7 @@ class Tarefas(models.Model):
         else:
             # Garante que a data do lembrete seja nula se não houver prazo ou dias
             self.data_lembrete = None
-
+        
         # --- LÓGICA DE NEGÓCIO AUTOMÁTICA ---
         # 1. Atualiza status para 'atrasada' se necessário
         if self.prazo and self.prazo < timezone.now() and self.status not in ['concluida', 'cancelada']:
@@ -176,7 +176,7 @@ class Tarefas(models.Model):
                 tarefa=self, status_anterior=old_status, novo_status=self.status,
                 alterado_por=self._user,
             )
-            
+
     @property
     def progresso(self):
         """

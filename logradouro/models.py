@@ -3,7 +3,6 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .constant import ESTADOS_BRASIL
-
 from core.managers import FilialManager
 from usuario.models import Filial
 

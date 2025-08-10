@@ -17,28 +17,17 @@ from django.db import models
 from django.db.models.functions import Coalesce, ExtractMonth
 from django.db.models.fields import FloatField
 from decimal import Decimal
-
 import os
 import io
 import json
 import traceback
-
 from datetime import datetime
 from urllib import request
 from treinamentos import treinamento_generators
 from .models import Treinamento, TipoCurso, Participante
 from .forms import (BaseParticipanteFormSet, ParticipanteForm, TipoCursoForm, TreinamentoForm, ParticipanteFormSet)
+from core.mixins import FilialScopedQuerysetMixin
 
-# --- Mixin de Segurança (Correto, sem alterações) ---
-class FilialScopedMixin:
-    """
-    Mixin que filtra a queryset principal de uma View baseada na 'filial'
-    do usuário logado.
-    """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        # A delegação para o manager customizado do modelo é a abordagem correta.
-        return qs.model.objects.for_request(self.request)
 
 class TreinamentoFormsetMixin:
     def get_context_data(self, **kwargs):
@@ -92,7 +81,7 @@ class CriarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin,
 
 # --- Visualizações para Treinamento (CRUD) ---
 
-class TreinamentoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
+class TreinamentoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     """Lista todos os treinamentos com filtros de busca."""
     model = Treinamento
     template_name = 'treinamentos/lista_treinamentos.html'
@@ -184,7 +173,7 @@ class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, Succes
     success_message = "Treinamento excluído com sucesso!"
 
 
-class TipoCursoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
     model = TipoCurso
     template_name = 'treinamentos/lista_tipo_curso.html'
@@ -259,7 +248,7 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
 
 # --- Visualizações para Relatórios ---
 
-class RelatorioTreinamentosView(LoginRequiredMixin, FilialScopedMixin, ListView):
+class RelatorioTreinamentosView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     """
     Gera um relatório de treinamentos com base em filtros.
     Agora herda de ListView para buscar e listar os treinamentos.
@@ -355,7 +344,7 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
             # Redireciona de volta para a página de detalhes do treinamento
             return redirect('treinamentos:detalhe_treinamento', pk=self.kwargs.get('pk'))
 
-class RelatorioGeralExcelView(LoginRequiredMixin, FilialScopedMixin, PermissionRequiredMixin, View):
+class RelatorioGeralExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, PermissionRequiredMixin, View):
     """
     Gera e oferece para download um relatório geral de treinamentos em .xlsx.
     """
@@ -383,18 +372,6 @@ class RelatorioGeralExcelView(LoginRequiredMixin, FilialScopedMixin, PermissionR
             print(f"ERRO REAL AO GERAR EXCEL: {e}")
             messages.error(request, f"Ocorreu um erro ao gerar o relatório Excel.")
             return redirect('treinamentos:lista_treinamentos')
-
-# --- Classe auxiliar (mantenha como está) ---
-# treinamentos/views.py
-
-# --- Imports (garanta que todos estes estejam no topo do arquivo) ---
-import json
-from decimal import Decimal
-from django.db.models import Sum, Count, FloatField
-from django.db.models.functions import Coalesce
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from .models import Treinamento, Participante, TipoCurso # Importe seus modelos
 
 # --- Classe auxiliar para o JSON (mantenha como está) ---
 class DecimalEncoder(json.JSONEncoder):

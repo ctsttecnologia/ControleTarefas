@@ -94,6 +94,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.filial_context',
                 'usuario.context_processors.filial_context',
+                'tarefas.context_processors.notification_processor',
             ],
         },
     },
