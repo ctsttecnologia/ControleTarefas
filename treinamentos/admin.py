@@ -1,15 +1,15 @@
 # G:\Projetos\treinamentos\admin.py
 
 from django.contrib import admin
-
 from treinamentos.forms import ParticipanteForm
 from .models import TipoCurso, Treinamento, Participante
+from core.admin import FilialAdminMixin
 
 @admin.register(TipoCurso)
 class TipoCursoAdmin(admin.ModelAdmin):
     """Configuração da interface de admin para o modelo TipoCurso."""
-    list_display = ('nome', 'modalidade', 'area', 'validade_meses', 'ativo')
-    list_filter = ('modalidade', 'area', 'ativo')
+    list_display = ('nome', 'filial', 'modalidade', 'area', 'validade_meses', 'ativo')
+    list_filter = ('modalidade', 'filial', 'area', 'ativo')
     search_fields = ('nome', 'descricao')
     list_editable = ('ativo',)
     ordering = ('nome',)
@@ -28,12 +28,12 @@ class ParticipanteInline(admin.TabularInline):
 
 
 @admin.register(Treinamento)
-class TreinamentoAdmin(admin.ModelAdmin):
+class TreinamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
     """Configuração da interface de admin para o modelo Treinamento."""
     # Adiciona o inline de participantes
     inlines = [ParticipanteInline]
 
-    list_display = ('nome', 'tipo_curso', 'data_inicio', 'responsavel', 'status', 'local')
+    list_display = ('nome', 'filial', 'tipo_curso', 'data_inicio', 'responsavel', 'status', 'local')
     list_filter = ('status', 'tipo_curso__nome', 'data_inicio', 'responsavel')
     # Corrigido para buscar em campos de modelos relacionados
     search_fields = (

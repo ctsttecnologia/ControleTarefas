@@ -3,17 +3,19 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import Cliente
+from core.admin import FilialAdminMixin
 
 @admin.register(Cliente)
-class ClienteAdmin(admin.ModelAdmin):
+class ClienteAdmin(FilialAdminMixin, admin.ModelAdmin):
     list_display = (
         'nome',
         'cnpj_formatado',
         'contrato',
+        'filial',
         'logradouro_link',
         'status_badge',
     )
-    list_filter = ('estatus', 'logradouro__cidade', 'data_de_inicio')
+    list_filter = ('estatus', 'filial', 'logradouro__cidade', 'data_de_inicio')
     search_fields = ('nome', 'razao_social', 'cnpj', 'contrato')
     readonly_fields = ('data_cadastro', 'data_atualizacao')
     actions = ['ativar_clientes', 'desativar_clientes']

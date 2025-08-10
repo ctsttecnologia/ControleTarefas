@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
     'home',
+    'core',
     'logradouro',             # É uma dependência, deve vir antes
     'usuario',                # Relacionado ao usuário
     'cliente',                # Depende de 'logradouro'
@@ -64,8 +65,7 @@ INSTALLED_APPS = [
     'treinamentos.apps.TreinamentosConfig',
     'gestao_riscos',
     'ata_reuniao',
-    'ferramentas',
-    'core.apps.CoreConfig'  
+    'ferramentas' 
 ]
 
 
@@ -93,6 +93,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.filial_context',
+                'usuario.context_processors.filial_context',
             ],
         },
     },

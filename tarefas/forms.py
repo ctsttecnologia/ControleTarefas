@@ -37,7 +37,7 @@ class TarefaForm(forms.ModelForm):
         fields = [
             'titulo', 'descricao', 'status', 'prioridade',
             'data_inicio', 'prazo', 'responsavel', 'projeto',
-            'duracao_prevista', 'tempo_gasto',
+            'duracao_prevista', 'tempo_gasto', 'dias_lembrete',
             # Adicionando os campos de recorrência ao formulário
             'recorrente', 'frequencia_recorrencia', 'data_fim_recorrencia'
         ]
@@ -79,9 +79,16 @@ class TarefaForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        dias_lembrete = cleaned_data.get('dias_lembrete')
+        prazo = cleaned_data.get('prazo')
         recorrente = cleaned_data.get('recorrente')
         frequencia = cleaned_data.get('frequencia_recorrencia')
         data_fim = cleaned_data.get('data_fim_recorrencia')
+
+        if dias_lembrete and not prazo:
+            raise forms.ValidationError(
+                {'dias_lembrete': 'Para definir dias de lembrete, você precisa primeiro definir um "Prazo Final".'}
+            )
 
         if recorrente and (not frequencia or not data_fim):
             raise forms.ValidationError(

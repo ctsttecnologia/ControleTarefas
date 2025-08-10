@@ -7,6 +7,7 @@ from .models import (
     Fabricante, Fornecedor, Funcao, Equipamento,
     MatrizEPI, FichaEPI, EntregaEPI, MovimentacaoEstoque
 )
+from core.admin import FilialAdminMixin
 
 # =============================================================================
 # ADMIN ACTIONS
@@ -53,33 +54,33 @@ class EntregaEPIInline(admin.TabularInline):
 # =============================================================================
 
 @admin.register(Fabricante)
-class FabricanteAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'cnpj', 'ativo')
-    list_filter = ('ativo',)
+class FabricanteAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'filial','cnpj', 'ativo')
+    list_filter = ('ativo', 'filial')
     search_fields = ('nome', 'cnpj')
     list_per_page = 20
 
 
 @admin.register(Fornecedor)
-class FornecedorAdmin(admin.ModelAdmin):
-    list_display = ('nome_fantasia', 'razao_social', 'cnpj', 'ativo')
-    list_filter = ('ativo',)
+class FornecedorAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome_fantasia', 'filial', 'razao_social', 'cnpj', 'ativo')
+    list_filter = ('ativo', 'filial')
     search_fields = ('nome_fantasia', 'razao_social', 'cnpj')
     list_per_page = 20
 
 
 @admin.register(Funcao)
-class FuncaoAdmin(admin.ModelAdmin):
+class FuncaoAdmin(FilialAdminMixin, admin.ModelAdmin):
     inlines = [MatrizEPIInline]
-    list_display = ('nome', 'ativo')
-    list_filter = ('ativo',)
+    list_display = ('nome', 'filial', 'ativo')
+    list_filter = ('ativo', 'filial')
     search_fields = ('nome',)
 
 
 @admin.register(Equipamento)
-class EquipamentoAdmin(admin.ModelAdmin):
-    list_display = ('nome', 'modelo', 'fabricante', 'certificado_aprovacao', 'data_validade_ca', 'ativo')
-    list_filter = ('ativo', 'fabricante', 'requer_numero_serie')
+class EquipamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'filial', 'modelo', 'fabricante', 'certificado_aprovacao', 'data_validade_ca', 'ativo')
+    list_filter = ('ativo', 'filial', 'fabricante', 'requer_numero_serie')
     search_fields = ('nome', 'modelo', 'certificado_aprovacao', 'fabricante__nome')
     autocomplete_fields = ['fabricante', 'fornecedor_padrao']
     actions = [marcar_como_inativo]
@@ -99,9 +100,9 @@ class EquipamentoAdmin(admin.ModelAdmin):
 
 
 @admin.register(FichaEPI)
-class FichaEPIAdmin(admin.ModelAdmin):
+class FichaEPIAdmin(FilialAdminMixin, admin.ModelAdmin):
     inlines = [EntregaEPIInline]
-    list_display = ('funcionario', 'get_funcionario_cargo', 'data_admissao', 'atualizado_em')
+    list_display = ('funcionario', 'filial', 'get_funcionario_cargo', 'data_admissao', 'atualizado_em')
     list_select_related = ('funcionario', 'funcionario__cargo') # Otimiza a busca
     search_fields = ('funcionario__nome_completo', 'funcionario__id')
     autocomplete_fields = ['funcionario']
@@ -126,9 +127,9 @@ class FichaEPIAdmin(admin.ModelAdmin):
 
 
 @admin.register(EntregaEPI)
-class EntregaEPIAdmin(admin.ModelAdmin):
-    list_display = ('ficha', 'equipamento', 'data_entrega', 'status_da_entrega', 'data_devolucao')
-    list_filter = ('equipamento', 'data_entrega', 'data_devolucao')
+class EntregaEPIAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('ficha', 'filial', 'equipamento', 'data_entrega', 'status_da_entrega', 'data_devolucao')
+    list_filter = ('equipamento', 'filial', 'data_entrega', 'data_devolucao')
     search_fields = ('equipamento__nome', 'ficha__funcionario__nome_completo')
     autocomplete_fields = ['ficha', 'equipamento']
     date_hierarchy = 'criado_em'
@@ -153,9 +154,9 @@ class EntregaEPIAdmin(admin.ModelAdmin):
 
 
 @admin.register(MovimentacaoEstoque)
-class MovimentacaoEstoqueAdmin(admin.ModelAdmin):
-    list_display = ('data', 'equipamento', 'tipo', 'quantidade', 'responsavel', 'justificativa')
-    list_filter = ('tipo', 'equipamento', 'responsavel')
+class MovimentacaoEstoqueAdmin(FilialAdminMixin, admin.ModelAdmin):
+    list_display = ('data', 'filial', 'equipamento', 'tipo', 'quantidade', 'responsavel', 'justificativa')
+    list_filter = ('tipo', 'filial', 'equipamento', 'responsavel')
     search_fields = ('equipamento__nome', 'responsavel__username', 'justificativa', 'lote')
     autocomplete_fields = ['equipamento', 'responsavel', 'fornecedor', 'entrega_associada']
     readonly_fields = ('data',)

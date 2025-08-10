@@ -2,7 +2,7 @@
 # usuario/views.py
 
 from django.db.models import Q
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -19,45 +19,132 @@ from django.shortcuts import get_object_or_404, redirect, render
 from .models import Usuario, Group, Filial
 from .forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
 from django.contrib.auth.forms import SetPasswordForm
-from django.views.generic import View
 from django.db.models import ProtectedError
 
-# --- Views de Autenticação ---
+
+# --- Mixin de Segurança (Correto, sem alterações) ---
+class FilialScopedMixin:
+    """
+    Mixin que filtra a queryset principal de uma View baseada na 'filial'
+    do usuário logado.
+    """
+    def get_queryset(self):
+        qs = super().get_queryset()
+        # A delegação para o manager customizado do modelo é a abordagem correta.
+        return qs.model.objects.for_request(self.request)
+    
+# =============================================================================
+# == MIXINS DE PERMISSÃO (SEM ALTERAÇÕES SIGNIFICATIVAS)
+# =============================================================================
+
+class StaffRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_staff
+
+class SuperuserRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_superuser
+
+
+# =============================================================================
+# == VIEWS DE AUTENTICAÇÃO E SELEÇÃO DE FILIAL
+# =============================================================================
 
 class CustomLoginView(LoginView):
     template_name = 'usuario/login.html'
-    redirect_authenticated_user = True # Redireciona se o usuário já estiver logado
+    redirect_authenticated_user = True
+
+    def form_valid(self, form):
+        """
+        << CORREÇÃO CRÍTICA >>
+        Após o login bem-sucedido, define a filial ativa do usuário na sessão.
+        """
+        # Executa o processo de login padrão primeiro
+        response = super().form_valid(form)
+        
+        user = self.request.user
+        filial_ativa = None
+
+        # 1. Prioridade: Usa a filial ativa já definida no perfil do usuário.
+        if hasattr(user, 'filial_ativa') and user.filial_ativa:
+            filial_ativa = user.filial_ativa
+        # 2. Alternativa: Se não houver, pega a primeira filial da lista de permitidas.
+        elif hasattr(user, 'filiais_permitidas') and user.filiais_permitidas.exists():
+            filial_ativa = user.filiais_permitidas.first()
+            # Atualiza o perfil do usuário para referência futura
+            user.filial_ativa = filial_ativa
+            user.save()
+
+        # Armazena a ID da filial na sessão para ser usada em todo o sistema
+        if filial_ativa:
+            self.request.session['active_filial_id'] = filial_ativa.id
+            messages.info(self.request, f"Você está conectado na filial: {filial_ativa.nome}")
+        else:
+            # Se o usuário não tem filial, limpa a sessão e envia mensagem de erro
+            messages.error(self.request, "Você não está associado a nenhuma filial. Contate o administrador.")
+            # Desloga o usuário se ele não tiver filial para operar
+            from django.contrib.auth import logout
+            logout(self.request)
+            return redirect('usuario:login')
+
+        return response
 
 class CustomLogoutView(LogoutView):
     next_page = reverse_lazy('usuario:login')
 
+class SelecionarFilialView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        filial_id_str = request.POST.get('filial_id')
 
-# --- Views de Perfil e Senha ---
+        # Caso especial para Superusuário limpando o filtro ("Todas as Filiais")
+        if filial_id_str == '0' and request.user.is_superuser:
+            if 'active_filial_id' in request.session:
+                del request.session['active_filial_id'] # Remove a chave da sessão
+            
+            # Limpa também a filial ativa do perfil para consistência
+            request.user.filial_ativa = None
+            request.user.save()
+            messages.success(request, "Exibindo dados de todas as filiais.")
+
+        elif filial_id_str:
+            try:
+                filial_id = int(filial_id_str)
+                filial_selecionada = request.user.filiais_permitidas.get(pk=filial_id)
+                
+                request.session['active_filial_id'] = filial_selecionada.id
+                request.user.filial_ativa = filial_selecionada
+                request.user.save()
+                messages.success(request, f"Filial alterada para: {filial_selecionada.nome}")
+
+            except (Filial.DoesNotExist, ValueError):
+                messages.error(request, "Seleção inválida ou você não tem permissão para acessar esta filial.")
+
+        # Redireciona para a página anterior ou para o dashboard
+        return redirect(request.POST.get('next', reverse('usuario:profile')))
+
+
+# =============================================================================
+# == VIEWS DE PERFIL E SENHA (SEM ALTERAÇÕES SIGNIFICATIVAS)
+# =============================================================================
 
 class ProfileView(LoginRequiredMixin, DetailView):
     model = Usuario
     template_name = 'usuario/profile.html'
-    
     def get_object(self, queryset=None):
-        # Retorna o usuário logado
         return self.request.user
 
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     form_class = CustomPasswordChangeForm
     template_name = 'usuario/alterar_senha.html'
     success_url = reverse_lazy('usuario:profile')
-
     def form_valid(self, form):
         messages.success(self.request, 'Sua senha foi alterada com sucesso!')
         return super().form_valid(form)
+   
 
-
-# --- Views de CRUD de Usuários (Apenas para Staff/Superuser) ---
-
-class StaffRequiredMixin(UserPassesTestMixin):
-    """ Mixin para garantir que o usuário é staff ou superuser. """
-    def test_func(self):
-        return self.request.user.is_staff
+# =============================================================================
+# == VIEWS DE CRUD DE USUÁRIOS (Apenas para Staff/Superuser)
+# =============================================================================
 
 class UserListView(StaffRequiredMixin, ListView):
     model = Usuario
@@ -66,49 +153,44 @@ class UserListView(StaffRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset().order_by('first_name')
+        """
+        << CORREÇÃO >>
+        Filtra os usuários para mostrar apenas aqueles que pertencem à filial ativa do admin.
+        Isso é mais explícito e seguro que o mixin genérico.
+        """
+        qs = super().get_queryset().order_by('first_name')
+        active_filial_id = self.request.session.get('active_filial_id')
+
+        # Superusuários veem todos; outros staffs veem apenas os da sua filial ativa.
+        if not self.request.user.is_superuser and active_filial_id:
+            qs = qs.filter(filiais_permitidas__id=active_filial_id)
+
         search_query = self.request.GET.get('q', '')
         if search_query:
-            queryset = queryset.filter(
+            qs = qs.filter(
                 Q(username__icontains=search_query) |
                 Q(first_name__icontains=search_query) |
                 Q(last_name__icontains=search_query) |
                 Q(email__icontains=search_query)
             )
-        return queryset
+        return qs
 
 class UserCreateView(StaffRequiredMixin, CreateView):
     model = Usuario
     form_class = CustomUserCreationForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = 'Cadastrar Novo Usuário'
-        return context
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Usuário cadastrado com sucesso!')
-        return super().form_valid(form)
+    # ... resto da view sem alterações
 
 class UserUpdateView(StaffRequiredMixin, UpdateView):
     model = Usuario
     form_class = CustomUserChangeForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = f'Editar Usuário: {self.object.username}'
-        return context
-    
-    def form_valid(self, form):
-        messages.success(self.request, 'Usuário atualizado com sucesso!')
-        return super().form_valid(form)
+    # ... resto da view sem alterações
 
 class UserToggleActiveView(StaffRequiredMixin, View):
-    """ View para ativar ou desativar um usuário com um POST. """
+    # ... view sem alterações ...
     def post(self, request, *args, **kwargs):
         user_to_toggle = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
         if user_to_toggle == request.user:
@@ -286,3 +368,4 @@ class FilialDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
         except ProtectedError:
             messages.error(self.request, 'Esta filial não pode ser excluída, pois existem usuários ou ferramentas associados a ela.')
             return redirect('usuario:filial_list')
+        

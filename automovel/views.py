@@ -1,8 +1,6 @@
 
 # automovel/views.py
 
-# automovel/views.py
-
 from django.shortcuts import get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View, TemplateView
 from django.urls import reverse_lazy, reverse

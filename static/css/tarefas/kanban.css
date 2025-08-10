@@ -118,3 +118,21 @@
     background-color: var(--bs-border-color-translucent);
     border-radius: 10px;
 }
+
+/* Estilos básicos para o novo layout do card */
+.kanban-card { transition: all 0.2s ease-in-out; }
+.kanban-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+.fs-tiny { font-size: 0.75rem; }
+.avatar-kanban {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--bs-secondary-bg-subtle);
+    color: var(--bs-emphasis-color);
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+
