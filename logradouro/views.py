@@ -24,6 +24,10 @@ class LogradouroListView(FilialScopedQuerysetMixin, LoginRequiredMixin, ListView
     context_object_name = 'logradouros'
     paginate_by = 15
 
+    def get_queryset(self):
+        """Garante que o usuário só edite endereços da sua filial."""
+        return super().get_queryset(request=self.request)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # CORREÇÃO: Conta apenas os objetos da queryset já filtrada pelo mixin.
@@ -40,6 +44,17 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
+
+    def get_initial(self):
+        """Pré-seleciona a filial atual do usuário no formulário."""
+        initial = super().get_initial()
+        if hasattr(self.request.user, 'filial_atual'):
+            initial['filial'] = self.request.user.filial_atual
+        return initial
+
+    def get_queryset(self):
+        """Garante que o usuário só edite endereços da sua filial."""
+        return super().get_queryset(request=self.request)
 
     def form_valid(self, form):
         # CORREÇÃO: Associa a filial do usuário ao novo objeto antes de salvar.
@@ -61,6 +76,10 @@ class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, Update
     template_name = 'logradouro/form_logradouro.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
 
+    def get_queryset(self):
+        """Garante que o usuário só edite endereços da sua filial."""
+        return super().get_queryset(request=self.request)
+    
     def form_valid(self, form):
         messages.success(self.request, _('Endereço atualizado com sucesso!'))
         return super().form_valid(form)
@@ -70,6 +89,10 @@ class LogradouroDeleteView(FilialScopedQuerysetMixin, LoginRequiredMixin, Delete
     model = Logradouro
     template_name = 'logradouro/confirmar_exclusao.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
+
+    def get_queryset(self):
+        """Garante que o usuário só edite endereços da sua filial."""
+        return super().get_queryset(request=self.request)
 
     def form_valid(self, form):
         messages.success(self.request, _('Endereço excluído com sucesso!'))
@@ -81,6 +104,10 @@ class LogradouroExportExcelView(LoginRequiredMixin, View):
     """
     Exporta a lista de logradouros para Excel, respeitando o escopo da filial.
     """
+    def get_queryset(self):
+        """Garante que o usuário só edite endereços da sua filial."""
+        return super().get_queryset(request=self.request)
+    
     def get(self, request, *args, **kwargs):
         # FALHA DE SEGURANÇA CORRIGIDA:
         # Substituímos .all() pelo manager seguro que filtra pela filial do usuário.

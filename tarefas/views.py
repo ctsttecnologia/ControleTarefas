@@ -48,7 +48,16 @@ class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermis
     paginate_by = 15
 
     def get_queryset(self):
-        return super().get_queryset().order_by('-prazo', '-prioridade')
+        # Obtém o queryset inicial do mixin
+        queryset = super().get_queryset(request=self.request) 
+
+        # 1. Otimiza a busca, trazendo dados das tabelas relacionadas (use os nomes válidos)
+        optimized_queryset = queryset.select_related('usuario', 'responsavel', 'filial')
+
+        # 2. Ordena o resultado final como desejado
+        # Exemplo: prazo mais recente primeiro, depois ordena pela prioridade.
+        return optimized_queryset.order_by('-prazo', 'prioridade')
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -62,7 +71,11 @@ class TarefaDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
     form_class = ComentarioForm
 
     def get_queryset(self):
-        return super().get_queryset().select_related('usuario', 'responsavel', 'filial')
+        # Obtém o queryset inicial do mixin, passando o objeto request
+        queryset = super().get_queryset(request=self.request) 
+        
+        # Agora aplica as otimizações adicionais
+        return queryset.select_related('usuario', 'responsavel', 'filial')
 
     def get_success_url(self):
         return reverse('tarefas:tarefa_detail', kwargs={'pk': self.object.pk})
@@ -144,6 +157,12 @@ class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
     context_object_name = 'tarefa'
     success_url = reverse_lazy('tarefas:listar_tarefas')
 
+    def get_queryset(self):
+        """
+        Garante que o mixin de filial receba o request para filtrar corretamente.
+        """
+        return super().get_queryset(request=self.request)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
@@ -205,6 +224,12 @@ class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPasses
     template_name = 'tarefas/confirmar_exclusao.html'
     success_url = reverse_lazy('tarefas:listar_tarefas')
 
+    def get_queryset(self):
+        """
+        Garante que o mixin de filial receba o request para filtrar corretamente.
+        """
+        return super().get_queryset(request=self.request)
+
     def test_func(self):
         return self.request.user == self.get_object().usuario
 
@@ -224,10 +249,11 @@ class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermission
 
     def get_queryset(self):
         """Filtra apenas as tarefas ativas para o quadro Kanban."""
-        # Adicionei 'concluida' para ter a coluna "Feito", que é comum em Kanbans.
-        # Se não quiser, pode remover.
+        # 1. Primeiro, obtenha o queryset já filtrado pela filial, passando o request.
+        queryset = super().get_queryset(request=self.request)
+        # 2. Em seguida, aplique o seu filtro de status específico para o Kanban.
         active_statuses = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
-        return super().get_queryset().filter(status__in=active_statuses)
+        return queryset.filter(status__in=active_statuses)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -295,7 +321,10 @@ class CalendarioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, Taref
     template_name = 'tarefas/calendario.html'
 
     def get_queryset(self):
-        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
+        """
+        Garante que o mixin de filial receba o request para filtrar corretamente.
+        """   
+        return super().get_queryset(request=self.request).filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -343,9 +372,18 @@ class RelatorioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListVi
     template_name = 'tarefas/relatorio_tarefas.html'
     
     def get_queryset(self):
-        qs = super().get_queryset().order_by('-data_criacao')
-        status_filter = self.request.GET.get('status', self.request.POST.get('status', ''))
-        return qs.filter(status=status_filter) if status_filter else qs
+        # 1. Chame o super() CORRETAMENTE, passando o request para o mixin de filial.
+        qs = super().get_queryset(request=self.request)
+
+        # 2. Obtenha o valor do filtro de status.
+        status_filter = self.request.GET.get('status') or self.request.POST.get('status')
+        
+        # 3. Aplique o filtro de status apenas se um valor foi fornecido.
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        
+        # 4. Ordene o resultado final e retorne.
+        return qs.order_by('-data_criacao')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
