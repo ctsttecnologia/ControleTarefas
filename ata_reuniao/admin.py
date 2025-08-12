@@ -3,44 +3,56 @@
 
 from django.contrib import admin
 from .models import AtaReuniao
-from core.mixins import FilialScopedQuerysetMixin
-
-# --------------------------------------------------------------------------
-# REGISTRAR O ADMIN PARA OS MODELOS RELACIONADOS
-# --------------------------------------------------------------------------
+from core.mixins import FilialScopedQuerysetMixin # Assumindo que o mixin está em core/mixins.py
 
 @admin.register(AtaReuniao)
 class AtaReuniaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
-    list_display = ('id', 'contrato', 'filial', 'coordenador', 'responsavel', 'natureza', 'entrada', 'prazo', 'status')
+    # Campos a serem exibidos na lista
+    list_display = (
+        'id', 
+        'contrato', 
+        'filial', 
+        'coordenador', 
+        'responsavel', 
+        'natureza', 
+        'entrada', 
+        'prazo', 
+        'status'
+    )
+    # Adicionando 'status' ao list_editable para mudanças rápidas
+    list_editable = ('status',)
+    list_display_links = ('id', 'contrato')
+
+    # Filtros na barra lateral
     list_filter = ('status', 'filial', 'natureza', 'entrada', 'prazo')
     
-    # Refinado para buscas mais eficientes e direcionadas
+    # Campos para a barra de busca
     search_fields = (
         'id', 
         'acao',
-        'contrato__nome',      # Busca no nome do cliente relacionado
-        'coordenador__nome',   # Busca no nome do coordenador relacionado
-        'responsavel__nome'    # Busca no nome do responsável relacionado
+        'contrato__nome',
+        'coordenador__username', # Use __username ou __first_name, dependendo do seu modelo User
+        'responsavel__username'
     )
     
+    # Navegação por hierarquia de datas
     date_hierarchy = 'entrada'
     ordering = ('-entrada',)
     
-    # Agora que ClienteAdmin e FuncionarioAdmin existem e têm 'search_fields',
-    # esta linha funcionará perfeitamente.
+    # Habilita busca otimizada para campos ForeignKey
     autocomplete_fields = ['contrato', 'coordenador', 'responsavel']
     
     fieldsets = (
-        ('Informações Básicas', {
-            'fields': ('contrato', 'status')
+        ('Informações Gerais', {
+            'fields': ('filial', 'contrato', 'status')
         }),
-        ('Responsáveis', {
+        ('Responsabilidade', {
             'fields': ('coordenador', 'responsavel')
         }),
-        ('Detalhes da Reunião', {
+        ('Detalhes e Ação', {
             'fields': ('natureza', 'acao')
         }),
-        ('Prazos', {
+        ('Datas', {
             'fields': ('entrada', 'prazo')
         }),
     )
@@ -48,8 +60,16 @@ class AtaReuniaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     actions = ['marcar_como_concluido']
 
     def marcar_como_concluido(self, request, queryset):
-        # Usando o TextChoices para mais segurança
+        # Acessa o valor do Choice através do enum/TextChoices
         updated = queryset.update(status=AtaReuniao.Status.CONCLUIDO)
-        self.message_user(request, f"{updated} ata(s) marcada(s) como Concluída(s).")
+        self.message_user(request, f"{updated} ata(s) foi(ram) marcada(s) como Concluída(s).")
+    
+    # Define o nome que aparecerá no dropdown de ações
     marcar_como_concluido.short_description = "Marcar selecionadas como Concluído"
+    
+    # Garante que o campo 'filial' seja preenchido automaticamente, se não for editável
+    def save_model(self, request, obj, form, change):
+        if not obj.filial_id and request.session.get('active_filial_id'):
+            obj.filial_id = request.session.get('active_filial_id')
+        super().save_model(request, obj, form, change)
     

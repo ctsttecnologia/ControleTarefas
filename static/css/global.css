@@ -13,15 +13,15 @@
     --bs-primary-rgb: 0, 184, 212;
 
     /* ALTERADO: Fundo do corpo com tom azulado */
-    --bs-body-bg: #aed7ff; 
+    --bs-body-bg: #cfe5fc; 
     
     /* Cor do texto principal (preto/cinza escuro) */
     --bs-body-color: #212529;
 
     /* Cor de fundo para componentes como cards e modais (branco) */
-    --bs-tertiary-bg: #caf4ff; 
+    --bs-tertiary-bg: #ffffff; 
     
-    --bs-border-color: #dee2e6;
+    --bs-border-color: #c7c7c7;
     --bs-font-sans-serif: 'Poppins', sans-serif;
 }
 

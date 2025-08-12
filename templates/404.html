@@ -1,0 +1,20 @@
+
+{% extends "base.html" %} {# Use seu template base para manter o visual #}
+
+{% block title %}Página Não Encontrada{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1 class="display-1">404</h1>
+    <h2>Página Não Encontrada ou Acesso Negado</h2>
+    <p class="lead">
+        O conteúdo que você procura não existe, foi movido ou você não tem permissão para visualizá-lo nesta filial.
+    </p>
+    <hr>
+    <p>
+        Tente voltar para a página inicial ou para a lista de tarefas.
+    </p>
+    <a href="{% url 'home' %}" class="btn btn-primary btn-lg">Página Inicial</a>
+    <a href="{% url 'usuario:profile' %}" class="btn btn-secondary btn-lg">Menu</a>
+</div>
+{% endblock %}

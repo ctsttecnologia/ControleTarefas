@@ -59,7 +59,8 @@ class AtaReuniaoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView
         """
         Usa os atributos consistentes definidos no dispatch() para filtrar.
         """
-        queryset = super().get_queryset()
+        queryset = super().get_queryset(request=self.request)
+        
 
         # ✅ Usando os nomes padronizados para filtrar
         if self.current_contrato:

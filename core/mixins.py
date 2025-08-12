@@ -4,23 +4,34 @@
 from django.db.models import Q
 from django.contrib.auth.mixins import AccessMixin
 
-class FilialScopedQuerysetMixin(AccessMixin):
+class FilialScopedQuerysetMixin:
     """
-    Garante que a queryset da view seja filtrada pela filial ativa na sessão.
-    Superusuários sem filial selecionada ("Todas") podem ver tudo.
+    Mixin universal para filtrar querysets pela filial ativa na sessão do usuário.
+    Compatível com ModelAdmin e Class-Based Views.
     """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        active_filial_id = self.request.session.get('active_filial_id')
+    def get_queryset(self, request):
+        # =================================================================
+        # CORREÇÃO FINAL: A chamada super() NÃO passa o 'request'.
+        # Isso a torna compatível com a cadeia de herança da ListView.
+        # =================================================================
+        qs = super().get_queryset() 
+        
+        active_filial_id = request.session.get('active_filial_id')
 
-        if self.request.user.is_superuser and not active_filial_id:
-            return qs  # Superuser em modo "Todas as Filiais" vê tudo
+        if request.user.is_superuser and not active_filial_id:
+            return qs
 
         if active_filial_id:
             return qs.filter(filial_id=active_filial_id)
+        
+        if not request.user.is_superuser:
+            # Garante que filiais_permitidas exista no modelo de usuário
+            if hasattr(request.user, 'filiais_permitidas'):
+                return qs.filter(filial__in=request.user.filiais_permitidas.all())
+            # Se não houver, retorna um queryset vazio para segurança
+            return qs.none()
 
-        # Por segurança, se não houver filial ativa, não retorna nada
-        return qs.none()
+        return qs
 
 class TarefaPermissionMixin(AccessMixin):
     """

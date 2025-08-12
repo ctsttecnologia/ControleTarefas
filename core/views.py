@@ -1,6 +1,6 @@
 # core/views.py
 
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin # 1. Importar o Mixin de permissão
@@ -43,3 +43,9 @@ class SelecionarFilialView(UserPassesTestMixin, View):
         
         # 4. Redireciona apenas uma vez no final, simplificando o fluxo.
         return redirect(request.META.get('HTTP_REFERER', 'ferramentas:dashboard'))
+    
+def error_404_view(request, exception):
+    """
+    View para renderizar a página 404 personalizada.
+    """
+    return render(request, '404.html', status=404)
