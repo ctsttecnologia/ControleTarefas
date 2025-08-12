@@ -5,7 +5,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Carro, Agendamento, Checklist, Foto
-from core.admin import FilialAdminMixin
+from core.mixins import FilialScopedQuerysetMixin
 
 # CORREÇÃO: O uso do FilialAdminMixin agora é CRÍTICO.
 # Ele deve garantir que:
@@ -14,7 +14,7 @@ from core.admin import FilialAdminMixin
 # Sem isso, a criação de objetos no admin irá falhar, pois o campo `filial` é obrigatório.
 
 @admin.register(Carro)
-class CarroAdmin(FilialAdminMixin, admin.ModelAdmin):
+class CarroAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('placa', 'modelo', 'marca', 'filial', 'disponivel', 'ativo')
     list_filter = ('filial', 'marca', 'disponivel', 'ativo')
     search_fields = ('placa', 'modelo', 'marca')
@@ -22,7 +22,7 @@ class CarroAdmin(FilialAdminMixin, admin.ModelAdmin):
     list_per_page = 20
 
 @admin.register(Agendamento)
-class AgendamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class AgendamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('id', 'carro', 'funcionario', 'data_hora_agenda', 'status', 'filial')
     list_filter = ('filial', 'status', 'carro', 'data_hora_agenda')
     search_fields = ('funcionario', 'carro__placa', 'usuario__username')
@@ -31,7 +31,7 @@ class AgendamentoAdmin(FilialAdminMixin, admin.ModelAdmin):
     list_per_page = 20
 
 @admin.register(Checklist)
-class ChecklistAdmin(FilialAdminMixin, admin.ModelAdmin):
+class ChecklistAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('id', 'agendamento', 'tipo', 'data_hora', 'filial')
     list_filter = ('filial', 'tipo', 'data_hora')
     search_fields = ('agendamento__carro__placa', 'agendamento__funcionario')
@@ -40,7 +40,7 @@ class ChecklistAdmin(FilialAdminMixin, admin.ModelAdmin):
     list_per_page = 20
 
 @admin.register(Foto)
-class FotoAdmin(FilialAdminMixin, admin.ModelAdmin):
+class FotoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     list_display = ('id', 'agendamento', 'data_criacao', 'image_preview', 'filial')
     list_filter = ('filial', 'data_criacao',)
     search_fields = ('agendamento__id',)

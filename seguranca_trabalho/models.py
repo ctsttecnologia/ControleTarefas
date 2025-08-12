@@ -9,13 +9,24 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from departamento_pessoal.models import Funcionario
 
+from core.managers import FilialManager
+from usuario.models import Filial
+
 # --- Modelos de Catálogo e Estrutura ---
 
 class Fabricante(models.Model):
     nome = models.CharField(max_length=150, unique=True, verbose_name=_("Nome do Fabricante"))
     cnpj = models.CharField(max_length=18, blank=True, null=True, verbose_name=_("CNPJ"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
-
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='fabricantes', 
+        verbose_name="Filial",
+        null=True
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
     class Meta:
         verbose_name = _("Fabricante")
         verbose_name_plural = _("Fabricantes")
@@ -35,6 +46,16 @@ class Fornecedor(models.Model):
     email = models.EmailField(blank=True, verbose_name=_("E-mail de Contato"))
     telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone de Contato"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='fornecedores',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _("Fornecedor")
@@ -52,6 +73,16 @@ class Funcao(models.Model):
     nome = models.CharField(max_length=100, unique=True, verbose_name=_("Nome da Função"))
     descricao = models.TextField(blank=True, verbose_name=_("Descrição das Atividades"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='funcoes',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _("Função")
@@ -75,6 +106,16 @@ class Equipamento(models.Model):
     requer_numero_serie = models.BooleanField(default=False, verbose_name=_("Requer Rastreamento por Nº de Série?"), help_text=_("Marque se cada item individual precisa ser rastreado."))
     foto = models.ImageField(upload_to='epi_fotos/', null=True, blank=True, verbose_name=_("Foto do Equipamento"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='equipamentos',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
  
     class Meta:
         verbose_name = _("Equipamento (EPI)")
@@ -102,6 +143,16 @@ class MatrizEPI(models.Model):
         verbose_name=_("Frequência de Troca (Meses)"),
         help_text=_("Deixe em branco para 'Quando Necessário' (QN).")
     )
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='matrizepis',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
     
     class Meta:
         verbose_name = _("Matriz de EPI por Função")
@@ -121,6 +172,16 @@ class FichaEPI(models.Model):
     data_admissao = models.DateField(editable=False)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='fichaepis',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
     
     class Meta:
         verbose_name = _("Ficha de EPI")
@@ -156,6 +217,7 @@ class EntregaEPI(models.Model):
         null=True, 
         blank=True
     )
+    data_assinatura = models.DateTimeField(null=True, blank=True, verbose_name=_("Data da Assinatura"))
     data_devolucao = models.DateField(null=True, blank=True, verbose_name=_("Data de Devolução")) 
     recebedor_devolucao = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -165,6 +227,16 @@ class EntregaEPI(models.Model):
         verbose_name=_("Recebedor")
     ) 
     criado_em = models.DateTimeField(default=timezone.now, verbose_name=_("Data do Registro"))
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='entregaepis',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _("Entrega de EPI")
@@ -201,6 +273,16 @@ class MovimentacaoEstoque(models.Model):
     responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     justificativa = models.CharField(max_length=255)
     entrega_associada = models.OneToOneField(EntregaEPI, on_delete=models.SET_NULL, null=True, blank=True)
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='movimentacaoestoques',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _("Movimentação de Estoque")

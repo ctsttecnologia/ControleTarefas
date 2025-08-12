@@ -1,87 +1,102 @@
-# gestao_riscos/views.py
-
-from django.shortcuts import redirect, render
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages  # MUDANÇA 1: Import correto do messages
+from django.urls import reverse_lazy
 from django.utils import timezone
-# Import dos seus forms e models
-from .forms import IncidenteForm, InspecaoForm
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
+from django.views.generic import TemplateView, CreateView
 from .models import Incidente, Inspecao
+from .forms import IncidenteForm, InspecaoForm
 
+# -----------------------------------------------------------------------------
+# VIEWS REATORADAS
+# -----------------------------------------------------------------------------
+class GestaoRiscosDashboardView(LoginRequiredMixin, TemplateView):
+    """
+    View principal que exibe um dashboard de incidentes e inspeções,
+    filtrando os dados pela filial do usuário logado.
+    """
+    template_name = 'gestao_riscos/lista_riscos.html'
 
-@login_required # MUDANÇA 4: Protegendo a view, só usuários logados podem acessar
-def gestao_riscos(request):
-    """
-    View principal que exibe um dashboard de incidentes e inspeções.
-    """
-    # Busca os 10 incidentes mais recentes
-    ultimos_incidentes = Incidente.objects.all().order_by('-data_ocorrencia')[:10]
-    # Busca todas as inspeções com status 'PENDENTE'
-    inspecoes_pendentes = Inspecao.objects.filter(status='PENDENTE').order_by('data_agendada')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
         
+        # Usamos nosso manager customizado para buscar apenas dados da filial do usuário
+        incidentes_da_filial = Incidente.objects.for_request(self.request)
+        inspecoes_da_filial = Inspecao.objects.for_request(self.request)
 
-    context = {
-        'incidentes': ultimos_incidentes,
-        'inspecoes': inspecoes_pendentes,
-        'titulo_pagina': 'Dashboard de Gestão de Riscos',
-        'data_atual': timezone.now(),
-    }
-    
-    return render(request, 'gestao_riscos/lista_riscos.html', context)
+        # Aplicamos a lógica de negócio sobre os dados já filtrados
+        context['incidentes'] = incidentes_da_filial.order_by('-data_ocorrencia')[:10]
+        context['inspecoes'] = inspecoes_da_filial.filter(status='PENDENTE').order_by('data_agendada')
+        
+        context['titulo_pagina'] = 'Dashboard de Gestão de Riscos'
+        context['data_atual'] = timezone.now()
+        
+        return context
 
 
-@login_required
-def registrar_incidente(request):
+class RegistrarIncidenteView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     """
-    Processa o formulário para registrar um novo incidente.
+    View para registrar um novo incidente, associando-o automaticamente
+    ao usuário e à sua filial.
     """
-    # MUDANÇA 3: Estrutura padrão de view com formulário
-    if request.method == 'POST':
-        # Formulário preenchido com os dados enviados
-        form = IncidenteForm(request.POST)
-        if form.is_valid():
-            incidente = form.save(commit=False) 
-            incidente.registrado_por = request.user 
-            incidente.save()
-            
-            # MUDANÇA 2: Mensagem de sucesso direta, sem a variável 'result'
-            messages.success(request, 'Incidente registrado com sucesso!')
-            return redirect('gestao_riscos:lista_riscos')
-        else:
-            # Se o formulário for inválido, exibe uma mensagem de erro
-            messages.error(request, 'Por favor, corrija os erros no formulário.')
-    else:
-        # Se for um GET, exibe um formulário em branco
-        form = IncidenteForm()
+    model = Incidente
+    form_class = IncidenteForm
+    template_name = 'gestao_riscos/registrar_incidente.html' # Um template genérico
+    success_url = reverse_lazy('gestao_riscos:lista_riscos')
+    success_message = "Incidente registrado com sucesso!"
 
-    context = {
-        'form': form,
-        'titulo_pagina': 'Registrar Novo Incidente',
-        'botao_submit_texto': 'Registrar Incidente', # Texto para o botão de submit
-    }
-    # Renderiza o mesmo template genérico para GET e POST com erro
-    return render(request, 'gestao_riscos/formulario_inspecao.html', context)
+    def form_valid(self, form):
+        """
+        Este método é chamado quando o formulário é válido.
+        É o local perfeito para adicionar dados que não vêm do formulário.
+        """
+        # Pega o objeto do formulário, mas não salva no banco ainda (commit=False)
+        incidente = form.save(commit=False)
+        # Associa o usuário logado
+        incidente.registrado_por = self.request.user
+        # Associa a filial do usuário logado (CRUCIAL PARA A SEGURANÇA)
+        if hasattr(self.request.user, 'filial'):
+            incidente.filial = self.request.user.filial
+        # Agora salva o objeto no banco com todos os dados
+        incidente.save()
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        """Adiciona dados extras ao contexto do template."""
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Registrar Novo Incidente'
+        context['botao_submit_texto'] = 'Registrar Incidente'
+        return context
 
 
-@login_required
-def agendar_inspecao(request):
+class AgendarInspecaoView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     """
-    Processa o formulário para agendar uma nova inspeção.
+    View para agendar uma nova inspeção, associando-a automaticamente
+    à filial do usuário.
     """
-    if request.method == 'POST':
-        form = InspecaoForm(request.POST)
-        if form.is_valid():
-            form.save() # O status 'PENDENTE' é o padrão no modelo.
-            messages.success(request, 'Inspeção agendada com sucesso!')
-            return redirect('gestao_riscos:lista_riscos')
-        else:
-            messages.error(request, 'Por favor, corrija os erros no formulário.')
-    else:
-        form = InspecaoForm()
+    model = Inspecao
+    form_class = InspecaoForm
+    template_name = 'gestao_riscos/formulario_inspecao.html' # Reutilizando o template
+    success_url = reverse_lazy('gestao_riscos:lista_riscos')
+    success_message = "Inspeção agendada com sucesso!"
 
-    context = {
-        'form': form,
-        'titulo_pagina': 'Agendar Nova Inspeção',
-        'botao_submit_texto': 'Agendar Inspeção', # Texto para o botão de submit
-    }
-    return render(request, 'gestao_riscos/formulario_inspecao.html', context)
+    def get_form_kwargs(self):
+        """Passa o usuário logado como um argumento para o __init__ do formulário."""
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        """Associa a filial do usuário à nova inspeção."""
+        inspecao = form.save(commit=False)
+        if hasattr(self.request.user, 'filial'):
+            inspecao.filial = self.request.user.filial
+        inspecao.save()
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        """Adiciona dados extras ao contexto do template."""
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = 'Agendar Nova Inspeção'
+        context['botao_submit_texto'] = 'Agendar Inspeção'
+        return context

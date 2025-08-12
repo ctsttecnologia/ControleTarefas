@@ -15,34 +15,32 @@
             </p>
         </div>
         <div>
-            <a href="{% url 'seguranca_trabalho:ficha_pdf' ficha.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">Gerar PDF</a>
+            <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">Gerar PDF</a>
             <a href="{% url 'seguranca_trabalho:ficha_delete' ficha.pk %}" class="btn btn-outline-danger btn-sm">Excluir Ficha</a>
         </div>
     </div>
 
-    <div class="card shadow-sm mb-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Registrar Nova Entrega</h5>
-        </div>
-        <div class="card-body">
-            <form method="post" action="{% url 'seguranca_trabalho:entrega_create' ficha.pk %}">
-                {% csrf_token %}
-                <div class="row align-items-end g-2">
-                    <div class="col-md-7">
-                        <label for="{{ entrega_form.equipamento.id_for_label }}" class="form-label">Equipamento (EPI)</label>
-                        {% render_field entrega_form.equipamento class="form-select" %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Registrar Nova Entrega</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <label for="{{ form.equipamento.id_for_label }}" class="form-label">Equipamento (EPI)</label>
+                            {{ form.equipamento }}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
+                            {{ form.quantidade }}
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100">Adicionar à Ficha</button>
+                        </div>
                     </div>
-                    <div class="col-md-2">
-                        <label for="{{ entrega_form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
-                        {% render_field entrega_form.quantidade class="form-control" %}
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-primary w-100">
-                            Adicionar à Ficha
-                        </button>
-                    </div>
-                </div>
-                 {% if entrega_form.errors %}
+                 {% if form.errors %}
                     <div class="alert alert-danger mt-3 small p-2">
                         <strong>Erro ao adicionar:</strong>
                         {{ entrega_form.non_field_errors }}
@@ -52,7 +50,6 @@
                 {% endif %}
             </form>
         </div>
-    </div>
 
     <h4 class="mt-4">Histórico de Entregas</h4>
     <div class="card shadow-sm">

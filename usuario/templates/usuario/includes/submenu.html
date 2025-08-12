@@ -3,12 +3,7 @@
 <div class="subnav shadow-sm">
     <div class="container">
         <ul class="nav nav-pills">
-            <li class="nav-item">
-                <a class="nav-link {% if 'filial_list' in request.resolver_match.view_name %}active{% endif %}" 
-                   href="{% url 'usuario:filial_list' %}">
-                    <i class="bi bi-collection me-1"></i> Gerenciar Filiais
-                </a>
-            </li>            
+           
             <li class="nav-item">
                 <a class="nav-link {% if 'lista_usuarios' in request.resolver_match.view_name %}active{% endif %}" 
                    href="{% url 'usuario:lista_usuarios' %}">
@@ -21,6 +16,12 @@
                     <i class="bi bi-collection me-1"></i> Grupos
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'filial_list' in request.resolver_match.view_name %}active{% endif %}" 
+                   href="{% url 'usuario:filial_list' %}">
+                    <i class="bi bi-collection me-1"></i> Gerenciar Filiais
+                </a>
+            </li> 
         </ul>
     </div>
 </div>

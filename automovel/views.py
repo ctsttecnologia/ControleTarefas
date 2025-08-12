@@ -1,8 +1,6 @@
 
 # automovel/views.py
 
-# automovel/views.py
-
 from django.shortcuts import get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View, TemplateView
 from django.urls import reverse_lazy, reverse
@@ -12,32 +10,17 @@ from django.contrib import messages
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib.staticfiles import finders
-
 from datetime import datetime, timedelta
 from openpyxl import Workbook
 from docx import Document
 from io import BytesIO
-
 from .models import Carro, Agendamento, Checklist, Foto
 from .forms import CarroForm, AgendamentoForm, ChecklistForm
-
 import base64
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from core.mixins import FilialScopedQuerysetMixin
 
-# --- Mixins reutilizáveis ---
-
-class FilialScopedMixin:
-    """
-    Mixin que automaticamente filtra a queryset principal de uma View
-    pela filial do usuário logado. Garante a segregação de dados.
-    """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_authenticated and hasattr(self.request.user, 'filial'):
-            # CORREÇÃO: Aplica o filtro do manager na queryset da view.
-            return qs.for_request(self.request)
-        return qs.none() # Impede acesso a usuários sem filial ou não logados.
 
 class SuccessMessageMixin:
     success_message = ""
@@ -101,7 +84,7 @@ class CalendarioAPIView(LoginRequiredMixin, View):
 
 # --- Carro CRUD ---
 
-class CarroListView(LoginRequiredMixin, FilialScopedMixin, ListView):
+class CarroListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     model = Carro
     template_name = 'automovel/carro_list.html'
     context_object_name = 'carros'
@@ -129,20 +112,20 @@ class CarroCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         form.instance.filial = self.request.user.filial
         return super().form_valid(form)
 
-class CarroUpdateView(LoginRequiredMixin, FilialScopedMixin, SuccessMessageMixin, UpdateView):
+class CarroUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
     model = Carro
     form_class = CarroForm
     template_name = 'automovel/carro_form.html'
     success_url = reverse_lazy('automovel:carro_list')
     success_message = "Carro atualizado com sucesso!"
 
-class CarroDetailView(LoginRequiredMixin, FilialScopedMixin, DetailView):
+class CarroDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, DetailView):
     model = Carro
     template_name = 'automovel/carro_detail.html'
 
 # --- Agendamento CRUD ---
 
-class AgendamentoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
+class AgendamentoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     model = Agendamento
     template_name = 'automovel/agendamento_list.html'
     context_object_name = 'agendamentos'
@@ -161,7 +144,7 @@ class AgendamentoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         form.instance.filial = self.request.user.filial
         return super().form_valid(form)
 
-class AgendamentoUpdateView(LoginRequiredMixin, FilialScopedMixin, SuccessMessageMixin, UpdateView):
+class AgendamentoUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
     model = Agendamento
     form_class = AgendamentoForm
     template_name = 'automovel/agendamento_form.html'
@@ -169,7 +152,7 @@ class AgendamentoUpdateView(LoginRequiredMixin, FilialScopedMixin, SuccessMessag
     def get_success_url(self):
         return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.pk})
 
-class AgendamentoDetailView(LoginRequiredMixin, FilialScopedMixin, DetailView):
+class AgendamentoDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, DetailView):
     model = Agendamento
     template_name = 'automovel/agendamento_detail.html'
 
@@ -216,7 +199,7 @@ class ChecklistCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.agendamento.pk})
 
-class ChecklistDetailView(LoginRequiredMixin, FilialScopedMixin, DetailView):
+class ChecklistDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, DetailView):
     model = Checklist
     template_name = 'automovel/checklist_detail.html'
 
@@ -224,7 +207,7 @@ class ChecklistDetailView(LoginRequiredMixin, FilialScopedMixin, DetailView):
 # (Omitido o código de geração de DOCX por ser longo e não ter erros de filial)
 # A lógica de filtragem foi adicionada abaixo
 
-class ChecklistExportWordView(LoginRequiredMixin, FilialScopedMixin, View):
+class ChecklistExportWordView(LoginRequiredMixin, FilialScopedQuerysetMixin, View):
     # CORREÇÃO: A herança do FilialScopedMixin e o uso de get_object_or_404
     # já garantem que apenas checklists da filial correta podem ser exportados.
     def get(self, request, *args, **kwargs):

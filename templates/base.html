@@ -23,6 +23,10 @@
         document.documentElement.setAttribute('data-bs-theme', theme);
       })();
     </script>
+
+    {# Logo no navegador #}
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+  
 </head>
 
 <body class="d-flex flex-column h-100 {% block body_class %}{% endblock %}">

@@ -4,7 +4,7 @@
 from django.urls import path
 from .views import (
     # ... todos os seus imports ...
-    CustomLoginView, CustomLogoutView, ProfileView, CustomPasswordChangeView,
+    CustomLoginView, CustomLogoutView, ProfileView, CustomPasswordChangeView, SelecionarFilialView,
     UserListView, UserCreateView, UserUpdateView, UserSetPasswordView, UserToggleActiveView,
     GerenciarGruposUsuarioView, GroupListView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     CustomPasswordResetView, CustomPasswordResetDoneView, CustomPasswordResetConfirmView, 
@@ -47,6 +47,7 @@ urlpatterns = [
 
     # --- URLs para Gestão de Filiais ---
     path('filiais/', FilialListView.as_view(), name='filial_list'),
+     path('selecionar-filial/', SelecionarFilialView.as_view(), name='selecionar_filial'),
     path('filiais/adicionar/', FilialCreateView.as_view(), name='filial_create'),
     path('filiais/<int:pk>/editar/', FilialUpdateView.as_view(), name='filial_update'),
     path('filiais/<int:pk>/excluir/', FilialDeleteView.as_view(), name='filial_delete'),

@@ -3,6 +3,8 @@ from django.db import models
 from django.core.validators import RegexValidator, EmailValidator
 from django.utils.translation import gettext_lazy as _
 from logradouro.models import Logradouro
+from core.managers import FilialManager
+from usuario.models import Filial
 
 
 class Cliente(models.Model):
@@ -51,6 +53,11 @@ class Cliente(models.Model):
     data_cadastro = models.DateTimeField(auto_now_add=True, verbose_name=_('Data de Cadastro'))
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name=_('Última Atualização'))
     data_encerramento = models.DateField(null=True, blank=True, verbose_name=_('Data de Encerramento'))
+    # CORREÇÃO: related_name único e campo obrigatório.
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='Cliente', null=True, blank=False)
+
+    # Manager Padrão
+    objects = FilialManager()
 
     @property
     def cnpj_formatado(self):

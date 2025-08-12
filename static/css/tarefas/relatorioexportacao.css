@@ -1,0 +1,125 @@
+
+/* static/css/tarefas/relatorioexportacao.css */
+/* Estilos para a página de relatórios, com suporte a tema claro e escuro. */
+
+/* --- Variáveis de Cor --- */
+.report-page {
+    /* TEMA CLARO (Padrão) */
+    --rp-bg-color: #f8f9fa;
+    --rp-card-bg: #ffffff;
+    --rp-text-color: #212529;
+    --rp-header-color: #00529B; /* Azul para títulos */
+    --rp-border-color: #dee2e6;
+    --rp-table-header-bg: #f8f9fa;
+    --rp-table-hover-bg: #f1f3f5;
+    --rp-card-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] .report-page {
+    /* TEMA ESCURO */
+    --rp-bg-color: #212529;
+    --rp-card-bg: #2c3034;
+    --rp-text-color: #dee2e6;
+    --rp-header-color: #0d6efd; /* Azul mais vibrante */
+    --rp-border-color: #495057;
+    --rp-table-header-bg: #343a40;
+    --rp-table-hover-bg: #3e444a;
+    --rp-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* --- Estilos Gerais da Página --- */
+.report-page {
+    background-color: var(--rp-bg-color);
+    color: var(--rp-text-color);
+}
+
+.report-page h1, .report-page h2 {
+    color: var(--rp-header-color);
+    font-weight: 700;
+}
+
+/* --- Cards e Layout --- */
+.report-page .card {
+    background-color: var(--rp-card-bg);
+    border: 1px solid var(--rp-border-color);
+    box-shadow: var(--rp-card-shadow);
+    border-radius: 12px;
+}
+
+.report-page .card-header {
+    background-color: var(--rp-table-header-bg);
+    color: var(--rp-text-color);
+    border-bottom: 1px solid var(--rp-border-color);
+    font-size: 1.1rem;
+}
+
+/* --- Tabela de Resultados --- */
+.report-page .table {
+    color: var(--rp-text-color);
+}
+
+.report-page .table thead th {
+    background-color: var(--rp-table-header-bg);
+    color: var(--rp-text-color);
+    border-bottom: 2px solid var(--rp-border-color);
+    font-weight: 600;
+}
+
+.report-page .table tbody tr:hover {
+    background-color: var(--rp-table-hover-bg);
+}
+
+.report-page .table td, .report-page .table th {
+    vertical-align: middle;
+}
+
+/* --- Badges de Status na Tabela --- */
+.status-badge {
+    padding: 0.3em 0.6em;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #fff;
+}
+
+.status-badge.badge-pendente { background-color: #6c757d; }
+.status-badge.badge-andamento { background-color: #0d6efd; }
+.status-badge.badge-concluida { background-color: #198754; }
+.status-badge.badge-atrasada { background-color: #dc3545; }
+.status-badge.badge-cancelada { background-color: #495057; }
+.status-badge.badge-pausada { background-color: #6f42c1; }
+
+/* --- Gráficos --- */
+.chart-container {
+    position: relative;
+    height: 400px; /* Altura fixa para os gráficos */
+    width: 100%;
+}
+
+/* --- Offcanvas de Filtros --- */
+.offcanvas {
+    background-color: var(--rp-card-bg);
+    color: var(--rp-text-color);
+}
+
+.offcanvas .offcanvas-header {
+    border-bottom: 1px solid var(--rp-border-color);
+}
+
+.offcanvas .btn-close {
+    filter: var(--rp-bg-color) = #ffffff  invert(0)  invert(1);
+}
+
+.offcanvas-body h5 {
+    color: var(--rp-header-color);
+}
+
+.offcanvas-body .form-label {
+    color: var(--rp-text-color);
+}
+
+.offcanvas-body .form-select {
+    background-color: var(--rp-bg-color);
+    color: var(--rp-text-color);
+    border-color: var(--rp-border-color);
+}

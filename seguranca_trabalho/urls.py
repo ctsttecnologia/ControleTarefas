@@ -68,7 +68,7 @@ urlpatterns = [
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),
     path('fichas/<int:pk>/update/', FichaEPIUpdateView.as_view(), name='ficha_update'),
     path('fichas/<int:pk>/delete/', FichaEPIDeleteView.as_view(), name='ficha_delete'),
-    path('fichas/<int:pk>/pdf/', GerarFichaPDFView.as_view(), name='ficha_pdf'),
+    path('fichas/<int:pk>/pdf/', GerarFichaPDFView.as_view(), name='ficha_pdf_template'),
 
     # ========================================================================
     # CATÁLOGOS (Equipamentos, Fabricantes, Fornecedores)
@@ -82,7 +82,6 @@ urlpatterns = [
     path('equipamentos/<int:pk>/excluir/', EquipamentoDeleteView.as_view(), name='equipamento_delete'),
 
     # --- CRUD de Fabricantes ---
-    # (Supondo que FabricanteDeleteView será criada seguindo o padrão das outras)
     path('fabricantes/', FabricanteListView.as_view(), name='fabricante_list'),
     path('fabricantes/novo/', FabricanteCreateView.as_view(), name='fabricante_create'),
     path('fabricantes/<int:pk>/', FabricanteDetailView.as_view(), name='fabricante_detail'),
@@ -90,7 +89,6 @@ urlpatterns = [
     # path('catalogo/fabricantes/<int:pk>/excluir/', FabricanteDeleteView.as_view(), name='fabricante_delete'),
 
     # --- CRUD de Fornecedores ---
-    # (Supondo que FornecedorDeleteView será criada seguindo o padrão das outras)
     path('fornecedores/', FornecedorListView.as_view(), name='fornecedor_list'),
     path('fornecedores/novo/', FornecedorCreateView.as_view(), name='fornecedor_create'),
     path('fornecedores/<int:pk>/', FornecedorDetailView.as_view(), name='fornecedor_detail'),
