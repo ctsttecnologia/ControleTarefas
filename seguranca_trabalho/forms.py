@@ -4,6 +4,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from .models import Equipamento, FichaEPI, EntregaEPI, Fabricante, Fornecedor
 from departamento_pessoal.models import Funcionario
+import pathlib
 
 class FabricanteForm(forms.ModelForm):
     class Meta:
@@ -89,10 +90,34 @@ class EntregaEPIForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        # 1. Remove o argumento 'filial' de kwargs antes de chamar o construtor pai.
+        filial = kwargs.pop('filial', None)
+        
+        # 2. Chama o construtor pai de forma segura.
         super().__init__(*args, **kwargs)
-        self.fields['equipamento'].queryset = Equipamento.objects.filter(ativo=True)
-        # Campos de lote/série podem ser escondidos com JS no front-end se não forem necessários
+        
+        # 3. Usa o argumento 'filial' para filtrar a queryset de equipamentos.
+        if filial:
+            self.fields['equipamento'].queryset = Equipamento.objects.filter(ativo=True, filial=filial)
+        else:
+            # Fallback para evitar que o campo fique sem opções caso a filial não seja passada.
+            self.fields['equipamento'].queryset = Equipamento.objects.filter(ativo=True)
+
+    @property
+    def get_assinatura_imagem_path_for_pdf(self):
+        """
+        Retorna o caminho da imagem de assinatura em formato de URI (file:///),
+        que é o formato correto para o gerador de PDF (WeasyPrint).
+        """
+        if self.assinatura_imagem and hasattr(self.assinatura_imagem, 'path'):
+            try:
+                return pathlib.Path(self.assinatura_imagem.path).as_uri()
+            except Exception:
+                return None
+        return None
         
 class AssinaturaForm(forms.Form):
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput())
+        
+
 

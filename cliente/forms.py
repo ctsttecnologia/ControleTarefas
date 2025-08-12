@@ -1,13 +1,13 @@
-  
 from django import forms
 from .models import Cliente
+from django.utils import timezone
 
 class ClienteForm(forms.ModelForm):
     class Meta:
         model = Cliente
-        fields = '__all__'  # Garante que todos os campos, incluindo 'contrato', sejam incluídos
+        fields = '__all__'
 
-        # Define classes e atributos diretamente aqui, sem loops complexos
+        # A definição dos widgets já aplica as classes CSS necessárias.
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
@@ -25,24 +25,45 @@ class ClienteForm(forms.ModelForm):
             'estatus': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
-    # O método __init__ não é mais necessário para adicionar classes
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # Loop para aplicar classes CSS do Bootstrap
-        for field_name, field in self.fields.items():
-            if isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs.update({'class': 'form-check-input'})
-            elif isinstance(field.widget, forms.Select):
-                field.widget.attrs.update({'class': 'form-select'})
-            else:
-                field.widget.attrs.update({'class': 'form-control'})
-
-        # Se a instância já existe (estamos editando), torna os campos readonly
+        # Se a instância é nova (criando um cliente), define a data de início como hoje.
+        if not self.instance.pk:
+            self.fields['data_de_inicio'].initial = timezone.now().date()
+        
+        # Se a instância já existe (editando), desabilita os campos e garante a exibição dos valores.
         if self.instance and self.instance.pk:
-            self.fields['cnpj'].widget.attrs['readonly'] = True
+            # Desabilita o campo e o torna não-obrigatório para a validação do formulário.
+            self.fields['cnpj'].disabled = True
             self.fields['cnpj'].widget.attrs['title'] = 'O CNPJ não pode ser alterado.'
             
-            self.fields['data_de_inicio'].widget.attrs['readonly'] = True
+            self.fields['data_de_inicio'].disabled = True
             self.fields['data_de_inicio'].widget.attrs['title'] = 'A data de início não pode ser alterada.'
-    
+            
+            # << CORREÇÃO DE EXIBIÇÃO >>
+            # Força o widget a renderizar como <input type="text"> para que o valor apareça.
+            self.fields['data_de_inicio'].widget.input_type = 'text'
+            
+            # Formata o valor para exibição no campo de texto no padrão brasileiro.
+            if self.instance.data_de_inicio:
+                self.initial['data_de_inicio'] = self.instance.data_de_inicio.strftime('%d/%m/%Y')
+
+    def clean(self):
+        """
+        << CORREÇÃO FUNDAMENTAL >>
+        Este método garante que os valores dos campos desabilitados não se percam ao salvar,
+        evitando o erro "Este campo é obrigatório".
+        """
+        cleaned_data = super().clean()
+
+        # Se estamos editando, restauramos os valores originais do banco de dados,
+        # pois campos desabilitados não são enviados no formulário.
+        if self.instance and self.instance.pk:
+            cleaned_data['cnpj'] = self.instance.cnpj
+            cleaned_data['data_de_inicio'] = self.instance.data_de_inicio
+            
+        return cleaned_data
+
+
+

@@ -2,92 +2,80 @@
 {% load static %}
 
 {% block extra_css %}
-    {# Carrega nosso CSS customizado após o Bootstrap #}
+    {# Link para seu CSS customizado, se necessário #}
     <link rel="stylesheet" href="{% static 'css/tarefas/kanban.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="kanban-wrapper">
-    <header class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-body-tertiary p-3 rounded-bottom shadow-sm">
+<div class="container-fluid p-3 p-md-4">
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
         <h1 class="h3 mb-0">Quadro Kanban</h1>
-        <div>
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">Ver em Lista</a>
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-outline-secondary">Calendário</a>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Nova Tarefa
+        <div class="d-flex gap-2">
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-list-ul me-1"></i>
+                Ver em Lista
+            </a>
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-calendar3 me-1"></i>
+                Calendário
+            </a>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg me-1"></i>
+                Nova Tarefa
             </a>
         </div>
     </header>
 
-    <div class="kanban-board d-flex gap-3">
-
+    <div class="kanban-board d-flex gap-3 overflow-auto pb-3">
         {% for coluna in colunas %}
-        {# Adicionamos uma classe baseada no nome da coluna para estilização #}
-        <div class="kanban-column status-{{ coluna.nome|slugify }}">
-            <div class="kanban-column-header">
-                <h2 class="h6 mb-0 text-uppercase fw-bold">{{ coluna.nome }}</h2>
-                <span class="badge bg-dark-subtle text-emphasis-dark rounded-pill">{{ coluna.tarefas|length }}</span>
-            </div>
-            
-            <div class="kanban-cards-container custom-scrollbar" id="{{ coluna.id }}">
-                {% for tarefa in coluna.tarefas %}
-                    {# Usando o componente .card do Bootstrap como base #}
-                    <div class="kanban-card card mb-3 {% if tarefa.atrasada %}is-overdue{% endif %}"
-                         data-task-id="{{ tarefa.pk }}">
-
-                        <div class="card-body">
-                            <p class="card-title fw-bold">{{ tarefa.titulo }}</p>
-                            
-                            <div class="card-meta d-flex justify-content-between align-items-center mt-3">
-                                <span class="small text-muted {% if tarefa.atrasada %}text-danger fw-bold{% endif %}">
-                                    <i class="far fa-calendar-alt me-1"></i>
-                                    {% if tarefa.prazo %}{{ tarefa.prazo|date:"d/m" }}{% else %}S/ Prazo{% endif %}
-                                </span>
-                                
-                                <span class="badge rounded-pill 
-                                    {% if tarefa.prioridade == 'baixa' %}bg-success-subtle text-success-emphasis
-                                    {% elif tarefa.prioridade == 'media' %}bg-warning-subtle text-warning-emphasis
-                                    {% else %}bg-danger-subtle text-danger-emphasis{% endif %}">
-                                    {{ tarefa.get_prioridade_display }}
-                                </span>
-                            </div>
+            <div class="kanban-column">
+                <div class="kanban-column-header">
+                    <h2 class="h6 mb-0 text-uppercase fw-bold">{{ coluna.nome }}</h2>
+                    <span class="badge bg-dark-subtle text-emphasis-dark rounded-pill">{{ coluna.tarefas|length }}</span>
+                </div>
+                
+                <div class="kanban-cards-container custom-scrollbar" id="{{ coluna.id }}">
+                    {% for tarefa in coluna.tarefas %}
+                        {# Aqui, incluímos o componente de card para cada tarefa #}
+                        {% include "tarefas/_task_card.html" with tarefa=tarefa now=now %}
+                    {% empty %}
+                        <div class="text-center text-muted p-5 small fst-italic">
+                            Nenhuma tarefa aqui.
                         </div>
-                    </div>
-                {% empty %}
-                    <div class="text-center text-muted p-4 small">
-                        Nenhuma tarefa aqui.
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             </div>
-        </div>
         {% endfor %}
-
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-    {# Seu JS continua o mesmo, pois as classes e IDs principais foram mantidos #}
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // ... seu código JS para Sortable e AJAX permanece o mesmo ...
-            const kanbanContainers = document.querySelectorAll('.kanban-cards-container');
+            // Inicializa os tooltips do Bootstrap (para o avatar do responsável)
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
 
+            // Lógica do Drag-and-Drop com SortableJS
+            const kanbanContainers = document.querySelectorAll('.kanban-cards-container');
             kanbanContainers.forEach(container => {
                 new Sortable(container, {
-                    group: 'kanban',
+                    group: 'kanban', // Permite arrastar entre colunas
                     animation: 150,
+                    ghostClass: 'kanban-ghost', // Classe para o item fantasma
                     onEnd: function (evt) {
-                        const itemEl = evt.item;
-                        const toContainer = evt.to;
-                        const taskId = itemEl.dataset.taskId;
-                        const newStatus = toContainer.id;
-                        updateTask(taskId, newStatus);
+                        const taskId = evt.item.dataset.taskId;
+                        const newStatus = evt.to.id;
+                        updateTaskStatus(taskId, newStatus);
                     }
                 });
             });
 
+            // Função para obter o CSRF token para requisições POST
             function getCookie(name) {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== '') {
@@ -103,7 +91,8 @@
                 return cookieValue;
             }
 
-            function updateTask(taskId, newStatus) {
+            // Função para enviar a atualização de status para o backend via AJAX/Fetch
+            function updateTaskStatus(taskId, newStatus) {
                 const csrftoken = getCookie('csrftoken');
                 const url = "{% url 'tarefas:update_task_status' %}";
 
@@ -117,10 +106,9 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    if (data.success) {
-                        console.log('Status da tarefa atualizado!');
-                    } else {
+                    if (!data.success) {
                         console.error('Falha ao atualizar o status:', data.message);
+                        // Opcional: reverter a ação no frontend ou mostrar um erro
                     }
                 })
                 .catch(error => console.error('Erro na requisição AJAX:', error));

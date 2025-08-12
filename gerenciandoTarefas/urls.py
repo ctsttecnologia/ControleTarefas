@@ -34,3 +34,11 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Definição da variável que o Django usará para qualquer erro 404 na aplicação.
+# Fica no mesmo nível do urlpatterns, não dentro dele.
+handler404 = 'core.views.error_404_view'
+
+# Da mesma forma, você pode definir para outros erros comuns:
+# handler500 = 'core.views.error_500_view' # Para erros internos do servidor
+# handler403 = 'core.views.error_403_view' # Para erros de permissão negada

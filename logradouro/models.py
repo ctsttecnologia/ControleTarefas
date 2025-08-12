@@ -3,6 +3,8 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from .constant import ESTADOS_BRASIL
+from core.managers import FilialManager
+from usuario.models import Filial
 
 class Logradouro(models.Model):
     # Validadores
@@ -97,6 +99,16 @@ class Logradouro(models.Model):
         auto_now=True,
         verbose_name=_('Última Atualização')
     )
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='logradouros',  
+        verbose_name=_("Filial"),
+        null=True,                  
+        blank=False              
+    )
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     # Métodos
     def clean(self):

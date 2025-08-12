@@ -6,9 +6,9 @@ class LogradouroForm(forms.ModelForm):
     class Meta:
         model = Logradouro
         fields = [
-            'endereco', 'numero', 'cep', 'complemento',
+            'filial', 'endereco', 'numero', 'cep', 'complemento',
             'bairro', 'cidade', 'estado', 'pais',
-            'ponto_referencia', 'latitude', 'longitude'
+            'ponto_referencia', 'latitude', 'longitude',
         ]
         
         widgets = {
@@ -29,6 +29,16 @@ class LogradouroForm(forms.ModelForm):
             'cep': 'CEP',
             'ponto_referencia': 'Ponto de Referência'
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Adiciona a classe do Bootstrap a todos os campos
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+        
+        # Opcional: Deixa o campo filial mais amigável, mostrando o nome da filial
+        self.fields['filial'].label = "Filial do Endereço"
+        self.fields['filial'].empty_label = "Selecione uma filial"
 
     def clean_cep(self):
         # A validação já é feita pelo RegexValidator no modelo, 

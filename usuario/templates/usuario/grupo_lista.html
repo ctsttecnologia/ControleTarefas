@@ -4,8 +4,7 @@
 {% block title %}Grupos de Permissões{% endblock %}
 
 {% block extra_css %}
-    {# Perfeito, já estamos usando o CSS refatorado da lista de usuários. #}
-    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario.css' %}">
 {% endblock %}
 
 
@@ -13,25 +12,22 @@
     {# Inclui o submenu da seção de usuários/grupos #}
     {% include 'usuario/includes/submenu.html' %}
 
-    <div class="container py-4">
-        {# MUDANÇA 1: Card com sombra padrão e estrutura de cabeçalho #}
+    <div class="container-fluid py-4" style="max-width: 1600px;">
         <div class="card shadow">
             <div class="card-header bg-white py-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <h2 class="h4 mb-0">Grupos de Permissões</h2>
                     {% if perms.auth.add_group %}
-                        {# MUDANÇA 2: Botão principal com o estilo moderno ".btn-glow" #}
-                        <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary btn-glow">
+                        <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary">
                             <i class="bi bi-plus-lg me-1"></i> Novo Grupo
                         </a>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="card-body p-0"> {# Removido o padding para a tabela ocupar toda a largura #}
+            <div class="card-body p-0"> {# Padding removido para a tabela ocupar toda a largura do card #}
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0"> {# Removida a margem inferior #}
-                        {# MUDANÇA 3: Aplicando o cabeçalho de tabela customizado #}
+                    <table class="table table-hover align-middle mb-0"> {# Margem inferior removida #}
                         <thead class="thead-custom">
                             <tr>
                                 <th scope="col" class="ps-4">Nome do Grupo</th>
@@ -46,7 +42,6 @@
                                 <td class="text-center">{{ grupo.user_set.count }}</td>
                                 <td class="text-center pe-4">
                                     <div class="dropdown">
-                                        {# MUDANÇA 4: Botão de ações com estilo mais limpo #}
                                         <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-three-dots-vertical"></i>
                                         </button>
@@ -64,7 +59,6 @@
                             </tr>
                             {% empty %}
                                 <tr>
-                                    {# MUDANÇA 5: Mensagem de "nenhum resultado" mais elaborada #}
                                     <td colspan="3" class="text-center py-5">
                                         <div class="text-muted">
                                             <i class="bi bi-collection fs-1"></i>

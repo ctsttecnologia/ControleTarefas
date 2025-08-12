@@ -1,73 +1,111 @@
-
 {% load static %}
 
 <header id="global-header">
     <nav class="navbar navbar-expand-lg shadow-sm" data-bs-theme="dark">
         <div class="container-fluid">
 
-            <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas"  width="130px" height="auto">
+            <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas" width="130px" height="auto">
 
             <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'usuario:profile' %}{% else %}{% url 'home' %}{% endif %}">
                 | <i class="bi bi-check2-square me-2"></i>Gerenciando Tarefas
             </a>
             
-
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    
-                    {# O seletor de filial como um item da navegação #}
-                    {% if user.is_superuser and available_filiais %}
+                    {# == INÍCIO DO SELETOR DE FILIAL REATORADO                      == #}                   
+                    {# CONDIÇÃO 1: Mostra o dropdown SOMENTE se o usuário for staff (admin) E tiver mais de uma filial permitida #}
+                    {% if user.is_staff and filiais_permitidas_global|length > 1 %}
                         <li class="nav-item dropdown mx-lg-3">
                             <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-map-marker-alt me-1"></i><strong>{% if active_filial %}{{ active_filial.nome }}{% else %}Todas{% endif %}</strong>
+                                <i class="fas fa-building me-1"></i>
+                                <strong>
+                                    {% if request.session.active_filial_id %}
+                                        {{ filial_ativa_global.nome }}
+                                    {% else %}
+                                        Todas as Filiais
+                                    {% endif %}
+                                </strong>
                             </a>
-                            
                             <ul class="dropdown-menu dropdown-menu-dark">
-                                <li>
-                                    <form action="{% url 'core:selecionar_filial' %}" method="post" class="d-grid">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="filial_id" value="0">
-                                        <button type="submit" class="dropdown-item {% if not active_filial %}active{% endif %}">
-                                            -- Todas as Filiais --
-                                        </button>
-                                    </form>
-                                </li>
-                                
-                                <li><hr class="dropdown-divider"></li>
+                                <form action="{% url 'usuario:selecionar_filial' %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="next" value="{{ request.path }}">
 
-                                {% for filial in available_filiais %}
-                                <li>
-                                    <form action="{% url 'core:selecionar_filial' %}" method="post" class="d-grid">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="filial_id" value="{{ filial.pk }}">
-                                        <button type="submit" class="dropdown-item {% if active_filial.pk == filial.pk %}active{% endif %}">
-                                            {{ filial.nome }}
-                                        </button>
-                                    </form>
-                                </li>
-                                {% endfor %}
+                                    {# Opção "Todas" aparece apenas para superusuários #}
+                                    {% if user.is_superuser %}
+                                        <li>
+                                            <button type="submit" name="filial_id" value="0" class="dropdown-item {% if not request.session.active_filial_id %}active{% endif %}">
+                                                -- Todas as Filiais --
+                                            </button>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                    {% endif %}
+                                    
+                                    {# Lista as filiais permitidas para o admin selecionar #}
+                                    {% for filial in filiais_permitidas_global %}
+                                        <li>
+                                            <button type="submit" name="filial_id" value="{{ filial.id }}" class="dropdown-item {% if filial.id == filial_ativa_global.id %}active{% endif %}">
+                                                {{ filial.nome }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </form>
                             </ul>
                         </li>
-
-                    {% elif user.filial %}
+                    
+                    {# CONDIÇÃO 2: Se o usuário estiver logado mas NÃO for admin, apenas mostra o nome da filial ativa #}
+                    {% elif user.is_authenticated and filial_ativa_global %}
                         <li class="nav-item mx-lg-3">
-                            <span class="navbar-text text-white">
-                                <i class="fas fa-map-marker-alt me-1"></i> Filial: <strong>{{ user.filial.nome }}</strong>
+                            <span class="nav-link" style="cursor: default;">
+                                <i class="fas fa-building me-1 text-white-50"></i>
+                                <span class="text-white-50">{{ filial_ativa_global.nome }}</span>
                             </span>
                         </li>
                     {% endif %}
-
                 </ul>
             </div>
 
             <div class="d-flex align-items-center">
                 {% if user.is_authenticated %}
+
+                    <div class="dropdown text-end me-3"> {# Adicionado me-3 para espaçamento #}
+                        <a href="#" class="nav-link text-white" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell-fill fs-5 position-relative">
+                                {% if notification_count > 0 %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em;">
+                                    {{ notification_count }}
+                                </span>
+                                {% endif %}
+                            </i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                            {% if notification_tasks %}
+                                {% for task in notification_tasks %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'tarefas:tarefa_detail' task.pk %}">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="small">{{ task.titulo|truncatechars:25 }}</span>
+                                                
+                                                {% if task.prazo and task.prazo < now %}
+                                                    <span class="badge bg-danger-subtle text-danger-emphasis">Atrasada</span>
+                                                {% elif task.data_lembrete and task.data_lembrete.date == now.date %}
+                                                    <span class="badge bg-info-subtle text-info-emphasis">Lembrete</span>
+                                                {% endif %}
+                                            </div>
+                                        </a>
+                                    </li>
+                                {% endfor %}
+                            {% else %}
+                                <li><span class="dropdown-item disabled text-muted">Nenhuma notificação</span></li>
+                            {% endif %}
+                        </ul>
+                    </div>
                     <div class="dropdown text-end me-2">
                         <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">{{ user.username }}</a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
                                 <a class="dropdown-item" href="{% url 'usuario:profile' %}">
-                                    <i class="bi bi-person-fill me-2"></i>Meu Perfil
+                                    <i class="bi bi-person-fill me-2"></i>Menu
                                 </a>
                             </li>
                             {% if user.is_staff %}

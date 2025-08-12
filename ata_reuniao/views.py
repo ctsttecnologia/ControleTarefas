@@ -13,27 +13,16 @@ from django.template.loader import get_template
 from django.views.generic import (
     ListView, CreateView, UpdateView, DeleteView, TemplateView, View
 )
-
+from django.contrib.auth import get_user_model # Melhor forma de pegar o modelo User
 from gerenciandoTarefas.settings import AUTH_USER_MODEL
 from .models import AtaReuniao, HistoricoAta
 from xhtml2pdf import pisa
-
 from .forms import AtaReuniaoForm
-from django.contrib.auth import get_user_model # Melhor forma de pegar o modelo User
+
+from core.mixins import FilialScopedQuerysetMixin
 
 User = get_user_model() # Carrega a classe do usuário
 
-
-class FilialScopedMixin:
-    """
-    Mixin que automaticamente filtra a queryset principal de uma View
-    pela filial do usuário logado. Garante a segregação de dados.
-    """
-    def get_queryset(self):
-        qs = super().get_queryset()
-        if self.request.user.is_authenticated and hasattr(self.request.user, 'filial'):
-            return qs.for_request(self.request)
-        return qs.none() # Impede acesso a usuários sem filial ou não logados.
 
 # --- Mixin Base para Evitar Repetição ---
 class AtaReuniaoBaseMixin(LoginRequiredMixin):
@@ -48,7 +37,7 @@ class AtaReuniaoBaseMixin(LoginRequiredMixin):
 
 # --- Views de CRUD (List, Create, Update, Delete) ---
 
-class AtaReuniaoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
+class AtaReuniaoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     model = AtaReuniao
     template_name = 'ata_reuniao/ata_reuniao_list.html'
     context_object_name = 'atas'
@@ -70,7 +59,8 @@ class AtaReuniaoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
         """
         Usa os atributos consistentes definidos no dispatch() para filtrar.
         """
-        queryset = super().get_queryset()
+        queryset = super().get_queryset(request=self.request)
+        
 
         # ✅ Usando os nomes padronizados para filtrar
         if self.current_contrato:
@@ -101,7 +91,7 @@ class AtaReuniaoListView(LoginRequiredMixin, FilialScopedMixin, ListView):
 
         return context
 
-class AtaReuniaoCreateView(AtaReuniaoBaseMixin, FilialScopedMixin, SuccessMessageMixin, CreateView):
+class AtaReuniaoCreateView(AtaReuniaoBaseMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, CreateView):
     """
     Cria uma nova Ata de Reunião.
     """
@@ -114,7 +104,7 @@ class AtaReuniaoCreateView(AtaReuniaoBaseMixin, FilialScopedMixin, SuccessMessag
         return kwargs
 
 
-class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, FilialScopedMixin, SuccessMessageMixin, UpdateView):
+class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
     """
     Atualiza uma Ata de Reunião existente e salva um registro no histórico.
     """
@@ -201,7 +191,6 @@ class AtaReuniaoDashboardView(LoginRequiredMixin, TemplateView):
         })
         return context
 
-
 # --- Views de Exportação ---
 
 class AtaReuniaoPDFExportView(LoginRequiredMixin, View):
@@ -221,7 +210,6 @@ class AtaReuniaoPDFExportView(LoginRequiredMixin, View):
         if pisa_status.err:
             return HttpResponse('Erro ao gerar PDF')
         return response
-
 
 class AtaReuniaoExcelExportView(LoginRequiredMixin, View):
     """
