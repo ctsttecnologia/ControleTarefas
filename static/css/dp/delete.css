@@ -1,0 +1,124 @@
+
+/*
+ * CSS para a página de confirmação de exclusão
+ * /static/css/dp/delete.css
+ */
+
+/* Estilização do Container Principal */
+.container {
+    max-width: 700px;
+    margin: 40px auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Título da Página */
+.container h2 {
+    color: #c0392b; /* Tom de vermelho escuro para indicar perigo */
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
+/* Painel de Navegação Superior */
+.painel {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+/* Mensagem de Confirmação */
+.container p {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.container p strong {
+    color: #333;
+    font-weight: 600;
+}
+
+/* Formulário e Botões de Ação */
+.container form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Espaço entre os botões */
+}
+
+/* Estilo Base para todos os Botões */
+.btn_cadastro,
+.btn_profile,
+.btn_excluir,
+.btn_cancelar {
+    display: inline-block;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    text-decoration: none;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    text-align: center;
+}
+
+.btn_cadastro:hover,
+.btn_profile:hover,
+.btn_excluir:hover,
+.btn_cancelar:hover {
+    transform: translateY(-2px); /* Efeito de elevação no hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* --- Estilos Específicos para cada Botão --- */
+
+/* Botão EXCLUIR (Ação Principal e Perigosa) */
+.btn_excluir {
+    background-color: #e74c3c; /* Vermelho forte */
+}
+
+.btn_excluir:hover {
+    background-color: #c0392b; /* Vermelho mais escuro */
+}
+
+/* Botão CANCELAR (Ação Secundária) */
+.btn_cancelar {
+    background-color: #7f8c8d; /* Cinza neutro */
+    border: 2px solid #7f8c8d;
+}
+
+.btn_cancelar:hover {
+    background-color: #6c7a7b; /* Cinza mais escuro */
+    border-color: #6c7a7b;
+}
+
+/* Botões do Painel Superior */
+.btn_cadastro {
+    background-color: #3498db; /* Azul */
+    padding: 8px 15px;
+    font-size: 0.9rem;
+}
+
+.btn_cadastro:hover {
+    background-color: #2980b9;
+}
+
+.btn_profile {
+    background-color: #2ecc71; /* Verde */
+    padding: 8px 15px;
+    font-size: 0.9rem;
+}
+
+.btn_profile:hover {
+    background-color: #27ae60;
+}

@@ -2,19 +2,13 @@
 {% load static %}
 {% block head %} 
     {% block extra_css %}
-        <link rel="stylesheet" href="{% static 'cssdp/confirm_delete_styles.css' %}">
+        <link rel="stylesheet" href="{% static 'css/dp/delete.css' %}">
     {% endblock %}
 {% endblock %}
 
 {% block content %}  
     <div class="container">
         <h2>Confirmar Exclusão</h2>
-
-        {% if user.is_authenticated %}
-        <p>Olá, {{ user.username }}!</p>
-        {% else %}
-            <a href="{% url 'home' %}" class="btn-home">Home</a>
-        {% endif %}
                 
         <div class="painel">
             <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn_cadastro">Cadastro de Funcionário</a>
