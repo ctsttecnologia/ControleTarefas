@@ -249,8 +249,29 @@ class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView)
         context['titulo_pagina'] = f"Editar Cargo: {self.object.nome}"
         return context
 
-# --- VIEWS PARA DOCUMENTOS (ADICIONADAS) ---
+# --- VIEWS PARA DOCUMENTOS (ADICIONADAS) 
 # O mixin padrão não funcionará. Precisamos de uma lógica customizada.
+#class DocumentoListView(StaffRequiredMixin, ListView): 
+#    model = Documento
+#    template_name = 'departamento_pessoal/lista_documentos.html'
+#    context_object_name = 'documentos'
+#    paginate_by = 10
+
+#    def get_queryset(self):
+#        # A chave da sessão que você usa é 'active_filial_id'
+#        filial_id = self.request.session.get('active_filial_id') 
+#        
+#        # SE a linha acima não encontrar nada (retornar None),
+#        # a condição abaixo se torna verdadeira e o erro é lançado.
+#        if not filial_id: 
+ #           raise PermissionDenied("Nenhuma filial selecionada.")
+        
+        # O resto do código, que filtra os documentos, nem chega a ser executado.
+#        queryset = super().get_queryset().filter(funcionario__filial_id=filial_id)
+        
+#        return queryset
+    
+
 class DocumentoListView(StaffRequiredMixin, ListView): 
     model = Documento
     template_name = 'departamento_pessoal/lista_documentos.html'
@@ -258,15 +279,15 @@ class DocumentoListView(StaffRequiredMixin, ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        # A chave da sessão que você usa é 'active_filial_id'
+
+        # Este código vai imprimir o conteúdo da sessão no seu console do Django
+        
         filial_id = self.request.session.get('active_filial_id') 
         
-        # SE a linha acima não encontrar nada (retornar None),
-        # a condição abaixo se torna verdadeira e o erro é lançado.
         if not filial_id: 
-            raise PermissionDenied("Nenhuma filial selecionada.") # <- FOI ISSO QUE ACONTECEU
+            # A mensagem de erro agora será mais informativa
+            raise PermissionDenied("Nenhuma filial selecionada. Verifique o console para ver o conteúdo da sessão.")
         
-        # O resto do código, que filtra os documentos, nem chega a ser executado.
         queryset = super().get_queryset().filter(funcionario__filial_id=filial_id)
         # ...
         return queryset
@@ -275,17 +296,19 @@ class DocumentoListView(StaffRequiredMixin, ListView):
 
 # A segurança aqui é garantir que o funcionário ao qual estamos adicionando
 # o documento pertence à filial ativa.
-class DocumentoCreateView(StaffRequiredMixin, CreateView): # Removido FilialScopedQuerysetMixin
+class DocumentoCreateView(StaffRequiredMixin, CreateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
 
+   
     def form_valid(self, form):
-        filial_id = self.request.session.get('filial_atual_id')
-        if not filial_id: raise PermissionDenied("Nenhuma filial selecionada.")
+        # Altere 'filial_atual_id' para 'active_filial_id'
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id: 
+            raise PermissionDenied("Nenhuma filial selecionada.")
 
         funcionario_pk = self.kwargs.get('funcionario_pk')
-        # Garante que o funcionário pertence à filial ativa antes de associar o documento.
         funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, filial_id=filial_id)
         
         form.instance.funcionario = funcionario
@@ -321,7 +344,7 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        filial_id = self.request.session.get('filial_atual_id')
+        filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
             context['permission_denied'] = True
             messages.error(self.request, "Selecione uma filial para visualizar o painel.")
@@ -351,7 +374,7 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
 
 class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get_scoped_queryset(self):
-        filial_id = self.request.session.get('filial_atual_id')
+        filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
             raise PermissionDenied("Nenhuma filial selecionada para exportar dados.")
         return Funcionario.objects.filter(filial_id=filial_id).select_related('cargo', 'departamento')

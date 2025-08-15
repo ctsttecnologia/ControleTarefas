@@ -2,8 +2,11 @@
 # departamento_pessoal/views.py
 
 # --- Imports Corrigidos ---
+from collections import defaultdict
 import json
 import io
+from multiprocessing.sharedctypes import Value
+from django.forms import DurationField
 import pandas as pd
 from django.http import HttpResponse
 from django.views import View
@@ -11,7 +14,8 @@ from django.views.generic import ListView, CreateView, UpdateView, DetailView, D
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
-from django.db.models import Q, Count, ExpressionWrapper, DateField, Func, F, DateField
+from django.db.models import Q, Count, ExpressionWrapper, DateField, Func, F, DurationField
+from django.db.models.functions import Coalesce, Cast
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.template.loader import render_to_string
@@ -29,6 +33,12 @@ from seguranca_trabalho.models import EntregaEPI, Equipamento, Fabricante, Ficha
 from django.conf import settings
 from weasyprint import default_url_fetcher # Importe o default_url_fetcher
 from core.mixins import FilialScopedQuerysetMixin
+import logging
+
+
+
+
+logger = logging.getLogger(__name__)
 
 # Adicione esta função no topo do seu arquivo de views
 def custom_url_fetcher(url):
@@ -638,13 +648,11 @@ class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateVi
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Querysets base já filtrados por filial
+        # Querysets base já filtrados
         equipamentos_da_filial = self.get_queryset(Equipamento)
         fichas_da_filial = self.get_queryset(FichaEPI)
         entregas_da_filial = self.get_queryset(EntregaEPI)
         matriz_da_filial = self.get_queryset(MatrizEPI)
-
-        today = timezone.now().date()
 
         # --- 1. DADOS PARA OS CARDS DE KPI ---
         context['total_equipamentos_ativos'] = equipamentos_da_filial.filter(ativo=True).count()
@@ -655,67 +663,55 @@ class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateVi
             assinatura_imagem__isnull=True
         ).count()
 
-        # Card: EPIs Vencendo (30d) - CORRIGIDO
-        #in_30_days = today + timedelta(days=30)
-        vencendo_em_30d = 0
-
-        # 4. EPIs Vencendo (Esta parte agora usa a DateAdd corrigida)
+        # --- 2. CÁLCULO DE STATUS EM PYTHON ---
         today = timezone.now().date()
         thirty_days_from_now = today + timedelta(days=30)
         
-        vencimento_expression = DateAdd(
-            F('data_entrega'), 
-            F('equipamento__vida_util_dias'),
-            output_field=DateField()
-        )
-
-        context['epis_vencendo_30d'] = entregas_da_filial.annotate(
-            vencimento=vencimento_expression
-        ).filter(
-            data_devolucao__isnull=True,
-            vencimento__gte=today,
-            vencimento__lte=thirty_days_from_now
-        ).count()
-        
-        # data_devolucao__isnull=True -> Busca EPIs que NÃO foram devolvidos.
+        # Otimiza a query para buscar dados relacionados de uma só vez
         entregas_ativas = entregas_da_filial.filter(
-            data_devolucao__isnull=True, 
-            data_entrega__isnull=False
-        )
-        
-        for entrega in entregas_ativas:
-            vencimento = entrega.data_vencimento_uso
-            if vencimento and today <= vencimento <= thirty_days_from_now:
-                vencendo_em_30d += 1
-        context['total_epis_vencendo_30d'] = vencendo_em_30d
-
-        # --- 2. DADOS PARA OS GRÁFICOS ---
-        
-        # Gráfico de Situação dos EPIs Entregues (Query Otimizada)
-        vencido_expression = ExpressionWrapper(
-            F('data_entrega') + F('equipamento__vida_util_dias') * timedelta(days=1),
-            output_field=DateField()
-        )
-        
-        status_counts = entregas_da_filial.filter(
             data_devolucao__isnull=True, data_entrega__isnull=False
-        ).annotate(
-            data_vencimento=vencido_expression
-        ).values('equipamento__nome').annotate(
-            total=Count('id'),
-            pendente=Count('id', filter=Q(assinatura_recebimento__isnull=True, assinatura_imagem__isnull=True)),
-            vencido=Count('id', filter=Q(data_vencimento__lt=today))
-        ).order_by('-total')[:10]
+        ).select_related('equipamento')
 
-        if status_counts:
-            context['situacao_labels'] = json.dumps([s['equipamento__nome'] for s in status_counts])
-            # Calcula o 'ativo' (não pendente e não vencido)
-            ativos = [s['total'] - s['pendente'] - s['vencido'] for s in status_counts]
-            context['situacao_data_ativo'] = json.dumps([max(0, a) for a in ativos]) # Garante que não seja negativo
-            context['situacao_data_pendente'] = json.dumps([s['pendente'] for s in status_counts])
-            context['situacao_data_vencido'] = json.dumps([s['vencido'] for s in status_counts])
+        # Inicializa contadores e estrutura para o gráfico
+        epis_vencendo_30d_count = 0
+        chart_data = defaultdict(lambda: {'total': 0, 'pendente': 0, 'vencido': 0})
 
-        # ... (lógica para os outros gráficos pode permanecer a mesma) ...
+        for entrega in entregas_ativas:
+            nome_equipamento = entrega.equipamento.nome
+            chart_data[nome_equipamento]['total'] += 1
+
+            # Verifica pendência de assinatura
+            if entrega.assinatura_recebimento is None and entrega.assinatura_imagem is None:
+                chart_data[nome_equipamento]['pendente'] += 1
+
+            # Calcula vencimento
+            vida_util = entrega.equipamento.vida_util_dias
+            if vida_util is not None:
+                vencimento = entrega.data_entrega + timedelta(days=vida_util)
+                
+                if vencimento < today:
+                    chart_data[nome_equipamento]['vencido'] += 1
+                elif today <= vencimento <= thirty_days_from_now:
+                    epis_vencendo_30d_count += 1
+        
+        context['total_epis_vencendo_30d'] = epis_vencendo_30d_count
+
+        # --- 3. DADOS PARA OS GRÁFICOS ---
+        
+        # Ordena os dados do gráfico pelo total e pega os 10 maiores
+        sorted_chart_data = sorted(chart_data.items(), key=lambda item: item[1]['total'], reverse=True)[:10]
+
+        if sorted_chart_data:
+            labels = [item[0] for item in sorted_chart_data]
+            pendentes = [item[1]['pendente'] for item in sorted_chart_data]
+            vencidos = [item[1]['vencido'] for item in sorted_chart_data]
+            ativos = [item[1]['total'] - item[1]['pendente'] - item[1]['vencido'] for item in sorted_chart_data]
+
+            context['situacao_labels'] = json.dumps(labels)
+            context['situacao_data_ativo'] = json.dumps([max(0, a) for a in ativos])
+            context['situacao_data_pendente'] = json.dumps(pendentes)
+            context['situacao_data_vencido'] = json.dumps(vencidos)
+
         # Gráfico da Matriz de EPI por Função
         matriz_chart_data = matriz_da_filial.values('funcao__nome').annotate(
             num_epis=Count('equipamento')
@@ -730,13 +726,22 @@ class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateVi
 
     def get_queryset(self, model):
         """
-        Método auxiliar para obter o queryset filtrado, assumindo que
-        FilialScopedMixin fornece get_queryset ou que o manager .for_request existe.
+        Método auxiliar para obter o queryset filtrado de forma robusta.
         """
-        if hasattr(model.objects, 'for_request'):
-            return model.objects.for_request(self.request)
-        # Fallback para o caso de FilialScopedMixin funcionar de outra forma
-        return model.objects.filter(filial=self.request.user.filial_ativa)
+        active_filial_id = self.request.session.get('active_filial_id')
+        
+        if active_filial_id:
+            if hasattr(model, 'filial'):
+                return model.objects.filter(filial_id=active_filial_id)
+            elif hasattr(model, 'funcionario'):
+                return model.objects.filter(funcionario__filial_id=active_filial_id)
+            return model.objects.none()
+        
+        if self.request.user.is_superuser:
+            return model.objects.all()
+
+        return model.objects.none()
+
     
 # O nome da classe deve ser EXATAMENTE este
 class ControleEPIPorFuncaoView(SSTPermissionMixin, TemplateView):

@@ -26,7 +26,7 @@ class LogradouroListView(FilialScopedQuerysetMixin, LoginRequiredMixin, ListView
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -54,7 +54,7 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def form_valid(self, form):
         # CORREÇÃO: Associa a filial do usuário ao novo objeto antes de salvar.
@@ -78,7 +78,7 @@ class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, Update
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
     
     def form_valid(self, form):
         messages.success(self.request, _('Endereço atualizado com sucesso!'))
@@ -92,7 +92,7 @@ class LogradouroDeleteView(FilialScopedQuerysetMixin, LoginRequiredMixin, Delete
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def form_valid(self, form):
         messages.success(self.request, _('Endereço excluído com sucesso!'))
@@ -106,7 +106,7 @@ class LogradouroExportExcelView(LoginRequiredMixin, View):
     """
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
     
     def get(self, request, *args, **kwargs):
         # FALHA DE SEGURANÇA CORRIGIDA:

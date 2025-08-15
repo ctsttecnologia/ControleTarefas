@@ -49,7 +49,7 @@ class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermis
 
     def get_queryset(self):
         # Obtém o queryset inicial do mixin
-        queryset = super().get_queryset(request=self.request) 
+        queryset = super().get_queryset() 
 
         # 1. Otimiza a busca, trazendo dados das tabelas relacionadas (use os nomes válidos)
         optimized_queryset = queryset.select_related('usuario', 'responsavel', 'filial')
@@ -72,7 +72,7 @@ class TarefaDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
 
     def get_queryset(self):
         # Obtém o queryset inicial do mixin, passando o objeto request
-        queryset = super().get_queryset(request=self.request) 
+        queryset = super().get_queryset() 
         
         # Agora aplica as otimizações adicionais
         return queryset.select_related('usuario', 'responsavel', 'filial')
@@ -161,7 +161,7 @@ class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -228,7 +228,7 @@ class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPasses
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def test_func(self):
         return self.request.user == self.get_object().usuario
@@ -250,7 +250,7 @@ class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermission
     def get_queryset(self):
         """Filtra apenas as tarefas ativas para o quadro Kanban."""
         # 1. Primeiro, obtenha o queryset já filtrado pela filial, passando o request.
-        queryset = super().get_queryset(request=self.request)
+        queryset = super().get_queryset()
         # 2. Em seguida, aplique o seu filtro de status específico para o Kanban.
         active_statuses = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
         return queryset.filter(status__in=active_statuses)
@@ -324,7 +324,7 @@ class CalendarioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, Taref
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """   
-        return super().get_queryset(request=self.request).filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
+        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -373,7 +373,7 @@ class RelatorioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListVi
     
     def get_queryset(self):
         # 1. Chame o super() CORRETAMENTE, passando o request para o mixin de filial.
-        qs = super().get_queryset(request=self.request)
+        qs = super().get_queryset()
 
         # 2. Obtenha o valor do filtro de status.
         status_filter = self.request.GET.get('status') or self.request.POST.get('status')

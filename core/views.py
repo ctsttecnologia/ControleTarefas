@@ -49,3 +49,4 @@ def error_404_view(request, exception):
     View para renderizar a página 404 personalizada.
     """
     return render(request, '404.html', status=404)
+

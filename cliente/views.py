@@ -27,7 +27,7 @@ class ClienteListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     def get_queryset(self):
         # A filtragem por filial já foi feita pelo FilialScopedMixin.
         # Agora, aplicamos apenas ordenação, otimizações e a busca do usuário.
-        queryset = super().get_queryset(request=self.request).select_related('logradouro').order_by('nome')
+        queryset = super().get_queryset().select_related('logradouro').order_by('nome')
         
         termo_pesquisa = self.request.GET.get('q', '')
         if termo_pesquisa:
@@ -67,7 +67,7 @@ class ClienteCreateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         Garante que o mixin de filial receba o request para filtrar o cliente
         corretamente pela filial do usuário logado.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
 class ClienteUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
     model = Cliente
@@ -81,7 +81,7 @@ class ClienteUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         Garante que o mixin de filial receba o request para filtrar o cliente
         corretamente pela filial do usuário logado.
         """
-        return super().get_queryset(request=self.request)  
+        return super().get_queryset()  
 
 class ClienteDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, DeleteView):
     model = Cliente
@@ -94,7 +94,7 @@ class ClienteDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         Garante que o mixin de filial receba o request para filtrar o cliente
         corretamente pela filial do usuário logado.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
 # --- VIEW DE EXPORTAÇÃO ---
 
@@ -108,7 +108,7 @@ class ExportarClientesExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, L
 
     def get(self, request, *args, **kwargs):
         # 1. Usa self.get_queryset() para obter a lista de clientes JÁ FILTRADA pelo mixin.
-        clientes = self.get_queryset(request=self.request).select_related('logradouro').order_by('nome')
+        clientes = self.get_queryset().select_related('logradouro').order_by('nome')
 
         # 2. O restante do código para gerar o Excel permanece o mesmo.
         wb = openpyxl.Workbook()

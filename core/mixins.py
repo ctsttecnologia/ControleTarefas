@@ -133,3 +133,5 @@ class FilialAdminScopedMixin:
                 )
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    
+    
