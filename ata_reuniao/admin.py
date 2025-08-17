@@ -3,10 +3,10 @@
 
 from django.contrib import admin
 from .models import AtaReuniao
-from core.mixins import FilialScopedQuerysetMixin # Assumindo que o mixin está em core/mixins.py
+from core.mixins import FilialAdminScopedMixin, FilialScopedQuerysetMixin # Assumindo que o mixin está em core/mixins.py
 
 @admin.register(AtaReuniao)
-class AtaReuniaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class AtaReuniaoAdmin(FilialAdminScopedMixin, admin.ModelAdmin):
     # Campos a serem exibidos na lista
     list_display = (
         'id', 
@@ -41,6 +41,7 @@ class AtaReuniaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     
     # Habilita busca otimizada para campos ForeignKey
     autocomplete_fields = ['contrato', 'coordenador', 'responsavel']
+    readonly_fields = ('filial',)
     
     fieldsets = (
         ('Informações Gerais', {

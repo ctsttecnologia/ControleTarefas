@@ -1,0 +1,182 @@
+
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+
+
+{% block title %}Detalhes do Cartão de {{ cartao.funcionario.nome_completo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tag-container {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        font-family: Arial, sans-serif;
+    }
+    .tag-card {
+        width: 300px;
+        height: 530px;
+        border: 4px solid black;
+        border-radius: 15px;
+        padding: 5px;
+        background-image:
+            repeating-linear-gradient(
+                45deg,
+                #FFD700,
+                #FFD700 10px,
+                #000000 10px,
+                #000000 20px
+            );
+        display: flex;
+    }
+    .tag-content {
+        background-color: white;
+        width: 100%;
+        border-radius: 8px;
+        text-align: center;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .tag-header {
+        text-align: left;
+        width: 100%;
+    }
+    .tag-logo {
+        height: 30px;
+        margin-bottom: 5px;
+    }
+    .retangulo-box {
+        display: flex;             /* Transforma em um contêiner flexível */
+        justify-content: center;   /* Centraliza os itens horizontalmente */
+        align-items: center;       /* Esta linha agora funciona para centralizar verticalmente */
+        background-color: #000000ff;
+        width: 260px;
+        padding: 2px 0;
+        margin: 3px 0;
+        border: 2px solid black;
+        border-radius: 5px;
+    }
+    .danger-box {
+        background-color: #d9534f;
+        width: 120px;
+        color: white;
+        font-weight: bold;
+        padding: 5px 0;
+        margin: 10px 0;
+        border: 2px solid black;
+        border-radius: 20px;
+        font-size: 1.5rem;
+    }
+    .tag-text {
+        color: black;
+        font-weight: bold;
+        margin-top: 10px;
+        font-size: 0.8rem;
+    }
+    .tag-main-text {
+        font-size: 1.0rem;
+    }
+    .tag-photo {
+        width: 120px;
+        height: 150px;
+        object-fit: cover;
+        border: 2px solid #ccc;
+        margin-top: 5px;
+    }
+    .tag-back .tag-content {
+        justify-content: space-around;
+    }
+    .steps-box {
+        border: 2px solid #FFD700;
+        padding: 8px;
+        width: 100%;
+        text-align: left;
+    }
+    .steps-box h4 {
+        font-size: 1rem;
+        font-weight: bold;
+        margin-bottom: 2px;
+        text-align: center;
+    }
+    .steps-box ol {
+        padding-left: 20px;
+        margin: 0;
+        font-size: 0.8rem;
+    }
+    .disclaimer {
+        color: #d9534f;
+        font-weight: bold;
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<br>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Cartão de Bloqueio: {{ cartao.funcionario.nome_completo }}</h1>
+        <div>
+            <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">Editar</a>
+            <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-secondary">Voltar à Lista</a>
+        </div>
+    </div>
+</div>
+<div class="tag-container">
+    <div class="tag-card tag-front">
+        <div class="tag-content">
+            <div class="tag-header">
+                <img src="{% static 'images/logocetest.png' %}" alt="Logo CETEST" class="tag-logo">
+            </div>
+            <div class="retangulo-box">
+                <div class="danger-box">PERIGO</div>
+            </div>
+            <p class="tag-text">NÃO LIGUE, NÃO OPERE,<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO.</p>
+            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO.</p>
+            
+            {% if cartao.funcionario.foto_3x4 %}
+                <img src="{{ cartao.funcionario.foto_3x4.url }}" alt=" foto de{{ cartao.funcionario.nome_completo }}" class="tag-photo">
+            {% endif %}
+
+            <h4 class="tag-text mt-3 mb-1">{{ cartao.funcionario.nome_completo }}</h4>
+            <p class="tag-text">FONE: {{ cartao.fone }}</p>
+            
+        </div>
+    </div>
+    
+    <div class="tag-card tag-back">
+        <div class="tag-content">
+            <div class="retangulo-box">
+                <div class="danger-box">PERIGO</div>
+            </div> 
+            <p class="tag-text">NÃO LIGUE, NÃO OPERE,<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO.</p>
+            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO.</p>
+
+            <div class="steps-box">
+                <h4>Os 6 passos para o trabalho seguro:</h4>
+                <ol>
+                    <li>Identificar as energias</li>
+                    <li>Desligar</li>
+                    <li>Desenergizar</li>
+                    <li>Bloquear e etiquetar</li>
+                    <li>Verificar energias residuais</li>
+                    <li>Testar e verificar</li>
+                </ol>
+            </div>
+            <p class="disclaimer mt-3">
+                ESSA ETIQUETA É UM DISPOSITIVO DE SEGURANÇA INDIVIDUAL.<br>
+                SÓ PODE SER RETIRADA PELO SEU PROPRIETÁRIO.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

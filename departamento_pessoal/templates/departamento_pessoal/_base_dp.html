@@ -9,9 +9,8 @@
 {% block content %}
     <div class="subnav">
         <div class="container-fluid">
-            <ul class="nav nav-pills">
+            <ul class="nav nav">
                 <li class="nav-item">
-
                     <a class="nav-link {% if 'departamento' in request.resolver_match.view_name %}active{% endif %}"
                        href="{% url 'departamento_pessoal:lista_departamento' %}">
                        <i class="bi bi-diagram-3 me-1"></i> Departamentos

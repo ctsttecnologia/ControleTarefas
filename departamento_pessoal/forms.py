@@ -46,6 +46,7 @@ class FuncionarioForm(forms.ModelForm):
         fields = [
             'usuario', 'nome_completo', 'email_pessoal', 'telefone', 'data_nascimento', 'sexo',
             'matricula', 'departamento', 'cargo', 'data_admissao', 'salario', 'status', 'data_demissao', 'cliente',
+            'foto_3x4', 
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {

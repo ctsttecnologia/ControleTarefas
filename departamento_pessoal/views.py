@@ -1,4 +1,3 @@
-
 # departamento_pessoal/views.py
 
 import json
@@ -18,14 +17,12 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 
-from usuario.models import Filial
 # Módulos Locais
+from usuario.models import Filial
 from .models import Funcionario, Departamento, Cargo, Documento
 from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
-
-# --- MIXINS ---
-from django.core.exceptions import PermissionDenied
 from core.mixins import FilialScopedQuerysetMixin, FilialCreateMixin
 
 
@@ -47,11 +44,10 @@ class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListVie
     paginate_by = 15
 
     def get_queryset(self):
-        # CORREÇÃO: A chamada super() agora é mais limpa e padrão.
-        # O mixin obterá o request sozinho através de self.request.
+        # A chamada super() agora é limpa. O mixin cuida da filtragem por filial.
         queryset = super().get_queryset().select_related('cargo', 'departamento').order_by('nome_completo')
         
-        query = self.request.GET.get('q') # self.request ainda está disponível aqui.
+        query = self.request.GET.get('q')
         if query:
             queryset = queryset.filter(
                 Q(nome_completo__icontains=query) |
@@ -60,19 +56,15 @@ class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListVie
             )
         return queryset
 
-class FuncionarioCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView): 
+class FuncionarioCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
-    
+    extra_context = {'titulo_pagina': "Cadastrar Novo Funcionário"}
     
     def get_success_url(self):
+        # A mensagem de sucesso já é tratada pelo FilialCreateMixin.
         return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Cadastrar Novo Funcionário"
-        return context
 
 
 class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
@@ -81,8 +73,9 @@ class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, Detai
     context_object_name = 'funcionario'
 
     def get_queryset(self):
-  
+        # Adiciona otimização, mantendo a filtragem do mixin.
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
+
     
 class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
@@ -90,9 +83,7 @@ class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, Updat
     template_name = 'departamento_pessoal/funcionario_form.html'
 
     def get_queryset(self):
-        """
-        Passa o request para o mixin de filial e otimiza a consulta.
-        """
+        # Otimização da query. A filtragem por filial é herdada do mixin.
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
     def get_success_url(self):
@@ -108,36 +99,22 @@ class FuncionarioDeleteView(FilialScopedQuerysetMixin, StaffRequiredMixin, Detai
     model = Funcionario
     template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'funcionario'
-
-    def get_queryset(self):
-        # REATORADO: Chamada super() simplificada.
-        return super().get_queryset()
-
+    
     def post(self, request, *args, **kwargs):
-        """
-        Este método é chamado quando o formulário é enviado.
-        Ele verifica qual botão foi pressionado ('inativar' ou 'excluir').
-        """
-        # Carrega o objeto funcionário que está sendo visualizado
         funcionario = self.get_object()
-        
-        # Pega a ação do botão que foi clicado no formulário
         action = request.POST.get('action')
 
         if action == 'inativar':
-            # Ação de "Soft Delete": Apenas muda o status
             funcionario.status = 'INATIVO'
             funcionario.save()
-            messages.warning(request, f"O funcionário '{funcionario.nome_completo}' foi INATIVADO, mas seus dados foram mantidos.")
-
+            messages.warning(request, f"O funcionário '{funcionario.nome_completo}' foi INATIVADO.")
         elif action == 'excluir':
-            # Ação de Exclusão Permanente: Deleta o registro do banco de dados
             nome_completo = funcionario.nome_completo
             funcionario.delete()
             messages.error(request, f"O funcionário '{nome_completo}' foi EXCLUÍDO PERMANENTEMENTE.")
 
-        # Redireciona para a lista de funcionários após qualquer uma das ações
         return redirect(reverse_lazy('departamento_pessoal:lista_funcionarios'))
+
 
 # --- VIEWS PARA O PROCESSO DE ADMISSÃO (NOVAS) ---
 
@@ -146,10 +123,6 @@ class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, Upd
     form_class = AdmissaoForm
     template_name = 'departamento_pessoal/admissao_form.html'
 
-    def get_queryset(self):
-        
-        return super().get_queryset()
-
     def get_success_url(self):
         messages.success(self.request, f"Dados de admissão de '{self.object.nome_completo}' salvos com sucesso!")
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
@@ -157,9 +130,9 @@ class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, Upd
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.object.data_admissao:
-             context['titulo_pagina'] = f"Editar Admissão de {self.object.nome_completo}"
+            context['titulo_pagina'] = f"Editar Admissão de {self.object.nome_completo}"
         else:
-             context['titulo_pagina'] = f"Registrar Admissão para {self.object.nome_completo}"
+            context['titulo_pagina'] = f"Registrar Admissão para {self.object.nome_completo}"
         return context
 
 # --- VIEWS PARA DEPARTAMENTO ---
@@ -169,20 +142,11 @@ class DepartamentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListVi
     context_object_name = 'departamentos'
 
     def get_queryset(self):
-        """ Passa o request para o mixin de filial. """
-        return super().get_queryset(request=self.request).filter(ativo=True) # Exemplo de filtro adicional
-
-
-class DepartamentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
-    model = Departamento
-    template_name = 'departamento_pessoal/lista_departamento.html'
-    context_object_name = 'departamentos'
-
-    def get_queryset(self):
-        # REATORADO: Chamada super() simplificada.
+        # Adiciona filtro extra sobre o queryset já filtrado pelo mixin.
         return super().get_queryset().filter(ativo=True)
 
-class DepartamentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView): # REATORADO: Usa FilialCreateMixin
+
+class DepartamentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -196,34 +160,26 @@ class DepartamentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, Upda
     template_name = 'departamento_pessoal/departamento_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_departamento')
 
-    def get_queryset(self):
-        
-        return super().get_queryset()
-    
     def form_valid(self, form):
         messages.success(self.request, "Departamento atualizado com sucesso.")
         return super().form_valid(form)
-    
-    def form_valid(self, form):
-        messages.success(self.request, "Departamento atualizado com sucesso.")
-        return super().form_valid(form)
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Departamento: {self.object.nome}"
         return context
     
 # --- VIEWS PARA CARGOS ---
+
 class CargoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
 
     def get_queryset(self):
-        # REATORADO: Chamada super() simplificada.
         return super().get_queryset().filter(ativo=True)
 
-class CargoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView): # REATORADO: Usa FilialCreateMixin
+class CargoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
@@ -235,15 +191,11 @@ class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView)
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_cargo')
-    
-    def get_queryset(self):
-        # REATORADO: Chamada super() simplificada.
-        return super().get_queryset()
 
     def form_valid(self, form):
         messages.success(self.request, "Cargo atualizado com sucesso.")
         return super().form_valid(form)
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Cargo: {self.object.nome}"
@@ -272,27 +224,22 @@ class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView)
 #        return queryset
     
 
-class DocumentoListView(StaffRequiredMixin, ListView): 
+class DocumentoListView(StaffRequiredMixin, ListView):
     model = Documento
     template_name = 'departamento_pessoal/lista_documentos.html'
     context_object_name = 'documentos'
     paginate_by = 10
 
     def get_queryset(self):
-
-        # Este código vai imprimir o conteúdo da sessão no seu console do Django
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            messages.error(self.request, "Por favor, selecione uma filial para ver os documentos.")
+            return self.model.objects.none() # Retorna queryset vazia em vez de erro
         
-        filial_id = self.request.session.get('active_filial_id') 
-        
-        if not filial_id: 
-            # A mensagem de erro agora será mais informativa
-            raise PermissionDenied("Nenhuma filial selecionada. Verifique o console para ver o conteúdo da sessão.")
-        
-        queryset = super().get_queryset().filter(funcionario__filial_id=filial_id)
-        # ...
+        # Filtra documentos cujo funcionário pertence à filial ativa.
+        queryset = super().get_queryset().filter(funcionario__filial_id=filial_id).select_related('funcionario')
         return queryset
 
-# departamento_pessoal/views.py
 
 # A segurança aqui é garantir que o funcionário ao qual estamos adicionando
 # o documento pertence à filial ativa.
@@ -301,13 +248,13 @@ class DocumentoCreateView(StaffRequiredMixin, CreateView):
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
 
-   
     def form_valid(self, form):
-        # Altere 'filial_atual_id' para 'active_filial_id'
         filial_id = self.request.session.get('active_filial_id')
-        if not filial_id: 
+        if not filial_id:
             raise PermissionDenied("Nenhuma filial selecionada.")
 
+        # Garante que o funcionário ao qual estamos adicionando o documento
+        # pertence à filial ativa na sessão, prevenindo manipulação de ID na URL.
         funcionario_pk = self.kwargs.get('funcionario_pk')
         funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, filial_id=filial_id)
         
@@ -318,20 +265,26 @@ class DocumentoCreateView(StaffRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.kwargs['funcionario_pk']})
 
-class DocumentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+# A lógica de update de documento precisa garantir que o usuário não edite
+# um documento de outra filial. Podemos criar um mixin simples para isso.
+class DocumentoScopedMixin:
+    def get_queryset(self):
+        qs = super().get_queryset()
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            raise PermissionDenied("Nenhuma filial selecionada.")
+        return qs.filter(funcionario__filial_id=filial_id)
+
+class DocumentoUpdateView(DocumentoScopedMixin, StaffRequiredMixin, UpdateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
-    success_url = reverse_lazy('departamento_pessoal:lista_documentos')
 
-    def get_queryset(self):
-        
-        return super().get_queryset()
-        
-    def form_valid(self, form):
+    def get_success_url(self):
         messages.success(self.request, "Documento atualizado com sucesso.")
-        return super().form_valid(form)
-    
+        # Retorna para a lista geral, pois o contexto do funcionário pode se perder.
+        return reverse_lazy('departamento_pessoal:lista_documentos')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f'Editar Documento de {self.object.funcionario.nome_completo}'

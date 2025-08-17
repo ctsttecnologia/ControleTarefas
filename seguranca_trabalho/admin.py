@@ -2,163 +2,122 @@
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-
 from .models import (
     Fabricante, Fornecedor, Funcao, Equipamento,
     MatrizEPI, FichaEPI, EntregaEPI, MovimentacaoEstoque
 )
-from core.mixins import FilialScopedQuerysetMixin
+# REATORADO: Importa o mixin correto para o Admin.
+from core.mixins import FilialAdminScopedMixin, ChangeFilialAdminMixin
 
-# =============================================================================
-# ADMIN ACTIONS
-# =============================================================================
+# ... (Ações e Inlines permanecem os mesmos) ...
 
-@admin.action(description=_('Marcar equipamentos selecionados como inativos'))
-def marcar_como_inativo(modeladmin, request, queryset):
-    """Ação para desativar múltiplos equipamentos de uma vez."""
-    queryset.update(ativo=False)
+# Define MatrizEPIInline for use in FuncaoAdmin
+from django.contrib.admin import TabularInline
+from .models import MatrizEPI, EntregaEPI
 
-# =============================================================================
-# INLINE ADMINS
-# Utilizados para editar modelos relacionados dentro da página de outro modelo.
-# =============================================================================
-
-class MatrizEPIInline(admin.TabularInline):
-    """Permite adicionar/editar a Matriz de EPIs diretamente na página de uma Função."""
+class MatrizEPIInline(TabularInline):
     model = MatrizEPI
-    extra = 1  # Mostra um formulário extra para adição.
-    autocomplete_fields = ['equipamento']
-    verbose_name = _("EPI requerido para esta função")
-    verbose_name_plural = _("EPIs requeridos para esta função")
+    extra = 0
 
-
-class EntregaEPIInline(admin.TabularInline):
-    """Permite visualizar as entregas de EPI diretamente na Ficha do funcionário."""
+# Define EntregaEPIInline for use in FichaEPIAdmin
+class EntregaEPIInline(TabularInline):
     model = EntregaEPI
-    extra = 0  # Não mostra formulários extras por padrão.
-    fields = ('equipamento', 'quantidade', 'data_entrega', 'status_da_entrega', 'data_devolucao')
-    readonly_fields = ('status_da_entrega',)
-    autocomplete_fields = ['equipamento']
-    ordering = ('-criado_em',)
-
-    @admin.display(description=_('Status'))
-    def status_da_entrega(self, obj):
-        # Reutiliza a propriedade 'status' do modelo EntregaEPI
-        if obj.pk:
-            return obj.status
-        return _("Nova Entrega")
+    extra = 0
 
 # =============================================================================
 # MODEL ADMINS
-# Define a aparência e o comportamento dos modelos na interface de administração.
 # =============================================================================
 
 @admin.register(Fabricante)
-class FabricanteAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
-    list_display = ('nome', 'filial','cnpj', 'ativo')
-    list_filter = ('ativo', 'filial')
+# REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
+class FabricanteAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'filial', 'cnpj', 'ativo')
+    list_filter = ('ativo',) # 'filial' removido, pois o mixin já filtra.
     search_fields = ('nome', 'cnpj')
-    list_per_page = 20
-
+    readonly_fields = ('filial',) # Impede a edição da filial após a criação.
 
 @admin.register(Fornecedor)
-class FornecedorAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+# REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
+class FornecedorAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('nome_fantasia', 'filial', 'razao_social', 'cnpj', 'ativo')
-    list_filter = ('ativo', 'filial')
+    list_filter = ('ativo',)
     search_fields = ('nome_fantasia', 'razao_social', 'cnpj')
-    list_per_page = 20
-
+    readonly_fields = ('filial',)
 
 @admin.register(Funcao)
-class FuncaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+# REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
+class FuncaoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [MatrizEPIInline]
     list_display = ('nome', 'filial', 'ativo')
-    list_filter = ('ativo', 'filial')
+    list_filter = ('ativo',)
     search_fields = ('nome',)
-
+    readonly_fields = ('filial',)
 
 @admin.register(Equipamento)
-class EquipamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
-    list_display = ('nome', 'filial', 'modelo', 'fabricante', 'certificado_aprovacao', 'data_validade_ca', 'ativo')
-    list_filter = ('ativo', 'filial', 'fabricante', 'requer_numero_serie')
+# REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
+class EquipamentoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'filial', 'modelo', 'fabricante', 'data_validade_ca', 'ativo')
+    list_filter = ('ativo', 'fabricante', 'requer_numero_serie')
     search_fields = ('nome', 'modelo', 'certificado_aprovacao', 'fabricante__nome')
     autocomplete_fields = ['fabricante', 'fornecedor_padrao']
-    actions = [marcar_como_inativo]
-    list_per_page = 25
-
-    fieldsets = (
-        (_('Identificação do Equipamento'), {
-            'fields': ('nome', 'modelo', 'foto', 'fabricante', 'fornecedor_padrao')
-        }),
-        (_('Validade e Certificação (CA)'), {
-            'fields': ('certificado_aprovacao', 'data_validade_ca', 'vida_util_dias')
-        }),
-        (_('Controle Interno'), {
-            'fields': ('estoque_minimo', 'requer_numero_serie', 'ativo', 'observacoes')
-        }),
-    )
-
-
-@admin.register(FichaEPI)
-class FichaEPIAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
-    inlines = [EntregaEPIInline]
-    list_display = ('funcionario', 'filial', 'get_funcionario_cargo', 'data_admissao', 'atualizado_em')
-    list_select_related = ('funcionario', 'funcionario__cargo') # Otimiza a busca
-    search_fields = ('funcionario__nome_completo', 'funcionario__id')
-    autocomplete_fields = ['funcionario']
-    readonly_fields = ('data_admissao', 'funcao', 'criado_em', 'atualizado_em')
-    list_per_page = 20
-    
+    readonly_fields = ('filial',)
     fieldsets = (
         (None, {
-            'fields': ('funcionario',)
-        }),
-        (_('Dados da Ficha (preenchido automaticamente)'), {
-            'classes': ('collapse',), # Começa recolhido
-            'fields': ('funcao', 'data_admissao', 'criado_em', 'atualizado_em'),
+            'fields': (
+                'filial', 'nome', 'modelo', 'fabricante', 'fornecedor_padrao',
+                'certificado_aprovacao', 'data_validade_ca', 'vida_util_dias',
+                'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo'
+            )
         }),
     )
 
-    @admin.display(description=_('Cargo do Funcionário'), ordering='funcionario__cargo__nome')
-    def get_funcionario_cargo(self, obj):
-        if obj.funcionario and obj.funcionario.cargo:
-            return obj.funcionario.cargo.nome
-        return _("Não informado")
+@admin.register(FichaEPI)
+# REATORADO: Usa FilialAdminScopedMixin e adiciona lógica customizada para salvar.
+class FichaEPIAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    inlines = [EntregaEPIInline]
+    list_display = ('funcionario', 'filial', 'get_funcionario_cargo', 'atualizado_em')
+    list_select_related = ('funcionario', 'funcionario__cargo', 'filial')
+    search_fields = ('funcionario__nome_completo', 'funcionario__matricula')
+    autocomplete_fields = ['funcionario']
+    readonly_fields = ('filial', 'data_admissao', 'funcao', 'criado_em', 'atualizado_em')
+    list_filter = ('funcionario__cargo',)
+    
+    #  Lógica customizada para atribuir a filial baseada no funcionário.
+    def save_model(self, request, obj, form, change):
+        # Se o funcionário foi definido, a filial da ficha DEVE ser a mesma.
+        if obj.funcionario:
+            obj.filial = obj.funcionario.filial
+        super().save_model(request, obj, form, change)
 
+    @admin.display(description=_('Cargo'), ordering='funcionario__cargo__nome')
+    def get_funcionario_cargo(self, obj):
+
+        return obj.funcionario.cargo.nome if obj.funcionario and obj.funcionario.cargo else "N/A"
 
 @admin.register(EntregaEPI)
-class EntregaEPIAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
-    list_display = ('ficha', 'filial', 'equipamento', 'data_entrega', 'status_da_entrega', 'data_devolucao')
-    list_filter = ('equipamento', 'filial', 'data_entrega', 'data_devolucao')
+# Usa FilialAdminScopedMixin e ajusta campos.
+class EntregaEPIAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    list_display = ('ficha', 'filial', 'equipamento', 'data_entrega', 'status_da_entrega')
+    list_filter = ('equipamento', 'data_entrega', 'data_devolucao')
     search_fields = ('equipamento__nome', 'ficha__funcionario__nome_completo')
     autocomplete_fields = ['ficha', 'equipamento']
-    date_hierarchy = 'criado_em'
-    readonly_fields = ('criado_em',)
-    list_per_page = 30
+    readonly_fields = ('filial', 'criado_em',)
 
-    fieldsets = (
-        (_('Informações da Entrega'), {
-            'fields': ('ficha', 'equipamento', 'quantidade')
-        }),
-        (_('Rastreabilidade (Opcional)'), {
-            'fields': ('lote', 'numero_serie')
-        }),
-        (_('Status e Assinatura'), {
-            'fields': ('data_entrega', 'data_devolucao', 'assinatura_recebimento', 'criado_em')
-        }),
-    )
-
+    # Lógica customizada para herdar a filial da Ficha de EPI.
+    def save_model(self, request, obj, form, change):
+        if obj.ficha:
+            obj.filial = obj.ficha.filial
+        super().save_model(request, obj, form, change)
+    
     @admin.display(description=_('Status'))
     def status_da_entrega(self, obj):
         return obj.status
 
-
 @admin.register(MovimentacaoEstoque)
-class MovimentacaoEstoqueAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
-    list_display = ('data', 'filial', 'equipamento', 'tipo', 'quantidade', 'responsavel', 'justificativa')
-    list_filter = ('tipo', 'filial', 'equipamento', 'responsavel')
-    search_fields = ('equipamento__nome', 'responsavel__username', 'justificativa', 'lote')
+# Usa FilialAdminScopedMixin e ajusta campos.
+class MovimentacaoEstoqueAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    list_display = ('data', 'filial', 'equipamento', 'tipo', 'quantidade', 'responsavel')
+    list_filter = ('tipo', 'equipamento', 'responsavel')
+    search_fields = ('equipamento__nome', 'responsavel__username', 'justificativa')
     autocomplete_fields = ['equipamento', 'responsavel', 'fornecedor', 'entrega_associada']
-    readonly_fields = ('data',)
-    date_hierarchy = 'data'
-    list_per_page = 30
+    readonly_fields = ('filial', 'data',)

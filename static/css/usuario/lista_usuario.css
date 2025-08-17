@@ -6,7 +6,7 @@
  conforme referenciado pela classe .thead-custom no HTML.
 */
 .thead-custom th {
-    background-color: #f8f9fa; /* Um cinza bem claro, padrão para cabeçalhos */
+    background-color: #edf3f8; /* Um cinza bem claro, padrão para cabeçalhos */
     color: #495057; /* Cor do texto mais escura para contraste */
     font-weight: 600; /* Deixa a fonte um pouco mais forte que o normal */
     text-transform: uppercase; /* Estilo clássico para cabeçalhos de tabela */

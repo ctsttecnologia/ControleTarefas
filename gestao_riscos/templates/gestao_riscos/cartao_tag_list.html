@@ -1,0 +1,75 @@
+
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Lista de Cartões de Bloqueio{% endblock %}
+
+{% block content %}
+<br>
+<div class="container">
+
+    {% if messages %}
+        <div class="alert alert-info">
+            {% for message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        
+        <h1 class="h2">Cartões de Bloqueio (Tags)</h1>
+        <a href="{% url 'gestao_riscos:cartao_tag_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Novo Cartão
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Telefone</th>
+                            <th>Validade</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cartao in cartoes %}
+                        <tr>
+                            <td>{{ cartao.funcionario.nome_completo }}</td>
+                            <td>{{ cartao.fone }}</td>
+                            <td>{{ cartao.data_validade|date:"d/m/Y"|default:"-" }}</td>
+                            <td>
+                                {% if cartao.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'gestao_riscos:cartao_tag_detail' cartao.pk %}" class="btn btn-sm btn-info" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'gestao_riscos:cartao_tag_delete' cartao.pk %}" class="btn btn-sm btn-danger" title="Deletar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">Nenhum cartão encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

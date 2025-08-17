@@ -20,7 +20,7 @@
     {% endif %}
     
     <div class="subnav-sst mb-4 p-3 bg-body-tertiary rounded-3 border">
-        <ul class="nav nav-pills">
+        <ul class="nav nav">
             <li class="nav-item">
                 <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">
                     <i class="bi bi-speedometer2 me-1"></i> Dashboard
