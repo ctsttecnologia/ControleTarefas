@@ -4,7 +4,7 @@ from django.urls import path
 from .views import (
     AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
     AtaReuniaoDeleteView, AtaReuniaoDashboardView, AtaReuniaoPDFExportView,
-    AtaReuniaoExcelExportView, AtaReuniaoDetailView # Adicionado DetailView
+    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView # Adicionado DetailView
 )
 
 app_name = 'ata_reuniao'
@@ -19,6 +19,8 @@ urlpatterns = [
     path('ata/<int:pk>/', AtaReuniaoDetailView.as_view(), name='ata_reuniao_detail'),
     path('ata/<int:pk>/editar/', AtaReuniaoUpdateView.as_view(), name='ata_reuniao_update'),
     path('ata/<int:pk>/excluir/', AtaReuniaoDeleteView.as_view(), name='ata_confirm_delete'),
+    path('ata/<int:pk>/add_comment/', AtaReuniaoAddCommentView.as_view(), name='ata_add_comment'),
+
 
     # --- Rotas de Exportação ---
     # Usam a lista principal de atas como base

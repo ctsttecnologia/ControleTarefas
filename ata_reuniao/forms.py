@@ -1,10 +1,9 @@
-
 # ata_reuniao/forms.py
 
 from django import forms
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from .models import Filial, AtaReuniao
+from .models import Filial, AtaReuniao, HistoricoAta
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
 
@@ -19,20 +18,18 @@ class AtaReuniaoForm(forms.ModelForm):
         required=False, # O comentário é opcional em cada salvamento
         help_text=_("Este comentário será adicionado ao histórico da ata.")
     )
-    filial_destino = forms.ModelChoiceField(
-        queryset=Filial.objects.all(),
-        label="Transferir para a Filial"
-    )
 
     class Meta:
         model = AtaReuniao
+        # 1. Campo 'titulo' adicionado à lista de campos.
         fields = [
-            'contrato', 'coordenador', 'responsavel', 'natureza', 
+            'titulo', 'contrato', 'coordenador', 'responsavel', 'natureza', 
             'acao', 'entrada', 'prazo', 'status'
         ]
         
         # Centraliza a definição de rótulos (labels) para facilitar a manutenção
         labels = {
+            'titulo': _('Título da Ata'),
             'acao': _('Ação ou Proposta Detalhada'),
             'prazo': _('Prazo Final (Opcional)'),
         }
@@ -43,6 +40,10 @@ class AtaReuniaoForm(forms.ModelForm):
         }
 
         widgets = {
+            # 2. Widget adicionado para o campo 'titulo' com um placeholder.
+            'titulo': forms.TextInput(
+                attrs={'placeholder': 'Ex: Reunião de alinhamento do Projeto X'}
+            ),
             'acao': forms.Textarea(attrs={'rows': 3}),
             'entrada': forms.DateInput(
                 format='%Y-%m-%d',
@@ -79,6 +80,7 @@ class AtaReuniaoForm(forms.ModelForm):
                     'data-placeholder': _(f'Selecione {field.label.lower()}')
                 })
             elif not isinstance(field.widget, forms.CheckboxInput):
+                # O método agora aplicará 'form-control' ao novo campo 'titulo' automaticamente
                 field.widget.attrs.update({'class': 'form-control'})
     
     def clean_prazo(self):
@@ -116,3 +118,21 @@ class TransferenciaFilialForm(forms.Form):
         label="Transferir para a Filial",
         required=True
     )
+
+class HistoricoAtaForm(forms.ModelForm):
+    class Meta:
+        model = HistoricoAta
+        fields = ['comentario']
+        widgets = {
+            'comentario': forms.Textarea(
+                attrs={
+                    'rows': 3,
+                    'placeholder': 'Digite seu comentário ou atualização aqui...'
+                }
+            )
+        }
+        labels = {
+            'comentario': ''  # Oculta o label, pois o contexto já é claro
+        }
+
+

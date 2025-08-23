@@ -74,69 +74,114 @@
         opacity: 0.7;
         text-decoration: line-through;
     }
+
+    /* Estilos para a nova área de filtros de relatório */
+    .report-filters {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap; /* Permite que os itens quebrem a linha em telas menores */
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-box">
+<div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
         <div>
             <br>
-            <h1 class="h2">📊 Dashboard de Atas</h1>
-            <p class="text-muted mb-0">Performance e fluxo de trabalho das atividades.</p>
+            <h1 class="h2">📊 Dashboard</h1>
+            <p class="text-muted mb-0">Performance e fluxo de trabalho em ata.</p>
         </div>
+
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <p class="text-muted mb-0">Exportar Relatórios por Período</p>
+                    <div class="report-filters">
+                        <div class="form-floating">
+                            <input type="date" class="form-control" id="data_inicio_filtro" placeholder="Data Início">
+                            <label for="data_inicio_filtro">Data Início</label>
+                        </div>
+                        <div class="form-floating">
+                            <input type="date" class="form-control" id="data_fim_filtro" placeholder="Data Fim">
+                            <label for="data_fim_filtro">Data Fim</label>
+                        </div>
+                        
+                        <button id="btn-export-pdf" class="btn btn-outline-danger h-100 py-2">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
+                        </button>
+                        <button id="btn-export-excel" class="btn btn-outline-success h-100 py-2">
+                            <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-list-ul me-1"></i> Ver Lista Completa
+            <i class="bi bi-list-ul me-1"></i> Lista
         </a>
     </div>
 
-    <div class="row g-4 mb-4">
+<div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-success-subtle h-100">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CONCLUIDO" class="card shadow-sm kpi-card border-success-subtle h-100 text-decoration-none">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title text-success">{{ total_concluido }}</h5>
+                        <h3 class="card-title fw-bold text-success mb-1">{{ total_concluido }}</h3>
                         <p class="card-text text-muted mb-0">Total Concluído</p>
                     </div>
                     <i class="bi bi-check2-circle kpi-card-icon text-success"></i>
                 </div>
-            </div>
+            </a>
         </div>
+
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-primary-subtle h-100">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CONCLUIDO" class="card shadow-sm kpi-card border-primary-subtle h-100 text-decoration-none">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title text-primary">{{ concluido_no_prazo }}</h5>
+                        <h3 class="card-title fw-bold text-primary mb-1">{{ concluido_no_prazo }}</h3>
                         <p class="card-text text-muted mb-0">Concluído no Prazo</p>
+                        <span class="badge bg-light-subtle text-primary-emphasis mt-2">{{ percentual_no_prazo|floatformat:1 }}% do total</span>
                     </div>
                     <i class="bi bi-calendar2-check kpi-card-icon text-primary"></i>
                 </div>
-            </div>
+            </a>
         </div>
+
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-danger-subtle h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CONCLUIDO" class="card shadow-sm kpi-card border-danger-subtle h-100 text-decoration-none">
+                <div class="card-body d-flex justify-content-between align-items-center position-relative">
                     <div>
-                        <h5 class="card-title text-danger">{{ concluido_com_atraso }}</h5>
+                        <h3 class="card-title fw-bold text-danger mb-1">{{ concluido_com_atraso }}</h3>
                         <p class="card-text text-muted mb-0">Concluído com Atraso</p>
+                        <span class="badge bg-light-subtle text-danger-emphasis mt-2">{{ percentual_com_atraso|floatformat:1 }}% do total</span>
                     </div>
+                    
+                    {% if concluido_com_atraso > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" title="{{ concluido_com_atraso }} concluído(s) com atraso">
+                        <span class="visually-hidden">Notificação de atrasos</span>
+                    </span>
+                    <i class="bi bi-bell-fill kpi-card-icon text-danger"></i>
+                    {% else %}
                     <i class="bi bi-calendar2-x kpi-card-icon text-danger"></i>
+                    {% endif %}
                 </div>
-            </div>
+            </a>
         </div>
+
         <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-secondary-subtle h-100">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CANCELADO" class="card shadow-sm kpi-card border-secondary-subtle h-100 text-decoration-none">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
-                        <h5 class="card-title text-secondary">{{ total_cancelado }}</h5>
+                        <h3 class="card-title fw-bold text-secondary mb-1">{{ total_cancelado }}</h3>
                         <p class="card-text text-muted mb-0">Total Cancelado</p>
                     </div>
                     <i class="bi bi-x-circle kpi-card-icon text-secondary"></i>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
-
+   
     <div class="row g-4 mb-5">
         <div class="col-lg-7">
             <div class="card shadow-sm h-100">
@@ -273,4 +318,58 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ... (seu script existente para os gráficos) ...
+
+
+    // ======================================================
+    // ==== INÍCIO DO NOVO SCRIPT PARA EXPORTAÇÃO ====
+    // ======================================================
+    const dataInicioInput = document.getElementById('data_inicio_filtro');
+    const dataFimInput = document.getElementById('data_fim_filtro');
+    const btnPdf = document.getElementById('btn-export-pdf');
+    const btnExcel = document.getElementById('btn-export-excel');
+
+    // Define as URLs base para a exportação
+    const baseUrlPdf = "{% url 'ata_reuniao:ata_reuniao_export_pdf' %}";
+    const baseUrlExcel = "{% url 'ata_reuniao:ata_reuniao_export_excel' %}";
+
+    function handleExport(baseUrl) {
+        const dataInicio = dataInicioInput.value;
+        const dataFim = dataFimInput.value;
+
+        // Verifica se ambas as datas foram preenchidas
+        if (dataInicio && dataFim) {
+            // Constrói a URL com os parâmetros de data
+            const params = new URLSearchParams({
+                'data_inicio': dataInicio,
+                'data_fim': dataFim
+            });
+            window.location.href = `${baseUrl}?${params.toString()}`;
+        } else if (dataInicio || dataFim) {
+            // Alerta o usuário se apenas uma data foi preenchida
+            alert('Por favor, preencha ambas as datas (Início e Fim) para filtrar o relatório.');
+        } else {
+            // Se nenhuma data for preenchida, exporta o relatório completo
+            if (confirm('Nenhum período selecionado. Deseja exportar o relatório com todos os dados?')) {
+                window.location.href = baseUrl;
+            }
+        }
+    }
+
+    // Adiciona os eventos de clique aos botões
+    btnPdf.addEventListener('click', function() {
+        handleExport(baseUrlPdf);
+    });
+
+    btnExcel.addEventListener('click', function() {
+        handleExport(baseUrlExcel);
+    });
+    // ============================================
+    // ==== FIM DO NOVO SCRIPT PARA EXPORTAÇÃO ====
+    // ============================================
+});
+</script>
 {% endblock %}
+
