@@ -3,18 +3,19 @@
 from django.contrib import admin
 from treinamentos.forms import ParticipanteForm
 from .models import TipoCurso, Treinamento, Participante
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 
 @admin.register(TipoCurso)
-class TipoCursoAdmin(admin.ModelAdmin):
+class TipoCursoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     """Configuração da interface de admin para o modelo TipoCurso."""
     list_display = ('nome', 'filial', 'modalidade', 'area', 'validade_meses', 'ativo')
     list_filter = ('modalidade', 'filial', 'area', 'ativo')
     search_fields = ('nome', 'descricao')
     list_editable = ('ativo',)
     ordering = ('nome',)
+    readonly_fields = ('filial',) # Impede a edição da filial após a criação.
 
-class ParticipanteInline(admin.TabularInline):
+class ParticipanteInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.TabularInline):
     """
     Permite a edição de participantes diretamente na página de um treinamento.
     """
@@ -25,10 +26,11 @@ class ParticipanteInline(admin.TabularInline):
     fields = ('funcionario', 'presente', 'nota_avaliacao', 'certificado_emitido')
     verbose_name = "Participante"
     verbose_name_plural = "Participantes do Treinamento"
+    readonly_fields = ('filial',) # Impede a edição da filial após a criação.
 
 
 @admin.register(Treinamento)
-class TreinamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class TreinamentoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     """Configuração da interface de admin para o modelo Treinamento."""
     # Adiciona o inline de participantes
     inlines = [ParticipanteInline]
@@ -67,7 +69,7 @@ class TreinamentoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
         }),
     )
 
-    readonly_fields = ('data_cadastro', 'data_atualizacao')
+    readonly_fields = ('data_cadastro', 'data_atualizacao', 'filial',) # Impede a edição da filial após a criação.)
 
     def save_formset(self, request, form, formset, change):
         """Garante que o treinamento seja salvo antes do formset."""

@@ -22,11 +22,12 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, T
 # --- Imports Locais ---
 from .models import Ferramenta, Movimentacao, Atividade
 from .forms import FerramentaForm, RetiradaForm, DevolucaoForm
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
+
+
 # =============================================================================
 # == MIXINS REUTILIZÁVEIS
 # =============================================================================
-
 
 class AtividadeLogMixin:
     """
@@ -68,14 +69,14 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['titulo_pagina'] = "Dashboard de Operações"
         return context
 
-class FerramentaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class FerramentaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Ferramenta
     template_name = 'ferramentas/ferramenta_list.html'
     context_object_name = 'ferramentas'
     # A queryset base é definida aqui. O FilialScopedMixin aplicará o filtro por cima.
     queryset = Ferramenta.objects.exclude(status=Ferramenta.Status.DESCARTADA).order_by('nome')
 
-class FerramentaDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, DetailView):
+class FerramentaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = Ferramenta
     template_name = 'ferramentas/ferramenta_detail.html'
     context_object_name = 'ferramenta'
@@ -136,7 +137,7 @@ class FerramentaCreateView(LoginRequiredMixin, AtividadeLogMixin, CreateView):
         context['titulo_pagina'] = "Adicionar Nova Ferramenta"
         return context
 
-class FerramentaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, AtividadeLogMixin, UpdateView):
+class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
     model = Ferramenta
     form_class = FerramentaForm
     template_name = 'ferramentas/ferramenta_form.html'

@@ -6,21 +6,33 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from .models import Tarefas, Comentario, HistoricoStatus
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 
 # --- INLINES ---
-class ComentarioInline(admin.TabularInline):
+class ComentarioInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.TabularInline):
     model = Comentario
-    # ... (resto do seu inline)
+    extra = 0
+    # Adicionado 'filial' para que o campo seja exibido
+    fields = ('autor', 'texto', 'filial',)
+    readonly_fields = ('filial',)
+    can_delete = True
+    verbose_name = "Comentário"
+    verbose_name_plural = "Comentários"
 
-class HistoricoStatusInline(admin.TabularInline):
+class HistoricoStatusInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.TabularInline):
     model = HistoricoStatus
-    # ... (resto do seu inline)
-
+    extra = 0
+    # Adicionado 'filial' para que o campo seja exibido
+    fields = ('novo_status', 'data_da_alteracao', 'alterado_por', 'filial',)
+    readonly_fields = ('filial',)
+    can_delete = False
+    verbose_name = "Histórico de Status"
+    verbose_name_plural = "Histórico de Status"
+   
 # --- ADMIN PRINCIPAL DE TAREFAS (Refatorado) ---
 
 @admin.register(Tarefas)
-class TarefasAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class TarefasAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     """
     Administração customizada para o modelo de Tarefas.
     Foco em performance, UX e organização.

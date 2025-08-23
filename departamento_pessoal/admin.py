@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 from .models import Departamento, Cargo, Funcionario, Documento
-from core.mixins import FilialAdminScopedMixin, ChangeFilialAdminMixin
+from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 
 # --- Inlines para a Visão de Funcionário ---
 
@@ -12,15 +12,11 @@ class DocumentoInline(admin.TabularInline):
     # O campo 'filial' é removido. Ele deve ser herdado do Funcionário.
     # A lógica para isso deve ficar no método save() do modelo Documento.
     fields = ('tipo', 'numero', 'anexo')
-    # A linha abaixo é inválida para TabularInline e foi removida.
-    # list_editable = ('ativo',)
-    # REATORADO: O campo filial não deve ser editável aqui, pois depende do funcionário.
-    # readonly_fields = ('filial',) # Opcional, se o campo for exibido.
-
+    
 # --- Configurações dos Admins Principais ---
 
 @admin.register(Departamento)
-class DepartamentoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class DepartamentoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     # O mixin FilialAdminScopedMixin já filtra por filial.
     list_display = ('nome', 'filial', 'ativo')
     search_fields = ('nome',)
@@ -29,7 +25,7 @@ class DepartamentoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.Mo
     readonly_fields = ('filial',)
 
 @admin.register(Cargo)
-class CargoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class CargoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     # O mixin FilialAdminScopedMixin já filtra por filial.
     list_display = ('nome', 'filial', 'cbo', 'ativo')
     list_filter = ('ativo',)
@@ -38,7 +34,7 @@ class CargoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmi
     readonly_fields = ('filial',)
 
 @admin.register(Funcionario)
-class FuncionarioAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class FuncionarioAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [DocumentoInline]
     
     list_display = ('nome_completo', 'filial', 'matricula', 'cargo', 'departamento', 'status')

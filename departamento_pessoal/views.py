@@ -23,7 +23,7 @@ from django.core.exceptions import PermissionDenied
 from usuario.models import Filial
 from .models import Funcionario, Departamento, Cargo, Documento
 from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
-from core.mixins import FilialScopedQuerysetMixin, FilialCreateMixin
+from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
 
 
 
@@ -37,7 +37,7 @@ class StaffRequiredMixin(PermissionRequiredMixin):
 
 # --- VIEWS PARA FUNCIONÁRIOS ---
 
-class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+class FuncionarioListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Funcionario
     template_name = 'departamento_pessoal/lista_funcionarios.html'
     context_object_name = 'funcionarios'
@@ -67,7 +67,7 @@ class FuncionarioCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
         return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
 
 
-class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDetailView(ViewFilialScopedMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/detalhe_funcionario.html'
     context_object_name = 'funcionario'
@@ -77,7 +77,7 @@ class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, Detai
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
     
-class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
@@ -95,7 +95,7 @@ class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, Updat
         context['titulo_pagina'] = f"Editar: {self.object.nome_completo}"
         return context
 
-class FuncionarioDeleteView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDeleteView(ViewFilialScopedMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'funcionario'
@@ -118,7 +118,7 @@ class FuncionarioDeleteView(FilialScopedQuerysetMixin, StaffRequiredMixin, Detai
 
 # --- VIEWS PARA O PROCESSO DE ADMISSÃO (NOVAS) ---
 
-class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioAdmissaoView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
     form_class = AdmissaoForm
     template_name = 'departamento_pessoal/admissao_form.html'
@@ -136,7 +136,7 @@ class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, Upd
         return context
 
 # --- VIEWS PARA DEPARTAMENTO ---
-class DepartamentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+class DepartamentoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Departamento
     template_name = 'departamento_pessoal/lista_departamento.html'
     context_object_name = 'departamentos'
@@ -154,7 +154,7 @@ class DepartamentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     extra_context = {'titulo_pagina': 'Novo Departamento'}
 
 
-class DepartamentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class DepartamentoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -171,7 +171,7 @@ class DepartamentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, Upda
     
 # --- VIEWS PARA CARGOS ---
 
-class CargoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+class CargoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
@@ -186,7 +186,7 @@ class CargoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     success_url = reverse_lazy('departamento_pessoal:lista_cargo')
     extra_context = {'titulo_pagina': 'Novo Cargo'}
 
-class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'

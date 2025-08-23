@@ -1,175 +1,171 @@
+
 # ata_reuniao/views.py
 
 import csv
+import io
 import json
 from typing import Any
-from django.db.models import Count, F, Q, QuerySet
-from django.http import HttpRequest, HttpResponse
-from django.urls import reverse_lazy
+
+import openpyxl
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.db.models import Count, F
+from django.http import HttpRequest, HttpResponse
 from django.template.loader import get_template
-from django.views.generic import (
-    ListView, CreateView, UpdateView, DeleteView, TemplateView, View
-)
-from django.contrib.auth import get_user_model # Melhor forma de pegar o modelo User
-from gerenciandoTarefas.settings import AUTH_USER_MODEL
-from .models import AtaReuniao, HistoricoAta
+from django.urls import reverse_lazy
+from django.utils import timezone  
+from django.views.generic import (CreateView, DeleteView, ListView,
+                                  TemplateView, UpdateView, View, DetailView)
+from openpyxl.styles import Font 
 from xhtml2pdf import pisa
+
+from cliente.models import Cliente
+from core.mixins import ViewFilialScopedMixin
+
 from .forms import AtaReuniaoForm
-
-from core.mixins import FilialScopedQuerysetMixin
-
-User = get_user_model() # Carrega a classe do usuário
+from .models import AtaReuniao, HistoricoAta
 
 
-# --- Mixin Base para Evitar Repetição ---
-class AtaReuniaoBaseMixin(LoginRequiredMixin):
-    """
-    Mixin que compartilha atributos comuns entre as views de CRUD de AtaReuniao.
-    """
+User = get_user_model()
+
+
+# --- Mixins (sem alterações) ---
+
+class AtaReuniaoBaseMixin(LoginRequiredMixin, ViewFilialScopedMixin):
     model = AtaReuniao
     form_class = AtaReuniaoForm
-    success_url = reverse_lazy('ata_reuniao_list')
-    context_object_name = 'atas'
+    # Corrigido o argumento de reverse_lazy
+    success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
 
 
-# --- Views de CRUD (List, Create, Update, Delete) ---
+class FilteredAtaReuniaoMixin:
+    def get_filtered_queryset(self, request: HttpRequest):
+        queryset = AtaReuniao.objects.for_request(request)
+        filtros = {
+            'contrato_id': request.GET.get('contrato'),
+            'status': request.GET.get('status'),
+            'coordenador_id': request.GET.get('coordenador'),
+        }
+        filtros_validos = {k: v for k, v in filtros.items() if v}
+        if filtros_validos:
+            queryset = queryset.filter(**filtros_validos)
+        return queryset.select_related('contrato', 'coordenador', 'responsavel').order_by('-entrada')
 
-class AtaReuniaoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+
+# --- Views de CRUD ---
+
+class AtaReuniaoListView(LoginRequiredMixin, FilteredAtaReuniaoMixin, ListView):
     model = AtaReuniao
     template_name = 'ata_reuniao/ata_reuniao_list.html'
     context_object_name = 'atas'
-    paginate_by = 10
-
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Define os atributos de filtro a partir dos parâmetros GET.
-        Usa nomes consistentes que serão usados em outros métodos.
-        """
-        # ✅ Padronizando os nomes dos atributos
-        self.current_contrato = request.GET.get('contrato', '')
-        self.current_status = request.GET.get('status', '')
-        self.current_coordenador = request.GET.get('coordenador', '')
-        
-        return super().dispatch(request, *args, **kwargs)
+    paginate_by = 20
 
     def get_queryset(self):
-        """
-        Usa os atributos consistentes definidos no dispatch() para filtrar.
-        """
-        queryset = super().get_queryset(request=self.request)
-        
-
-        # ✅ Usando os nomes padronizados para filtrar
-        if self.current_contrato:
-            queryset = queryset.filter(contrato_id=self.current_contrato)
-        if self.current_status:
-            queryset = queryset.filter(status=self.current_status)
-        if self.current_coordenador:
-            queryset = queryset.filter(coordenador_id=self.current_coordenador)
-
-        return queryset.order_by('-entrada')
+        return self.get_filtered_queryset(self.request)
 
     def get_context_data(self, **kwargs):
-        """
-        Adiciona os filtros e outras informações ao contexto do template.
-        """
         context = super().get_context_data(**kwargs)
+        # Otimização da busca da queryset sem paginação
+        # object_list já contém a queryset filtrada, não precisa chamar get_queryset() de novo.
+        queryset_sem_paginacao = self.object_list
 
-        coordenador_ids = AtaReuniao.objects.order_by().values_list('coordenador_id', flat=True).distinct()
-        context['coordenadores'] = User.objects.filter(id__in=coordenador_ids).order_by('first_name', 'last_name')
-        
-        ContratoModel = self.model._meta.get_field('contrato').related_model
-        context['contratos'] = ContratoModel.objects.all().order_by('nome')
-        
-        # ✅ Passando os valores com os nomes corretos e consistentes para o template
-        context['current_contrato'] = self.current_contrato
-        context['current_status'] = self.current_status
-        context['current_coordenador'] = self.current_coordenador
+        coordenador_ids = queryset_sem_paginacao.values_list('coordenador_id', flat=True).distinct()
+        context['coordenadores'] = User.objects.filter(id__in=coordenador_ids).order_by('first_name')
 
+        contrato_ids = queryset_sem_paginacao.values_list('contrato_id', flat=True).distinct()
+        context['contratos'] = Cliente.objects.filter(id__in=contrato_ids).order_by('nome')
+
+        context['current_contrato'] = self.request.GET.get('contrato', '')
+        context['current_status'] = self.request.GET.get('status', '')
+        context['current_coordenador'] = self.request.GET.get('coordenador', '')
         return context
 
-class AtaReuniaoCreateView(AtaReuniaoBaseMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, CreateView):
-    """
-    Cria uma nova Ata de Reunião.
-    """
+# Simplificadas as views Create e Update
+class AtaReuniaoCreateView(AtaReuniaoBaseMixin, SuccessMessageMixin, CreateView):
     template_name = 'ata_reuniao/ata_form.html'
     success_message = "✅ Ata de reunião criada com sucesso!"
 
-    def get_form_kwargs(self) -> dict[str, Any]:
+    def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
         return kwargs
 
 
-class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
-    """
-    Atualiza uma Ata de Reunião existente e salva um registro no histórico.
-    """
+class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, SuccessMessageMixin, UpdateView):
     template_name = 'ata_reuniao/ata_form.html'
     success_message = "🔄 Ata de reunião atualizada com sucesso!"
+    # Removido success_url redundante (já está no mixin)
 
-    def get_form_kwargs(self) -> dict[str, Any]:
+    def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
         return kwargs
 
-    # --- MÉTODO form_valid ADICIONADO ---
     def form_valid(self, form):
-        # Primeiro, salva o formulário principal da Ata de Reunião
         response = super().form_valid(form)
-        
-        # Pega o comentário do formulário
         comentario_texto = form.cleaned_data.get('comentario')
-
-        # Se o usuário escreveu um comentário, cria um registro no histórico
         if comentario_texto:
             HistoricoAta.objects.create(
                 ata=self.object,
                 usuario=self.request.user,
                 comentario=comentario_texto
             )
-            
         return response
 
+class AtaReuniaoDetailView(AtaReuniaoBaseMixin, DetailView):
+    """
+    Exibe os detalhes de uma Ata de Reunião específica, incluindo seu histórico.
+    """
+    template_name = 'ata_reuniao/ata_reuniao_detail.html'
+    context_object_name = 'ata'  # Usaremos 'ata' no template para clareza
 
-class AtaReuniaoDeleteView(AtaReuniaoBaseMixin, DeleteView):
-    """
-    Exclui uma Ata de Reunião.
-    """
+    def get_queryset(self):
+        """
+        Otimiza a consulta para buscar a ata e todo o seu histórico relacionado
+        (incluindo o usuário de cada entrada do histórico) em apenas duas queries.
+        """
+        # Chama a queryset base do mixin, que já filtra por filial
+        queryset = super().get_queryset()
+        return queryset.prefetch_related('historico__usuario')
+
+class AtaReuniaoDeleteView(AtaReuniaoBaseMixin, SuccessMessageMixin, DeleteView):
     template_name = 'ata_reuniao/ata_confirm_delete.html'
     success_message = "🗑️ Ata de reunião excluída com sucesso!"
 
-    def delete(self, request: HttpRequest, *args: str, **kwargs: Any) -> HttpResponse:
+    # Simplificada a lógica de mensagem (usando o padrão do mixin)
+    def form_valid(self, form):
         messages.success(self.request, self.success_message)
-        return super().delete(request, *args, **kwargs)
+        return super().form_valid(form)
 
-
-# --- View do Dashboard ---
-
+# --- View do Dashboard (sem alterações significativas, já está boa) ---
 class AtaReuniaoDashboardView(LoginRequiredMixin, TemplateView):
     """
-    Exibe os indicadores de performance e o quadro Kanban.
+    Exibe os indicadores de performance e o quadro Kanban,
+    com todos os dados filtrados pela filial ativa do usuário.
     """
-    template_name = 'ata_reuniao/dashboard.html'
+    template_name = 'ata_reuniao/ata_reuniao_dashboard.html'
 
-    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+    def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # --- Indicador 1: Pendências por Responsável ---
-        pendencias_queryset = AtaReuniao.objects.exclude(
+        # PONTO CHAVE: Começa com a queryset já filtrada pela filial do usuário
+        base_queryset = AtaReuniao.objects.for_request(self.request)
+        
+        # Indicador 1: Pendências por Responsável
+        pendencias_queryset = base_queryset.exclude(
             status__in=[AtaReuniao.Status.CONCLUIDO, AtaReuniao.Status.CANCELADO]
         ).values('responsavel__nome_completo').annotate(count=Count('id')).order_by('-count')
         
-        # --- Indicador 2: Qualidade das Atividades Concluídas ---
-        concluidas = AtaReuniao.objects.filter(status=AtaReuniao.Status.CONCLUIDO)
+        # Indicador 2: Qualidade das Atividades Concluídas
+        concluidas = base_queryset.filter(status=AtaReuniao.Status.CONCLUIDO)
         concluido_no_prazo = concluidas.filter(prazo__isnull=False, atualizado_em__date__lte=F('prazo')).count()
         concluido_com_atraso = concluidas.filter(prazo__isnull=False, atualizado_em__date__gt=F('prazo')).count()
-
-        # --- Dados para o Quadro Kanban ---
-        tasks = AtaReuniao.objects.all().select_related('responsavel', 'contrato').order_by('prazo')
+        
+        # Dados para o Quadro Kanban
+        tasks = base_queryset.select_related('responsavel', 'contrato').order_by('prazo')
         kanban_columns = {label: [] for _, label in AtaReuniao.Status.choices}
         for task in tasks:
             kanban_columns[task.get_status_display()].append(task)
@@ -181,26 +177,27 @@ class AtaReuniaoDashboardView(LoginRequiredMixin, TemplateView):
             'titulo_pagina': 'Dashboard de Atas',
             'pendencias_labels': json.dumps([item['responsavel__nome_completo'] for item in pendencias_queryset]),
             'pendencias_data': json.dumps([item['count'] for item in pendencias_queryset]),
-            'total_concluido': concluidas.count(),
-            'total_cancelado': AtaReuniao.objects.filter(status=AtaReuniao.Status.CANCELADO).count(),
-            'concluido_no_prazo': concluido_no_prazo,
-            'concluido_com_atraso': concluido_com_atraso,
-            'qualidade_labels': json.dumps(['Concluído no Prazo', 'Concluído com Atraso']),
+            'qualidade_labels': json.dumps(['No Prazo', 'Com Atraso']),
             'qualidade_data': json.dumps([concluido_no_prazo, concluido_com_atraso]),
             'kanban_items': kanban_ordenado,
         })
         return context
-
+    
 # --- Views de Exportação ---
-
-class AtaReuniaoPDFExportView(LoginRequiredMixin, View):
+class AtaReuniaoPDFExportView(LoginRequiredMixin, FilteredAtaReuniaoMixin, View):
     """
-    Exporta a lista de atas para um arquivo PDF.
+    Exporta a lista de atas (respeitando os filtros aplicados) para um arquivo PDF.
     """
-    def get(self, request: HttpRequest, *args: str, **kwargs: Any) -> HttpResponse:
-        atas = AtaReuniao.objects.all().order_by('-entrada')
-        context = {'atas': atas}
+    def get(self, request, *args, **kwargs):
+        # Usa a mesma lógica de filtro da ListView, garantindo consistência e segurança
+        atas = self.get_filtered_queryset(request)
+        
         template = get_template('ata_reuniao/ata_pdf.html')
+        context = {
+            'atas': atas,
+            'data_exportacao': timezone.now(),
+            'usuario_exportacao': request.user.get_full_name(),
+        }
         html = template.render(context)
         
         response = HttpResponse(content_type='application/pdf')
@@ -208,35 +205,42 @@ class AtaReuniaoPDFExportView(LoginRequiredMixin, View):
         
         pisa_status = pisa.CreatePDF(html, dest=response)
         if pisa_status.err:
-            return HttpResponse('Erro ao gerar PDF')
+            messages.error(request, "Ocorreu um erro ao gerar o PDF.")
+            return HttpResponse('Erro ao gerar PDF', status=500)
+            
         return response
 
-class AtaReuniaoExcelExportView(LoginRequiredMixin, View):
-    """
-    Exporta a lista de atas para um arquivo CSV (compatível com Excel).
-    """
-    def get(self, request: HttpRequest, *args: str, **kwargs: Any) -> HttpResponse:
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename="atas_reuniao.csv"'
-        
-        writer = csv.writer(response, delimiter=';')
-        writer.writerow([
-            'ID', 'Contrato', 'Coordenador', 'Responsável', 'Natureza', 
-            'Ação', 'Entrada', 'Prazo', 'Status'
-        ])
-        
-        atas = AtaReuniao.objects.all().select_related('contrato', 'coordenador', 'responsavel').order_by('-entrada')
+
+class AtaReuniaoExcelExportView(LoginRequiredMixin, FilteredAtaReuniaoMixin, View):
+    def get(self, request, *args, **kwargs):
+        atas = self.get_filtered_queryset(request)
+        buffer = io.BytesIO()
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = "Atas de Reunião"
+        headers = ['ID', 'Contrato', 'Coordenador', 'Responsável', 'Natureza', 'Ação', 'Entrada', 'Prazo', 'Status']
+        sheet.append(headers)
+        for cell in sheet[1]:
+            cell.font = Font(bold=True)
         for ata in atas:
-            writer.writerow([
+            row_data = [
                 ata.id,
-                ata.contrato,
-                ata.coordenador,
-                ata.responsavel,
+                ata.contrato.nome if ata.contrato else '',
+                ata.coordenador.get_full_name() if ata.coordenador else '',
+                ata.responsavel.nome_completo if ata.responsavel else '',
                 ata.get_natureza_display(),
                 ata.acao,
-                ata.entrada.strftime('%d/%m/%Y'),
-                ata.prazo.strftime('%d/%m/%Y') if ata.prazo else '',
+                ata.entrada,
+                ata.prazo if ata.prazo else '',
                 ata.get_status_display(),
-            ])
-        
+            ]
+            sheet.append(row_data)
+        for column_cells in sheet.columns:
+            length = max(len(str(cell.value) or "") for cell in column_cells)
+            sheet.column_dimensions[column_cells[0].column_letter].width = length + 2
+        workbook.save(buffer)
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        filename = f'atas_reuniao_{timezone.now().strftime("%Y-%m-%d")}.xlsx'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response

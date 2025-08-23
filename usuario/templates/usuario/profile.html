@@ -5,130 +5,225 @@
 
 {% block extra_css %}
     {# Carrega o CSS específico para esta página #}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/usuario/profile.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/usuario/profile.css' %}"> 
+{% endblock %}
 
-    {# A FORMA CORRETA DE DEFINIR A IMAGEM DE FUNDO #}
-    {# Usamos a tag <style> para que o Django possa gerar o caminho correto para a imagem. #}
+{# Aplicamos a classe de fundo no bloco que o base.html espera #}
+{% block body_class %}profile-page-background{% endblock %}
+
+{# O estilo do fundo vai aqui dentro de uma tag <style> #}
+{% block extra_head %}
 <style>
-  .profile-page-background {
+.profile-page-background {
     background-image: url('{% static "images/background.png" %}');
     background-position: center center;
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
-  }
+}
 </style>
 {% endblock %}
 
-
 {% block content %}
-{# Adicionamos a classe com a imagem de fundo aqui #}
-<div class="profile-page-background">
-    <div class="container py-5">
 
-        <div class="d-flex justify-content-end align-items-center mb-5">
-            <span class="me-3 fs-5 text-white shadow-sm">Olá, {{ user.username }}!</span>
-        </div>
+<div class="container py-5">
+    <div class="row g-4" id="card-container">
 
-        <div class="row g-4">
-
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/tarefa.gif' %}" class="card-icon" alt="Ícone de Tarefas">
+        <div class="col-lg-4 col-md-6" data-card-id="tarefas">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">Tarefas</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
                         <a href="{% url 'tarefas:listar_tarefas' %}" class="card-link">Minhas Tarefas</a>
                         <a href="{% url 'tarefas:dashboard_analitico' %}" class="card-link">Dashboard Analítico</a>
                         <a href="{% url 'tarefas:calendario_tarefas' %}" class="card-link">Agenda</a>
                     </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/tarefa.gif' %}" class="card-icon" alt="Ícone de Tarefas">
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/cliente.gif' %}" class="card-icon" alt="Ícone de Clientes">
+        <div class="col-lg-4 col-md-6" data-card-id="clientes">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">Clientes</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
                         <a href="{% url 'cliente:lista_clientes' %}" class="card-link">Lista de Clientes</a>
                         <a href="{% url 'cliente:cadastro_cliente' %}" class="card-link">Cadastrar Cliente</a>
                     </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/cliente.gif' %}" class="card-icon" alt="Ícone de Clientes">
+                    </div>
                 </div>
             </div>
-            
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/dp.gif' %}" class="card-icon" alt="Ícone de DP">
+        </div>
+        
+        <div class="col-lg-4 col-md-6" data-card-id="dp">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">Departamento Pessoal</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
                         <a href="{% url 'departamento_pessoal:painel_dp' %}" class="card-link">Painel DP</a>
                         <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="card-link">Funcionários</a>
                         <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="card-link">Cargos</a>
                         <a href="{% url 'departamento_pessoal:lista_departamento' %}" class="card-link">Departamentos</a>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/tst.gif' %}" class="card-icon" alt="Ícone de SST">
-                    <h5 class="card-title">Segurança do Trabalho</h5>
-                    <div class="card-links">
-                        <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card-link">Painel SST</a>
-                        <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="card-link">Fichas de EPI</a>
-                        <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card-link">Dashboard</a>
-                        <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card-link"> Agendar Inspeção</a>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/dp.gif' %}" class="card-icon" alt="Ícone de DP">
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/cadastro.gif' %}" class="card-icon" alt="Ícone de Endereços">
+        <div class="col-lg-4 col-md-6" data-card-id="sst">
+            <div class="profile-card">
+                <div class="card-header-section">
+                    <h5 class="card-title">Segurança do Trabalho</h5>
+                </div>
+                <div class="card-body-section">
+                    <div class="card-links">
+                        <a href="{% url 'seguranca_trabalho:dashboard' %}" class="card-link">Dashboard</a>
+                        <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="card-link">Fichas de EPI</a>
+                        <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="card-link">Agendar Inspeção</a>
+                    </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/tst.gif' %}" class="card-icon" alt="Ícone de SST">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6" data-card-id="enderecos">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">Endereços</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
                         <a href="{% url 'logradouro:listar_logradouros' %}"class="card-link">Endereços</a>
                         <a href="{% url 'logradouro:cadastrar_logradouro' %}"class="card-link">Cadastrar Endereço</a>
                     </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/cadastro.gif' %}" class="card-icon" alt="Ícone de Endereços">
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/carro.gif' %}" class="card-icon" alt="Ícone de Veículo">
+        <div class="col-lg-4 col-md-6" data-card-id="veiculos">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">Veículos</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
                         <a href="{% url 'automovel:carro_list' %}" class="card-link">Frota</a>
                         <a href="{% url 'automovel:agendamento_list' %}" class="card-link">Agendamentos</a>
                         <a href="{% url 'automovel:dashboard' %}" class="card-link">Relatórios</a>
                         <a href="{% url 'automovel:calendario' %}" class="card-link">Calendário</a>
-
+                    </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/carro.gif' %}" class="card-icon" alt="Ícone de Veículo">
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/reuniao.png' %}" class="card-icon" alt="Ícone de GA">
+        <div class="col-lg-4 col-md-6" data-card-id="ga">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">GA</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
-                        <a href="{% url 'ata_reuniao_list' %}" class="card-link">Ata de Reunião</a>
-                        <a href="{% url 'ata_reuniao_create' %}" class="card-link">Criar Ata</a>
+                        <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="card-link">Ata de Reunião</a>
+                        <a href="{% url 'ata_reuniao:ata_reuniao_create' %}" class="card-link">Criar Ata</a>
                         <a href="{% url 'treinamentos:dashboard' %}" class="card-link">Treinamentos</a>
                     </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/reuniao.png' %}" class="card-icon" alt="Ícone de GA">
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="profile-card">
-                    <img src="{% static 'images/serviço.gif' %}" class="card-icon" alt="Ícone de GA">
+        </div>
+
+        <div class="col-lg-4 col-md-6" data-card-id="operacao">
+            <div class="profile-card">
+                <div class="card-header-section">
                     <h5 class="card-title">Operação</h5>
+                </div>
+                <div class="card-body-section">
                     <div class="card-links">
                         <a href="{% url 'ferramentas:ferramenta_list' %}" class="card-link">Ferramentas</a>
                         <a href="{% url 'ferramentas:dashboard' %}" class="card-link">Dashboard</a>
-                     </div>
+                    </div>
+                    <div class="card-icon-wrapper">
+                        <img src="{% static 'images/serviço.gif' %}" class="card-icon" alt="Ícone de Operação">
+                    </div>
                 </div>
             </div>
-        </div> 
-    </div>
+        </div>
+
+    </div> 
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('card-container');
+    const storageKey = 'profileCardOrder';
+
+    // --- FUNÇÃO PARA RESTAURAR A ORDEM ---
+    function restoreOrder() {
+        const savedOrderJSON = localStorage.getItem(storageKey);
+        if (savedOrderJSON) {
+            const savedOrder = JSON.parse(savedOrderJSON);
+            
+            // Reordena os elementos no DOM de acordo com a ordem salva
+            savedOrder.forEach(cardId => {
+                const cardElement = container.querySelector(`[data-card-id="${cardId}"]`);
+                if (cardElement) {
+                    container.appendChild(cardElement);
+                }
+            });
+        }
+    }
+
+    // --- FUNÇÃO PARA SALVAR A ORDEM ---
+    function saveOrder(sortableInstance) {
+        const currentOrder = sortableInstance.toArray();
+        localStorage.setItem(storageKey, JSON.stringify(currentOrder));
+    }
+
+    // 1. Restaura a ordem salva assim que a página carrega
+    restoreOrder();
+
+    // 2. Inicializa o SortableJS
+    const sortable = new Sortable(container, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        // O método toArray() usa o atributo data-id por padrão.
+        // Como usamos data-card-id, precisamos especificar aqui.
+        dataIdAttr: 'data-card-id',
+
+        // 3. Salva a nova ordem toda vez que o usuário solta um card
+        onEnd: function() {
+            saveOrder(this);
+        },
+    });
+});
+</script>
 {% endblock %}
 

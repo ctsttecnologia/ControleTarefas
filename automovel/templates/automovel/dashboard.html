@@ -5,12 +5,21 @@
 {% block content %}
 
 
-<div class="container"><br>
+<div class="container">
     {% include "partials/_page_header.html" with title="Painel" %}
 
     <div class="btn-toolbar mb-2">
-        <a class="nav-link" href="{% url 'automovel:calendario' %}">
+        <a href="{% url 'automovel:carro_create' %}" class="btn btn-secondary">
+                <i class="bi bi-plus-lg me-1"></i> Adicionar Veículo
+        </a>
+        <a href="{% url 'automovel:carro_list' %}" class="btn btn-secondary">
+            Carros
+        </a>
+        <a href="{% url 'automovel:calendario' %}" class="btn btn-secondary">
             <i class="fas fa-calendar-alt"></i> Calendário
+        </a>
+        <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar para Lista
         </a>
     </div>
     <div class="row">

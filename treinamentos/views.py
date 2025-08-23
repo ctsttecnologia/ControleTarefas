@@ -26,7 +26,7 @@ from urllib import request
 from treinamentos import treinamento_generators
 from .models import Treinamento, TipoCurso, Participante
 from .forms import (BaseParticipanteFormSet, ParticipanteForm, TipoCursoForm, TreinamentoForm, ParticipanteFormSet)
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
 
 
 class TreinamentoFormsetMixin:
@@ -81,7 +81,7 @@ class CriarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin,
 
 # --- Visualizações para Treinamento (CRUD) ---
 
-class TreinamentoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os treinamentos com filtros de busca."""
     model = Treinamento
     template_name = 'treinamentos/lista_treinamentos.html'
@@ -173,7 +173,7 @@ class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, Succes
     success_message = "Treinamento excluído com sucesso!"
 
 
-class TipoCursoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
     model = TipoCurso
     template_name = 'treinamentos/lista_tipo_curso.html'
@@ -248,7 +248,7 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
 
 # --- Visualizações para Relatórios ---
 
-class RelatorioTreinamentosView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """
     Gera um relatório de treinamentos com base em filtros.
     Agora herda de ListView para buscar e listar os treinamentos.
@@ -344,7 +344,7 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
             # Redireciona de volta para a página de detalhes do treinamento
             return redirect('treinamentos:detalhe_treinamento', pk=self.kwargs.get('pk'))
 
-class RelatorioGeralExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, PermissionRequiredMixin, View):
+class RelatorioGeralExcelView(LoginRequiredMixin, ViewFilialScopedMixin, PermissionRequiredMixin, View):
     """
     Gera e oferece para download um relatório geral de treinamentos em .xlsx.
     """
@@ -433,7 +433,7 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         total_treinamentos = base_queryset.count()
         em_andamento = base_queryset.filter(status='A').count()
         
-        # CORREÇÃO FINAL ESTÁ AQUI: Adicionando o 'output_field'
+        # Adicionando o 'output_field'
         total_custo = base_queryset.aggregate(
             total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
         )['total']

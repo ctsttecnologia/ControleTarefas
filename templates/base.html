@@ -17,6 +17,9 @@
     
     {% block extra_css %}{% endblock %}
 
+    {# ✅ AJUSTE 1: Bloco adicionado para permitir a injeção de tags <style> #}
+    {% block extra_head %}{% endblock %}
+
     <script>
       (() => {
         const theme = localStorage.getItem('theme') || 'light';
@@ -26,14 +29,15 @@
 
     {# Logo no navegador #}
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
-  
+ 
 </head>
 
 <body class="d-flex flex-column h-100 {% block body_class %}{% endblock %}">
 
     {% include 'partials/global_header.html' %}
     
-    <main class="flex-shrink-0" id="main-content">
+    {# ✅ AJUSTE 2: Classe trocada para garantir o sticky footer #}
+    <main class="flex-grow-1" id="main-content">
         {% block content %}{% endblock %}
     </main>
     

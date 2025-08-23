@@ -30,7 +30,7 @@ from .utils import enviar_email_tarefa
 from .models import Tarefas, Comentario, HistoricoStatus
 from .forms import TarefaForm, ComentarioForm
 from .services import preparar_contexto_relatorio, gerar_pdf_relatorio, gerar_csv_relatorio, gerar_docx_relatorio
-from core.mixins import FilialScopedQuerysetMixin, TarefaPermissionMixin
+from core.mixins import ViewFilialScopedMixin, TarefaPermissionMixin
 
 
 User = get_user_model()
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # == VIEWS DE GERENCIAMENTO (CRUD)
 # =============================================================================
 
-class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, ListView):
+class TarefaListView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/listar_tarefas.html'
     context_object_name = 'tarefas'
@@ -65,7 +65,7 @@ class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermis
         context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
         return context
 
-class TarefaDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, FormMixin, DetailView):
+class TarefaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, FormMixin, DetailView):
     model = Tarefas
     template_name = 'tarefas/tarefa_detail.html'
     form_class = ComentarioForm
@@ -150,7 +150,7 @@ class TarefaCreateView(LoginRequiredMixin, CreateView):
         # 6. Retorna a resposta de redirecionamento criada pelo 'super()'.
         return response
 
-class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, UpdateView):
+class TarefaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, UpdateView):
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/editar_tarefa.html'
@@ -219,7 +219,7 @@ class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
         messages.success(self.request, f"Tarefa '{tarefa_atualizada.titulo}' atualizada com sucesso!")
         return response
 
-class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPassesTestMixin, DeleteView):
+class TarefaDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, UserPassesTestMixin, DeleteView):
     model = Tarefas
     template_name = 'tarefas/confirmar_exclusao.html'
     success_url = reverse_lazy('tarefas:listar_tarefas')
@@ -242,7 +242,7 @@ class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPasses
 # == VIEWS DE VISUALIZAÇÃO (KANBAN, CALENDÁRIO)
 # =============================================================================
 
-class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, ListView):
+class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/kanban_board.html'
     context_object_name = 'tarefas' # Definir isso é uma boa prática em ListView
@@ -316,7 +316,7 @@ def enviar_email_notificacao(tarefa, usuario, status_anterior, novo_status, requ
     email.attach_alternative(corpo_html, "text/html")
     email.send()
 
-class CalendarioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, ListView):
+class CalendarioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/calendario.html'
 
@@ -367,7 +367,7 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
             logger.error(f"Erro ao atualizar status da tarefa {task_id}: {e}")
             return JsonResponse({'success': False, 'message': 'Ocorreu um erro interno.'}, status=500)
 
-class RelatorioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/relatorio_tarefas.html'
     

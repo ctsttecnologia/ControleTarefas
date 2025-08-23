@@ -11,11 +11,11 @@ from openpyxl.utils import get_column_letter
 from .models import Logradouro
 from .forms import LogradouroForm
 from .constant import ESTADOS_BRASIL
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
 
 
 # --- Views de Logradouro (CRUD)
-class LogradouroListView(FilialScopedQuerysetMixin, LoginRequiredMixin, ListView):
+class LogradouroListView(ViewFilialScopedMixin, LoginRequiredMixin, ListView):
     """
     Lista os logradouros cadastrados, respeitando o escopo da filial.
     """
@@ -70,7 +70,7 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
         return super().form_invalid(form)
 
 # Nenhuma alteração necessária aqui, o mixin já garante a segurança.
-class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
+class LogradouroUpdateView(ViewFilialScopedMixin, LoginRequiredMixin, UpdateView):
     model = Logradouro
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
@@ -85,7 +85,7 @@ class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, Update
         return super().form_valid(form)
 
 # Nenhuma alteração necessária aqui, o mixin já garante a segurança.
-class LogradouroDeleteView(FilialScopedQuerysetMixin, LoginRequiredMixin, DeleteView):
+class LogradouroDeleteView(ViewFilialScopedMixin, LoginRequiredMixin, DeleteView):
     model = Logradouro
     template_name = 'logradouro/confirmar_exclusao.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')

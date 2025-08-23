@@ -4,11 +4,10 @@
 from django import forms
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
-# Cada modelo é importado de seu aplicativo de origem
-from .models import AtaReuniao
+from .models import Filial, AtaReuniao
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
+
 
 
 class AtaReuniaoForm(forms.ModelForm):
@@ -19,6 +18,10 @@ class AtaReuniaoForm(forms.ModelForm):
         widget=forms.Textarea(attrs={'rows': 3, 'placeholder': 'Descreva a atualização ou progresso aqui...'}),
         required=False, # O comentário é opcional em cada salvamento
         help_text=_("Este comentário será adicionado ao histórico da ata.")
+    )
+    filial_destino = forms.ModelChoiceField(
+        queryset=Filial.objects.all(),
+        label="Transferir para a Filial"
     )
 
     class Meta:
@@ -98,10 +101,18 @@ class AtaReuniaoForm(forms.ModelForm):
         responsavel = cleaned_data.get('responsavel')
 
         # Validação para garantir que coordenador e responsável não sejam a mesma pessoa
-        if coordenador and responsavel and coordenador == responsavel:
-            self.add_error('responsavel', _('O responsável não pode ser a mesma pessoa que o coordenador.'))
+        #if coordenador and responsavel and coordenador == responsavel:
+        #    self.add_error('responsavel', _('O responsável não pode ser a mesma pessoa que o coordenador.'))
         
         # Um método 'clean' DEVE sempre retornar o dicionário cleaned_data.
         return cleaned_data
     
-
+class TransferenciaFilialForm(forms.Form):
+    """
+    Formulário para a ação de transferência de filial no admin.
+    """
+    filial_destino = forms.ModelChoiceField(
+        queryset=Filial.objects.all().order_by('nome'),
+        label="Transferir para a Filial",
+        required=True
+    )

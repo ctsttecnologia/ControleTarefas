@@ -4,13 +4,13 @@ from django.views.generic import ListView, CreateView, DeleteView, UpdateView, D
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from automovel.views import SuccessMessageMixin
-from core.mixins import FilialScopedQuerysetMixin, FilialCreateMixin
+from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
 from .forms import IncidenteForm, InspecaoForm, CartaoTagForm
 from .models import Incidente, Inspecao, CartaoTag
 
 
 
-class GestaoRiscosDashboardView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class GestaoRiscosDashboardView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """
     Dashboard refatorado para usar ListView e o mixin de filtro de filial.
     Exibe uma lista de incidentes.
@@ -85,13 +85,13 @@ class AgendarInspecaoView(LoginRequiredMixin, FilialCreateMixin, SuccessMessageM
 # CRUD DE CARTÃO DE BLOQUEIO (TAG)
 # ========================================================================
 
-class CartaoTagListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class CartaoTagListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = CartaoTag
     template_name = 'gestao_riscos/cartao_tag_list.html'
     context_object_name = 'cartoes'
     paginate_by = 10
 
-class CartaoTagDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, DetailView):
+class CartaoTagDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = CartaoTag
     template_name = 'gestao_riscos/cartao_tag_detail.html'
     context_object_name = 'cartao'
@@ -109,7 +109,7 @@ class CartaoTagCreateView(LoginRequiredMixin, FilialCreateMixin, SuccessMessageM
         kwargs['request'] = self.request
         return kwargs
 
-class CartaoTagUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
+class CartaoTagUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
     model = CartaoTag
     form_class = CartaoTagForm
     template_name = 'gestao_riscos/cartao_tag_form.html'
@@ -121,7 +121,7 @@ class CartaoTagUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, Success
         kwargs['request'] = self.request
         return kwargs
 
-class CartaoTagDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, DeleteView):
+class CartaoTagDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, DeleteView):
     model = CartaoTag
     template_name = 'gestao_riscos/cartao_tag_confirm_delete.html'
     success_url = reverse_lazy('gestao_riscos:cartao_tag_list')

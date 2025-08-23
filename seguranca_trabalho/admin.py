@@ -6,12 +6,7 @@ from .models import (
     Fabricante, Fornecedor, Funcao, Equipamento,
     MatrizEPI, FichaEPI, EntregaEPI, MovimentacaoEstoque
 )
-# REATORADO: Importa o mixin correto para o Admin.
-from core.mixins import FilialAdminScopedMixin, ChangeFilialAdminMixin
-
-# ... (Ações e Inlines permanecem os mesmos) ...
-
-# Define MatrizEPIInline for use in FuncaoAdmin
+from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 from django.contrib.admin import TabularInline
 from .models import MatrizEPI, EntregaEPI
 
@@ -30,7 +25,7 @@ class EntregaEPIInline(TabularInline):
 
 @admin.register(Fabricante)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
-class FabricanteAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class FabricanteAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('nome', 'filial', 'cnpj', 'ativo')
     list_filter = ('ativo',) # 'filial' removido, pois o mixin já filtra.
     search_fields = ('nome', 'cnpj')
@@ -38,7 +33,7 @@ class FabricanteAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.Mode
 
 @admin.register(Fornecedor)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
-class FornecedorAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class FornecedorAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('nome_fantasia', 'filial', 'razao_social', 'cnpj', 'ativo')
     list_filter = ('ativo',)
     search_fields = ('nome_fantasia', 'razao_social', 'cnpj')
@@ -46,7 +41,7 @@ class FornecedorAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.Mode
 
 @admin.register(Funcao)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
-class FuncaoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class FuncaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [MatrizEPIInline]
     list_display = ('nome', 'filial', 'ativo')
     list_filter = ('ativo',)
@@ -55,7 +50,7 @@ class FuncaoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdm
 
 @admin.register(Equipamento)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
-class EquipamentoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class EquipamentoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('nome', 'filial', 'modelo', 'fabricante', 'data_validade_ca', 'ativo')
     list_filter = ('ativo', 'fabricante', 'requer_numero_serie')
     search_fields = ('nome', 'modelo', 'certificado_aprovacao', 'fabricante__nome')
@@ -72,8 +67,8 @@ class EquipamentoAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.Mod
     )
 
 @admin.register(FichaEPI)
-# REATORADO: Usa FilialAdminScopedMixin e adiciona lógica customizada para salvar.
-class FichaEPIAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+# Usa FilialAdminScopedMixin e adiciona lógica customizada para salvar.
+class FichaEPIAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [EntregaEPIInline]
     list_display = ('funcionario', 'filial', 'get_funcionario_cargo', 'atualizado_em')
     list_select_related = ('funcionario', 'funcionario__cargo', 'filial')
@@ -96,7 +91,7 @@ class FichaEPIAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelA
 
 @admin.register(EntregaEPI)
 # Usa FilialAdminScopedMixin e ajusta campos.
-class EntregaEPIAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class EntregaEPIAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('ficha', 'filial', 'equipamento', 'data_entrega', 'status_da_entrega')
     list_filter = ('equipamento', 'data_entrega', 'data_devolucao')
     search_fields = ('equipamento__nome', 'ficha__funcionario__nome_completo')
@@ -115,7 +110,7 @@ class EntregaEPIAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.Mode
 
 @admin.register(MovimentacaoEstoque)
 # Usa FilialAdminScopedMixin e ajusta campos.
-class MovimentacaoEstoqueAdmin(FilialAdminScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class MovimentacaoEstoqueAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('data', 'filial', 'equipamento', 'tipo', 'quantidade', 'responsavel')
     list_filter = ('tipo', 'equipamento', 'responsavel')
     search_fields = ('equipamento__nome', 'responsavel__username', 'justificativa')

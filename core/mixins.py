@@ -9,12 +9,71 @@ from django.core.exceptions import PermissionDenied
 from .forms import ChangeFilialForm 
 
 
+# core/mixins.py
 
-class FilialScopedQuerysetMixin:
+class BaseFilialScopedQueryset:
     """
+    Classe base que contém a lógica de filtragem.
+    NÃO DEVE SER USADA DIRETAMENTE.
+    """
+    def _get_filtered_queryset(self, request, base_qs):
+        """
+        Lógica de filtragem centralizada.
+        Recebe o request e a queryset base, e retorna a queryset filtrada.
+        """
+        active_filial_id = request.session.get('active_filial_id')
+
+        # Superuser sem filial na sessão vê tudo
+        if request.user.is_superuser and not active_filial_id:
+            return base_qs
+
+        # Qualquer usuário com uma filial ativa na sessão vê apenas os dados dela
+        if active_filial_id:
+            return base_qs.filter(filial_id=active_filial_id)
+        
+        # Usuário comum sem filial na sessão: usa as filiais permitidas no perfil
+        if not request.user.is_superuser:
+            if hasattr(request.user, 'filiais_permitidas'):
+                return base_qs.filter(filial__in=request.user.filiais_permitidas.all())
+            
+            # Se não tem filiais permitidas, não vê nada
+            return base_qs.none()
+
+        # Fallback final para o superuser (se outras condições não se aplicarem)
+        return base_qs
+
+
+class AdminFilialScopedMixin(BaseFilialScopedQueryset):
+    """
+    Mixin para ser usado EXCLUSIVAMENTE no admin.py (ModelAdmin).
+    """
+    def get_queryset(self, request):
+        # A assinatura correta para o ModelAdmin
+        qs = super().get_queryset(request)
+        return self._get_filtered_queryset(request, qs)
+
+
+class ViewFilialScopedMixin(BaseFilialScopedQueryset):
+    """
+    Mixin para ser usado EXCLUSIVAMENTE em Class-Based Views (views.py).
+    """
+    def get_queryset(self):
+        # A assinatura correta para CBVs
+        qs = super().get_queryset()
+        # Acessa o request via self.request
+        return self._get_filtered_queryset(self.request, qs)
+
+# Você pode manter o seu ChangeFilialAdminMixin aqui sem alterações.
+class ChangeFilialAdminMixin:
+    # ... seu código para este mixin ...
+    pass
+
+
+"""class FilialScopedQuerysetMixin:
+    
     Mixin universal para filtrar querysets pela filial ativa na sessão do usuário.
     Compatível com ModelAdmin e Class-Based Views.
-    """
+   
     def get_queryset(self): # MUDANÇA 1: A assinatura agora é o padrão do Django.
         # super().get_queryset() agora funciona de forma confiável com qualquer view do Django.
         qs = super().get_queryset() 
@@ -49,7 +108,7 @@ class FilialScopedQuerysetMixin:
             return qs.none()
 
         # Fallback final para o superuser (se as outras condições não se aplicarem).
-        return qs
+        return qs """
 
 class TarefaPermissionMixin(AccessMixin):
     """
@@ -79,14 +138,14 @@ class FilialCreateMixin:
         form.instance.filial_id = filial_id
         messages.success(self.request, f"{self.model._meta.verbose_name.capitalize()} criado(a) com sucesso.")
         return super().form_valid(form)
-    
+"""    
 class FilialAdminScopedMixin:
-    """
+    
     Mixin completo para o Django Admin que:
     1. Filtra a listagem de objetos pela filial ativa na sessão (`get_queryset`).
     2. Atribui automaticamente a filial ativa ao criar um novo objeto (`save_model`).
     3. Filtra os campos de ForeignKey (dropdowns) para mostrar apenas opções da filial ativa (`formfield_for_foreignkey`).
-    """
+  
 
     def get_queryset(self, request):
         # A assinatura do ModelAdmin.get_queryset recebe 'request' como argumento.
@@ -106,10 +165,10 @@ class FilialAdminScopedMixin:
         return qs.none()
 
     def save_model(self, request, obj, form, change):
-        """
+       
         Chamado ao salvar um objeto.
         'change' é True se for uma edição, False se for uma criação.
-        """
+       
         # Se for um novo objeto (change=False), atribui a filial da sessão.
         if not change:
             filial_id = request.session.get('active_filial_id')
@@ -123,9 +182,9 @@ class FilialAdminScopedMixin:
         super().save_model(request, obj, form, change)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        """
+      
         Filtra os dropdowns de chaves estrangeiras.
-        """
+      
         filial_id = request.session.get('active_filial_id')
 
         if filial_id:
@@ -136,7 +195,7 @@ class FilialAdminScopedMixin:
                     filial_id=filial_id
                 )
 
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs) """
     
 # Trocar filal, só administradores
 

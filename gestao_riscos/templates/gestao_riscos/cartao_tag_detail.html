@@ -4,8 +4,6 @@
 {% load static %}
 {% load crispy_forms_tags %}
 
-
-
 {% block title %}Detalhes do Cartão de {{ cartao.funcionario.nome_completo }}{% endblock %}
 
 {% block extra_css %}
@@ -32,6 +30,9 @@
                 #000000 20px
             );
         display: flex;
+        -webkit-print-color-adjust: exact; /* Garante que os backgrounds sejam impressos */
+        print-color-adjust: exact;
+        page-break-inside: avoid; /* Evita que o card seja cortado entre páginas */
     }
     .tag-content {
         background-color: white;
@@ -52,9 +53,9 @@
         margin-bottom: 5px;
     }
     .retangulo-box {
-        display: flex;             /* Transforma em um contêiner flexível */
-        justify-content: center;   /* Centraliza os itens horizontalmente */
-        align-items: center;       /* Esta linha agora funciona para centralizar verticalmente */
+        display: flex;
+        justify-content: center;
+        align-items: center;
         background-color: #000000ff;
         width: 260px;
         padding: 2px 0;
@@ -115,21 +116,46 @@
         font-size: 0.8rem;
         line-height: 1.2;
     }
+
+    /* --- ESTILOS DE IMPRESSÃO --- */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .tag-container, .tag-container * {
+            visibility: visible;
+        }
+        .tag-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .no-print {
+            display: none !important;
+        }
+        @page {
+            size: auto;
+            margin: 10mm;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <br>
 <div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <h1 class="h2">Cartão de Bloqueio: {{ cartao.funcionario.nome_completo }}</h1>
         <div>
+            <button id="print-btn" class="btn btn-info">Imprimir</button>
             <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">Editar</a>
             <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-secondary">Voltar à Lista</a>
         </div>
     </div>
 </div>
-<div class="tag-container">
+
+<div class="tag-container" id="tag-area">
     <div class="tag-card tag-front">
         <div class="tag-content">
             <div class="tag-header">
@@ -179,4 +205,15 @@
 </div>
 {% endblock %}
 
-
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.getElementById('print-btn');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            window.print(); // Abre a caixa de diálogo de impressão do navegador
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -28,7 +28,7 @@ from usuario.views import StaffRequiredMixin
 from .forms import EntregaEPIForm, EquipamentoForm, FabricanteForm, FichaEPIForm, FornecedorForm
 from .models import EntregaEPI, Equipamento, Fabricante, FichaEPI, Fornecedor, Funcao, MatrizEPI
 from django.conf import settings
-from core.mixins import FilialScopedQuerysetMixin, FilialCreateMixin 
+from core.mixins import ViewFilialScopedMixin, FilialCreateMixin 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.contrib.auth.mixins import PermissionRequiredMixin
@@ -46,12 +46,12 @@ def custom_url_fetcher(url):
 
 # --- CRUD de Equipamentos ---
 # Adicionados mixins para consistência de filtro e criação.
-class EquipamentoListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
+class EquipamentoListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_list.html'
     context_object_name = 'equipamentos'
 
-class EquipamentoDetailView(FilialScopedQuerysetMixin, SSTPermissionMixin, DetailView):
+class EquipamentoDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_detail.html'
     context_object_name = 'equipamento'
@@ -62,25 +62,25 @@ class EquipamentoCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
 
-class EquipamentoUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, UpdateView):
+class EquipamentoUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
 
-class EquipamentoDeleteView(FilialScopedQuerysetMixin, SSTPermissionMixin, DeleteView):
+class EquipamentoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     model = Equipamento
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
 
 # --- CRUD de Fabricantes ---
 #  Adicionados mixins para consistência de filtro e criação.
-class FabricanteListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
+class FabricanteListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = Fabricante
     template_name = 'seguranca_trabalho/fabricante_list.html'
     context_object_name = 'fabricantes'
 
-class FabricanteDetailView(FilialScopedQuerysetMixin, SSTPermissionMixin, DetailView):
+class FabricanteDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Fabricante
     template_name = 'seguranca_trabalho/fabricante_detail.html'
     context_object_name = 'fabricante'
@@ -91,7 +91,7 @@ class FabricanteCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     template_name = 'seguranca_trabalho/fabricante_form.html'
     success_url = reverse_lazy('seguranca_trabalho:fabricante_list')
 
-class FabricanteUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, UpdateView):
+class FabricanteUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Fabricante
     form_class = FabricanteForm
     template_name = 'seguranca_trabalho/fabricante_form.html'
@@ -99,12 +99,12 @@ class FabricanteUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, Update
 
 # --- CRUD de Fornecedores ---
 # REATORADO: Adicionados mixins para consistência de filtro e criação.
-class FornecedorListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
+class FornecedorListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = Fornecedor
     template_name = 'seguranca_trabalho/fornecedor_list.html'
     context_object_name = 'fornecedores'
 
-class FornecedorDetailView(FilialScopedQuerysetMixin, SSTPermissionMixin, DetailView):
+class FornecedorDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Fornecedor
     template_name = 'seguranca_trabalho/fornecedor_detail.html'
     context_object_name = 'fornecedor'
@@ -115,7 +115,7 @@ class FornecedorCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     template_name = 'seguranca_trabalho/fornecedor_form.html'
     success_url = reverse_lazy('seguranca_trabalho:fornecedor_list')
 
-class FornecedorUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, UpdateView):
+class FornecedorUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Fornecedor
     form_class = FornecedorForm
     template_name = 'seguranca_trabalho/fornecedor_form.html'
@@ -125,7 +125,7 @@ class FornecedorUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, Update
 # CRUD DE FICHAS DE EPI E AÇÕES
 # ========================================================================
 
-class FichaEPIListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
+class FichaEPIListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
@@ -143,7 +143,7 @@ class FichaEPIListView(FilialScopedQuerysetMixin, SSTPermissionMixin, ListView):
             )
         return qs
 
-class FichaEPICreateView(SSTPermissionMixin, CreateView):
+class FichaEPICreateView(ViewFilialScopedMixin, SSTPermissionMixin, CreateView):
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_create.html'
@@ -162,7 +162,7 @@ class FichaEPICreateView(SSTPermissionMixin, CreateView):
         return super().form_valid(form)
 
 # Substitua a sua FichaEPIDetailView por esta:
-class FichaEPIDetailView(FilialScopedQuerysetMixin, SSTPermissionMixin, FormMixin, DetailView):
+class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, DetailView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
@@ -206,7 +206,7 @@ class FichaEPIDetailView(FilialScopedQuerysetMixin, SSTPermissionMixin, FormMixi
         # Redireciona para a página de sucesso
         return redirect(self.get_success_url())
 
-class FichaEPIUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, UpdateView):
+class FichaEPIUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_form.html'
@@ -214,7 +214,7 @@ class FichaEPIUpdateView(FilialScopedQuerysetMixin, SSTPermissionMixin, UpdateVi
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
 
-class FichaEPIDeleteView(FilialScopedQuerysetMixin, SSTPermissionMixin, DeleteView):
+class FichaEPIDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
@@ -420,7 +420,7 @@ class DateAdd(Func):
         )
         super().__init__(date_expression, interval_expression, **extra)
 
-class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateView):
+class DashboardSSTView(ViewFilialScopedMixin, SSTPermissionMixin, TemplateView):
     template_name = 'seguranca_trabalho/dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -434,9 +434,9 @@ class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateVi
 
         # --- 1. DADOS PARA OS CARDS DE KPI (COM NOMES CORRIGIDOS) ---
         context['total_equipamentos_ativos'] = equipamentos_da_filial.filter(ativo=True).count()
-        # CORREÇÃO: O template espera 'fichas_ativas'
+        # O template espera 'fichas_ativas'
         context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count()
-        # CORREÇÃO: O template espera 'entregas_pendentes_assinatura'
+        # O template espera 'entregas_pendentes_assinatura'
         context['entregas_pendentes_assinatura'] = entregas_da_filial.filter(
             data_devolucao__isnull=True, 
             data_assinatura__isnull=True # Simplificado, já que a assinatura é uma data
@@ -458,7 +458,7 @@ class DashboardSSTView(FilialScopedQuerysetMixin, SSTPermissionMixin, TemplateVi
                 if today <= vencimento <= thirty_days_from_now:
                     epis_vencendo_30d_count += 1
         
-        # CORREÇÃO: O template espera 'epis_vencendo_em_30_dias'
+        # O template espera 'epis_vencendo_em_30_dias'
         context['epis_vencendo_em_30_dias'] = epis_vencendo_30d_count
 
         # --- 3. DADOS PARA OS GRÁFICOS (mantido como JSON) ---

@@ -47,7 +47,7 @@ urlpatterns = [
 
     # --- URLs para Gestão de Filiais ---
     path('filiais/', FilialListView.as_view(), name='filial_list'),
-     path('selecionar-filial/', SelecionarFilialView.as_view(), name='selecionar_filial'),
+    path('selecionar-filial/', SelecionarFilialView.as_view(), name='selecionar_filial'),
     path('filiais/adicionar/', FilialCreateView.as_view(), name='filial_create'),
     path('filiais/<int:pk>/editar/', FilialUpdateView.as_view(), name='filial_update'),
     path('filiais/<int:pk>/excluir/', FilialDeleteView.as_view(), name='filial_delete'),

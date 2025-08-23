@@ -13,12 +13,12 @@ from .forms import ClienteForm
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
 
 
 # --- VIEWS DE CLIENTE (CRUD) ---
 
-class ClienteListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class ClienteListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Cliente
     template_name = 'cliente/cliente_list.html'
     context_object_name = 'clientes'
@@ -55,7 +55,7 @@ class ClienteListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
         return context
 
 
-class ClienteCreateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, CreateView):
+class ClienteCreateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, CreateView):
     model = Cliente
     form_class = ClienteForm
     template_name = 'cliente/cliente_form.html'
@@ -69,7 +69,7 @@ class ClienteCreateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         """
         return super().get_queryset()
 
-class ClienteUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
+class ClienteUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
     model = Cliente
     form_class = ClienteForm
     template_name = 'cliente/cliente_form.html'
@@ -83,7 +83,7 @@ class ClienteUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         """
         return super().get_queryset()  
 
-class ClienteDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, DeleteView):
+class ClienteDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, DeleteView):
     model = Cliente
     template_name = 'cliente/cliente_confirm_delete.html'
     success_url = reverse_lazy('cliente:lista_clientes')
@@ -98,7 +98,7 @@ class ClienteDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
 
 # --- VIEW DE EXPORTAÇÃO ---
 
-class ExportarClientesExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class ExportarClientesExcelView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """
     Esta view agora herda de FilialScopedMixin e ListView.
     Isso garante que a exportação respeitará a filial do usuário,
