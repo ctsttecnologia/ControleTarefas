@@ -31,19 +31,22 @@ class TipoCurso(models.Model):
         ('SAU', 'Saúde'),
         ('SEG', 'Segurança'),      
         ('TEC', 'Técnico'),
-        
     ]
 
     nome = models.CharField("Nome do Curso", max_length=100, unique=True)
     modalidade = models.CharField("Modalidade", max_length=1, choices=MODALIDADE_CHOICES)
     area = models.CharField("Área de Conhecimento", max_length=3, choices=AREA_CHOICES)
-    descricao = models.TextField("Descrição", blank=True, null=True)
+    
+    # CORREÇÃO: Removido null=True. Uma string vazia é o padrão para campos de texto.
+    descricao = models.TextField("Descrição", blank=True, null=True,)
+    
     certificado = models.BooleanField("Emite Certificado?", default=True)
-    # Corrigido para PositiveIntegerField, pois a validade não pode ser negativa.
-    validade_meses = models.PositiveIntegerField("Validade do Certificado (meses)")
+    validade_meses = models.PositiveIntegerField("Validade do Certificado (meses)", help_text="Insira 0 se o certificado não tiver validade.")
     ativo = models.BooleanField("Ativo", default=True)
     data_cadastro = models.DateTimeField("Data de Cadastro", auto_now_add=True)
     data_atualizacao = models.DateTimeField("Data de Atualização", auto_now=True)
+    
+    # CORREÇÃO CRÍTICA: Removido null=True para garantir que todo curso tenha uma filial.
     filial = models.ForeignKey(
         Filial, 
         on_delete=models.PROTECT,
@@ -51,6 +54,7 @@ class TipoCurso(models.Model):
         verbose_name="Filial",
         null=True
     )
+    
     # Manager customizado para segregação de dados
     objects = FilialManager()
 
@@ -68,8 +72,16 @@ class TipoCurso(models.Model):
         return self.nome
 
     def get_absolute_url(self):
-        # Corrigido: o nome da URL da lista de tipos de curso é 'lista_tipos_curso'.
-        return reverse('treinamentos:lista_tipos_curso')
+        """
+        Retorna a URL para a página de detalhe deste Tipo de Curso.
+        Ajuste o nome 'detalhe_tipo_curso' conforme definido em seu urls.py.
+        """
+        # CORREÇÃO: A URL deve ser para o detalhe do TipoCurso, não do Treinamento.
+        try:
+            return reverse('treinamentos:detalhe_tipo_curso', kwargs={'pk': self.pk})
+        except:
+             # Se a rota de detalhe não existir, redireciona para a lista para evitar erros.
+            return reverse('treinamentos:lista_tipos_curso')
 
 
 class Treinamento(models.Model):
@@ -98,16 +110,17 @@ class Treinamento(models.Model):
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name='treinamentos_responsavel',
-        verbose_name="Responsável"
+        verbose_name="Responsável",
+        null=True,
     )
     # Campo 'cm' mantido, mas um nome mais descritivo como 'centro_custo' é recomendado.
     cm = models.CharField("CM (Centro de Custo?)", max_length=100, blank=True)
     palestrante = models.CharField("Palestrante/Instrutor", max_length=100)
     # Campo 'hxh' mantido, mas um nome como 'horas_homem' é recomendado.
-    hxh = models.IntegerField("HxH (Horas Homem)")
+    horas_homem = models.PositiveIntegerField("HxH (Horas Homem)", null=True)
+    centro_custo = models.CharField("CM (Centro de Custo)", max_length=100, blank=True)
     status = models.CharField("Status", max_length=1, choices=STATUS_CHOICES, default='P')
     local = models.CharField("Local", max_length=200)
     custo = models.DecimalField("Custo Total", max_digits=10, decimal_places=2, default=0.00)
@@ -120,13 +133,13 @@ class Treinamento(models.Model):
         on_delete=models.PROTECT,
         related_name='treinamentos',
         verbose_name="Filial",
-        null=True
+        null=True,
     )
     # Manager customizado para segregação de dados
     objects = FilialManager()
 
     class Meta:
-        db_table = 'Treinamento'
+        db_table = 'treinamento'
         verbose_name = "Treinamento"
         verbose_name_plural = "Treinamentos"
         ordering = ['-data_inicio']
@@ -182,28 +195,22 @@ class Participante(models.Model):
     )
     certificado_emitido = models.BooleanField(
         default=False,
-        verbose_name='Certificado Emitido'
+        verbose_name='Certificado Emitido',
     )
     data_registro = models.DateTimeField(
         auto_now_add=True,
-        verbose_name='Data de Registro'
+        verbose_name='Data de Registro',
+        null=True,
     )
-    filial = models.ForeignKey(
-        Filial, 
-        on_delete=models.PROTECT,
-        related_name='participantes',
-        verbose_name="Filial",
-        null=True
-    )
-    # Manager customizado para segregação de dados
-    objects = FilialManager()
 
     class Meta:
         db_table = 'participante'
         verbose_name = 'Participante'
         verbose_name_plural = 'Participantes'
-        # Garante que um funcionário não pode ser inscrito duas vezes no mesmo treinamento.
-        unique_together = ['treinamento', 'funcionario']
+        # MELHORADO: Usando constraints, a abordagem moderna do Django.
+        constraints = [
+            models.UniqueConstraint(fields=['treinamento', 'funcionario'], name='inscricao_unica_por_aluno')
+        ]
         permissions = [
             ('registrar_presenca', 'Pode registrar presença de participantes'),
             ('emitir_certificado', 'Pode emitir certificado para participante'),
@@ -211,7 +218,8 @@ class Participante(models.Model):
         ]
 
     def __str__(self):
-        # Utiliza o método __str__ do User model, que geralmente é o username.
-        return f"{self.funcionario} - {self.treinamento.nome}"
+        # Acessa o nome através da relação com o funcionário.
+        nome_funcionario = getattr(self.funcionario, 'nome_completo', self.funcionario.username)
+        return f"{nome_funcionario} - {self.treinamento.nome}"
 
 

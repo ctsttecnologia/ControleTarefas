@@ -31,39 +31,39 @@ class AtaReuniao(models.Model):
         on_delete=models.PROTECT,
         related_name='atas',
         verbose_name=_("Contrato"),
-        null=False,
+        null=True,
     )
     coordenador = models.ForeignKey(
         'departamento_pessoal.Funcionario',
         on_delete=models.PROTECT,
         related_name='atas_coordenadas',
         verbose_name=_("Coordenador"),
-        null=False,
+        null=True,
     )
     responsavel = models.ForeignKey(
         'departamento_pessoal.Funcionario',
         on_delete=models.PROTECT,
         related_name='atas_responsaveis',
         verbose_name=_("Responsável"),
-        null=False,
+        null=True,
     )
     natureza = models.CharField(
         max_length=20,
         choices=Natureza.choices,
         default=Natureza.TECNICA,
         verbose_name=_("Natureza"),
-        null=False,
+        null=True,
     )
     titulo = models.CharField(
         max_length=50,
         verbose_name=_("Titulo"),
         help_text=_("Descreva o nome da proposta."),
-        null=False,
+        null=True,
     )
     acao = models.TextField(
         verbose_name=_("Ação/Proposta"),
         help_text=_("Descreva a ação a ser tomada ou a proposta discutida."),
-        null=False,
+        null=True,
     )
     entrada = models.DateField(
         verbose_name=_("Data de Entrada"),
@@ -79,7 +79,7 @@ class AtaReuniao(models.Model):
         choices=Status.choices,
         default=Status.PENDENTE,
         verbose_name=_("Status"),
-        null=False,
+        null=True,
     )
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
     atualizado_em = models.DateTimeField(auto_now=True, verbose_name=_("Atualizado em"))
