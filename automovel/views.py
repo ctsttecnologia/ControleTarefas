@@ -2,7 +2,7 @@
 # automovel/views.py
 
 import io
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View, TemplateView
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -23,6 +23,7 @@ import base64
 from docx.shared import Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from core.mixins import ViewFilialScopedMixin
+
 
 
 class SuccessMessageMixin:
@@ -172,33 +173,46 @@ class AgendamentoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailVie
 
 # --- Checklist CRUD ---
 
+class ChecklistListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+    model = Checklist
+    template_name = 'automovel/checklist_list.html'
+    context_object_name = 'checklists'
+
+    def get_queryset(self):
+        # Filtra os checklists pela filial do usuário
+        return super().get_queryset().filter(agendamento__filial=self.request.user.filial)
+
 class ChecklistCreateView(LoginRequiredMixin, CreateView):
     model = Checklist
     form_class = ChecklistForm
     template_name = 'automovel/checklist_form.html'
 
-    def get_agendamento(self):
-        return get_object_or_404(Agendamento.objects.for_request(self.request), pk=self.kwargs.get('agendamento_pk'))
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Verifica se um checklist do tipo especificado já existe ANTES de mostrar o formulário.
+        """
+        self.agendamento = get_object_or_404(Agendamento.objects.for_request(self.request), pk=self.kwargs.get('agendamento_pk'))
+        self.tipo_checklist = self.request.GET.get('tipo', 'saida') # Pega o tipo da URL (?tipo=...)
+
+        if Checklist.objects.filter(agendamento=self.agendamento, tipo=self.tipo_checklist).exists():
+            messages.error(request, f"Um checklist de '{self.tipo_checklist}' já existe para este agendamento.")
+            return redirect('automovel:agendamento_detail', pk=self.agendamento.pk)
+            
+        return super().dispatch(request, *args, **kwargs)
 
     def get_initial(self):
-        """
-        Passa o agendamento para o formulário para validações.
-        """
-        agendamento = self.get_agendamento()
+        """ Preenche dados iniciais no formulário. """
         return {
-            'agendamento': agendamento,
-            'km_inicial': agendamento.km_inicial,
-            'tipo': self.request.GET.get('tipo', 'saida'), # Pré-seleciona o tipo via URL
+            'agendamento': self.agendamento,
+            'km_inicial': self.agendamento.km_inicial,
+            'tipo': self.tipo_checklist, # Usa o tipo definido no dispatch
         }
     
     def get_context_data(self, **kwargs):
-        # 1. Pega o contexto padrão (que já inclui o 'form' e 'agendamento')
         context = super().get_context_data(**kwargs)
-        context['agendamento'] = self.get_agendamento()
-
-        # 2. Pega a instância do formulário que o Django já colocou no contexto
+        context['agendamento'] = self.agendamento
         form = context['form']
-
+        
         # 3. Cria a estrutura de dados que o template espera
         form_sections = [
             {
@@ -226,30 +240,56 @@ class ChecklistCreateView(LoginRequiredMixin, CreateView):
                 'photo_field': form['foto_lado_passageiro']
             }
         ]
-        
-        # 4. Adiciona a lista ao contexto que será enviado para o template
         context['form_sections'] = form_sections
-        
         return context
 
     def form_valid(self, form):
-        agendamento = self.get_agendamento()
-        form.instance.agendamento = agendamento
+        form.instance.agendamento = self.agendamento
         form.instance.usuario = self.request.user
-        form.instance.filial = agendamento.filial
+        form.instance.filial = self.agendamento.filial
         
-        # A lógica de negócio foi movida para o models.py!
-        # A view apenas exibe a mensagem de sucesso apropriada.
-        if form.instance.tipo == 'saida':
+        # O tipo já vem pré-definido pelo get_initial, mas garantimos aqui
+        form.instance.tipo = self.tipo_checklist 
+
+        response = super().form_valid(form) # Salva o objeto
+
+        # Lógica para atualizar o status do agendamento
+        if self.tipo_checklist == 'saida':
             messages.success(self.request, 'Checklist de saída registrado com sucesso!')
-        elif form.instance.tipo == 'retorno':
+        elif self.tipo_checklist == 'retorno':
+            self.agendamento.status = 'finalizado' # Exemplo de como finalizar
+            self.agendamento.save()
             messages.success(self.request, 'Checklist de retorno registrado e agendamento finalizado!')
         
-        return super().form_valid(form)
+        return response
 
     def get_success_url(self):
-        # self.object é o checklist salvo
+        # self.object é o checklist que acabou de ser salvo
         return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.agendamento.pk})
+    
+class ChecklistUpdateView(LoginRequiredMixin, UpdateView):
+    model = Checklist
+    form_class = ChecklistForm
+    template_name = 'automovel/checklist_form.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # self.object é o checklist que está sendo editado
+        context['agendamento'] = self.object.agendamento
+        
+        # O código para dividir o formulário em seções (reutilizado da CreateView)
+        form = context['form']
+        form_sections = [
+            # ... cole aqui a mesma estrutura de 'form_sections' da sua CreateView ...
+        ]
+        context['form_sections'] = form_sections
+        return context
+
+    def get_success_url(self):
+        messages.success(self.request, 'Checklist atualizado com sucesso!')
+        # Redireciona de volta para os detalhes do agendamento
+        return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.agendamento.pk})
+
 
 class ChecklistDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = Checklist
@@ -311,15 +351,25 @@ class ChecklistExportWordView(LoginRequiredMixin, ViewFilialScopedMixin, View):
             document.add_heading('Observações Gerais', level=1)
             document.add_paragraph(checklist.observacoes_gerais)
 
-        # Seção de Fotos
+        # Seção de Fotos (CORRIGIDA)
         document.add_heading('Fotos da Vistoria', level=1)
         if checklist.foto_frontal:
             document.add_paragraph('Foto Frontal:')
             document.add_picture(checklist.foto_frontal.path, width=Inches(3.0))
-        # Adicione as outras fotos de forma similar...
+        
         if checklist.foto_trazeira:
             document.add_paragraph('Foto Traseira:')
             document.add_picture(checklist.foto_trazeira.path, width=Inches(3.0))
+
+        # --- CÓDIGO ADICIONADO ABAIXO ---
+        if checklist.foto_lado_motorista:
+            document.add_paragraph('Foto Lado do Motorista:')
+            document.add_picture(checklist.foto_lado_motorista.path, width=Inches(3.0))
+
+        if checklist.foto_lado_passageiro:
+            document.add_paragraph('Foto Lado do Passageiro:')
+            document.add_picture(checklist.foto_lado_passageiro.path, width=Inches(3.0))
+        # --- FIM DO CÓDIGO ADICIONADO ---
 
         # Seção de Assinatura
         if checklist.assinatura:

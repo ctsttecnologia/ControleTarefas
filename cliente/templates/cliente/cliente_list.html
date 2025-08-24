@@ -8,7 +8,7 @@
 <div class="container-fluid py-4 px-lg-5">
     <!-- Cabeçalho da Página -->
     <header class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
-        <h2 class="h3 mb-3 mb-md-0"><i class="bi bi-people-fill me-2"></i>Lista de Clientes ({{ total_clientes }})</h2>
+        <h2 class="h3 mb-3 mb-md-0"><i class="bi bi-people-fill me-2"></i>Lista de Clientes <i class="bi bi-forward"></i> {{ total_clientes }}</h2>
         <div class="d-flex">
             <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-primary flex-grow-1 flex-md-grow-0">
                 <i class="bi bi-plus-circle me-1"></i> 

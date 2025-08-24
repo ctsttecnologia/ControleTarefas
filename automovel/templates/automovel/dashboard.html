@@ -1,26 +1,19 @@
-{% extends "base.html" %}
+{% extends "automovel/_base_automovel.html" %}
 
 {% block title %}Painel - Gestão de Veículos{% endblock %}
 
-{% block content %}
-
-
+{% block automovel_content %}
 <div class="container">
-    {% include "partials/_page_header.html" with title="Painel" %}
-
-    <div class="btn-toolbar mb-2">
-        <a href="{% url 'automovel:carro_create' %}" class="btn btn-secondary">
-                <i class="bi bi-plus-lg me-1"></i> Adicionar Veículo
-        </a>
-        <a href="{% url 'automovel:carro_list' %}" class="btn btn-secondary">
-            Carros
-        </a>
-        <a href="{% url 'automovel:calendario' %}" class="btn btn-secondary">
-            <i class="fas fa-calendar-alt"></i> Calendário
-        </a>
-        <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar para Lista
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold"><i class="bi bi-speedometer2 me-1"></i>Painel de Gestão de Veículos</h1>
+        <div class="btn-toolbar mb-2">
+            <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista
+            </a>
+            <a href="{% url 'automovel:calendario' %}" class="btn btn-secondary">
+                <i class="fas fa-calendar-alt"></i> Calendário
+            </a>
+        </div>
     </div>
     <div class="row">
         <div class="col-xl-3 col-md-6 mb-4">

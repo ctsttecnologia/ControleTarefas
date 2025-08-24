@@ -1,5 +1,5 @@
-// static/js/global.js
 
+// static/js/global.js
 
 document.addEventListener('DOMContentLoaded', () => {
     const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
@@ -12,12 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightIcon = themeSwitcherBtn.querySelector('.theme-icon-light');
     const darkIcon = themeSwitcherBtn.querySelector('.theme-icon-dark');
     
-    // Função para definir o tema e salvar a preferência
+    // Função para definir o tema, salvar a preferência e ATUALIZAR O ÍCONE
     const setTheme = (theme) => {
-        // Altera o atributo no <html> que o seu CSS usa para aplicar os estilos
+        // Altera o atributo no <html> que o Bootstrap usa para os estilos
         htmlElement.setAttribute('data-bs-theme', theme);
         
-        // Salva a escolha do usuário no localStorage para lembrar na próxima visita
+        // Salva a escolha do usuário no localStorage
         localStorage.setItem('theme', theme);
 
         // Atualiza qual ícone está visível
@@ -37,26 +37,18 @@ document.addEventListener('DOMContentLoaded', () => {
         setTheme(currentTheme === 'dark' ? 'light' : 'dark');
     });
 
-    // Garante que o ícone correto seja exibido quando a página carrega
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    if (currentTheme === 'dark') {
-        lightIcon.classList.add('d-none');
-        darkIcon.classList.remove('d-none');
-    } else {
-        darkIcon.classList.add('d-none');
-        lightIcon.classList.remove('d-none');
-}
-
     // --- INICIALIZAÇÃO DA PÁGINA ---
-    // Apenas atualiza o ícone na carga inicial. O tema já foi setado pelo script no <head>.
-    updateThemeIcon();
-
+    // Pega o tema salvo no navegador do usuário. Se não houver, usa 'dark' como padrão.
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    
+    // Chama a função setTheme() com o tema salvo para aplicar o tema e o ícone corretos.
+    setTheme(savedTheme);
 
     // =================================================================
     // OUTROS SCRIPTS GLOBAIS
     // =================================================================
 
-    // Lógica para fechar alertas automaticamente (código já está ótimo)
+    // Lógica para fechar alertas automaticamente
     setTimeout(() => {
         const alerts = document.querySelectorAll('.alert.alert-dismissible');
         alerts.forEach(alert => {
@@ -64,15 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 new bootstrap.Alert(alert).close();
             }
         });
-    }, 5000); // Fecha após 5 segundos
+    }, 5000);
 
     // Lógica para inicializar tooltips do Bootstrap
     if (typeof bootstrap !== 'undefined') {
-        // RECOMENDAÇÃO: Sintaxe mais moderna e semanticamente correta com forEach
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         tooltipTriggerList.forEach(tooltipTriggerEl => {
             new bootstrap.Tooltip(tooltipTriggerEl);
         });
     }
-
 });

@@ -8,18 +8,9 @@
 {% block content %}
 <div class="container-fluid mt-4">
 
-    {% if messages %}
-        <div class="container mt-3">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+{% include "partials/_messages.html" %} 
     
-    <div class="subnav-sst mb-4 p-3 bg-body-tertiary rounded-3 border">
+    <div class="subnav-automovel mb-3 p-3 bg-body-tertiary rounded-2 border sticky-top" style="top: 60px; z-index: 1020;">
         <ul class="nav nav">
             <li class="nav-item">
                 <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">

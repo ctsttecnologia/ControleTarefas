@@ -74,6 +74,14 @@ class Agendamento(models.Model):
         verbose_name_plural = "Agendamentos"
         ordering = ['-data_hora_agenda']
 
+    @property
+    def checklist_saida(self):
+        return self.checklists.filter(tipo='saida').first()
+
+    @property
+    def checklist_retorno(self):
+        return self.checklists.filter(tipo='retorno').first()
+
 class Checklist(models.Model):
     TIPO_CHOICES = [('saida', 'Saída'), ('retorno', 'Retorno'), ('vistoria', 'Vistoria')]
     STATUS_CHOICES = [('ok', 'OK'), ('danificado', 'Danificado'), ('nao_aplicavel', 'Não Aplicável')]
@@ -96,37 +104,49 @@ class Checklist(models.Model):
     anexo_ocorrencia = models.TextField(blank=True, null=True)
     assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
-    # CORREÇÃO: related_name único e campo obrigatório.
+    # related_name único e campo obrigatório.
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='checklists', null=True, blank=False)
     
     # Manager Padrão
     objects = FilialManager()
 
-    def save(self, *args, **kwargs):
-        """
-        Sobrescreve o método save para centralizar a lógica de negócio
-        após a criação de um checklist.
-        """
-        # Ação acontece apenas na criação de um novo checklist
-        is_new = self._state.adding
-        super().save(*args, **kwargs)  # Salva o checklist primeiro
+    # automovel/models.py (dentro da classe Checklist)
 
-        if is_new:
-            agendamento = self.agendamento
-            if self.tipo == 'saida':
-                agendamento.status = 'em_andamento'
-                agendamento.save(update_fields=['status'])
+def save(self, *args, **kwargs):
+    """
+    Sobrescreve o método save para centralizar a lógica de negócio
+    após a criação de um checklist.
+    """
+    is_new = self._state.adding
+    super().save(*args, **kwargs)  # Salva o checklist primeiro
+
+    if is_new:
+        agendamento = self.agendamento
+        
+        if self.tipo == 'saida':
+            agendamento.status = 'em_andamento'
+            agendamento.save(update_fields=['status'])
+        
+        elif self.tipo == 'retorno':
+            agendamento.status = 'finalizado'
+            # É mais eficiente salvar o status junto com outras alterações, se houver
             
-            elif self.tipo == 'retorno':
-                agendamento.status = 'finalizado'
+            # Atualiza o KM do carro com o KM final do checklist
+            if self.km_final:
+                carro = agendamento.carro
                 
-                # Atualiza o KM do carro com o KM final do checklist
-                if self.km_final:
-                    carro = agendamento.carro
-                    carro.km_atual = self.km_final
-                    carro.save(update_fields=['km_atual'])
+                # CORREÇÃO: Use o nome correto do campo de quilometragem do seu model Carro
+                # Substitua 'quilometragem' se o nome for outro (ex: km_hodometro)
+                nome_campo_km_do_carro = 'quilometragem'
                 
-                agendamento.save(update_fields=['status'])
+                setattr(carro, nome_campo_km_do_carro, self.km_final)
+                carro.save(update_fields=[nome_campo_km_do_carro])
+
+                # Atualiza também o agendamento
+                agendamento.km_final = self.km_final
+                agendamento.save(update_fields=['status', 'km_final'])
+            else:
+                 agendamento.save(update_fields=['status'])
 
     def __str__(self):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
