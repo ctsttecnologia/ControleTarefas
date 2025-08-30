@@ -14,7 +14,6 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
@@ -23,6 +22,7 @@ from django.core.exceptions import PermissionDenied
 from usuario.models import Filial
 from .models import Funcionario, Departamento, Cargo, Documento
 from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
 
 

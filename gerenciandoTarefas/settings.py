@@ -24,10 +24,14 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-wt$exc#ld^38(f66)^zde_&=sd5c_xkx9n0r)^t7x67v0g!2*o'
+SECRET_KEY = config('SECRET_KEY')
 
+# Guarde esta chave em um local seguro, como variáveis de ambiente!
+FERNET_KEYS = [
+    config('KEYS')
+]
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG')
 
 
 ALLOWED_HOSTS = ['*']
@@ -65,7 +69,9 @@ INSTALLED_APPS = [
     'treinamentos.apps.TreinamentosConfig',
     'gestao_riscos',
     'ata_reuniao',
-    'ferramentas' 
+    'ferramentas',
+    'controle_de_telefone',
+    'phonenumber_field',
 ]
 
 
@@ -175,8 +181,19 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
 
-MEDIA_URL = '/midia/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'midia')
+# Diretório público para imagens, etc.
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Diretório PRIVADO para arquivos sensíveis
+PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
+
+# Configuração para servir arquivos privados com django-sendfile2
+# Crie uma pasta 'private_media' na raiz do projeto
+SENDFILE_BACKEND = 'sendfile2.backends.simple'
+SENDFILE_ROOT = os.path.join(BASE_DIR, 'private_media')
+SENDFILE_URL = '/private' # URL interna, não precisa ser servida publicamente
+
 
 # Tamanho máximo de upload (5MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
