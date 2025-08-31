@@ -26,7 +26,7 @@ urlpatterns = [
     # --- Gerenciamento de Usuários (CRUD) ---
     path('usuarios/', UserListView.as_view(), name='lista_usuarios'),
     # --- O nome correto para a criação é 'cadastrar_usuario'
-    path('usuarios/novo/', UserCreateView.as_view(), name='form_usuario'),
+    path('usuarios/novo/', UserCreateView.as_view(), name='usuario_criar'),
     # ---- O nome correto para a edição é 'usuario_editar'
     path('usuarios/editar/<int:pk>/', UserUpdateView.as_view(), name='usuario_editar'),
     path('usuarios/toggle-active/<int:pk>/', UserToggleActiveView.as_view(), name='toggle_active_usuario'),

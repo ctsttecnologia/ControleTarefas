@@ -200,29 +200,7 @@ class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Cargo: {self.object.nome}"
         return context
-
-# --- VIEWS PARA DOCUMENTOS (ADICIONADAS) 
-# O mixin padrão não funcionará. Precisamos de uma lógica customizada.
-#class DocumentoListView(StaffRequiredMixin, ListView): 
-#    model = Documento
-#    template_name = 'departamento_pessoal/lista_documentos.html'
-#    context_object_name = 'documentos'
-#    paginate_by = 10
-
-#    def get_queryset(self):
-#        # A chave da sessão que você usa é 'active_filial_id'
-#        filial_id = self.request.session.get('active_filial_id') 
-#        
-#        # SE a linha acima não encontrar nada (retornar None),
-#        # a condição abaixo se torna verdadeira e o erro é lançado.
-#        if not filial_id: 
- #           raise PermissionDenied("Nenhuma filial selecionada.")
-        
-        # O resto do código, que filtra os documentos, nem chega a ser executado.
-#        queryset = super().get_queryset().filter(funcionario__filial_id=filial_id)
-        
-#        return queryset
-    
+   
 
 class DocumentoListView(StaffRequiredMixin, ListView):
     model = Documento

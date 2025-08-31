@@ -1,0 +1,19 @@
+
+{# templates/usuario/base_usuario.html #}
+{% extends 'base.html' %}
+
+{% block title %}
+    Gerenciamento - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+    {# Inclui o submenu de navegação padrão para esta seção #}
+    {% include 'usuario/includes/submenu.html' %}
+
+    {# Bloco onde o conteúdo específico de cada página será inserido #}
+    <div class="container py-5">
+        {% block usuario_content %}
+            {# O conteúdo das páginas de lista, formulários, etc. virá aqui #}
+        {% endblock usuario_content %}
+    </div>
+{% endblock %}

@@ -1,15 +1,127 @@
-{# templates/usuario/form_usuario.html (VERSÃO CORRETA) #}
+{# templates/usuario/form_usuario.html #}
 {% extends 'base.html' %}
+{% load static %}
 {% load widget_tweaks %}
 
 {% block title %}{% if form.instance.pk %}Editar Usuário{% else %}Cadastrar Novo Usuário{% endif %}{% endblock %}
 
+{% block extra_head %}
+    {{ form.media.css }} {# Carrega o CSS do admin #}
+    <style>
+        /* Estilos gerais para centralizar e dar mais respiro */
+        .container {
+            max-width: 900px; /* Limita a largura do container principal */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .card-body.p-4.p-md-5 {
+            padding: 2rem !important; /* Aumenta o padding interno do card */
+        }
+        .form-row.mb-3 {
+            display: flex; /* Garante que os campos de texto se alinhem */
+            align-items: center;
+        }
+        .form-row label {
+            padding-right: 15px; /* Espaçamento entre label e input */
+        }
+        
+        /* Estilos para o widget FilteredSelectMultiple (admin) */
+        .selector {
+            display: flex; /* Usa flexbox para organizar as colunas */
+            justify-content: space-between; /* Espaço entre as colunas */
+            gap: 15px; /* Espaçamento entre as colunas */
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* Permite que as colunas quebrem em telas menores */
+        }
+        .selector .selector-available,
+        .selector .selector-chosen {
+            flex: 1; /* Faz as colunas ocuparem o espaço disponível igualmente */
+            min-width: 280px; /* Garante uma largura mínima para cada coluna */
+            border: 1px solid #dee2e6; /* Borda sutil */
+            border-radius: 0.25rem; /* Bordas arredondadas */
+            overflow: hidden; /* Garante que o conteúdo não vaze */
+            display: flex;
+            flex-direction: column;
+        }
+        .selector-filter input {
+            width: calc(100% - 10px) !important; /* Ajusta a largura do input de filtro */
+            margin: 5px !important;
+            padding: 0.375rem 0.75rem; /* Padding do input */
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+        }
+        .selector-available h2, .selector-chosen h2 {
+            font-size: 1.1rem; /* Tamanho do título */
+            background-color: #f8f9fa; /* Fundo do título */
+            padding: 0.75rem 1rem;
+            margin-bottom: 0;
+            border-bottom: 1px solid #dee2e6;
+            color: #495057;
+        }
+        .selector select {
+            border: none; /* Remove bordas internas do select */
+            height: 200px; /* Altura fixa para as listas */
+            flex-grow: 1; /* Faz as listas ocuparem o espaço restante */
+            min-height: 150px; /* Altura mínima */
+            resize: vertical; /* Permite redimensionar verticalmente */
+            padding: 5px; /* Espaçamento interno */
+        }
+        .selector select option {
+            padding: 5px; /* Padding para cada opção */
+        }
+
+        .selector .selector-control {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            gap: 5px; /* Espaçamento entre os botões */
+        }
+        .selector .selector-control a {
+            font-size: 1.5rem; /* Tamanho dos botões de controle */
+            display: block; /* Cada botão em uma linha */
+            padding: 0 5px;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            text-decoration: none;
+            color: #343a40;
+            background-color: #e9ecef;
+            transition: background-color 0.2s ease-in-out;
+            line-height: 1; /* Ajusta a altura da linha para centralizar o texto */
+        }
+        .selector .selector-control a:hover {
+            background-color: #dee2e6;
+        }
+
+        /* Estilos para os checkbox is_active, is_staff, is_superuser */
+        .form-check {
+            padding-left: 2.25em; /* Garante que o input e a label fiquem alinhados */
+            margin-bottom: 0.5rem;
+        }
+        .form-check-input {
+            margin-top: 0.25em; /* Alinha o checkbox */
+            margin-left: -1.5em; /* Posiciona o checkbox */
+        }
+
+        /* Ajuste para o .module aligned que o admin gera */
+        fieldset.module.aligned {
+            margin-bottom: 20px;
+        }
+        fieldset.module.aligned .form-row {
+            padding: 0;
+            margin-bottom: 15px;
+        }
+    </style>
+{% endblock %}
+
 {% block content %}
-    {# Inclui o submenu da seção de usuários, se aplicável #}
+    {# Inclui o submenu de navegação padrão para esta seção #}
     {% include 'usuario/includes/submenu.html' %}
+
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-lg-8">
+            <div class="col-lg-12"> {# Aumentei a largura para telas maiores #}
                 <div class="card shadow-sm">
                     <div class="card-header">
                         <h2 class="h4 mb-0">
@@ -24,33 +136,12 @@
                         <form method="post" novalidate>
                             {% csrf_token %}
 
-                            {% if form.non_field_errors %}
-                                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-                            {% endif %}
-
-                            <div class="row g-3">
-                                {% for field in form %}
-                                    <div class="col-12 {% if field.name in 'first_name,last_name' %}col-md-6{% endif %}">
-                                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-
-                                        {# O render_field vai criar o input/select/etc. correto #}
-                                        {% render_field field class+="form-control" %}
-                                        
-                                        {% if field.help_text %}
-                                            <small class="form-text text-muted">{{ field.help_text|safe }}</small>
-                                        {% endif %}
-                                        {% for error in field.errors %}
-                                            <div class="invalid-feedback d-block">{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endfor %}
-                            </div>
+                            {# Agora o _form_fields.html já contém toda a lógica de renderização #}
+                            {% include 'partials/_form_fields.html' with form=form %}
 
                             <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
                                 <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
-                                <button type="submit" class="btn btn-primary px-4">
-                                    <i class="bi bi-check-lg me-1"></i> Salvar
-                                </button>
+                                <button type="submit" class="btn btn-primary px-4">Salvar</button>
                             </div>
                         </form>
                     </div>
@@ -60,4 +151,7 @@
     </div>
 {% endblock %}
 
-
+{% block extra_js %}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    {{ form.media.js }}
+{% endblock %}

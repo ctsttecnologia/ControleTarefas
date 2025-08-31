@@ -33,7 +33,7 @@ urlpatterns = [
     path('relatorio/', RelatorioTarefasView.as_view(), name='relatorio_tarefas'),
     path('kanban/', KanbanView.as_view(), name='kanban_board'),
     path('kanban/', KanbanView.as_view(), name='kanban'),
-    path('<int:pk>/editar/', TarefaUpdateView.as_view(), name='tarefa_update'), # URL para a view de edição
+    path('<int:pk>/editar/', TarefaUpdateView.as_view(), name='tarefa_update'),
     path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='update_task_status'),
 
 

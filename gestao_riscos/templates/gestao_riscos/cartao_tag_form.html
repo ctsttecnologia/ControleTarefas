@@ -7,14 +7,8 @@
 
 {% block content %}
 <div class="container-box">
-    <br>
-    {% if messages %}
-        <div class="alert alert-info">
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        </div>
-    {% endif %}
+    {% partial "templates/partials/messages.html" %}
+
     <h1 class="h2 mb-4">{% if object %}Editar Cartão de Bloqueio{% else %}Criar Novo Cartão de Bloqueio{% endif %}</h1>
     <div class="card shadow-sm">
         <div class="card-body">
