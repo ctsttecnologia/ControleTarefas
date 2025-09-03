@@ -1,0 +1,25 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Assinatura Pendente</title>
+</head>
+<body>
+    <p>Olá, {{ nome_usuario }}!</p>
+    <p>
+        Um novo Termo de Responsabilidade, referente ao equipamento <strong>{{ nome_aparelho }}</strong>, foi gerado em seu nome e está aguardando sua assinatura.
+    </p>
+    <p>
+        Por favor, acesse o link abaixo para revisar e assinar o documento.
+    </p>
+    <p>
+        <a href="{{ url_assinatura }}" style="padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">
+            Assinar Termo
+        </a>
+    </p>
+    <p>
+        Atenciosamente,<br>
+        Equipe CETEST
+    </p>
+</body>
+</html>

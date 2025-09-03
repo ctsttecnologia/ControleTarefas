@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'ferramentas',
     'controle_de_telefone',
     'phonenumber_field',
+    'notifications',
 ]
 
 

@@ -1,26 +1,27 @@
 
 # controle_de_telefone/views.py
+from django.contrib import messages 
 import os
-from pyexpat.errors import messages
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-
-from automovel.views import SuccessMessageMixin
-from .models import Aparelho, LinhaTelefonica, Vinculo, Marca, Modelo, Operadora, Plano
+from .models import Aparelho, LinhaTelefonica, Vinculo, Marca, Modelo, Operadora, Plano, enviar_notificacao_de_assinatura
 from .forms import AparelhoForm, LinhaTelefonicaForm, VinculoForm, MarcaForm, ModeloForm, OperadoraForm, PlanoForm
-
 from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
 from django.views.generic import TemplateView
 from django.db.models import Count
 import json
 from django.db.models import ProtectedError, Q
-
-
-
+from django.contrib.messages.views import SuccessMessageMixin
+from django.core.files.base import ContentFile
+from .pdf_generator import gerar_termo_responsabilidade_pdf 
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.urls import reverse
+from notifications.models import Notificacao
 
 
 class StaffRequiredMixin(PermissionRequiredMixin):
@@ -221,25 +222,82 @@ class VinculoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView)
 
 
 class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+    
     model = Vinculo
     form_class = VinculoForm
     permission_required = 'controle_de_telefone.add_vinculo'
     template_name = 'controle_de_telefone/generic_form.html'
     success_url = reverse_lazy('controle_de_telefone:vinculo_list')
-    success_message = "Vínculo criado com sucesso!"
+    success_message = "Vínculo criado com sucesso! O Termo de Responsabilidade foi gerado."
 
     def get_form(self, form_class=None):
         """ Filtra os campos para mostrar apenas itens disponíveis. """
         form = super().get_form(form_class)
+        # Filtra os aparelhos com status 'disponivel'
         form.fields['aparelho'].queryset = Aparelho.objects.filter(status='disponivel')
+        # Filtra as linhas com status 'disponivel'
         form.fields['linha'].queryset = LinhaTelefonica.objects.filter(status='disponivel')
         return form
-
+    
     def get_context_data(self, **kwargs):
+        """ Define o título e o botão de voltar da página. """
         context = super().get_context_data(**kwargs)
-        context['titulo'] = 'Criar Novo Vínculo'
+        context['title'] = 'Criar Novo Vínculo' # 'title' ao invés de 'titulo'
         context['voltar_url'] = self.success_url
         return context
+
+    def form_valid(self, form):
+        # Primeiro, chama o método pai para salvar o objeto e obter o self.object
+        response = super().form_valid(form)
+        
+        # Agora o self.object é o vínculo recém-criado
+        vinculo = self.object
+
+        # 1. Gerar e salvar o PDF (código que já tínhamos)
+        pdf_buffer = gerar_termo_responsabilidade_pdf(vinculo)
+        file_name = f"termo_{vinculo.funcionario.id}_{vinculo.id}.pdf"
+        vinculo.termo_responsabilidade.save(file_name, ContentFile(pdf_buffer.read()), save=True)
+        vinculo.termo_gerado.save(file_name, ContentFile(pdf_buffer.read()), save=True)
+        # 2. Criar a notificação no sistema
+        # Assumindo que seu modelo Funcionario tem uma relação OneToOne com o User
+        usuario_a_notificar = vinculo.funcionario.usuario
+        try:
+            enviar_notificacao_de_assinatura(self.request, vinculo)
+        except Exception as e:
+            # Adiciona uma mensagem de erro se a notificação falhar, mas não impede a criação do vínculo
+            messages.warning(self.request, f"Vínculo criado, mas ocorreu um erro ao enviar a notificação: {e}")
+        # Crie a URL para a qual a notificação irá apontar
+        # Ex: a página de edição do vínculo, onde ele pode assinar
+        url_assinatura = self.request.build_absolute_uri(
+            reverse('controle_de_telefone:vinculo_update', args=[vinculo.pk])
+        )
+
+        Notificacao.objects.create(
+            usuario=usuario_a_notificar,
+            mensagem=f"Um novo Termo de Responsabilidade para o aparelho {vinculo.aparelho} foi gerado para você assinar.",
+            url_destino=url_assinatura
+        )
+
+        # 3. Enviar a notificação por e-mail
+        if usuario_a_notificar.email:
+            assunto = "Termo de Responsabilidade Pendente de Assinatura"
+            contexto_email = {
+                'nome_usuario': usuario_a_notificar.first_name or usuario_a_notificar.username,
+                'nome_aparelho': str(vinculo.aparelho),
+                'url_assinatura': url_assinatura,
+            }
+            corpo_html = render_to_string('emails/notificacao_assinatura.html', contexto_email)
+            
+            send_mail(
+                subject=assunto,
+                message='', # Django usará o corpo_html
+                from_email='seu-email@suaempresa.com.br', # Configure no settings.py
+                recipient_list=[usuario_a_notificar.email],
+                html_message=corpo_html,
+                fail_silently=False # Mude para True em produção
+            )
+
+        return response
 
 
 class VinculoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -275,7 +333,9 @@ class VinculoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMess
             )
         else:
             form.fields['linha'].queryset = LinhaTelefonica.objects.filter(status='disponivel')
-            
+
+        form.fields['data_entrega'].disabled = True 
+
         return form
 
     def get_context_data(self, **kwargs):
@@ -374,10 +434,6 @@ class ModeloDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     permission_required = 'controle_de_telefone.delete_modelo'
     template_name = 'controle_de_telefone/generic_confirm_delete.html'
     success_url = reverse_lazy('controle_de_telefone:modelo_list')
-
-# Adicione estes imports no topo do seu views.py se eles não estiverem lá
-from .models import Operadora, Plano
-from .forms import OperadoraForm, PlanoForm
 
 # --- CRUD para Operadora (Novo) ---
 
@@ -561,6 +617,20 @@ def download_termo(request, vinculo_id):
     # forçando o navegador a baixar o arquivo em vez de tentar exibi-lo.
     
     return response
+
+def notificar_assinatura(request, vinculo_id):
+    """
+    View que é chamada pela URL para reenviar a notificação de um vínculo existente.
+    """
+    vinculo = get_object_or_404(Vinculo, pk=vinculo_id)
     
+    try:
+        enviar_notificacao_de_assinatura(request, vinculo)
+        messages.success(request, f"Notificação para {vinculo.funcionario.nome_completo} enviada com sucesso!")
+    except Exception as e:
+        messages.error(request, f"Ocorreu um erro ao enviar a notificação: {e}")
+
+    # Redireciona de volta para a lista de vínculos ou para a página anterior
+    return redirect('controle_de_telefone:vinculo_list')    
     
 

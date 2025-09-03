@@ -33,12 +33,25 @@
 
                 <dt class="col-sm-3">Termo de Responsabilidade:</dt>
                 <dd class="col-sm-9">
-                    {% if object.termo_responsabilidade %}
+                    {% comment %} 
+                    Usamos 'object.termo_gerado' conforme a correção do modelo que fizemos.
+                    {% endcomment %}
+                    {% if object.termo_gerado %}
                         <a href="{% url 'controle_de_telefone:download_termo' object.pk %}" class="btn btn-sm btn-info" target="_blank">
-                            <i class="fas fa-download me-1"></i> Baixar Termo
+                            <i class="fas fa-download me-1"></i> Baixar Termo Gerado
                         </a>
-                    {% else %}
-                        <span class="text-muted">Nenhum termo anexado.</span>
+
+                        {% if object.assinatura_digital or object.termo_assinado %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check-circle me-1"></i> Assinado
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark ms-2">
+                                <i class="fas fa-clock me-1"></i> Pendente de Assinatura
+                            </span>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-muted">Nenhum termo gerado.</span>
                     {% endif %}
                 </dd>
             </dl>

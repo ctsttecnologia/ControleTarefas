@@ -116,17 +116,33 @@ class LinhaTelefonicaForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
+
 class VinculoForm(forms.ModelForm):
     class Meta:
         model = Vinculo
-        fields = ['funcionario', 'aparelho', 'linha', 'data_entrega', 'data_devolucao', 'termo_responsabilidade']
+        
+        # GARANTA QUE TODOS OS CAMPOS ESTEJAM AQUI
+        fields = [
+            'funcionario', 
+            'aparelho', 
+            'linha', 
+            'data_entrega', 
+            'data_devolucao',
+            'assinatura_digital', 
+            'termo_assinado', 
+        ]
+        
         widgets = {
             'data_entrega': forms.DateInput(attrs={'type': 'date'}),
             'data_devolucao': forms.DateInput(attrs={'type': 'date'}),
+            'assinatura_digital': forms.HiddenInput(), 
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Aplica classe CSS para estilização (seu código existente)
         for field_name, field in self.fields.items():
-            if field_name != 'termo_responsabilidade':
-                field.widget.attrs['class'] = 'form-control'
+            if field.widget.__class__.__name__ != 'FileInput':
+                 field.widget.attrs.update({'class': 'form-control'})
+
+

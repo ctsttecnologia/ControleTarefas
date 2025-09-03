@@ -6,8 +6,15 @@ from usuario.models import Filial
 import os
 from uuid import uuid4
 from departamento_pessoal.models import Funcionario
-
+from django.conf import settings
+from django.utils import timezone
 from core.encryption import encrypt_data, decrypt_data
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.urls import reverse
+from notifications.models import Notificacao
 
 
 class BaseModel(models.Model):
@@ -167,21 +174,40 @@ class Vinculo(BaseModel):
         ('ativo', 'Ativo'),
         ('finalizado', 'Finalizado'),
     )
-    funcionario = models.ForeignKey(Funcionario, on_delete=models.PROTECT, related_name="vinculos_telefonicos", verbose_name="Colaborador")
+    funcionario = models.ForeignKey(
+        'departamento_pessoal.Funcionario', 
+        on_delete=models.PROTECT
+    )
     aparelho = models.ForeignKey(Aparelho, on_delete=models.PROTECT, related_name="vinculos", blank=True, null=True, verbose_name="Aparelho")
     linha = models.ForeignKey(LinhaTelefonica, on_delete=models.PROTECT, related_name="vinculos", blank=True, null=True, verbose_name="Linha Telefônica")
     data_entrega = models.DateField(verbose_name="Data de Entrega")
     data_devolucao = models.DateField(blank=True, null=True, verbose_name="Data de Devolução")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
-    termo_responsabilidade = models.FileField(upload_to=termo_upload_path, blank=True, null=True, verbose_name="Termo de Responsabilidade Assinado")
-    # ... (Meta e __str__ sem alterações) ...
+     # 1. Campo para o PDF que o sistema gera.
+    termo_gerado = models.FileField(
+        upload_to='termos_gerados/',
+        null=True, blank=True,
+        verbose_name="Termo de Responsabilidade Gerado",
+        help_text="PDF gerado automaticamente ao criar o vínculo."
+    )
+
+    # 2. Campo para a assinatura digital desenhada na tela.
+    assinatura_digital = models.TextField(
+        null=True, blank=True,
+        verbose_name="Assinatura Digital",
+        help_text="Armazena os dados da assinatura digital."
+    )
+
+    # 3. Campo para o usuário fazer o upload do termo assinado.
+    termo_assinado = models.FileField(
+        upload_to='termos_assinados/',
+        null=True, blank=True,
+        verbose_name="Termo Assinado (Upload)",
+        help_text="Faça o upload do termo assinado aqui."
+    )
 
     def save(self, *args, **kwargs):
-        """
-        <--- MUDANÇA: A lógica do signal foi movida para cá.
-        Isso garante que as atualizações de status ocorram de forma mais previsível
-        e dentro da mesma transação do banco de dados.
-        """
+       
         # Rastreia o estado original do objeto
         is_new = self._state.adding
         original_status = None
@@ -213,4 +239,41 @@ class Vinculo(BaseModel):
                 self.linha.status = 'disponivel'
                 self.linha.save()
 
+    def __str__(self):
+        return f"{self.funcionario} - {self.aparelho or 'Sem Aparelho'}"
 
+def enviar_notificacao_de_assinatura(request, vinculo):
+    """
+    Função reutilizável para criar a notificação no sistema e enviar o e-mail.
+    """
+    usuario_a_notificar = vinculo.funcionario.usuario
+    
+    # URL para a página onde o funcionário pode editar/assinar o vínculo
+    url_assinatura = request.build_absolute_uri(
+        reverse('controle_de_telefone:vinculo_update', args=[vinculo.pk])
+    )
+
+    # Cria a notificação no sistema
+    Notificacao.objects.create(
+        usuario=usuario_a_notificar,
+        mensagem=f"Lembrete: Você tem um Termo de Responsabilidade para o aparelho {vinculo.aparelho} pendente de assinatura.",
+        url_destino=url_assinatura
+    )
+
+    # Envia o e-mail de notificação
+    if usuario_a_notificar.email:
+        assunto = "Lembrete: Termo de Responsabilidade Pendente de Assinatura"
+        contexto_email = {
+            'nome_usuario': usuario_a_notificar.first_name or usuario_a_notificar.username,
+            'nome_aparelho': str(vinculo.aparelho),
+            'url_assinatura': url_assinatura,
+        }
+        corpo_html = render_to_string('emails/notificacao_assinatura.html', contexto_email)
+        
+        send_mail(
+            subject=assunto,
+            message='',
+            from_email='nao-responda@suaempresa.com',
+            recipient_list=[usuario_a_notificar.email],
+            html_message=corpo_html
+        )

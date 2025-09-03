@@ -5,45 +5,55 @@
 {% block title %}Planos de Telefonia{% endblock %}
 {% block content %}
 <div class="container mt-6">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Planos de Telefonia</h1>
-            <a class="nav-link" href="{% url 'controle_de_telefone:dashboard' %}">
-                <i class="fas fa-tachometer-alt fa-fw me-2"></i>Dashboard
-            </a>
-            <a href="{% url 'controle_de_telefone:plano_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Adicionar Plano
-            </a>
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h1>Planos de Telefonia</h1>
+            <div>
+                <a href="{% url 'controle_de_telefone:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar para o painel
+                </a>
+            </div>
+            <div>
+                <a href="{% url 'controle_de_telefone:plano_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Adicionar Plano
+                </a>
 
+            </div>
+        </div>
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Nome do Plano</th>
+                    <th>Operadora</th>
+                    <th>Valor Mensal</th>
+                    <th>Dados (GB)</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for plano in planos %}
+                <tr>
+                    <td>{{ plano.nome }}</td>
+                    <td>{{ plano.operadora.nome }}</td>
+                    <td>R$ {{ plano.valor_mensal }}</td>
+                    <td>{{ plano.franquia_dados_gb }} GB</td>
+                    <td>
+                        <a href="{% url 'controle_de_telefone:plano_update' plano.pk %}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-edit me-2"></i> Editar
+                        </a>
+                        <a href="{% url 'controle_de_telefone:plano_delete' plano.pk %}" class="btn btn-sm btn-danger">
+                            <i class="fas fa-trash-alt me-2"></i> Excluir
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Nenhum plano cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>Nome do Plano</th>
-                <th>Operadora</th>
-                <th>Valor Mensal</th>
-                <th>Dados (GB)</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for plano in planos %}
-            <tr>
-                <td>{{ plano.nome }}</td>
-                <td>{{ plano.operadora.nome }}</td>
-                <td>R$ {{ plano.valor_mensal }}</td>
-                <td>{{ plano.franquia_dados_gb }} GB</td>
-                <td>
-                    <a href="{% url 'controle_de_telefone:plano_update' plano.pk %}" class="btn btn-sm btn-warning">Editar</a>
-                    <a href="{% url 'controle_de_telefone:plano_delete' plano.pk %}" class="btn btn-sm btn-danger">Excluir</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center">Nenhum plano cadastrado.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
 </div>
 {% endblock %}
 

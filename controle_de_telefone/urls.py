@@ -61,6 +61,7 @@ urlpatterns = [
     
     # URL de download
     path('vinculos/<int:vinculo_id>/download/', views.download_termo, name='download_termo'),
+    path('vinculos/<int:vinculo_id>/notificar/', views.notificar_assinatura, name='notificar_assinatura'),
 ]
 
 

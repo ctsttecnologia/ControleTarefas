@@ -4,47 +4,53 @@
 {% block title %}Modelos de Aparelhos{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">Modelos de Aparelhos</h4>
-        <a class="nav-link" href="{% url 'controle_de_telefone:dashboard' %}">
-            <i class="fas fa-tachometer-alt fa-fw me-2"></i>Dashboard
-        </a>
-        <a href="{% url 'controle_de_telefone:modelo_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i> Novo Modelo
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Marca</th>
-                        <th>Nome do Modelo</th>
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for modelo in modelos %}
-                    <tr>
-                        <td>{{ modelo.marca.nome }}</td>
-                        <td>{{ modelo.nome }}</td>
-                        <td class="text-end">
-                             <a href="{% url 'controle_de_telefone:modelo_update' modelo.pk %}" class="btn btn-sm btn-outline-warning" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="{% url 'controle_de_telefone:modelo_delete' modelo.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
-                                <i class="fas fa-trash-alt"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center">Nenhum modelo cadastrado.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="container mt-6">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h4 class="mb-0">Modelos de Aparelhos</h4>
+            <div>
+                <a href="{% url 'controle_de_telefone:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar para o painel
+                </a>
+            </div>
+            <div>
+                <a href="{% url 'controle_de_telefone:modelo_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Novo Modelo
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Marca</th>
+                            <th>Nome do Modelo</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for modelo in modelos %}
+                        <tr>
+                            <td>{{ modelo.marca.nome }}</td>
+                            <td>{{ modelo.nome }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'controle_de_telefone:modelo_update' modelo.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i> Editar
+                                </a>
+                                <a href="{% url 'controle_de_telefone:modelo_delete' modelo.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                    <i class="fas fa-trash-alt"></i> Excluir
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center">Nenhum modelo cadastrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
