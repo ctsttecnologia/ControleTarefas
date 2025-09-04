@@ -197,16 +197,12 @@ body {
 
 /* =================================================================
    CÓDIGO PARA CABEÇALHOS E RODAPÉ FIXOS
-   Adicione ao final do seu arquivo css/global.css
    ================================================================= */
-
 body {
     /* Espaço no topo para o header principal (fixed-top) */
-    /* MEÇA A ALTURA DO SEU HEADER E AJUSTE ESTE VALOR */
     padding-top: 59px;
 
     /* Espaço embaixo para o rodapé */
-    /* MEÇA A ALTURA DO SEU RODAPÉ E AJUSTE ESTE VALOR */
     padding-bottom: 5px; 
 }
 
