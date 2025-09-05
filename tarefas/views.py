@@ -30,7 +30,7 @@ from .utils import enviar_email_tarefa
 from .models import Tarefas, Comentario, HistoricoStatus
 from .forms import TarefaForm, ComentarioForm
 from .services import preparar_contexto_relatorio, gerar_pdf_relatorio, gerar_csv_relatorio, gerar_docx_relatorio
-from core.mixins import FilialScopedQuerysetMixin, TarefaPermissionMixin
+from core.mixins import ViewFilialScopedMixin, TarefaPermissionMixin
 
 
 User = get_user_model()
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # == VIEWS DE GERENCIAMENTO (CRUD)
 # =============================================================================
 
-class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, ListView):
+class TarefaListView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/listar_tarefas.html'
     context_object_name = 'tarefas'
@@ -49,7 +49,7 @@ class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermis
 
     def get_queryset(self):
         # Obtém o queryset inicial do mixin
-        queryset = super().get_queryset(request=self.request) 
+        queryset = super().get_queryset() 
 
         # 1. Otimiza a busca, trazendo dados das tabelas relacionadas (use os nomes válidos)
         optimized_queryset = queryset.select_related('usuario', 'responsavel', 'filial')
@@ -65,14 +65,14 @@ class TarefaListView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermis
         context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
         return context
 
-class TarefaDetailView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, FormMixin, DetailView):
+class TarefaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, FormMixin, DetailView):
     model = Tarefas
     template_name = 'tarefas/tarefa_detail.html'
     form_class = ComentarioForm
 
     def get_queryset(self):
         # Obtém o queryset inicial do mixin, passando o objeto request
-        queryset = super().get_queryset(request=self.request) 
+        queryset = super().get_queryset() 
         
         # Agora aplica as otimizações adicionais
         return queryset.select_related('usuario', 'responsavel', 'filial')
@@ -150,7 +150,7 @@ class TarefaCreateView(LoginRequiredMixin, CreateView):
         # 6. Retorna a resposta de redirecionamento criada pelo 'super()'.
         return response
 
-class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, UpdateView):
+class TarefaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, UpdateView):
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/editar_tarefa.html'
@@ -161,7 +161,7 @@ class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -219,7 +219,7 @@ class TarefaUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPerm
         messages.success(self.request, f"Tarefa '{tarefa_atualizada.titulo}' atualizada com sucesso!")
         return response
 
-class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPassesTestMixin, DeleteView):
+class TarefaDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, UserPassesTestMixin, DeleteView):
     model = Tarefas
     template_name = 'tarefas/confirmar_exclusao.html'
     success_url = reverse_lazy('tarefas:listar_tarefas')
@@ -228,7 +228,7 @@ class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPasses
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def test_func(self):
         return self.request.user == self.get_object().usuario
@@ -242,7 +242,7 @@ class TarefaDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, UserPasses
 # == VIEWS DE VISUALIZAÇÃO (KANBAN, CALENDÁRIO)
 # =============================================================================
 
-class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, ListView):
+class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/kanban_board.html'
     context_object_name = 'tarefas' # Definir isso é uma boa prática em ListView
@@ -250,7 +250,7 @@ class KanbanView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermission
     def get_queryset(self):
         """Filtra apenas as tarefas ativas para o quadro Kanban."""
         # 1. Primeiro, obtenha o queryset já filtrado pela filial, passando o request.
-        queryset = super().get_queryset(request=self.request)
+        queryset = super().get_queryset()
         # 2. Em seguida, aplique o seu filtro de status específico para o Kanban.
         active_statuses = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
         return queryset.filter(status__in=active_statuses)
@@ -316,7 +316,7 @@ def enviar_email_notificacao(tarefa, usuario, status_anterior, novo_status, requ
     email.attach_alternative(corpo_html, "text/html")
     email.send()
 
-class CalendarioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, TarefaPermissionMixin, ListView):
+class CalendarioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/calendario.html'
 
@@ -324,7 +324,7 @@ class CalendarioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, Taref
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """   
-        return super().get_queryset(request=self.request).filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
+        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -367,13 +367,13 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
             logger.error(f"Erro ao atualizar status da tarefa {task_id}: {e}")
             return JsonResponse({'success': False, 'message': 'Ocorreu um erro interno.'}, status=500)
 
-class RelatorioTarefasView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/relatorio_tarefas.html'
     
     def get_queryset(self):
         # 1. Chame o super() CORRETAMENTE, passando o request para o mixin de filial.
-        qs = super().get_queryset(request=self.request)
+        qs = super().get_queryset()
 
         # 2. Obtenha o valor do filtro de status.
         status_filter = self.request.GET.get('status') or self.request.POST.get('status')

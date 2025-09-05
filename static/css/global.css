@@ -1,44 +1,27 @@
 /* =================================================================
-   ARQUIVO DE ESTILO GLOBAL (VERSÃO REFINADA)
+   ARQUIVO DE ESTILO GLOBAL (VERSÃO CORRIGIDA E REFINADA)
    ================================================================= */
 
 /* 1. CONFIGURAÇÃO E TEMA
 /* ================================================================= */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-/* Define as variáveis de cor para os temas */
 :root, [data-bs-theme="light"] {
-    /* ALTERADO: Cor primária azul piscina */
     --bs-primary: #00b8d4;
     --bs-primary-rgb: 0, 184, 212;
-
-    /* ALTERADO: Fundo do corpo com tom azulado */
     --bs-body-bg: #cfe5fc; 
-    
-    /* Cor do texto principal (preto/cinza escuro) */
     --bs-body-color: #212529;
-
-    /* Cor de fundo para componentes como cards e modais (branco) */
     --bs-tertiary-bg: #ffffff; 
-    
     --bs-border-color: #c7c7c7;
     --bs-font-sans-serif: 'Poppins', sans-serif;
 }
 
 [data-bs-theme="dark"] {
-    /* ALTERADO: Cor primária azul piscina */
     --bs-primary: #00b8d4;
     --bs-primary-rgb: 0, 184, 212;
-
-    /* ALTERADO: Fundo do corpo escuro com tom azulado */
     --bs-body-bg: #1a202c; 
-    
-    /* Cor do texto principal (branco/cinza claro) */
     --bs-body-color: #e9ecef;
-
-    /* Cor de fundo para componentes como cards (cinza escuro) */
     --bs-tertiary-bg: #283040;
-    
     --bs-border-color: #404a5a;
 }
 
@@ -50,8 +33,24 @@ body {
     color: var(--bs-body-color);
     font-family: var(--bs-font-sans-serif);
     transition: background-color 0.3s ease, color 0.3s ease;
+    
+    /* Adicionado para o Sticky Footer */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
+/* Modificado para o Sticky Footer */
+#main-content {
+    flex-grow: 1; /* Faz o conteúdo principal crescer e empurrar o footer para baixo */
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #c8ebfb;
+}
 
 /* 3. COMPONENTES GLOBAIS
 /* ================================================================= */
@@ -62,18 +61,30 @@ body {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Garante que a navbar dentro do header seja transparente */
 #global-header .navbar {
     background-color: transparent !important; 
     box-shadow: none;
 }
 
-/* Estilo do Footer Global */
+/* Estilo do Footer Global (MODIFICADO) */
 #global-footer {
-    background-color: var(--bs-tertiary-bg);
-    border-top: 1px solid var(--bs-border-color);
+    background-color: var(--bs-primary);      /* Mesma cor de fundo do header */
+    color: rgba(255, 255, 255, 0.9);          /* Cor de texto clara para contraste */
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);  /* Sombra para cima, similar à do header */
     font-size: 0.85rem;
     padding: 1rem 0;
+    margin-top: auto;                         /* Empurra para o fim do flex container */
+}
+
+/* Adicionado: Garante que os links no footer também sejam claros */
+#global-footer a {
+    color: #ffffff;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+#global-footer a:hover {
+    text-decoration: underline;
 }
 
 /* Estilo genérico para cards, usado em todo o sistema */
@@ -82,7 +93,7 @@ body {
     border-color: var(--bs-border-color);
 }
 
-/* Estilo para a sub-navegação (abas como "Usuários", "Grupos") */
+/* Estilo para a sub-navegação */
 .subnav {
     background-color: var(--bs-tertiary-bg);
     border-bottom: 1px solid var(--bs-border-color);
@@ -90,8 +101,69 @@ body {
     padding: 0.5rem 0;
 }
 
+/* Ativa o menu dropdown do Bootstrap ao passar o mouse */
+.dropdown:hover .dropdown-menu {
+    display: block;
+    margin-top: 0;
+}
 
-/* 4. PADRÕES DE PÁGINA (EX: LOGIN)
+
+/* 4. COMPONENTES DE PÁGINA (ESTILOS ESPECÍFICOS)
+/* ================================================================= */
+.content-box {
+    padding: 30px;
+    background-color: var(--bs-tertiary-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.confirmation-box {
+    padding: 30px;
+    background-color: var(--bs-tertiary-bg);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    max-width: 600px;
+    margin: auto;
+}
+
+.confirmation-box h2 {
+    color: #c0392b;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    border-bottom: 2px solid var(--bs-border-color);
+    padding-bottom: 15px;
+}
+
+.confirmation-box p {
+    font-size: 1.1rem;
+    color: var(--bs-body-color);
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+.confirmation-box p strong {
+    color: var(--bs-body-color);
+    font-weight: 600;
+}
+
+.confirmation-box .painel {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.confirmation-box form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+
+/* 5. PADRÕES DE PÁGINA (EX: LOGIN)
 /* ================================================================= */
 .body-login #global-header,
 .body-login #global-footer {
@@ -106,7 +178,7 @@ body {
 }
 
 
-/* 5. ESTILOS DE IMPRESSÃO (PADRÃO SEGURO)
+/* 6. ESTILOS DE IMPRESSÃO
 /* ================================================================= */
 @media print {
     #global-header,
@@ -123,9 +195,25 @@ body {
     }
 }
 
-/* Ativa o menu dropdown do Bootstrap ao passar o mouse */
-.dropdown:hover .dropdown-menu {
-    display: block;
-    margin-top: 0; /* Corrige um pequeno espaçamento que pode aparecer */
+/* =================================================================
+   CÓDIGO PARA CABEÇALHOS E RODAPÉ FIXOS
+   ================================================================= */
+body {
+    /* Espaço no topo para o header principal (fixed-top) */
+    padding-top: 59px;
+
+    /* Espaço embaixo para o rodapé */
+    padding-bottom: 5px; 
+}
+
+/* Aumenta o espaço no topo APENAS nas páginas que têm o submenu */
+body.has-submenu {
+    /* VALOR = (altura do header + altura do submenu) */
+    padding-top: 20px !important;
+}
+
+/* Garante que o footer não seja 'sticky' e se comporte normalmente */
+#global-footer {
+    margin-top: 0;
 }
 

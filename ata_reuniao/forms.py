@@ -1,14 +1,12 @@
-
 # ata_reuniao/forms.py
 
 from django import forms
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
-# Cada modelo é importado de seu aplicativo de origem
-from .models import AtaReuniao
+from .models import Filial, AtaReuniao, HistoricoAta
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
+
 
 
 class AtaReuniaoForm(forms.ModelForm):
@@ -23,13 +21,15 @@ class AtaReuniaoForm(forms.ModelForm):
 
     class Meta:
         model = AtaReuniao
+        # 1. Campo 'titulo' adicionado à lista de campos.
         fields = [
-            'contrato', 'coordenador', 'responsavel', 'natureza', 
+            'titulo', 'contrato', 'coordenador', 'responsavel', 'natureza', 
             'acao', 'entrada', 'prazo', 'status'
         ]
         
         # Centraliza a definição de rótulos (labels) para facilitar a manutenção
         labels = {
+            'titulo': _('Título da Ata'),
             'acao': _('Ação ou Proposta Detalhada'),
             'prazo': _('Prazo Final (Opcional)'),
         }
@@ -40,6 +40,10 @@ class AtaReuniaoForm(forms.ModelForm):
         }
 
         widgets = {
+            # 2. Widget adicionado para o campo 'titulo' com um placeholder.
+            'titulo': forms.TextInput(
+                attrs={'placeholder': 'Ex: Reunião de alinhamento do Projeto X'}
+            ),
             'acao': forms.Textarea(attrs={'rows': 3}),
             'entrada': forms.DateInput(
                 format='%Y-%m-%d',
@@ -76,6 +80,7 @@ class AtaReuniaoForm(forms.ModelForm):
                     'data-placeholder': _(f'Selecione {field.label.lower()}')
                 })
             elif not isinstance(field.widget, forms.CheckboxInput):
+                # O método agora aplicará 'form-control' ao novo campo 'titulo' automaticamente
                 field.widget.attrs.update({'class': 'form-control'})
     
     def clean_prazo(self):
@@ -98,10 +103,36 @@ class AtaReuniaoForm(forms.ModelForm):
         responsavel = cleaned_data.get('responsavel')
 
         # Validação para garantir que coordenador e responsável não sejam a mesma pessoa
-        if coordenador and responsavel and coordenador == responsavel:
-            self.add_error('responsavel', _('O responsável não pode ser a mesma pessoa que o coordenador.'))
+        #if coordenador and responsavel and coordenador == responsavel:
+        #    self.add_error('responsavel', _('O responsável não pode ser a mesma pessoa que o coordenador.'))
         
         # Um método 'clean' DEVE sempre retornar o dicionário cleaned_data.
         return cleaned_data
     
+class TransferenciaFilialForm(forms.Form):
+    """
+    Formulário para a ação de transferência de filial no admin.
+    """
+    filial_destino = forms.ModelChoiceField(
+        queryset=Filial.objects.all().order_by('nome'),
+        label="Transferir para a Filial",
+        required=True
+    )
+
+class HistoricoAtaForm(forms.ModelForm):
+    class Meta:
+        model = HistoricoAta
+        fields = ['comentario']
+        widgets = {
+            'comentario': forms.Textarea(
+                attrs={
+                    'rows': 3,
+                    'placeholder': 'Digite seu comentário ou atualização aqui...'
+                }
+            )
+        }
+        labels = {
+            'comentario': ''  # Oculta o label, pois o contexto já é claro
+        }
+
 

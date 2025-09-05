@@ -8,6 +8,9 @@
     <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <h1 class="h2 mb-0">{{ titulo_pagina }}</h1>
         <div class="btn-group">
+            <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-danger btn-glow" title="Dashboard">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+            </a>
             <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-danger btn-glow" title="Registrar Incidente">
                 <i class="bi bi-exclamation-octagon-fill me-1"></i> Registrar Incidente
             </a>

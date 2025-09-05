@@ -31,6 +31,7 @@
 
 
 {% block content %}
+<br>
 <div class="row justify-content-center">
     <div class="col-lg-10 col-xl-9">
         <form method="post" novalidate>
@@ -40,9 +41,9 @@
                 <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
                     <h2 class="h4 mb-0 fw-light">
                         <i class="bi bi-file-earmark-text text-primary me-2"></i>
-                        {% if object %}Editar Ata #{{ object.id }}{% else %}Nova Ata de Reunião{% endif %}
+                        {% if object %}Editar Ata - Item: {{ object.id }}{% else %}Nova Ata de Reunião{% endif %}
                     </h2>
-                    <a href="{% url 'ata_reuniao_list' %}" class="btn-close" title="Fechar" aria-label="Close"></a>
+                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn-close" title="Fechar" aria-label="Close"></a>
                 </div>
 
                 <div class="card-body p-4 p-md-5">
@@ -52,9 +53,11 @@
                             {% if field.name != 'comentario' %}
                             <div class="col-12 {% if field.name in 'contrato,coordenador,responsavel,natureza,status' %}col-md-6{% elif field.name in 'entrada,prazo' %}col-md-6{% endif %}">
                                 <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                {% render_field field class+=" is-invalid"|if:field.errors %}
+                                
+                                {% render_field field %}
+
                                 {% if field.help_text %}<div class="form-text small text-muted">{{ field.help_text }}</div>{% endif %}
-                                {% for error in field.errors %}<div class="invalid-feedback">{{ error }}</div>{% endfor %}
+                                {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                             {% endif %}
                         {% endfor %}
@@ -92,7 +95,7 @@
                 {% endif %}
 
                 <div class="border-top p-3 d-flex justify-content-end gap-2">
-                    <a href="{% url 'ata_reuniao_list' %}" class="btn btn-secondary">Cancelar</a>
+                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-check-circle me-1"></i> 
                         {% if object %}Atualizar{% else %}Criar Ata{% endif %}

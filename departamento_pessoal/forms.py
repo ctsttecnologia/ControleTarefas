@@ -14,12 +14,16 @@ User = get_user_model()
 class DepartamentoForm(forms.ModelForm):
     class Meta:
         model = Departamento
+        # REMOVA 'filial' desta lista. O usuário não precisa mais interagir com este campo.
         fields = ['nome', 'centro_custo', 'ativo']
-        widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'centro_custo': forms.TextInput(attrs={'class': 'form-control'}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+
+    def __init__(self, *args, **kwargs):
+        # A lógica complexa de __init__ para filtrar o queryset não é mais necessária.
+        super().__init__(*args, **kwargs)
+        
+        # Podemos manter a estilização dos widgets
+        self.fields['nome'].widget.attrs.update({'placeholder': 'Ex: Contabilidade'})
+        self.fields['centro_custo'].widget.attrs.update({'placeholder': 'Ex: 101.02'})
 
 class CargoForm(forms.ModelForm):
     class Meta:
@@ -42,6 +46,7 @@ class FuncionarioForm(forms.ModelForm):
         fields = [
             'usuario', 'nome_completo', 'email_pessoal', 'telefone', 'data_nascimento', 'sexo',
             'matricula', 'departamento', 'cargo', 'data_admissao', 'salario', 'status', 'data_demissao', 'cliente',
+            'foto_3x4', 
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {

@@ -1,24 +1,25 @@
 {% extends "seguranca_trabalho/_base_sst.html" %}
+
+{% load static %}
+{% load i18n %}
+{% load humanize %}
 {% block title %}Fichas de EPI{% endblock %}
-
-{% block sst_content %}
-    {% load static %}
-    {% load i18n %}
-    {% load humanize %}
-
 {% block extra_head %}
   
-    <div class="page-header mb-4">
+
+{% endblock %}
+{% block sst_content %} 
+    <div class="d-flex page-header mb-4 align-items-center justify-content-between">
         <div>
             <h1 class="h2">Fichas de EPI de Colaboradores</h1>
             <p class="text-muted">Lista de todas as fichas de Equipamentos de Proteção Individual.</p>
         </div>
-        <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i> Nova Ficha
-        </a>
-        
-    </div>
-{% endblock %}
+        <div>
+            <a href="{% url 'seguranca_trabalho:ficha_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Nova Ficha
+            </a>
+        </div>
+    </div>    
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">

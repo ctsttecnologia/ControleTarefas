@@ -22,9 +22,15 @@ urlpatterns = [
     path('agendamentos/<int:agendamento_pk>/checklist/novo/', views.ChecklistCreateView.as_view(), name='checklist_create'),
     # NOVA ROTA para ver os detalhes de um checklist preenchido
     path('checklists/<int:pk>/', views.ChecklistDetailView.as_view(), name='checklist_detail'),
-    path('checklists/<int:pk>/export/word/', views.ChecklistExportWordView.as_view(), name='checklist_export_word'),
+    path('checklists/<int:pk>/exportar/', views.ChecklistExportWordView.as_view(), name='checklist_export_word'),
+
+    # URL para EDITAR um checklist existente
+    path('agendamentos/checklist/<int:pk>/editar/', views.ChecklistUpdateView.as_view(), name='checklist_update'),
+    # URL para CRIAR um novo checklist para um agendamento
+    path('agendamentos/<int:agendamento_pk>/checklist/novo/', views.ChecklistCreateView.as_view(), name='checklist_create'),
+
     # Relatórios
-    path('relatorios/carros/<str:format>/', views.CarroReportView.as_view(), name='relatorio_carros'),
+    path('carros/relatorio/', views.CarroReportView.as_view(), name='carro_report'),
 
     # Calendário
     path('calendario/', views.CalendarioView.as_view(), name='calendario'),

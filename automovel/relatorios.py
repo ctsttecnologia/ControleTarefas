@@ -20,7 +20,7 @@ def gerar_relatorio_excel(request, tipo):
     ws.title = tipo.capitalize()
     
     if tipo == 'carros':
-        dados = Carro.objects.all()
+        dados = Carro.objects.for_request(request).filter(ativo=True)
         ws.append(['Placa', 'Marca', 'Modelo', 'Ano', 'Cor', 'Status', 'Última Manutenção'])
         for carro in dados:
             ws.append([
@@ -33,7 +33,7 @@ def gerar_relatorio_excel(request, tipo):
                 carro.data_ultima_manutencao.strftime('%d/%m/%Y') if carro.data_ultima_manutencao else 'N/A'
             ])
     else:
-        dados = Agendamento.objects.select_related('carro').all()
+        dados = Agendamento.objects.for_request(request).select_related('carro')
         ws.append(['Veículo', 'Placa', 'Data', 'Serviço', 'Responsável', 'Status', 'KM Inicial'])
         for ag in dados:
             ws.append([

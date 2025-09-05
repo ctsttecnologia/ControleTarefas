@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin # 1. Importar o Mixin de permissão
 from usuario.models import Filial
 
+
 # 2. Usar o Mixin para verificar a permissão ANTES de executar a view.
 #    O Django automaticamente redirecionará usuários não autorizados.
 class SelecionarFilialView(UserPassesTestMixin, View):
@@ -49,3 +50,5 @@ def error_404_view(request, exception):
     View para renderizar a página 404 personalizada.
     """
     return render(request, '404.html', status=404)
+
+

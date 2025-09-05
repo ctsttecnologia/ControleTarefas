@@ -10,15 +10,14 @@
 
 {# O local CORRETO para adicionar links de CSS específicos da página #}
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssusuario/styles.css' %}">
+    
 {% endblock %}
 
 
 {% block content %}
-{# 1. SUBSTITUIÇÃO do .login-container por classes utilitárias do Bootstrap 5 #}
-<div class="d-flex align-items-center justify-content-center min-vh-100 p-3">
 
-    {# 2. MELHORIA do .login-card, combinando com a classe .card do Bootstrap #}
+<div class="d-flex align-items-center justify-content-center min-vh-50 p-3">
+
     <div class="card login-card shadow-lg">
         <div class="card-body">
 
@@ -52,7 +51,7 @@
 
             <div class="login-links text-center mt-4">
                 <p class="mb-1"><a href="{% url 'usuario:password_reset' %}">Esqueceu sua senha?</a></p>
-                <p class="mb-0">Não tem uma conta? <a href="{% url 'usuario:form_usuario' %}">Registre-se</a></p>
+                <p class="mb-0">Não tem uma conta? <a href="{% url 'usuario:usuario_criar' %}">Registre-se</a></p>
             </div>
             
         </div>

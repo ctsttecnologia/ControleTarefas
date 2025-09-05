@@ -1,56 +1,54 @@
+
 // static/js/global.js
 
 document.addEventListener('DOMContentLoaded', () => {
+    const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
+    if (!themeSwitcherBtn) {
+        // Se o botão não existir na página, não faz nada.
+        return;
+    }
 
-    // =================================================================
-    // LÓGICA DO TEMA CLARO/ESCURO
-    // =================================================================
-    
-    const themeToggleButton = document.getElementById('theme-toggle');
     const htmlElement = document.documentElement;
+    const lightIcon = themeSwitcherBtn.querySelector('.theme-icon-light');
+    const darkIcon = themeSwitcherBtn.querySelector('.theme-icon-dark');
     
-    // RECOMENDAÇÃO: Mover a definição dos ícones para constantes no topo
-    const sunIcon = `<i class="bi bi-sun-fill"></i>`;
-    const moonIcon = `<i class="bi bi-moon-stars-fill"></i>`;
+    // Função para definir o tema, salvar a preferência e ATUALIZAR O ÍCONE
+    const setTheme = (theme) => {
+        // Altera o atributo no <html> que o Bootstrap usa para os estilos
+        htmlElement.setAttribute('data-bs-theme', theme);
+        
+        // Salva a escolha do usuário no localStorage
+        localStorage.setItem('theme', theme);
 
-    // Função única para atualizar o ícone do botão com base no tema atual
-    const updateThemeIcon = () => {
-        const currentTheme = htmlElement.getAttribute('data-bs-theme');
-        if (themeToggleButton) {
-            themeToggleButton.innerHTML = currentTheme === 'dark' ? sunIcon : moonIcon;
+        // Atualiza qual ícone está visível
+        if (theme === 'dark') {
+            lightIcon.classList.add('d-none');
+            darkIcon.classList.remove('d-none');
+        } else {
+            darkIcon.classList.add('d-none');
+            lightIcon.classList.remove('d-none');
         }
     };
 
-    if (themeToggleButton) {
-        themeToggleButton.addEventListener('click', () => {
-            // Alterna o tema
-            const newTheme = htmlElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-            htmlElement.setAttribute('data-bs-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            
-            // Atualiza o ícone
-            updateThemeIcon();
-
-            // Recria os gráficos se as funções existirem (ótima prática!)
-            if (typeof window.recreateAnalyticCharts === 'function') {
-                window.recreateAnalyticCharts();
-            }
-            if (typeof window.recreateTaskCharts === 'function') {
-                window.recreateTaskCharts();
-            }
-        });
-    }
+    // Adiciona o evento de clique ao botão
+    themeSwitcherBtn.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-bs-theme');
+        // Se o tema atual for escuro, muda para claro, e vice-versa.
+        setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    });
 
     // --- INICIALIZAÇÃO DA PÁGINA ---
-    // Apenas atualiza o ícone na carga inicial. O tema já foi setado pelo script no <head>.
-    updateThemeIcon();
-
+    // Pega o tema salvo no navegador do usuário. Se não houver, usa 'dark' como padrão.
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    
+    // Chama a função setTheme() com o tema salvo para aplicar o tema e o ícone corretos.
+    setTheme(savedTheme);
 
     // =================================================================
     // OUTROS SCRIPTS GLOBAIS
     // =================================================================
 
-    // Lógica para fechar alertas automaticamente (código já está ótimo)
+    // Lógica para fechar alertas automaticamente
     setTimeout(() => {
         const alerts = document.querySelectorAll('.alert.alert-dismissible');
         alerts.forEach(alert => {
@@ -58,15 +56,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 new bootstrap.Alert(alert).close();
             }
         });
-    }, 5000); // Fecha após 5 segundos
+    }, 5000);
 
     // Lógica para inicializar tooltips do Bootstrap
     if (typeof bootstrap !== 'undefined') {
-        // RECOMENDAÇÃO: Sintaxe mais moderna e semanticamente correta com forEach
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         tooltipTriggerList.forEach(tooltipTriggerEl => {
             new bootstrap.Tooltip(tooltipTriggerEl);
         });
     }
-
 });

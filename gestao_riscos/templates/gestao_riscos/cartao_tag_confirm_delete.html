@@ -1,0 +1,22 @@
+
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Confirmar Deleção{% endblock %}
+
+{% block content %}
+<h1 class="h2 mb-4">Deletar Cartão de Bloqueio</h1>
+<div class="card shadow-sm">
+    <div class="card-body">
+        <p>Você tem certeza que deseja deletar o cartão de <strong>{{ object.funcionario.nome_completo }}</strong>?</p>
+        <p class="text-danger">Esta ação não pode ser desfeita.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-end">
+                <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-secondary me-2">Cancelar</a>
+                <button type="submit" class="btn btn-danger">Sim, Deletar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

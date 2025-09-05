@@ -1,0 +1,90 @@
+
+{% extends "controle_de_telefone/_base_telefone.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {{ title|default:"Formulário" }}
+{% endblock title %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ title|default:"Formulário" }}</h4>
+                    <a href="{{ request.META.HTTP_REFERER|default:'..' }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle"></i> 
+                        O Termo de Responsabilidade em PDF será gerado e anexado automaticamente após salvar.
+                        Utilize os campos abaixo se precisar incluir uma assinatura digitalizada ou o documento assinado.
+                    </div>
+                    <form method="post" enctype="multipart/form-data" id="vinculoForm">
+                        {% csrf_token %}
+
+                        {{ form|crispy }}
+                        <div class="form-group">
+                            <label for="signature-canvas">Assinatura digital</label>
+                            <div style="border: 1px solid #ced4da; border-radius: .25rem; width: 100%; height: 200px;">
+                                <canvas id="signature-canvas" style="width: 100%; height: 100%;"></canvas>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar</button>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar e Gerar Termo
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var canvas = document.getElementById('signature-canvas');
+    var signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)'
+    });
+
+    // Ajusta o tamanho do canvas para renderização correta
+    function resizeCanvas() {
+        var ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        signaturePad.clear(); // Limpa ao redimensionar
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    // Limpa a assinatura
+    document.getElementById('clear-signature').addEventListener('click', function () {
+        signaturePad.clear();
+    });
+
+    // Antes de enviar o formulário, salva a assinatura no campo oculto
+    document.getElementById('vinculoForm').addEventListener('submit', function(event) {
+        if (!signaturePad.isEmpty()) {
+            // Pega a assinatura como uma imagem PNG em base64
+            var signatureData = signaturePad.toDataURL('image/png');
+            // Coloca os dados no campo oculto 'assinatura_digital'
+            document.getElementById('id_assinatura_digital').value = signatureData;
+        }
+    });
+});
+</script>
+{% endblock extra_js %}
+

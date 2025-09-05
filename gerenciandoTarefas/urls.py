@@ -22,12 +22,13 @@ urlpatterns = [
     path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
     path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),
     path('cliente/', include('cliente.urls')),
-    path('logradouro/', include('logradouro.urls')), # <-- Esta linha está correta
+    path('logradouro/', include('logradouro.urls')), 
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
     path('ferramentas/', include('ferramentas.urls')),
     path('core/', include('core.urls')),
+    path('controle_de_telefone/', include('controle_de_telefone.urls')), 
 ]
 
 # Configuração para servir arquivos de mídia e estáticos

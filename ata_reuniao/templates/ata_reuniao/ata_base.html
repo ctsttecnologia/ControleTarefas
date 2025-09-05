@@ -1,49 +1,50 @@
-
+{% extends "base.html" %}
 {% load static widget_tweaks %}
 
+{# 1. Define o título específico desta seção da página #}
+{% block title %}Gestão de Atas - {{ block.super }}{% endblock %}
+
+{# 2. Adiciona o CSS específico para esta seção #}
 {% block extra_css %}
     <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
 {% endblock extra_css %}
 
+{# 3. Preenche o bloco de conteúdo principal herdado do base.html #}
 {% block content %}
-<!doctype html>
-<html lang="pt-BR">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Gestão de Atas{% endblock %}</title>
+<div class="container-fluid">
+
+    {# Inclui o template de mensagens de alerta #}
+    {% include "partials/_messages.html" %}
     
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    {# Cria um submenu consistente com o resto do site #}
+    <div class="subnav-atas mb-4 p-3 bg-body-tertiary rounded-3 border sticky-top" style="top: 60px; z-index: 1020;">
+        <ul class="nav nav">
+            <li class="nav-item">
+                <a href="#" class="nav-link"> {# <-- ATUALIZE ESTE LINK #}
+                    <i class="bi bi-speedometer2 me-1"></i> Painel de Atas
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link active"> {# <-- ATUALIZE ESTE LINK #}
+                    <i class="bi bi-list-ul me-1"></i> Lista de Atas
+                </a>  
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link"> {# <-- ATUALIZE ESTE LINK #}
+                    <i class="bi bi-plus-circle me-1"></i> Nova Ata
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    {# 4. Bloco para o conteúdo específico das páginas de "Atas" (ex: a tabela de atas) #}
+    {% block atas_content %}
     
-    <style>
-        body { background-color: #f8f9fa; }
-        .card { border: none; }
-        .btn-group-sm > .btn i { font-size: 0.8rem; }
-    </style>
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container">
-            <a class="navbar-brand" href="#">Meu Sistema</a>
-        </div>
-    </nav>
+        {% endblock atas_content %}
 
-    <main class="container my-4">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
+</div>
+{% endblock content %}
 
-        {% block content %}{% endblock %}
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
-</body>
-</html>3
+{# 5. Bloco para adicionar JavaScript específico se necessário #}
+{% block extra_js %}
+    {% endblock extra_js %}

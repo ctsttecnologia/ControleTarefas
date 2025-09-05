@@ -30,43 +30,56 @@ class AtaReuniao(models.Model):
         'cliente.Cliente', 
         on_delete=models.PROTECT,
         related_name='atas',
-        verbose_name=_("Contrato")
+        verbose_name=_("Contrato"),
+        null=True,
     )
     coordenador = models.ForeignKey(
         'departamento_pessoal.Funcionario',
         on_delete=models.PROTECT,
         related_name='atas_coordenadas',
-        verbose_name=_("Coordenador")
+        verbose_name=_("Coordenador"),
+        null=True,
     )
     responsavel = models.ForeignKey(
         'departamento_pessoal.Funcionario',
         on_delete=models.PROTECT,
         related_name='atas_responsaveis',
-        verbose_name=_("Responsável")
+        verbose_name=_("Responsável"),
+        null=True,
     )
     natureza = models.CharField(
         max_length=20,
         choices=Natureza.choices,
         default=Natureza.TECNICA,
-        verbose_name=_("Natureza")
+        verbose_name=_("Natureza"),
+        null=True,
+    )
+    titulo = models.CharField(
+        max_length=50,
+        verbose_name=_("Titulo"),
+        help_text=_("Descreva o nome da proposta."),
+        null=True,
     )
     acao = models.TextField(
         verbose_name=_("Ação/Proposta"),
-        help_text=_("Descreva a ação a ser tomada ou a proposta discutida.")
+        help_text=_("Descreva a ação a ser tomada ou a proposta discutida."),
+        null=True,
     )
     entrada = models.DateField(
-        verbose_name=_("Data de Entrada")
+        verbose_name=_("Data de Entrada"),
+        null=True,
     )
     prazo = models.DateField(
         verbose_name=_("Prazo Final"),
         blank=True,
-        null=True
+        null=True,
     )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.PENDENTE,
-        verbose_name=_("Status")
+        verbose_name=_("Status"),
+        null=True,
     )
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
     atualizado_em = models.DateTimeField(auto_now=True, verbose_name=_("Atualizado em"))

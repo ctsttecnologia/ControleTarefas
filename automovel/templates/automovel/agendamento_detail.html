@@ -79,72 +79,50 @@
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-check2-square me-2"></i>Checklists</h5>
                 </div>
-                <div class="list-group list-group-flush">
+                <ul class="list-group list-group-flush">
                     
-                    <div class="list-group-item">
-                        <h6>Checklist de Saída</h6>
-                        {% if checklist_saida %}
-                            <p class="small text-muted mb-2">Realizado em {{ checklist_saida.data_hora|date:"d/m/Y H:i" }}</p>
-                            {% if checklist_saida %}
-                                <div class="btn-group btn-group-sm w-100">
-                                    <a href="{% url 'automovel:checklist_detail' checklist_saida.pk %}" class="btn btn-outline-secondary">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </a>
-                                    <a href="{% url 'automovel:checklist_export_word' checklist_saida.pk %}" class="btn btn-outline-primary">
-                                        <i class="bi bi-file-earmark-word"></i> Word
-                                    </a>
-                                </div>
-                            {% endif %}
-
-
-                            {% if checklist_retorno %}
-                                <div class="btn-group btn-group-sm w-100">
-                                    <a href="{% url 'automovel:checklist_detail' checklist_retorno.pk %}" class="btn btn-outline-secondary">
-                                        <i class="bi bi-eye"></i> Ver
-                                    </a>
-                                    <a href="{% url 'automovel:checklist_export_word' checklist_retorno.pk %}" class="btn btn-outline-primary">
-                                        <i class="bi bi-file-earmark-word"></i> Word
-                                    </a>
-                                </div>
-                            {% endif %}
-                        {% elif agendamento.status == 'finalizado' %}
-                            <p class="small text-muted mb-0">Checklist já realizado.</p>
-                        {% else %}
-                            {% if agendamento.status == 'agendado' %}
-                                <a href="{% url 'automovel:checklist_create' agendamento_pk=agendamento.pk %}" class="btn btn-success w-100">
-                                    <i class="bi bi-box-arrow-right me-1"></i> Registrar Saída
-                                </a>
-                            {% else %}
-                                <p class="small text-danger mb-0">Pendente</p>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-
-                    <div class="list-group-item">
-                        <h6>Checklist de Retorno</h6>
-                        {% if checklist_retorno %}
-                            <p class="small text-muted mb-2">Realizado em {{ checklist_retorno.data_hora|date:"d/m/Y H:i" }}</p>
-                            <div class="btn-group btn-group-sm w-100">
-                                <a href="#" class="btn btn-outline-secondary" title="Ver agenda">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Checklist de Saída
+                        {% if agendamento.checklist_saida %}
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'automovel:checklist_detail' agendamento.checklist_saida.pk %}" class="btn btn-outline-success">
                                     <i class="bi bi-eye"></i> Ver
                                 </a>
-                                <a href="{% url 'automovel:checklist_export_word' checklist_retorno.pk %}" class="btn btn-outline-primary" title="exportar">
-                                    <i class="bi bi-file-earmark-word"></i> Word
+                                <a href="{% url 'automovel:checklist_update' agendamento.checklist_saida.pk %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Editar
                                 </a>
                             </div>
                         {% else %}
-                            {% if agendamento.status == 'em_andamento' %}
-                                <a href="{% url 'automovel:checklist_create' agendamento_pk=agendamento.pk %}" class="btn btn-info w-100">
-                                    <i class="bi bi-box-arrow-in-left me-1"></i> Registrar Retorno
+                            <a href="{% url 'automovel:checklist_create' agendamento.pk %}?tipo=saida" class="btn btn-sm btn-primary">
+                                <i class="bi bi-pencil-square me-1"></i> Registrar Saída
+                            </a>
+                        {% endif %}
+                    </li>
+
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Checklist de Retorno
+                        {% if agendamento.checklist_retorno %}
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'automovel:checklist_detail' agendamento.checklist_retorno.pk %}" class="btn btn-outline-success">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                                <a href="{% url 'automovel:checklist_update' agendamento.checklist_retorno.pk %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                            </div>
+                        {% else %}
+                            {% if agendamento.checklist_saida %}
+                                <a href="{% url 'automovel:checklist_create' agendamento.pk %}?tipo=retorno" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-pencil-square me-1"></i> Registrar Retorno
                                 </a>
                             {% else %}
-                                <p class="small text-muted mb-0">Aguardando saída</p>
+                                <span class="badge bg-secondary">Aguardando Saída</span>
                             {% endif %}
                         {% endif %}
-                    </div>
-                </div>
+                    </li>
+                </ul>
             </div>
-        </div>
+        </div> 
     </div>
 
     {% if checklist_saida or checklist_retorno %}

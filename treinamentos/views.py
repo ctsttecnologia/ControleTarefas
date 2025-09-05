@@ -1,6 +1,5 @@
 
 # Importe seus modelos e o módulo gerador
-from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -12,8 +11,6 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView, UpdateView, TemplateView)
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
-from django.db import models
 from django.db.models.functions import Coalesce, ExtractMonth
 from django.db.models.fields import FloatField
 from decimal import Decimal
@@ -22,66 +19,75 @@ import io
 import json
 import traceback
 from datetime import datetime
-from urllib import request
 from treinamentos import treinamento_generators
+from treinamentos.forms import ParticipanteFormSet, TipoCursoForm, TreinamentoForm
 from .models import Treinamento, TipoCurso, Participante
-from .forms import (BaseParticipanteFormSet, ParticipanteForm, TipoCursoForm, TreinamentoForm, ParticipanteFormSet)
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
+from django.db import transaction
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
 
 
+# ==========================================================================
+# MIXIN - Agora é a fonte única de lógica para formsets
+# ==========================================================================
 class TreinamentoFormsetMixin:
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.POST:
-            context['form_participantes'] = ParticipanteFormSet(
-                self.request.POST,
-                instance=self.object,
-                prefix='participantes'
-            )
+            context['form_participantes'] = ParticipanteFormSet(self.request.POST, instance=self.object)
         else:
-            context['form_participantes'] = ParticipanteFormSet(
-                instance=self.object,
-                prefix='participantes'
-            )
+            context['form_participantes'] = ParticipanteFormSet(instance=self.object)
         return context
 
-    def form_valid(self, form):
-        self.object = form.save(commit=False)
-        context = self.get_context_data()
-        form_participantes = ParticipanteFormSet(self.request.POST, instance=self.object, prefix='participantes')
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object() if isinstance(self, UpdateView) else None
+        form = self.get_form()
+        form_participantes = ParticipanteFormSet(self.request.POST, instance=self.object)
 
         if form.is_valid() and form_participantes.is_valid():
-            self.object.save()
-            form_participantes.instance = self.object
-            form_participantes.save()
-            return super().form_valid(form)
+            return self.form_valid(form, form_participantes)
         else:
             return self.form_invalid(form, form_participantes)
+
+    def form_valid(self, form, form_participantes):
+        with transaction.atomic():
+            form.instance.filial = self.request.user.filial_ativa
+            self.object = form.save()
+            form_participantes.instance = self.object
+            form_participantes.save()
+        
+        # A chamada a super().form_valid(form) da View original cuida da mensagem de sucesso e do redirect
+        return super().form_valid(form)
 
     def form_invalid(self, form, form_participantes):
         return self.render_to_response(self.get_context_data(form=form, form_participantes=form_participantes))
 
     
-class CriarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin,
-                            TreinamentoFormsetMixin, SuccessMessageMixin, CreateView):
+class CriarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, SuccessMessageMixin, CreateView):
     model = Treinamento
     form_class = TreinamentoForm
     template_name = 'treinamentos/criar_treinamento.html'
-    permission_required = 'treinamentos.add_treinamento'
-    success_message = "Treinamento criado com sucesso!"
+    success_url = reverse_lazy('treinamentos:lista_treinamentos')
+    success_message = "✅ Treinamento cadastrado com sucesso!"
 
-    def get_success_url(self):
-        return reverse_lazy('treinamentos:detalhe_treinamento', kwargs={'pk': self.object.pk})
+    def get_form_kwargs(self):
+        """ Passa o request para o formulário. """
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['titulo'] = 'Novo Treinamento'
+        context['titulo'] = 'Cadastrar Novo Treinamento'
         return context
 
 
 # --- Visualizações para Treinamento (CRUD) ---
 
-class TreinamentoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os treinamentos com filtros de busca."""
     model = Treinamento
     template_name = 'treinamentos/lista_treinamentos.html'
@@ -116,40 +122,25 @@ class TreinamentoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListVie
         context['total_treinamentos'] = Treinamento.objects.count()
         return context
 
-class EditarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+class EditarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, SuccessMessageMixin, UpdateView):
     model = Treinamento
     form_class = TreinamentoForm
-    template_name = 'treinamentos/editar_treinamento.html'
-    permission_required = 'treinamentos.change_treinamento'
-    success_message = "Treinamento atualizado com sucesso!"
+    template_name = 'treinamentos/criar_treinamento.html' # Reutilizando o mesmo template
+    success_message = "🔄 Treinamento atualizado com sucesso!"
 
     def get_success_url(self):
         return reverse_lazy('treinamentos:detalhe_treinamento', kwargs={'pk': self.object.pk})
 
+    def get_form_kwargs(self):
+        """ Passa o request para o formulário. """
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Editar Treinamento'
-        context['participantes_formset'] = ParticipanteFormSet(instance=self.object, prefix='participantes')
         return context
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.get_form()
-        participantes_formset = ParticipanteFormSet(request.POST, instance=self.object, prefix='participantes')
-
-        if form.is_valid() and participantes_formset.is_valid():
-            self.object = form.save()
-            participantes_formset.save()
-            return self.form_valid(form) # Aqui, você pode redirecionar ou fazer o que for necessário após o sucesso
-        else:
-            return self.form_invalid(form, participantes_formset)
-
-    def form_valid(self, form):
-        return super().form_valid(form)
-
-    def form_invalid(self, form, participantes_formset):
-        return self.render_to_response(self.get_context_data(form=form, participantes_formset=participantes_formset))
-
 
 class DetalheTreinamentoView(LoginRequiredMixin, DetailView):
     """Exibe os detalhes de um treinamento específico."""
@@ -173,7 +164,7 @@ class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, Succes
     success_message = "Treinamento excluído com sucesso!"
 
 
-class TipoCursoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
     model = TipoCurso
     template_name = 'treinamentos/lista_tipo_curso.html'
@@ -206,19 +197,29 @@ class TipoCursoListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView)
 
 
 class CriarTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
-    """View para criar um novo tipo de curso."""
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'treinamentos/criar_tipo_curso.html'
-    success_url = reverse_lazy('treinamentos:lista_tipo_curso')
+    success_url = reverse_lazy('treinamentos:lista_tipos_curso')
     permission_required = 'treinamentos.add_tipocurso'
-    success_message = "Tipo de curso cadastrado com sucesso!"
+    success_message = "✅ Tipo de curso cadastrado com sucesso!"
 
     def get_context_data(self, **kwargs):
-        """Adiciona o título da página ao contexto."""
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Cadastrar Tipo de Curso'
         return context
+
+    def form_valid(self, form):
+        """
+        Este método é chamado APENAS se o formulário for válido.
+        Aqui, nós associamos a filial do usuário antes de salvar.
+        """
+        # Define a filial na instância do modelo ANTES que o método save() seja chamado.
+        # Estamos assumindo que a filial ativa está em 'self.request.user.filial_ativa'
+        form.instance.filial = self.request.user.filial_ativa
+        
+        # A chamada super().form_valid(form) irá salvar o objeto e redirecionar
+        return super().form_valid(form)
 
 
 class EditarTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
@@ -248,7 +249,7 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
 
 # --- Visualizações para Relatórios ---
 
-class RelatorioTreinamentosView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """
     Gera um relatório de treinamentos com base em filtros.
     Agora herda de ListView para buscar e listar os treinamentos.
@@ -344,7 +345,7 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
             # Redireciona de volta para a página de detalhes do treinamento
             return redirect('treinamentos:detalhe_treinamento', pk=self.kwargs.get('pk'))
 
-class RelatorioGeralExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, PermissionRequiredMixin, View):
+class RelatorioGeralExcelView(LoginRequiredMixin, ViewFilialScopedMixin, PermissionRequiredMixin, View):
     """
     Gera e oferece para download um relatório geral de treinamentos em .xlsx.
     """
@@ -433,7 +434,7 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         total_treinamentos = base_queryset.count()
         em_andamento = base_queryset.filter(status='A').count()
         
-        # CORREÇÃO FINAL ESTÁ AQUI: Adicionando o 'output_field'
+        # Adicionando o 'output_field'
         total_custo = base_queryset.aggregate(
             total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
         )['total']

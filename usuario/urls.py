@@ -26,7 +26,7 @@ urlpatterns = [
     # --- Gerenciamento de Usuários (CRUD) ---
     path('usuarios/', UserListView.as_view(), name='lista_usuarios'),
     # --- O nome correto para a criação é 'cadastrar_usuario'
-    path('usuarios/novo/', UserCreateView.as_view(), name='form_usuario'),
+    path('usuarios/novo/', UserCreateView.as_view(), name='usuario_criar'),
     # ---- O nome correto para a edição é 'usuario_editar'
     path('usuarios/editar/<int:pk>/', UserUpdateView.as_view(), name='usuario_editar'),
     path('usuarios/toggle-active/<int:pk>/', UserToggleActiveView.as_view(), name='toggle_active_usuario'),
@@ -47,7 +47,7 @@ urlpatterns = [
 
     # --- URLs para Gestão de Filiais ---
     path('filiais/', FilialListView.as_view(), name='filial_list'),
-     path('selecionar-filial/', SelecionarFilialView.as_view(), name='selecionar_filial'),
+    path('selecionar-filial/', SelecionarFilialView.as_view(), name='selecionar_filial'),
     path('filiais/adicionar/', FilialCreateView.as_view(), name='filial_create'),
     path('filiais/<int:pk>/editar/', FilialUpdateView.as_view(), name='filial_update'),
     path('filiais/<int:pk>/excluir/', FilialDeleteView.as_view(), name='filial_delete'),
