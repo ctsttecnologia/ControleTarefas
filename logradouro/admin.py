@@ -3,10 +3,10 @@ from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from .models import Logradouro
 from .constant import ESTADOS_BRASIL
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 
 @admin.register(Logradouro)
-class LogradouroAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class LogradouroAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = (
         'endereco_completo',
         'filial',
@@ -18,7 +18,7 @@ class LogradouroAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     
     list_filter = ('estado', 'filial', 'cidade', 'bairro')
     search_fields = ('endereco', 'numero', 'cep', 'bairro', 'cidade')
-    readonly_fields = ('data_cadastro', 'data_atualizacao', 'coordenadas_admin')
+    readonly_fields = ('data_cadastro', 'data_atualizacao', 'coordenadas_admin', 'filial',) # Impede a edição da filial após a criação.)
     
     fieldsets = (
         (_('Informações Básicas'), {

@@ -13,12 +13,12 @@ from .forms import ClienteForm
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
 
 
 # --- VIEWS DE CLIENTE (CRUD) ---
 
-class ClienteListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class ClienteListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Cliente
     template_name = 'cliente/cliente_list.html'
     context_object_name = 'clientes'
@@ -27,7 +27,7 @@ class ClienteListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
     def get_queryset(self):
         # A filtragem por filial já foi feita pelo FilialScopedMixin.
         # Agora, aplicamos apenas ordenação, otimizações e a busca do usuário.
-        queryset = super().get_queryset(request=self.request).select_related('logradouro').order_by('nome')
+        queryset = super().get_queryset().select_related('logradouro').order_by('nome')
         
         termo_pesquisa = self.request.GET.get('q', '')
         if termo_pesquisa:
@@ -55,7 +55,7 @@ class ClienteListView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
         return context
 
 
-class ClienteCreateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, CreateView):
+class ClienteCreateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, CreateView):
     model = Cliente
     form_class = ClienteForm
     template_name = 'cliente/cliente_form.html'
@@ -67,9 +67,9 @@ class ClienteCreateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         Garante que o mixin de filial receba o request para filtrar o cliente
         corretamente pela filial do usuário logado.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
-class ClienteUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, UpdateView):
+class ClienteUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
     model = Cliente
     form_class = ClienteForm
     template_name = 'cliente/cliente_form.html'
@@ -81,9 +81,9 @@ class ClienteUpdateView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         Garante que o mixin de filial receba o request para filtrar o cliente
         corretamente pela filial do usuário logado.
         """
-        return super().get_queryset(request=self.request)  
+        return super().get_queryset()  
 
-class ClienteDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMessageMixin, DeleteView):
+class ClienteDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, DeleteView):
     model = Cliente
     template_name = 'cliente/cliente_confirm_delete.html'
     success_url = reverse_lazy('cliente:lista_clientes')
@@ -94,11 +94,11 @@ class ClienteDeleteView(LoginRequiredMixin, FilialScopedQuerysetMixin, SuccessMe
         Garante que o mixin de filial receba o request para filtrar o cliente
         corretamente pela filial do usuário logado.
         """
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
 # --- VIEW DE EXPORTAÇÃO ---
 
-class ExportarClientesExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, ListView):
+class ExportarClientesExcelView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """
     Esta view agora herda de FilialScopedMixin e ListView.
     Isso garante que a exportação respeitará a filial do usuário,
@@ -108,7 +108,7 @@ class ExportarClientesExcelView(LoginRequiredMixin, FilialScopedQuerysetMixin, L
 
     def get(self, request, *args, **kwargs):
         # 1. Usa self.get_queryset() para obter a lista de clientes JÁ FILTRADA pelo mixin.
-        clientes = self.get_queryset(request=self.request).select_related('logradouro').order_by('nome')
+        clientes = self.get_queryset().select_related('logradouro').order_by('nome')
 
         # 2. O restante do código para gerar o Excel permanece o mesmo.
         wb = openpyxl.Workbook()

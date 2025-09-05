@@ -1,77 +1,35 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'usuario/base_usuario.html' %}
 
-{% block title %}Grupos de Permissões{% endblock %}
+{% block title %}Lista de Grupos{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'cssusuario/lista_usuario.css' %}">
+{% block usuario_content %}
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="h4 mb-0">Grupos de Permissões</h2>
+        <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary">Novo Grupo</a>
+    </div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>Nome do Grupo</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+                {% for grupo in grupos %}
+                <tr>
+                    <td>{{ grupo.name }}</td>
+                    <td>
+                        <a href="{% url 'usuario:grupo_form' grupo.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
+                        <a href="{% url 'usuario:grupo_excluir' grupo.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
 
-
-{% block content %}
-    {# Inclui o submenu da seção de usuários/grupos #}
-    {% include 'usuario/includes/submenu.html' %}
-
-    <div class="container-fluid py-4" style="max-width: 1600px;">
-        <div class="card shadow">
-            <div class="card-header bg-white py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h2 class="h4 mb-0">Grupos de Permissões</h2>
-                    {% if perms.auth.add_group %}
-                        <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-lg me-1"></i> Novo Grupo
-                        </a>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="card-body p-0"> {# Padding removido para a tabela ocupar toda a largura do card #}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0"> {# Margem inferior removida #}
-                        <thead class="thead-custom">
-                            <tr>
-                                <th scope="col" class="ps-4">Nome do Grupo</th>
-                                <th scope="col" class="text-center">Nº de Usuários</th>
-                                <th scope="col" class="text-center pe-4">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for grupo in grupos %}
-                            <tr>
-                                <td class="fw-bold ps-4">{{ grupo.name }}</td>
-                                <td class="text-center">{{ grupo.user_set.count }}</td>
-                                <td class="text-center pe-4">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            {% if perms.auth.change_group %}
-                                                <li><a class="dropdown-item" href="{% url 'usuario:grupo_form' grupo.pk %}"><i class="bi bi-pencil-fill me-2"></i>Editar</a></li>
-                                            {% endif %}
-                                            {% if perms.auth.delete_group %}
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li><a class="dropdown-item text-danger" href="{% url 'usuario:grupo_excluir' grupo.pk %}"><i class="bi bi-trash3-fill me-2"></i>Excluir</a></li>
-                                            {% endif %}
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="3" class="text-center py-5">
-                                        <div class="text-muted">
-                                            <i class="bi bi-collection fs-1"></i>
-                                            <h5 class="mt-3">Nenhum grupo encontrado.</h5>
-                                            <p class="small">Crie um novo grupo para começar a organizar as permissões.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+{% block extra_js %}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    {{ form.media.js }}
 {% endblock %}

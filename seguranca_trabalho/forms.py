@@ -54,19 +54,28 @@ class EquipamentoForm(forms.ModelForm):
 
 
 class FichaEPIForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        # 1. Use .pop() para extrair o 'request' e REMOVÊ-LO de kwargs.
+        request = kwargs.pop('request', None)
+        
+        # 2. Chame o 'super' AGORA que kwargs não tem mais a chave 'request'.
+        super().__init__(*args, **kwargs)
+        
+        # 3. Agora use o 'request' para filtrar o queryset do campo.
+        if request:
+            filial_id = request.session.get('active_filial_id')
+            if filial_id:
+                self.fields['funcionario'].queryset = Funcionario.objects.filter(
+                    filial_id=filial_id, status='ATIVO'
+                ).order_by('nome_completo')
+
     class Meta:
         model = FichaEPI
-        fields = ['funcionario'] # Apenas o funcionário é necessário, o resto é preenchido no model/view
+        fields = ['funcionario']
+        # Adicione widgets se necessário
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Filtra para mostrar apenas funcionários ativos que ainda não têm ficha
-        funcionarios_com_ficha = FichaEPI.objects.values_list('funcionario_id', flat=True)
-        self.fields['funcionario'].queryset = Funcionario.objects.filter(status='ATIVO').exclude(id__in=funcionarios_com_ficha)
-        self.fields['funcionario'].label_from_instance = lambda obj: f"{obj.nome_completo} (Mat. {obj.id})"
 
     def clean_funcionario(self):
         funcionario = self.cleaned_data['funcionario']

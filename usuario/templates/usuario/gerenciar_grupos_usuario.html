@@ -1,75 +1,58 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'usuario/base_usuario.html' %}
 
 {% block title %}Gerenciar Grupos de {{ usuario_alvo.username }}{% endblock %}
 
-{% block content %}
-    {% include 'usuario/includes/submenu.html' %}
-    <div class="container py-4">
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h3 mb-0">Gerenciar Grupos de <span class="text-primary">{{ usuario_alvo.username }}</span></h2>
-            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-light">
-                <i class="bi bi-arrow-left-circle me-1"></i>
-                Voltar para Lista
-            </a>
+{% block usuario_content %}
+<div class="card shadow-sm">
+    <div class="card-header"><h2 class="h4 mb-0">Gerenciar Grupos para: <strong>{{ usuario_alvo.get_full_name }}</strong></h2></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Grupos Atuais</h5>
+                <ul class="list-group">
+                    {% for grupo in grupos_usuario %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ grupo.name }}
+                            <form method="post" action="{% url 'usuario:gerenciar_grupos_usuario' pk=usuario_alvo.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                <input type="hidden" name="acao" value="remover">
+                                <button type="submit" class="btn btn-sm btn-danger">&times;</button>
+                            </form>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">Este usuário não pertence a nenhum grupo.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5>Grupos Disponíveis</h5>
+                <ul class="list-group">
+                    {% for grupo in grupos_disponiveis %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ grupo.name }}
+                            <form method="post" action="{% url 'usuario:gerenciar_grupos_usuario' pk=usuario_alvo.pk %}" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                <input type="hidden" name="acao" value="adicionar">
+                                <button type="submit" class="btn btn-sm btn-success">+</button>
+                            </form>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">Não há grupos disponíveis para adicionar.</li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
-
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header fw-semibold">Grupos Disponíveis</div>
-                    <ul class="list-group list-group-flush">
-                        {% for grupo in grupos_disponiveis %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>{{ grupo.name }}</span>
-                                <form method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="grupo" value="{{ grupo.pk }}">
-                                    <button type="submit" name="acao" value="adicionar" 
-                                            class="btn btn-link text-success text-decoration-none p-0" 
-                                            title="Adicionar {{ grupo.name }} ao usuário">
-                                        <i class="bi bi-plus-circle-fill fs-5"></i>
-                                    </button>
-                                </form>
-                            </li>
-                        {% empty %}
-                            <li class="list-group-item text-center text-muted p-4">
-                                <i class="bi bi-check2-all fs-2"></i>
-                                <p class="mb-0 mt-2 small">Todos os grupos já foram adicionados.</p>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header fw-semibold">Grupos do Usuário</div>
-                    <ul class="list-group list-group-flush">
-                        {% for grupo in grupos_usuario %}
-                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>{{ grupo.name }}</span>
-                                <form method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="grupo" value="{{ grupo.pk }}">
-                                    <button type="submit" name="acao" value="remover" 
-                                            class="btn btn-link text-danger text-decoration-none p-0"
-                                            title="Remover {{ grupo.name }} do usuário">
-                                        <i class="bi bi-x-circle-fill fs-5"></i>
-                                    </button>
-                                </form>
-                            </li>
-                        {% empty %}
-                            <li class="list-group-item text-center text-muted p-4">
-                                <i class="bi bi-person-fill-slash fs-2"></i>
-                                <p class="mb-0 mt-2 small">O usuário não pertence a nenhum grupo.</p>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
+        <div class="mt-4 border-top pt-3">
+             <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Voltar para Lista de Usuários</a>
         </div>
     </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    {{ form.media.js }}
 {% endblock %}
 

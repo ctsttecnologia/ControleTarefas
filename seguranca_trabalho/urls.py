@@ -35,7 +35,7 @@ from .views import (
     FichaEPIListView,
     FichaEPICreateView,
     FichaEPIDetailView,
-    AdicionarEntregaView,
+    #AdicionarEntregaView,
     AssinarEntregaView,
     GerarFichaPDFView,
     RegistrarDevolucaoView,
@@ -63,7 +63,7 @@ urlpatterns = [
     path('controle-epi-funcao/', ControleEPIPorFuncaoView.as_view(), name='controle_epi_por_funcao'),  
 
     # Ações relacionadas a uma entrega de EPI específica.
-    path('fichas/<int:ficha_pk>/adicionar-entrega/', AdicionarEntregaView.as_view(), name='entrega_create'),
+    #path('fichas/<int:ficha_pk>/adicionar-entrega/', AdicionarEntregaView.as_view(), name='entrega_create'),
     path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='entrega_sign'),
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),
     path('fichas/<int:pk>/update/', FichaEPIUpdateView.as_view(), name='ficha_update'),

@@ -1,5 +1,5 @@
 
-{% extends "ata_base.html" %}
+{% extends "base.html" %}
 {% load static widget_tweaks %}
 {% load ata_extras %}
 {% block title %}Confirmar Exclusão{% endblock %}
@@ -18,7 +18,7 @@
                 <p class="text-muted">Esta ação não poderá ser desfeita.</p>
                 <form method="post">
                     {% csrf_token %}
-                    <a href="{% url 'ata_reuniao_list' %}" class="btn btn-secondary px-4">Cancelar</a>
+                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-secondary px-4">Cancelar</a>
                     <button type="submit" class="btn btn-danger px-4">Sim, Excluir</button>
                 </form>
             </div>

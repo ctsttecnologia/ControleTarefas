@@ -19,3 +19,4 @@ class StaffRequiredMixin(AccessMixin):
             
         # Se passar nas duas verificações, permite o acesso à view.
         return super().dispatch(request, *args, **kwargs)
+

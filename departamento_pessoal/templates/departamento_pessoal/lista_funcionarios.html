@@ -4,7 +4,7 @@
 
 {% block dp_content %}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Gerenciar Funcionários</h1>
+        <h1 class="h2"><i class="bi bi-people-fill kpi-card-icon"></i>Gerenciar Funcionários</h1>
         <div class="dropdown">
         <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn btn-primary">
             <i class="bi bi-person-plus-fill me-1"></i> Novo Funcionário
@@ -56,6 +56,7 @@
                             <th>Departamento</th>
                             <th>Data de Admissão</th>
                             <th>Status</th>
+                            <th>Filial</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
@@ -79,16 +80,29 @@
                                     <span class="badge text-bg-warning">{{ funcionario.get_status_display }}</span>
                                 {% endif %}
                             </td>
+                            <td>{{ funcionario.filial.nome|default:"-" }}</td>
                             <td class="text-end">
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Editar fucionário">
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}"><i class="bi bi-eye-fill me-2"></i>Ver Detalhes</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}"><i class="bi bi-pencil-fill me-2"></i>Editar</a></li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}">
+                                                <i class="bi bi-eye-fill me-2"></i>Ver Detalhes
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}">
+                                                <i class="bi bi-pencil-fill me-2"></i>Editar
+                                            </a>
+                                        </li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="{% url 'departamento_pessoal:funcionario_delete' funcionario.pk %}"><i class="bi bi-trash3-fill me-2"></i>Excluir</a></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="{% url 'departamento_pessoal:funcionario_delete' funcionario.pk %}">
+                                                <i class="bi bi-trash3-fill me-2"></i>Excluir
+                                            </a>
+                                        </li>
                                     </ul>
                                 </div>
                             </td>

@@ -44,6 +44,12 @@ class Departamento(models.Model):
     # Manager customizado para segregação de dados
     objects = FilialManager()
 
+    def save(self, *args, **kwargs):
+        # Garante que a filial do documento seja sempre a mesma do funcionário.
+        if self.funcionario:
+            self.filial = self.funcionario.filial
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = _("Departamento")
         verbose_name_plural = _("Departamentos")
@@ -169,6 +175,13 @@ class Funcionario(models.Model):
     # --- Metadados ---
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+    foto_3x4 = models.ImageField(
+        _("Foto 3x4"),
+        upload_to='fotos_3x4/', # A pasta dentro do seu diretório MEDIA_ROOT
+        null=True,
+        blank=True,
+        help_text=_("Faça o upload de uma foto 3x4 do funcionário.")
+    )
 
     # Manager customizado para segregação de dados
     objects = FilialManager()

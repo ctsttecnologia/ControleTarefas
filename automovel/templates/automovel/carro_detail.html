@@ -19,8 +19,17 @@
 
         <div class="row">
             <div class="col-md-4">
-                <img src="{% static 'automovel/img/car-placeholder.png' %}" 
-                     alt="{{ carro.modelo }}" class="carro-image">
+                <h2>Detalhes do Carro</h2>
+
+                {% if carro.foto %}
+                    <img src="{{ carro.foto.url }}" alt="Foto do {{ carro.modelo }}" style="max-width: 400px; border-radius: 8px;">
+                    
+                {% else %}
+                    <p>Este carro não possui foto cadastrada.</p>
+                {% endif %}
+
+                <p><strong>Placa:</strong> {{ carro.placa }}</p>
+                <p><strong>Modelo:</strong> {{ carro.modelo }}</p>
             </div>
             <div class="col-md-8">
                 <div class="carro-info">
@@ -133,3 +142,5 @@
     </div>
 </div>
 {% endblock %}
+
+

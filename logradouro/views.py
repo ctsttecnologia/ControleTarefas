@@ -11,11 +11,11 @@ from openpyxl.utils import get_column_letter
 from .models import Logradouro
 from .forms import LogradouroForm
 from .constant import ESTADOS_BRASIL
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import ViewFilialScopedMixin
 
 
 # --- Views de Logradouro (CRUD)
-class LogradouroListView(FilialScopedQuerysetMixin, LoginRequiredMixin, ListView):
+class LogradouroListView(ViewFilialScopedMixin, LoginRequiredMixin, ListView):
     """
     Lista os logradouros cadastrados, respeitando o escopo da filial.
     """
@@ -26,7 +26,7 @@ class LogradouroListView(FilialScopedQuerysetMixin, LoginRequiredMixin, ListView
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -54,7 +54,7 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def form_valid(self, form):
         # CORREÇÃO: Associa a filial do usuário ao novo objeto antes de salvar.
@@ -70,7 +70,7 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
         return super().form_invalid(form)
 
 # Nenhuma alteração necessária aqui, o mixin já garante a segurança.
-class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
+class LogradouroUpdateView(ViewFilialScopedMixin, LoginRequiredMixin, UpdateView):
     model = Logradouro
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
@@ -78,21 +78,21 @@ class LogradouroUpdateView(FilialScopedQuerysetMixin, LoginRequiredMixin, Update
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
     
     def form_valid(self, form):
         messages.success(self.request, _('Endereço atualizado com sucesso!'))
         return super().form_valid(form)
 
 # Nenhuma alteração necessária aqui, o mixin já garante a segurança.
-class LogradouroDeleteView(FilialScopedQuerysetMixin, LoginRequiredMixin, DeleteView):
+class LogradouroDeleteView(ViewFilialScopedMixin, LoginRequiredMixin, DeleteView):
     model = Logradouro
     template_name = 'logradouro/confirmar_exclusao.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
 
     def form_valid(self, form):
         messages.success(self.request, _('Endereço excluído com sucesso!'))
@@ -106,7 +106,7 @@ class LogradouroExportExcelView(LoginRequiredMixin, View):
     """
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset(request=self.request)
+        return super().get_queryset()
     
     def get(self, request, *args, **kwargs):
         # FALHA DE SEGURANÇA CORRIGIDA:

@@ -12,13 +12,15 @@
 {% block content %}
 <div class="container py-4">
 
-    {# Cabeçalho da página #}
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
         <h2 class="h3 mb-3 mb-md-0">
             <i class="bi bi-book-half me-2"></i>Treinamentos
         </h2>
         <div class="btn-toolbar" role="toolbar">
             <div class="btn-group me-2" role="group">
+                <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-list"></i> Lista de Cursos
+                </a>
                 <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>

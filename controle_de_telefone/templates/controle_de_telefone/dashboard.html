@@ -1,0 +1,231 @@
+
+{% extends "controle_de_telefone/_base_telefone.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Painel de Controle - Controle de Telefone{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Painel de Controle</h1>
+        <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus-circle fa-sm text-white-50"></i> Novo Vínculo
+        </a>
+    </div>
+
+    <div class="row">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Aparelhos Cadastrados</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_aparelhos }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-mobile-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-between">
+                        <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-sm btn-outline-secondary">Listar Todos</a>
+                        <a href="{% url 'controle_de_telefone:aparelho_create' %}" class="btn btn-sm btn-primary">Adicionar Novo</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Linhas Telefônicas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_linhas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-sim-card fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                     <div class="mt-3 d-flex justify-content-between">
+                        <a href="{% url 'controle_de_telefone:linhatelefonica_list' %}" class="btn btn-sm btn-outline-secondary">Listar Todas</a>
+                        <a href="{% url 'controle_de_telefone:linhatelefonica_create' %}" class="btn btn-sm btn-success">Adicionar Nova</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Vínculos (em uso)
+                            </div>
+                            <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{ total_vinculos }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex justify-content-between">
+                        <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-sm btn-outline-secondary">Listar Todos</a>
+                        <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-sm btn-info">Novo Vínculo</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Cadastros Auxiliares</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" style="font-size: 1rem;">
+                                {{ total_marcas }} Marcas | {{ total_operadoras }} Operadoras
+                            </div>
+                        </div>
+                         <div class="col-auto">
+                            <i class="fas fa-cogs fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="btn-group btn-group-sm w-100" role="group">
+                           <a href="{% url 'controle_de_telefone:marca_list' %}" class="btn btn-outline-warning">Marcas</a>
+                           <a href="{% url 'controle_de_telefone:modelo_list' %}" class="btn btn-outline-warning">Modelos</a>
+                           <a href="{% url 'controle_de_telefone:operadora_list' %}" class="btn btn-outline-warning">Operadoras</a>
+                           <a href="{% url 'controle_de_telefone:plano_list' %}" class="btn btn-outline-warning">Planos</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Quantidade de Aparelhos por Marca</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:320px">
+                        <canvas id="marcasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5 mb-4">
+            {% if vinculos_status_data_json != '[]' and vinculos_status_data_json != '[0, 0]' %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">Status dos Vínculos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:150px">
+                        <canvas id="vinculosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-success">Quantidade de Linhas por Operadora</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height:150px">
+                        <canvas id="operadorasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Para deixar as cores consistentes com o tema
+    const themeColors = {
+        primary: '#4e73df',
+        success: '#1cc88a',
+        info: '#36b9cc',
+        warning: '#f6c23e',
+        danger: '#e74a3b',
+        secondary: '#858796'
+    };
+
+    // Pega os dados JSON fornecidos pela view do Django
+    const marcasLabels = JSON.parse('{{ marcas_labels_json|escapejs }}');
+    const marcasData = JSON.parse('{{ marcas_data_json|escapejs }}');
+    const operadorasLabels = JSON.parse('{{ operadoras_labels_json|escapejs }}');
+    const operadorasData = JSON.parse('{{ operadoras_data_json|escapejs }}');
+    const vinculosStatusData = JSON.parse('{{ vinculos_status_data_json|escapejs }}');
+
+    // Gráfico 1: Aparelhos por Marca (Rosca/Doughnut)
+    if (marcasLabels.length > 0) {
+        const ctxMarcas = document.getElementById('marcasChart').getContext('2d');
+        new Chart(ctxMarcas, {
+            type: 'doughnut',
+            data: {
+                labels: marcasLabels,
+                datasets: [{
+                    data: marcasData,
+                    backgroundColor: [themeColors.primary, themeColors.success, themeColors.info, themeColors.warning, themeColors.danger],
+                    hoverOffset: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // Gráfico 2: Linhas por Operadora (Barras Horizontais)
+    if (operadorasLabels.length > 0) {
+        const ctxOperadoras = document.getElementById('operadorasChart').getContext('2d');
+        new Chart(ctxOperadoras, {
+            type: 'bar',
+            data: {
+                labels: operadorasLabels,
+                datasets: [{
+                    label: 'Nº de Linhas',
+                    data: operadorasData,
+                    backgroundColor: themeColors.success,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // Gráfico 3: Status dos Vínculos (Pizza)
+    // Verifica se há dados para exibir no gráfico
+    if (vinculosStatusData.length > 0 && vinculosStatusData.some(item => item > 0)) {
+        const ctxVinculos = document.getElementById('vinculosChart').getContext('2d');
+        new Chart(ctxVinculos, {
+            type: 'pie',
+            data: {
+                labels: ['Ativos', 'Inativos'],
+                datasets: [{
+                    data: vinculosStatusData,
+                    backgroundColor: [themeColors.info, themeColors.secondary],
+                    hoverOffset: 4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+});
+</script>
+{% endblock %}

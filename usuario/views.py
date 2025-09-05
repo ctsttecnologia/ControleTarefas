@@ -119,6 +119,112 @@ class ProfileView(LoginRequiredMixin, DetailView):
     def get_object(self, queryset=None):
         return self.request.user
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        # 1. Defina a estrutura de todos os cards possíveis
+        all_cards = [
+            {
+                'id': 'tarefas',
+                'title': 'Tarefas',
+                'permission': 'tarefas.view_tarefa',  # Permissão necessária
+                'icon': 'images/tarefa.gif',
+                'links': [
+                    {'url': 'tarefas:listar_tarefas', 'text': 'Minhas Tarefas'},
+                    {'url': 'tarefas:calendario_tarefas', 'text': 'Agenda'},
+                    {'url': 'tarefas:dashboard_analitico', 'text': 'Dashboard Analítico'},
+                ]
+            },
+            {
+                'id': 'clientes',
+                'title': 'Clientes',
+                'permission': 'cliente.view_cliente', 
+                'icon': 'images/cliente.gif',
+                'links': [
+                    {'url': 'cliente:lista_clientes', 'text': 'Lista de Clientes'},
+                    {'url': 'cliente:cadastro_cliente', 'text': 'Cadastrar Cliente'},
+                ]
+            },
+            {
+                'id': 'dp',
+                'title': 'Departamento Pessoal',
+                'permission': 'departamento_pessoal.departamento_pessoal', 
+                'icon': 'images/dp.gif',
+                'links': [
+                    {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
+                    {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
+                    {'url': 'departamento_pessoal:lista_cargo', 'text': 'Cargos'},
+                    {'url': 'departamento_pessoal:lista_departamento', 'text': 'Departamentos'},
+                ]
+            },
+            {
+                'id': 'sst',
+                'title': 'Segurança do Trabalho',
+                'permission': 'seguranca_trabalho.view_fichaepi', 
+                'icon': 'images/tst.gif',
+                'links': [
+                    {'url': 'seguranca_trabalho:dashboard', 'text': 'Dashboard'},
+                    {'url': 'seguranca_trabalho:ficha_list', 'text': 'Fichas de EPI'},
+                    {'url': 'gestao_riscos:agendar_inspecao', 'text': 'Agendar Inspeção'},
+                ]
+            },
+            {
+                'id': 'endereco',
+                'title': 'Logradouro',
+                'permission': 'logradouro.view_logradouro', 
+                'icon': 'images/cadastro.gif',
+                'links': [
+                    {'url': 'logradouro:listar_logradouros', 'text': 'Lista de Logradouros'},
+                    {'url': 'logradouro:cadastrar_logradouro', 'text': 'Cadastrar Logradouro'},
+                ]
+            },
+            {
+                'id': 'ga',
+                'title': 'Gestão Administrativa',
+                'permission': 'ata_reuniao.ata_reuniao',
+                'icon': 'images/reuniao.png',
+                'links': [
+                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
+                    {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
+                    {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
+                ]
+            },
+            {
+                'id': 'veiculos',
+                'title': 'Veículos',
+                'permission': 'automovel.view_carro',
+                'icon': 'images/carro.gif',
+                'links': [
+                    {'url': 'automovel:carro_list', 'text': 'Frota'},
+                    {'url': 'automovel:agendamento_list', 'text': 'Agendamentos'},
+                    {'url': 'automovel:dashboard', 'text': 'Relatórios'},
+                    {'url': 'automovel:calendario', 'text': 'Calendário'},
+                ]
+            },
+            {
+                'id': 'operacao',
+                'title': 'Operação',
+                'permission': 'ferramentas.view_ferramentas',
+                'icon': 'images/serviço.gif',
+                'links': [
+                    {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
+                ]
+            },
+        ]
+
+        # 2. Filtre os cards com base nas permissões do usuário
+        allowed_cards = []
+        for card in all_cards:
+            # Superusuários veem tudo. Ou, verifique a permissão específica.
+            if user.is_superuser or user.has_perm(card['permission']):
+                allowed_cards.append(card)
+
+        # 3. Passe a lista de cards permitidos para o template
+        context['allowed_cards'] = allowed_cards
+        return context
+
+
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     form_class = CustomPasswordChangeForm
     template_name = 'usuario/alterar_senha.html'
@@ -302,7 +408,7 @@ class GerenciarGruposUsuarioView(SuperuserRequiredMixin, View):
         
         return redirect('usuario:gerenciar_grupos_usuario', pk=usuario.pk)
     
-    # =============================================================================
+# =============================================================================
 # == VIEWS DE CRUD DE FILIAIS (Apenas para Superuser)
 # =============================================================================
 

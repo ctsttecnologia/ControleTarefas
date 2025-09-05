@@ -1,8 +1,9 @@
+
 {% load static %}
 {% load widget_tweaks %}
 
 <!DOCTYPE html>
-<html lang="pt-br" class="h-100">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,24 +17,26 @@
     <link rel="stylesheet" href="{% static 'css/global.css' %}">
     
     {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
 
     <script>
       (() => {
-        const theme = localStorage.getItem('theme') || 'light';
+        const theme = localStorage.getItem('theme') || 'dark'; // Padrão 'dark'
         document.documentElement.setAttribute('data-bs-theme', theme);
       })();
     </script>
 
-    {# Logo no navegador #}
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
-  
+
 </head>
 
-<body class="d-flex flex-column h-100 {% block body_class %}{% endblock %}">
+{# ✅ MUDANÇA: Classes de flex removidas do body #}
+<body class="{% block body_class %}{% endblock %}">
 
+    {# Header será inserido aqui, agora com a classe 'fixed-top' #}
     {% include 'partials/global_header.html' %}
     
-    <main class="flex-shrink-0" id="main-content">
+    <main id="main-content">
         {% block content %}{% endblock %}
     </main>
     
@@ -50,4 +53,3 @@
 
 </body>
 </html>
-

@@ -31,7 +31,7 @@
                 </a>
             </div>
         </div>
-    </header>
+    </header><br>
 
     <div class="row g-4">
         <div class="col-lg-8">
@@ -46,7 +46,7 @@
 
             <div class="card task-comments-section">
                 <div class="card-body">
-                    <h2 class="section-title">Comentários -{{ object.comentarios.count }}</h2>
+                    <h2 class="section-title">Comentários <i class="bi bi-forward"></i> {{ object.comentarios.count }}</h2>
                     
                     <form method="post" class="comment-form mb-4">
                         {% csrf_token %}

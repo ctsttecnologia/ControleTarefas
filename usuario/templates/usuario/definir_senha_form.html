@@ -1,69 +1,38 @@
-
-{% extends 'base.html' %}
+{% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
 
 {% block title %}Definir Nova Senha{% endblock %}
 
-{% block content %}
-    {# O submenu pode ou não ser necessário aqui, dependendo do fluxo do usuário. Mantido por consistência. #}
-    {% include 'usuario/includes/submenu.html' %}
-
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="card shadow">
-                    <div class="card-header text-center bg-white py-4">
-                        <i class="bi bi-shield-lock-fill fs-1 text-primary"></i>
-                        <h2 class="h3 mt-2 mb-0">Defina sua Nova Senha</h2>
-                        <p class="text-muted mb-0">Crie uma senha forte e segura.</p>
+{% block usuario_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h2 class="h4 mb-0">Definir Senha para {{ usuario_alvo.username }}</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% render_field field class+="form-control" %}
+                            {% if field.help_text %}<small class="form-text text-muted">{{ field.help_text|safe }}</small>{% endif %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endfor %}
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Salvar Nova Senha</button>
                     </div>
-                    <div class="card-body p-4 p-md-5">
-                        
-                        <form method="post" novalidate>
-                            {% csrf_token %}
-
-                            {% if form.non_field_errors %}
-                                <div class="alert alert-danger p-2">
-                                    {% for error in form.non_field_errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-
-                            {% for field in form %}
-                            <div class="mb-3">
-                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                                
-                                {# A mágica acontece aqui: adiciona a classe .is-invalid SE o campo tiver erros #}
-                                {% render_field field class+="form-control form-control-lg"|add_class:"is-invalid"|if:field.errors placeholder="••••••••" %}
-                                
-                                {# Exibe a mensagem de ajuda do Django (ex: requisitos de senha) #}
-                                {% if field.help_text %}
-                                    <div class="form-text small">{{ field.help_text|safe }}</div>
-                                {% endif %}
-
-                                {# Exibe a mensagem de erro específica do campo #}
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in field.errors %}
-                                            <span>{{ error }}</span>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                            
-                            <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">
-                                <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-light btn-lg">Cancelar</a> {# Redireciona para o login #}
-                                <button type="submit" class="btn btn-primary btn-lg btn-glow">
-                                    <i class="bi bi-check-lg me-1"></i>
-                                    Definir Nova Senha
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% url 'admin:jsi18n' %}"></script>
+    {{ form.media.js }}
 {% endblock %}

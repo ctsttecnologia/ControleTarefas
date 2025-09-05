@@ -1,0 +1,117 @@
+{% extends "controle_de_telefone/_base_telefone.html" %}
+
+{% block title %}Detalhes da Linha {{ object.numero }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Detalhes da Linha: {{ object.numero }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Informações da Linha</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">Número:</dt>
+                        <dd class="col-sm-8">{{ object.numero }}</dd>
+
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8">{{ object.get_status_display }}</dd>
+
+                        <dt class="col-sm-4">Data de Ativação:</dt>
+                        <dd class="col-sm-8">{{ object.data_ativacao|date:"d/m/Y" }}</dd>
+
+                        <dt class="col-sm-4">Filial:</dt>
+                        <dd class="col-sm-8">{{ object.filial }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <h5>Informações do Plano</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">Operadora:</dt>
+                        <dd class="col-sm-8">{{ object.plano.operadora.nome }}</dd>
+                        
+                        <dt class="col-sm-4">Plano:</dt>
+                        <dd class="col-sm-8">{{ object.plano.nome }}</dd>
+
+                        <dt class="col-sm-4">Valor Mensal:</dt>
+                        <dd class="col-sm-8">R$ {{ object.plano.valor_mensal|floatformat:2 }}</dd>
+
+                        <dt class="col-sm-4">Franquia:</dt>
+                        <dd class="col-sm-8">{{ object.plano.franquia_dados_gb }} GB</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <hr>
+            <h5>Histórico de Vínculos</h5>
+            {% with object.vinculos.all as vinculos %}
+                {% if vinculos %}
+                <ul class="list-group">
+                    {% for vinculo in vinculos %}
+                    <li class="list-group-item">
+                        Vinculado a <strong>{{ vinculo.funcionario }}</strong> de {{ vinculo.data_entrega|date:"d/m/Y" }}
+                        {% if vinculo.data_devolucao %}
+                            até {{ vinculo.data_devolucao|date:"d/m/Y" }} (Finalizado)
+                        {% else %}
+                            (Ativo)
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Esta linha nunca foi vinculada a um colaborador.</p>
+                {% endif %}
+            {% endwith %}
+
+        </div>
+        <div class="card-footer text-end">
+            <a href="{% url 'controle_de_telefone:linhatelefonica_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Voltar para a Lista
+            </a>
+            <a href="{% url 'controle_de_telefone:linhatelefonica_update' object.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit me-1"></i> Editar
+            </a>
+        </div>
+    </div>
+
+    <div>
+        {% comment %} 
+        Verificamos primeiro se existe algum histórico.
+        Se não houver, exibimos uma mensagem simples em vez de um acordeão vazio.
+        {% endcomment %}
+        {% if object.historico %}
+        <div class="accordion mt-4" id="accordionHistorico">
+            <div class="accordion-item">
+            <h2 class="accordion-header" id="headingHistorico">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHistorico" aria-expanded="false" aria-controls="collapseHistorico">
+                <i class="fas fa-history me-2"></i>
+                <strong>Histórico de Alterações</strong>
+                <span class="badge bg-secondary ms-2">{{ object.historico|length }}</span>
+                </button>
+            </h2>
+            <div id="collapseHistorico" class="accordion-collapse collapse" aria-labelledby="headingHistorico" data-bs-parent="#accordionHistorico">
+                <div class="accordion-body">
+                <ul class="list-group list-group-flush">
+                    {% for log in object.historico %}
+                    <li class="list-group-item">
+                        <small>{{ log }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                </div>
+            </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="mt-4">
+            <h5>Histórico de Alterações</h5>
+            <p class="text-muted">Nenhuma alteração registrada.</p>
+        </div>
+        {% endif %}        
+        </div>
+    </div>    
+</div>
+
+{% endblock %}

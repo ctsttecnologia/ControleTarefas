@@ -20,10 +20,13 @@ class Carro(models.Model):
     ativo = models.BooleanField(default=True)
     observacoes = models.TextField(blank=True, null=True)
     disponivel = models.BooleanField(default=True)
-    # CORREÇÃO: related_name único e campo obrigatório.
+    foto = models.ImageField(
+            upload_to='carros/fotos/', 
+            null=True, 
+            blank=True, 
+            verbose_name="Foto do Carro"
+    )
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='carros', null=True, blank=False)
-
-    # Manager Padrão
     objects = FilialManager()
 
     def __str__(self):
@@ -47,7 +50,7 @@ class Agendamento(models.Model):
     carro = models.ForeignKey(Carro, on_delete=models.PROTECT, related_name='agendamentos')
     data_hora_agenda = models.DateTimeField()
     data_hora_devolucao = models.DateTimeField()
-    cm = models.CharField(max_length=20, verbose_name="Centro de Custo/Motorista")
+    cm = models.CharField(max_length=4, verbose_name="CM/Contrato")
     descricao = models.TextField()
     pedagio = models.BooleanField(default=False)
     abastecimento = models.BooleanField(default=False)
@@ -60,10 +63,7 @@ class Agendamento(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='agendado')
     cancelar_agenda = models.BooleanField(default=False)
     motivo_cancelamento = models.TextField(blank=True, null=True)
-    # CORREÇÃO: related_name único e campo obrigatório.
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='agendamentos', null=True, blank=False)
-
-    # Manager Padrão
     objects = FilialManager()
 
     def __str__(self):
@@ -73,6 +73,14 @@ class Agendamento(models.Model):
         verbose_name = "Agendamento"
         verbose_name_plural = "Agendamentos"
         ordering = ['-data_hora_agenda']
+
+    @property
+    def checklist_saida(self):
+        return self.checklists.filter(tipo='saida').first()
+
+    @property
+    def checklist_retorno(self):
+        return self.checklists.filter(tipo='retorno').first()
 
 class Checklist(models.Model):
     TIPO_CHOICES = [('saida', 'Saída'), ('retorno', 'Retorno'), ('vistoria', 'Vistoria')]
@@ -96,14 +104,53 @@ class Checklist(models.Model):
     anexo_ocorrencia = models.TextField(blank=True, null=True)
     assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
-    # CORREÇÃO: related_name único e campo obrigatório.
+    # related_name único e campo obrigatório.
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='checklists', null=True, blank=False)
     
     # Manager Padrão
     objects = FilialManager()
 
+    # automovel/models.py (dentro da classe Checklist)
+
+def save(self, *args, **kwargs):
+    """
+    Sobrescreve o método save para centralizar a lógica de negócio
+    após a criação de um checklist.
+    """
+    is_new = self._state.adding
+    super().save(*args, **kwargs)  # Salva o checklist primeiro
+
+    if is_new:
+        agendamento = self.agendamento
+        
+        if self.tipo == 'saida':
+            agendamento.status = 'em_andamento'
+            agendamento.save(update_fields=['status'])
+        
+        elif self.tipo == 'retorno':
+            agendamento.status = 'finalizado'
+            # É mais eficiente salvar o status junto com outras alterações, se houver
+            
+            # Atualiza o KM do carro com o KM final do checklist
+            if self.km_final:
+                carro = agendamento.carro
+                
+                # CORREÇÃO: Use o nome correto do campo de quilometragem do seu model Carro
+                # Substitua 'quilometragem' se o nome for outro (ex: km_hodometro)
+                nome_campo_km_do_carro = 'quilometragem'
+                
+                setattr(carro, nome_campo_km_do_carro, self.km_final)
+                carro.save(update_fields=[nome_campo_km_do_carro])
+
+                # Atualiza também o agendamento
+                agendamento.km_final = self.km_final
+                agendamento.save(update_fields=['status', 'km_final'])
+            else:
+                 agendamento.save(update_fields=['status'])
+
     def __str__(self):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
+
 
     class Meta:
         verbose_name = "Checklist"

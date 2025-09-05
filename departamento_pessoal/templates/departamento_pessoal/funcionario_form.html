@@ -6,7 +6,7 @@
 {% block dp_content %}
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-lg-10">
+        <div class="col-lg-11">
             <div class="card shadow-sm">
                 <div class="card-header bg-light py-3">
                     <h2 class="h4 mb-0 fw-bold">
@@ -14,40 +14,60 @@
                     </h2>
                 </div>
                 <div class="card-body p-4 p-md-5">
-                    <form method="post" novalidate>
+                    
+                    <form method="post" novalidate enctype="multipart/form-data">
                         {% csrf_token %}
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
                         {% endif %}
 
-                        <h5 class="mb-3 border-bottom pb-2">Informações Pessoais</h5>
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-8">
-                                <label class="form-label">{{ form.nome_completo.label }}</label>
-                                {% render_field form.nome_completo class+="form-control" %}
-                                {% for error in form.nome_completo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <h5 class="mb-3">Foto 3x4</h5>
+                                {% if object.foto_3x4 %}
+                                    <img src="{{ object.foto_3x4.url }}" alt="Foto de {{ object.nome_completo }}" class="img-thumbnail mb-2" style="width: 150px; height: 200px; object-fit: cover;">
+                                {% else %}
+                                    <div class="border bg-light d-flex align-items-center justify-content-center mb-2" style="width: 150px; height: 200px; margin: 0 auto;">
+                                        <i class="bi bi-person-bounding-box" style="font-size: 5rem; color: #ccc;"></i>
+                                    </div>
+                                {% endif %}
+                                {% render_field form.foto_3x4 class+="form-control form-control-sm" %}
+                                {% for error in form.foto_3x4.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">{{ form.data_nascimento.label }}</label>
-                                {% render_field form.data_nascimento class+="form-control" %}
-                                {% for error in form.data_nascimento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                             <div class="col-md-5">
-                                <label class="form-label">{{ form.email_pessoal.label }}</label>
-                                {% render_field form.email_pessoal class+="form-control" placeholder="email.pessoal@exemplo.com" %}
-                                {% for error in form.email_pessoal.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">{{ form.telefone.label }}</label>
-                                {% render_field form.telefone class+="form-control" id="id_telefone" %}
-                                {% for error in form.telefone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">{{ form.sexo.label }}</label>
-                                {% render_field form.sexo class+="form-select" %}
-                                {% for error in form.sexo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+
+                            <div class="col-md-9">
+                                <h5 class="mb-3 border-bottom pb-2">Informações Pessoais</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <label class="form-label">{{ form.nome_completo.label }}</label>
+                                        {% render_field form.nome_completo class+="form-control" %}
+                                        {% for error in form.nome_completo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">{{ form.data_nascimento.label }}</label>
+                                        {% render_field form.data_nascimento class+="form-control" %}
+                                        {% for error in form.data_nascimento.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">{{ form.email_pessoal.label }}</label>
+                                        {% render_field form.email_pessoal class+="form-control" placeholder="email.pessoal@exemplo.com" %}
+                                        {% for error in form.email_pessoal.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">{{ form.telefone.label }}</label>
+                                        {% render_field form.telefone class+="form-control" id="id_telefone" %}
+                                        {% for error in form.telefone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">{{ form.sexo.label }}</label>
+                                        {% render_field form.sexo class+="form-select" %}
+                                        {% for error in form.sexo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <hr class="my-4">
 
                         <h5 class="mb-3 border-bottom pb-2">Dados de Contratação</h5>
                         <div class="row g-3">
@@ -72,14 +92,12 @@
                                 {% render_field form.cargo class+="form-select" %}
                                 {% for error in form.cargo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
-
                             <div class="col-12">
                                 <label class="form-label">{{ form.cliente.label }}</label>
                                 {% render_field form.cliente class+="form-select" %}
                                 {% for error in form.cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                                 <small class="form-text text-muted">Selecione a qual cliente ou contrato este funcionário está vinculado.</small>
                             </div>
-
                             <div class="col-md-4">
                                 <label class="form-label">{{ form.data_admissao.label }}</label>
                                 {% render_field form.data_admissao class+="form-control" %}
@@ -104,7 +122,7 @@
                                 {% for error in form.data_demissao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                                 <small class="form-text text-muted">Preencha apenas se o status for 'Inativo'.</small>
                             </div>
-                        </div>  
+                        </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
                             <a href="{% if object %}{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}{% else %}{% url 'departamento_pessoal:lista_funcionarios' %}{% endif %}" class="btn btn-secondary">Cancelar</a>

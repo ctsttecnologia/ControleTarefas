@@ -1,13 +1,13 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Ferramenta, Movimentacao, Atividade
-from core.mixins import FilialScopedQuerysetMixin
+from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 
 class AtividadeInline(admin.TabularInline):
     model = Atividade
     extra = 0
     fields = ('timestamp', 'tipo_atividade', 'descricao', 'usuario')
-    readonly_fields = fields
+    readonly_fields = ('fields',)
     can_delete = False
     verbose_name = "Registro de Atividade"
     verbose_name_plural = "Registros de Atividades"
@@ -16,11 +16,11 @@ class AtividadeInline(admin.TabularInline):
         return False
 
 @admin.register(Ferramenta)
-class FerramentaAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class FerramentaAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('nome', 'patrimonio', 'status', 'filial', 'qr_code_preview')
     list_filter = ('status', 'fabricante', 'filial')
     search_fields = ('nome', 'patrimonio', 'codigo_identificacao')
-    readonly_fields = ('qr_code_preview',)
+    readonly_fields = ('qr_code_preview', 'filial',) # Impede a edição da filial após a criação.)
     inlines = [AtividadeInline]
     fieldsets = (
         ('Informações Principais', {
@@ -42,7 +42,7 @@ class FerramentaAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
         return "Será gerado ao salvar"
 
 @admin.register(Movimentacao)
-class MovimentacaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class MovimentacaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('ferramenta', 'retirado_por', 'data_retirada', 'esta_ativa', 'filial')
     list_filter = ('data_retirada', 'filial', 'ferramenta__nome')
     search_fields = ('ferramenta__nome', 'retirado_por__username')
@@ -77,7 +77,7 @@ class MovimentacaoAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None): return False
 
 @admin.register(Atividade)
-class AtividadeAdmin(FilialScopedQuerysetMixin, admin.ModelAdmin):
+class AtividadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     list_display = ('timestamp', 'ferramenta', 'tipo_atividade', 'usuario', 'filial')
     list_filter = ('tipo_atividade', 'timestamp', 'filial')
     search_fields = ('ferramenta__nome', 'descricao', 'usuario__username')

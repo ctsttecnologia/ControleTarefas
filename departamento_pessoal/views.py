@@ -1,10 +1,10 @@
-
 # departamento_pessoal/views.py
 
 import json
 import io
 import pandas as pd
 from docx import Document as PyDocxDocument
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 from weasyprint import HTML
 # Módulos Django
 from django.db.models import Q, Count
@@ -14,29 +14,17 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.template.loader import render_to_string
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
+
 # Módulos Locais
+from usuario.models import Filial
 from .models import Funcionario, Departamento, Cargo, Documento
 from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
-from core.mixins import FilialScopedQuerysetMixin
-# --- MIXINS ---
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
 
-class FilialScopedMixin:
-    """
-    Mixin que filtra a queryset principal de uma View baseada na 'filial'
-    do usuário logado. Requer que o modelo associado à view possua um
-    manager com o método `for_request`.
-    """
-    def get_queryset(self):
-        # A lógica começa buscando a queryset da classe pai na hierarquia (MRO).
-        qs = super().get_queryset()
-
-        # O filtro de filial é delegado ao manager customizado do modelo.
-        # Isso centraliza a lógica de segregação de dados no manager.
-        # Assumimos que todos os modelos relevantes têm o manager `FilialManager`.
-        return qs.model.objects.for_request(self.request)
 
 
 class StaffRequiredMixin(PermissionRequiredMixin):
@@ -47,18 +35,18 @@ class StaffRequiredMixin(PermissionRequiredMixin):
     permission_required = 'auth.view_user' # Exemplo: apenas quem pode ver usuários
     raise_exception = True # Levanta um erro 403 (Forbidden) se não tiver permissão
 
-
 # --- VIEWS PARA FUNCIONÁRIOS ---
 
-class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+class FuncionarioListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Funcionario
     template_name = 'departamento_pessoal/lista_funcionarios.html'
     context_object_name = 'funcionarios'
     paginate_by = 15
 
     def get_queryset(self):
-        # A filtragem de filial já foi feita pelo mixin. Aqui aplicamos apenas a busca.
+        # A chamada super() agora é limpa. O mixin cuida da filtragem por filial.
         queryset = super().get_queryset().select_related('cargo', 'departamento').order_by('nome_completo')
+        
         query = self.request.GET.get('q')
         if query:
             queryset = queryset.filter(
@@ -68,37 +56,35 @@ class FuncionarioListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListVie
             )
         return queryset
 
-class FuncionarioDetailView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
+class FuncionarioCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
+    model = Funcionario
+    form_class = FuncionarioForm
+    template_name = 'departamento_pessoal/funcionario_form.html'
+    extra_context = {'titulo_pagina': "Cadastrar Novo Funcionário"}
+    
+    def get_success_url(self):
+        # A mensagem de sucesso já é tratada pelo FilialCreateMixin.
+        return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
+
+
+class FuncionarioDetailView(ViewFilialScopedMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/detalhe_funcionario.html'
     context_object_name = 'funcionario'
-    queryset = Funcionario.objects.select_related('usuario', 'cargo', 'departamento').all()
 
     def get_queryset(self):
-        """
-        Otimiza a consulta para o novo modelo.
-        Agora só precisamos de select_related para os ForeignKeys diretos.
-        """
+        # Adiciona otimização, mantendo a filtragem do mixin.
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
-class FuncionarioCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
-    model = Funcionario
-    form_class = FuncionarioForm
-    template_name = 'departamento_pessoal/funcionario_form.html'
     
-    def get_success_url(self):
-        messages.success(self.request, "Funcionário cadastrado com sucesso!")
-        return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = "Cadastrar Novo Funcionário"
-        return context
-
-class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
+
+    def get_queryset(self):
+        # Otimização da query. A filtragem por filial é herdada do mixin.
+        return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
     def get_success_url(self):
         messages.success(self.request, "Dados do funcionário atualizados com sucesso!")
@@ -109,168 +95,146 @@ class FuncionarioUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, Updat
         context['titulo_pagina'] = f"Editar: {self.object.nome_completo}"
         return context
 
-class FuncionarioDeleteView(FilialScopedQuerysetMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDeleteView(ViewFilialScopedMixin, StaffRequiredMixin, DetailView):
     model = Funcionario
     template_name = 'departamento_pessoal/confirm_delete.html'
-    context_object_name = 'funcionario' # Adicionado para clareza no template
-
+    context_object_name = 'funcionario'
+    
     def post(self, request, *args, **kwargs):
-        """
-        Este método é chamado quando o formulário é enviado.
-        Ele verifica qual botão foi pressionado ('inativar' ou 'excluir').
-        """
-        # Carrega o objeto funcionário que está sendo visualizado
         funcionario = self.get_object()
-        
-        # Pega a ação do botão que foi clicado no formulário
         action = request.POST.get('action')
 
         if action == 'inativar':
-            # Ação de "Soft Delete": Apenas muda o status
             funcionario.status = 'INATIVO'
             funcionario.save()
-            messages.warning(request, f"O funcionário '{funcionario.nome_completo}' foi INATIVADO, mas seus dados foram mantidos.")
-
+            messages.warning(request, f"O funcionário '{funcionario.nome_completo}' foi INATIVADO.")
         elif action == 'excluir':
-            # Ação de Exclusão Permanente: Deleta o registro do banco de dados
             nome_completo = funcionario.nome_completo
             funcionario.delete()
             messages.error(request, f"O funcionário '{nome_completo}' foi EXCLUÍDO PERMANENTEMENTE.")
 
-        # Redireciona para a lista de funcionários após qualquer uma das ações
         return redirect(reverse_lazy('departamento_pessoal:lista_funcionarios'))
+
 
 # --- VIEWS PARA O PROCESSO DE ADMISSÃO (NOVAS) ---
 
-class FuncionarioAdmissaoView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
-    """
-    View para preencher os dados de admissão de um funcionário.
-    Usa o formulário focado 'AdmissaoForm'.
-    """
+class FuncionarioAdmissaoView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Funcionario
     form_class = AdmissaoForm
-    template_name = 'departamento_pessoal/admissao_form.html' # Usaremos um template único
+    template_name = 'departamento_pessoal/admissao_form.html'
 
     def get_success_url(self):
-        # Após salvar a admissão, volta para a página de detalhes do funcionário
         messages.success(self.request, f"Dados de admissão de '{self.object.nome_completo}' salvos com sucesso!")
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.object.data_admissao:
-             context['titulo_pagina'] = f"Editar Admissão de {self.object.nome_completo}"
+            context['titulo_pagina'] = f"Editar Admissão de {self.object.nome_completo}"
         else:
-             context['titulo_pagina'] = f"Registrar Admissão para {self.object.nome_completo}"
+            context['titulo_pagina'] = f"Registrar Admissão para {self.object.nome_completo}"
         return context
 
 # --- VIEWS PARA DEPARTAMENTO ---
-class DepartamentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+class DepartamentoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Departamento
     template_name = 'departamento_pessoal/lista_departamento.html'
     context_object_name = 'departamentos'
 
-class DepartamentoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
+    def get_queryset(self):
+        # Adiciona filtro extra sobre o queryset já filtrado pelo mixin.
+        return super().get_queryset().filter(ativo=True)
+
+
+class DepartamentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_departamento')
     extra_context = {'titulo_pagina': 'Novo Departamento'}
 
-    def form_valid(self, form):
-        messages.success(self.request, "Departamento criado com sucesso.")
-        return super().form_valid(form)
 
-
-class DepartamentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class DepartamentoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_departamento')
-    
+
+    def form_valid(self, form):
+        messages.success(self.request, "Departamento atualizado com sucesso.")
+        return super().form_valid(form)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Departamento: {self.object.nome}"
         return context
     
-    def form_valid(self, form):
-        messages.success(self.request, "Departamento atualizado com sucesso.")
-        return super().form_valid(form)
-
-
 # --- VIEWS PARA CARGOS ---
-class CargoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+
+class CargoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
 
-class CargoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
+    def get_queryset(self):
+        return super().get_queryset().filter(ativo=True)
+
+class CargoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_cargo')
     extra_context = {'titulo_pagina': 'Novo Cargo'}
 
-    def form_valid(self, form):
-        messages.success(self.request, "Cargo criado com sucesso.")
-        return super().form_valid(form)
-
-class CargoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_cargo')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = f"Editar Cargo: {self.object.nome}"
-        return context
 
     def form_valid(self, form):
         messages.success(self.request, "Cargo atualizado com sucesso.")
         return super().form_valid(form)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f"Editar Cargo: {self.object.nome}"
+        return context
+   
 
-# --- VIEWS PARA DOCUMENTOS (ADICIONADAS) ---
-
-class DocumentoListView(FilialScopedQuerysetMixin, StaffRequiredMixin, ListView):
+class DocumentoListView(StaffRequiredMixin, ListView):
     model = Documento
     template_name = 'departamento_pessoal/lista_documentos.html'
     context_object_name = 'documentos'
     paginate_by = 10
 
     def get_queryset(self):
-        # CORREÇÃO: A consulta agora começa com `super().get_queryset()`,
-        # invocando o FilialScopedMixin e garantindo a filtragem por filial.
-        queryset = super().get_queryset().select_related('funcionario').order_by('funcionario__nome_completo', 'tipo')
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            messages.error(self.request, "Por favor, selecione uma filial para ver os documentos.")
+            return self.model.objects.none() # Retorna queryset vazia em vez de erro
         
-        tipo_query = self.request.GET.get('tipo')
-        if tipo_query:
-            queryset = queryset.filter(tipo=tipo_query)
+        # Filtra documentos cujo funcionário pertence à filial ativa.
+        queryset = super().get_queryset().filter(funcionario__filial_id=filial_id).select_related('funcionario')
         return queryset
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tipos_documento'] = Documento.TIPO_CHOICES
-        return context
 
-# departamento_pessoal/views.py
-
-class DocumentoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateView):
+# A segurança aqui é garantir que o funcionário ao qual estamos adicionando
+# o documento pertence à filial ativa.
+class DocumentoCreateView(StaffRequiredMixin, CreateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
 
     def form_valid(self, form):
-        # CORREÇÃO DE SEGURANÇA: A busca pelo funcionário é feita DENTRO
-        # do escopo de filiais do usuário, para impedir a associação cruzada.
-        funcionario_pk = self.kwargs.get('funcionario_pk')
-        if not funcionario_pk:
-            messages.error(self.request, "ID do funcionário não fornecido.")
-            return redirect('departamento_pessoal:lista_funcionarios')
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            raise PermissionDenied("Nenhuma filial selecionada.")
 
-        # Busca o funcionário apenas dentro do conjunto de dados permitido.
-        funcionario = get_object_or_404(Funcionario.objects.for_request(self.request), pk=funcionario_pk)
+        # Garante que o funcionário ao qual estamos adicionando o documento
+        # pertence à filial ativa na sessão, prevenindo manipulação de ID na URL.
+        funcionario_pk = self.kwargs.get('funcionario_pk')
+        funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, filial_id=filial_id)
         
         form.instance.funcionario = funcionario
         messages.success(self.request, f"Documento adicionado com sucesso para {funcionario.nome_completo}.")
@@ -279,21 +243,31 @@ class DocumentoCreateView(FilialScopedQuerysetMixin, StaffRequiredMixin, CreateV
     def get_success_url(self):
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.kwargs['funcionario_pk']})
 
-class DocumentoUpdateView(FilialScopedQuerysetMixin, StaffRequiredMixin, UpdateView):
+# A lógica de update de documento precisa garantir que o usuário não edite
+# um documento de outra filial. Podemos criar um mixin simples para isso.
+class DocumentoScopedMixin:
+    def get_queryset(self):
+        qs = super().get_queryset()
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            raise PermissionDenied("Nenhuma filial selecionada.")
+        return qs.filter(funcionario__filial_id=filial_id)
+
+class DocumentoUpdateView(DocumentoScopedMixin, StaffRequiredMixin, UpdateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
-    success_url = reverse_lazy('departamento_pessoal:lista_documentos')
-    
+
+    def get_success_url(self):
+        messages.success(self.request, "Documento atualizado com sucesso.")
+        # Retorna para a lista geral, pois o contexto do funcionário pode se perder.
+        return reverse_lazy('departamento_pessoal:lista_documentos')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f'Editar Documento de {self.object.funcionario.nome_completo}'
         return context
     
-    def form_valid(self, form):
-        messages.success(self.request, "Documento atualizado com sucesso.")
-        return super().form_valid(form)
-
 # --- VIEW DO PAINEL ---
 
 class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
@@ -301,21 +275,22 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            context['permission_denied'] = True
+            messages.error(self.request, "Selecione uma filial para visualizar o painel.")
+            return context
+
+        # CORREÇÃO CRÍTICA: Filtrar todas as querysets pela filial da sessão.
+        funcionarios_qs = Funcionario.objects.filter(filial_id=filial_id)
+        departamentos_qs = Departamento.objects.filter(filial_id=filial_id)
         
-        # CORREÇÃO CRÍTICA: Todas as consultas agora usam o manager escopado
-        # `for_request` para garantir que os dados sejam APENAS da filial do usuário.
-        funcionarios_qs = Funcionario.objects.for_request(self.request)
-        departamentos_qs = Departamento.objects.for_request(self.request)
-        cargos_qs = Cargo.objects.for_request(self.request)
-        
-        # --- KPIs escopados por filial ---
         context['total_funcionarios_ativos'] = funcionarios_qs.filter(status='ATIVO').count()
         context['total_departamentos'] = departamentos_qs.filter(ativo=True).count()
-        context['total_cargos'] = cargos_qs.filter(ativo=True).count()
+        context['total_cargos'] = Cargo.objects.filter(filial_id=filial_id, ativo=True).count()
 
-        # --- Gráficos escopados por filial ---
         func_por_depto = departamentos_qs.filter(ativo=True).annotate(
-        num_funcionarios=Count('funcionarios', filter=Q(funcionarios__status='ATIVO'))
+            num_funcionarios=Count('funcionarios', filter=Q(funcionarios__status='ATIVO'))
         ).values('nome', 'num_funcionarios').order_by('-num_funcionarios')
             
         context['depto_labels'] = json.dumps([d['nome'] for d in func_por_depto])
@@ -329,13 +304,11 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         return context
 
 class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):
-    """
-    Classe base para views de exportação, para evitar repetição de código.
-    A lógica principal de filtragem por filial está aqui.
-    """
     def get_scoped_queryset(self):
-        # CORREÇÃO CRÍTICA: Centraliza a busca de dados escopados.
-        return Funcionario.objects.for_request(self.request).select_related('cargo', 'departamento')
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            raise PermissionDenied("Nenhuma filial selecionada para exportar dados.")
+        return Funcionario.objects.filter(filial_id=filial_id).select_related('cargo', 'departamento')
 
 
 # Relatório Excel #    
@@ -359,37 +332,10 @@ class ExportarFuncionariosExcelView(BaseExportView):
         df.to_excel(response, index=False)
         return response
     
-class ExportarFuncionariosPDFView(FilialScopedQuerysetMixin, StaffRequiredMixin, View):
-    """
-    Gera um relatório de funcionários em formato PDF usando um template HTML.
-    """
-    def get(self, request, *args, **kwargs):
-        # Filtra apenas funcionários ativos para o relatório
-        funcionarios = Funcionario.objects.select_related('cargo', 'departamento').filter(status='ATIVO')
-
-        context = {
-            'funcionarios': funcionarios,
-            'data_emissao': timezone.now().strftime('%d/%m/%Y às %H:%M'),
-        }
-
-        # Renderiza o template HTML como uma string
-        html_string = render_to_string('departamento_pessoal/relatorio_funcionarios_pdf.html', context)
-
-        # Gera o PDF a partir da string HTML
-        # O base_url é necessário para encontrar arquivos estáticos, se houver
-        html = HTML(string=html_string, base_url=request.build_absolute_uri())
-        pdf_file = html.write_pdf()
-
-        # Cria a resposta HTTP com o tipo de conteúdo para PDF
-        response = HttpResponse(pdf_file, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.pdf"'
-
-        return response
-
+# Unificando as views de PDF e fazendo herdar da BaseExportView
 class ExportarFuncionariosPDFView(BaseExportView):
     def get(self, request, *args, **kwargs):
         funcionarios = self.get_scoped_queryset().filter(status='ATIVO')
-        
         context = {
             'funcionarios': funcionarios,
             'data_emissao': timezone.now().strftime('%d/%m/%Y às %H:%M'),
@@ -397,31 +343,75 @@ class ExportarFuncionariosPDFView(BaseExportView):
         html_string = render_to_string('departamento_pessoal/relatorio_funcionarios_pdf.html', context)
         html = HTML(string=html_string, base_url=request.build_absolute_uri())
         pdf_file = html.write_pdf()
-
         response = HttpResponse(pdf_file, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.pdf"'
         return response
 
-
 class ExportarFuncionariosWordView(BaseExportView):
     def get(self, request, *args, **kwargs):
+        # 1. Obter os dados já filtrados pela filial ativa e com status 'ATIVO'
         funcionarios = self.get_scoped_queryset().filter(status='ATIVO')
-        
-        document = PyDocxDocument()
-        document.add_heading('Relatório de Colaboradores', level=1)
-        # ... (lógica completa de criação do DOCX) ...
-        table = document.add_table(rows=1, cols=4)
-        hdr_cells = table.rows[0].cells
-        hdr_cells[0].text = 'Nome Completo'; hdr_cells[1].text = 'Cargo'; hdr_cells[2].text = 'Departamento'; hdr_cells[3].text = 'Data de Admissão'
-        for f in funcionarios:
-            row_cells = table.add_row().cells
-            row_cells[0].text = f.nome_completo; row_cells[1].text = f.cargo.nome if f.cargo else '-'; # ... etc
 
+        # 2. Criar um documento Word em branco na memória
+        document = PyDocxDocument()
+
+        # --- Início da Construção do Documento ---
+
+        # Adicionar um título principal ao documento
+        document.add_heading('Relatório de Colaboradores Ativos', level=1)
+
+        # Adicionar metadados do relatório (data de emissão e filial)
+        data_emissao = timezone.now().strftime('%d/%m/%Y às %H:%M')
+        # Pega o nome da filial a partir do primeiro funcionário (se existir)
+        nome_filial = funcionarios.first().filial.nome if funcionarios.exists() else "N/A"
+        
+        document.add_paragraph(f"Filial: {nome_filial}")
+        document.add_paragraph(f"Data de Emissão: {data_emissao}")
+        document.add_paragraph(f"Total de Colaboradores Listados: {len(funcionarios)}")
+
+        # Adicionar um espaço antes da tabela
+        document.add_paragraph()
+
+        # 3. Criar a tabela de dados
+        # Definir os cabeçalhos das colunas
+        colunas = ['Matrícula', 'Nome Completo', 'Cargo', 'Departamento', 'Data de Admissão']
+        
+        tabela = document.add_table(rows=1, cols=len(colunas))
+        tabela.style = 'Table Grid' # Estilo de tabela com bordas
+
+        # Preencher a linha de cabeçalho
+        hdr_cells = tabela.rows[0].cells
+        for i, nome_coluna in enumerate(colunas):
+            cell = hdr_cells[i]
+            cell.text = nome_coluna
+            # Deixar o texto do cabeçalho em negrito
+            cell.paragraphs[0].runs[0].font.bold = True
+            # Centralizar o texto do cabeçalho
+            cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # 4. Preencher a tabela com os dados dos funcionários
+        for f in funcionarios:
+            row_cells = tabela.add_row().cells
+            row_cells[0].text = f.matricula or '-'
+            row_cells[1].text = f.nome_completo
+            row_cells[2].text = f.cargo.nome if f.cargo else '-'
+            row_cells[3].text = f.departamento.nome if f.departamento else '-'
+            row_cells[4].text = f.data_admissao.strftime('%d/%m/%Y') if f.data_admissao else '-'
+
+        # --- Fim da Construção do Documento ---
+
+        # 5. Salvar o documento em um buffer de memória
         buffer = io.BytesIO()
         document.save(buffer)
-        buffer.seek(0)
+        # É crucial "rebobinar" o buffer para o início antes de lê-lo.
+        buffer.seek(0) 
 
-        response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.docx"'
+        # 6. Criar a HttpResponse com o conteúdo do buffer
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+        response['Content-Disposition'] = 'attachment; filename="relatorio_colaboradores_ativos.docx"'
+        
         return response
     

@@ -12,12 +12,25 @@ class CarroForm(forms.ModelForm):
             'observacoes': forms.Textarea(attrs={'rows': 3}),
         }
 
-class AgendamentoForm(forms.ModelForm): 
+class AgendamentoForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        # Primeiro, executa o __init__ padrão da classe pai
+        super().__init__(*args, **kwargs)
+
+        # Verifica se o formulário está sendo usado para editar um objeto existente
+        if self.instance and self.instance.pk:
+            # Se sim, desabilita o campo 'data_hora_agenda'
+            self.fields['data_hora_agenda'].disabled = True
+            # Opcional: Adiciona um texto de ajuda para o usuário
+            self.fields['data_hora_agenda'].help_text = "A data de agendamento não pode ser alterada após a criação." 
+
     class Meta:
         model = Agendamento
         fields = '__all__'
         widgets = {
             'data_hora_agenda': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'data_hora_devolucao': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
             'descricao': forms.Textarea(attrs={'rows': 3}),
             'ocorrencia': forms.Textarea(attrs={'rows': 3}),
             'assinatura': forms.HiddenInput(),  # Se for um campo oculto que será preenchido via JS

@@ -36,7 +36,7 @@ urlpatterns = [
     path('<int:pk>/excluir/', ExcluirTreinamentoView.as_view(), name='excluir_treinamento'),
 
     # Lista todos os tipos de curso
-    path('tipos-de-curso/', TipoCursoListView.as_view(), name='lista_tipo_curso'),
+    path('tipos-de-curso/', TipoCursoListView.as_view(), name='lista_tipos_curso'),
     path('criar_tipo_curso/', CriarTipoCursoView.as_view(), name='criar_tipo_curso'),
     path('tipos-de-curso/<int:pk>/editar/', EditarTipoCursoView.as_view(), name='editar_tipo_curso'),
     path('tipos-de-curso/<int:pk>/excluir/', ExcluirTipoCursoView.as_view(), name='excluir_tipo_curso'),

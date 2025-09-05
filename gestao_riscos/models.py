@@ -2,32 +2,16 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.conf import settings # Usado para referenciar o modelo de Filial
+from django.conf import settings
 from core.managers import FilialManager
 from usuario.models import Filial
+from departamento_pessoal.models import Funcionario
 
 User = get_user_model()
 
 # -----------------------------------------------------------------------------
-# MANAGER CUSTOMIZADO PARA FILTRAGEM DE FILIAL
-# -----------------------------------------------------------------------------
-class FilialScopedManager(models.Manager):
-    """
-    Manager que adiciona um método para filtrar querysets pela filial do usuário
-    armazenada na request.
-    """
-    def for_request(self, request):
-        qs = self.get_queryset()
-        # Se o usuário estiver logado e tiver o atributo 'filial'
-        if request.user.is_authenticated and hasattr(request.user, 'filial'):
-            return qs.filter(filial=request.user.filial)
-        # Se não, retorna uma queryset vazia para não vazar dados.
-        return qs.none()
-
-# -----------------------------------------------------------------------------
 # MODELOS ATUALIZADOS
 # -----------------------------------------------------------------------------
-
 class Incidente(models.Model):
     """Registra qualquer ocorrência ou incidente de segurança."""
     SETORES_CHOICES = [
@@ -56,8 +40,8 @@ class Incidente(models.Model):
     registrado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='incidentes_registrados')
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='incidentes', null=True, blank=False)
 
-    # Manager Padrão
-    objects = FilialManager()
+    # Usando o manager padrão do Django
+    objects = models.Manager()
 
     class Meta:
         verbose_name = "Incidente"
@@ -71,10 +55,8 @@ class Incidente(models.Model):
 class Inspecao(models.Model):
     """Agenda e registra inspeções de segurança."""
     STATUS_CHOICES = [
-        ('PENDENTE', 'Pendente'),
-        ('CONCLUIDA', 'Concluída'),
+        ('PENDENTE', 'Pendente'), ('CONCLUIDA', 'Concluída'),
         ('CANCELADA', 'Cancelada'),
-        
     ]
     
     equipamento = models.ForeignKey(
@@ -89,8 +71,8 @@ class Inspecao(models.Model):
     observacoes = models.TextField(blank=True)
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='inspecoes', null=True, blank=False)
 
-    # Manager Padrão
-    objects = FilialManager()
+    # Usando o manager padrão do Django
+    objects = models.Manager()
 
     class Meta:
         verbose_name = "Inspeção"
@@ -99,4 +81,38 @@ class Inspecao(models.Model):
 
     def __str__(self):
         return f"Inspeção de {self.equipamento.nome} em {self.data_agendada}"
+    
+class CartaoTag(models.Model):
+    """
+    Representa um Cartão de Bloqueio (Tag de Perigo) individual para um funcionário.
+    """
+    funcionario = models.ForeignKey(
+        Funcionario,
+        on_delete=models.CASCADE,
+        related_name='cartoes_tag',
+        verbose_name="Funcionário Proprietário"
+    )
+    fone = models.CharField(
+        max_length=20,
+        default="(11) 3045-9400",
+        verbose_name="Telefone de Contato"
+    )
+    data_criacao = models.DateTimeField(auto_now_add=True, verbose_name="Data de Criação")
+    data_validade = models.DateField(verbose_name="Data de Validade", null=True, blank=True)
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='cartoes_tag'
+    )
+
+    objects = models.Manager() # Usando o manager padrão
+
+    class Meta:
+        verbose_name = "Cartão de Bloqueio (Tag)"
+        verbose_name_plural = "Cartões de Bloqueio (Tags)"
+        ordering = ['-data_criacao']
+
+    def __str__(self):
+        return f"Cartão de {self.funcionario.nome_completo}"
     

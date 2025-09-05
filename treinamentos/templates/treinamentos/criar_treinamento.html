@@ -1,11 +1,10 @@
-
 {% extends 'base.html' %}
 {% load static widget_tweaks %}
 
 {% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Treinamento{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstreinamentos/treinamento_form_styles.css' %}">
+    {# Mantenha seu CSS customizado, se houver #}
 {% endblock %}
 
 
@@ -32,133 +31,189 @@
             <form method="post" novalidate>
                 {% csrf_token %}
 
-                {% if form.non_field_errors or form_participantes.non_form_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {{ form.non_field_errors.as_ul }}
-                        {{ form_participantes.non_form_errors.as_ul }}
+                {# ========================================== #}
+                {# ==== BLOCO DE EXIBIÇÃO DE ERROS MELHORADO ==== #}
+                {# ========================================== #}
+                {% if form.errors or form_participantes.errors %}
+                    <div class="alert alert-danger">
+                        <h5 class="alert-heading">🚨 Foram encontrados erros!</h5>
+                        <p>Por favor, corrija os problemas indicados abaixo:</p>
+                        <hr>
+                        <ul class="mb-0">
+                            {# Exibe erros de campos específicos do formulário principal #}
+                            {% for field in form %}
+                                {% if field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {# Exibe erros gerais do formulário principal #}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            
+                            {# AQUI ESTÁ A CHAVE: Exibe erros gerais do formset (ex: duplicados) #}
+                            {% for error in form_participantes.non_form_errors %}
+                                <li><strong>Participantes:</strong> {{ error }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 {% endif %}
 
-                <!-- Seção 1: Dados do Treinamento -->
                 <h5 class="section-title">Dados do Treinamento</h5>
-                <div class="row g-3">
-                    <div class="col-md-6">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-8">
                         <div class="form-floating">
-                            {% render_field form.nome class+="form-control" placeholder=form.nome.label required="required" %}
+                            {% render_field form.nome class+="form-control" %}
                             <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+                            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <div class="form-floating">
+                                {% render_field form.tipo_curso class+="form-select" %}
+                                <label for="{{ form.tipo_curso.id_for_label }}">{{ form.tipo_curso.label }}</label>
+                            </div>
+                            <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-outline-secondary" title="Adicionar Novo Tipo de Curso">
+                                <i class="bi bi-plus-lg"></i>
+                            </a>
+                        </div>
+                        {% if form.tipo_curso.errors %}<div class="invalid-feedback d-block">{{ form.tipo_curso.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-floating">
+                             {% render_field form.descricao class+="form-control" style="height: 100px" %}
+                             <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+                             {% if form.descricao.errors %}<div class="invalid-feedback d-block">{{ form.descricao.errors.as_text }}</div>{% endif %}
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="form-floating">
-                            {% render_field form.tipo_curso class+="form-select" required="required" %}
-                            <label for="{{ form.tipo_curso.id_for_label }}">{{ form.tipo_curso.label }}</label>
+                            {% render_field form.palestrante class+="form-control" %}
+                            <label for="{{ form.palestrante.id_for_label }}">{{ form.palestrante.label }}</label>
+                            {% if form.palestrante.errors %}<div class="invalid-feedback d-block">{{ form.palestrante.errors.as_text }}</div>{% endif %}
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label for="{{ form.data_inicio.id_for_label }}" class="form-label">{{ form.data_inicio.label }}</label>
-                        {% render_field form.data_inicio type="datetime-local" class+="form-control" required="required" %}
-                    </div>
-                    <div class="col-md-6">
-                        <label for="{{ form.data_vencimento.id_for_label }}" class="form-label">{{ form.data_vencimento.label }}</label>
-                        {% render_field form.data_vencimento type="date" class+="form-control" %}
-                    </div>
-                    <div class="col-md-6">
+                     <div class="col-md-6">
                         <div class="form-floating">
-                            {% render_field form.local class+="form-control" placeholder=form.local.label %}
+                            {% render_field form.local class+="form-control" %}
                             <label for="{{ form.local.id_for_label }}">{{ form.local.label }}</label>
+                            {% if form.local.errors %}<div class="invalid-feedback d-block">{{ form.local.errors.as_text }}</div>{% endif %}
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
+                        <label for="{{ form.data_inicio.id_for_label }}" class="form-label">Início</label>
+                        {% render_field form.data_inicio class+="form-control" %}
+                         {% if form.data_inicio.errors %}<div class="invalid-feedback d-block">{{ form.data_inicio.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.data_vencimento.id_for_label }}" class="form-label">Vencimento</label>
+                        {% render_field form.data_vencimento class+="form-control" %}
+                         {% if form.data_vencimento.errors %}<div class="invalid-feedback d-block">{{ form.data_vencimento.errors.as_text }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-floating">
+                            {% render_field form.duracao type="number" class+="form-control" %}
+                            <label for="{{ form.duracao.id_for_label }}">{{ form.duracao.label }}</label>
+                             {% if form.duracao.errors %}<div class="invalid-feedback d-block">{{ form.duracao.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                     <div class="col-md-3">
                         <div class="form-floating">
                             {% render_field form.status class+="form-select" %}
                             <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                            {% if form.status.errors %}<div class="invalid-feedback d-block">{{ form.status.errors.as_text }}</div>{% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Seção 2: Participantes -->
-                <h5 class="section-title mt-5">Participantes</h5>
+                <h5 class="section-title mt-4">Participantes</h5>
                 {{ form_participantes.management_form }}
-                <div id="participantes-formset">
-                    {% for form_participante in form_participantes %}
-                    <div class="row g-2 align-items-center participante-form mb-2">
-                        {% for hidden in form_participante.hidden_fields %}{{ hidden }}{% endfor %}
+                
+                <div id="participantes-formset" class="d-flex flex-column gap-2">
+                    {% for p_form in form_participantes %}
+                    <div class="row g-2 align-items-center participante-form">
+                        {% for hidden in p_form.hidden_fields %}{{ hidden }}{% endfor %}
                         <div class="col-md-5">
-                            {% render_field form_participante.funcionario class+="form-select form-select-sm" %}
+                            {% render_field p_form.funcionario class+="form-select form-select-sm" %}
                         </div>
                         <div class="col-md-2">
                             <div class="input-group input-group-sm">
-                                {% render_field form_participante.nota_avaliacao class+="form-control" placeholder="Nota" %}
+                                {% render_field p_form.nota_avaliacao class+="form-control" placeholder="Nota" %}
                                 <span class="input-group-text">%</span>
                             </div>
                         </div>
-                        <div class="col-md-2 text-center">
+                        <div class="col text-center">
                             <div class="form-check form-switch d-inline-block">
-                                {% render_field form_participante.presente class+="form-check-input" %}
-                                <label for="{{ form_participante.presente.id_for_label }}" class="form-check-label">Presente</label>
+                                {% render_field p_form.presente class+="form-check-input" %}
+                                <label for="{{ p_form.presente.id_for_label }}" class="form-check-label">Presente</label>
                             </div>
                         </div>
-                        <div class="col-md-2 text-center">
+                        <div class="col text-center">
                             <div class="form-check form-switch d-inline-block">
-                                {% render_field form_participante.certificado_emitido class+="form-check-input" %}
-                                <label for="{{ form_participante.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label>
+                                {% render_field p_form.certificado_emitido class+="form-check-input" %}
+                                <label for="{{ p_form.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label>
                             </div>
                         </div>
-                        <div class="col-md-1 text-end">
-                            <div class="form-check d-none">
-                                {% render_field form_participante.DELETE class+="form-check-input" %}
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
-                                <i class="bi bi-trash3"></i>
-                            </button>
+                        <div class="col-auto text-end">
+                            {% if p_form.instance.pk %}
+                                {{ p_form.DELETE }}
+                                <label for="{{ p_form.DELETE.id_for_label }}" class="btn btn-sm btn-outline-danger remove-form-row" title="Marcar para Remover">
+                                    <i class="bi bi-trash3"></i>
+                                </label>
+                            {% else %}
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            {% endif %}
                         </div>
-                        {% if form_participante.errors %}
-                        <div class="col-12"><div class="alert alert-danger py-1 px-2 small">{{ form_participante.errors }}</div></div>
-                        {% endif %}
+                        {% if p_form.errors %}<div class="col-12"><div class="alert alert-danger py-1 px-2 mt-1 small">{{ p_form.errors.as_ul }}</div></div>{% endif %}
                     </div>
                     {% endfor %}
                 </div>
-                
+
+                <h5 class="section-title mt-4">Detalhes Operacionais</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            {# Supondo que você renomeou o campo 'hxh' para 'horas_homem' no modelo/form #}
+                            {% render_field form.horas_homem type="number" class+="form-control" placeholder="0" %}
+                            <label for="{{ form.horas_homem.id_for_label }}">{{ form.horas_homem.label }}</label>
+                            {% if form.horas_homem.errors %}<div class="invalid-feedback d-block">{{ form.horas_homem.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            {% render_field form.custo type="number" step="0.01" class+="form-control" placeholder="0.00" %}
+                            <label for="{{ form.custo.id_for_label }}">{{ form.custo.label }}</label>
+                            {% if form.custo.errors %}<div class="invalid-feedback d-block">{{ form.custo.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-floating">
+                            {% render_field form.participantes_previstos type="number" class+="form-control" placeholder="0" %}
+                            <label for="{{ form.participantes_previstos.id_for_label }}">{{ form.participantes_previstos.label }}</label>
+                            {% if form.participantes_previstos.errors %}<div class="invalid-feedback d-block">{{ form.participantes_previstos.errors.as_text }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
                 <template id="empty-form-template">
-                    <div class="row g-2 align-items-center participante-form mb-2">
+                    <div class="row g-2 align-items-center participante-form">
+                        {{ form_participantes.empty_form.as_p|json_script:"empty-form-p" }}
                         {% for hidden in form_participantes.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
-                        <div class="col-md-5">
-                            {% render_field form_participantes.empty_form.funcionario class+="form-select form-select-sm" %}
-                        </div>
-                        <div class="col-md-2">
-                            <div class="input-group input-group-sm">
-                                {% render_field form_participantes.empty_form.nota_avaliacao class+="form-control" placeholder="Nota" %}
-                                <span class="input-group-text">%</span>
-                            </div>
-                        </div>
-                        <div class="col-md-2 text-center">
-                            <div class="form-check form-switch d-inline-block">
-                                {% render_field form_participantes.empty_form.presente class+="form-check-input" %}
-                                <label for="{{ form_participantes.empty_form.presente.id_for_label }}" class="form-check-label">Presente</label>
-                            </div>
-                        </div>
-                        <div class="col-md-2 text-center">
-                            <div class="form-check form-switch d-inline-block">
-                                {% render_field form_participantes.empty_form.certificado_emitido class+="form-check-input" %}
-                                <label for="{{ form_participantes.empty_form.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label>
-                            </div>
-                        </div>
-                        <div class="col-md-1 text-end">
-                            <div class="form-check d-none">
-                                {% render_field form_participantes.empty_form.DELETE class+="form-check-input" %}
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        </div>
+                        <div class="col-md-5">{% render_field form_participantes.empty_form.funcionario class+="form-select form-select-sm" %}</div>
+                        <div class="col-md-2"><div class="input-group input-group-sm">{% render_field form_participantes.empty_form.nota_avaliacao class+="form-control" placeholder="Nota" %}<span class="input-group-text">%</span></div></div>
+                        <div class="col text-center"><div class="form-check form-switch d-inline-block">{% render_field form_participantes.empty_form.presente class+="form-check-input" %}<label for="{{ form_participantes.empty_form.presente.id_for_label }}" class="form-check-label">Presente</label></div></div>
+                        <div class="col text-center"><div class="form-check form-switch d-inline-block">{% render_field form_participantes.empty_form.certificado_emitido class+="form-check-input" %}<label for="{{ form_participantes.empty_form.certificado_emitido.id_for_label }}" class="form-check-label">Certif.</label></div></div>
+                        <div class="col-auto text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante"><i class="bi bi-trash3"></i></button></div>
                     </div>
                 </template>
 
-                <button type="button" id="add-form" class="btn btn-outline-secondary mt-2">
+                <button type="button" id="add-form-row" class="btn btn-outline-secondary mt-2">
                     <i class="bi bi-plus-circle me-1"></i> Adicionar Participante
                 </button>
 
-                <!-- Botões de Ação -->
                 <div class="d-flex justify-content-between mt-5 border-top pt-4">
                     <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-secondary">
                         <i class="bi bi-x-circle me-1"></i> Cancelar
@@ -168,6 +223,7 @@
                     </button>
                 </div>
             </form>
+
         </div>
     </div>
 </div>
@@ -176,32 +232,31 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // CORREÇÃO: O ID do campo de total de formulários depende do prefixo do formset.
-    // Se o prefixo for 'participantes', o ID será 'id_participantes-TOTAL_FORMS'.
-    // Se não houver prefixo, será 'id_form-TOTAL_FORMS'.
-    // Vamos tentar os dois para maior robustez.
-    let totalFormsInput = document.querySelector('#id_participantes-TOTAL_FORMS');
-    if (!totalFormsInput) {
-        totalFormsInput = document.querySelector('#id_form-TOTAL_FORMS');
-    }
-
     const formsetContainer = document.querySelector('#participantes-formset');
-    const addButton = document.querySelector('#add-form');
+    const addButton = document.querySelector('#add-form-row');
     const emptyFormTemplate = document.querySelector('#empty-form-template');
+    
+    // O prefixo é crucial! Django usa isso para identificar os formulários do formset.
+    const formsetPrefix = '{{ form_participantes.prefix }}';
+    const totalFormsInput = document.querySelector(`#id_${formsetPrefix}-TOTAL_FORMS`);
 
-    // --- Verificação de Segurança ---
     if (!formsetContainer || !addButton || !emptyFormTemplate || !totalFormsInput) {
-        console.error('Um ou mais elementos essenciais do formset não foram encontrados. A funcionalidade de adicionar/remover não funcionará.');
+        console.error('Elementos essenciais do formset não foram encontrados. A funcionalidade de adicionar/remover não funcionará.');
         return;
     }
 
     addButton.addEventListener('click', function() {
         let formNum = parseInt(totalFormsInput.value);
         
-        const newFormNode = emptyFormTemplate.content.cloneNode(true);
-        const newFormHtml = newFormNode.firstElementChild.outerHTML.replace(/__prefix__/g, formNum);
+        // Clona o template e substitui o placeholder '__prefix__' pelo número do novo formulário.
+        const newFormHtml = emptyFormTemplate.innerHTML.replace(/__prefix__/g, formNum);
         
-        formsetContainer.insertAdjacentHTML('beforeend', newFormHtml);
+        // Cria um novo elemento div para o formulário e insere o HTML.
+        const newFormElement = document.createElement('div');
+        newFormElement.innerHTML = newFormHtml;
+        formsetContainer.append(newFormElement.firstElementChild);
+
+        // Atualiza o contador de formulários.
         totalFormsInput.value = formNum + 1;
     });
 
@@ -212,15 +267,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const deleteInput = formRow.querySelector('input[type="checkbox"][id$="-DELETE"]');
             
             if (deleteInput) {
+                // Se o formulário já foi salvo, apenas marca para exclusão.
                 deleteInput.checked = true;
-                formRow.style.display = 'none';
+                formRow.style.display = 'none'; // Esconde o formulário.
             } else {
+                // Se for um formulário novo (que ainda não foi salvo), remove do DOM.
                 formRow.remove();
-                // Esta lógica de decrementar pode ser complexa. Django lida com isso se os formulários
-                // forem simplesmente removidos do DOM antes de submeter.
             }
         }
     });
 });
 </script>
 {% endblock %}
+
