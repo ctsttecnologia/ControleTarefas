@@ -71,7 +71,7 @@ class Tarefas(models.Model):
     descricao = models.TextField(_('Descrição'), blank=True, null=True)
     data_criacao = models.DateTimeField(_('Data de Criação'), auto_now_add=True)
     data_atualizacao = models.DateTimeField(_('Última Atualização'), auto_now=True)
-    data_inicio = models.DateTimeField(_('Data de Início'), default=timezone.now)
+    data_inicio = models.DateTimeField(_('Data de Início'), blank=True, null=True)
     prazo = models.DateTimeField(_('Prazo Final'), blank=True, null=True)
     concluida_em = models.DateTimeField(_('Concluída em'), blank=True, null=True)
     status = models.CharField(_('Status'), max_length=20, choices=STATUS_CHOICES, default='pendente')
@@ -211,6 +211,7 @@ class Tarefas(models.Model):
         elif frequencia == 'semanal': delta = relativedelta(weeks=1)
         elif frequencia == 'quinzenal': delta = relativedelta(weeks=2)
         elif frequencia == 'mensal': delta = relativedelta(months=1)
+        elif frequencia == 'anual': delta = relativedelta(years=1)
         else: return
 
         novo_inicio = self.data_inicio + delta
