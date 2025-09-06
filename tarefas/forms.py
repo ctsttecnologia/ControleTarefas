@@ -60,6 +60,9 @@ class TarefaForm(forms.ModelForm):
             'projeto': forms.TextInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'prioridade': forms.Select(attrs={'class': 'form-select'}),
+            'duracao_prevista': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ex: 1 02:30:00'}),
+            'tempo_gasto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ex: 0 01:15:00'}),
+            'dias_lembrete': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 30}),
         }
         help_texts = {
             'duracao_prevista': 'Formato: dias HH:MM:SS (ex: 1 02:30:00)',
