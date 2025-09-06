@@ -38,20 +38,28 @@ class TarefaForm(forms.ModelForm):
             'titulo', 'descricao', 'status', 'prioridade',
             'data_inicio', 'prazo', 'responsavel', 'projeto',
             'duracao_prevista', 'tempo_gasto', 'dias_lembrete',
-            # Adicionando os campos de recorrência ao formulário
             'recorrente', 'frequencia_recorrencia', 'data_fim_recorrencia'
         ]
         widgets = {
-            'titulo': forms.TextInput(attrs={'class': 'form-control form-control-lg'}),
+            'data_inicio': forms.DateTimeInput(
+                attrs={
+                    'class': 'form-control datetime-picker', # AQUI ADICIONAMOS A CLASSE!
+                    'placeholder': 'Selecione a data e hora de início'
+                }
+            ),
+            'prazo': forms.DateTimeInput(
+                attrs={
+                    'class': 'form-control datetime-picker', # Aproveite para adicionar no prazo também
+                    'placeholder': 'Selecione o prazo final'
+                }
+            ),
+            # Adicione outros widgets para estilização se desejar
+            'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
-            'prioridade': forms.Select(attrs={'class': 'form-select'}),
-            'data_inicio': forms.DateTimeInput(attrs={'class': 'form-control datetime-picker'}, format='%Y-%m-%dT%H:%M'),
-            'prazo': forms.DateTimeInput(attrs={'class': 'form-control datetime-picker'}, format='%Y-%m-%dT%H:%M'),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'projeto': forms.TextInput(attrs={'class': 'form-control'}),
-            'duracao_prevista': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'DD HH:MM:SS'}),
-            'tempo_gasto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'DD HH:MM:SS'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'prioridade': forms.Select(attrs={'class': 'form-select'}),
         }
         help_texts = {
             'duracao_prevista': 'Formato: dias HH:MM:SS (ex: 1 02:30:00)',
