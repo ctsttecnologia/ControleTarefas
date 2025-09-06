@@ -44,11 +44,6 @@ class Departamento(models.Model):
     # Manager customizado para segregação de dados
     objects = FilialManager()
 
-    def save(self, *args, **kwargs):
-        # Garante que a filial do documento seja sempre a mesma do funcionário.
-        if self.funcionario:
-            self.filial = self.funcionario.filial
-        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _("Departamento")
