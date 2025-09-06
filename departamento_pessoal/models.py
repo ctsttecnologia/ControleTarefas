@@ -1,4 +1,5 @@
 
+
 # models.py
 
 from datetime import date
@@ -38,17 +39,12 @@ class Departamento(models.Model):
         on_delete=models.PROTECT,
         related_name='departamentos',  
         verbose_name=_("Filial"),
-        null=True,                  
-        blank=False              
+        null=True,            
+        blank=False          
     )
     # Manager customizado para segregação de dados
     objects = FilialManager()
-
-    def save(self, *args, **kwargs):
-        # Garante que a filial do documento seja sempre a mesma do funcionário.
-        if self.funcionario:
-            self.filial = self.funcionario.filial
-        super().save(*args, **kwargs)
+   
 
     class Meta:
         verbose_name = _("Departamento")
@@ -86,7 +82,7 @@ class Cargo(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='cargos',  # CORREÇÃO: Plural para clareza
+        related_name='cargos',  
         verbose_name=_("Filial"),
         null=True,
         blank=False
@@ -132,7 +128,7 @@ class Funcionario(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='funcionarios',  # CORREÇÃO: Plural para clareza
+        related_name='funcionarios',  
         verbose_name=_("Filial de Lotação"),
         null=True,
         blank=False
@@ -177,7 +173,7 @@ class Funcionario(models.Model):
     atualizado_em = models.DateTimeField(auto_now=True)
     foto_3x4 = models.ImageField(
         _("Foto 3x4"),
-        upload_to='fotos_3x4/', # A pasta dentro do seu diretório MEDIA_ROOT
+        upload_to='fotos_3x4/', 
         null=True,
         blank=True,
         help_text=_("Faça o upload de uma foto 3x4 do funcionário.")
@@ -205,8 +201,12 @@ class Funcionario(models.Model):
         if not self.data_nascimento:
             return None
         hoje = date.today()
+        # Calcula a diferença de anos e subtrai 1 se o aniversário ainda não ocorreu este ano.
         return hoje.year - self.data_nascimento.year - ((hoje.month, hoje.day) < (self.data_nascimento.month, self.data_nascimento.day))
-    idade.fget.short_description = _("Idade")
+    
+    # O decorador @property já torna o método acessível como um atributo,
+    # então o uso de 'idade.fget.short_description' não é necessário ou é um padrão antigo.
+    # O Django Admin pode inferir o nome do campo do próprio nome do método (@property).
 
 
 class Documento(models.Model):
@@ -222,7 +222,7 @@ class Documento(models.Model):
 
     funcionario = models.ForeignKey(
         Funcionario,
-        on_delete=models.CASCADE,  # Se o funcionário for removido, seus documentos também são.
+        on_delete=models.CASCADE,  
         related_name='documentos',
         verbose_name=_("Funcionário")
     )
@@ -237,7 +237,7 @@ class Documento(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='documentos_filial', # CORREÇÃO: Nome único para evitar conflito
+        related_name='documentos_filial', 
         verbose_name=_("Filial"),
         null=True,
         blank=False
