@@ -300,50 +300,143 @@ class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMess
         return response
 
 
-class VinculoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
+class VinculoUpdateView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Vinculo
     form_class = VinculoForm
-    permission_required = 'controle_de_telefone.change_vinculo'
-    template_name = 'controle_de_telefone/generic_form.html'
     success_url = reverse_lazy('controle_de_telefone:vinculo_list')
     success_message = "Vínculo atualizado com sucesso!"
 
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Verifica a permissão manualmente. O usuário deve ser o dono do vínculo
+        ou ter a permissão 'change_vinculo'.
+        """
+        vinculo = self.get_object()
+        is_owner = request.user == vinculo.funcionario.usuario
+        is_manager = request.user.has_perm('controle_de_telefone.change_vinculo')
+
+        if not is_owner and not is_manager:
+            return self.handle_no_permission()
+        
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_template_names(self):
+        """
+        Retorna um template diferente se o usuário logado for o funcionário
+        e o termo estiver pendente de assinatura.
+        """
+        self.object = self.get_object()
+        is_owner = self.request.user == self.object.funcionario.usuario
+        is_pending = not self.object.assinatura_digital and not self.object.termo_assinado
+
+        if is_owner and is_pending:
+            return ['controle_de_telefone/vinculo_assinatura.html'] # Template para o funcionário assinar
+        return ['controle_de_telefone/generic_form.html'] # Template padrão para o gestor editar
+
     def get_queryset(self):
-        filial_id = self.request.session.get('active_filial_id')
-        return Vinculo.objects.filter(funcionario__filial_id=filial_id)
-    
+        """
+        Permite que o gestor veja vínculos da sua filial e o funcionário
+        veja apenas os seus próprios vínculos.
+        """
+        user = self.request.user
+        if user.has_perm('controle_de_telefone.change_vinculo'):
+            filial_id = self.request.session.get('active_filial_id')
+            if filial_id:
+                return Vinculo.objects.filter(funcionario__filial_id=filial_id)
+            return Vinculo.objects.none()
+        else:
+            return Vinculo.objects.filter(funcionario__usuario=user)
+
     def get_form(self, form_class=None):
         """
-        Filtra os campos para mostrar itens disponíveis E o item atualmente vinculado.
+        Customiza os campos do formulário dependendo do usuário.
+        - Gestor: Pode editar os aparelhos/linhas disponíveis.
+        - Funcionário: Não pode editar nada, apenas assinar.
         """
         form = super().get_form(form_class)
+        self.object = self.get_object()
+        is_owner = self.request.user == self.object.funcionario.usuario
+        is_manager = self.request.user.has_perm('controle_de_telefone.change_vinculo')
+        is_pending = not self.object.assinatura_digital and not self.object.termo_assinado
+
+        if is_manager and not (is_owner and is_pending):
+            # Lógica para gestores (campos de aparelho/linha disponíveis para troca)
+            if self.object.aparelho:
+                form.fields['aparelho'].queryset = Aparelho.objects.filter(
+                    Q(status='disponivel') | Q(pk=self.object.aparelho.pk)
+                )
+            else:
+                form.fields['aparelho'].queryset = Aparelho.objects.filter(status='disponivel')
+
+            if self.object.linha:
+                form.fields['linha'].queryset = LinhaTelefonica.objects.filter(
+                    Q(status='disponivel') | Q(pk=self.object.linha.pk)
+                )
+            else:
+                form.fields['linha'].queryset = LinhaTelefonica.objects.filter(status='disponivel')
+            
+            # Gestor não edita campos de assinatura diretamente
+            del form.fields['assinatura_digital']
+            del form.fields['termo_assinado']
         
-        # Aparelho: mostra disponíveis OU o que já está neste vínculo
-        if self.object.aparelho:
-            form.fields['aparelho'].queryset = Aparelho.objects.filter(
-                Q(status='disponivel') | Q(pk=self.object.aparelho.pk)
-            )
-        else:
-             form.fields['aparelho'].queryset = Aparelho.objects.filter(status='disponivel')
-
-        # Linha: mostra disponíveis OU a que já está neste vínculo
-        if self.object.linha:
-            form.fields['linha'].queryset = LinhaTelefonica.objects.filter(
-                Q(status='disponivel') | Q(pk=self.object.linha.pk)
-            )
-        else:
-            form.fields['linha'].queryset = LinhaTelefonica.objects.filter(status='disponivel')
-
-        form.fields['data_entrega'].disabled = True 
+        elif is_owner:
+            # Desabilita todos os campos para o funcionário, exceto os de assinatura
+            for field_name in ['funcionario', 'aparelho', 'linha', 'data_entrega', 'data_devolucao']:
+                if field_name in form.fields:
+                    form.fields[field_name].disabled = True
 
         return form
 
     def get_context_data(self, **kwargs):
+        """
+        Adiciona dados extras ao contexto do template.
+        """
         context = super().get_context_data(**kwargs)
-        context['titulo'] = 'Editar Vínculo'
+        self.object = self.get_object()
+        is_owner = self.request.user == self.object.funcionario.usuario
+        is_pending = not self.object.assinatura_digital and not self.object.termo_assinado
+
+        if is_owner and is_pending:
+            context['titulo'] = 'Assinar Termo de Responsabilidade'
+            # Adiciona as cláusulas do documento para serem exibidas no template
+            context['termo_clauses'] = {
+                'clausula_1': "O Celular de propriedade da CETEST MINAS ENGENHARIA E SERVIÇOS S.A ficar a partir desta data sob sua inteira responsabilidade, devendo ser mantido em perfeito estado de conservação e funcionamento, não podendo em qualquer hipótese ser cedido a terceiros sem prévia e escrita concordância da CETEST MINAS ENGENHARIA E SERVIÇOS S.A, obedecendo as cláusulas seguintes:.",
+                'clausula_2': "A CETEST MINAS ENGENHARIA E SERVIÇOS S.A NÃO autoriza o portador, ao qual este equipamento se encontra sob responsabilidade por intermédio deste termo, seja em comunicação de voz ou em transmissão de dados, receber e enviar conteúdo considerado inadequado ou ilegal, sob o ponto de vista da ética e da legislação.",
+                'clausula_3': "Será de responsabilidade do usuário, signatário deste termo, responder por qualquer forma de comunicação que demonstre atitude de preconceito e racismo, exploração do trabalho escravo, depreciação de entidades públicas e seus servidores, assédio sexual e moral, participação em negócios exclusos aos propósitos desta empresa, descumprimento de legislação e normas reguladoras da competição saudável de mercado.",
+                'clausula_4': "Fica aos cuidados do Sr.(a) guarda e conservação do aparelho e respectivos acessórios entregues nesta data, devendo restitu-los sempre que for solicitado pela empresa ou em caso de rescisão do contrato de trabalho, sob pena de responsabilizar-se pelo pagamento de eventuais danos materiais.",
+                'clausula_5': "Fica vedado ao Usuário permutar o equipamento, ou qualquer um de seus acessórios, com outro usuário.",
+                'clausula_6': "Proibido a troca do e-mail e senha fornecida pela empresa.",
+                'clausula_7': "A qualquer momento e sem prévio aviso, a empresa CETEST MINAS ENGENHARIA E SERVIÇOS S.A poderá solicitar a devolução imediata da linha e do aparelho.",
+                'clausula_8': "Diante das cláusulas descritas neste termo e da responsabilidade que me foi confiada, declaro que recebi os equipamentos acima descritos em perfeito estado de conservação, bem como autorizo desde já o desconto em minha folha de pagamento, os valores das ligações particulares de meu exclusivo interesse bem como quaisquer outras não relacionadas com o trabalho."
+            }
+        else:
+            context['titulo'] = 'Editar Vínculo'
+            
         context['voltar_url'] = self.success_url
         return context
 
+    def form_valid(self, form):
+        """
+        Valida se pelo menos uma forma de assinatura foi enviada e
+        customiza a mensagem de sucesso.
+        """
+        self.object = self.get_object()
+        is_owner = self.request.user == self.object.funcionario.usuario
+        is_pending = not self.object.assinatura_digital and not self.object.termo_assinado
+        
+        if is_owner and is_pending:
+            assinatura_digital = form.cleaned_data.get('assinatura_digital')
+            termo_assinado = form.cleaned_data.get('termo_assinado')
+            if not assinatura_digital and not termo_assinado:
+                 form.add_error(None, "Você deve desenhar sua assinatura ou fazer o upload do termo assinado para continuar.")
+                 return self.form_invalid(form)
+            
+            messages.success(self.request, "Termo de Responsabilidade assinado com sucesso!")
+        else:
+            # Usa a mensagem padrão para outras atualizações
+            messages.success(self.request, self.success_message)
+            
+        return super().form_valid(form)
 
 class VinculoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Vinculo

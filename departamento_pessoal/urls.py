@@ -36,10 +36,15 @@ urlpatterns = [
     path('cargos/novo/', CargoCreateView.as_view(), name='cargo_form'),
     path('cargos/<int:pk>/editar/', CargoUpdateView.as_view(), name='cargo_update'),
 
-    # Rotas para o CRUD de Documentos
+    # Rota para exibir a lista de todos os documentos.
+    # O nome 'lista_documentos' permite referenciar esta URL em templates.
     path('documentos/', DocumentoListView.as_view(), name='lista_documentos'),
+    # Rota para criar um novo documento sem um funcionário pré-definido.
     path('documentos/novo/', DocumentoCreateView.as_view(), name='documento_create'),
+    # Rota para criar um novo documento, mas já associando a um funcionário específico
+    # através de um parâmetro na URL (<int:funcionario_pk>).
     path('documentos/novo/<int:funcionario_pk>/', DocumentoCreateView.as_view(), name='adicionar_documento'),
+    # Rota para editar um documento existente, identificado pelo seu ID (<int:pk>).
     path('documentos/<int:pk>/editar/', DocumentoUpdateView.as_view(), name='editar_documentos'),
 
     # Rotas para relatórios

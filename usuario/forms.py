@@ -1,28 +1,49 @@
-
-# usuario/forms.py
-
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, PasswordChangeForm
-from django.contrib.auth.models import Group, Permission 
-from .models import Filial, Usuario
+from django.contrib.auth.models import Group, Permission
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
+from departamento_pessoal.models import Funcionario
+from .models import Usuario, Filial
+from django.db.models import Q
 
 
 class CustomUserCreationForm(UserCreationForm):
+    """
+    Um formulário de criação de usuário personalizado que adiciona um campo
+    para selecionar um funcionário.
+    """
+    funcionario = forms.ModelChoiceField(
+        queryset=Funcionario.objects.filter(
+            Q(usuario__isnull=True)
+        ),
+        required=False,
+        label="Vincular ao Funcionário",
+        help_text="Associa este usuário a um funcionário existente que ainda não tem um usuário.",
+    )
+    
     class Meta(UserCreationForm.Meta):
         model = Usuario
-        # Definimos os campos a serem exibidos no formulário de criação.
-        fields = ('username', 'first_name', 'last_name', 'email')
+        fields = UserCreationForm.Meta.fields + ('email', 'first_name', 'last_name', 'filiais_permitidas')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtra a lista de funcionários para exibir apenas aqueles que não possuem um usuário associado
+        self.fields['funcionario'].queryset = Funcionario.objects.filter(usuario__isnull=True)
+        
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            
+        return user
+
 
 class CustomUserChangeForm(UserChangeForm):
-    class Meta(UserChangeForm.Meta):
-        model = Usuario
-        # Exibimos mais campos no formulário de edição.
-        fields = ('username', 'first_name', 'last_name', 'email', 'is_active', 'is_staff', 'is_superuser', 'groups')
-
-class CustomUserChangeForm(UserChangeForm):
-    # Definimos os campos ManyToMany explicitamente para usar o widget do admin
+    """
+    Um formulário de alteração de usuário que permite a edição dos
+    grupos e filiais permitidas.
+    """
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         widget=FilteredSelectMultiple(verbose_name='Grupos', is_stacked=False),
@@ -33,16 +54,21 @@ class CustomUserChangeForm(UserChangeForm):
         widget=FilteredSelectMultiple(verbose_name='Filiais Permitidas', is_stacked=False),
         required=False
     )
-
+    
     class Meta(UserChangeForm.Meta):
         model = Usuario
         fields = (
             'username', 'first_name', 'last_name', 'email',
             'is_active', 'is_staff', 'is_superuser',
-            'groups', 'filiais_permitidas' # Adicionamos os campos aqui
+            'groups', 'filiais_permitidas'
         )
-        # O campo 'user_permissions' pode ser adicionado da mesma forma se você precisar
-        # gerenciar permissões individuais, mas o ideal é usar grupos.     
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['groups'].initial = self.instance.groups.all()
+            self.fields['filiais_permitidas'].initial = self.instance.filiais_permitidas.all()
+
 
 class CustomPasswordChangeForm(PasswordChangeForm):
     """ Formulário para o próprio usuário alterar sua senha. """
@@ -51,15 +77,15 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'form-control'})
 
-# usuario/forms.py
 
 class GrupoForm(forms.ModelForm):
-     # A mesma lógica para o formulário de grupo
+    """ Formulário para gerenciar grupos e suas permissões. """
     permissions = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.all().order_by('content_type__app_label', 'name'),
         widget=FilteredSelectMultiple(verbose_name='Permissões', is_stacked=False),
         required=False
     )
+
     class Meta:
         model = Group
         fields = ['name', 'permissions']
@@ -67,16 +93,12 @@ class GrupoForm(forms.ModelForm):
             'name': 'Nome do Grupo',
             'permissions': 'Permissões do Grupo'
         }
-    
+        
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # AQUI ESTÁ A MUDANÇA: Adicionamos uma classe ao widget
-        self.fields['permissions'].widget = forms.CheckboxSelectMultiple(
-            attrs={'class': 'permissions-list'}
-        )
-        
-        self.fields['permissions'].queryset = self.fields['permissions'].queryset.order_by('content_type__app_label', 'name')
+        if self.instance.pk:
+            self.fields['permissions'].initial = self.instance.permissions.all()
+
 
 class FilialForm(forms.ModelForm):
     class Meta:

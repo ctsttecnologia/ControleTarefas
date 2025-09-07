@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django_components',
+    'django_extensions',
+    'django_bootstrap5',
 
     # 2. Aplicativos de Terceiros
     'rest_framework',
@@ -55,6 +58,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'localflavor',
+    'template_partials',
+
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
     'home',

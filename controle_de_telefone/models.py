@@ -277,3 +277,6 @@ def enviar_notificacao_de_assinatura(request, vinculo):
             recipient_list=[usuario_a_notificar.email],
             html_message=corpo_html
         )
+
+
+        

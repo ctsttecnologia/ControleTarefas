@@ -9,7 +9,7 @@
             <a class="navbar-brand fw-bold" href="{% if user.is_authenticated %}{% url 'usuario:profile' %}{% else %}{% url 'home' %}{% endif %}">
                 | <i class="bi bi-check2-square me-2"></i>Gerenciando Tarefas
             </a>
-            
+
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     {# == INÍCIO DO SELETOR DE FILIAL REATORADO                      == #}                   
