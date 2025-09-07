@@ -123,7 +123,9 @@ class Funcionario(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name='funcionario',
-        verbose_name=_("Usuário do Sistema")
+        verbose_name=_("Usuário do Sistema"),
+        null=True,
+        blank=True,
     )
     filial = models.ForeignKey(
         Filial,

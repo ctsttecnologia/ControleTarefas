@@ -148,8 +148,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ... seu código dos gráficos aqui ...
 
     // 1. DADOS VINDOS DO DJANGO (essas linhas são essenciais)
-    const statusData = {{ status_data_json|safe }};
-    const priorityData = {{ priority_data_json|safe }};
+    const statusData = JSON.parse('{{ status_data_json|escapejs }}');
+    const priorityData = JSON.parse('{{ priority_data_json|escapejs }}');
 
     // Linhas de depuração para verificar os dados no console do navegador (F12)
     console.log("Dados de Status recebidos:", statusData);

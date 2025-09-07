@@ -1,6 +1,12 @@
 
 {% load static %}
 {% load widget_tweaks %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load tz %}
+{% load humanize %}
+
+
 
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -30,12 +36,13 @@
 
 </head>
 
-{# ✅ MUDANÇA: Classes de flex removidas do body #}
+{# Classes de flex removidas do body #}
 <body class="{% block body_class %}{% endblock %}">
 
     {# Header será inserido aqui, agora com a classe 'fixed-top' #}
     {% include 'partials/global_header.html' %}
-    
+
+    {# Main content sem classes de flex #}
     <main id="main-content">
         {% block content %}{% endblock %}
     </main>

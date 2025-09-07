@@ -120,29 +120,33 @@ class LinhaTelefonicaForm(forms.ModelForm):
 class VinculoForm(forms.ModelForm):
     class Meta:
         model = Vinculo
-        
-        # GARANTA QUE TODOS OS CAMPOS ESTEJAM AQUI
         fields = [
             'funcionario', 
             'aparelho', 
             'linha', 
             'data_entrega', 
             'data_devolucao',
-            'assinatura_digital', 
-            'termo_assinado', 
+            'assinatura_digital', # Campo para assinatura desenhada
+            'termo_assinado',     # Campo para upload do arquivo
         ]
-        
         widgets = {
             'data_entrega': forms.DateInput(attrs={'type': 'date'}),
             'data_devolucao': forms.DateInput(attrs={'type': 'date'}),
-            'assinatura_digital': forms.HiddenInput(), 
+            'assinatura_digital': forms.HiddenInput(), # Será preenchido via JavaScript
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Aplica classe CSS para estilização (seu código existente)
+        
+        # Torna os campos de assinatura não obrigatórios no formulário
+        # A lógica de "pelo menos um" será tratada na view.
+        self.fields['assinatura_digital'].required = False
+        self.fields['termo_assinado'].required = False
+
+        # Aplica classe CSS para estilização
         for field_name, field in self.fields.items():
-            if field.widget.__class__.__name__ != 'FileInput':
+            # Evita aplicar a classe em campos ocultos ou de arquivo para não quebrar o estilo
+            if not isinstance(field.widget, (forms.HiddenInput, forms.FileInput)):
                  field.widget.attrs.update({'class': 'form-control'})
 
 

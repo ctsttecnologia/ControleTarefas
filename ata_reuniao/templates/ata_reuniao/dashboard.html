@@ -196,17 +196,27 @@
             {% endfor %}
         </div>
     </div>
-</div>    
+</div>      
 {% endblock %}
 
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
+{{ pendencias_labels|default:"[]"|json_script:"pendencias_labels_data" }}
+{{ pendencias_data|default:"[]"|json_script:"pendencias_data_data" }}
+{{ qualidade_labels|default:"[]"|json_script:"qualidade_labels_data" }}
+{{ qualidade_data|default:"[]"|json_script:"qualidade_data_data" }}
+
+<script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
     const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const chartTextColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+
+    const pendenciasLabels = JSON.parse(document.getElementById('pendencias_labels_data').textContent);
+    const pendenciasData = JSON.parse(document.getElementById('pendencias_data_data').textContent);
+    const qualidadeLabels = JSON.parse(document.getElementById('qualidade_labels_data').textContent);
+    const qualidadeData = JSON.parse(document.getElementById('qualidade_data_data').textContent);
 
     // Gráfico de Barras: Pendências
     const pendenciasCtx = document.getElementById('pendenciasChart');
@@ -214,10 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(pendenciasCtx, {
             type: 'bar',
             data: {
-                labels: {{ pendencias_labels|safe }},
+                labels: pendenciasLabels,
                 datasets: [{
                     label: 'Nº de Pendências',
-                    data: {{ pendencias_data|safe }},
+                    data: pendenciasData,
                     backgroundColor: 'rgba(255, 193, 7, 0.6)',
                     borderColor: 'rgba(255, 193, 7, 1)',
                     borderWidth: 1
@@ -247,9 +257,9 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(qualidadeCtx, {
             type: 'doughnut',
             data: {
-                labels: {{ qualidade_labels|safe }},
+                labels: qualidadeLabels,
                 datasets: [{
-                    data: {{ qualidade_data|safe }},
+                    data: qualidadeData,
                     backgroundColor: ['rgba(25, 135, 84, 0.7)', 'rgba(220, 53, 69, 0.7)'],
                     borderColor: ['#FFFFFF', '#FFFFFF'],
                     borderWidth: 2
