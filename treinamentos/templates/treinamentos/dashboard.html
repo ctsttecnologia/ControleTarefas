@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
@@ -95,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         // CORREÇÃO: A variável do template já é uma string JSON. Usamos `|safe` para que o Django
         // não escape as aspas, e o navegador irá interpretar a string como um objeto JavaScript.
-        dashboardData = {{ dashboard_data_json|safe }};
+        dashboardData = JSON.parse('{{ dashboard_data_json|safe }}');
 
         // Verificação adicional para garantir que os dados foram carregados como um objeto válido
         if (typeof dashboardData !== 'object' || dashboardData === null) {

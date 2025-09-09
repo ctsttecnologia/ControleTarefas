@@ -1,134 +1,292 @@
+<!DOCTYPE html>
 {% extends 'base.html' %}
 {% load static %}
 
-{% block head %}
-        {% block extra_css %}
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-            <link rel="stylesheet" href="{% static 'css/tarefas/lista_tarefa.css' %}">
-        {% endblock extra_css %}
+{% block title %}Lista de Tarefas{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tarefas.css' %}">
+<style>
+    :root {
+        --primary-color: #4e73df;
+        --success-color: #1cc88a;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+        --secondary-color: #858796;
+        --light-bg: #f8f9fc;
+        --dark-bg: #2e59d9;
+    }
+    
+    .task-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-bg) 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 10px 10px;
+    }
+    
+    .task-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        transition: transform 0.2s;
+        margin-bottom: 1.5rem;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+    }
+    
+    .priority-high {
+        border-left: 4px solid var(--danger-color);
+    }
+    
+    .priority-medium {
+        border-left: 4px solid var(--warning-color);
+    }
+    
+    .priority-low {
+        border-left: 4px solid var(--success-color);
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 0.5em 0.8em;
+    }
+    
+    .filters {
+        background-color: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .stats-box {
+        text-align: center;
+        padding: 1.5rem;
+        border-radius: 10px;
+        color: white;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats-box.total {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-bg) 100%);
+    }
+    
+    .stats-box.completed {
+        background: linear-gradient(135deg, var(--success-color) 0%, #0f9d58 100%);
+    }
+    
+    .stats-box.pending {
+        background: linear-gradient(135deg, var(--warning-color) 0%, #f4b400 100%);
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    
+    .btn-action {
+        margin: 0 0.2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .task-actions {
+            margin-top: 1rem;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Cabeçalho -->
-    <header class="d-flex justify-content-between align-items-center mb-4">
-        <div class="painel-controles">
-            <h1 class="mb-0"><i class="fas fa-list"></i>Lista de Tarefas</h1>
-        </div>
-        <div>
-            <td><a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-outline-secondary">
-                    <i class="fas fa-calendar-alt"></i>
+<div class="task-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1><i class="bi bi-check2-square"></i> Lista de Tarefas</h1>
+                <p class="lead">Gerencie suas tarefas de forma eficiente</p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-light">
+                    <i class="bi bi-plus-circle"></i> Nova Tarefa
                 </a>
-            </td>
-            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-secondary">
-                <i class="fas fa-list"></i> Kanban
-            </a>
-            <a href="{% url 'tarefas:dashboard_analitico' %}" class="btn btn-secondary">
-                <i class="bi bi-speedometer2"></i> Dashboard</a>
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-secondary">
-                <i class="fas fa-list"></i> Relatórios
-            </a>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Nova Tarefa
-            </a>
+            </div>
         </div>
-    </header>
+    </div>
 </div>
-    <div class="containerlist">
-        <!-- Tabela de Tarefas -->
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="bg-primary text-white">
-                            <tr>
-                                <th>Título</th>
-                                <th>Projeto</th>
-                                <th>Criado por</th>
-                                <th>Responsável</th>
-                                <th>Status</th>
-                                <th>Prioridade</th>
-                                <th>Data de Criação</th>
-                                <th>data_inicio</th>
-                                <th>Prazo</th>
-                                <th>data_atualizacao</th>
-                                <th>concluida_em</th>
-                                <th>Progresso</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tarefa in tarefas %}
-                            <tr class="align-middle">
-                                <td>{{ tarefa.titulo }}</td>
-                                <td>{{ tarefa.projeto|default:"-" }}</td>
-                                <td>{{ tarefa.usuario.username }}</td>
-                                <td>{{ tarefa.responsavel.username|default:"-" }}</td>
-                                <td>
-                                    {# Usando if/elif para mapear o status para uma classe Bootstrap válida #}
-                                    <span class="status-badge status- 
-                                        {% if tarefa.status == 'P' %}bg-secondary
-                                        {% elif tarefa.status == 'A' %}bg-primary
-                                        {% elif tarefa.status == 'C' %}bg-danger
-                                        {% elif tarefa.status == 'F' %}bg-success
-                                        {% else %}bg-light text-dark{% endif %}">
-                                        {{ tarefa.get_status_display }}
-                                    </span>
-                                </td>
-                                <td>
-                                    {# Mapeando a prioridade para uma classe Bootstrap válida #}
-                                    <span class="priority-badge priority-
-                                        {% if tarefa.prioridade == 'B' %}bg-success
-                                        {% elif tarefa.prioridade == 'M' %}bg-warning text-dark
-                                        {% elif tarefa.prioridade == 'A' %}bg-danger
-                                        {% else %}bg-secondary{% endif %}">
-                                        {{ tarefa.get_prioridade_display }}
-                                    </span>
-                                </td>
-                                <td>{{ tarefa.data_criacao|date:"d/m/Y"|default:"-" }}</td>
-                                <td>{{ tarefa.data_inicio|date:"d/m/Y"|default:"-" }}</td>
-                                <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
-                                <td>{{ tarefa.data_atualizacao|date:"d/m/Y"|default:"-" }}</td>
-                                <td>{{ tarefa.concluida_em|date:"d/m/Y"|default:"-" }}</td>
-                                <td>
-                                    <div class="progress" style="height: 20px;" title="{{ tarefa.progresso|default:0 }}% Concluído">
-                                        <div class="progress-bar bg-success" 
-                                            role="progressbar" 
-                                            style="width: {{ tarefa.progresso|default:0 }}%;" 
-                                            aria-valuenow="{{ tarefa.progresso|default:0 }}" 
-                                            aria-valuemin="0" 
-                                            aria-valuemax="100">
-                                            {{ tarefa.progresso|default:0 }}%
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-end"> {# Alinhando os botões à direita para um melhor visual #}
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-outline-info" title="Visualizar">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-outline-warning" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-outline-danger" title="Excluir">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="9" class="text-center py-4">
-                                    <div class="alert alert-info">Nenhuma tarefa encontrada.</div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+
+<div class="container">
+    <!-- Estatísticas -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="stats-box total">
+                <h5><i class="bi bi-list-task"></i> Total de Tarefas</h5>
+                <div class="stats-number">{{ total_tarefas }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-box completed">
+                <h5><i class="bi bi-check2-all"></i> Concluídas</h5>
+                <div class="stats-number">{{ tarefas_concluidas }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-box pending">
+                <h5><i class="bi bi-hourglass-split"></i> Pendentes</h5>
+                <div class="stats-number">{{ tarefas_pendentes }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+        <form method="get" action="{% url 'tarefas:listar_tarefas' %}">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Filtrar por status:</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        {% for status_value, status_label in status_options %}
+                        <option value="{{ status_value }}" {% if status_filtro == status_value %}selected{% endif %}>{{ status_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Filtrar por prioridade:</label>
+                    <select name="prioridade" class="form-select">
+                        <option value="">Todos</option>
+                        {% for prioridade_value, prioridade_label in prioridade_options %}
+                        <option value="{{ prioridade_value }}" {% if prioridade_filtro == prioridade_value %}selected{% endif %}>{{ prioridade_label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">Buscar:</label>
+                    <input type="text" name="q" class="form-control" placeholder="Digite para buscar..." value="{{ busca }}">
+                </div>
+                <div class="col-md-2 mb-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de Tarefas -->
+    <h3 class="mb-3">Minhas Tarefas</h3>
+    
+    {% for tarefa in tarefas %}
+    <div class="card task-card priority-{{ tarefa.prioridade }}">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="card-title">{{ tarefa.titulo }}</h5>
+                    <p class="card-text">{{ tarefa.descricao }}</p>
+                    <div>
+                        <span class="badge bg-{{ tarefa.prioridade_cor }}">{{ tarefa.get_prioridade_display }}</span>
+                        <span class="badge bg-secondary">{{ tarefa.categoria }}</span>
+                        <span class="badge bg-warning text-dark">Prazo: {{ tarefa.prazo|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Progresso:</span>
+                        <span>{{ tarefa.progresso }}%</span>
+                    </div>
+                    <div class="progress">
+                        <!-- CORREÇÃO: Removido o filtro |add:'0' que causava o erro -->
+                        <div class="progress-bar bg-{{ tarefa.status_cor }}" role="progressbar" 
+                             style="width: {{ tarefa.progresso }}%;" 
+                             aria-valuenow="{{ tarefa.progresso }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <div class="col-md-3 task-actions text-md-end">
+                    {% if tarefa.status != 'concluido' %}
+                    <a href="{% url 'tarefas:concluir_tarefa' tarefa.id %}" class="btn btn-sm btn-success btn-action">
+                        <i class="bi bi-check2"></i>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'tarefas:editar_tarefa' tarefa.id %}" class="btn btn-sm btn-primary btn-action">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.id %}" class="btn btn-sm btn-danger btn-action">
+                        <i class="bi bi-trash"></i>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+    {% empty %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Nenhuma tarefa encontrada com os filtros aplicados.
+    </div>
+    {% endfor %}
+
+    <!-- Paginação -->
+    {% if tarefas.has_other_pages %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if tarefas.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ tarefas.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" tabindex="-1">Anterior</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">Anterior</a>
+            </li>
+            {% endif %}
+            
+            {% for i in tarefas.paginator.page_range %}
+                {% if tarefas.number == i %}
+                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                {% else %}
+                <li class="page-item"><a class="page-link" href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if tarefas.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ tarefas.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Próxima</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#">Próxima</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Script para manipulação das tarefas
+document.addEventListener('DOMContentLoaded', function() {
+    // Tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
+    // Confirmação para exclusão
+    var deleteButtons = document.querySelectorAll('.btn-danger');
+    deleteButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
 
 
