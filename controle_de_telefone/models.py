@@ -180,7 +180,7 @@ class Vinculo(BaseModel):
     )
     aparelho = models.ForeignKey(Aparelho, on_delete=models.PROTECT, related_name="vinculos", blank=True, null=True, verbose_name="Aparelho")
     linha = models.ForeignKey(LinhaTelefonica, on_delete=models.PROTECT, related_name="vinculos", blank=True, null=True, verbose_name="Linha Telefônica")
-    data_entrega = models.DateField(verbose_name="Data de Entrega")
+    data_entrega = models.DateField(verbose_name="Data de Entrega", blank=True, null=True)
     data_devolucao = models.DateField(blank=True, null=True, verbose_name="Data de Devolução")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
      # 1. Campo para o PDF que o sistema gera.
