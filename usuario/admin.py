@@ -5,7 +5,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin, GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.models import Group
 from django.db.models import Count
-from .models import Usuario, GrupoProxy, PermissaoProxy, Filial
+from .models import Usuario, GrupoProxy, PermissaoProxy, Filial, GroupCardPermissions
+from django.forms import CheckboxSelectMultiple
 
 # -----------------------------------------------------------------------------
 # Admin para Filial (Necessário para o autocomplete no UsuarioAdmin)
@@ -85,4 +86,34 @@ class PermissaoProxyAdmin(admin.ModelAdmin):
     def content_type_pt(self, obj):
         return obj.content_type
     
+# -----------------------------------------------------------------------------
+# No seu admin.py
+# -----------------------------------------------------------------------------
 
+class GroupCardPermissionsAdmin(admin.ModelAdmin):
+    list_display = ('group',)
+
+    # Para usar o campo JSONField, vamos sobrescrever o formulário de administração
+    # e criar um widget de seleção múltipla com os IDs dos cards
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+
+        # Adicione aqui todos os IDs dos seus cards.
+        # Isso deve ser mantido em sincronia com o seu views.py.
+        ALL_CARD_CHOICES = [
+            ('tarefas', 'Tarefas'),
+            ('clientes', 'Clientes'),
+            ('dp', 'Departamento Pessoal'),
+            ('sst', 'Segurança do Trabalho'),
+            ('endereco', 'Logradouro'),
+            ('ga', 'Gestão Administrativa'),
+            ('veiculos', 'Veículos'),
+            ('operacao', 'Operação'),
+        ]
+        
+        form.base_fields['cards_visiveis'].widget = CheckboxSelectMultiple(
+            choices=ALL_CARD_CHOICES
+        )
+        return form
+
+admin.site.register(GroupCardPermissions, GroupCardPermissionsAdmin)

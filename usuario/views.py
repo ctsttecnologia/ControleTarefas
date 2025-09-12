@@ -1,4 +1,3 @@
-
 # usuario/views.py
 
 from django.db.models import Q
@@ -16,11 +15,10 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .models import Usuario, Group, Filial
-from .forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
+from usuario.models import Usuario, Group, Filial, GroupCardPermissions
+from usuario.forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
 from django.contrib.auth.forms import SetPasswordForm
 from django.db.models import ProtectedError
-
 
 
 class StaffRequiredMixin(UserPassesTestMixin):
@@ -30,6 +28,7 @@ class StaffRequiredMixin(UserPassesTestMixin):
 class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
+    
 
 
 # =============================================================================
@@ -41,10 +40,7 @@ class CustomLoginView(LoginView):
     redirect_authenticated_user = True
 
     def form_valid(self, form):
-        """
-        << CORREÇÃO CRÍTICA >>
-        Após o login bem-sucedido, define a filial ativa do usuário na sessão.
-        """
+
         # Executa o processo de login padrão primeiro
         response = super().form_valid(form)
         
@@ -110,7 +106,7 @@ class SelecionarFilialView(LoginRequiredMixin, View):
 
 
 # =============================================================================
-# == VIEWS DE PERFIL E SENHA (SEM ALTERAÇÕES SIGNIFICATIVAS)
+# == VIEWS DE PERFIL E SENHA 
 # =============================================================================
 
 class ProfileView(LoginRequiredMixin, DetailView):
@@ -154,8 +150,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
                     {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
-                    {'url': 'departamento_pessoal:lista_cargo', 'text': 'Cargos'},
-                    {'url': 'departamento_pessoal:lista_departamento', 'text': 'Departamentos'},
                 ]
             },
             {
@@ -213,11 +207,33 @@ class ProfileView(LoginRequiredMixin, DetailView):
             },
         ]
 
-        # 2. Filtre os cards com base nas permissões do usuário
+        # 1. Obtenha os IDs dos cartões visíveis para o grupo do usuário
+        allowed_card_ids = []
+        if user.is_superuser:
+            # Superusuários veem todos os cartões
+            allowed_card_ids = [card['id'] for card in all_cards]
+        else:
+            # Para usuários normais, verifique a configuração do grupo
+            for group in user.groups.all():
+                try:
+                    # Tenta encontrar a configuração de permissão de cartão para este grupo
+                    card_permissions = GroupCardPermissions.objects.get(group=group)
+                    # Adiciona os IDs dos cartões permitidos para este grupo
+                    allowed_card_ids.extend(card_permissions.cards_visiveis)
+                except GroupCardPermissions.DoesNotExist:
+                    # Se não houver configuração para o grupo, continue
+                    pass
+
+        # 2. Filtre os cards com base nas permissões do Django E nos IDs do grupo
         allowed_cards = []
         for card in all_cards:
-            # Superusuários veem tudo. Ou, verifique a permissão específica.
-            if user.is_superuser or user.has_perm(card['permission']):
+            # Verifique a permissão do Django
+            has_django_perm = user.has_perm(card['permission'])
+            
+            # Verifique se o ID do cartão está na lista de permissões do grupo
+            is_allowed_by_group = card['id'] in allowed_card_ids
+            
+            if user.is_superuser or (has_django_perm or is_allowed_by_group):
                 allowed_cards.append(card)
 
         # 3. Passe a lista de cards permitidos para o template
@@ -460,4 +476,59 @@ class FilialDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
         except ProtectedError:
             messages.error(self.request, 'Esta filial não pode ser excluída, pois existem usuários ou ferramentas associados a ela.')
             return redirect('usuario:filial_list')
+            
+# =============================================================================
+# Permissão para acesso aos cards
+# =============================================================================
+class ManageCardPermissionsView(LoginRequiredMixin, UserPassesTestMixin, View):
+    template_name = 'usuario/gerenciar_cards.html'
+
+    def test_func(self):
+        # Apenas superusuários ou usuários com permissão podem acessar esta página
+        return self.request.user.is_superuser or self.request.user.has_perm('usuario.change_groupcardpermissions')
+
+    def get_all_cards_data(self):
+        # Defina a mesma estrutura de cards que você tem na sua ProfileView
+        return [
+            {'id': 'tarefas', 'title': 'Tarefas'},
+            {'id': 'clientes', 'title': 'Clientes'},
+            {'id': 'dp', 'title': 'Departamento Pessoal'},
+            {'id': 'sst', 'title': 'Segurança do Trabalho'},
+            {'id': 'endereco', 'title': 'Logradouro'},
+            {'id': 'ga', 'title': 'Gestão Administrativa'},
+            {'id': 'veiculos', 'title': 'Veículos'},
+            {'id': 'operacao', 'title': 'Operação'},
+        ]
+
+    def get(self, request, *args, **kwargs):
+        grupos = Group.objects.all().order_by('name')
+        todos_os_cards = self.get_all_cards_data()
         
+        permissoes_por_grupo = {
+            p.group.id: p.cards_visiveis for p in GroupCardPermissions.objects.all()
+        }
+
+        context = {
+            'grupos': grupos,
+            'todos_os_cards': todos_os_cards,
+            'permissoes_por_grupo': permissoes_por_grupo,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        todos_os_cards = [card['id'] for card in self.get_all_cards_data()]
+        
+        for group in Group.objects.all():
+            cards_selecionados = []
+            for card_id in todos_os_cards:
+                if f'group_{group.id}_{card_id}' in request.POST:
+                    cards_selecionados.append(card_id)
+            
+            GroupCardPermissions.objects.update_or_create(
+                group=group,
+                defaults={'cards_visiveis': cards_selecionados}
+            )
+
+        return redirect('usuario:gerenciar_cards')
+    
+    
