@@ -9,7 +9,7 @@ from .views import (
     GerenciarGruposUsuarioView, GroupListView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     CustomPasswordResetView, CustomPasswordResetDoneView, CustomPasswordResetConfirmView, 
     CustomPasswordResetCompleteView,
-    FilialListView, FilialCreateView, FilialUpdateView, FilialDeleteView
+    FilialListView, FilialCreateView, FilialUpdateView, FilialDeleteView, ManageCardPermissionsView
 )
 
 app_name = 'usuario'
@@ -38,6 +38,7 @@ urlpatterns = [
     path('grupos/novo/', GroupCreateView.as_view(), name='grupo_criar'),
     path('grupos/editar/<int:pk>/', GroupUpdateView.as_view(), name='grupo_form'),
     path('grupos/excluir/<int:pk>/', GroupDeleteView.as_view(), name='grupo_excluir'),
+    path('gerenciar-cards/', ManageCardPermissionsView.as_view(), name='gerenciar_cards'),
     
     # --- Redefinição de Senha (Esqueci a Senha) ---
     path('password_reset/', CustomPasswordResetView.as_view(), name='password_reset'),

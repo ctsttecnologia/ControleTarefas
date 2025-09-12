@@ -62,10 +62,10 @@ INSTALLED_APPS = [
 
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
+    'usuario', 
     'home',
     'core',
-    'logradouro',             # É uma dependência, deve vir antes
-    'usuario',                # Relacionado ao usuário
+    'logradouro',             # É uma dependência, deve vir antes               # Relacionado ao usuário
     'cliente',                # Depende de 'logradouro'
     'departamento_pessoal',   # Depende de 'cliente'
     'automovel.apps.AutomovelConfig',
@@ -162,15 +162,16 @@ AUTH_USER_MODEL = 'usuario.Usuario'
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-# Mude 'en-us' para 'pt-br'
+# Em seu settings.py
 LANGUAGE_CODE = 'pt-br'
+
+USE_I18N = True # Habilita a internacionalização
+USE_L10N = True # Habilita a localização (formato de datas, números, etc.)
+USE_TZ = False
 
 # Mude 'UTC' para o fuso horário do Brasil
 TIME_ZONE = 'America/Sao_Paulo'
 
-# Garanta que estes estão como True
-USE_I18N = True
-USE_TZ = False
 
 
 #AUTH_USER_MODEL = 'usuario.Usuario'

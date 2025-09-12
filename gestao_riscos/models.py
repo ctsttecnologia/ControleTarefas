@@ -5,13 +5,11 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.managers import FilialManager
 from usuario.models import Filial
-from departamento_pessoal.models import Funcionario
+from departamento_pessoal.models import Cargo, Funcionario
 
 User = get_user_model()
 
-# -----------------------------------------------------------------------------
-# MODELOS ATUALIZADOS
-# -----------------------------------------------------------------------------
+
 class Incidente(models.Model):
     """Registra qualquer ocorrência ou incidente de segurança."""
     SETORES_CHOICES = [
@@ -28,10 +26,7 @@ class Incidente(models.Model):
         
     ]
     
-    # --- CAMPO NOVO E ESSENCIAL ---
-    # Supondo que você tenha um modelo de Filial em outro app.
-    # Se o modelo Filial estiver no mesmo app, mude para 'Filial'.
-
+    
     descricao = models.CharField(max_length=255, verbose_name="Título do Incidente")
     detalhes = models.TextField(verbose_name="Detalhes da Ocorrência")
     setor = models.CharField(max_length=20, choices=SETORES_CHOICES, verbose_name="Setor")
@@ -40,7 +35,7 @@ class Incidente(models.Model):
     registrado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='incidentes_registrados')
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='incidentes', null=True, blank=False)
 
-    # Usando o manager padrão do Django
+ 
     objects = models.Manager()
 
     class Meta:
@@ -92,6 +87,16 @@ class CartaoTag(models.Model):
         related_name='cartoes_tag',
         verbose_name="Funcionário Proprietário"
     )
+    cargo = models.ForeignKey(
+        Cargo,
+        on_delete=models.CASCADE,
+        related_name='cartoes_tag',
+        verbose_name="Cargo", 
+        null=True, 
+        blank=True, 
+        default=None,
+    )
+
     fone = models.CharField(
         max_length=20,
         default="(11) 3045-9400",

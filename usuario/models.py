@@ -6,8 +6,6 @@ from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext_lazy as _
 
 
-
-# NOVO MODELO: Filial
 class Filial(models.Model):
     """
     Modelo para cadastrar as unidades/filiais da empresa.
@@ -27,7 +25,7 @@ class Filial(models.Model):
         return self.nome
 
 # =============================================================================
-# == MODELO USUARIO CORRIGIDO
+# == MODELO USUARIO 
 # =============================================================================
 class Usuario(AbstractUser):
     email = models.EmailField(_('endereço de e-mail'), unique=True)
@@ -60,9 +58,24 @@ class Usuario(AbstractUser):
 
     def __str__(self):
         return self.get_full_name() or self.username
+    
+class GroupCardPermissions(models.Model):
+    # A Foreign Key para o modelo de grupo do Django
+    group = models.OneToOneField(Group, on_delete=models.CASCADE)
+    
+    # Campo JSON para armazenar uma lista dos IDs dos cartões
+    # Exemplo: ['tarefas', 'clientes', 'dp']
+    cards_visiveis = models.JSONField(default=list)
+
+    def __str__(self):
+        return f"Permissões de Cartão para o Grupo: {self.group.name}"
+
+    class Meta:
+        verbose_name = "Permissão de Cartão de Grupo"
+        verbose_name_plural = "Permissões de Cartões de Grupo"
 
 #
-# Seus modelos Proxy continuam aqui, eles estão corretos.
+# Seus modelos Proxy 
 #
 class GrupoProxy(Group):
     class Meta:
@@ -75,3 +88,5 @@ class PermissaoProxy(Permission):
         proxy = True
         verbose_name = 'Permissão'
         verbose_name_plural = 'Permissões'
+
+        

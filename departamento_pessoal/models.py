@@ -151,7 +151,7 @@ class Funcionario(models.Model):
         Cliente,
         on_delete=models.SET_NULL, # Permite remover o cliente sem apagar o funcionário
         related_name='funcionarios_alocados',
-        verbose_name=_("Cliente/Contrato de Alocação"),
+        verbose_name=_("Cliente/Contrato"),
         null=True,
         blank=True
     )
@@ -218,7 +218,9 @@ class Documento(models.Model):
     TIPO_CHOICES = [
         ('CPF', _('CPF')),
         ('RG', _('RG')),
-        ('CTPS', _('CTPS - Carteira de Trabalho')),
+        ('CTPS', _('CTPS')),
+        ('CNH', _('CNH')),
+        ('PIS', _('PIS')),
         ('OUTRO', _('Outro'))
     ]
 

@@ -180,48 +180,39 @@ class Vinculo(BaseModel):
     )
     aparelho = models.ForeignKey(Aparelho, on_delete=models.PROTECT, related_name="vinculos", blank=True, null=True, verbose_name="Aparelho")
     linha = models.ForeignKey(LinhaTelefonica, on_delete=models.PROTECT, related_name="vinculos", blank=True, null=True, verbose_name="Linha Telefônica")
-    data_entrega = models.DateField(verbose_name="Data de Entrega", blank=True, null=True)
+    data_entrega = models.DateField(verbose_name="Data de Entrega", blank=True, null=False)
     data_devolucao = models.DateField(blank=True, null=True, verbose_name="Data de Devolução")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
-     # 1. Campo para o PDF que o sistema gera.
     termo_gerado = models.FileField(
         upload_to='termos_gerados/',
         null=True, blank=True,
         verbose_name="Termo de Responsabilidade Gerado",
         help_text="PDF gerado automaticamente ao criar o vínculo."
     )
-
-    # 2. Campo para a assinatura digital desenhada na tela.
-    assinatura_digital = models.TextField(
-        null=True, blank=True,
-        verbose_name="Assinatura Digital",
-        help_text="Armazena os dados da assinatura digital."
-    )
-
-    # 3. Campo para o usuário fazer o upload do termo assinado.
-    termo_assinado = models.FileField(
-        upload_to='termos_assinados/',
-        null=True, blank=True,
-        verbose_name="Termo Assinado (Upload)",
-        help_text="Faça o upload do termo assinado aqui."
-    )
+    assinatura_digital = models.FileField(upload_to='assinaturas/', blank=True, null=True)
+    termo_assinado_upload = models.FileField(upload_to='termos_assinados/', blank=True, null=True, verbose_name="Upload do Termo Assinado")
+    foi_assinado = models.BooleanField(default=False, verbose_name="Termo Foi Assinado?")
+    data_assinatura = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
-       
-        # Rastreia o estado original do objeto
+        # [MELHORIA] Adicionada clareza à lógica de status.
         is_new = self._state.adding
         original_status = None
         if not is_new:
+            # Busca o estado original do banco de dados para comparar as mudanças.
             original = Vinculo.objects.get(pk=self.pk)
             original_status = original.status
 
-        # Lógica para finalizar o vínculo se a data de devolução for preenchida
+        # Lógica de automação: se a data de devolução for preenchida, o status MUDA para 'finalizado'.
         if self.data_devolucao and self.status == 'ativo':
             self.status = 'finalizado'
         
-        super().save(*args, **kwargs) # Salva o vínculo primeiro
+        super().save(*args, **kwargs) # Salva o estado atual do vínculo.
 
-        # Se o vínculo foi criado como ATIVO
+        # Agora, executa ações com base no estado salvo.
+        
+        # Caso 1: Vínculo NOVO sendo criado como ATIVO.
+        # Os recursos (aparelho/linha) são marcados como "em uso".
         if is_new and self.status == 'ativo':
             if self.aparelho:
                 self.aparelho.status = 'em_uso'
@@ -230,7 +221,8 @@ class Vinculo(BaseModel):
                 self.linha.status = 'ativa'
                 self.linha.save()
         
-        # Se o status do vínculo MUDOU para FINALIZADO
+        # Caso 2: O status do vínculo MUDOU para FINALIZADO (seja pela data de devolução ou manualmente).
+        # Os recursos são liberados, tornando-se "disponíveis".
         elif self.status == 'finalizado' and original_status != 'finalizado':
             if self.aparelho:
                 self.aparelho.status = 'disponivel'

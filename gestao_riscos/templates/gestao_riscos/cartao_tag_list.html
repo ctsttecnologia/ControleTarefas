@@ -7,14 +7,8 @@
 {% block content %}
 <br>
 <div class="container-box">
-
-    {% if messages %}
-        <div class="alert alert-info">
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        </div>
-    {% endif %}
+{% include "partials/_messages.html" %}
+    
     <div class="d-flex justify-content-between align-items-center mb-4">
         
         <h1 class="h2">Cartões de Bloqueio (Tags)</h1>
@@ -30,6 +24,7 @@
                     <thead>
                         <tr>
                             <th>Funcionário</th>
+                            <th>Cargo</th>
                             <th>Telefone</th>
                             <th>Validade</th>
                             <th>Status</th>
@@ -40,6 +35,7 @@
                         {% for cartao in cartoes %}
                         <tr>
                             <td>{{ cartao.funcionario.nome_completo }}</td>
+                            <td>{{ cartao.funcionario.cargo }}</td>
                             <td>{{ cartao.fone }}</td>
                             <td>{{ cartao.data_validade|date:"d/m/Y"|default:"-" }}</td>
                             <td>

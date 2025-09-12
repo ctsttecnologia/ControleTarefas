@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -92,9 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Carrega e analisa os dados do Django de forma segura
     try {
-        // CORREÇÃO: A variável do template já é uma string JSON. Usamos `|safe` para que o Django
-        // não escape as aspas, e o navegador irá interpretar a string como um objeto JavaScript.
-        dashboardData = JSON.parse('{{ dashboard_data_json|safe }}');
+        // CORREÇÃO: Usando escapejs para prevenir problemas de sintaxe JavaScript
+        dashboardData = JSON.parse('{{ dashboard_data_json|escapejs }}');
 
         // Verificação adicional para garantir que os dados foram carregados como um objeto válido
         if (typeof dashboardData !== 'object' || dashboardData === null) {
@@ -103,7 +103,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (e) {
         console.error("Falha ao carregar ou analisar os dados JSON do Django. Verifique se a variável 'dashboard_data_json' está sendo passada corretamente pela view.", e);
-        return; 
+        
+        // Fallback para dados vazios caso ocorra um erro
+        dashboardData = {
+            area: [],
+            status: [],
+            custo: []
+        };
     }
 
     // 2. Função para obter as cores e fontes dinâmicas com base no tema
@@ -123,15 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dynamicOptions = getDynamicChartOptions();
         
-        // Mapeamento de dados
-        const areaLabels = dashboardData.area.map(item => item.nome_legivel);
-        const areaValues = dashboardData.area.map(item => item.total);
+        // Mapeamento de dados com verificações de segurança
+        const areaLabels = dashboardData.area ? dashboardData.area.map(item => item.nome_legivel) : [];
+        const areaValues = dashboardData.area ? dashboardData.area.map(item => item.total) : [];
 
-        const statusLabels = dashboardData.status.map(item => item.nome_legivel);
-        const statusValues = dashboardData.status.map(item => item.total);
+        const statusLabels = dashboardData.status ? dashboardData.status.map(item => item.nome_legivel) : [];
+        const statusValues = dashboardData.status ? dashboardData.status.map(item => item.total) : [];
 
-        const custoLabels = dashboardData.custo.map(item => item.nome_legivel);
-        const custoValues = dashboardData.custo.map(item => item.total);
+        const custoLabels = dashboardData.custo ? dashboardData.custo.map(item => item.nome_legivel) : [];
+        const custoValues = dashboardData.custo ? dashboardData.custo.map(item => item.total) : [];
 
         const createChart = (canvasId, config) => {
             const ctx = document.getElementById(canvasId);
@@ -141,35 +147,41 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         // Gráfico 1: Por Área (Pizza)
-        createChart('chartArea', {
-            type: 'pie',
-            data: { labels: areaLabels, datasets: [{ data: areaValues, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'] }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
-        });
+        if (areaLabels.length > 0) {
+            createChart('chartArea', {
+                type: 'pie',
+                data: { labels: areaLabels, datasets: [{ data: areaValues, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
+            });
+        }
 
         // Gráfico 2: Por Status (Rosquinha)
-        createChart('chartStatus', {
-            type: 'doughnut',
-            data: { labels: statusLabels, datasets: [{ data: statusValues, backgroundColor: ['#6c757d', '#0d6efd', '#dc3545', '#198754'] }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
-        });
+        if (statusLabels.length > 0) {
+            createChart('chartStatus', {
+                type: 'doughnut',
+                data: { labels: statusLabels, datasets: [{ data: statusValues, backgroundColor: ['#6c757d', '#0d6efd', '#dc3545', '#198754'] }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
+            });
+        }
 
         // Gráfico 3: Custo por Área (Linha)
-        createChart('chartCusto', {
-            type: 'line',
-            data: {
-                labels: custoLabels,
-                datasets: [{ label: 'Custo (R$)', data: custoValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.1 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } },
-                    x: { ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } }
+        if (custoLabels.length > 0) {
+            createChart('chartCusto', {
+                type: 'line',
+                data: {
+                    labels: custoLabels,
+                    datasets: [{ label: 'Custo (R$)', data: custoValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.1 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } },
+                        x: { ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } }
+                    }
                 }
-            }
-        });
+            });
+        }
     };
 
     // 4. Observador para a mudança de tema
@@ -189,4 +201,3 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock extra_js %}
-

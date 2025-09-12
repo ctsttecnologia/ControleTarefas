@@ -73,9 +73,10 @@ class CartaoTagForm(forms.ModelForm):
 
     class Meta:
         model = CartaoTag
-        fields = ['funcionario', 'fone', 'data_validade', 'ativo']
+        fields = ['funcionario', 'cargo', 'fone', 'data_validade', 'ativo']
         widgets = {
             'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'cargo': forms.Select(attrs={'class': 'form-select'}),
             'fone': forms.TextInput(attrs={'class': 'form-control'}),
             'data_validade': forms.DateInput(
                 attrs={'class': 'form-control', 'type': 'date'}

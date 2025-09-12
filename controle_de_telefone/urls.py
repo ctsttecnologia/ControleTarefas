@@ -1,67 +1,76 @@
-# controle_telefones/urls.py
+# controle_de_telefone/urls.py
 
 from django.urls import path
 from . import views
 
+# Importe as novas classes de view
+from .views import (
+    AparelhoListView, AparelhoDetailView, AparelhoCreateView, AparelhoUpdateView, AparelhoDeleteView, AssinarTermoView,
+    LinhaTelefonicaListView, LinhaTelefonicaDetailView, LinhaTelefonicaCreateView, LinhaTelefonicaUpdateView, LinhaTelefonicaDeleteView,
+    VinculoListView, VinculoDetailView, VinculoCreateView, VinculoUpdateView, VinculoDeleteView,
+    MarcaListView, MarcaCreateView, MarcaUpdateView, MarcaDeleteView,
+    ModeloListView, ModeloCreateView, ModeloUpdateView, ModeloDeleteView,
+    OperadoraListView, OperadoraCreateView, OperadoraUpdateView, OperadoraDeleteView,
+    PlanoListView, PlanoCreateView, PlanoUpdateView, PlanoDeleteView,
+    DashboardView, DownloadTermoView, RegenerarTermoView, NotificarAssinaturaView, 
+)
+
 app_name = 'controle_de_telefone'
 
 urlpatterns = [
-    # Rota principal do app
-    path('', views.DashboardView.as_view(), name='dashboard'), 
-    # URLs do CRUD de Aparelhos
-    path('aparelhos/', views.AparelhoListView.as_view(), name='aparelho_list'),
-    path('aparelhos/novo/', views.AparelhoCreateView.as_view(), name='aparelho_create'),
-    path('aparelhos/<int:pk>/', views.AparelhoDetailView.as_view(), name='aparelho_detail'),
-    path('aparelhos/<int:pk>/editar/', views.AparelhoUpdateView.as_view(), name='aparelho_update'),
-    path('aparelhos/<int:pk>/deletar/', views.AparelhoDeleteView.as_view(), name='aparelho_delete'),
-    path('aparelhos/', views.AparelhoListView.as_view(), name='aparelho_list'),
-    path('aparelhos/novo/', views.AparelhoCreateView.as_view(), name='aparelho_create'),
+    # Dashboard
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
 
-    # URLs do CRUD de Marcas
-    path('marcas/', views.MarcaListView.as_view(), name='marca_list'),
-    path('marcas/nova/', views.MarcaCreateView.as_view(), name='marca_create'),
-    path('marcas/<int:pk>/editar/', views.MarcaUpdateView.as_view(), name='marca_update'),
-    path('marcas/<int:pk>/deletar/', views.MarcaDeleteView.as_view(), name='marca_delete'),
+    # Aparelhos
+    path('aparelhos/', AparelhoListView.as_view(), name='aparelho_list'),
+    path('aparelhos/novo/', AparelhoCreateView.as_view(), name='aparelho_create'),
+    path('aparelhos/<int:pk>/', AparelhoDetailView.as_view(), name='aparelho_detail'),
+    path('aparelhos/<int:pk>/editar/', AparelhoUpdateView.as_view(), name='aparelho_update'),
+    path('aparelhos/<int:pk>/excluir/', AparelhoDeleteView.as_view(), name='aparelho_delete'),
 
-    # URLs do CRUD de Modelos
-    path('modelos/', views.ModeloListView.as_view(), name='modelo_list'),
-    path('modelos/novo/', views.ModeloCreateView.as_view(), name='modelo_create'),
-    path('modelos/<int:pk>/editar/', views.ModeloUpdateView.as_view(), name='modelo_update'),
-    path('modelos/<int:pk>/deletar/', views.ModeloDeleteView.as_view(), name='modelo_delete'),
+    # Linhas Telefônicas
+    path('linhas/', LinhaTelefonicaListView.as_view(), name='linhatelefonica_list'),
+    path('linhas/nova/', LinhaTelefonicaCreateView.as_view(), name='linhatelefonica_create'),
+    path('linhas/<int:pk>/', LinhaTelefonicaDetailView.as_view(), name='linhatelefonica_detail'),
+    path('linhas/<int:pk>/editar/', LinhaTelefonicaUpdateView.as_view(), name='linhatelefonica_update'),
+    path('linhas/<int:pk>/excluir/', LinhaTelefonicaDeleteView.as_view(), name='linhatelefonica_delete'),
 
-    # URLs do CRUD de Linhas Telefônicas
-    path('linhas/', views.LinhaTelefonicaListView.as_view(), name='linhatelefonica_list'),
-    path('linhas/nova/', views.LinhaTelefonicaCreateView.as_view(), name='linhatelefonica_create'),
-    path('linhas/<int:pk>/editar/', views.LinhaTelefonicaUpdateView.as_view(), name='linhatelefonica_update'),
-    path('linhas/<int:pk>/deletar/', views.LinhaTelefonicaDeleteView.as_view(), name='linhatelefonica_delete'),
-    path('linhas/', views.LinhaTelefonicaListView.as_view(), name='linhatelefonica_list'),
-    path('linhas/<int:pk>/', views.LinhaTelefonicaDetailView.as_view(), name='linhatelefonica_detail'), 
-    path('linhas/nova/', views.LinhaTelefonicaCreateView.as_view(), name='linhatelefonica_create'),
-    path('linhas/<int:pk>/editar/', views.LinhaTelefonicaUpdateView.as_view(), name='linhatelefonica_update'),
-    path('linhas/<int:pk>/excluir/', views.LinhaTelefonicaDeleteView.as_view(), name='linhatelefonica_delete'),
+    # Vínculos
+    path('vinculos/', VinculoListView.as_view(), name='vinculo_list'),
+    path('vinculos/novo/', VinculoCreateView.as_view(), name='vinculo_create'),
+    path('vinculos/<int:pk>/', VinculoDetailView.as_view(), name='vinculo_detail'),
+    path('vinculos/<int:pk>/editar/', VinculoUpdateView.as_view(), name='vinculo_update'),
+    path('vinculos/<int:pk>/excluir/', VinculoDeleteView.as_view(), name='vinculo_delete'),
 
-    # URLs do CRUD de Vínculos
-    path('vinculos/', views.VinculoListView.as_view(), name='vinculo_list'),
-    path('vinculos/novo/', views.VinculoCreateView.as_view(), name='vinculo_create'),
-    path('vinculos/<int:pk>/', views.VinculoDetailView.as_view(), name='vinculo_detail'),
-    path('vinculos/<int:pk>/editar/', views.VinculoUpdateView.as_view(), name='vinculo_update'),
-    path('vinculos/<int:pk>/deletar/', views.VinculoDeleteView.as_view(), name='vinculo_delete'),
+    path('vinculos/<int:pk>/download/', DownloadTermoView.as_view(), name='download_termo'),
+    path('vinculos/<int:pk>/regenerar-termo/', RegenerarTermoView.as_view(), name='regenerar_termo'),
+    path('vinculos/<int:pk>/notificar/', NotificarAssinaturaView.as_view(), name='notificar_assinatura'),
+    path('vinculos/assinar/<int:pk>/', AssinarTermoView.as_view(), name='vinculo_assinar'), 
+    # Marcas
+    path('marcas/', MarcaListView.as_view(), name='marca_list'),
+    path('marcas/nova/', MarcaCreateView.as_view(), name='marca_create'),
+    path('marcas/<int:pk>/editar/', MarcaUpdateView.as_view(), name='marca_update'),
+    path('marcas/<int:pk>/excluir/', MarcaDeleteView.as_view(), name='marca_delete'),
 
-    # URLs do CRUD de Operadoras
-    path('operadoras/', views.OperadoraListView.as_view(), name='operadora_list'),
-    path('operadoras/nova/', views.OperadoraCreateView.as_view(), name='operadora_create'),
-    path('operadoras/<int:pk>/editar/', views.OperadoraUpdateView.as_view(), name='operadora_update'),
-    path('operadoras/<int:pk>/deletar/', views.OperadoraDeleteView.as_view(), name='operadora_delete'),
-
-    # URLs do CRUD de Planos
-    path('planos/', views.PlanoListView.as_view(), name='plano_list'),
-    path('planos/novo/', views.PlanoCreateView.as_view(), name='plano_create'),
-    path('planos/<int:pk>/editar/', views.PlanoUpdateView.as_view(), name='plano_update'),
-    path('planos/<int:pk>/deletar/', views.PlanoDeleteView.as_view(), name='plano_delete'),
+    # Modelos
+    path('modelos/', ModeloListView.as_view(), name='modelo_list'),
+    path('modelos/novo/', ModeloCreateView.as_view(), name='modelo_create'),
+    path('modelos/<int:pk>/editar/', ModeloUpdateView.as_view(), name='modelo_update'),
+    path('modelos/<int:pk>/excluir/', ModeloDeleteView.as_view(), name='modelo_delete'),
     
-    # URL de download
-    path('vinculos/<int:vinculo_id>/download/', views.download_termo, name='download_termo'),
-    path('vinculos/<int:vinculo_id>/notificar/', views.notificar_assinatura, name='notificar_assinatura'),
+    # Operadoras
+    path('operadoras/', OperadoraListView.as_view(), name='operadora_list'),
+    path('operadoras/nova/', OperadoraCreateView.as_view(), name='operadora_create'),
+    path('operadoras/<int:pk>/editar/', OperadoraUpdateView.as_view(), name='operadora_update'),
+    path('operadoras/<int:pk>/excluir/', OperadoraDeleteView.as_view(), name='operadora_delete'),
+    
+    # Planos
+    path('planos/', PlanoListView.as_view(), name='plano_list'),
+    path('planos/novo/', PlanoCreateView.as_view(), name='plano_create'),
+    path('planos/<int:pk>/editar/', PlanoUpdateView.as_view(), name='plano_update'),
+    path('planos/<int:pk>/excluir/', PlanoDeleteView.as_view(), name='plano_delete'),
+
+
 ]
 
 

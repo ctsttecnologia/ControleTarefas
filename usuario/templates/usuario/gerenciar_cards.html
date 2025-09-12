@@ -1,0 +1,51 @@
+
+{% extends 'usuario/base_usuario.html' %}
+{% load static %}
+{% load template_utils %} 
+
+{% block title %}Gerenciar Permissões de Cards{% endblock %}
+
+{% block content %}
+{% include 'usuario/includes/submenu.html' %}
+<div class="container mt-5">
+    <h1 class="mb-4">Gerenciar Permissões de Cards por Grupo</h1>
+    <p>Selecione os cards que cada grupo de usuários poderá visualizar no perfil.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="accordion" id="accordionGroups">
+            {% for grupo in grupos %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ grupo.id }}">
+                    <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ grupo.id }}" aria-expanded="{% if forloop.first %}true{% endif %}" aria-controls="collapse{{ grupo.id }}">
+                        Grupo: {{ grupo.name }}
+                    </button>
+                </h2>
+                <div id="collapse{{ grupo.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading{{ grupo.id }}" data-bs-parent="#accordionGroups">
+                    <div class="accordion-body">
+                        <div class="row">
+                            {% for card in todos_os_cards %}
+                                {% with card_id=card.id %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="card_{{ grupo.id }}_{{ card_id }}" 
+                                               name="group_{{ grupo.id }}_{{ card_id }}" 
+                                               {% if card_id in permissoes_por_grupo|get_item:grupo.id %}checked{% endif %}>
+                                        <label class="form-check-label" for="card_{{ grupo.id }}_{{ card_id }}">
+                                            {{ card.title }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary mt-4">Salvar Permissões</button>
+    </form>
+</div>
+{% endblock %}

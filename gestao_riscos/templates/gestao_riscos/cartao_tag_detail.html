@@ -31,7 +31,7 @@
             );
         display: flex;
         -webkit-print-color-adjust: exact; /* Garante que os backgrounds sejam impressos */
-        print-color-adjust: exact;
+        print-color-adjust: exact;        
         page-break-inside: avoid; /* Evita que o card seja cortado entre páginas */
     }
     .tag-content {
@@ -77,7 +77,7 @@
     .tag-text {
         color: black;
         font-weight: bold;
-        margin-top: 10px;
+        margin-top: 8px;
         font-size: 0.8rem;
     }
     .tag-main-text {
@@ -164,14 +164,15 @@
             <div class="retangulo-box">
                 <div class="danger-box">PERIGO</div>
             </div>
-            <p class="tag-text">NÃO LIGUE, NÃO OPERE,<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO.</p>
-            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO.</p>
+            <p class="tag-text">NÃO LIGUE, NÃO OPERE<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO</p>
+            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
 
             {% if cartao.funcionario.foto_3x4 %}
                 <img src="{{ cartao.funcionario.foto_3x4.url }}" alt=" foto de{{ cartao.funcionario.nome_completo }}" class="tag-photo">
             {% endif %}
 
-            <h4 class="tag-text mt-3 mb-1">{{ cartao.funcionario.nome_completo }}</h4>
+            <h4 class="tag-text mt-2 mb-1">{{ cartao.funcionario.nome_completo }}</h4>
+            <p class="tag-text">{{ cartao.funcionario.cargo }}</p>
             <p class="tag-text">FONE: {{ cartao.fone }}</p>
             
         </div>
@@ -182,8 +183,8 @@
             <div class="retangulo-box">
                 <div class="danger-box">PERIGO</div>
             </div> 
-            <p class="tag-text">NÃO LIGUE, NÃO OPERE,<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO.</p>
-            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO.</p>
+            <p class="tag-text">NÃO LIGUE, NÃO OPERE<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO</p>
+            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
 
             <div class="steps-box">
                 <h4>Os 6 passos para o trabalho seguro:</h4>
@@ -197,8 +198,8 @@
                 </ol>
             </div>
             <p class="disclaimer mt-3">
-                ESSA ETIQUETA É UM DISPOSITIVO DE SEGURANÇA INDIVIDUAL.<br>
-                SÓ PODE SER RETIRADA PELO SEU PROPRIETÁRIO.
+                ESSA ETIQUETA É UM DISPOSITIVO DE SEGURANÇA INDIVIDUAL<br>
+                SÓ PODE SER RETIRADA PELO SEU PROPRIETÁRIO
             </p>
         </div>
     </div>

@@ -27,17 +27,28 @@
                         {% csrf_token %}
 
                         {{ form|crispy }}
-                        <div class="form-group">
-                            <label for="signature-canvas">Assinatura digital</label>
-                            <div style="border: 1px solid #ced4da; border-radius: .25rem; width: 100%; height: 200px;">
+
+                        {# --- INÍCIO DA CONDIÇÃO: Mostra a assinatura apenas para o funcionário que precisa assinar --- #}
+                        {% if request.user == object.funcionario.usuario and not object.assinatura_digital and not object.termo_assinado %}
+                        <div class="form-group mt-3">
+                            <label for="signature-canvas"><strong>Desenhe sua assinatura abaixo:</strong></label>
+                            <div style="border: 1px solid #ced4da; border-radius: .25rem; width: 100%; height: 200px; background-color: #fff;">
                                 <canvas id="signature-canvas" style="width: 100%; height: 100%;"></canvas>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar Assinatura</button>
                         </div>
+                        {% endif %}
+                       
 
                         <div class="mt-4">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Salvar e Gerar Termo
+                                {# --- INÍCIO DA CONDIÇÃO: Muda o texto do botão conforme a ação --- #}
+                                {% if request.user == object.funcionario.usuario and not object.assinatura_digital and not object.termo_assinado %}
+                                    <i class="fas fa-signature"></i> Assinar e Salvar
+                                {% else %}
+                                    <i class="fas fa-save"></i> Salvar e Gerar Termo
+                                {% endif %}
+                               
                             </button>
                         </div>
                     </form>
@@ -50,6 +61,8 @@
 {% endblock content %}
 
 {% block extra_js %}
+
+{% if request.user == object.funcionario.usuario and not object.assinatura_digital and not object.termo_assinado %}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
@@ -59,32 +72,32 @@ document.addEventListener('DOMContentLoaded', function() {
         backgroundColor: 'rgb(255, 255, 255)'
     });
 
-    // Ajusta o tamanho do canvas para renderização correta
     function resizeCanvas() {
         var ratio =  Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
         canvas.getContext("2d").scale(ratio, ratio);
-        signaturePad.clear(); // Limpa ao redimensionar
+        signaturePad.clear();
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    // Limpa a assinatura
     document.getElementById('clear-signature').addEventListener('click', function () {
         signaturePad.clear();
     });
 
-    // Antes de enviar o formulário, salva a assinatura no campo oculto
     document.getElementById('vinculoForm').addEventListener('submit', function(event) {
         if (!signaturePad.isEmpty()) {
-            // Pega a assinatura como uma imagem PNG em base64
             var signatureData = signaturePad.toDataURL('image/png');
-            // Coloca os dados no campo oculto 'assinatura_digital'
-            document.getElementById('id_assinatura_digital').value = signatureData;
+            // Procura pelo campo de assinatura digital (o crispy forms pode gerar um ID diferente)
+            var signatureInput = document.querySelector('[name="assinatura_digital"]');
+            if(signatureInput) {
+                signatureInput.value = signatureData;
+            }
         }
     });
 });
 </script>
-{% endblock extra_js %}
+{% endif %}
 
+{% endblock extra_js %}

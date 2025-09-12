@@ -25,7 +25,7 @@ class InspecaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelA
 @admin.register(CartaoTag)
 class CartaoTagAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     """Admin para Cartões de Bloqueio (Tags)."""
-    list_display = ('funcionario', 'fone', 'data_criacao', 'data_validade', 'ativo', 'filial')
+    list_display = ('funcionario', 'cargo', 'fone', 'data_criacao', 'data_validade', 'ativo', 'filial')
     list_filter = ('ativo', 'data_validade', 'filial')
     search_fields = ('funcionario__nome_completo',)
     autocomplete_fields = ['funcionario']
