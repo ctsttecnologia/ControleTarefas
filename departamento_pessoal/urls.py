@@ -1,7 +1,7 @@
 # departamento_pessoal/urls.py
 from django.urls import path
 from .views import (
-    DocumentoCreateView, DocumentoListView, DocumentoUpdateView, 
+    DocumentoCreateView, DocumentoDeleteView, DocumentoListView, DocumentoUpdateView, 
     ExportarFuncionariosPDFView, ExportarFuncionariosExcelView, ExportarFuncionariosWordView,
     FuncionarioAdmissaoView, FuncionarioListView, FuncionarioDetailView, 
     FuncionarioCreateView, FuncionarioUpdateView, FuncionarioDeleteView,
@@ -46,6 +46,7 @@ urlpatterns = [
     path('documentos/novo/<int:funcionario_pk>/', DocumentoCreateView.as_view(), name='adicionar_documento'),
     # Rota para editar um documento existente, identificado pelo seu ID (<int:pk>).
     path('documentos/<int:pk>/editar/', DocumentoUpdateView.as_view(), name='editar_documentos'),
+    path('documentos/<int:pk>/excluir/', DocumentoDeleteView.as_view(), name='excluir_documento'),
 
     # Rotas para relatórios
     path('funcionarios/exportar/excel/', ExportarFuncionariosExcelView.as_view(), name='exportar_excel'),

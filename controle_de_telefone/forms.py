@@ -3,11 +3,15 @@
 from datetime import date
 from django import forms
 from django.urls import reverse
-
 from cliente import models
 from core.managers import FilialManager
 from .models import Aparelho, Marca, Modelo, Operadora, Plano, LinhaTelefonica, Vinculo, LinhaTelefonica
 from departamento_pessoal.models import Funcionario
+from .models import Vinculo
+import base64
+import uuid
+from django.core.files.base import ContentFile
+
 
 
 class AparelhoForm(forms.ModelForm):
@@ -28,8 +32,10 @@ class AparelhoForm(forms.ModelForm):
             'numero_serie', 
             'data_aquisicao', 
             'valor_aquisicao', 
-            'status', 
-            'observacoes'
+            'status',
+            'acessorios', 
+            'observacoes',
+            
         ]
         widgets = {'data_aquisicao': forms.DateInput(attrs={'type': 'date'})}
 
@@ -120,7 +126,7 @@ class VinculoForm(forms.ModelForm):
         fields = [
             'funcionario', 
             'aparelho', 
-            'linha', 
+            'linha',
             'data_entrega', 
             'data_devolucao', 
             'status',
@@ -163,17 +169,69 @@ class VinculoForm(forms.ModelForm):
             if linha_atual:
                 linhas_disponiveis = linhas_disponiveis | LinhaTelefonica.objects.filter(pk=linha_atual.pk)
             self.fields['linha'].queryset = linhas_disponiveis
-        
-        
+        # self.instance é o objeto que está sendo editado.
+        # Verificamos se a instância existe e se já tem uma data de entrega.
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk and instance.data_entrega:
+            # Se a data de entrega já foi definida, desabilita o campo de data de entrega
+            self.fields['data_entrega'].disabled = True
+            self.fields['data_entrega'].help_text = 'A data de entrega não pode ser alterada pois o recebimento já foi registrado.'
 
+    # Garantir a cronologia com validação
+    def clean(self):
+        cleaned_data = super().clean()
+        data_entrega = cleaned_data.get("data_entrega")
+        data_recebimento = cleaned_data.get("data_recebimento")
+
+        if data_entrega and data_recebimento:
+            # Garante que a data de recebimento não seja anterior à de entrega
+            if data_recebimento < data_entrega:
+                raise forms.ValidationError(
+                    "A data de recebimento não pode ser anterior à data de entrega."
+                )
+        return cleaned_data    
+
+
+# Renomeei seu formulário para mais clareza
 class VinculoAssinaturaForm(forms.ModelForm):
-    # Campo oculto para receber os dados da imagem da assinatura em base64
+    # Campo oculto para receber os dados da imagem em base64 do front-end
     assinatura_digital_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
         model = Vinculo
-        fields = [] # Nenhum campo do modelo será exibido diretamente.
+        # Nenhum campo do modelo será exibido diretamente pelo Django, 
+        # pois o template já tem a estrutura.
+        fields = []
 
-    
+    def save(self, commit=True):
+        # Pega a instância do vínculo, mas ainda não salva no banco de dados.
+        vinculo = super().save(commit=False)
+        
+        # Pega os dados da assinatura do campo oculto.
+        assinatura_base64 = self.cleaned_data.get('assinatura_digital_base64')
+
+        if assinatura_base64:
+            # O front-end envia um cabeçalho 'data:image/png;base64,', que precisamos remover.
+            try:
+                format, imgstr = assinatura_base64.split(';base64,') 
+                ext = format.split('/')[-1] # Pega a extensão (ex: png)
+                
+                # Decodifica os dados base64 para binário
+                data = ContentFile(base64.b64decode(imgstr))
+                
+                # Cria um nome de arquivo único
+                file_name = f'assinatura_{vinculo.pk}_{uuid.uuid4().hex}.{ext}'
+                
+                # Associa o arquivo de imagem decodificado ao campo do modelo
+                vinculo.assinatura_digital.save(file_name, data, save=False)
+
+            except (ValueError, TypeError):
+                # Lida com casos onde a string base64 é inválida
+                pass
+
+        if commit:
+            vinculo.save()
+            
+        return vinculo
 
            

@@ -1,4 +1,3 @@
-
 # seguranca_trabalho/views.py
 
 from collections import defaultdict
@@ -6,6 +5,7 @@ from datetime import timedelta
 import json
 import io
 from multiprocessing.sharedctypes import Value
+from urllib import request
 from django.forms import DurationField
 import pandas as pd
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed
@@ -21,7 +21,6 @@ from django.template.loader import render_to_string
 from docx import Document
 from weasyprint import HTML, default_url_fetcher
 from django.views.generic.edit import FormMixin
-
 from usuario.models import Filial
 from departamento_pessoal.models import Cargo, Funcionario
 from usuario.views import StaffRequiredMixin
@@ -31,9 +30,11 @@ from django.conf import settings
 from core.mixins import ViewFilialScopedMixin, FilialCreateMixin 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.contrib.auth.mixins import PermissionRequiredMixin
 from .mixins import SSTPermissionMixin
 
+# --- Ações de Entrega ---
+import logging
+logger = logging.getLogger(__name__)
 
 
 # --- Funções e Mixins de Permissão (mantidos como no original) ---
@@ -104,10 +105,19 @@ class FornecedorListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     template_name = 'seguranca_trabalho/fornecedor_list.html'
     context_object_name = 'fornecedores'
 
+
 class FornecedorDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Fornecedor
     template_name = 'seguranca_trabalho/fornecedor_detail.html'
     context_object_name = 'fornecedor'
+
+    def get_queryset(self):
+        # Chama o queryset padrão da view
+        queryset = super().get_queryset()
+        
+        # Adiciona a otimização com select_related para carregar o endereço
+        # Isso garante que o endereço seja carregado na mesma consulta do fornecedor
+        return queryset.select_related('endereco')
 
 class FornecedorCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     model = Fornecedor
@@ -232,15 +242,10 @@ def get_entrega_scoped(request, pk):
     # O filtro é feito via Ficha, garantindo que a entrega pertence a um funcionário da filial.
     return get_object_or_404(EntregaEPI, pk=pk, ficha__filial_id=filial_id)
 
-# --- Ações de Entrega ---
-import logging
-logger = logging.getLogger(__name__)
 
-# SUBSTITUA A CLASSE ANTIGA 'AssinarEntregaView' POR ESTA:
+# 'AssinarEntregaView' 
 class AssinarEntregaView(SSTPermissionMixin, View):
     """
-    View refatorada para gerenciar a assinatura de uma entrega de EPI.
-
     - O objeto 'entrega' é buscado uma única vez no método dispatch.
     - Validações de status (devolvido, já assinado) são feitas no início.
     - O método POST é focado apenas em processar os dados da assinatura.
@@ -657,6 +662,24 @@ class ExportarFuncionariosWordView(StaffRequiredMixin, View): # CORREÇÃO: Mixi
         document.add_paragraph()
 
         table = document.add_table(rows=1, cols=4)
+        table.style = 'Table Grid'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text, hdr_cells[1].text, hdr_cells[2].text, hdr_cells[3].text = 'Nome Completo', 'Cargo', 'Departamento', 'Data de Admissão'
+
+        for f in funcionarios:
+            row_cells = table.add_row().cells
+            row_cells[0].text = f.nome_completo
+            row_cells[1].text = f.cargo.nome if f.cargo else '-'
+            row_cells[2].text = f.departamento.nome if f.departamento else '-'
+            row_cells[3].text = f.data_admissao.strftime('%d/%m/%Y') if f.data_admissao else '-'
+
+        buffer = io.BytesIO()
+        document.save(buffer)
+        buffer.seek(0)
+
+        response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.docx"'
+        return response
         table.style = 'Table Grid'
         hdr_cells = table.rows[0].cells
         hdr_cells[0].text, hdr_cells[1].text, hdr_cells[2].text, hdr_cells[3].text = 'Nome Completo', 'Cargo', 'Departamento', 'Data de Admissão'

@@ -26,6 +26,10 @@
                         <tr>
                             <th scope="col">Nome do Fabricante</th>
                             <th scope="col">CNPJ</th>
+                            <th scope="col" class="text-center">Endereço</th>
+                            <th scope="col" class="text-center">Telefo</th>
+                            <th scope="col" class="text-center">Celular</th>
+                            <th scope="col" class="text-center">Email</th>
                             <th scope="col" class="text-center">Status</th>
                             <th scope="col" class="text-end">Ações</th>
                         </tr>
@@ -39,6 +43,10 @@
                                 </a>
                             </td>
                             <td>{{ fabricante.cnpj|default:"-" }}</td>
+                            <td class="text-center">{{ fabricante.endereco|default:"-" }}</td>
+                            <td class="text-center">{{ fabricante.contato|default:"-" }}</td>
+                            <td class="text-center">{{ fabricante.telefone|default:"-" }}</td>
+                            <td class="text-center">{{ fabricante.email|default:"-" }}</td>
                             <td class="text-center">
                                 {% if fabricante.ativo %}
                                     <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Ativo</span>

@@ -56,3 +56,59 @@
         </div>
     </div>
 {% endblock logradouro_content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Seleciona os campos do formulário pelos IDs gerados pelo Django
+    const cepInput = document.getElementById('id_cep');
+    const enderecoInput = document.getElementById('id_endereco');
+    const bairroInput = document.getElementById('id_bairro');
+    const cidadeInput = document.getElementById('id_cidade');
+    const estadoSelect = document.getElementById('id_estado');
+
+    // Adiciona um ouvinte de evento para quando o campo CEP perde o foco
+    if (cepInput) {
+        cepInput.addEventListener('blur', function () {
+            // Limpa e formata o CEP para conter apenas dígitos
+            let cep = this.value.replace(/\D/g, '');
+
+            // Verifica se o CEP tem 8 dígitos
+            if (cep.length === 8) {
+                // Monta a URL para a nossa view de consulta
+                const url = `{% url 'logradouro:consulta_cep' %}?cep=${cep}`;
+
+                // Faz a requisição para a nossa API
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Erro na resposta da rede.');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.erro) {
+                            alert(data.erro); // Exibe um alerta se o CEP não for encontrado ou for inválido
+                            // Limpar os campos se o CEP for inválido
+                            enderecoInput.value = '';
+                            bairroInput.value = '';
+                            cidadeInput.value = '';
+                            estadoSelect.value = '';
+                        } else {
+                            // Preenche os campos do formulário com os dados recebidos
+                            enderecoInput.value = data.endereco;
+                            bairroInput.value = data.bairro;
+                            cidadeInput.value = data.cidade;
+                            estadoSelect.value = data.estado;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Falha ao buscar CEP:', error);
+                        alert('Não foi possível consultar o CEP. Verifique sua conexão ou tente novamente mais tarde.');
+                    });
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

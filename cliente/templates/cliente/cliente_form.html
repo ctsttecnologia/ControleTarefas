@@ -70,14 +70,30 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Scripts para máscaras de input -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
 <script>
-    $(document).ready(function() {
-        // Aplica as máscaras aos campos usando seus IDs
+    $(document).ready(function(){   
+        
+        // --- MÁSCARA DINÂMICA PARA TELEFONE (FIXO E CELULAR) ---
+        var phoneMaskBehavior = function (val) {
+            return val.replace(/\D/g, '').length === 11 ? '(00) 00000-0000' : '(00) 0000-0000';
+        };
+        
+        var phoneOptions = {
+            onKeyPress: function(val, e, field, options) {
+                field.mask(phoneMaskBehavior.apply({}, arguments), options);
+            }
+        };
+
+        // Seleciona o campo de telefone pelo ID gerado pelo Django
+        var telefoneInput = $('#id_telefone');
+        if (telefoneInput.length) {
+            telefoneInput.mask(phoneMaskBehavior, phoneOptions);
+        }
+        // --- OUTRAS MÁSCARAS ---
         $('#id_cnpj').mask('00.000.000/0000-00', {reverse: true});
-        $('#id_telefone').mask('(00) 00000-0000');
+        $('#id_cep').mask('00000-000');
         $('#id_contrato').mask('0000');
     });
 </script>

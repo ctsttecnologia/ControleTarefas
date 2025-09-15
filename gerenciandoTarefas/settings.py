@@ -13,26 +13,26 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from decouple import config
+from django.core.management.utils import get_random_secret_key
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-
+FIELD_ENCRYPTION_KEY = get_random_secret_key()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY= config('SECRET_KEY')
 
 # Guarde esta chave em um local seguro, como variáveis de ambiente!
-FERNET_KEYS = [
-    config('KEYS')
-]
+FERNET_KEYS = config('KEYS')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
 
+# Isso gera uma chave segura. Armazene-a em um local seguro, como variáveis de ambiente.
+FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 ALLOWED_HOSTS = ['*']
 
@@ -77,7 +77,7 @@ INSTALLED_APPS = [
     'ferramentas',
     'controle_de_telefone',
     'phonenumber_field',
-    'notifications',
+    'notifications',    
 ]
 
 
@@ -106,7 +106,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.filial_context',
                 'usuario.context_processors.filial_context',
-                'tarefas.context_processors.notification_processor',
+                #'tarefas.context_processors.notification_processor',
+                
             ],
         },
     },
@@ -212,9 +213,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# Configurações de email (ajuste conforme seu servidor de email)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Configuração de E-mail para DESENVOLVIMENTO (imprime no console)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'smtp.seu-servidor.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True

@@ -1,5 +1,10 @@
 from django.db import models
 from core.managers import FilialManager 
+from django.conf import settings
+from django.utils import timezone
+from django.core.mail import send_mail
+
+
 
 
 # --- ADICIONE ESTA NOVA CLASSE ---
@@ -30,3 +35,4 @@ class BaseModel(models.Model):
         # no banco de dados para este modelo. Ele apenas serve de base.
         abstract = True
         ordering = ['-criado_em']
+

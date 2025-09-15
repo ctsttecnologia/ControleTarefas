@@ -15,16 +15,16 @@
 
             <div class="row mb-4 p-3 bg-light rounded border">
                 <div class="col-md-6">
-                    <h6><i class="fas fa-user me-2"></i>Colaborador</h6>
+                    <p><i class="fas fa-user me-2"></i><strong>Colaborador</strong></p>
                     <p><strong>Nome:</strong> {{ object.funcionario.nome_completo }}</p>
-                    <p><strong>Documento:</strong> {{ object.funcionario.documento.numero }}</p>
+                    <p><strong>Documento:</strong> {{ object.funcionario.documentos.numero }}</p>
                 </div>
                 <div class="col-md-6">
-                    <h6><i class="fas fa-mobile-alt me-2"></i>Equipamento e Acessórios</h6>
+                    <p><i class="fas fa-mobile-alt me-2"></i><strong>Equipamento e Acessórios</strong></p>
                     <p><strong>Aparelho:</strong> {{ object.aparelho.modelo.marca }} {{ object.aparelho.modelo }}</p>
                     <p><strong>IMEI:</strong> {{ object.aparelho.imei }}</p>
                     <p><strong>Linha:</strong> {{ object.linha.numero }}</p>
-                    <p class="small text-muted">Acessórios: Cabo USB, Fonte de Alimentação, Capa Protetora e Película de Vidro.</p>
+                    <p class="small text-muted">Acessórios: {{ object.aparelho.acessorios }}</p>
                 </div>
             </div>
 

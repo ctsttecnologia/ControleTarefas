@@ -49,3 +49,6 @@ class LogradouroForm(forms.ModelForm):
         if cep and len(cep) != 8:
             raise forms.ValidationError("CEP deve conter exatamente 8 dígitos.")
         return cep
+    
+
+    

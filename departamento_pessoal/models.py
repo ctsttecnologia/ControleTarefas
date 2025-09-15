@@ -169,7 +169,6 @@ class Funcionario(models.Model):
     data_demissao = models.DateField(_("Data de Demissão"), null=True, blank=True)
     salario = models.DecimalField(_("Salário Base"), max_digits=10, decimal_places=2, default=0.00)
     status = models.CharField(_("Status"), max_length=10, choices=STATUS_CHOICES, default='ATIVO')
-
     # --- Metadados ---
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -225,8 +224,8 @@ class Documento(models.Model):
     ]
 
     funcionario = models.ForeignKey(
-        Funcionario,
-        on_delete=models.CASCADE,  
+        'departamento_pessoal.Funcionario',
+        on_delete=models.PROTECT,  
         related_name='documentos',
         verbose_name=_("Funcionário")
     )
