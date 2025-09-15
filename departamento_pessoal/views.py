@@ -12,7 +12,7 @@ from django.http import HttpResponse
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView, DeleteView
 from django.contrib import messages
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -219,29 +219,55 @@ class DocumentoListView(StaffRequiredMixin, ListView):
         return queryset
 
 
-# A segurança aqui é garantir que o funcionário ao qual estamos adicionando
-# o documento pertence à filial ativa.
-class DocumentoCreateView(StaffRequiredMixin, CreateView):
+class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
 
-    def form_valid(self, form):
-        filial_id = self.request.session.get('active_filial_id')
-        if not filial_id:
-            raise PermissionDenied("Nenhuma filial selecionada.")
-
-        # Garante que o funcionário ao qual estamos adicionando o documento
-        # pertence à filial ativa na sessão, prevenindo manipulação de ID na URL.
+    def get_initial(self):
+        """
+        Pré-seleciona o funcionário se um 'funcionario_pk' for passado na URL.
+        Isso ativará a lógica de HiddenInput no DocumentoForm.
+        """
+        initial = super().get_initial()
         funcionario_pk = self.kwargs.get('funcionario_pk')
-        funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, filial_id=filial_id)
+        if funcionario_pk:
+            # Garante que o funcionário pertence à filial ativa do usuário
+            filial_id = self.request.session.get('active_filial_id')
+            funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, filial_id=filial_id)
+            initial['funcionario'] = funcionario
+        return initial
+
+    def get_context_data(self, **kwargs):
+        """
+        Adiciona o funcionário ao contexto para poder exibir seu nome no título da página.
+        """
+        context = super().get_context_data(**kwargs)
+        funcionario_pk = self.kwargs.get('funcionario_pk')
+        if funcionario_pk:
+            # Reutiliza a busca do get_initial se possível, mas aqui garantimos que o contexto tenha o funcionário
+            context['funcionario'] = get_object_or_404(Funcionario, pk=funcionario_pk)
+            context['titulo_pagina'] = f"Adicionar Documento para {context['funcionario'].nome_completo}"
+        else:
+            context['titulo_pagina'] = "Adicionar Novo Documento"
+        return context
         
-        form.instance.funcionario = funcionario
-        messages.success(self.request, f"Documento adicionado com sucesso para {funcionario.nome_completo}.")
+    def form_valid(self, form):
+        """
+        O FilialCreateMixin já associa a filial correta ao documento.
+        A lógica de associar o funcionário já foi resolvida pelo form
+        (seja pelo HiddenInput ou pelo select normal).
+        """
+        messages.success(self.request, f"Documento adicionado com sucesso para {form.instance.funcionario.nome_completo}.")
+        # Não precisamos chamar super().form_valid() aqui, pois o mixin já faz isso.
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.kwargs['funcionario_pk']})
+        """
+        Redireciona para a página de detalhes do funcionário ao qual o documento foi adicionado.
+        """
+        # self.object é a instância do Documento que acabou de ser salva
+        return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
 
 # A lógica de update de documento precisa garantir que o usuário não edite
 # um documento de outra filial. Podemos criar um mixin simples para isso.
@@ -267,6 +293,17 @@ class DocumentoUpdateView(DocumentoScopedMixin, StaffRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f'Editar Documento de {self.object.funcionario.nome_completo}'
         return context
+    
+# Adicione a view de exclusão de documento
+class DocumentoDeleteView(DocumentoScopedMixin, StaffRequiredMixin, DeleteView):
+    model = Documento
+    template_name = 'departamento_pessoal/documento_confirm_delete.html' # Crie este template
+    context_object_name = 'documento'
+
+    def get_success_url(self):
+        messages.success(self.request, "Documento excluído com sucesso.")
+        # self.object é o documento que foi excluído
+        return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
     
 # --- VIEW DO PAINEL ---
 

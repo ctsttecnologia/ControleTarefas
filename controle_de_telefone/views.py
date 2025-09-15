@@ -15,6 +15,7 @@ from django.urls import reverse, reverse_lazy
 from django.views import View
 
 from notifications.models import Notificacao
+from .forms import VinculoForm
 from .forms import VinculoAssinaturaForm # Precisamos criar este formulário
 import base64
 from django.views.generic import (
@@ -27,13 +28,11 @@ from .forms import (
 )
 from .models import (
     Aparelho, LinhaTelefonica, Vinculo, Marca, Modelo, Operadora, Plano,
-    enviar_notificacao_de_assinatura
+   
 )
 from .pdf_generator import gerar_termo_responsabilidade_pdf  
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-
-
 
 
 
@@ -373,6 +372,9 @@ class VinculoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView)
             'funcionario', 'aparelho__modelo__marca', 'linha__plano__operadora'
         )
 
+def enviar_notificacao_de_assinatura(request, vinculo):
+    raise NotImplementedError
+
 class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     model = Vinculo
     form_class = VinculoForm
@@ -436,6 +438,19 @@ class VinculoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMess
         messages.success(self.request, self.success_message)
         return super().form_valid(form)
 
+def editar_vinculo(request, pk):
+    objeto = get_object_or_404(Vinculo, pk=pk)
+    if request.method == 'POST':
+        form = VinculoForm(request.POST, instance=objeto)
+        if form.is_valid():
+            form.save()
+            return redirect('pagina_de_sucesso') # Redireciona após salvar
+    else:
+        form = VinculoForm(instance=objeto) # O formulário é instanciado com o objeto
+    
+    return render(request, 'seu_app/template_de_edicao.html', {'form': form, 'object': objeto})
+
+    
 class VinculoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = Vinculo
     permission_required = 'controle_de_telefone.delete_vinculo'
@@ -502,67 +517,51 @@ class RegenerarTermoView(LoginRequiredMixin, PermissionRequiredMixin, View):
             messages.error(request, f"Ocorreu um erro ao gerar o termo: {e}")
         return redirect('controle_de_telefone:vinculo_list')
 
-class NotificarAssinaturaView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    """
-    Envia uma notificação para o funcionário assinar o termo de responsabilidade.
-    Este endpoint é acionado por um gestor, geralmente a partir da lista de vínculos.
-    """
-    permission_required = 'controle_de_telefone.change_vinculo' # [MELHORIA] Garante que só usuários com permissão podem notificar
-    raise_exception = True # Redireciona para 403 se não tiver permissão
-
+class NotificarAssinaturaView(View):
     def post(self, request, *args, **kwargs):
-        vinculo = get_object_or_404(Vinculo, pk=self.kwargs.get('pk'))
-
-        # [MELHORIA] Verifica se o termo já foi assinado para evitar notificações desnecessárias.
-        if vinculo.foi_assinado:
-            messages.info(request, f"O termo para {vinculo.funcionario.nome_completo} já foi assinado.")
-            return redirect('controle_de_telefone:vinculo_list')
-
+        vinculo = get_object_or_404(Vinculo, pk=kwargs.get('pk'))
         usuario_a_notificar = vinculo.funcionario.usuario
-        
-        # Verifica se o funcionário tem um usuário associado no sistema.
+
         if not usuario_a_notificar:
-            messages.error(request, f"Não foi possível notificar: o funcionário {vinculo.funcionario.nome_completo} não possui um usuário de sistema associado.")
-            return redirect('controle_de_telefone:vinculo_list')
+            messages.error(request, "Este funcionário não possui um usuário de sistema.")
+            return redirect('alguma_url_de_fallback') # Ajuste
 
-        # Constrói a URL absoluta para a página de assinatura.
+        # Gera a URL única para a assinatura
         url_assinatura = request.build_absolute_uri(
-            reverse('controle_de_telefone:vinculo_assinatura', args=[vinculo.pk])
+            reverse('controle_de_telefone:vinculo_assinar', args=[vinculo.pk])
         )
+        
+        mensagem_notificacao = f"Você tem um Termo de Responsabilidade para o aparelho {vinculo.aparelho} pendente de assinatura."
 
-        # 1. Cria a notificação interna no sistema.
+        # --- AÇÃO 1: CRIAR NOTIFICAÇÃO PARA O SINO ---
         Notificacao.objects.create(
             usuario=usuario_a_notificar,
-            mensagem=f"Lembrete: Você tem um Termo de Responsabilidade para o aparelho {vinculo.aparelho} pendente de assinatura.",
+            mensagem=mensagem_notificacao,
             url_destino=url_assinatura
         )
 
-        # 2. Envia o e-mail de notificação.
+        # --- AÇÃO 2: ENVIAR O E-MAIL ---
         if usuario_a_notificar.email:
-            assunto = "Lembrete: Termo de Responsabilidade Pendente de Assinatura"
+            assunto = "Lembrete: Termo de Responsabilidade Pendente"
             contexto_email = {
                 'nome_usuario': usuario_a_notificar.first_name or usuario_a_notificar.username,
                 'nome_aparelho': str(vinculo.aparelho),
                 'url_assinatura': url_assinatura,
             }
-            # Certifique-se de que o template 'emails/notificacao_assinatura.html' existe.
-            corpo_html = render_to_string('emails/notificacao_assinatura.html', contexto_email)
+            corpo_html = render_to_string('email/notificacao_assinatura.html', contexto_email)
             
-            try:
-                send_mail(
-                    subject=assunto,
-                    message='', # A mensagem principal está no corpo_html
-                    from_email='nao-responda@suaempresa.com', # Altere para seu e-mail
-                    recipient_list=[usuario_a_notificar.email],
-                    html_message=corpo_html
-                )
-                messages.success(request, f"Notificação para assinatura enviada com sucesso para {vinculo.funcionario.nome_completo}.")
-            except Exception as e:
-                messages.error(request, f"A notificação no sistema foi criada, mas ocorreu um erro ao enviar o e-mail: {e}")
+            send_mail(
+                subject=assunto, message='',
+                from_email='nao-responda@suaempresa.com',
+                recipient_list=[usuario_a_notificar.email],
+                html_message=corpo_html
+            )
+            messages.success(request, f"Notificação por e-mail e no sistema enviada para {usuario_a_notificar.get_full_name()}.")
         else:
-            messages.warning(request, f"Notificação criada no sistema, mas o usuário {usuario_a_notificar.username} não possui e-mail cadastrado.")
+            messages.warning(request, "Notificação criada no sistema, mas o funcionário não possui e-mail cadastrado.")
             
-        return redirect('controle_de_telefone:vinculo_list')
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
 
 class AssinarTermoView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     """
@@ -571,9 +570,15 @@ class AssinarTermoView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Vinculo
     form_class = VinculoAssinaturaForm
     template_name = 'controle_de_telefone/vinculo_assinatura.html'
+    context_object_name = 'vinculo'
     success_url = reverse_lazy('controle_de_telefone:vinculo_list')
-    # [NOTA] A mensagem de sucesso será adicionada manualmente abaixo.
     success_message = "Termo de Responsabilidade assinado com sucesso!"
+
+    def get_success_url(self):
+        messages.success(self.request, "Termo de responsabilidade assinado e enviado com sucesso!")
+        # Redireciona para uma página de sucesso ou de detalhes do vínculo
+        return reverse('controle_de_telefone:dashboard')
+
 
     def dispatch(self, request, *args, **kwargs):
         vinculo = self.get_object()
@@ -598,34 +603,25 @@ class AssinarTermoView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        vinculo = self.get_object()
-        signature_data_url = form.cleaned_data.get('assinatura_digital_base64')
+        # 1. Salva o formulário. Isso executará o método .save() customizado no forms.py,
+        # que decodifica a assinatura e a salva no campo 'assinatura_digital'.
+        vinculo = form.save(commit=False) # commit=False para podermos adicionar o PDF
+        vinculo.foi_assinado = True
+        vinculo.data_assinatura = timezone.now()
+        vinculo.save() # Salva o vínculo com a imagem da assinatura
 
-        if signature_data_url:
-            try:
-                # Processa e decodifica a imagem da assinatura
-                format, imgstr = signature_data_url.split(';base64,') 
-                ext = format.split('/')[-1] 
-                file_data = ContentFile(base64.b64decode(imgstr), name=f'assinatura_{vinculo.pk}.{ext}')
-                
-                # Atualiza os campos do objeto Vinculo
-                vinculo.assinatura_digital = file_data
-                vinculo.foi_assinado = True
-                vinculo.data_assinatura = timezone.now()
-                
-                # Salva o objeto com as alterações no banco de dados
-                vinculo.save()
-                
-            except (ValueError, TypeError) as e:
-                form.add_error(None, f"Ocorreu um erro ao processar a assinatura: {e}")
-                return self.form_invalid(form)
-        else:
-            form.add_error(None, "A assinatura é obrigatória. Por favor, assine no campo indicado.")
-            return self.form_invalid(form)
-            
-        # Adiciona a mensagem de sucesso e redireciona manualmente
-        messages.success(self.request, self.success_message)
-        return redirect(self.get_success_url())
+        # 2. Gera o PDF. A função agora terá acesso ao 'vinculo.assinatura_digital'
+        # que acabamos de salvar.
+        pdf_buffer = gerar_termo_responsabilidade_pdf(vinculo)
+        
+        # 3. Salva o PDF gerado (com a assinatura) no campo de upload
+        pdf_filename = f'termo_assinado_{vinculo.pk}.pdf'
+        vinculo.termo_assinado_upload.save(pdf_filename, ContentFile(pdf_buffer.read()), save=True)
+
+        # O form.save() original é chamado implicitamente pelas ações acima.
+        # Nós redirecionamos para a success_url.
+        return super().form_valid(form)
+    
 # --- Dashboard e Views de Ação ---
 
 class DashboardView(LoginRequiredMixin, TemplateView):
@@ -650,6 +646,31 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         aparelhos_por_marca = Aparelho.objects.values('modelo__marca__nome').annotate(total=Count('id')).order_by('-total')
         context['marcas_labels_json'] = json.dumps([item['modelo__marca__nome'] for item in aparelhos_por_marca])
         context['marcas_data_json'] = json.dumps([item['total'] for item in aparelhos_por_marca])
+
+        # Gráfico: Linhas por Operadora
+        linhas_por_operadora = LinhaTelefonica.objects.values('plano__operadora__nome').annotate(total=Count('id')).order_by('-total')
+        context['operadoras_labels_json'] = json.dumps([item['plano__operadora__nome'] for item in linhas_por_operadora])
+        context['operadoras_data_json'] = json.dumps([item['total'] for item in linhas_por_operadora])
+
+        # Gráfico: Vínculos Ativos vs. Inativos
+        vinculos_ativos = context['total_vinculos'] # Reutiliza a contagem já feita
+        vinculos_inativos = Vinculo.objects.filter(data_devolucao__isnull=False).count()
+        context['vinculos_status_data_json'] = json.dumps([vinculos_ativos, vinculos_inativos])
+
+        return context
+        context['marcas_data_json'] = json.dumps([item['total'] for item in aparelhos_por_marca])
+
+        # Gráfico: Linhas por Operadora
+        linhas_por_operadora = LinhaTelefonica.objects.values('plano__operadora__nome').annotate(total=Count('id')).order_by('-total')
+        context['operadoras_labels_json'] = json.dumps([item['plano__operadora__nome'] for item in linhas_por_operadora])
+        context['operadoras_data_json'] = json.dumps([item['total'] for item in linhas_por_operadora])
+
+        # Gráfico: Vínculos Ativos vs. Inativos
+        vinculos_ativos = context['total_vinculos'] # Reutiliza a contagem já feita
+        vinculos_inativos = Vinculo.objects.filter(data_devolucao__isnull=False).count()
+        context['vinculos_status_data_json'] = json.dumps([vinculos_ativos, vinculos_inativos])
+
+        return context
 
         # Gráfico: Linhas por Operadora
         linhas_por_operadora = LinhaTelefonica.objects.values('plano__operadora__nome').annotate(total=Count('id')).order_by('-total')

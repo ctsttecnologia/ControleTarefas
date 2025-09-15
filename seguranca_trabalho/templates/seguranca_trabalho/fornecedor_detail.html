@@ -6,6 +6,30 @@
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h1>Detalhes do Fornecedor: {{ fornecedor.nome }}</h1>
+            <p><strong>CNPJ:</strong> {{ fornecedor.cnpj }}</p>
+
+            <h2>Informações de Contato</h2>
+            {% if fornecedor.telefone %}
+                <p><strong>Telefone:</strong> {{ fornecedor.telefone }}</p>
+            {% endif %}
+
+            {% if fornecedor.email %}
+                <p><strong>Email:</strong> {{ fornecedor.email }}</p>
+            {% endif %}
+
+            <h2>Endereço</h2>
+            {% if fornecedor.endereco %}
+                <p><strong>Logradouro:</strong> {{ fornecedor.endereco.nome }}</p>
+                <p><strong>Número:</strong> {{ fornecedor.endereco.numero }}</p>
+                <p><strong>CEP:</strong> {{ fornecedor.endereco.cep }}</p>
+            {% else %}
+                <p>Endereço não informado.</p>
+            {% endif %}
+
+
+
         <div>
             <h1 class="h2">Detalhes do Fornecedor</h1>
             <p class="text-muted">{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</p>

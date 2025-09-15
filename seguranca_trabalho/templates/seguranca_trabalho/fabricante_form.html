@@ -14,7 +14,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2">{{ titulo_pagina }}</h1>
+                <h1 class="h2">Cadastro</h1>
                 <div>
                     <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
@@ -39,6 +39,46 @@
                                 {% render_field form.cnpj class+="form-control" %}
                                 {% for error in form.cnpj.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.endereco.id_for_label }}" class="form-label">{{ form.endereco.label }}</label>
+                                {% render_field form.endereco class+="form-select" %}
+                                {% for error in form.endereco.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.contato.id_for_label }}" class="form-label">{{ form.contato.label }}</label>
+                                {% render_field form.contato class+="form-control" %}
+                                {% for error in form.contato.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}       
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.telefone.id_for_label }}" class="form-label">{{ form.telefone.label }}</label>
+                                {% render_field form.telefone class+="form-control" %}
+                                {% for error in form.telefone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}      
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.celular.id_for_label }}" class="form-label">{{ form.celular.label }}</label>
+                                {% render_field form.celular class+="form-control" %}
+                                {% for error in form.celular.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                                {% render_field form.email class+="form-control" %}
+                                {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div> 
+                            <div class="col-md-6">
+                                <label for="{{ form.site.id_for_label }}" class="form-label">{{ form.site.label }}</label>
+                                {% render_field form.site class+="form-control" %}
+                                {% for error in form.site.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}              
+                            </div>
+                            <div class="col-12">
+                                <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+                                {% render_field form.observacoes class+="form-control" %}
+                                {% for error in form.observacoes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.ativo.id_for_label }}" class="form-label">{{ form.ativo.label }}</label>
+                                {% render_field form.ativo class+="form-check-input" %}
+                            </div>      
+
                             <div class="col-md-6 d-flex align-items-end">
                                 <div class="form-check form-switch mb-2">
                                     {% render_field form.ativo class+="form-check-input" %}

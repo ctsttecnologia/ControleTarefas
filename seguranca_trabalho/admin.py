@@ -26,10 +26,10 @@ class EntregaEPIInline(TabularInline):
 @admin.register(Fabricante)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
 class FabricanteAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    list_display = ('nome', 'filial', 'cnpj', 'ativo')
-    list_filter = ('ativo',) # 'filial' removido, pois o mixin já filtra.
+    list_display = ('nome', 'cnpj', 'filial', 'ativo')
+    list_filter = ('ativo',)
     search_fields = ('nome', 'cnpj')
-    readonly_fields = ('filial',) # Impede a edição da filial após a criação.
+    
 
 @admin.register(Fornecedor)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.
@@ -37,7 +37,7 @@ class FornecedorAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mode
     list_display = ('nome_fantasia', 'filial', 'razao_social', 'cnpj', 'ativo')
     list_filter = ('ativo',)
     search_fields = ('nome_fantasia', 'razao_social', 'cnpj')
-    readonly_fields = ('filial',)
+    
 
 @admin.register(Funcao)
 # REATORADO: Usa FilialAdminScopedMixin e ajusta campos.

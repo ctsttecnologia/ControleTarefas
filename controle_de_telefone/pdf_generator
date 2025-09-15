@@ -1,3 +1,5 @@
+# controle_de_telefone/pdf_generator.py
+
 import io
 from functools import partial
 import logging
@@ -11,10 +13,11 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import (Image, KeepTogether, Paragraph,
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 import os
-# Coloque no início do seu arquivo, junto com os outros imports
-import logging
+
+# Configurar logger para logs mais detalhados
 logger = logging.getLogger(__name__)
 
+# --- Funções Auxiliares ---
 def get_safe_attr(obj, attrs, default='N/A'):
     """
     Função auxiliar para obter atributos aninhados de forma segura.
@@ -57,7 +60,7 @@ def create_introductory_text(vinculo, styles, safe_get):
     data_entrega_f = date_format(vinculo.data_entrega, 'd \\d\\e F \\d\\e Y')
     texto_inicial = f"""
         A empresa <strong>{EMPRESA_NOME}</strong>, nesta data de <strong>{data_entrega_f}</strong>,
-        entrega ao funcionário do contrato CM {safe_get(vinculo, 'funcionario.cliente.contrato')} um aparelho com as seguintes características:
+        entrega ao funcionário do contrato {safe_get(vinculo, 'funcionario.cliente.contrato')} um aparelho com as seguintes características:
     """
     return [Paragraph(texto_inicial, styles['Justify']), Spacer(1, 10)]
 
@@ -105,54 +108,31 @@ def create_clauses_section(vinculo, styles, safe_get):
         
     return story
 
-
-
-
-
 def create_signature_block(vinculo, styles, safe_get):
-    """
-    Cria a tabela de assinaturas, com logs detalhados para depuração.
-    """
-    logger.info("--- [TESTE DE ASSINATURA] --- Iniciando a criação do bloco de assinatura.")
+    """Cria a tabela de assinaturas, incluindo a assinatura digital."""
+    EMPRESA_NOME = "CETEST MINAS ENGENHARIA E SERVIÇOS S.A"
+    assinatura_funcionario = []
     
-    assinatura_funcionario_story = []
+    assinatura_path = vinculo.assinatura_digital.path if vinculo.assinatura_digital else None
     
-    # PASSO 1: Verificar se o campo `assinatura_digital` existe no objeto
-    if hasattr(vinculo, 'assinatura_digital') and vinculo.assinatura_digital:
-        assinatura_path = vinculo.assinatura_digital.path
-        logger.info(f"[TESTE DE ASSINATURA] Campo 'assinatura_digital' encontrado. Caminho obtido: {assinatura_path}")
-
-        # PASSO 2: Verificar se o arquivo realmente existe no sistema de arquivos
-        if os.path.exists(assinatura_path):
-            logger.info(f"[TESTE DE ASSINATURA] SUCESSO: O arquivo foi encontrado em '{assinatura_path}'.")
-            
-            # PASSO 3: Tentar carregar a imagem
-            try:
-                assinatura_img = Image(assinatura_path, width=150, height=50)
-                assinatura_funcionario_story.append(assinatura_img)
-                logger.info("[TESTE DE ASSINATURA] SUCESSO: Imagem carregada e adicionada ao PDF.")
-            except Exception as e:
-                logger.error(f"[TESTE DE ASSINATURA] ERRO: O arquivo existe, mas falhou ao ser carregado como imagem. Erro: {e}")
-                assinatura_funcionario_story.append(Paragraph("________________________________", styles['Center']))
-        else:
-            # Se o arquivo não existe no caminho, este é o ponto de falha mais comum.
-            logger.warning(f"[TESTE DE ASSINATURA] FALHA: O arquivo NÃO foi encontrado no caminho '{assinatura_path}'. Verifique as configurações de MEDIA_ROOT e se o arquivo existe no servidor.")
-            assinatura_funcionario_story.append(Paragraph("________________________________", styles['Center']))
+    if assinatura_path and os.path.exists(assinatura_path):
+        try:
+            assinatura_img = Image(assinatura_path, width=150, height=50)
+            assinatura_funcionario.append(assinatura_img)
+        except Exception as e:
+            logger.error(f"ERRO ao carregar imagem da assinatura: {e}")
+            assinatura_funcionario.append(Paragraph("________________________________", styles['Center']))
     else:
-        logger.warning("[TESTE DE ASSINATURA] FALHA: O objeto 'vinculo' não possui um arquivo de assinatura digital associado no banco de dados.")
-        assinatura_funcionario_story.append(Paragraph("________________________________", styles['Center']))
-
-    # Adiciona o nome e documento do funcionário abaixo da linha/imagem
-    assinatura_funcionario_story.append(Spacer(1, 2))
-    assinatura_funcionario_story.append(Paragraph(safe_get(vinculo, 'funcionario.nome_completo'), styles['Center']))
-    assinatura_funcionario_story.append(Paragraph(f"Doc: {safe_get(vinculo, 'funcionario.documentos.numero')}", styles['CenterSmall']))
-
-    # --- CORREÇÃO DE LAYOUT DA TABELA ---
-    # A tabela original estava definida com 2 colunas ('50%', '50%') mas só recebia 1 item.
-    # O correto é definir 1 coluna de 100% para centralizar o bloco corretamente.
+        assinatura_funcionario.append(Paragraph("________________________________", styles['Center']))
+        
+    assinatura_funcionario.append(Spacer(1, 2))
+    assinatura_funcionario.append(Paragraph(safe_get(vinculo, 'funcionario.nome_completo'), styles['Center']))
+    assinatura_funcionario.append(Paragraph(f"Doc: {safe_get(vinculo, 'funcionario.documentos.numero')}", styles['CenterSmall']))
+    
+    
     tabela_assinaturas = Table(
-        [[assinatura_funcionario_story]], 
-        colWidths=['100%']  # Corrigido para uma única coluna
+        [[assinatura_funcionario, ]], 
+        colWidths=['50%', '50%']
     )
     tabela_assinaturas.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
@@ -194,3 +174,4 @@ def gerar_termo_responsabilidade_pdf(vinculo):
     
     buffer.seek(0)
     return buffer
+

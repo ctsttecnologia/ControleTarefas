@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from departamento_pessoal.models import Funcionario
 
 from core.managers import FilialManager
+from logradouro.models import Logradouro
 from usuario.models import Filial
 
 # --- Modelos de Catálogo e Estrutura ---
@@ -23,14 +24,31 @@ class Fabricante(models.Model):
         on_delete=models.PROTECT,
         related_name='fabricantes', 
         verbose_name="Filial",
-        null=True
+        null=True,
+       blank=True,
     )
+
     # Manager customizado para segregação de dados
     objects = FilialManager()
     class Meta:
         verbose_name = _("Fabricante")
         verbose_name_plural = _("Fabricantes")
         ordering = ['nome']
+
+    endereco = models.ForeignKey(
+        Logradouro,
+        on_delete=models.PROTECT,
+        related_name='fabricantes',
+        verbose_name="Endereço",
+        null=True
+    )
+
+    contato = models.CharField(max_length=100, blank=True, verbose_name=_("Contato"))
+    telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone"))
+    celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
+    email = models.EmailField(blank=True, verbose_name=_("E-mail de Contato"))
+    site = models.URLField(blank=True, verbose_name=_("Site"))
+    observacoes = models.TextField(blank=True, verbose_name=_("Observações"))
 
     def __str__(self):
         return self.nome
@@ -43,16 +61,27 @@ class Fornecedor(models.Model):
     razao_social = models.CharField(max_length=255, verbose_name=_("Razão Social"))
     nome_fantasia = models.CharField(max_length=255, blank=True, verbose_name=_("Nome Fantasia"))
     cnpj = models.CharField(max_length=18, unique=True, verbose_name=_("CNPJ"))
-    email = models.EmailField(blank=True, verbose_name=_("E-mail de Contato"))
+    inscricao_estadual = models.CharField(max_length=20, blank=True, verbose_name=_("Inscrição Estadual"))
+    contato = models.CharField(max_length=100, blank=True, verbose_name=_("Contato"))
     telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone de Contato"))
+    celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
+    email = models.EmailField(blank=True, verbose_name=_("E-mail de Contato"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
+    endereco = models.ForeignKey(
+        Logradouro,
+        on_delete=models.PROTECT,
+        related_name='fornecedores',
+        verbose_name="Endereço",
+        null=True
+    )
+    site = models.URLField(blank=True, verbose_name=_("Site"))
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
         related_name='fornecedores',  
         verbose_name=_("Filial"),
         null=True,                  
-        blank=False              
+        blank=True,              
     )
     # Manager customizado para segregação de dados
     objects = FilialManager()

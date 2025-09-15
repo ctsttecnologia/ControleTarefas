@@ -205,6 +205,13 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
                 ]
             },
+            {
+                'id': '',
+                'title': '',
+                'permission': 'GARANT_ALL',  # Permissão especial para superusuários
+                'icon': 'images/favicon.ico',
+                'links': []
+            },
         ]
 
         # 1. Obtenha os IDs dos cartões visíveis para o grupo do usuário

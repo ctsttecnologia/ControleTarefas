@@ -1,27 +1,14 @@
 
 from django.db import models
-from django.core.validators import RegexValidator, EmailValidator
 from django.utils.translation import gettext_lazy as _
 from logradouro.models import Logradouro
 from core.managers import FilialManager
 from usuario.models import Filial
+from core.validators import (validate_telefone, validate_cnpj, validate_email)
 
 
 class Cliente(models.Model):
-    # Seus validadores continuam aqui...
-    cnpj_validator = RegexValidator(
-        regex=r'^\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}$|^\d{14}$',
-        message=_('CNPJ deve estar no formato 00.000.000/0000-00 ou conter 14 dígitos')
-    )
-    telefone_validator = RegexValidator(
-        regex=r'^\(\d{2}\) \d{4,5}-\d{4}$|^\d{10,11}$',
-        message=_('Telefone deve estar no formato (00) 00000-0000 ou conter 10/11 dígitos')
-    )
-    email_validator = EmailValidator(
-        message=_('Informe um endereço de email válido')
-    )
 
-   
     # Seus campos continuam aqui...
     nome = models.CharField(max_length=100, verbose_name=_('Nome Fantasia'))
     logradouro = models.ForeignKey(Logradouro, on_delete=models.PROTECT, related_name='clientes', verbose_name=_('Endereço'))
@@ -33,18 +20,24 @@ class Cliente(models.Model):
         unique=True,
         verbose_name=_('CNPJ'),
         help_text=_('Formato: 00.000.000/0000-00'),
-        validators=[cnpj_validator]  # O validador é usado aqui
+        validators=[validate_cnpj]  # O validador é usado aqui
     )
     
     telefone = models.CharField(
-        max_length=15,
+        max_length=16,
         blank=True,
         null=True,
         verbose_name=_('Telefone'),
-        help_text=_('Formato: (00) 00000-0000'),
-        validators=[telefone_validator] # O validador é usado aqui
+        help_text=_('Formato: (00) 00000-0000 ou (00) 0000-0000'),
+        validators=[validate_telefone] # O validador é usado aqui
     )
-    email = models.EmailField(max_length=100, blank=True, null=True, verbose_name=_('E-mail'))
+    email = models.EmailField(
+        max_length=100, 
+        blank=True, 
+        null=True, 
+        verbose_name=_('E-mail'),
+        validators=[validate_email]
+    ) # O validador é usado aqui
     observacoes = models.TextField(blank=True, null=True, verbose_name=_('Observações'))
     inscricao_estadual = models.CharField(max_length=20, blank=True, null=True, verbose_name=_('Inscrição Estadual'))
     inscricao_municipal = models.CharField(max_length=20, blank=True, null=True, verbose_name=_('Inscrição Municipal'))

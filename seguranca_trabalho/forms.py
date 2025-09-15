@@ -9,23 +9,32 @@ import pathlib
 class FabricanteForm(forms.ModelForm):
     class Meta:
         model = Fabricante
-        fields = ['nome', 'cnpj', 'ativo']
+        fields = ['nome', 'cnpj', 'endereco', 'contato', 'telefone', 'celular', 'email', 'site', 'observacoes', 'ativo']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
+            'endereco': forms.Select(attrs={'class': 'form-select'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
+            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
+            'contato': forms.TextInput(attrs={'class': 'form-control'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'site': forms.URLInput(attrs={'class': 'form-control', 'placeholder': ' https://www.exemplo.com'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 class FornecedorForm(forms.ModelForm):
     class Meta:
-        model = Fornecedor
-        fields = ['razao_social', 'nome_fantasia', 'cnpj', 'email', 'telefone', 'ativo']
+        model = Fornecedor 
+        fields = ['razao_social', 'nome_fantasia', 'cnpj', 'endereco', 'email', 'telefone', 'celular', 'ativo']
         widgets = {
             'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
             'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
+            'endereco': forms.Select(attrs={'class': 'form-select'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
+            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
+            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 

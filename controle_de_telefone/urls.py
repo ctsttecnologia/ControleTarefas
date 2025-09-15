@@ -12,7 +12,7 @@ from .views import (
     ModeloListView, ModeloCreateView, ModeloUpdateView, ModeloDeleteView,
     OperadoraListView, OperadoraCreateView, OperadoraUpdateView, OperadoraDeleteView,
     PlanoListView, PlanoCreateView, PlanoUpdateView, PlanoDeleteView,
-    DashboardView, DownloadTermoView, RegenerarTermoView, NotificarAssinaturaView, 
+    DashboardView, DownloadTermoView, RegenerarTermoView, NotificarAssinaturaView,
 )
 
 app_name = 'controle_de_telefone'
@@ -36,16 +36,20 @@ urlpatterns = [
     path('linhas/<int:pk>/excluir/', LinhaTelefonicaDeleteView.as_view(), name='linhatelefonica_delete'),
 
     # Vínculos
-    path('vinculos/', VinculoListView.as_view(), name='vinculo_list'),
-    path('vinculos/novo/', VinculoCreateView.as_view(), name='vinculo_create'),
-    path('vinculos/<int:pk>/', VinculoDetailView.as_view(), name='vinculo_detail'),
-    path('vinculos/<int:pk>/editar/', VinculoUpdateView.as_view(), name='vinculo_update'),
-    path('vinculos/<int:pk>/excluir/', VinculoDeleteView.as_view(), name='vinculo_delete'),
+    path('vinculos/', views.VinculoListView.as_view(), name='vinculo_list'),
+    path('vinculos/novo/', views.VinculoCreateView.as_view(), name='vinculo_create'),
+    path('vinculos/<int:pk>/', views.VinculoDetailView.as_view(), name='vinculo_detail'),
+    path('vinculos/<int:pk>/editar/', views.VinculoUpdateView.as_view(), name='vinculo_update'),
+    path('vinculos/<int:pk>/excluir/', views.VinculoDeleteView.as_view(), name='vinculo_delete'),
 
-    path('vinculos/<int:pk>/download/', DownloadTermoView.as_view(), name='download_termo'),
-    path('vinculos/<int:pk>/regenerar-termo/', RegenerarTermoView.as_view(), name='regenerar_termo'),
-    path('vinculos/<int:pk>/notificar/', NotificarAssinaturaView.as_view(), name='notificar_assinatura'),
-    path('vinculos/assinar/<int:pk>/', AssinarTermoView.as_view(), name='vinculo_assinar'), 
+    # Ações do Vínculo
+    path('vinculos/<int:pk>/download-termo/', views.DownloadTermoView.as_view(), name='download_termo'),
+    path('vinculos/<int:pk>/regenerar-termo/', views.RegenerarTermoView.as_view(), name='regenerar_termo'),
+    path('vinculos/<int:pk>/notificar/', views.NotificarAssinaturaView.as_view(), name='notificar_assinatura'),
+
+    # URL DA PÁGINA DE ASSINATURA (A que está faltando)
+    path('vinculos/<int:pk>/assinar/', views.AssinarTermoView.as_view(), name='vinculo_assinar'), # <-- ADICIONE ESTA LINHA
+
     # Marcas
     path('marcas/', MarcaListView.as_view(), name='marca_list'),
     path('marcas/nova/', MarcaCreateView.as_view(), name='marca_create'),
@@ -69,6 +73,7 @@ urlpatterns = [
     path('planos/novo/', PlanoCreateView.as_view(), name='plano_create'),
     path('planos/<int:pk>/editar/', PlanoUpdateView.as_view(), name='plano_update'),
     path('planos/<int:pk>/excluir/', PlanoDeleteView.as_view(), name='plano_delete'),
+
 
 
 ]

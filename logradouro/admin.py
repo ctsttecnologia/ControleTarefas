@@ -1,6 +1,8 @@
 from django.contrib import admin
+from django.http import JsonResponse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+import requests
 from .models import Logradouro
 from .constant import ESTADOS_BRASIL
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
@@ -70,3 +72,37 @@ class LogradouroAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mode
         if db_field.name == 'estado':
             kwargs['choices'] = ESTADOS_BRASIL
         return super().formfield_for_choice_field(db_field, request, **kwargs)
+    
+ # Adiciona a funcionalidade de autocompletar por CEP
+    
+def consulta_cep(request):
+    """
+    View para consultar um CEP na API ViaCEP e retornar os dados do endereço.
+    """
+    cep = request.GET.get('cep', '').replace('-', '').replace('.', '')
+
+    if not cep.isdigit() or len(cep) != 8:
+        return JsonResponse({'erro': 'CEP inválido. Deve conter 8 dígitos numéricos.'}, status=400)
+
+    try:
+        response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
+        response.raise_for_status()  # Lança um erro para respostas HTTP 4xx/5xx
+        data = response.json()
+
+        if data.get('erro'):
+            return JsonResponse({'erro': 'CEP não encontrado.'}, status=404)
+
+        # Mapeia os campos da API ViaCEP para os campos do seu modelo/formulário
+        endereco_data = {
+            'endereco': data.get('logradouro', ''),
+            'bairro': data.get('bairro', ''),
+            'cidade': data.get('localidade', ''),
+            'estado': data.get('uf', ''),
+        }
+        return JsonResponse(endereco_data)
+
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'erro': f'Erro ao consultar o serviço de CEP: {e}'}, status=500)
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {e}'}, status=500)
+

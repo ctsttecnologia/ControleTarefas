@@ -34,8 +34,10 @@
                         <tr>
                             <th>Colaborador</th>
                             <th>Aparelho</th>
+                            <th>IMEI</th>
                             <th>Linha</th>
                             <th>Data de Entrega</th>
+                            <th>Data de Devolução</th>
                             <th>Status Assinatura</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -44,9 +46,17 @@
                         {% for vinculo in vinculos %}
                         <tr>
                             <td>{{ vinculo.funcionario }}</td>
-                            <td>{{ vinculo.aparelho|default:"N/A" }}</td>
+                            <td>{{ vinculo.aparelho.modelo|default:"N/A" }}</td>
+                            <td>{{ vinculo.aparelho.imei|default:"N/A" }}</td>
                             <td>{{ vinculo.linha|default:"N/A" }}</td>
                             <td>{{ vinculo.data_entrega|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if vinculo.data_devolucao %}
+                                    {{ vinculo.data_devolucao|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">Ainda não devolvido</span>
+                                {% endif %}
+                            </td>
                             <td>
                                 {% if vinculo.foi_assinado %}
                                     <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Assinado</span>
@@ -54,47 +64,40 @@
                                     <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pendente</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end">
-                                <!-- ================================================================ -->
-                                <!-- INÍCIO DA LÓGICA CONDICIONAL PARA GESTORES -->
-                                <!-- ================================================================ -->
-
-                                <!-- Botão de Visualizar (Detalhes) -->
-                                {% if perms.controle_de_telefone.view_vinculo %}
-                                    <a href="{% url 'controle_de_telefone:vinculo_detail' vinculo.pk %}" class="btn btn-sm btn-info" title="Detalhes"><i class="fas fa-eye"></i></a>
-                                {% endif %}
-
-                                <!-- Botão de Editar -->
-                                {% if perms.controle_de_telefone.change_vinculo %}
-                                    <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-sm btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
-                                {% endif %}
-
-                                <!-- Botão de Excluir -->
-                                {% if perms.controle_de_telefone.delete_vinculo %}
-                                    <a href="{% url 'controle_de_telefone:vinculo_delete' vinculo.pk %}" class="btn btn-sm btn-danger" title="Excluir"><i class="fas fa-trash-alt"></i></a>
-                                {% endif %}
-
-                                <!-- ================================================================ -->
-                                <!-- FIM DA LÓGICA CONDICIONAL PARA GESTORES -->
-                                <!-- ================================================================ -->
-
-                                <!-- Botão de Assinar para o próprio funcionário -->
-                                {% if not vinculo.foi_assinado and user == vinculo.funcionario.usuario %}
-                                <a href="{% url 'controle_de_telefone:vinculo_assinar' vinculo.pk %}" class="btn btn-sm btn-success" title="Assinar Termo">
-                                    <i class="fas fa-signature"></i> Assinar
+                           <td class="text-end">
+                            {% if perms.controle_de_telefone.view_vinculo %}
+                                <a href="{% url 'controle_de_telefone:vinculo_detail' vinculo.pk %}" class="btn btn-sm btn-info" title="Detalhes">
+                                    <i class="bi bi-eye-fill"></i>
                                 </a>
-                                {% endif %}
+                            {% endif %}
 
-                                <!-- Botão de Notificar para gestores -->
-                                {% if not vinculo.foi_assinado and perms.controle_de_telefone.change_vinculo %}
+                            {% if perms.controle_de_telefone.change_vinculo %}
+                                <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-sm btn-warning" title="Editar">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                            {% endif %}
+
+                            {% if perms.controle_de_telefone.delete_vinculo %}
+                                <a href="{% url 'controle_de_telefone:vinculo_delete' vinculo.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                    <i class="bi bi-trash-fill"></i>
+                                </a>
+                            {% endif %}
+
+                            {% if not vinculo.foi_assinado and user == vinculo.funcionario.usuario %}
+                                <a href="{% url 'controle_de_telefone:vinculo_assinar' vinculo.pk %}" class="btn btn-sm btn-success" title="Assinar Termo">
+                                    <i class="bi bi-pencil-square"></i> Assinar
+                                </a>
+                            {% endif %}
+
+                            {% if not vinculo.foi_assinado and perms.controle_de_telefone.change_vinculo %}
                                 <form action="{% url 'controle_de_telefone:notificar_assinatura' vinculo.pk %}" method="POST" class="d-inline ms-1">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-secondary" title="Notificar Assinatura">
-                                        <i class="fas fa-bell"></i>
+                                    <button type="submit" class="btn btn-sm btn-secondary btn-notify-pulsing" title="Notificar Assinatura">
+                                        <i class="bi bi-bell-fill"></i>
                                     </button>
                                 </form>
-                                {% endif %}
-                            </td>
+                            {% endif %}
+                        </td>
                         </tr>
                         {% empty %}
                         <tr>

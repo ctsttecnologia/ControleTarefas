@@ -1,0 +1,23 @@
+
+{% load widget_tweaks %} 
+
+<div class="col-md-{{ col_size|default:'6' }}">
+    <div class="mb-3">
+        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+        
+        {% if field|widget_type == 'select' %}
+            {% render_field field class="form-select" %}
+        {% else %}
+            {# Adicionando o atributo autocomplete aqui #}
+            {% render_field field class="form-control" autocomplete=field.name %}
+        {% endif %}
+
+        {% if field.help_text %}
+            <div class="form-text">{{ field.help_text|safe }}</div>
+        {% endif %}
+
+        {% for error in field.errors %}
+            <div class="invalid-feedback d-block">{{ error }}</div>
+        {% endfor %}
+    </div>
+</div>
