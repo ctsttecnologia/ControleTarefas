@@ -35,14 +35,6 @@ class Fabricante(models.Model):
         verbose_name_plural = _("Fabricantes")
         ordering = ['nome']
 
-    endereco = models.ForeignKey(
-        Logradouro,
-        on_delete=models.PROTECT,
-        related_name='fabricantes',
-        verbose_name="Endereço",
-        null=True
-    )
-
     contato = models.CharField(max_length=100, blank=True, verbose_name=_("Contato"))
     telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone"))
     celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
@@ -128,6 +120,12 @@ class Equipamento(models.Model):
     fabricante = models.ForeignKey(Fabricante, on_delete=models.PROTECT, related_name='equipamentos', null=True, blank=True)
     fornecedor_padrao = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Fornecedor Padrão"))
     certificado_aprovacao = models.CharField(max_length=50, verbose_name=_("Certificado de Aprovação (CA)"), help_text=_("Deixe em branco se não aplicável."), blank=True)
+    data_cadastro = models.DateField(
+        auto_now_add=True, 
+        verbose_name="Data de Cadastro", 
+        help_text="Data em que o equipamento foi cadastrado no sistema.",
+        null=True
+    )
     data_validade_ca = models.DateField(null=True, blank=True, verbose_name=_("Data de Validade do CA"))
     vida_util_dias = models.PositiveIntegerField(verbose_name=_("Vida Útil (dias)"), help_text=_("Vida útil em dias após a entrega, conforme fabricante."))
     estoque_minimo = models.PositiveIntegerField(default=5, verbose_name=_("Estoque Mínimo"))
@@ -166,7 +164,7 @@ class MatrizEPI(models.Model):
     funcao = models.ForeignKey(Funcao, on_delete=models.CASCADE, related_name='matriz_epis')
     equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='matriz_funcoes')
     quantidade_padrao = models.PositiveIntegerField(default=1, verbose_name=_("Quantidade Padrão"))
-    # --- CAMPO ADICIONADO ---
+
     frequencia_troca_meses = models.PositiveIntegerField(
         null=True, blank=True,
         verbose_name=_("Frequência de Troca (Meses)"),
@@ -268,9 +266,14 @@ class EntregaEPI(models.Model):
     objects = FilialManager()
 
     class Meta:
+        permissions = [
+            # GARANTA QUE O PRIMEIRO ITEM DA TUPLA SEJA ESTE:
+            ("assinar_entregaepi", "Pode assinar entrega de EPI"), 
+        ]
         verbose_name = _("Entrega de EPI")
         verbose_name_plural = _("Entregas de EPI")
         ordering = ['-criado_em']
+        
 
     @property
     def data_vencimento_uso(self):

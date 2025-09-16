@@ -13,10 +13,9 @@ class SelecionarFilialView(UserPassesTestMixin, View):
     
     def test_func(self):
         """
-        Esta função é chamada pelo UserPassesTestMixin.
-        A view só será executada se a função retornar True.
+        Permite que qualquer usuário autenticado acesse a view.
         """
-        return self.request.user.is_authenticated and self.request.user.is_superuser
+        return self.request.user.is_authenticated
 
     def post(self, request, *args, **kwargs):
         # A verificação de superusuário já foi feita pelo mixin,

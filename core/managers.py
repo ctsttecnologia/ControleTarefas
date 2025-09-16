@@ -1,32 +1,28 @@
-# core/managers.py
+# Em core/managers.py 
 
 from django.db import models
 
 class FilialQuerySet(models.QuerySet):
-    def for_request(self, request):
-        active_filial_id = None
-        
-        # 1. Tenta obter da sessão primeiro (padrão em aplicações web)
-        if hasattr(request, 'session'):
-            active_filial_id = request.session.get('active_filial_id')
-
-        # 2. Se não estiver na sessão, tenta obter do objeto de usuário (útil para APIs/testes)
-        if not active_filial_id and hasattr(request, 'user') and request.user.is_authenticated:
-            if hasattr(request.user, 'filial_ativa') and request.user.filial_ativa:
-                active_filial_id = request.user.filial_ativa.id
-        
-        # 3. Se uma ID de filial foi encontrada, filtre por ela.
-        if active_filial_id:
-            return self.filter(filial_id=active_filial_id)
-        
-        # 4. (MAIS IMPORTANTE) Se nenhuma filial foi encontrada, NÃO retorne nada.
-        #    Isso corrige a falha que mostrava "5 equipamentos".
+    """
+    QuerySet customizado que adiciona um método explícito para filtrar por filial.
+    """
+    def da_filial(self, filial_obj):
+        """
+        Filtra o QuerySet para objetos pertencentes a uma filial específica.
+        Se a filial for None, retorna um queryset vazio por segurança.
+        """
+        if filial_obj:
+            # Assumindo que o campo no modelo se chama 'filial'
+            return self.filter(filial=filial_obj)
         return self.none()
 
 class FilialManager(models.Manager):
+    """
+    Manager que permite chamar o método da_filial diretamente.
+    Exemplo: Funcao.objects.da_filial(minha_filial)
+    """
     def get_queryset(self):
         return FilialQuerySet(self.model, using=self._db)
 
-    def for_request(self, request):
-        return self.get_queryset().for_request(request)
-
+    def da_filial(self, filial_obj):
+        return self.get_queryset().da_filial(filial_obj)

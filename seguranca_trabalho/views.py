@@ -24,13 +24,14 @@ from django.views.generic.edit import FormMixin
 from usuario.models import Filial
 from departamento_pessoal.models import Cargo, Funcionario
 from usuario.views import StaffRequiredMixin
-from .forms import EntregaEPIForm, EquipamentoForm, FabricanteForm, FichaEPIForm, FornecedorForm
+from .forms import AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FabricanteForm, FichaEPIForm, FornecedorForm
 from .models import EntregaEPI, Equipamento, Fabricante, FichaEPI, Fornecedor, Funcao, MatrizEPI
 from django.conf import settings
 from core.mixins import ViewFilialScopedMixin, FilialCreateMixin 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from .mixins import SSTPermissionMixin
+from core.mixins import SSTPermissionMixin
+
 
 # --- Ações de Entrega ---
 import logging
@@ -46,70 +47,98 @@ def custom_url_fetcher(url):
     return default_url_fetcher(url)
 
 # --- CRUD de Equipamentos ---
-# Adicionados mixins para consistência de filtro e criação.
+
 class EquipamentoListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_list.html'
     context_object_name = 'equipamentos'
+    permission_required = 'seguranca_trabalho.view_equipamento'
 
 class EquipamentoDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_detail.html'
     context_object_name = 'equipamento'
+    permission_required = 'seguranca_trabalho.view_equipamento'
 
 class EquipamentoCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
+    permission_required = 'seguranca_trabalho.add_equipamento'
+
 
 class EquipamentoUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
+    permission_required = 'seguranca_trabalho.change_equipamento'
+
+    def get_queryset(self):
+        # A sua lógica de otimização de consulta
+        queryset = super().get_queryset().select_related('fabricante', 'fornecedor_padrao')
+        return queryset
+
+    # O método form_valid abaixo garante que a data de cadastro não seja alterada
+    def form_valid(self, form):
+        # A data de cadastro é auto_now_add=True, então o formulário não precisa dela.
+        # Mas para outros campos que não são 'auto', a lógica a seguir não se aplica.
+        # Deixe o form_valid padrão do UpdateView para persistir os dados.
+
+        # A menos que você tenha uma lógica de negócio específica aqui
+        # que esteja removendo o valor da data, você não precisa mexer.
+        return super().form_valid(form)
 
 class EquipamentoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     model = Equipamento
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
+    context_object_name = 'object'
+    permission_required = 'seguranca_trabalho.delete_equipamento'
 
 # --- CRUD de Fabricantes ---
-#  Adicionados mixins para consistência de filtro e criação.
+
 class FabricanteListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = Fabricante
     template_name = 'seguranca_trabalho/fabricante_list.html'
     context_object_name = 'fabricantes'
+    permission_required = 'seguranca_trabalho.view_fabricante'
 
 class FabricanteDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Fabricante
     template_name = 'seguranca_trabalho/fabricante_detail.html'
     context_object_name = 'fabricante'
+    permission_required = 'seguranca_trabalho.view_fabricante'
 
 class FabricanteCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     model = Fabricante
     form_class = FabricanteForm
     template_name = 'seguranca_trabalho/fabricante_form.html'
     success_url = reverse_lazy('seguranca_trabalho:fabricante_list')
+    permission_required = 'seguranca_trabalho.add_fabricante'
 
 class FabricanteUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Fabricante
     form_class = FabricanteForm
     template_name = 'seguranca_trabalho/fabricante_form.html'
     success_url = reverse_lazy('seguranca_trabalho:fabricante_list')
+    permission_required = 'seguranca_trabalho.change_fabricante'
 
 # --- CRUD de Fornecedores ---
-# REATORADO: Adicionados mixins para consistência de filtro e criação.
+
 class FornecedorListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = Fornecedor
     template_name = 'seguranca_trabalho/fornecedor_list.html'
     context_object_name = 'fornecedores'
+    permission_required = 'seguranca_trabalho.view_fornecedor'
 
 
 class FornecedorDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
     model = Fornecedor
     template_name = 'seguranca_trabalho/fornecedor_detail.html'
     context_object_name = 'fornecedor'
+    permission_required = 'seguranca_trabalho.view_fornecedor'
 
     def get_queryset(self):
         # Chama o queryset padrão da view
@@ -124,12 +153,14 @@ class FornecedorCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
     form_class = FornecedorForm
     template_name = 'seguranca_trabalho/fornecedor_form.html'
     success_url = reverse_lazy('seguranca_trabalho:fornecedor_list')
+    permission_required = 'seguranca_trabalho.add_fornecedor'
 
 class FornecedorUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Fornecedor
     form_class = FornecedorForm
     template_name = 'seguranca_trabalho/fornecedor_form.html'
     success_url = reverse_lazy('seguranca_trabalho:fornecedor_list')
+    permission_required = 'seguranca_trabalho.change_fornecedor'
 
 # ========================================================================
 # CRUD DE FICHAS DE EPI E AÇÕES
@@ -140,6 +171,7 @@ class FichaEPIListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
     paginate_by = 20
+    permission_required = 'seguranca_trabalho.view_fichaepi'
 
     def get_queryset(self):
         # A lógica aqui já estava correta, chamando super() primeiro.
@@ -158,6 +190,8 @@ class FichaEPICreateView(ViewFilialScopedMixin, SSTPermissionMixin, CreateView):
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_create.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
+    permission_required = 'seguranca_trabalho.add_fichaepi'
+
 
     # Filtra o campo 'funcionario' para mostrar apenas os da filial ativa.
     def get_form_kwargs(self):
@@ -177,6 +211,17 @@ class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, D
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
     form_class = EntregaEPIForm
+    permission_required = 'seguranca_trabalho.view_fichaepi'    
+    
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == 'POST':
+            if not request.user.has_perm('seguranca_trabalho.add_entregaepi'):
+                raise PermissionDenied("Você não tem permissão para registrar uma nova entrega.")
+        else: # GET e outros métodos
+            if not request.user.has_perm('seguranca_trabalho.view_fichaepi'):
+                 raise PermissionDenied("Você não tem permissão para visualizar esta ficha.")
+        return super().dispatch(request, *args, **kwargs)
+
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
@@ -207,7 +252,7 @@ class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, D
         nova_entrega = form.save(commit=False)
         # Associa a entrega à ficha de EPI que está aberta na tela
         nova_entrega.ficha = self.object
-        # FINALMENTE, DEFINE A DATA DE ENTREGA. ESTA É A CORREÇÃO PRINCIPAL.
+        # FINALMENTE, DEFINE A DATA DE ENTREGA.
         nova_entrega.data_entrega = timezone.now().date()
         # Agora salva o objeto completo no banco de dados
         nova_entrega.filial = self.object.filial
@@ -220,6 +265,7 @@ class FichaEPIUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_form.html'
+    permission_required = 'seguranca_trabalho.change_fichaepi'  
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
@@ -229,6 +275,7 @@ class FichaEPIDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     template_name = 'seguranca_trabalho/ficha_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
     context_object_name = 'object'
+    permission_required = 'seguranca_trabalho.delete_fichaepi'
 
 # --- Ações de Entrega ---
 # A lógica dessas views customizadas já filtrava manualmente, o que está correto.
@@ -244,92 +291,65 @@ def get_entrega_scoped(request, pk):
 
 
 # 'AssinarEntregaView' 
-class AssinarEntregaView(SSTPermissionMixin, View):
-    """
-    - O objeto 'entrega' é buscado uma única vez no método dispatch.
-    - Validações de status (devolvido, já assinado) são feitas no início.
-    - O método POST é focado apenas em processar os dados da assinatura.
-    """
+
+class AssinarEntregaView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
+    model = EntregaEPI
+    form_class = AssinaturaEntregaForm
     template_name = 'seguranca_trabalho/entrega_sign.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        """
-        Método executado antes do GET ou POST.
-        Busca o objeto 'entrega' de forma segura e o anexa à instância da view (self).
-        """
-        filial_id = request.session.get('active_filial_id')
+    context_object_name = 'entrega'
+    permission_required = 'seguranca_trabalho.assinar_entregaepi'
+   
+    
+    def get_object(self, queryset=None):
+        """Sobrescreve o método para adicionar a validação de filial."""
+        pk = self.kwargs.get(self.pk_url_kwarg)
+        filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
-            messages.error(request, "Nenhuma filial selecionada. Acesso negado.")
-            # Redireciona para uma página segura, como o dashboard.
-            return redirect('seguranca_trabalho:dashboard')
+            raise Http404("Nenhuma filial selecionada. Acesso negado.")
 
-        try:
-            # Busca a entrega, garantindo que ela pertence a uma ficha da filial ativa.
-            pk = self.kwargs.get('pk')
-            self.entrega = get_object_or_404(
-                EntregaEPI,
-                pk=pk,
-                ficha__filial_id=filial_id
-            )
-        except Http404:
-            messages.error(request, "A entrega de EPI solicitada não foi encontrada ou você não tem permissão para acessá-la.")
-            return redirect('seguranca_trabalho:ficha_list')
+        obj = get_object_or_404(
+            EntregaEPI,
+            pk=pk,
+            ficha__filial_id=filial_id
+        )
+        return obj
 
-        return super().dispatch(request, *args, **kwargs)
+    def get_success_url(self):
+        return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.ficha.pk})
 
     def get(self, request, *args, **kwargs):
-        """
-        Exibe a página de assinatura após validar as condições.
-        """
-        # Validação 1: O EPI já foi devolvido?
-        if self.entrega.data_devolucao:
-            messages.warning(request, "Este EPI já foi devolvido e não pode mais ser assinado.")
-            return redirect(reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.entrega.ficha.pk}))
+        """Validação antes de exibir o formulário GET."""
+        self.object = self.get_object()
+        if self.object.data_devolucao or self.object.data_assinatura:
+            messages.info(request, "Esta entrega já foi processada e não pode mais ser assinada.")
+            return redirect(self.get_success_url())
+        return super().get(request, *args, **kwargs)
 
-        # Validação 2: A entrega já foi assinada?
-        if self.entrega.data_assinatura:
-            messages.info(request, "Esta entrega já foi assinada anteriormente.")
-            return redirect(reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.entrega.ficha.pk}))
+    def form_valid(self, form):
+        """Processa a assinatura e salva."""
+        # A lógica de salvar os dados da assinatura será feita aqui
+        signature_b64 = self.request.POST.get('assinatura_base64')
+        signature_image = self.request.FILES.get('assinatura_imagem')
 
-        context = {
-            'entrega': self.entrega,
-            'titulo_pagina': f"Assinar Recebimento: {self.entrega.equipamento.nome}"
-        }
-        return render(request, self.template_name, context)
-
-    def post(self, request, *args, **kwargs):
-        """
-        Processa os dados da assinatura enviados pelo formulário.
-        """
-        signature_b64 = request.POST.get('assinatura_base64')
-        signature_image = request.FILES.get('assinatura_imagem')
-
-        # Validação: Garante que pelo menos uma forma de assinatura foi enviada.
         if not signature_b64 and not signature_image:
-            messages.error(request, "Nenhuma assinatura foi fornecida. Por favor, assine no campo ou envie uma imagem.")
-            # Redireciona de volta para a página de assinatura
-            return redirect(reverse('seguranca_trabalho:assinar_entrega', kwargs={'pk': self.entrega.pk}))
+            messages.error(self.request, "Nenhuma assinatura foi fornecida.")
+            return self.form_invalid(form)
 
-        try:
-            # Prioriza a imagem se ambas forem enviadas
-            if signature_image:
-                self.entrega.assinatura_imagem = signature_image
-                self.entrega.assinatura_recebimento = None  # Limpa o campo de texto para consistência
-            elif signature_b64:
-                self.entrega.assinatura_recebimento = signature_b64
-                self.entrega.assinatura_imagem = None  # Limpa o campo de imagem
+        if signature_image:
+            self.object.assinatura_imagem = signature_image
+            self.object.assinatura_recebimento = None
+        elif signature_b64:
+            self.object.assinatura_recebimento = signature_b64
+            self.object.assinatura_imagem = None
 
-            self.entrega.data_assinatura = timezone.now()
-            self.entrega.save()
-
-            messages.success(request, f"Assinatura para o EPI '{self.entrega.equipamento.nome}' registrada com sucesso!")
-            return redirect(reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.entrega.ficha.pk}))
-
-        except Exception as e:
-            messages.error(request, f"Ocorreu um erro inesperado ao salvar a assinatura. Por favor, tente novamente. Erro: {e}")
-            return redirect(reverse('seguranca_trabalho:assinar_entrega', kwargs={'pk': self.entrega.pk}))
+        self.object.data_assinatura = timezone.now()
+        
+        # Chama a função super para salvar e redirecionar
+        return super().form_valid(form)
 
 class RegistrarDevolucaoView(SSTPermissionMixin, View):
+
+    permission_required = 'seguranca_trabalho.add_devolucao'
     """
     View refatorada para processar a devolução de um EPI de forma segura e atômica.
     - Esta view responde apenas a requisições POST.
@@ -383,6 +403,9 @@ class RegistrarDevolucaoView(SSTPermissionMixin, View):
         return redirect(reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.entrega.ficha.pk}))
 
 class GerarFichaPDFView(SSTPermissionMixin, View):
+
+    permission_required = 'seguranca_trabalho.view_fichaepi'
+
     def get(self, request, *args, **kwargs):
         filial_id = request.session.get('active_filial_id')
         if not filial_id:
@@ -409,8 +432,9 @@ class GerarFichaPDFView(SSTPermissionMixin, View):
 # --- VIEW DO PAINEL ---
 
 class DateAdd(Func):
+
     """
-    Função customizada e corrigida para usar o DATE_ADD do MySQL
+    Função customizada para usar o DATE_ADD do MySQL
     de forma segura, compondo as expressões corretamente.
     """
     function = 'DATE_ADD'
@@ -426,7 +450,10 @@ class DateAdd(Func):
         super().__init__(date_expression, interval_expression, **extra)
 
 class DashboardSSTView(ViewFilialScopedMixin, SSTPermissionMixin, TemplateView):
+
     template_name = 'seguranca_trabalho/dashboard.html'
+    permission_required = 'seguranca_trabalho.view_equipamento'
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -525,6 +552,8 @@ class BaseExportView(LoginRequiredMixin, View):
 
 # O nome da classe deve ser EXATAMENTE este
 class ControleEPIPorFuncaoView(SSTPermissionMixin, TemplateView):
+
+    permission_required = 'seguranca_trabalho.view_fichaepi'
     template_name = 'seguranca_trabalho/controle_epi_por_funcao.html'
 
     def get_context_data(self, **kwargs):
@@ -541,13 +570,12 @@ class ControleEPIPorFuncaoView(SSTPermissionMixin, TemplateView):
             return context
         
         try:
-            # Agora ele vai procurar na tabela certa (usuario_filial)
             filial_atual = Filial.objects.get(pk=active_filial_id)
         except Filial.DoesNotExist:
             messages.error(request, "A filial selecionada na sua sessão é inválida.")
             return context
 
-        funcoes_da_filial = Funcao.objects.filter(filial=filial_atual).order_by('nome')
+        funcoes_da_filial = Funcao.objects.da_filial(filial_atual).order_by('nome')
         equipamentos_ativos = Equipamento.objects.filter(ativo=True).order_by('nome')
 
         matriz_data = {}
@@ -598,10 +626,11 @@ class ControleEPIPorFuncaoView(SSTPermissionMixin, TemplateView):
         return redirect(request.path_info)
        
 # --- VIEWS DE EXPORTAÇÃO ---
-class ExportarFuncionariosExcelView(StaffRequiredMixin, View): # CORREÇÃO: Mixin de filial não funciona aqui
+class ExportarFuncionariosExcelView(StaffRequiredMixin, View): 
     def get(self, request, *args, **kwargs):
         # CORREÇÃO: Aplicando o filtro de filial manualmente.
         funcionarios = Funcionario.objects.for_request(request).select_related('cargo', 'departamento').all()
+        
 
         data = [
             {
@@ -620,6 +649,9 @@ class ExportarFuncionariosExcelView(StaffRequiredMixin, View): # CORREÇÃO: Mix
         return response
     
 class RelatorioSSTPDFView(SSTPermissionMixin, View):
+
+    permission_required = 'seguranca_trabalho.view_fichaepi'
+
     def get(self, request, *args, **kwargs):
         context = {
             'data_emissao': timezone.now(),
@@ -632,9 +664,10 @@ class RelatorioSSTPDFView(SSTPermissionMixin, View):
         response['Content-Disposition'] = 'attachment; filename="relatorio_sst.pdf"'
         return response
     
-class ExportarFuncionariosPDFView(StaffRequiredMixin, View): # CORREÇÃO: Mixin de filial não funciona aqui
+class ExportarFuncionariosPDFView(StaffRequiredMixin, View): 
+
     def get(self, request, *args, **kwargs):
-        # CORREÇÃO: Aplicando o filtro de filial manualmente.
+        
         funcionarios = Funcionario.objects.for_request(request).select_related('cargo', 'departamento').filter(status='ATIVO')
 
         context = {
@@ -650,9 +683,10 @@ class ExportarFuncionariosPDFView(StaffRequiredMixin, View): # CORREÇÃO: Mixin
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.pdf"'
         return response
     
-class ExportarFuncionariosWordView(StaffRequiredMixin, View): # CORREÇÃO: Mixin de filial não funciona aqui
+class ExportarFuncionariosWordView(StaffRequiredMixin, View): 
+
     def get(self, request, *args, **kwargs):
-        # CORREÇÃO: Aplicando o filtro de filial manualmente.
+      
         funcionarios = Funcionario.objects.for_request(request).select_related('cargo', 'departamento').filter(status='ATIVO')
 
         document = Document()

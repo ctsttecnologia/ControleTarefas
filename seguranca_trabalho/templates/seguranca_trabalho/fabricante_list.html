@@ -26,7 +26,6 @@
                         <tr>
                             <th scope="col">Nome do Fabricante</th>
                             <th scope="col">CNPJ</th>
-                            <th scope="col" class="text-center">Endereço</th>
                             <th scope="col" class="text-center">Telefo</th>
                             <th scope="col" class="text-center">Celular</th>
                             <th scope="col" class="text-center">Email</th>
@@ -43,7 +42,6 @@
                                 </a>
                             </td>
                             <td>{{ fabricante.cnpj|default:"-" }}</td>
-                            <td class="text-center">{{ fabricante.endereco|default:"-" }}</td>
                             <td class="text-center">{{ fabricante.contato|default:"-" }}</td>
                             <td class="text-center">{{ fabricante.telefone|default:"-" }}</td>
                             <td class="text-center">{{ fabricante.email|default:"-" }}</td>
