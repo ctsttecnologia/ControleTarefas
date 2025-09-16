@@ -59,10 +59,14 @@
                                 <small class="form-text text-muted">{{ form.certificado_aprovacao.help_text }}</small>
                                 {% for error in form.certificado_aprovacao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
-                             <div class="col-md-6">
-                                <label for="{{ form.data_validade_ca.id_for_label }}" class="form-label">{{ form.data_validade_ca.label }}</label>
-                                {% render_field form.data_validade_ca class+="form-control" %}
-                                {% for error in form.data_validade_ca.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            <div class="col-md-6">
+                                <label class="form-label" for="{{ form.data_validade_ca.id_for_label }}">
+                                    {{ form.data_validade_ca.label }}
+                                </label>
+                                {{ form.data_validade_ca }}
+                                {% for error in form.data_validade_ca.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
                             </div>
                             <div class="col-md-6">
                                 <label for="{{ form.vida_util_dias.id_for_label }}" class="form-label">{{ form.vida_util_dias.label }}*</label>

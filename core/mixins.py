@@ -1,15 +1,31 @@
 # Em core/mixins.py
 
 from django.db.models import Q
-from django.contrib.auth.mixins import AccessMixin
-from django.core.exceptions import PermissionDenied
 from django.contrib import admin, messages
 from django.shortcuts import render
 from django.core.exceptions import PermissionDenied
 from .forms import ChangeFilialForm 
+from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
+from django.shortcuts import redirect
 
+class SSTPermissionMixin(PermissionRequiredMixin):
+    """
+    Mixin que herda do PermissionRequiredMixin do Django, mas customiza
+    o comportamento em caso de falha de permissão.
+    """
 
-# core/mixins.py
+    def handle_no_permission(self):
+        """
+        Sobrescreve o método padrão para redirecionar o usuário com uma
+        mensagem de erro, em vez de mostrar a página 403 Forbidden.
+        """
+        # Adiciona a mensagem de erro que será exibida na próxima página.
+        messages.error(self.request, "Você não tem permissão para acessar esta página.")
+        
+        # Redireciona o usuário para a página inicial do seu sistema.
+        # MUDE AQUI para a URL da sua página inicial/dashboard, se for diferente.
+        return redirect('usuario:profile') 
+
 
 class BaseFilialScopedQueryset:
     """
@@ -152,31 +168,3 @@ class ChangeFilialAdminMixin:
     change_filial_action.short_description = "Alterar filial dos itens selecionados"
 
 
-
-"""
-Mixin para ModelAdmin que adiciona uma ação global para alterar a filial de objetos.
-
-Uso:
-    - Adicione este mixin à sua classe ModelAdmin para permitir que superusuários alterem a filial de múltiplos objetos selecionados via ação no Django Admin.
-    - A ação estará disponível apenas para superusuários e será exibida no menu de ações do admin.
-
-Contexto Esperado:
-    - O ModelAdmin deve estar associado a um modelo que possua um campo ForeignKey chamado 'filial'.
-    - O formulário intermediário (ChangeFilialForm) deve estar corretamente configurado para receber os IDs dos objetos selecionados e a nova filial.
-
-Pontos de Atenção e Casos de Borda:
-    - Apenas superusuários podem executar esta ação; outros usuários receberão PermissionDenied.
-    - Se os IDs selecionados forem inválidos ou não puderem ser convertidos para inteiros, uma mensagem de erro será exibida.
-    - Se a filial não for selecionada no formulário, a ação não será concluída.
-    - O template 'admin/actions/change_filial_intermediate.html' deve existir e estar preparado para receber o contexto fornecido.
-    - A ação não sobrescreve métodos críticos do ModelAdmin, evitando conflitos com outros mixins.
-
-"""
-    
-""" # Característica	FilialAdminScopedMixin	ChangeFilialAdminMixin
-Propósito 
-Principal	Restringir a visão e criação de itens à filial ativa.	Fornecer uma ferramenta para mover itens entre filiais.
-Como Atua	Automaticamente, em todas as listagens e formulários.	Apenas quando um administrador a seleciona no menu "Ações".
-Quem Usa	Todos os usuários no admin (para garantir o escopo).	Apenas superusuários (para tarefas administrativas).
-Conflito?	Não. Um controla a rotina, o outro é uma ação manual.	Não. Eles não sobrescrevem os mesmos métodos. 
-# """

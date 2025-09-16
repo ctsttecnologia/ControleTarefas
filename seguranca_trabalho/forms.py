@@ -9,11 +9,10 @@ import pathlib
 class FabricanteForm(forms.ModelForm):
     class Meta:
         model = Fabricante
-        fields = ['nome', 'cnpj', 'endereco', 'contato', 'telefone', 'celular', 'email', 'site', 'observacoes', 'ativo']
+        fields = ['nome', 'cnpj', 'contato', 'telefone', 'celular', 'email', 'site', 'observacoes', 'ativo']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
-            'endereco': forms.Select(attrs={'class': 'form-select'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
             'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
@@ -36,6 +35,7 @@ class FornecedorForm(forms.ModelForm):
             'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
             'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'data_validade_ca': forms.DateInput(attrs={'type': 'date'}),
         }
 
 class EquipamentoForm(forms.ModelForm):
@@ -44,7 +44,7 @@ class EquipamentoForm(forms.ModelForm):
         fields = [
             'nome', 'modelo', 'fabricante', 'fornecedor_padrao', 
             'certificado_aprovacao', 'data_validade_ca', 'vida_util_dias',
-            'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo'
+            'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo', 
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug'}),
@@ -52,7 +52,7 @@ class EquipamentoForm(forms.ModelForm):
             'fabricante': forms.Select(attrs={'class': 'form-select'}),
             'fornecedor_padrao': forms.Select(attrs={'class': 'form-select'}),
             'certificado_aprovacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5745'}),
-            'data_validade_ca': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_validade_ca': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'vida_util_dias': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'estoque_minimo': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -61,6 +61,23 @@ class EquipamentoForm(forms.ModelForm):
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Sua lógica de read-only para CA e Validade
+        if self.instance.pk:
+            # Torna o CA somente leitura
+            self.fields['certificado_aprovacao'].widget.attrs['readonly'] = True
+            self.fields['certificado_aprovacao'].widget.attrs['class'] = 'form-control-plaintext'
+
+            # Torna a Data de Validade somente leitura
+            self.fields['data_validade_ca'].widget.attrs['readonly'] = True
+            # **Ajuste o widget para um TextInput simples para garantir a renderização do valor**
+            self.fields['data_validade_ca'].widget = forms.TextInput(attrs={'class': 'form-control-plaintext'})
+
+            # Formata a data para o formato de exibição (opcional, mas recomendado)
+            if self.instance.data_validade_ca:
+                self.fields['data_validade_ca'].initial = self.instance.data_validade_ca.strftime('%d/%m/%Y')
 
 class FichaEPIForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -137,5 +154,20 @@ class EntregaEPIForm(forms.ModelForm):
 class AssinaturaForm(forms.Form):
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput())
         
+class AssinaturaEntregaForm(forms.ModelForm):
+    # Campos que a nova view vai lidar.
+    # Não defina widgets aqui, pois eles serão HiddenInput.
+    
+    class Meta:
+        model = EntregaEPI
+        # Inclua apenas os campos que serão atualizados pela view de assinatura
+        fields = ['assinatura_recebimento', 'assinatura_imagem', 'data_assinatura']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Oculta todos os campos, pois a lógica da assinatura será feita via JavaScript no template
+        # e o Django só precisa que os campos existam para receber os dados via POST.
+        self.fields['assinatura_recebimento'].widget = forms.HiddenInput()
+        self.fields['assinatura_imagem'].widget = forms.HiddenInput()
+        self.fields['data_assinatura'].widget = forms.HiddenInput()
 
