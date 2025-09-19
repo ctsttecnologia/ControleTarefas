@@ -1,12 +1,9 @@
 # seguranca_trabalho/views.py
 
-from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 import json
 import io
 from multiprocessing.sharedctypes import Value
-from urllib import request
-from django.forms import DurationField
 import pandas as pd
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.views import View
@@ -20,17 +17,18 @@ from django.utils import timezone
 from django.template.loader import render_to_string
 from docx import Document
 from weasyprint import HTML, default_url_fetcher
-from django.views.generic.edit import FormMixin
 from usuario.models import Filial
-from departamento_pessoal.models import Cargo, Funcionario
-from usuario.views import StaffRequiredMixin
+from departamento_pessoal.models import Funcionario
 from .forms import AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FabricanteForm, FichaEPIForm, FornecedorForm
 from .models import EntregaEPI, Equipamento, Fabricante, FichaEPI, Fornecedor, Funcao, MatrizEPI
 from django.conf import settings
-from core.mixins import ViewFilialScopedMixin, FilialCreateMixin 
+from core.mixins import ViewFilialScopedMixin, FilialCreateMixin, SSTPermissionMixin
+from django.views.generic.edit import FormMixin
+from usuario.views import StaffRequiredMixin 
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from core.mixins import SSTPermissionMixin
+from django.contrib.auth.decorators import login_required
+
 
 
 # --- Ações de Entrega ---
@@ -77,7 +75,7 @@ class EquipamentoUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateVie
 
     def get_queryset(self):
         # A sua lógica de otimização de consulta
-        queryset = super().get_queryset().select_related('fabricante', 'fornecedor_padrao')
+        queryset = super().get_queryset().select_related('fabricante', 'fornecedor')
         return queryset
 
     # O método form_valid abaixo garante que a data de cadastro não seja alterada
@@ -174,16 +172,32 @@ class FichaEPIListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     permission_required = 'seguranca_trabalho.view_fichaepi'
 
     def get_queryset(self):
-        # A lógica aqui já estava correta, chamando super() primeiro.
         qs = super().get_queryset()
-        qs = qs.select_related('funcionario', 'funcionario__cargo').order_by('-criado_em')
-        query = self.request.GET.get('q')
-        if query:
+        qs = qs.select_related('funcionario', 'funcionario__cargo')
+
+        # Obter os parâmetros de busca da URL
+        query_text = self.request.GET.get('q')
+        data_inicio_str = self.request.GET.get('data_inicio')
+        data_fim_str = self.request.GET.get('data_fim')
+
+        # Filtrar por nome ou matrícula
+        if query_text:
             qs = qs.filter(
-                Q(funcionario__nome_completo__icontains=query) |
-                Q(funcionario__matricula__icontains=query)
+                Q(funcionario__nome_completo__icontains=query_text) |
+                Q(funcionario__matricula__icontains=query_text)
             )
-        return qs
+
+        # Filtrar por data de criação da ficha
+        if data_inicio_str:
+            data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+            qs = qs.filter(criado_em__date__gte=data_inicio)
+
+        if data_fim_str:
+            data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+            qs = qs.filter(criado_em__date__lte=data_fim)
+
+        return qs.order_by('-criado_em')
+
 
 class FichaEPICreateView(ViewFilialScopedMixin, SSTPermissionMixin, CreateView):
     model = FichaEPI
@@ -205,38 +219,40 @@ class FichaEPICreateView(ViewFilialScopedMixin, SSTPermissionMixin, CreateView):
         messages.success(self.request, "Ficha de EPI criada com sucesso!")
         return super().form_valid(form)
 
-# Substitua a sua FichaEPIDetailView por esta:
 class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, DetailView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
     form_class = EntregaEPIForm
-    permission_required = 'seguranca_trabalho.view_fichaepi'    
+    permission_required = 'seguranca_trabalho.view_fichaepi'
     
     def dispatch(self, request, *args, **kwargs):
-        if request.method == 'POST':
-            if not request.user.has_perm('seguranca_trabalho.add_entregaepi'):
-                raise PermissionDenied("Você não tem permissão para registrar uma nova entrega.")
-        else: # GET e outros métodos
-            if not request.user.has_perm('seguranca_trabalho.view_fichaepi'):
-                 raise PermissionDenied("Você não tem permissão para visualizar esta ficha.")
+        # Apenas permite staff e superusuários acessarem qualquer ficha por PK
+        if not request.user.is_staff and not request.user.is_superuser:
+            # Para usuários comuns, a permissão de ver a ficha já é verificada na `minha_ficha_redirect_view`.
+            # Esta view não é o ponto de entrada principal para eles.
+            # No entanto, se eles acessarem a URL diretamente, vamos garantir a segurança.
+            ficha = get_object_or_404(self.model, pk=self.kwargs.get('pk'))
+            if request.user.funcionario != ficha.funcionario:
+                messages.error(request, "Você não tem permissão para visualizar esta ficha.")
+                return redirect('usuario:profile')
+        
+        # Lógica de permissão para registrar nova entrega (POST)
+        if request.method == 'POST' and not request.user.has_perm('seguranca_trabalho.add_entregaepi'):
+            raise PermissionDenied("Você não tem permissão para registrar uma nova entrega.")
+        
         return super().dispatch(request, *args, **kwargs)
-
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
 
     def get_context_data(self, **kwargs):
-        # Adiciona o formulário e a lista de entregas ao contexto do template
         context = super().get_context_data(**kwargs)
         context['form'] = self.get_form()
         context['entregas'] = EntregaEPI.objects.filter(ficha=self.object).select_related('equipamento').order_by('-data_entrega')
         return context
 
     def post(self, request, *args, **kwargs):
-        """
-        Este método é chamado quando o formulário é enviado (POST).
-        """
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
@@ -245,22 +261,26 @@ class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, D
             return self.form_invalid(form)
 
     def form_valid(self, form):
-        """
-        Cria o objeto mas não o salva no banco ainda (commit=False),
-        permite que o modifiquemos antes de salvar.
-        """
         nova_entrega = form.save(commit=False)
-        # Associa a entrega à ficha de EPI que está aberta na tela
         nova_entrega.ficha = self.object
-        # FINALMENTE, DEFINE A DATA DE ENTREGA.
         nova_entrega.data_entrega = timezone.now().date()
-        # Agora salva o objeto completo no banco de dados
         nova_entrega.filial = self.object.filial
         nova_entrega.save()
         messages.success(self.request, "Nova entrega de EPI registrada com sucesso!")
-        # Redireciona para a página de sucesso
         return redirect(self.get_success_url())
 
+@login_required
+def minha_ficha_redirect_view(request):
+    try:
+        ficha = FichaEPI.objects.get(funcionario=request.user.funcionario)
+        return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
+    except FichaEPI.DoesNotExist:
+        messages.error(request, "Seu funcionário não possui uma ficha de EPI.")
+        return redirect('usuario:profile')
+    except AttributeError:
+        messages.error(request, "Seu usuário não está associado a um funcionário.")
+        return redirect('usuario:profile')
+    
 class FichaEPIUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = FichaEPI
     form_class = FichaEPIForm

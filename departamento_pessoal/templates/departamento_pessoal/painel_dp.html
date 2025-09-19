@@ -1,16 +1,96 @@
+
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
 
 {% block title %}Painel de Departamento Pessoal{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Estilos para os cards de KPIs */
+    .kpi-card {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+        background-color: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    }
+
+    .kpi-card-icon {
+        font-size: 3rem;
+        color: var(--bs-secondary);
+        opacity: 0.7;
+    }
+
+    .kpi-card-value {
+        font-size: 2.25rem;
+        font-weight: 700;
+        line-height: 1;
+        color: var(--bs-primary);
+    }
+
+    .kpi-card-label {
+        font-size: 1rem;
+        color: var(--bs-secondary);
+        font-weight: 500;
+    }
+
+    /* Estilos para os links de navegação */
+    .nav-card {
+        display: block;
+        padding: 1.5rem;
+        background-color: var(--bs-body-bg);
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    }
+
+    .nav-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        border-color: var(--bs-primary);
+    }
+
+    .nav-icon {
+        font-size: 2rem;
+        color: var(--bs-primary);
+        margin-bottom: 0.75rem;
+        opacity: 0.8;
+    }
+
+    .nav-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .nav-text {
+        color: var(--bs-secondary);
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <div class="mb-5">
-        <h1 class="h2 fw-bold"><i class="bi bi-speedometer2 me-1"></i>Painel de Departamento Pessoal</h1>
-        <p class="text-muted mb-0">Visão geral, análises e acesso rápido aos módulos de RH.</p>
-    </div>
+    <header class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
+        <div>
+            <h1 class="h2 fw-bold"><i class="bi bi-speedometer2 me-2"></i>Painel de Departamento Pessoal</h1>
+            <p class="text-muted mb-0">Visão geral, análises e acesso rápido aos módulos de RH.</p>
+        </div>
+    </header>
 
-    <div class="row g-4 mb-5">
+    <section class="row g-4 mb-5">
         <div class="col-lg-4 col-md-6">
             <div class="kpi-card">
                 <i class="bi bi-people-fill kpi-card-icon"></i>
@@ -38,103 +118,148 @@
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <h3 class="h4 fw-bold mb-3">Análises Rápidas</h3>
-    <div class="row">
-        <div class="col-lg-8 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header"><i class="bi bi-bar-chart-line-fill me-2"></i>Funcionários por Departamento</div>
-                <div class="card-body">
-                    <canvas id="deptoChart" style="min-height: 250px;"></canvas>
+    <section class="mb-5">
+        <h3 class="h4 fw-bold mb-3">Análises Rápidas</h3>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0"><i class="bi bi-bar-chart-line-fill me-2"></i>Funcionários por Departamento</div>
+                    <div class="card-body">
+                        <canvas id="deptoChart" style="min-height: 300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-transparent border-0"><i class="bi bi-pie-chart-fill me-2"></i>Distribuição por Status</div>
+                    <div class="card-body d-flex justify-content-center align-items-center">
+                        <canvas id="statusChart" style="max-height: 300px;"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Distribuição por Status</div>
-                <div class="card-body">
-                    <canvas id="statusChart" style="min-height: 250px;"></canvas>
-                </div>
+    </section>
+
+    <section>
+        <h3 class="h4 fw-bold mb-3">Gerenciar</h3>
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="nav-card">
+                    <div class="nav-icon"><i class="bi bi-people"></i></div>
+                    <h5 class="nav-title">Funcionários</h5>
+                    <p class="nav-text">Gerencie os dados cadastrais, admissões e documentos dos colaboradores.</p>
+                </a>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="nav-card">
+                    <div class="nav-icon"><i class="bi bi-briefcase"></i></div>
+                    <h5 class="nav-title">Cargos</h5>
+                    <p class="nav-text">Cadastre e organize os cargos e suas descrições.</p>
+                </a>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <a href="{% url 'departamento_pessoal:lista_departamento' %}" class="nav-card">
+                    <div class="nav-icon"><i class="bi bi-diagram-3"></i></div>
+                    <h5 class="nav-title">Departamentos</h5>
+                    <p class="nav-text">Estruture os centros de custo e os departamentos da empresa.</p>
+                </a>
             </div>
         </div>
-    </div>
-
-    <h3 class="h4 fw-bold mb-3 mt-4">Gerenciar</h3>
-    <div class="row g-4">
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="nav-card">
-                <div class="nav-icon"><i class="bi bi-people"></i></div>
-                <h5 class="nav-title">Funcionários</h5>
-                <p class="nav-text">Gerencie os dados cadastrais, admissões e documentos dos colaboradores.</p>
-            </a>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="nav-card">
-                <div class="nav-icon"><i class="bi bi-briefcase"></i></div>
-                <h5 class="nav-title">Cargos</h5>
-                <p class="nav-text">Cadastre e organize os cargos e suas descrições.</p>
-            </a>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <a href="{% url 'departamento_pessoal:lista_departamento' %}" class="nav-card">
-                <div class="nav-icon"><i class="bi bi-diagram-3"></i></div>
-                <h5 class="nav-title">Departamentos</h5>
-                <p class="nav-text">Estruture os centros de custo e os departamentos da empresa.</p>
-            </a>
-        </div>
-    </div>
-
+    </section>
 </div>
 {% endblock %}
-
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+{{ depto_labels|default:"[]"|json_script:"depto_labels_data" }}
+{{ depto_data|default:"[]"|json_script:"depto_data_data" }}
+{{ status_labels|default:"[]"|json_script:"status_labels_data" }}
+{{ status_data|default:"[]"|json_script:"status_data_data" }}
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // --- GRÁFICO 1: DEPARTAMENTOS ---
-        const deptoCtx = document.getElementById('deptoChart').getContext('2d');
+        // Obtenha o modo do tema para ajustar a cor do texto do gráfico
+        const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const chartTextColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+
+        // Analisa os dados JSON passados do Django
+        const deptoLabels = JSON.parse(document.getElementById('depto_labels_data').textContent);
+        const deptoData = JSON.parse(document.getElementById('depto_data_data').textContent);
+        const statusLabels = JSON.parse(document.getElementById('status_labels_data').textContent);
+        const statusData = JSON.parse(document.getElementById('status_data_data').textContent);
+
+        // --- GRÁFICO 1: FUNCIONÁRIOS POR DEPARTAMENTO (BARRAS) ---
+        const deptoCtx = document.getElementById('deptoChart');
         if (deptoCtx) {
             new Chart(deptoCtx, {
                 type: 'bar',
                 data: {
-                    labels: {{ depto_labels|safe }},
+                    labels: deptoLabels,
                     datasets: [{
                         label: 'Funcionários Ativos',
-                        data: {{ depto_data|safe }},
+                        data: deptoData,
                         backgroundColor: 'rgba(54, 162, 235, 0.7)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: chartTextColor }
+                        },
+                        x: {
+                            ticks: { color: chartTextColor }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
             });
         }
 
-        // --- GRÁFICO 2: STATUS ---
-        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        // --- GRÁFICO 2: DISTRIBUIÇÃO POR STATUS (ROSCA) ---
+        const statusCtx = document.getElementById('statusChart');
         if (statusCtx) {
             new Chart(statusCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: {{ status_labels|safe }},
+                    labels: statusLabels,
                     datasets: [{
                         label: 'Total',
-                        data: {{ status_data|safe }},
+                        data: statusData,
                         backgroundColor: [
-                            'rgba(40, 167, 69, 0.8)',
-                            'rgba(255, 193, 7, 0.8)',
-                            'rgba(220, 53, 69, 0.8)',
-                            'rgba(108, 117, 125, 0.8)'
+                            'rgba(25, 135, 84, 0.8)',  // Verde para "Ativo"
+                            'rgba(255, 193, 7, 0.8)',   // Amarelo para "Em Férias"
+                            'rgba(220, 53, 69, 0.8)',   // Vermelho para "Demitido"
+                            'rgba(108, 117, 125, 0.8)'  // Cinza para "Afastado"
                         ],
                         hoverOffset: 4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: chartTextColor }
+                        },
+                        title: {
+                            display: false,
+                        }
+                    }
+                }
             });
         }
     });
 </script>
 {% endblock %}
+

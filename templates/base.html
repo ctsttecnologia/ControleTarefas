@@ -7,7 +7,6 @@
 {% load humanize %}
 
 
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -25,6 +24,11 @@
     {% block extra_css %}{% endblock %}
     {% block extra_head %}{% endblock %}
 
+
+    {# Inclui o template de mensagens flash #}
+    {% include 'partials/_messages.html' %}
+    
+    {# Script para aplicar o tema salvo no localStorage #}
     <script>
       (() => {
         const theme = localStorage.getItem('theme') || 'dark'; // Padrão 'dark'
@@ -32,8 +36,9 @@
       })();
     </script>
 
+    
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
-
+    
 </head>
 
 {# Classes de flex removidas do body #}
@@ -47,15 +52,19 @@
         {% block content %}{% endblock %}
     </main>
     
+    {# Footer permanece fora do main #}
     {% include 'partials/global_footer.html' %}
-
+    
+    {# Scripts JS no final do body para melhor performance #}
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
+    <script src="{% static 'js/signature.js' %}"></script>
     <script src="{% static 'js/global.js' %}"></script>
-    
+
+    {# Scripts adicionais podem ser incluídos aqui #}
     {% block extra_js %}{% endblock %}
 
 </body>

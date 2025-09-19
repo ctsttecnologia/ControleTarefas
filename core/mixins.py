@@ -8,6 +8,8 @@ from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
 from django.shortcuts import redirect
 
+
+
 class SSTPermissionMixin(PermissionRequiredMixin):
     """
     Mixin que herda do PermissionRequiredMixin do Django, mas customiza
@@ -29,8 +31,7 @@ class SSTPermissionMixin(PermissionRequiredMixin):
 
 class BaseFilialScopedQueryset:
     """
-    Classe base que contém a lógica de filtragem.
-    NÃO DEVE SER USADA DIRETAMENTE.
+    Classe base que contém a lógica de filtragem por filial.
     """
     def _get_filtered_queryset(self, request, base_qs):
         """
@@ -39,24 +40,21 @@ class BaseFilialScopedQueryset:
         """
         active_filial_id = request.session.get('active_filial_id')
 
-        # Superuser sem filial na sessão vê tudo
+        # Condição 1: Superuser sem filial na sessão vê tudo
         if request.user.is_superuser and not active_filial_id:
             return base_qs
 
-        # Qualquer usuário com uma filial ativa na sessão vê apenas os dados dela
+        # Condição 2: Qualquer usuário com uma filial ativa na sessão
         if active_filial_id:
             return base_qs.filter(filial_id=active_filial_id)
-        
-        # Usuário comum sem filial na sessão: usa as filiais permitidas no perfil
-        if not request.user.is_superuser:
-            if hasattr(request.user, 'filiais_permitidas'):
-                return base_qs.filter(filial__in=request.user.filiais_permitidas.all())
-            
-            # Se não tem filiais permitidas, não vê nada
-            return base_qs.none()
 
-        # Fallback final para o superuser (se outras condições não se aplicarem)
-        return base_qs
+        # Condição 3: Usuário comum sem filial na sessão: usa as filiais permitidas no perfil
+        if hasattr(request.user, 'filiais_permitidas'):
+            # CORRIGIDO: Agora usa o relacionamento ManyToManyField
+            return base_qs.filter(filial__in=request.user.filiais_permitidas.all())
+        
+        # Condição 4: Se não tem filiais permitidas, não vê nada
+        return base_qs.none()
 
 
 class AdminFilialScopedMixin(BaseFilialScopedQueryset):

@@ -40,6 +40,7 @@ from .views import (
     GerarFichaPDFView,
     RegistrarDevolucaoView,
     RelatorioSSTPDFView,
+    minha_ficha_redirect_view,
 )
 
 # O app_name é crucial para o namespacing das URLs.
@@ -61,14 +62,12 @@ urlpatterns = [
     path('fichas/nova/', FichaEPICreateView.as_view(), name='ficha_create'),
     path('fichas/<int:pk>/', FichaEPIDetailView.as_view(), name='ficha_detail'),
     path('controle-epi-funcao/', ControleEPIPorFuncaoView.as_view(), name='controle_epi_por_funcao'),  
-
-    # Ações relacionadas a uma entrega de EPI específica.
-    #path('fichas/<int:ficha_pk>/adicionar-entrega/', AdicionarEntregaView.as_view(), name='entrega_create'),
     path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='entrega_sign'),
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),
     path('fichas/<int:pk>/update/', FichaEPIUpdateView.as_view(), name='ficha_update'),
     path('fichas/<int:pk>/delete/', FichaEPIDeleteView.as_view(), name='ficha_delete'),
     path('fichas/<int:pk>/pdf/', GerarFichaPDFView.as_view(), name='ficha_pdf_template'),
+    path('minha-ficha/', minha_ficha_redirect_view, name='minha_ficha'),
 
     # ========================================================================
     # CATÁLOGOS (Equipamentos, Fabricantes, Fornecedores)

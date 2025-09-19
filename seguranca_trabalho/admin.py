@@ -129,12 +129,12 @@ class EquipamentoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mod
     list_display = ('nome', 'filial', 'modelo', 'fabricante', 'data_validade_ca', 'ativo', 'data_cadastro')
     list_filter = ('ativo', 'fabricante', 'requer_numero_serie', 'data_cadastro')
     search_fields = ('nome', 'modelo', 'certificado_aprovacao', 'fabricante__nome')
-    autocomplete_fields = ['fabricante', 'fornecedor_padrao']
+    autocomplete_fields = ['fabricante', 'fornecedor']
     readonly_fields = ('filial',)
     fieldsets = (
         (None, {
             'fields': (
-                'filial', 'nome', 'modelo', 'fabricante', 'fornecedor_padrao',
+                'filial', 'nome', 'modelo', 'fabricante', 'fornecedor',
                 'certificado_aprovacao', 'data_validade_ca', 'vida_util_dias',
                 'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo'
             )

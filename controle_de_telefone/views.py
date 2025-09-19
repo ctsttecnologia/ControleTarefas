@@ -14,10 +14,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
 
+from departamento_pessoal.models import Documento
 from notifications.models import Notificacao
 from .forms import VinculoForm
 from .forms import VinculoAssinaturaForm # Precisamos criar este formulário
-import base64
+
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 )
@@ -30,9 +31,12 @@ from .models import (
     Aparelho, LinhaTelefonica, Vinculo, Marca, Modelo, Operadora, Plano,
    
 )
-from .pdf_generator import gerar_termo_responsabilidade_pdf  
+ 
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+import base64
+# Importe sua função de gerar PDF. O nome foi corrigido para evitar o ImportError.
+from .pdf_utils import gerar_termo_pdf_assinado
 
 
 
@@ -331,12 +335,14 @@ class PlanoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     success_url = reverse_lazy('controle_de_telefone:plano_list')
 
 # --- CRUD para Vinculo ---
-class VinculoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class VinculoListView(LoginRequiredMixin, PermissionRequiredMixin, ViewFilialScopedMixin, ListView):
+    # Mantenha esta view como está
     model = Vinculo
     permission_required = 'controle_de_telefone.view_vinculo'
     template_name = 'controle_de_telefone/vinculo_list.html'
     context_object_name = 'vinculos'
-    paginate_by = 10
+    paginate_by = 20
+
 
     def get_queryset(self):
         filial_id = self.request.session.get('active_filial_id')
@@ -359,10 +365,12 @@ class VinculoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['search_query'] = self.request.GET.get('q', '')
         return context
 
-class VinculoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView):
+class VinculoDetailView(LoginRequiredMixin, PermissionRequiredMixin, ViewFilialScopedMixin, DetailView):
+    # Mantenha esta view como está
     model = Vinculo
     permission_required = 'controle_de_telefone.view_vinculo'
     template_name = 'controle_de_telefone/vinculo_detail.html'
+    context_object_name = 'vinculo'
 
     def get_queryset(self):
         filial_id = self.request.session.get('active_filial_id')
@@ -375,39 +383,39 @@ class VinculoDetailView(LoginRequiredMixin, PermissionRequiredMixin, DetailView)
 def enviar_notificacao_de_assinatura(request, vinculo):
     raise NotImplementedError
 
-class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
+class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, FilialCreateMixin, SuccessMessageMixin, CreateView):
+    # Mantenha esta view como está
     model = Vinculo
     form_class = VinculoForm
     permission_required = 'controle_de_telefone.add_vinculo'
     template_name = 'controle_de_telefone/generic_form.html'
     success_url = reverse_lazy('controle_de_telefone:vinculo_list')
-    success_message = "Vínculo criado com sucesso! O Termo de Responsabilidade foi gerado."
+    success_message = "Vínculo criado! O funcionário foi notificado para assinar o termo."
 
-    # Este método agora passa o 'filial_id' para o formulário.
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['filial_id'] = self.request.session.get('active_filial_id')
         return kwargs
-    
+
+    def form_valid(self, form):
+        vinculo = form.save()
+        if vinculo.funcionario.usuario:
+            url_assinatura = self.request.build_absolute_uri(
+                reverse('controle_de_telefone:vinculo_assinar', args=[vinculo.pk])
+            )
+            Notificacao.objects.create(
+                usuario=vinculo.funcionario.usuario,
+                mensagem=f"Você tem um novo Termo de Responsabilidade para o aparelho {vinculo.aparelho} pendente de assinatura.",
+                url_destino=url_assinatura
+            )
+        messages.success(self.request, self.success_message)
+        return redirect(self.get_success_url())
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Criar Novo Vínculo'
         context['voltar_url'] = self.success_url
         return context
-
-    def form_valid(self, form):
-        self.object = form.save()
-        try:
-            pdf_buffer = gerar_termo_responsabilidade_pdf(self.object)
-            file_name = f"termo_{self.object.funcionario.id}_{self.object.id}.pdf"
-            self.object.termo_gerado.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
-            
-            enviar_notificacao_de_assinatura(self.request, self.object)
-            messages.success(self.request, self.success_message)
-        except Exception as e:
-            messages.error(self.request, f"O vínculo foi criado, mas ocorreu um erro ao gerar o termo ou notificar: {e}")
-        
-        return redirect(self.get_success_url())
 
 class VinculoUpdateView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Vinculo
@@ -498,6 +506,9 @@ class DownloadTermoView(LoginRequiredMixin, View):
 
         return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
 
+def gerar_termo_responsabilidade_pdf(vinculo):
+    raise NotImplementedError
+
 
 class RegenerarTermoView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """
@@ -564,21 +575,14 @@ class NotificarAssinaturaView(View):
 
 
 class AssinarTermoView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
-    """
-    Página onde o funcionário logado pode visualizar e assinar o termo.
-    """
     model = Vinculo
     form_class = VinculoAssinaturaForm
-    template_name = 'controle_de_telefone/vinculo_assinatura.html'
+    template_name = 'controle_de_telefone/termo_assinatura.html'
     context_object_name = 'vinculo'
-    success_url = reverse_lazy('controle_de_telefone:vinculo_list')
     success_message = "Termo de Responsabilidade assinado com sucesso!"
 
     def get_success_url(self):
-        messages.success(self.request, "Termo de responsabilidade assinado e enviado com sucesso!")
-        # Redireciona para uma página de sucesso ou de detalhes do vínculo
-        return reverse('controle_de_telefone:dashboard')
-
+        return reverse('controle_de_telefone:vinculo_list')
 
     def dispatch(self, request, *args, **kwargs):
         vinculo = self.get_object()
@@ -593,34 +597,49 @@ class AssinarTermoView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo'] = 'Assinar Termo de Responsabilidade'
-        context['termo_clauses'] = {
-            'Cláusula 1': "A CETEST MINAS ENGENHARIA E SERVIÇOS S.A NÃO autoriza o portador, ao qual este equipamento se encontra sob responsabilidade por intermédio deste termo, seja em comunicação de voz ou em transmissão de dados, receber e enviar conteúdo considerado inadequado ou ilegal, sob o ponto de vista da ética e da legislação. [cite: 13]",
-            'Cláusula 2': "Será de responsabilidade do usuário, signatário deste termo, responder por qualquer forma de comunicação que demonstre atitude de preconceito e racismo, exploração do trabalho escravo, depreciação de entidades públicas e seus servidores, assédio sexual e moral, participação em negócios exclusos aos propósitos desta empresa, descumprimento de legislação e normas reguladoras da competição saudável de mercado. [cite: 14]",
-            'Cláusula 3': f"Fica aos cuidados do(a) Sr.(a) {self.object.funcionario.nome_completo} a guarda e conservação do aparelho e respectivos acessórios entregues nesta data, devendo restituí-los sempre que for solicitado pela empresa ou em caso de rescisão do contrato de trabalho, sob pena de responsabilizar-se pelo pagamento de eventuais danos materiais. [cite: 15]",
-            'Cláusula 4': "Fica vedado ao Usuário permutar o equipamento, ou qualquer um de seus acessórios, com outro usuário. [cite: 16] [cite_start]É proibida a troca do e-mail e senha fornecida pela empresa. [cite: 17]",
-            'Cláusula 5': "A qualquer momento e sem prévio aviso, a empresa CETEST MINAS ENGENHARIA E SERVIÇOS S.A poderá solicitar a devolução imediata da linha e do aparelho. [cite: 18]"
-        }
+        try:
+            rg_doc = Documento.objects.get(funcionario=self.object.funcionario, tipo_documento='RG')
+            context['rg_numero'] = rg_doc.numero
+        except Documento.DoesNotExist:
+            context['rg_numero'] = None
         return context
 
     def form_valid(self, form):
-        # 1. Salva o formulário. Isso executará o método .save() customizado no forms.py,
-        # que decodifica a assinatura e a salva no campo 'assinatura_digital'.
-        vinculo = form.save(commit=False) # commit=False para podermos adicionar o PDF
+        vinculo = form.save(commit=False)
         vinculo.foi_assinado = True
         vinculo.data_assinatura = timezone.now()
-        vinculo.save() # Salva o vínculo com a imagem da assinatura
-
-        # 2. Gera o PDF. A função agora terá acesso ao 'vinculo.assinatura_digital'
-        # que acabamos de salvar.
-        pdf_buffer = gerar_termo_responsabilidade_pdf(vinculo)
+        vinculo.save()
         
-        # 3. Salva o PDF gerado (com a assinatura) no campo de upload
-        pdf_filename = f'termo_assinado_{vinculo.pk}.pdf'
-        vinculo.termo_assinado_upload.save(pdf_filename, ContentFile(pdf_buffer.read()), save=True)
+        try:
+            # CORREÇÃO AQUI: Chama a função com o nome correto.
+            pdf_buffer = gerar_termo_pdf_assinado(vinculo)
+            pdf_filename = f'termo_assinado_{vinculo.pk}.pdf'
+            vinculo.termo_assinado_upload.save(pdf_filename, ContentFile(pdf_buffer.read()), save=True)
+            messages.success(self.request, self.success_message)
+        except Exception as e:
+            messages.error(self.request, f"Assinatura salva, mas houve um erro ao gerar o PDF final: {e}")
 
-        # O form.save() original é chamado implicitamente pelas ações acima.
-        # Nós redirecionamos para a success_url.
-        return super().form_valid(form)
+        return redirect(self.get_success_url())
+
+class RegenerarTermoView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'controle_de_telefone.change_vinculo'
+    
+    def post(self, request, *args, **kwargs):
+        vinculo = get_object_or_404(Vinculo, pk=self.kwargs.get('pk'))
+        try:
+            # CORREÇÃO AQUI: Chama a função com o nome correto.
+            pdf_buffer = gerar_termo_pdf_assinado(vinculo)
+            file_name = f"termo_regenerado_{vinculo.pk}.pdf"
+            
+            if vinculo.foi_assinado:
+                vinculo.termo_assinado_upload.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
+            else:
+                 vinculo.termo_gerado.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
+            
+            messages.success(request, f"Termo para {vinculo.funcionario.nome_completo} foi gerado com sucesso!")
+        except Exception as e:
+            messages.error(request, f"Ocorreu um erro ao gerar o termo: {e}")
+        return redirect('controle_de_telefone:vinculo_detail', pk=vinculo.pk)
     
 # --- Dashboard e Views de Ação ---
 
@@ -641,7 +660,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         context['total_operadoras'] = Operadora.objects.count()
         context['total_planos'] = Plano.objects.count()
     
-
         # Gráfico: Aparelhos por Marca
         aparelhos_por_marca = Aparelho.objects.values('modelo__marca__nome').annotate(total=Count('id')).order_by('-total')
         context['marcas_labels_json'] = json.dumps([item['modelo__marca__nome'] for item in aparelhos_por_marca])
@@ -657,7 +675,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         vinculos_inativos = Vinculo.objects.filter(data_devolucao__isnull=False).count()
         context['vinculos_status_data_json'] = json.dumps([vinculos_ativos, vinculos_inativos])
 
-        return context
         context['marcas_data_json'] = json.dumps([item['total'] for item in aparelhos_por_marca])
 
         # Gráfico: Linhas por Operadora
@@ -669,8 +686,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         vinculos_ativos = context['total_vinculos'] # Reutiliza a contagem já feita
         vinculos_inativos = Vinculo.objects.filter(data_devolucao__isnull=False).count()
         context['vinculos_status_data_json'] = json.dumps([vinculos_ativos, vinculos_inativos])
-
-        return context
 
         # Gráfico: Linhas por Operadora
         linhas_por_operadora = LinhaTelefonica.objects.values('plano__operadora__nome').annotate(total=Count('id')).order_by('-total')

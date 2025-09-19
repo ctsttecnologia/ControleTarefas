@@ -21,6 +21,7 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col">Nome / Modelo</th>
+                        <th scope="col">Fornecedor</th>
                         <th scope="col">Fabricante</th>
                         <th scope="col">CA</th>
                         <th scope="col">Validade do CA</th>
@@ -34,6 +35,13 @@
                         <td>
                             <a href="{{ equipamento.get_absolute_url }}" class="fw-bold text-decoration-none">{{ equipamento.nome }}</a>
                             <small class="d-block text-muted">{{ equipamento.modelo|default:"" }}</small>
+                        </td>
+                        <td>
+                            {% if equipamento.fornecedor %}
+                                {{ equipamento.fornecedor.nome_fantasia|default:equipamento.fornecedor.razao_social }}
+                            {% else %}
+                                N/A
+                            {% endif %}
                         </td>
                         <td>{{ equipamento.fabricante.nome|default:"N/A" }}</td>
                         <td>{{ equipamento.certificado_aprovacao|default:"-" }}</td>
@@ -57,7 +65,7 @@
                             <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal-{{ equipamento.pk }}" title="Excluir"><i class="bi bi-trash-fill"></i></button>
                         </td>
                     </tr>
-
+                    
                     <div class="modal fade" id="deleteModal-{{ equipamento.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel-{{ equipamento.pk }}" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">

@@ -8,19 +8,19 @@
         @page {
             size: a4 portrait;
             margin: 2cm;
-            @frame header_frame {
+            @top-center {
                 -pdf-frame-content: page-header;
                 margin-top: 1cm;
                 margin-left: 2cm;
                 margin-right: 2cm;
                 height: 1cm;
             }
-            @frame footer_frame {
+            @bottom-center {
                 -pdf-frame-content: page-footer;
                 bottom: 1cm;
                 margin-left: 2cm;
                 margin-right: 2cm;
-                height: 1cm;
+                height: 1cm;/*  */
             }
         }
 

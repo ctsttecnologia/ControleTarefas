@@ -26,6 +26,7 @@ class AparelhoForm(forms.ModelForm):
         model = Aparelho
        
         fields = [
+            'tipo_de_aparelho',
             'modelo', 
             'filial',
             'imei',
@@ -124,7 +125,7 @@ class VinculoForm(forms.ModelForm):
     class Meta:
         model = Vinculo
         fields = [
-            'funcionario', 
+            'funcionario',
             'aparelho', 
             'linha',
             'data_entrega', 
@@ -195,26 +196,24 @@ class VinculoForm(forms.ModelForm):
 # Renomeei seu formulário para mais clareza
 class VinculoAssinaturaForm(forms.ModelForm):
     # Campo oculto para receber os dados da imagem em base64 do front-end
-    assinatura_digital_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
+    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
         model = Vinculo
-        # Nenhum campo do modelo será exibido diretamente pelo Django, 
-        # pois o template já tem a estrutura.
+        # Nenhum campo do modelo precisa ser exibido diretamente pelo Django
         fields = []
 
     def save(self, commit=True):
-        # Pega a instância do vínculo, mas ainda não salva no banco de dados.
         vinculo = super().save(commit=False)
         
-        # Pega os dados da assinatura do campo oculto.
-        assinatura_base64 = self.cleaned_data.get('assinatura_digital_base64')
+        # Pega os dados da assinatura do campo com o nome correto
+        assinatura_base64_data = self.cleaned_data.get('assinatura_base64')
 
-        if assinatura_base64:
-            # O front-end envia um cabeçalho 'data:image/png;base64,', que precisamos remover.
+        if assinatura_base64_data:
             try:
-                format, imgstr = assinatura_base64.split(';base64,') 
-                ext = format.split('/')[-1] # Pega a extensão (ex: png)
+                # O front-end envia um cabeçalho 'data:image/png;base64,' que precisa ser removido.
+                format, imgstr = assinatura_base64_data.split(';base64,') 
+                ext = format.split('/')[-1]
                 
                 # Decodifica os dados base64 para binário
                 data = ContentFile(base64.b64decode(imgstr))
@@ -225,8 +224,9 @@ class VinculoAssinaturaForm(forms.ModelForm):
                 # Associa o arquivo de imagem decodificado ao campo do modelo
                 vinculo.assinatura_digital.save(file_name, data, save=False)
 
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as e:
                 # Lida com casos onde a string base64 é inválida
+                print(f"Erro ao decodificar a assinatura: {e}")
                 pass
 
         if commit:

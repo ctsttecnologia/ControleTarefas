@@ -4,7 +4,7 @@ from django.urls import path
 from .views import (
     AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
     AtaReuniaoDeleteView, AtaReuniaoDashboardView, AtaReuniaoPDFExportView,
-    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView # Adicionado DetailView
+    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, UpdateTaskStatusView # Adicionado DetailView
 )
 
 app_name = 'ata_reuniao'
@@ -26,5 +26,10 @@ urlpatterns = [
     # Usam a lista principal de atas como base
     path('exportar/pdf/', AtaReuniaoPDFExportView.as_view(), name='ata_reuniao_export_pdf'),
     path('exportar/excel/', AtaReuniaoExcelExportView.as_view(), name='ata_reuniao_export_excel'),
+
+
+    # NOVO ENDPOINT PARA O DRAG AND DROP
+    path('api/update-status/<int:pk>/', UpdateTaskStatusView.as_view(), name='api_update_status'),
 ]
+
 

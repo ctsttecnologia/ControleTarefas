@@ -118,7 +118,7 @@ class Equipamento(models.Model):
     nome = models.CharField(max_length=150, verbose_name=_("Descrição EPI"))
     modelo = models.CharField(max_length=100, blank=True, verbose_name=_("Modelo"))
     fabricante = models.ForeignKey(Fabricante, on_delete=models.PROTECT, related_name='equipamentos', null=True, blank=True)
-    fornecedor_padrao = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Fornecedor Padrão"))
+    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Fornecedor"))
     certificado_aprovacao = models.CharField(max_length=50, verbose_name=_("Certificado de Aprovação (CA)"), help_text=_("Deixe em branco se não aplicável."), blank=True)
     data_cadastro = models.DateField(
         auto_now_add=True, 
@@ -293,9 +293,9 @@ class EntregaEPI(models.Model):
 
 
 class MovimentacaoEstoque(models.Model):
-    TIPO_MOVIMENTACAO = [('ENTRADA', 'Entrada'), ('SAIDA', 'Saída'), ('AJUSTE', 'Ajuste')]
+    MOVIMENTACAO = [('ENTRADA', 'Entrada'),('SAIDA', 'Saída'), ('AJUSTE', 'Ajuste')]
     equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT, related_name='movimentacoes_estoque')
-    tipo = models.CharField(max_length=7, choices=TIPO_MOVIMENTACAO)
+    tipo = models.CharField(max_length=7, choices=MOVIMENTACAO)
     quantidade = models.IntegerField()
     fornecedor = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True)
     lote = models.CharField(max_length=100, blank=True, verbose_name=_("Lote"))

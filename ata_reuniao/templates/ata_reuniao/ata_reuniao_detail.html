@@ -4,6 +4,9 @@
 
 {% block title %}Detalhes da Ata #{{ ata.id }}{% endblock %}
 
+{# Inclui o template de mensagens de alerta #}
+{% include "partials/_messages.html" %}
+
 {% block content %}<br>
 <div class="container">
     

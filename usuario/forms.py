@@ -97,6 +97,12 @@ class CustomUserChangeForm(UserChangeForm):
         widget=FilteredSelectMultiple(verbose_name='Filiais Permitidas', is_stacked=False),
         required=False
     )
+    filial_ativa = forms.ModelChoiceField(
+        queryset=Filial.objects.none(),
+        required=False,
+        label="Filial Ativa",
+        help_text="A filial que o usuário usará por padrão. Deve ser uma das Filiais Permitidas."
+    )
 
     class Meta:
         model = Usuario
@@ -108,7 +114,13 @@ class CustomUserChangeForm(UserChangeForm):
         )
 
     def __init__(self, *args, **kwargs):
+        # Recebe o queryset personalizado
+        filiais_permitidas_qs = kwargs.pop('filiais_permitidas_qs', None)
         super().__init__(*args, **kwargs)
+
+        if filiais_permitidas_qs is not None:
+            self.fields['filial_ativa'].queryset = filiais_permitidas_qs
+
         # Preenche os campos ManyToMany com os valores iniciais da instância do usuário
         if self.instance.pk:
             self.fields['groups'].initial = self.instance.groups.all()

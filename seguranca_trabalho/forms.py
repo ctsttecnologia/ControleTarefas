@@ -42,7 +42,7 @@ class EquipamentoForm(forms.ModelForm):
     class Meta:
         model = Equipamento
         fields = [
-            'nome', 'modelo', 'fabricante', 'fornecedor_padrao', 
+            'nome', 'modelo', 'fabricante', 'fornecedor', 
             'certificado_aprovacao', 'data_validade_ca', 'vida_util_dias',
             'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo', 
         ]
@@ -50,7 +50,7 @@ class EquipamentoForm(forms.ModelForm):
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 1100'}),
             'fabricante': forms.Select(attrs={'class': 'form-select'}),
-            'fornecedor_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'certificado_aprovacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5745'}),
             'data_validade_ca': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'vida_util_dias': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),

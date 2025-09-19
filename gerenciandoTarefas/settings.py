@@ -180,6 +180,7 @@ TIME_ZONE = 'America/Sao_Paulo'
 #Static files (CSS, JavaScript, Images)
 #https://docs.djangoproject.com/en/5.1/howto/static-files/
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Configurações para arquivos estáticos

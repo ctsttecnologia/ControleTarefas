@@ -205,6 +205,14 @@ class Funcionario(models.Model):
         # Calcula a diferença de anos e subtrai 1 se o aniversário ainda não ocorreu este ano.
         return hoje.year - self.data_nascimento.year - ((hoje.month, hoje.day) < (self.data_nascimento.month, self.data_nascimento.day))
     
+    @property
+    def rg_numero(self):
+        """Retorna o número do RG do funcionário, se existir."""
+        try:
+            return self.documentos.get(tipo_documento='RG').numero
+        except Documento.DoesNotExist:
+            return "N/A"
+        
     # O decorador @property já torna o método acessível como um atributo,
     # então o uso de 'idade.fget.short_description' não é necessário ou é um padrão antigo.
     # O Django Admin pode inferir o nome do campo do próprio nome do método (@property).
@@ -229,7 +237,7 @@ class Documento(models.Model):
         related_name='documentos',
         verbose_name=_("Funcionário")
     )
-    tipo = models.CharField(_("Tipo de Documento"), max_length=10, choices=TIPO_CHOICES)
+    tipo_documento = models.CharField(_("Tipo de Documento"), max_length=10, choices=TIPO_CHOICES)
     numero = models.CharField(_("Número/Código do Documento"), max_length=50)
     anexo = models.FileField(
         _("Arquivo Anexado"),
@@ -253,7 +261,7 @@ class Documento(models.Model):
         verbose_name = _("Documento")
         verbose_name_plural = _("Documentos")
         # Garante que um funcionário só pode ter um documento de cada tipo.
-        unique_together = ('funcionario', 'tipo')
+        unique_together = ('funcionario', 'tipo_documento')
 
     def __str__(self):
-        return f"{self.get_tipo_display()} de {self.funcionario.nome_completo}"
+        return f"{self.get_tipo_documento_display()} de {self.funcionario.nome_completo}"

@@ -106,6 +106,15 @@ class Aparelho(BaseModel):
         ('manutencao', 'Em Manutenção'),
         ('descartado', 'Descartado'),
     )
+
+    APARELHO_TIPO_CHOICES = (
+        ('smartphone', 'Smartphone'),
+        ('tablet', 'Tablet'),
+        ('radio_ht', 'Rádio HT'),
+        ('notebook', 'Notebook'),
+        ('outro', 'Outro'),
+    )
+    tipo_de_aparelho = models.CharField(max_length=30, choices=APARELHO_TIPO_CHOICES, default='smartphone', verbose_name="Tipo de Aparelho")
     modelo = models.ForeignKey(Modelo, on_delete=models.PROTECT, related_name="aparelhos")
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name="aparelhos")
 
@@ -242,3 +251,5 @@ class Vinculo(BaseModel):
                 recipient_list=[usuario_a_notificar.email],
                 html_message=corpo_html
             )
+
+
