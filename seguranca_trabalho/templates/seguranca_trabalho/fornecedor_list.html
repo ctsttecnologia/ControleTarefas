@@ -24,7 +24,7 @@
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col">Nome Fantasia / Razão Social</th>
+                            <th scope="col">Nome</th>
                             <th scope="col">CNPJ</th>
                             <th scope="col">Telefone</th>
                             <th scope="col">Celular</th>
@@ -42,14 +42,14 @@
                                     {{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}
                                 </a>
                                 {% if fornecedor.nome_fantasia %}
-                                <small class="d-block text-muted">{{ fornecedor.razao_social }}</small>
+                                    <small class="d-block text-muted">{{ fornecedor.razao_social }}</small>
                                 {% endif %}
                             </td>
                             <td>{{ fornecedor.cnpj }}</td>
-                            <td>
-                                {% if fornecedor.email %}<small class="d-block">{{ fornecedor.email }}</small>{% endif %}
-                                {% if fornecedor.telefone %}<small class="d-block text-muted">{{ fornecedor.telefone }}</small>{% endif %}
-                            </td>
+                            <td>{{ fornecedor.telefone }}</td>
+                            <td>{{ fornecedor.celular }}</td>
+                            <td>{{ fornecedor.email }}</td>
+                            <td>{{ fornecedor.observacoes }}</td>
                             <td class="text-center">
                                 {% if fornecedor.ativo %}
                                     <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Ativo</span>

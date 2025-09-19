@@ -9,12 +9,12 @@
     <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
 {% endblock extra_css %}
 
+{# Inclui o template de mensagens de alerta #}
+{% include "partials/_messages.html" %}
+
 {# 3. Preenche o bloco de conteúdo principal herdado do base.html #}
 {% block content %}
 <div class="container-fluid">
-
-    {# Inclui o template de mensagens de alerta #}
-    {% include "partials/_messages.html" %}
     
     {# Cria um submenu consistente com o resto do site #}
     <div class="subnav-atas mb-4 p-3 bg-body-tertiary rounded-3 border sticky-top" style="top: 60px; z-index: 1020;">

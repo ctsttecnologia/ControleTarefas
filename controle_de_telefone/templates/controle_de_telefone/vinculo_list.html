@@ -33,6 +33,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Colaborador</th>
+                            <th>Tipo de Aparelho</th>
                             <th>Aparelho</th>
                             <th>IMEI</th>
                             <th>Linha</th>
@@ -46,6 +47,7 @@
                         {% for vinculo in vinculos %}
                         <tr>
                             <td>{{ vinculo.funcionario }}</td>
+                            <td>{{ vinculo.aparelho.tipo_de_aparelho }}</td>
                             <td>{{ vinculo.aparelho.modelo|default:"N/A" }}</td>
                             <td>{{ vinculo.aparelho.imei|default:"N/A" }}</td>
                             <td>{{ vinculo.linha|default:"N/A" }}</td>

@@ -265,15 +265,11 @@ class UserListView(StaffRequiredMixin, ListView):
     model = Usuario
     template_name = 'usuario/lista_usuarios.html'
     context_object_name = 'usuarios'
-    paginate_by = 10
+    paginate_by = 20
 
     def get_queryset(self):
-        """
-        << CORREÇÃO >>
-        Filtra os usuários para mostrar apenas aqueles que pertencem à filial ativa do admin.
-        Isso é mais explícito e seguro que o mixin genérico.
-        """
-        qs = super().get_queryset().order_by('first_name')
+        # Carrega a filial_ativa junto com a consulta principal
+        qs = super().get_queryset().select_related('filial_ativa').order_by('first_name')
         active_filial_id = self.request.session.get('active_filial_id')
 
         # Superusuários veem todos; outros staffs veem apenas os da sua filial ativa.
@@ -295,17 +291,40 @@ class UserCreateView(StaffRequiredMixin, CreateView):
     form_class = CustomUserCreationForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
-    # ... resto da view sem alterações
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f"Usuário {self.object.username} criado com sucesso.")
+        user = form.save()
+
+        primeira_filial = user.filiais_permitidas.first()
+        if primeira_filial:
+            user.filial_ativa = primeira_filial
+            user.save()
+            
+        messages.success(self.request, f"Usuário '{user.username}' criado com sucesso.")
+        return super().form_valid(form)
+    
 
 class UserUpdateView(StaffRequiredMixin, UpdateView):
     model = Usuario
     form_class = CustomUserChangeForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
-    # ... resto da view sem alterações
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # Garante que o campo filial_ativa no formulário tenha apenas
+        # as opções que o usuário-alvo tem permissão de acessar.
+        if self.object and 'filial_ativa' in self.form_class.base_fields:
+            kwargs['initial'] = {
+                'filial_ativa': self.object.filial_ativa,
+            }
+            kwargs['filiais_permitidas_qs'] = self.object.filiais_permitidas.all()
+        return kwargs
 
 class UserToggleActiveView(StaffRequiredMixin, View):
-    # ... view sem alterações ...
+    
     def post(self, request, *args, **kwargs):
         user_to_toggle = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
         if user_to_toggle == request.user:

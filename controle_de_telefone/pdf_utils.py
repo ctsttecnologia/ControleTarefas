@@ -1,8 +1,9 @@
-# controle_de_telefone/pdf_generator.py
+# controle_de_telefone/pdf_utils.py
 
 import io
 from functools import partial
 import logging
+import os
 
 from django.contrib.staticfiles import finders
 from django.utils.dateformat import format as date_format
@@ -10,14 +11,17 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.platypus import (Image, KeepTogether, Paragraph,
-                                SimpleDocTemplate, Spacer, Table, TableStyle)
-import os
+from reportlab.platypus import (Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle)
 
-# Configurar logger para logs mais detalhados
+from departamento_pessoal.models import Documento
+
+
+
+
 logger = logging.getLogger(__name__)
 
-# --- Funções Auxiliares ---
+# --- FUNÇÕES DE AUXÍLIO ---
+
 def get_safe_attr(obj, attrs, default='N/A'):
     """
     Função auxiliar para obter atributos aninhados de forma segura.
@@ -25,8 +29,9 @@ def get_safe_attr(obj, attrs, default='N/A'):
     """
     for attr in attrs.split('.'):
         try:
+            # CORREÇÃO: Usa 'getattr' para acessar o atributo dinamicamente
             obj = getattr(obj, attr, None)
-            if obj is None:
+            if obj is None or (isinstance(obj, str) and not obj.strip()):
                 return default
         except AttributeError:
             return default
@@ -60,7 +65,7 @@ def create_introductory_text(vinculo, styles, safe_get):
     data_entrega_f = date_format(vinculo.data_entrega, 'd \\d\\e F \\d\\e Y')
     texto_inicial = f"""
         A empresa <strong>{EMPRESA_NOME}</strong>, nesta data de <strong>{data_entrega_f}</strong>,
-        entrega ao funcionário do contrato {safe_get(vinculo, 'funcionario.cliente.contrato')} um aparelho com as seguintes características:
+        entrega ao funcionário do contrato CM {safe_get(vinculo, 'funcionario.cliente.contrato')} um aparelho com as seguintes características:
     """
     return [Paragraph(texto_inicial, styles['Justify']), Spacer(1, 10)]
 
@@ -109,69 +114,72 @@ def create_clauses_section(vinculo, styles, safe_get):
     return story
 
 def create_signature_block(vinculo, styles, safe_get):
-    """Cria a tabela de assinaturas, incluindo a assinatura digital."""
-    EMPRESA_NOME = "CETEST MINAS ENGENHARIA E SERVIÇOS S.A"
-    assinatura_funcionario = []
-    
-    assinatura_path = vinculo.assinatura_digital.path if vinculo.assinatura_digital else None
-    
-    if assinatura_path and os.path.exists(assinatura_path):
-        try:
-            assinatura_img = Image(assinatura_path, width=150, height=50)
-            assinatura_funcionario.append(assinatura_img)
-        except Exception as e:
-            logger.error(f"ERRO ao carregar imagem da assinatura: {e}")
-            assinatura_funcionario.append(Paragraph("________________________________", styles['Center']))
-    else:
-        assinatura_funcionario.append(Paragraph("________________________________", styles['Center']))
+    """
+    Cria a tabela de assinaturas, incluindo a assinatura digital se existir.
+    """
+    assinatura_story_content = []
+
+    # PASSO 1: Verificar se há uma assinatura digital salva
+    if hasattr(vinculo, 'assinatura_digital') and vinculo.assinatura_digital:
+        assinatura_path = vinculo.assinatura_digital.path
         
-    assinatura_funcionario.append(Spacer(1, 2))
-    assinatura_funcionario.append(Paragraph(safe_get(vinculo, 'funcionario.nome_completo'), styles['Center']))
-    assinatura_funcionario.append(Paragraph(f"Doc: {safe_get(vinculo, 'funcionario.documentos.numero')}", styles['CenterSmall']))
+        # PASSO 2: Verificar se o arquivo da assinatura existe no disco
+        if os.path.exists(assinatura_path):
+            try:
+                assinatura_img = Image(assinatura_path, width=150, height=50)
+                assinatura_story_content.append(assinatura_img)
+            except Exception as e:
+                logger.error(f"Erro ao carregar imagem da assinatura: {e}")
+                assinatura_story_content.append(Paragraph("________________________________", styles['Center']))
+        else:
+            logger.warning(f"Assinatura não encontrada em: {assinatura_path}")
+            assinatura_story_content.append(Paragraph("________________________________", styles['Center']))
+    else:
+        logger.info("Nenhuma assinatura digital encontrada para este vínculo.")
+        assinatura_story_content.append(Paragraph("________________________________", styles['Center']))
+
+    # Adiciona nome e documento abaixo da linha/imagem
+    assinatura_story_content.append(Spacer(1, 2))
+    assinatura_story_content.append(Paragraph(safe_get(vinculo, 'funcionario.nome_completo'), styles['Center']))
     
-    
-    tabela_assinaturas = Table(
-        [[assinatura_funcionario, ]], 
-        colWidths=['50%', '50%']
-    )
-    tabela_assinaturas.setStyle(TableStyle([
+    # Busca o RG do funcionário
+    try:
+        rg_doc = Documento.objects.get(funcionario=vinculo.funcionario, tipo='RG')
+        rg_numero = rg_doc.numero
+    except Documento.DoesNotExist:
+        rg_numero = "N/A"
+    assinatura_story_content.append(Paragraph(f"RG: {rg_numero}", styles['CenterSmall']))
+
+    tabela = Table([[assinatura_story_content]], colWidths=['100%'])
+    tabela.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
     ]))
     
-    return [Spacer(1, 25), KeepTogether([tabela_assinaturas])]
+    return [Spacer(1, 25), KeepTogether([tabela])]
 
-# --- Função Principal ---
-def gerar_termo_responsabilidade_pdf(vinculo):
-    """
-    Gera o PDF do Termo de Responsabilidade para um determinado vínculo.
-    """
+
+# --- FUNÇÃO PRINCIPAL ---
+def gerar_termo_pdf_assinado(vinculo):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=40, bottomMargin=40)
 
     styles = get_reportlab_styles()
     safe_get = partial(get_safe_attr, default='___________')
     story = []
-    # 1. Cabeçalho
+
     story.extend(create_header(styles))
-    # 2. Texto Introdutório
     story.extend(create_introductory_text(vinculo, styles, safe_get))
-    # 3. Tabela de Itens
     story.extend(create_item_table(vinculo, safe_get))
-    # 4. Corpo do Texto - Cláusulas
     story.extend(create_clauses_section(vinculo, styles, safe_get))
-    # 5. Declaração Final
-    declaracao = """
-        Diante das cláusulas descritas, declaro que recebi os equipamentos em perfeito estado e autorizo o desconto em
-        folha de pagamento dos valores de ligações particulares ou danos por mau uso.
-    """
+
+    declaracao = "Diante das cláusulas descritas..." # (mantenha seu texto de declaração)
     story.append(Spacer(1, 10))
     story.append(Paragraph(declaracao, styles['Justify']))
-    # 6. Bloco de Assinaturas
-    story.extend(create_signature_block(vinculo, styles, safe_get))
-    # 7. Construção do PDF
-    doc.build(story)
     
+    # Bloco de Assinaturas (agora com a imagem)
+    story.extend(create_signature_block(vinculo, styles, safe_get))
+
+    doc.build(story)
     buffer.seek(0)
     return buffer
-

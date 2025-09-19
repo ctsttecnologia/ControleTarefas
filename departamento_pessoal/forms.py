@@ -94,7 +94,7 @@ class DocumentoForm(forms.ModelForm):
     class Meta:
         model = Documento
         # Adicionamos 'funcionario' à lista de campos
-        fields = ['funcionario', 'tipo', 'numero', 'anexo']
+        fields = ['funcionario', 'tipo_documento', 'numero', 'anexo']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -104,7 +104,7 @@ class DocumentoForm(forms.ModelForm):
 
         # Aplica classes do bootstrap para um visual consistente
         self.fields['funcionario'].widget.attrs.update({'class': 'form-select'})
-        self.fields['tipo'].widget.attrs.update({'class': 'form-select'})
+        self.fields['tipo_documento'].widget.attrs.update({'class': 'form-select'})
         self.fields['numero'].widget.attrs.update({'class': 'form-control'})
         self.fields['anexo'].widget.attrs.update({'class': 'form-control'})
 

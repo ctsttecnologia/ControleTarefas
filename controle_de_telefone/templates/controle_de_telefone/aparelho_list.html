@@ -23,6 +23,7 @@
         <table class="table table-striped table-hover">
             <thead>
                 <tr>
+                    <th>Tipo de aparelho</th>
                     <th>Modelo</th>
                     <th>IMEI</th>
                     <th>Status</th>
@@ -32,6 +33,7 @@
             <tbody>
                 {% for aparelho in aparelhos %}
                 <tr>
+                    <td>{{ aparelho.tipo_de_aparelho }}</td>
                     <td>{{ aparelho.modelo }}</td>
                     <td>{{ aparelho.imei }}</td>
                     <td><span class="badge bg-secondary">{{ aparelho.get_status_display }}</span></td>

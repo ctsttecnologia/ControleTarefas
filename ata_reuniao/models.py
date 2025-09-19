@@ -1,4 +1,5 @@
-# ata_reuniao/models.py (CORRIGIDO E REATORADO)
+# ata_reuniao/models.py 
+
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -148,4 +149,25 @@ class HistoricoAta(models.Model):
     def __str__(self):
         return f"Comentário em {self.ata} por {self.usuario} em {self.timestamp.strftime('%d/%m/%Y %H:%M')}"
     
+
+class Comentario(models.Model):
+    ata_reuniao = models.ForeignKey(
+        'AtaReuniao', 
+        on_delete=models.CASCADE,
+        related_name='comentarios'
+    )
+    autor = models.ForeignKey(
+        'usuario.Usuario', 
+        on_delete=models.CASCADE,
+        related_name='comentarios_ata'
+    )
+    # Adicione este campo:
+    comentario = models.TextField() 
+    
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'Comentário de {self.autor.username} em {self.ata_reuniao.titulo}'
+    
+
     

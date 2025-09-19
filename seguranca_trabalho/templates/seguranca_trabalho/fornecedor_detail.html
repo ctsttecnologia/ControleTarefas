@@ -1,35 +1,10 @@
-
 {% extends 'base.html' %}
 
-{% block title %}Detalhes: {{ fornecedor }}{% endblock %}
+{% block title %}Detalhes: {{ fornecedor.razao_social }}{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <h1>Detalhes do Fornecedor: {{ fornecedor.nome }}</h1>
-            <p><strong>CNPJ:</strong> {{ fornecedor.cnpj }}</p>
-
-            <h2>Informações de Contato</h2>
-            {% if fornecedor.telefone %}
-                <p><strong>Telefone:</strong> {{ fornecedor.telefone }}</p>
-            {% endif %}
-
-            {% if fornecedor.email %}
-                <p><strong>Email:</strong> {{ fornecedor.email }}</p>
-            {% endif %}
-
-            <h2>Endereço</h2>
-            {% if fornecedor.endereco %}
-                <p><strong>Logradouro:</strong> {{ fornecedor.endereco.nome }}</p>
-                <p><strong>Número:</strong> {{ fornecedor.endereco.numero }}</p>
-                <p><strong>CEP:</strong> {{ fornecedor.endereco.cep }}</p>
-            {% else %}
-                <p>Endereço não informado.</p>
-            {% endif %}
-
-
-
         <div>
             <h1 class="h2">Detalhes do Fornecedor</h1>
             <p class="text-muted">{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</p>
@@ -43,11 +18,10 @@
             </a>
         </div>
     </div>
-
+    <h4 class="h6 mb-3">Cadastro</h4>
     <div class="card shadow-sm">
         <div class="card-body p-4">
-            <h5 class="card-title border-bottom pb-2 mb-3">Informações de Cadastro</h5>
-            <dl class="row">
+            <dl class="row mb-0">
                 <dt class="col-sm-3">Razão Social</dt>
                 <dd class="col-sm-9">{{ fornecedor.razao_social }}</dd>
 
@@ -62,6 +36,15 @@
                 
                 <dt class="col-sm-3">Telefone</dt>
                 <dd class="col-sm-9">{{ fornecedor.telefone|default:"-" }}</dd>
+                
+                <dt class="col-sm-3">Endereço</dt>
+                <dd class="col-sm-9">
+                    {% if fornecedor.endereco %}
+                        {{ fornecedor.endereco.logradouro }}, {{ fornecedor.endereco.numero }} - {{ fornecedor.endereco.cep }}
+                    {% else %}
+                        <span class="text-muted">Endereço não cadastrado</span>
+                    {% endif %}
+                </dd>
 
                 <dt class="col-sm-3">Status</dt>
                 <dd class="col-sm-9">
@@ -74,22 +57,21 @@
             </dl>
         </div>
     </div>
+
+    <h4 class="h6 my-4">Equipamentos onde este é o Fornecedor Padrão</h4>
     
-    <div class="card shadow-sm mt-4">
-        <div class="card-header">
-            <h5 class="mb-0">Equipamentos onde este é o Fornecedor Padrão</h5>
-        </div>
+    <div class="card shadow-sm">
         <div class="card-body">
             {% with equipamentos=fornecedor.equipamentos_fornecidos.all %}
                 {% if equipamentos %}
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover">
+                        <table class="table table-sm table-hover mb-0">
                              <thead>
-                                <tr>
-                                    <th>Nome do Equipamento</th>
-                                    <th>Fabricante</th>
-                                    <th>CA</th>
-                                </tr>
+                                 <tr>
+                                     <th>Equipamento</th>
+                                     <th>Fabricante</th>
+                                     <th>Certificado de Aprovação</th>
+                                 </tr>
                             </thead>
                             <tbody>
                                 {% for epi in equipamentos %}
@@ -110,3 +92,5 @@
     </div>
 </div>
 {% endblock %}
+
+

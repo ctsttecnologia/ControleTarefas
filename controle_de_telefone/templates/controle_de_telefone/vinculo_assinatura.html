@@ -17,11 +17,13 @@
                 <div class="col-md-6">
                     <p><i class="fas fa-user me-2"></i><strong>Colaborador</strong></p>
                     <p><strong>Nome:</strong> {{ object.funcionario.nome_completo }}</p>
-                    <p><strong>Documento:</strong> {{ object.funcionario.documentos.numero }}</p>
+                    <p><strong>Cargo:</strong> {{ object.funcionario.cargo }}</p>
+                    <p><strong>Documento:</strong> {{ object.funcionario.rg_numero }}</p>
                 </div>
                 <div class="col-md-6">
                     <p><i class="fas fa-mobile-alt me-2"></i><strong>Equipamento e Acessórios</strong></p>
-                    <p><strong>Aparelho:</strong> {{ object.aparelho.modelo.marca }} {{ object.aparelho.modelo }}</p>
+                    <p><strong>Aparelho:</strong> {{ object.aparelho.modelo.marca }}</p>
+                    <p><strong>Modelo:</strong> {{ object.aparelho.modelo }}</p>
                     <p><strong>IMEI:</strong> {{ object.aparelho.imei }}</p>
                     <p><strong>Linha:</strong> {{ object.linha.numero }}</p>
                     <p class="small text-muted">Acessórios: {{ object.aparelho.acessorios }}</p>
@@ -113,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault(); // Impede o envio do formulário
         } else {
             const hiddenInput = document.querySelector('[name="assinatura_digital_base64"]');
-            // [CORRIGIDO] O argumento deve ser o tipo MIME, por exemplo, 'image/png'.
+            // O argumento deve ser o tipo MIME, por exemplo, 'image/png'.
             hiddenInput.value = signaturePad.toDataURL('image/png');
         }
     });

@@ -3,6 +3,8 @@
 from django import forms
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+from tarefas.models import Comentario
 from .models import Filial, AtaReuniao, HistoricoAta
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
@@ -135,4 +137,13 @@ class HistoricoAtaForm(forms.ModelForm):
             'comentario': ''  # Oculta o label, pois o contexto já é claro
         }
 
+
+# Altere este formulário para usar HistoricoAta
+class ComentarioForm(forms.ModelForm):
+    class Meta:
+        model = HistoricoAta  # Use HistoricoAta em vez de Comentario
+        fields = ['comentario']
+        widgets = {
+            'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Adicione um comentário...'}),
+        }
 

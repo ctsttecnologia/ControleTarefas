@@ -5,10 +5,9 @@
 {% load humanize %}
 {% block title %}Fichas de EPI{% endblock %}
 {% block extra_head %}
-  
-
+    
 {% endblock %}
-{% block sst_content %} 
+{% block sst_content %}
     <div class="d-flex page-header mb-4 align-items-center justify-content-between">
         <div>
             <h1 class="h2">Fichas de EPI de Colaboradores</h1>
@@ -19,7 +18,31 @@
                 <i class="bi bi-plus-lg me-1"></i> Nova Ficha
             </a>
         </div>
-    </div>    
+    </div>
+    
+    <div class="card shadow-sm mb-2">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label for="id_nome" class="form-label">Buscar por Nome</label>
+                    <input type="text" name="nome" id="id_nome" class="form-control" value="{{ request.GET.nome }}" placeholder="Digite o nome do colaborador...">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_data_inicio" class="form-label">Data de Início</label>
+                    <input type="date" name="data_inicio" id="id_data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="id_data_fim" class="form-label">Data de Fim</label>
+                    <input type="date" name="data_fim" id="id_data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -64,6 +87,5 @@
             {% include 'partials/pagination.html' %}
         </div>
     </div>
- 
 {% endblock %}
 
