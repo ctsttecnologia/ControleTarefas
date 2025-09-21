@@ -100,9 +100,12 @@ class AtaReuniao(models.Model):
     # --- MÉTODOS DEPOIS DA META CLASS ---
     
     def __str__(self):
-        # Acessa o nome do contrato relacionado. O Django carrega o objeto automaticamente.
-        return f"Ata #{self.id} - {self.contrato.nome}"
-
+        # Formata a data de entrada para o formato DD/MM/YYYY
+        data_str = self.entrada.strftime('%d/%m/%Y') if self.entrada else 'Sem data'
+        
+        # Combina o ID da Ata, o Título e a Data para uma descrição clara
+        return f"Ata ID:{self.id} - {self.contrato} / {self.titulo} / ({data_str})"
+    
     @property
     def is_overdue(self):
         """Retorna True se a ata estiver com o prazo vencido e não finalizada."""

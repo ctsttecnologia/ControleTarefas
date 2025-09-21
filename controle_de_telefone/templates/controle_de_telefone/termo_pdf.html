@@ -1,0 +1,47 @@
+
+
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Termo de Responsabilidade - {{ vinculo.funcionario.nome_completo }}</title>
+    <style>
+        /* Seus estilos CSS permanecem os mesmos */
+        @page { size: a4 portrait; margin: 2cm; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
+        .assinatura-img { max-width: 300px; height: 80px; }
+    </style>
+</head>
+<body>
+    <div class="termo-container">
+        <header class="termo-header">
+            {# Renderiza a logo a partir da variável Base64 #}
+            {% if logo_base64 %}
+                <img src="{{ logo_base64 }}" alt="Logo da Empresa">
+            {% else %}
+                <p>Logo da Empresa</p>
+            {% endif %}
+            <h1>TERMO DE RESPONSABILIDADE SOBRE USO DE SMARTPHONE</h1>
+        </header>
+
+        <div class="signature-wrapper">
+            <p><strong>Assinatura do Colaborador:</strong></p>
+            
+            {# Renderiza a assinatura a partir do caminho do arquivo #}
+            {% if assinatura_path %}
+                <img src="{{ assinatura_path }}" alt="Assinatura Digital" class="assinatura-img">
+            {% else %}
+                <p>Assinatura pendente.</p>
+            {% endif %}
+
+            <p>___________________________________</p>
+            <p><strong>{{ vinculo.funcionario.nome_completo }}</strong></p>
+            
+            {# CORREÇÃO 3: Renderiza o RG a partir da variável do contexto #}
+            <p><small>RG: {{ rg_numero }}</small></p>
+            <p><small>Assinado em: {{ vinculo.data_assinatura|date:"d/m/Y H:i:s" }}</small></p>
+        </div>
+    </div>
+</body>
+</html>

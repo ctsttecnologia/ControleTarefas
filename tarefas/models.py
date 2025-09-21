@@ -21,6 +21,7 @@ import logging
 import os
 
 
+
 logger = logging.getLogger(__name__)
 
 User = settings.AUTH_USER_MODEL
@@ -58,7 +59,8 @@ class Tarefas(models.Model):
         null=True
     )
     data_fim_recorrencia = models.DateField(_('Repetir até'), blank=True, null=True)
-    tarefa_pai = models.ForeignKey(
+    # Renomeado para evitar conflito. Este campo guarda a tarefa original da qual esta recorrência foi criada.
+    tarefa_recorrencia_pai = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,
         null=True,
@@ -78,7 +80,7 @@ class Tarefas(models.Model):
     prioridade = models.CharField(
         max_length=10,
         choices=PRIORIDADE_CHOICES,
-        default='baixo', # ou qualquer outro padrão
+        default='baixo', 
         verbose_name="Prioridade"
     )
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tarefas_criadas', verbose_name=_('Criado por'))
@@ -106,8 +108,8 @@ class Tarefas(models.Model):
         verbose_name="Filial",
         null=True
     )
-    # Manager customizado para segregação de dados
-    objects = FilialManager()
+    
+    # Este campo é para indicar se esta tarefa é uma subtarefa de outra.
     tarefa_pai = models.ForeignKey(
         'self',
         on_delete=models.CASCADE,
@@ -116,6 +118,19 @@ class Tarefas(models.Model):
         related_name='subtarefas',
         verbose_name='Tarefa Principal'
     )
+
+    ata_reuniao = models.ForeignKey(
+        'ata_reuniao.ataReuniao',
+        on_delete=models.SET_NULL, # Se a atividade da ata for deletada, este campo ficará nulo, mas a tarefa continuará existindo.
+        null=True, # Permite que o campo seja nulo no banco de dados.
+        blank=True, # Permite que o campo seja opcional em formulários.
+        related_name='tarefas_vinculadas', # Nome para acessar as tarefas a partir de uma atividade da ata.
+        verbose_name=_('Atividade da Ata de Reunião'),
+        help_text=_('Vincule esta tarefa a uma atividade de uma ata de reunião, se aplicável.')
+    )
+
+    # Manager customizado para segregação de dados
+    objects = FilialManager()
 
     class Meta:
         verbose_name = _('Tarefa')

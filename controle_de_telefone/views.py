@@ -2,6 +2,8 @@
 
 import os
 import json
+import zipfile
+from django.http import HttpResponse
 from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,31 +15,30 @@ from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
-
 from departamento_pessoal.models import Documento
 from notifications.models import Notificacao
 from .forms import VinculoForm
 from .forms import VinculoAssinaturaForm # Precisamos criar este formulário
-
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 )
 from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
 from .forms import (
     AparelhoForm, LinhaTelefonicaForm, VinculoForm, MarcaForm,
-    ModeloForm, OperadoraForm, PlanoForm
+    ModeloForm, OperadoraForm, PlanoForm, Vinculo
 )
 from .models import (
-    Aparelho, LinhaTelefonica, Vinculo, Marca, Modelo, Operadora, Plano,
-   
+    Aparelho, LinhaTelefonica, Vinculo, Marca, Modelo, Operadora, Plano,  
 )
- 
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 import base64
-# Importe sua função de gerar PDF. O nome foi corrigido para evitar o ImportError.
 from .pdf_utils import gerar_termo_pdf_assinado
-
+from io import BytesIO
+from django.conf import settings
+from weasyprint import HTML
+from xhtml2pdf import pisa  # Garanta que você tem o xhtml2pdf instalado
+from .utils import get_logo_base64
 
 
 class StaffRequiredMixin(PermissionRequiredMixin):
@@ -384,7 +385,6 @@ def enviar_notificacao_de_assinatura(request, vinculo):
     raise NotImplementedError
 
 class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, FilialCreateMixin, SuccessMessageMixin, CreateView):
-    # Mantenha esta view como está
     model = Vinculo
     form_class = VinculoForm
     permission_required = 'controle_de_telefone.add_vinculo'
@@ -398,18 +398,24 @@ class VinculoCreateView(LoginRequiredMixin, PermissionRequiredMixin, FilialCreat
         return kwargs
 
     def form_valid(self, form):
-        vinculo = form.save()
-        if vinculo.funcionario.usuario:
+        # 1. Salve o objeto chamando form.save() antes de super()
+        # Isso te dá acesso à instância do objeto recém-criado.
+        self.object = form.save()
+
+        # 2. Execute sua lógica customizada.
+        if self.object.funcionario.usuario:
             url_assinatura = self.request.build_absolute_uri(
-                reverse('controle_de_telefone:vinculo_assinar', args=[vinculo.pk])
+                reverse('controle_de_telefone:vinculo_assinar', args=[self.object.pk])
             )
             Notificacao.objects.create(
-                usuario=vinculo.funcionario.usuario,
-                mensagem=f"Você tem um novo Termo de Responsabilidade para o aparelho {vinculo.aparelho} pendente de assinatura.",
+                usuario=self.object.funcionario.usuario,
+                mensagem=f"Você tem um novo Termo de Responsabilidade para o aparelho {self.object.aparelho} pendente de assinatura.",
                 url_destino=url_assinatura
             )
-        messages.success(self.request, self.success_message)
-        return redirect(self.get_success_url())
+        
+        # 3. Chame o super().form_valid(form) para que a lógica padrão do Django
+        # seja executada, incluindo o redirecionamento para o success_url.
+        return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -478,36 +484,73 @@ class VinculoDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView)
 class DownloadTermoView(LoginRequiredMixin, View):
     """
     Fornece o download seguro do termo de responsabilidade (PDF).
-    Verifica se o usuário é o dono do vínculo ou se tem permissão de gestor.
     """
     def get(self, request, *args, **kwargs):
-        vinculo_id = self.kwargs.get('pk')
-        vinculo = get_object_or_404(Vinculo, pk=vinculo_id)
-
-        # Regras de permissão
+        vinculo = get_object_or_404(Vinculo, pk=self.kwargs.get('pk'))
+        
+        # Lógica de permissão... (mantida como está, parece correta)
         is_owner = request.user == vinculo.funcionario.usuario
         is_manager = request.user.has_perm('controle_de_telefone.view_vinculo')
         
         if not is_owner and not is_manager:
             return HttpResponseForbidden("Você não tem permissão para acessar este arquivo.")
         
-        # Gestor só pode ver arquivos da sua filial
         if is_manager:
             filial_id = request.session.get('active_filial_id')
             if vinculo.funcionario.filial_id != filial_id:
                 return HttpResponseForbidden("Acesso negado a arquivos de outra filial.")
 
-        if not vinculo.termo_gerado or not hasattr(vinculo.termo_gerado, 'path'):
-            raise Http404("Nenhum termo de responsabilidade encontrado para este vínculo.")
+        # A LÓGICA ABAIXO FOI REVISADA
+        # Verifica se o termo assinado existe, caso contrário, verifica o termo não assinado
+        file_to_download = None
+        if vinculo.termo_assinado_upload and vinculo.termo_assinado_upload.name:
+            file_to_download = vinculo.termo_assinado_upload
+        elif vinculo.termo_gerado and vinculo.termo_gerado.name:
+            file_to_download = vinculo.termo_gerado
 
-        file_path = vinculo.termo_gerado.path
-        if not os.path.exists(file_path):
-            raise Http404("Arquivo não encontrado no servidor. Tente regenerar o termo.")
+        if not file_to_download or not os.path.exists(file_to_download.path):
+            raise Http404("Nenhum termo de responsabilidade encontrado para este vínculo. Tente regenerar o termo.")
 
-        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
+        return FileResponse(open(file_to_download.path, 'rb'), as_attachment=True, filename=os.path.basename(file_to_download.path))
+    
+# Daunload de todos os termos
 
-def gerar_termo_responsabilidade_pdf(vinculo):
-    raise NotImplementedError
+class DownloadTermosAssinadosView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    permission_required = 'controle_de_telefone.view_vinculo'
+
+    def get(self, request, *args, **kwargs):
+        # A nova URL que você criou
+        filial_id = request.session.get('active_filial_id')
+        
+        # Filtra os vínculos que foram assinados e que pertencem à filial do usuário
+        vinculos_assinados = Vinculo.objects.filter(
+            foi_assinado=True, 
+            termo_assinado_upload__isnull=False,
+            funcionario__filial_id=filial_id
+        )
+        
+        if not vinculos_assinados.exists():
+            return HttpResponse("Nenhum termo assinado encontrado para download.", status=404)
+
+        # Cria um buffer de memória para o arquivo ZIP
+        buffer = BytesIO()
+        zip_file = zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED)
+        
+        for vinculo in vinculos_assinados:
+            # Pega o caminho do arquivo PDF assinado
+            file_path = vinculo.termo_assinado_upload.path
+            
+            # Adiciona o arquivo ao ZIP com um nome amigável
+            file_name = f'termo_{vinculo.funcionario.nome_completo}_{vinculo.aparelho}.pdf'
+            zip_file.write(file_path, file_name)
+
+        zip_file.close()
+        buffer.seek(0)
+        
+        # Cria a resposta HTTP com o arquivo ZIP
+        response = HttpResponse(buffer, content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename="termos_assinados.zip"'
+        return response
 
 
 class RegenerarTermoView(LoginRequiredMixin, PermissionRequiredMixin, View):
@@ -520,13 +563,81 @@ class RegenerarTermoView(LoginRequiredMixin, PermissionRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         vinculo = get_object_or_404(Vinculo, pk=self.kwargs.get('pk'))
         try:
-            pdf_buffer = gerar_termo_responsabilidade_pdf(vinculo)
-            file_name = f"termo_regenerado_{vinculo.funcionario.id}_{vinculo.id}.pdf"
-            vinculo.termo_gerado.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
+            pdf_buffer = gerar_termo_pdf_assinado(vinculo)
+            
+            # Use o campo correto dependendo se o termo foi assinado ou não
+            if vinculo.foi_assinado:
+                file_name = f"termo_assinado_{vinculo.pk}.pdf"
+                vinculo.termo_assinado_upload.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
+            else:
+                file_name = f"termo_gerado_{vinculo.pk}.pdf"
+                vinculo.termo_gerado.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
+            
             messages.success(request, f"Termo para {vinculo.funcionario.nome_completo} foi gerado com sucesso!")
         except Exception as e:
             messages.error(request, f"Ocorreu um erro ao gerar o termo: {e}")
-        return redirect('controle_de_telefone:vinculo_list')
+        
+        return redirect('controle_de_telefone:vinculo_detail', pk=vinculo.pk)
+
+
+def gerar_termo_pdf(vinculo):
+    """
+    Gera o PDF do termo de responsabilidade, buscando todos os dados necessários.
+    """
+    context = {'vinculo': vinculo}
+
+    # 1. Busca a Logo
+    context['logo_base64'] = get_logo_base64()
+
+    # 2. Busca o RG do funcionário
+    try:
+        rg_doc = Documento.objects.get(funcionario=vinculo.funcionario, tipo_documento='RG')
+        context['rg_numero'] = rg_doc.numero
+    except Documento.DoesNotExist:
+        context['rg_numero'] = "Documento não encontrado"
+
+    # 3. Busca o caminho ABSOLUTO da assinatura digital
+    if vinculo.assinatura_digital and hasattr(vinculo.assinatura_digital, 'path'):
+        context['assinatura_path'] = vinculo.assinatura_digital.path
+    else:
+        context['assinatura_path'] = None
+
+    # Renderiza o template do PDF com o contexto completo
+    html = render_to_string('controle_de_telefone/termo_pdf.html', context)
+    
+    # Cria o PDF
+    buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+
+    if pisa_status.err:
+        return None # Ou levante uma exceção
+    
+    buffer.seek(0)
+    return buffer
+
+def form_valid(self, form):
+    # Primeiro, salva o formulário. O método save() customizado do form
+    # já cuida de salvar a imagem da assinatura.
+    vinculo = form.save(commit=False)
+    vinculo.foi_assinado = True
+    vinculo.data_assinatura = timezone.now()
+    vinculo.save() # Salva o vinculo com os dados e a assinatura
+
+    try:
+        # AGORA, com o vínculo salvo e a assinatura no lugar, geramos o PDF.
+        pdf_buffer = gerar_termo_pdf(vinculo)
+        if pdf_buffer:
+            pdf_filename = f'termo_assinado_{vinculo.pk}.pdf'
+            vinculo.termo_assinado_upload.save(pdf_filename, ContentFile(pdf_buffer.getvalue()), save=True)
+            messages.success(self.request, "Termo assinado e PDF gerado com sucesso!")
+        else:
+            messages.error(self.request, "Assinatura salva, mas houve um erro ao gerar o PDF.")
+
+    except Exception as e:
+        messages.error(self.request, f"Assinatura salva, mas houve um erro ao gerar o PDF final: {e}")
+
+    return redirect(self.get_success_url())
+   
 
 class NotificarAssinaturaView(View):
     def post(self, request, *args, **kwargs):
@@ -543,7 +654,7 @@ class NotificarAssinaturaView(View):
         )
         
         mensagem_notificacao = f"Você tem um Termo de Responsabilidade para o aparelho {vinculo.aparelho} pendente de assinatura."
-
+            
         # --- AÇÃO 1: CRIAR NOTIFICAÇÃO PARA O SINO ---
         Notificacao.objects.create(
             usuario=usuario_a_notificar,
@@ -573,73 +684,112 @@ class NotificarAssinaturaView(View):
             
         return redirect(request.META.get('HTTP_REFERER', '/'))
 
+def get_logo_base64():
+    """Lê o arquivo da logo e retorna seu conteúdo codificado em Base64."""
+    logo_path = os.path.join(settings.STATICFILES_DIRS[0], 'images', 'logocetest.png')
+    try:
+        with open(logo_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+    except FileNotFoundError:
+        return None
 
 class AssinarTermoView(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Vinculo
     form_class = VinculoAssinaturaForm
-    template_name = 'controle_de_telefone/termo_assinatura.html'
+    template_name = 'controle_de_telefone/termo_assinar_form.html'
     context_object_name = 'vinculo'
     success_message = "Termo de Responsabilidade assinado com sucesso!"
 
     def get_success_url(self):
-        return reverse('controle_de_telefone:vinculo_list')
+        # Redireciona para os detalhes do vínculo que foi assinado
+        return reverse('controle_de_telefone:vinculo_detail', kwargs={'pk': self.object.pk})
 
     def dispatch(self, request, *args, **kwargs):
         vinculo = self.get_object()
+        # Valida se o usuário logado é o dono do vínculo
         if not request.user == vinculo.funcionario.usuario:
             messages.error(request, "Você não tem permissão para assinar este termo.")
             return redirect('controle_de_telefone:vinculo_list')
+        # Valida se o termo já foi assinado previamente
         if vinculo.foi_assinado:
             messages.info(request, "Este termo já foi assinado.")
-            return redirect('controle_de_telefone:vinculo_list')
+            return redirect(self.get_success_url())
         return super().dispatch(request, *args, **kwargs)
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo'] = 'Assinar Termo de Responsabilidade'
-        try:
-            rg_doc = Documento.objects.get(funcionario=self.object.funcionario, tipo_documento='RG')
-            context['rg_numero'] = rg_doc.numero
-        except Documento.DoesNotExist:
-            context['rg_numero'] = None
-        return context
-
     def form_valid(self, form):
-        vinculo = form.save(commit=False)
+        """
+        Processa os dados do formulário após a submissão (POST).
+        """
+        vinculo = form.instance
+
+        # Lê os dados da assinatura diretamente do request
+        signature_type = self.request.POST.get('signature_type')
+        assinatura_salva = False
+
+        # Processa a assinatura desenhada (base64)
+        if signature_type == 'draw':
+            base64_data = self.request.POST.get('assinatura_base64')
+            if base64_data and ';base64,' in base64_data:
+                try:
+                    format, imgstr = base64_data.split(';base64,')
+                    ext = format.split('/')[-1]
+                    file_name = f"assinatura_{vinculo.id}_{timezone.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+                    data = ContentFile(base64.b64decode(imgstr), name=file_name)
+                    vinculo.assinatura_digital = data
+                    assinatura_salva = True
+                except Exception as e:
+                    messages.error(self.request, f"Erro ao decodificar a assinatura: {e}")
+                    return self.form_invalid(form)
+
+        # Processa a assinatura via upload de imagem
+        elif signature_type == 'upload':
+            image_file = self.request.FILES.get('assinatura_imagem_upload')
+            if image_file:
+                vinculo.assinatura_digital = image_file
+                assinatura_salva = True
+        
+        if not assinatura_salva:
+            messages.error(self.request, "Assinatura não fornecida. Por favor, desenhe ou faça o upload.")
+            return self.form_invalid(form)
+
+        # Define as flags de assinatura
         vinculo.foi_assinado = True
         vinculo.data_assinatura = timezone.now()
-        vinculo.save()
         
+        # Salva o vínculo com a nova imagem da assinatura no disco
+        vinculo.save()
+
+        # Tenta gerar o PDF assinado
         try:
-            # CORREÇÃO AQUI: Chama a função com o nome correto.
             pdf_buffer = gerar_termo_pdf_assinado(vinculo)
-            pdf_filename = f'termo_assinado_{vinculo.pk}.pdf'
-            vinculo.termo_assinado_upload.save(pdf_filename, ContentFile(pdf_buffer.read()), save=True)
-            messages.success(self.request, self.success_message)
+            pdf_filename = f'termo_assinado_{vinculo.pk}_{timezone.now().strftime("%Y%m%d")}.pdf'
+            vinculo.termo_assinado_upload.save(pdf_filename, ContentFile(pdf_buffer.getvalue()), save=True)
+            
         except Exception as e:
             messages.error(self.request, f"Assinatura salva, mas houve um erro ao gerar o PDF final: {e}")
 
-        return redirect(self.get_success_url())
+        # Finaliza o processo, exibindo a mensagem de sucesso e redirecionando
+        return super().form_valid(form)
 
-class RegenerarTermoView(LoginRequiredMixin, PermissionRequiredMixin, View):
-    permission_required = 'controle_de_telefone.change_vinculo'
-    
-    def post(self, request, *args, **kwargs):
-        vinculo = get_object_or_404(Vinculo, pk=self.kwargs.get('pk'))
+    def get_context_data(self, **kwargs):
+        """
+        Adiciona dados extras ao contexto para renderizar o template (GET).
+        """
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Assinar Termo de Responsabilidade'
+        
+        # Adiciona a logo em base64, se a função existir
+        if 'get_logo_base64' in globals():
+            context['logo_base64'] = get_logo_base64()
+        
         try:
-            # CORREÇÃO AQUI: Chama a função com o nome correto.
-            pdf_buffer = gerar_termo_pdf_assinado(vinculo)
-            file_name = f"termo_regenerado_{vinculo.pk}.pdf"
-            
-            if vinculo.foi_assinado:
-                vinculo.termo_assinado_upload.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
-            else:
-                 vinculo.termo_gerado.save(file_name, ContentFile(pdf_buffer.getvalue()), save=True)
-            
-            messages.success(request, f"Termo para {vinculo.funcionario.nome_completo} foi gerado com sucesso!")
-        except Exception as e:
-            messages.error(request, f"Ocorreu um erro ao gerar o termo: {e}")
-        return redirect('controle_de_telefone:vinculo_detail', pk=vinculo.pk)
+            # CORREÇÃO: Usar 'self.object' para se referir à instância do vínculo
+            rg_doc = Documento.objects.get(funcionario=self.object.funcionario, tipo_documento='RG')
+            context['rg_numero'] = rg_doc.numero
+        except Documento.DoesNotExist:
+            context['rg_numero'] = "RG não encontrado"
+        
+        return context
     
 # --- Dashboard e Views de Ação ---
 

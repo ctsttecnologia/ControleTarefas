@@ -121,17 +121,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
 
         # 1. Defina a estrutura de todos os cards possíveis
         all_cards = [
-            {
-                'id': 'tarefas',
-                'title': 'Tarefas',
-                'permission': 'tarefas.view_tarefa',  # Permissão necessária
-                'icon': 'images/tarefa.gif',
-                'links': [
-                    {'url': 'tarefas:listar_tarefas', 'text': 'Minhas Tarefas'},
-                    {'url': 'tarefas:calendario_tarefas', 'text': 'Agenda'},
-                    {'url': 'tarefas:dashboard_analitico', 'text': 'Dashboard Analítico'},
-                ]
-            },
+
             {
                 'id': 'clientes',
                 'title': 'Clientes',
@@ -182,6 +172,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
                     {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
+                    {'url': 'tarefas:listar_tarefas', 'text': 'Minhas Tarefas'},
                 ]
             },
             {

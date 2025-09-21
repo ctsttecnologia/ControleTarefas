@@ -204,11 +204,12 @@ class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
 
 class DocumentoListView(StaffRequiredMixin, ListView):
     model = Documento
-    template_name = 'departamento_pessoal/lista_documentos.html'
+    template_name = 'departamento_pessoal/documentos_list.html'
     context_object_name = 'documentos'
-    paginate_by = 10
+    paginate_by = 20
 
     def get_queryset(self):
+        queryset = super().get_queryset()
         filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
             messages.error(self.request, "Por favor, selecione uma filial para ver os documentos.")
@@ -216,8 +217,23 @@ class DocumentoListView(StaffRequiredMixin, ListView):
         
         # Filtra documentos cujo funcionário pertence à filial ativa.
         queryset = super().get_queryset().filter(funcionario__filial_id=filial_id).select_related('funcionario')
-        return queryset
+        
+        tipo_documento = self.request.GET.get('tipo', '')
+        if tipo_documento:
+            queryset = queryset.filter(tipo_documento=tipo_documento)
 
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Adiciona a lista de tipos de documento para o filtro do template
+        context['tipos_documento'] = Documento.TIPO_CHOICES
+        
+        # Se você tiver um formulário de filtro mais complexo, pode adicioná-lo aqui
+        # context['form'] = DocumentoFilterForm(self.request.GET)
+        
+        return context
 
 class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     model = Documento

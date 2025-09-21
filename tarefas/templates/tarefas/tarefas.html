@@ -107,8 +107,15 @@
                         <span>Progresso</span>
                         <span>{{ tarefa.progresso }}%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ tarefa.progresso }}%;" aria-valuenow="{{ tarefa.progresso }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="progress" 
+                        style="height: 8px;">
+                        <div class="progress-bar" role="progressbar" 
+                        style="background-color: '{{ tarefa.status_cor }};'" 
+                        aria-valuenowstyle="width: {{ tarefa.progresso }}%;" 
+                        aria-valuenow="{{ tarefa.progresso }}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                    </div>
                     </div>
                 </div>
             </div>
@@ -130,6 +137,11 @@
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination justify-content-center">
             {# ... seu código de paginação ... #}
+            {% for page in paginator.page_range %}
+                <li class="page-item {% if page == paginator.number %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page }}">{{ page }}</a>
+                </li>
+            {% endfor %}
         </ul>
     </nav>
     {% endif %}

@@ -5,7 +5,7 @@ from . import views
 
 # Importe as novas classes de view
 from .views import (
-    AparelhoListView, AparelhoDetailView, AparelhoCreateView, AparelhoUpdateView, AparelhoDeleteView, AssinarTermoView,
+    AparelhoListView, AparelhoDetailView, AparelhoCreateView, AparelhoUpdateView, AparelhoDeleteView, AssinarTermoView, DownloadTermosAssinadosView,
     LinhaTelefonicaListView, LinhaTelefonicaDetailView, LinhaTelefonicaCreateView, LinhaTelefonicaUpdateView, LinhaTelefonicaDeleteView,
     VinculoListView, VinculoDetailView, VinculoCreateView, VinculoUpdateView, VinculoDeleteView,
     MarcaListView, MarcaCreateView, MarcaUpdateView, MarcaDeleteView,
@@ -43,6 +43,10 @@ urlpatterns = [
     path('vinculos/<int:pk>/excluir/', views.VinculoDeleteView.as_view(), name='vinculo_delete'),
 
     # Ações do Vínculo
+    # URL para baixar um único termo
+    
+    # URL para baixar todos os termos assinados
+    path('vinculos/download-todos/', DownloadTermosAssinadosView.as_view(), name='download_termos_assinado'),
     path('vinculos/<int:pk>/download-termo/', views.DownloadTermoView.as_view(), name='download_termo'),
     path('vinculos/<int:pk>/regenerar-termo/', views.RegenerarTermoView.as_view(), name='regenerar_termo'),
     path('vinculos/<int:pk>/notificar/', views.NotificarAssinaturaView.as_view(), name='notificar_assinatura'),
