@@ -18,5 +18,9 @@ urlpatterns = [
 
     path('<int:pk>/iniciar-manutencao/', views.IniciarManutencaoView.as_view(), name='iniciar_manutencao'),
     path('<int:pk>/finalizar-manutencao/', views.FinalizarManutencaoView.as_view(), name='finalizar_manutencao'),
+
+    # NOVAS ROTAS PARA IMPORTAÇÃO
+    path('importar/', views.ImportarFerramentasView.as_view(), name='importar_ferramentas'),
+    path('importar/template/', views.DownloadTemplateView.as_view(), name='download_template'),
 ]
     

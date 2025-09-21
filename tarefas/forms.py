@@ -38,13 +38,14 @@ class TarefaForm(forms.ModelForm):
             'titulo', 'descricao', 'status', 'prioridade',
             'data_inicio', 'prazo', 'responsavel', 'projeto',
             'duracao_prevista', 'tempo_gasto', 'dias_lembrete',
-            'recorrente', 'frequencia_recorrencia', 'data_fim_recorrencia'
+            'recorrente', 'frequencia_recorrencia', 'data_fim_recorrencia','ata_reuniao',
         ]
         widgets = {
             'data_inicio': forms.DateTimeInput(
                 attrs={
                     'class': 'form-control datetime-picker', # AQUI ADICIONAMOS A CLASSE!
-                    'placeholder': 'Selecione a data e hora de início'
+                    'placeholder': 'Selecione a data e hora de início',
+                    'ata_reuniao': forms.Select(attrs={'class': 'form-control select2-widget'}),
                 }
             ),
             'prazo': forms.DateTimeInput(
@@ -273,66 +274,35 @@ class TarefaForm(forms.ModelForm):
         )
         
     def __init__(self, *args, **kwargs):
+        # A linha abaixo para obter o 'request' já está no seu código e deve ser mantida
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-        # Lógica para desabilitar campo em edição
+        # --- LÓGICA CORRIGIDA E ADICIONADA ---
+        # Verifica se o formulário está sendo usado para editar uma instância existente
         if self.instance and self.instance.pk:
-            self.fields['data_inicio'].disabled = True
-            self.fields['data_inicio'].help_text = 'Data de início não pode ser alterada após criação'
+            # 1. Pega os valores de recorrência salvos no modelo...
+            # ...e os define como os valores iniciais dos campos do formulário.
+            self.fields['recorrente'].initial = self.instance.recorrente
+            self.fields['frequencia_recorrencia'].initial = self.instance.frequencia_recorrencia
+            self.fields['data_fim_recorrencia'].initial = self.instance.data_fim_recorrencia
 
-        # Filtra responsáveis da mesma equipe se houver
+            # 2. Desabilita a edição da data de início para tarefas existentes
+            self.fields['data_inicio'].disabled = True
+            self.fields['data_inicio'].help_text = 'Data de início não pode ser alterada após a criação.'
+
+        # Filtra a lista de responsáveis para mostrar apenas usuários da mesma equipe (se aplicável)
+        # Esta parte do seu código já estava correta.
         if self.request and hasattr(self.request.user, 'equipe'):
             self.fields['responsavel'].queryset = User.objects.filter(
                 equipe=self.request.user.equipe
             )
 
-        # >>> INÍCIO DA NOVA LÓGICA PARA ESTILIZAR ERROS <<<
-        # Itera sobre todos os campos do formulário
+        # Adiciona a classe 'is-invalid' aos campos que tiverem erros de validação
         for field_name, field in self.fields.items():
-            # Verifica se este campo específico tem erros
             if self.errors.get(field_name):
-                # Pega as classes CSS existentes no widget
                 existing_classes = field.widget.attrs.get('class', '')
-                # Adiciona a classe 'is-invalid' do Bootstrap
                 field.widget.attrs['class'] = f'{existing_classes} is-invalid'.strip()
- 
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        # LÓGICA CRÍTICA: Se for uma nova tarefa, define o criador como o usuário logado.
-        if not instance.pk and self.request and self.request.user.is_authenticated:
-            instance.usuario = self.request.user
-        
-        # Anexa o usuário que está fazendo a alteração para usar no método save() do modelo
-        if self.request and self.request.user.is_authenticated:
-            instance._user = self.request.user
-
-        if commit:
-            instance.save() # Agora salva no banco com o usuário já definido
-            
-        return instance
-    
-    def clean_prazo(self):
-        """Validação para garantir que o prazo não seja anterior à data de início."""
-        prazo = self.cleaned_data.get('prazo')
-        data_inicio = self.cleaned_data.get('data_inicio')
-
-        if prazo and data_inicio and prazo < data_inicio:
-            raise forms.ValidationError("O prazo final não pode ser anterior à data de início.")
-        return prazo
-    
-    def clean_duracao_prevista(self):
-        data = self.cleaned_data.get('duracao_prevista')
-        if data and data > timedelta(days=30):
-            raise forms.ValidationError("A duração não pode exceder 30 dias")
-        return data
-    
-    def clean_tempo_gasto(self):
-        data = self.cleaned_data.get('tempo_gasto')
-        if data and data > timedelta(days=30):
-            raise forms.ValidationError("O tempo gasto não pode exceder 30 dias")
-        return data
    
 class DurationInput(forms.TextInput):
     input_type = 'text'
@@ -360,4 +330,5 @@ class ComentarioForm(forms.ModelForm):
                     f'Tamanho máximo permitido: {Comentario.TAMANHO_MAXIMO_ANEXO // (1024*1024)}MB'
                 )
         return anexo
+
 

@@ -1,10 +1,10 @@
 # controle_de_telefone/pdf_utils.py
 
+
 import io
 from functools import partial
 import logging
 import os
-
 from django.contrib.staticfiles import finders
 from django.utils.dateformat import format as date_format
 from reportlab.lib import colors
@@ -12,11 +12,7 @@ from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import (Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle)
-
 from departamento_pessoal.models import Documento
-
-
-
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +25,10 @@ def get_safe_attr(obj, attrs, default='N/A'):
     """
     for attr in attrs.split('.'):
         try:
-            # CORREÇÃO: Usa 'getattr' para acessar o atributo dinamicamente
             obj = getattr(obj, attr, None)
+            if callable(obj): # Lida com métodos, como 'get_tipo_aparelho_display'
+                obj = obj()
+            
             if obj is None or (isinstance(obj, str) and not obj.strip()):
                 return default
         except AttributeError:
@@ -46,18 +44,38 @@ def get_reportlab_styles():
     styles.add(ParagraphStyle(name='CenterSmall', alignment=TA_CENTER, fontSize=8))
     return styles
 
-def create_header(styles):
-    """Cria a seção do cabeçalho com o logo e o título."""
-    story = []
+# --- FUNÇÕES DE CRIAÇÃO DE CONTEÚDO PARA O PDF ---
+
+def create_header(vinculo, styles, safe_get): # <-- CORREÇÃO 1: Adicionado 'safe_get'
+    """Cria a seção do cabeçalho com título e logo lado a lado usando uma Tabela."""
+    
+    # 1. Prepara o conteúdo do título
+    tipo_aparelho = get_safe_attr(vinculo, 'aparelho.get_tipo_aparelho_display', default='Aparelho')
+    
+    texto_titulo = f"TERMO DE RESPONSABILIDADE<br/>SOBRE USO DE <strong>{tipo_aparelho.upper()}</strong>"
+    titulo_paragraph = Paragraph(texto_titulo, styles['CenterBold'])
+    
+    # 2. Prepara o conteúdo da logo
+    logo_content = Spacer(0, 0)
     caminho_logo = finders.find('images/logocetest.png')
     if caminho_logo:
-        story.append(Image(caminho_logo, width=100, height=40, hAlign='RIGHT'))
+        logo_content = Image(caminho_logo, width=120, height=48)
     else:
         logger.warning("AVISO: Logo 'images/logocetest.png' não encontrada.")
-    story.append(Spacer(1, 15))
-    story.append(Paragraph("TERMO DE RESPONSABILIDADE SOBRE USO DE SMARTPHONE", styles['CenterBold']))
-    story.append(Spacer(1, 20))
-    return story
+        
+    # 3. Organiza os conteúdos em uma tabela
+    data = [[titulo_paragraph, logo_content]]
+    table = Table(data, colWidths=['75%', '25%'])
+    
+    # 4. Aplica um estilo à tabela
+    table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
+        ('LEFTPADDING', (0, 0), (0, 0), 0),
+        ('RIGHTPADDING', (1, 0), (1, 0), 0),
+    ]))
+    
+    return [table, Spacer(1, 20)]
 
 def create_introductory_text(vinculo, styles, safe_get):
     """Cria a seção do texto introdutório do termo."""
@@ -93,7 +111,7 @@ def create_clauses_section(vinculo, styles, safe_get):
     """Cria a seção das cláusulas do termo."""
     EMPRESA_NOME = "CETEST MINAS ENGENHARIA E SERVIÇOS S.A"
     clausulas_intro = f"""
-        O Celular de propriedade da {EMPRESA_NOME} ficará a partir desta data sob sua inteira responsabilidade, 
+        O <strong>{safe_get(vinculo, 'aparelho.tipo_de_aparelho')}</strong> de propriedade da {EMPRESA_NOME} ficará a partir desta data sob sua inteira responsabilidade, 
         devendo ser mantido em perfeito estado de conservação e funcionamento, 
         não podendo em qualquer hipótese ser cedido a terceiros sem prévia e escrita concordância da {EMPRESA_NOME},
         obedecendo as cláusulas seguintes:
@@ -144,7 +162,7 @@ def create_signature_block(vinculo, styles, safe_get):
     
     # Busca o RG do funcionário
     try:
-        rg_doc = Documento.objects.get(funcionario=vinculo.funcionario, tipo='RG')
+        rg_doc = Documento.objects.get(funcionario=vinculo.funcionario, tipo_documento='RG')
         rg_numero = rg_doc.numero
     except Documento.DoesNotExist:
         rg_numero = "N/A"
@@ -168,7 +186,7 @@ def gerar_termo_pdf_assinado(vinculo):
     safe_get = partial(get_safe_attr, default='___________')
     story = []
 
-    story.extend(create_header(styles))
+    story.extend(create_header(vinculo, styles, safe_get))
     story.extend(create_introductory_text(vinculo, styles, safe_get))
     story.extend(create_item_table(vinculo, safe_get))
     story.extend(create_clauses_section(vinculo, styles, safe_get))

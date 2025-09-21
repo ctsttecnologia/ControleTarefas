@@ -54,6 +54,14 @@
                                 {{ form.descricao }}
                                 <div class="invalid-feedback d-block">{{ form.descricao.errors|first }}</div>
                             </div>
+                            <div class="form-label fw-bold row checked">
+                                <label for="{{ form.ata_reuniao.id_for_label }}" class="form-label fw-bold">
+                                    <p>É uma atividade da Ata de Reunião?</p>
+                                </label><br>
+                                {{ form.ata_reuniao }}
+                                <small class="form-text text-muted">{{ form.ata_reuniao.help_text }}</small>
+                                <div class="invalid-feedback d-block">{{ form.ata_reuniao.errors|first }}</div>
+                            </div>
                         </div>
 
                         <div class="form-section">
@@ -217,5 +225,17 @@
         }
     });
     </script>
+
+    {# No final do seu template de formulário (ex: tarefa_form.html) #}
+    <script>
+        $(document).ready(function() {
+            // Inicializa o Select2 em qualquer elemento com a classe 'select2-widget'
+            $('.select2-widget').select2({
+                placeholder: "Selecione uma atividade",
+                allowClear: true // Permite limpar a seleção
+            });
+        });
+    </script>
+
 {% endblock %}
 

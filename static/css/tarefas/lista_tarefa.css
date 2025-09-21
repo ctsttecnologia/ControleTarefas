@@ -1,144 +1,153 @@
+/* ==========================================================================
+   CSS Refatorado para Lista de Tarefas (Layout de Cartões)
+   - Integrado com Bootstrap 5 e temas claro/escuro.
+   ========================================================================== */
 
-/*
- * lista_tarefa.css
- * Estilos modernos e responsivos para a tabela de listagem de tarefas.
- */
-
-/* 1. Variáveis de Cores e Tema Geral */
-/* =================================== */
+/* --- 1. Variáveis do Tema --- */
+/* As variáveis agora herdam diretamente do Bootstrap.
+  Isso garante consistência e adaptação automática ao tema (claro/escuro).
+*/
 :root {
-    --table-header-bg: rgba(var(--bs-primary-rgb), 0.1);
-    --table-row-border: var(--bs-border-color-translucent);
-    --table-hover-bg: rgba(var(--bs-primary-rgb), 0.05);
-    
-    /* Cores para os Badges de Status */
-    --status-pendente-bg: hsl(210, 15%, 55%);
-    --status-andamento-bg: hsl(210, 85%, 55%);
-    --status-pausada-bg: hsl(45, 100%, 60%);
-    --status-concluida-bg: hsl(134, 61%, 41%);
-    --status-cancelada-bg: hsl(210, 10%, 30%);
-    --status-atrasada-bg: hsl(354, 70%, 54%);
-
-    /* Cores para os Badges de Prioridade */
-    --priority-baixa-bg: hsl(152, 58%, 45%);
-    --priority-media-bg: hsl(38, 92%, 50%);
-    --priority-alta-bg: hsl(12, 88%, 52%);
+  --task-card-bg: var(--bs-body-bg);
+  --task-card-border: var(--bs-border-color);
+  --task-card-shadow: 0 0.15rem 1.75rem rgba(var(--bs-body-color-rgb), 0.05);
+  --task-card-hover-shadow: 0 0.5rem 1.75rem rgba(var(--bs-body-color-rgb), 0.1);
+  --task-header-bg: linear-gradient(135deg, var(--bs-primary), var(--bs-primary-dark));
+  --stats-completed-bg: linear-gradient(135deg, var(--bs-success), var(--bs-success-dark));
+  --stats-pending-bg: linear-gradient(135deg, var(--bs-warning), var(--bs-warning-dark));
+  --progress-bg: var(--bs-tertiary-bg);
 }
 
-/* 2. Cabeçalho da Página */
-/* =================================== */
-header h1 {
-    font-weight: 600;
+/* --- 2. Layout Principal da Página --- */
+.task-header {
+  background: var(--task-header-bg);
+  color: var(--bs-light);
+  padding: 2.5rem 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 0 0 1rem 1rem;
 }
 
-header .btn {
-    font-weight: 500;
+.filters {
+  background-color: var(--task-card-bg);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: var(--task-card-shadow);
+  margin-bottom: 2.5rem;
+  border: 1px solid var(--task-card-border);
 }
 
-/* 3. Card da Tabela */
-/* =================================== */
-.card {
-    border: none;
-    border-radius: 0.75rem;
-    background-color: var(--bs-tertiary-bg);
+.stats-box {
+  text-align: center;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  color: var(--bs-light);
+  margin-bottom: 1.5rem;
+  box-shadow: var(--task-card-shadow);
 }
 
-/* 4. Estilo da Tabela */
-/* =================================== */
-.containerlist{
-    width: 100%;
-    height: outo;
+.stats-box.total { background: var(--task-header-bg); }
+.stats-box.completed { background: var(--stats-completed-bg); }
+.stats-box.pending { background: var(--stats-pending-bg); }
+
+.stats-number {
+  font-size: 2.25rem;
+  font-weight: 700;
 }
 
-.table {
-    border-collapse: separate;
-    border-spacing: 0;
+/* --- 3. Cards de Tarefa --- */
+.task-card-list {
+  display: grid;
+  gap: 1.5rem; /* Espaçamento consistente entre os cards */
 }
 
-.table thead {
-    background-color: var(--table-header-bg);
-    color: var(--bs-heading-color);
+.task-card {
+  background-color: var(--task-card-bg);
+  border: 1px solid var(--task-card-border);
+  border-left-width: 4px; /* A borda da prioridade fica na esquerda */
+  border-radius: 0.75rem;
+  box-shadow: var(--task-card-shadow);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  margin-bottom: 0; /* Removido, pois o grid-gap cuida do espaçamento */
 }
 
-.table th {
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.5px;
-    border-bottom-width: 1px;
+.task-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--task-card-hover-shadow);
+  z-index: 10;
+  position: relative;
 }
 
-.table td {
-    border-top: 1px solid var(--table-row-border);
-}
+/* Borda lateral colorida baseada na prioridade usando variáveis do Bootstrap */
+.task-card.priority-alta { border-left-color: var(--bs-danger); }
+.task-card.priority-media { border-left-color: var(--bs-warning); }
+.task-card.priority-baixa { border-left-color: var(--bs-success); }
 
-.table tbody tr {
-    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
-}
-
-.table-hover > tbody > tr:hover {
-    background-color: var(--table-hover-bg);
-    transform: scale(1.015);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 10;
-}
-
-/* 5. Badges de Status e Prioridade */
-/* =================================== */
-.status-badge,
-.priority-badge {
-    display: inline-block;
-    padding: 0.4em 0.8em;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1;
-    color: #fff;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: baseline;
-    border-radius: 50rem; /* pill shape */
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-}
-
-/* Aplicando as cores de status */
-.status-badge.status-pendente { background-color: var(--status-pendente-bg); }
-.status-badge.status-andamento { background-color: var(--status-andamento-bg); }
-.status-badge.status-pausada { background-color: var(--status-pausada-bg); color: #212529; }
-.status-badge.status-concluida { background-color: var(--status-concluida-bg); }
-.status-badge.status-cancelada { background-color: var(--status-cancelada-bg); }
-.status-badge.status-atrasada { background-color: var(--status-atrasada-bg); }
-
-/* Aplicando as cores de prioridade */
-.priority-badge.priority-baixa { background-color: var(--priority-baixa-bg); }
-.priority-badge.priority-media { background-color: var(--priority-media-bg); color: #212529; }
-.priority-badge.priority-alta { background-color: var(--priority-alta-bg); }
-
-/* 6. Barra de Progresso e Botões de Ação */
-/* =================================== */
 .progress {
-    background-color: var(--bs-secondary-bg);
+  height: 0.625rem; /* 10px */
+  border-radius: 50rem;
+  background-color: var(--progress-bg);
 }
 
-.btn-group-sm .btn {
-    padding: 0.2rem 0.6rem;
-    font-size: 0.9rem;
+.task-actions .btn {
+  margin: 0 0.125rem;
 }
 
-/* 7. Responsividade */
-/* =================================== */
-@media (max-width: 767px) {
-    header {
-        flex-direction: column;
-        align-items: flex-start !important;
-        gap: 1rem;
-    }
+/* --- 4. Badges (Crachás) --- */
+/* Badges agora usam as cores de fundo sutis do Bootstrap 5 para melhor integração */
+.badge.priority-alta { background-color: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); border: 1px solid var(--bs-danger-border-subtle); }
+.badge.priority-media { background-color: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); border: 1px solid var(--bs-warning-border-subtle); }
+.badge.priority-baixa { background-color: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); border: 1px solid var(--bs-success-border-subtle); }
 
-    header h1 {
-        font-size: 1.5rem;
-    }
+.badge.status-concluida { background-color: var(--bs-success-bg-subtle); color: var(--bs-success-text-emphasis); border: 1px solid var(--bs-success-border-subtle); }
+.badge.status-andamento { background-color: var(--bs-primary-bg-subtle); color: var(--bs-primary-text-emphasis); border: 1px solid var(--bs-primary-border-subtle); }
+.badge.status-pendente { background-color: var(--bs-secondary-bg-subtle); color: var(--bs-secondary-text-emphasis); border: 1px solid var(--bs-secondary-border-subtle); }
+.badge.status-atrasada { background-color: var(--bs-danger-bg-subtle); color: var(--bs-danger-text-emphasis); border: 1px solid var(--bs-danger-border-subtle); }
+.badge.status-cancelada { opacity: 0.65; }
 
-    .table {
-        font-size: 0.9rem;
-    }
+/* --- Estilo Base para os Cards de Estatísticas --- */
+.stats-card {
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 0.5rem; /* Bordas arredondadas */
+  background-color: var(--bs-body-bg);
+  transition: all 0.2s ease-in-out;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--bs-box-shadow-lg) !important;
+}
+
+.stats-card .card-body {
+  padding: 1.5rem;
+}
+
+/* --- Estilos para o texto dentro dos cards --- */
+.text-xs {
+  font-size: 0.75rem; /* Texto menor para o rótulo */
+}
+
+.text-gray-300 {
+  color: #dddfeb !important;
+}
+
+[data-bs-theme="dark"] .text-gray-300 {
+  color: #5a5c69 !important;
+}
+
+.text-gray-800 {
+  color: #5a5c69 !important;
+}
+
+[data-bs-theme="dark"] .text-gray-800 {
+  color: #eaecf4 !important;
+}
+
+/* --- 5. Responsividade --- */
+@media (max-width: 768px) {
+  .task-actions {
+    margin-top: 1rem;
+    display: flex; /* Alinha os botões horizontalmente */
+    justify-content: flex-start; /* Alinha à esquerda */
+    gap: 0.5rem;
+  }
 }

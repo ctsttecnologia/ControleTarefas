@@ -11,6 +11,8 @@ from .models import Vinculo
 import base64
 import uuid
 from django.core.files.base import ContentFile
+import base64
+import uuid
 
 
 
@@ -193,41 +195,42 @@ class VinculoForm(forms.ModelForm):
         return cleaned_data    
 
 
-# Renomeei seu formulário para mais clareza
 class VinculoAssinaturaForm(forms.ModelForm):
-    # Campo oculto para receber os dados da imagem em base64 do front-end
-    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
+    # Este é o campo que o JavaScript vai usar. Tornamos ele obrigatório.
+    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=True)
 
     class Meta:
         model = Vinculo
-        # Nenhum campo do modelo precisa ser exibido diretamente pelo Django
+        # CORREÇÃO: A lista de fields deve ser vazia.
+        # Não queremos que o Django crie um campo de upload de arquivo.
         fields = []
 
+    def clean_assinatura_base64(self):
+        """Valida se o campo da assinatura não está vazio."""
+        data = self.cleaned_data.get('assinatura_base64')
+        if not data:
+            raise forms.ValidationError("A assinatura é obrigatória. Por favor, assine no campo designado.")
+        return data
+
     def save(self, commit=True):
+        """
+        Pega os dados do campo oculto, decodifica a imagem,
+        e a salva no campo 'assinatura_digital' do modelo.
+        """
         vinculo = super().save(commit=False)
-        
-        # Pega os dados da assinatura do campo com o nome correto
         assinatura_base64_data = self.cleaned_data.get('assinatura_base64')
 
         if assinatura_base64_data:
             try:
-                # O front-end envia um cabeçalho 'data:image/png;base64,' que precisa ser removido.
-                format, imgstr = assinatura_base64_data.split(';base64,') 
-                ext = format.split('/')[-1]
-                
-                # Decodifica os dados base64 para binário
+                format_part, imgstr = assinatura_base64_data.split(';base64,') 
+                ext = format_part.split('/')[-1]
                 data = ContentFile(base64.b64decode(imgstr))
-                
-                # Cria um nome de arquivo único
                 file_name = f'assinatura_{vinculo.pk}_{uuid.uuid4().hex}.{ext}'
                 
-                # Associa o arquivo de imagem decodificado ao campo do modelo
+                # O save é feito diretamente no campo do modelo, não no form
                 vinculo.assinatura_digital.save(file_name, data, save=False)
-
             except (ValueError, TypeError) as e:
-                # Lida com casos onde a string base64 é inválida
                 print(f"Erro ao decodificar a assinatura: {e}")
-                pass
 
         if commit:
             vinculo.save()

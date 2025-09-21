@@ -83,3 +83,13 @@ class DevolucaoForm(forms.ModelForm):
                 'placeholder': 'Descreva como a ferramenta foi devolvida. Aponte qualquer dano ou problema.'
             }),
         }
+
+class UploadFileForm(forms.Form):
+    """
+    Formulário simples para o upload de um arquivo de planilha.
+    """
+    file = forms.FileField(
+        label="Selecione a planilha (.xlsx)",
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx'})
+    )
+

@@ -35,9 +35,13 @@
         document.documentElement.setAttribute('data-bs-theme', theme);
       })();
     </script>
-
-    
+   
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+</head>
+<body>
+    
     
 </head>
 
@@ -63,6 +67,9 @@
 
     <script src="{% static 'js/signature.js' %}"></script>
     <script src="{% static 'js/global.js' %}"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     {# Scripts adicionais podem ser incluídos aqui #}
     {% block extra_js %}{% endblock %}

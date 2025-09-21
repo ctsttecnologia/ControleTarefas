@@ -4,15 +4,6 @@
 {% load static %}
 {% load widget_tweaks %}
 
-{% comment %}
-Este template foi corrigido para:
-1. Resolver o erro 'NoReverseMatch' com um link de "Cancelar" dinâmico.
-2. Usar os campos corretos do DocumentoForm ('funcionario', 'tipo', 'numero', 'anexo'),
-   removendo os campos específicos (cpf, rg, pis) que não existem mais no modelo atual.
-3. Funcionar tanto para criar um novo documento (genérico ou para um funcionário específico)
-   quanto para editar um documento existente.
-{% endcomment %}
-
 {% block title %}{{ titulo_pagina|default:"Formulário de Documento" }}{% endblock %}
 
 {% block content %}

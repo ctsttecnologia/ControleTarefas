@@ -1,176 +1,166 @@
-
 /* static/css/tarefas/detalhe.css */
-/* Versão refatorada para suportar temas claro e escuro dinamicamente. */
+/* Versão refatorada: Responsiva, profissional e integrada ao Bootstrap 5. */
 
-/* --- Variáveis de Cor 
+/* ==========================================================================
+   1. VARIÁVEIS E CONFIGURAÇÃO DO TEMA
+   ========================================================================== */
+
+/* Em vez de definir cores fixas, usamos as variáveis do Bootstrap.
+  Isso garante que nosso componente se adapte a qualquer tema do Bootstrap.
+  A troca para o modo escuro (`data-bs-theme="dark"`) funcionará automaticamente.
+*/
 .task-detail-page {
- 
-    --azul-royal: #00529B;
-    --fundo-pagina: #f4f7f9;
-    --fundo-card: #ffffff;
-    --texto-principal: #212529;
-    --texto-secundario: #6c757d;
-    --borda-suave: #dee2e6;
-    --sombra-card: 0 4px 8px rgba(0, 0, 0, 0.05);
-    --fundo-comentario: #f8f9fa;
-    --fundo-input: #ffffff;
-    --cor-input: #212529;
+  --fundo-card: var(--bs-body-bg);
+  --texto-principal: var(--bs-body-color);
+  --texto-secundario: var(--bs-secondary-color);
+  --borda-suave: var(--bs-border-color);
+  --cor-primaria: var(--bs-primary);
+  --fundo-sutil: var(--bs-tertiary-bg);
+  --sombra-card: 0 0.5rem 1rem rgba(var(--bs-body-color-rgb), 0.05);
 }
 
-
-[data-bs-theme="dark"] .task-detail-page {
-    --azul-royal: #0d6efd;
-    --fundo-pagina: #212529;
-    --fundo-card: #2c3034;
-    --texto-principal: #dee2e6;
-    --texto-secundario: #adb5bd;
-    --borda-suave: #495057;
-    --sombra-card: 0 4px 12px rgba(0, 0, 0, 0.2);
-    --fundo-comentario: #343a40;
-    --fundo-input: #343a40;
-    --cor-input: #dee2e6;
-}
-
- Estilos Gerais (usam as variáveis) --- */
+/* ==========================================================================
+   2. LAYOUT GERAL E TIPOGRAFIA
+   ========================================================================== */
 
 .task-detail-page {
-    color: var(--texto-principal);
+  color: var(--texto-principal);
 }
 
-.task-detail-page .page-header-detail {
-    padding-bottom: 1.5rem;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--borda-suave);
+/* O container principal usa grid para melhor controle sobre o layout responsivo */
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Padrão para mobile: uma coluna */
+  gap: 2rem; /* Espaçamento entre conteúdo principal e a sidebar */
 }
 
-.task-detail-page .task-title {
-    color: var(--texto-principal);
-    font-weight: 600;
+/* Em telas maiores (desktops), cria o layout de 2 colunas */
+@media (min-width: 992px) {
+  .task-detail-grid {
+    grid-template-columns: 1fr 320px; /* Conteúdo principal flexível, sidebar fixa */
+  }
 }
 
-.task-detail-page .task-meta-subtitle {
-    color: var(--texto-secundario);
+/* ==========================================================================
+   3. CABEÇALHO DA PÁGINA
+   ========================================================================== */
+
+.page-header-detail {
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--borda-suave);
 }
 
-.task-detail-page .btn-primary {
-    background-color: var(--azul-royal);
-    border-color: var(--azul-royal);
+.task-title {
+  font-weight: 600;
+  color: var(--texto-principal);
 }
 
-/* --- Cards --- */
+.task-meta-subtitle {
+  color: var(--texto-secundario);
+  font-size: 1rem;
+}
+
+/* ==========================================================================
+   4. COMPONENTES: CARDS, SEÇÕES E COMENTÁRIOS
+   ========================================================================== */
+
 .task-detail-page .card {
-    background-color: var(--fundo-card);
-    color: var(--texto-principal);
-    border: 1px solid var(--borda-suave);
-    border-radius: 12px;
-    box-shadow: var(--sombra-card);
+  background-color: var(--fundo-card);
+  border: 1px solid var(--borda-suave);
+  border-radius: 0.75rem; /* Bordas mais suaves */
+  box-shadow: var(--sombra-card);
+  transition: all 0.2s ease-in-out;
 }
 
-.task-detail-page .section-title {
-    color: var(--azul-royal);
-    border-bottom-color: var(--borda-suave);
-    font-weight: 600;
+.section-title {
+  font-weight: 600;
+  color: var(--texto-principal);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--borda-suave);
 }
 
-.task-detail-page .task-description {
-    color: var(--texto-principal);
+.task-description {
+  line-height: 1.7; /* Melhora a legibilidade */
 }
 
-/* --- Barra Lateral (Sidebar) --- */
-.task-detail-page .task-sidebar .card {
+.comment-form textarea {
+  background-color: var(--fundo-sutil);
+  border-color: var(--borda-suave);
+  color: var(--texto-principal);
+}
+.comment-form textarea:focus {
+  background-color: var(--fundo-card);
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.comment-card {
+  background-color: var(--fundo-sutil);
+  border-left: 4px solid var(--cor-primaria);
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: var(--texto-principal);
+}
+
+.comment-date {
+  font-size: 0.85rem;
+  color: var(--texto-secundario);
+}
+
+/* ==========================================================================
+   5. BARRA LATERAL (SIDEBAR) E METADADOS
+   ========================================================================== */
+
+/* Em telas de desktop, a sidebar fica "grudada" no topo ao rolar a página */
+@media (min-width: 992px) {
+  .task-sidebar .card {
     position: sticky;
-    top: 20px;
+    top: 1.5rem; /* Distância do topo */
+  }
 }
 
-.task-detail-page .meta-group,
-.task-detail-page .meta-group-progress {
-    padding: 0.85rem 0;
+.meta-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--borda-suave);
+}
+.meta-group:last-child {
+  border-bottom: none;
 }
 
-.task-detail-page .meta-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.task-detail-page .meta-label {
-    color: var(--texto-secundario);
-    font-weight: 600;
-}
-
-.task-detail-page .meta-value {
-    color: var(--texto-principal);
-}
-
-.task-detail-page .meta-value .fas {
-    color: var(--texto-secundario);
-}
-
-.task-detail-page hr {
-    border-color: var(--borda-suave);
-    margin: 0.5rem 0;
-}
-
-/* --- Seção de Comentários --- */
-.task-detail-page .comment-form textarea {
-    background-color: var(--fundo-input);
-    border-color: var(--borda-suave);
-    color: var(--cor-input);
-}
-
-.task-detail-page .comment-form textarea::placeholder {
-    color: var(--texto-secundario);
-}
-
-.task-detail-page .comment-form textarea:focus {
-    border-color: var(--azul-royal);
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.task-detail-page .comment-card {
-    background-color: var(--fundo-comentario);
-    border-left: 4px solid var(--azul-royal);
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-
-.task-detail-page .comment-author {
-    color: var(--texto-principal);
-    font-weight: 600;
-}
-
-.task-detail-page .comment-date {
-    color: var(--texto-secundario);
-}
-
-.task-detail-page .comment-text {
-    color: var(--texto-principal);
+.meta-label {
+  font-weight: 500;
+  color: var(--texto-secundario);
 }
 
 /* --- Badges de Status e Prioridade --- */
-/* Estilos para os crachás de Status e Prioridade */
-.task-detail-page .badge {
-    /* Define tamanho e preenchimento consistentes */
-    font-size: 0.9rem !important;
-    padding: 0.5em 0.8em;
+.badge-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.4em 0.8em;
+  border-radius: 50rem;
 }
 
-/* Estilos para a barra de progresso */
-.task-detail-page .progress {
-    /* Define a cor de fundo da barra de progresso */
-    background-color: var(--borda-suave); /* Usando a variável que já estava no código */
+/* Cores específicas para prioridades */
+.badge-priority-alta { background-color: rgba(var(--bs-danger-rgb), 0.2); color: var(--bs-danger-text-emphasis); border: 1px solid var(--bs-danger-border-subtle); }
+.badge-priority-media { background-color: rgba(var(--bs-warning-rgb), 0.2); color: var(--bs-warning-text-emphasis); border: 1px solid var(--bs-warning-border-subtle); }
+.badge-priority-baixa { background-color: rgba(var(--bs-success-rgb), 0.2); color: var(--bs-success-text-emphasis); border: 1px solid var(--bs-success-border-subtle); }
+
+/* --- Barra de Progresso --- */
+.progress {
+  height: 0.75rem;
+  background-color: var(--fundo-sutil);
 }
 
-.task-detail-page .progress-bar {
-    /* Define a cor principal da barra de progresso */
-    background-color: var(--azul-royal); /* Usando a variável que já estava no código */
+.progress-bar {
+  background-color: var(--cor-primaria);
 }
-
-/* Ajustes responsivos */
-@media (max-width: 991.98px) {
-    .task-detail-page .task-sidebar .card {
-        position: static;
-    }
-}
-

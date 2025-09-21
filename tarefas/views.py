@@ -5,15 +5,13 @@ import json
 import logging
 from collections import defaultdict
 from datetime import timedelta
-
-# Imports do Django
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q, Count, OuterRef, Subquery, IntegerField
 from django.db.models.functions import TruncWeek
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
@@ -21,12 +19,9 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.views.generic.edit import FormMixin
 from django.core.serializers.json import DjangoJSONEncoder
 from requests import request
-
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from .utils import enviar_email_tarefa 
-
-# Imports Locais
 from .models import Tarefas, Comentario, HistoricoStatus
 from .forms import TarefaForm, ComentarioForm
 from .services import preparar_contexto_relatorio, gerar_pdf_relatorio, gerar_csv_relatorio, gerar_docx_relatorio
@@ -35,34 +30,59 @@ from core.mixins import ViewFilialScopedMixin, TarefaPermissionMixin
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
-
-
 # =============================================================================
 # == VIEWS DE GERENCIAMENTO (CRUD)
 # =============================================================================
-
 class TarefaListView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/listar_tarefas.html'
-    context_object_name = 'tarefas'
-    paginate_by = 15
+    context_object_name = 'object_list' # Usar object_list é o padrão e evita conflitos
+    paginate_by = 20
 
     def get_queryset(self):
-        # Obtém o queryset inicial do mixin
-        queryset = super().get_queryset() 
+        # 1. Obtém o queryset inicial já filtrado pela filial
+        queryset = super().get_queryset()
 
-        # 1. Otimiza a busca, trazendo dados das tabelas relacionadas (use os nomes válidos)
-        optimized_queryset = queryset.select_related('usuario', 'responsavel', 'filial')
+        # 2. Pega os valores dos filtros da URL (via GET)
+        status_filtro = self.request.GET.get('status', '')
+        prioridade_filtro = self.request.GET.get('prioridade', '')
+        query_busca = self.request.GET.get('q', '')
 
-        # 2. Ordena o resultado final como desejado
-        # Exemplo: prazo mais recente primeiro, depois ordena pela prioridade.
-        return optimized_queryset.order_by('-prazo', 'prioridade')
+        # 3. Aplica os filtros ao queryset
+        if status_filtro:
+            queryset = queryset.filter(status=status_filtro)
+        
+        if prioridade_filtro:
+            queryset = queryset.filter(prioridade=prioridade_filtro)
 
+        if query_busca:
+            queryset = queryset.filter(
+                Q(titulo__icontains=query_busca) |
+                Q(descricao__icontains=query_busca) |
+                Q(projeto__icontains=query_busca)
+            )
+
+        # 4. Otimiza e ordena o resultado final
+        return queryset.select_related('usuario', 'responsavel', 'filial').order_by('-prazo', 'prioridade')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['status_choices'] = Tarefas.STATUS_CHOICES
-        context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
+        
+        # --- LÓGICA DE CONTAGEM ---
+        # Pega a lista de tarefas da filial ATUAL, SEM filtros, para os contadores
+        base_qs = super().get_queryset()
+        context['total_tarefas'] = base_qs.count()
+        context['tarefas_concluidas'] = base_qs.filter(status='concluida').count()
+        # Tarefas pendentes são todas que não estão concluídas ou canceladas
+        context['tarefas_pendentes'] = base_qs.exclude(status__in=['concluida', 'cancelada']).count()
+
+        # --- DADOS PARA OS DROPDOWNS DE FILTRO ---
+        context['status_options'] = Tarefas.STATUS_CHOICES
+        context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
+        
+        # Mantém os valores selecionados nos filtros após o envio
+        context['request'] = self.request 
+
         return context
 
 class TarefaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, FormMixin, DetailView):
@@ -105,8 +125,8 @@ class TarefaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissi
 class TarefaCreateView(LoginRequiredMixin, CreateView):
     model = Tarefas
     form_class = TarefaForm
-    template_name = 'tarefas/criar_tarefa.html' # Renomeado para seguir um padrão
-    success_url = reverse_lazy('tarefas:kanban') # Sugestão: redirecionar para o Kanban
+    template_name = 'tarefas/criar_tarefa.html'
+    success_url = reverse_lazy('tarefas:kanban_board') 
 
     def get_form_kwargs(self):
         """
@@ -219,6 +239,20 @@ class TarefaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissi
         messages.success(self.request, f"Tarefa '{tarefa_atualizada.titulo}' atualizada com sucesso!")
         return response
 
+class ConcluirTarefaView(View):
+    def get(self, request, pk):
+        tarefa = get_object_or_404(Tarefas, pk=pk)
+        
+        # Lógica para marcar a tarefa como concluída
+        if tarefa.status != 'concluida':
+            tarefa.status = 'concluida'
+            tarefa.save()
+            messages.success(request, f'A tarefa "{tarefa.titulo}" foi marcada como concluída!')
+        else:
+            messages.info(request, 'Esta tarefa já estava concluída.')
+            
+        return redirect('tarefas:listar_tarefas')
+
 class TarefaDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, UserPassesTestMixin, DeleteView):
     model = Tarefas
     template_name = 'tarefas/confirmar_exclusao.html'
@@ -324,7 +358,7 @@ class CalendarioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPer
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
         """   
-        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['concluida', 'cancelada'])
+        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['cancelada'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -424,7 +458,7 @@ class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
 
 
 class DashboardAnaliticoView(LoginRequiredMixin, TemplateView):
-    template_name = 'tarefas/dashboard_analitico.html'
+    template_name = 'tarefas/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -439,7 +473,7 @@ class DashboardAnaliticoView(LoginRequiredMixin, TemplateView):
         if active_filial_id:
             usuarios = usuarios.filter(filiais_permitidas__id=active_filial_id)
 
-        # --- DADOS PARA A TABELA (sem alteração) ---
+        # --- DADOS PARA A TABELA ---
         usuarios_performance = []
         thirty_days_ago = timezone.now() - timedelta(days=30)
         for usuario in usuarios:

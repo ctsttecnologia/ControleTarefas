@@ -1,13 +1,10 @@
 
 # ferramentas/views.py
 
-# --- Imports do Python ---
 import base64
 import json
 from datetime import timedelta
 from io import BytesIO
-
-# --- Imports do Django ---
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.files.base import ContentFile
@@ -18,11 +15,17 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView
-# --- Imports Locais ---
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, TemplateView, FormView
 from .models import Ferramenta, Movimentacao, Atividade
 from .forms import FerramentaForm, RetiradaForm, DevolucaoForm
 from core.mixins import ViewFilialScopedMixin
+import openpyxl
+from datetime import datetime
+from django.http import HttpResponse
+from .forms import UploadFileForm
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from openpyxl.utils import get_column_letter
+
 
 
 # =============================================================================
@@ -142,6 +145,18 @@ class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeL
     form_class = FerramentaForm
     template_name = 'ferramentas/ferramenta_form.html'
     
+    def get_form(self, form_class=None):
+        """
+        Pega a instância do formulário e desabilita o campo 'data_aquisicao'
+        para impedir sua alteração durante a edição.
+        """
+        form = super().get_form(form_class)
+        # Verifica se o campo existe no formulário antes de tentar desabilitá-lo
+        if 'data_aquisicao' in form.fields:
+            form.fields['data_aquisicao'].disabled = True
+            form.fields['data_aquisicao'].help_text = "A data de aquisição não pode ser alterada após o cadastro inicial."
+        return form
+
     def form_valid(self, form):
         messages.success(self.request, "Dados da ferramenta atualizados com sucesso.")
         response = super().form_valid(form)
@@ -149,6 +164,7 @@ class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeL
         return response
 
     def get_success_url(self):
+        # Garante que o método get_absolute_url exista no modelo Ferramenta
         return self.object.get_absolute_url()
 
     def get_context_data(self, **kwargs):
@@ -286,3 +302,130 @@ class DevolucaoUpdateView(LoginRequiredMixin, AtividadeLogMixin, UpdateView):
     
     def get_success_url(self):
         return self.object.ferramenta.get_absolute_url()
+    
+class DownloadTemplateView(LoginRequiredMixin, View):
+    """
+    Gera e oferece para download a planilha modelo formatada para o usuário preencher.
+    """
+    def get(self, request, *args, **kwargs):
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = "Modelo de Importação"
+
+        # --- Estilos do Cabeçalho ---
+        header_font = Font(name='Calibri', bold=True, color='FFFFFF', size=12)
+        header_fill = PatternFill(start_color='004C99', end_color='004C99', fill_type='solid') # Tom de azul escuro
+        header_alignment = Alignment(horizontal='center', vertical='center')
+        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+        # --- Cabeçalhos das Colunas ---
+        headers = [
+            "Nome da Ferramenta*",
+            "Código de Identificação* (para QR Code)",
+            "Data de Aquisição (dd/mm/aaaa)*",
+            "Localização Padrão*",
+            "Nº de Patrimônio (Opcional)",
+            "Fabricante (Opcional)",
+            "Observações (Opcional)"
+        ]
+        
+        # Aplica os cabeçalhos e estilos
+        for col_num, header_title in enumerate(headers, 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.value = header_title
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+            cell.border = thin_border
+            # Ajusta a largura da coluna
+            column_letter = get_column_letter(col_num)
+            worksheet.column_dimensions[column_letter].width = 30
+
+        # --- Instruções e Exemplo ---
+        instructions = [
+            [], # Linha em branco
+            ["Instruções:"],
+            ["1. Preencha as colunas com os dados das ferramentas. Campos com * são obrigatórios."],
+            ["2. O 'Código de Identificação' deve ser único para cada ferramenta (ex: PAT123-FURADEIRA). É este código que será usado para gerar o QR Code."],
+            ["3. A data de aquisição deve estar no formato Dia/Mês/Ano (ex: 21/09/2025)."],
+            [],
+            ["Exemplo de preenchimento:"]
+        ]
+        for row_data in instructions:
+            worksheet.append(row_data)
+
+        # Adiciona uma linha de exemplo
+        example_row = ["Furadeira de Impacto", "PAT789-FURADEIRA", "21/09/2025", "Armário B, Gaveta 1", "789", "Bosch", "Comprada para o projeto X"]
+        worksheet.append(example_row)
+
+        # Prepara a resposta HTTP para o download
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename="modelo_importacao_ferramentas.xlsx"'
+        workbook.save(response)
+        return response
+
+
+class ImportarFerramentasView(LoginRequiredMixin, FormView):
+    """
+    View que renderiza a página de upload e processa a planilha enviada.
+    """
+    template_name = 'ferramentas/importar_ferramentas.html'
+    form_class = UploadFileForm
+    success_url = reverse_lazy('ferramentas:ferramenta_list')
+
+    def form_valid(self, form):
+        file = form.cleaned_data['file']
+        active_filial_id = self.request.session.get('active_filial_id')
+
+        if not active_filial_id:
+            messages.error(self.request, "Nenhuma filial ativa selecionada. Por favor, selecione uma filial antes de importar.")
+            return self.form_invalid(form)
+
+        try:
+            workbook = openpyxl.load_workbook(file)
+            worksheet = workbook.active
+            ferramentas_para_criar, erros = [], []
+
+            for i, row in enumerate(worksheet.iter_rows(min_row=2, values_only=True), start=2):
+                if all(cell is None for cell in row): continue # Pula linhas totalmente em branco
+
+                nome, codigo, data_str, localizacao = row[0], row[1], row[2], row[3]
+                patrimonio, fabricante, observacoes = (row[4] or None), (row[5] or None), (row[6] or None)
+
+                if not all([nome, codigo, data_str, localizacao]):
+                    erros.append(f"Linha {i}: Dados obrigatórios faltando.")
+                    continue
+                try:
+                    data_aquisicao = datetime.strptime(str(data_str).split(" ")[0], '%Y-%m-%d').date()
+                except ValueError:
+                    try:
+                        data_aquisicao = datetime.strptime(str(data_str), '%d/%m/%Y').date()
+                    except ValueError:
+                        erros.append(f"Linha {i}: Formato de data inválido para '{data_str}'. Use dd/mm/aaaa.")
+                        continue
+
+                if Ferramenta.objects.filter(codigo_identificacao=codigo).exists():
+                    erros.append(f"Linha {i}: Código de Identificação '{codigo}' já existe no sistema.")
+                    continue
+
+                ferramentas_para_criar.append(Ferramenta(
+                    nome=nome, codigo_identificacao=codigo, data_aquisicao=data_aquisicao,
+                    localizacao_padrao=localizacao, patrimonio=patrimonio, fabricante=fabricante,
+                    observacoes=observacoes, filial_id=active_filial_id
+                ))
+
+            if erros:
+                for erro in erros: messages.error(self.request, erro)
+                return self.form_invalid(form)
+
+            with transaction.atomic():
+                Ferramenta.objects.bulk_create(ferramentas_para_criar)
+
+            messages.success(self.request, f"{len(ferramentas_para_criar)} ferramentas importadas com sucesso!")
+        except Exception as e:
+            messages.error(self.request, f"Ocorreu um erro inesperado ao processar o arquivo: {e}")
+            return self.form_invalid(form)
+
+        return super().form_valid(form)

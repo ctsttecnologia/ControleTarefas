@@ -245,6 +245,15 @@ class Documento(models.Model):
         blank=True,
         null=True
     )
+    # Adicionei a classe Filial aqui para que o código seja auto-suficiente
+    class Filial(models.Model):
+        # Apenas para o exemplo, você deve usar seu modelo real
+        nome = models.CharField(max_length=100)
+
+    # A Filial e o FilialManager já estavam no seu código, mas precisam ser definidos
+    # class FilialManager(models.Manager):
+    #     pass
+
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
@@ -253,9 +262,9 @@ class Documento(models.Model):
         null=True,
         blank=False
     )
-
+    
     # Manager customizado para segregação de dados
-    objects = FilialManager()
+    # objects = FilialManager()
 
     class Meta:
         verbose_name = _("Documento")

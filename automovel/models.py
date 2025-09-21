@@ -26,7 +26,7 @@ class Carro(models.Model):
             blank=True, 
             verbose_name="Foto do Carro"
     )
-    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='carros', null=True, blank=False)
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='carros', default='CETEST-SP', null=True, blank=False)
     objects = FilialManager()
 
     def __str__(self):
