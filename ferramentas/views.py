@@ -98,7 +98,7 @@ class FerramentaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView
         ferramenta = self.object
         
         context['movimentacoes'] = ferramenta.movimentacoes.all()
-        context['atividades'] = ferramenta.atividades.all()[:10]
+        context['atividades'] = ferramenta.atividades.all()[:20]
         context['movimentacao_ativa'] = next((m for m in context['movimentacoes'] if m.esta_ativa), None)
 
         # Lógica do Gráfico (sem alterações)
@@ -125,7 +125,7 @@ class FerramentaCreateView(LoginRequiredMixin, AtividadeLogMixin, CreateView):
         if self.request.user.is_superuser and self.request.session.get('active_filial_id'):
             form.instance.filial_id = self.request.session.get('active_filial_id')
         else:
-            form.instance.filial = self.request.user.filial
+            form.instance.filial = self.request.user.filial_ativa
         
         messages.success(self.request, "Ferramenta adicionada com sucesso.")
         response = super().form_valid(form) 
@@ -244,7 +244,7 @@ class RetiradaCreateView(LoginRequiredMixin, AtividadeLogMixin, CreateView):
 
         movimentacao = form.save(commit=False)
         movimentacao.ferramenta = ferramenta
-        movimentacao.filial = self.request.user.filial # Associa a movimentação à filial
+        movimentacao.filial = self.request.user.filial_ativa # Associa a movimentação à filial
 
         # Processamento da assinatura...
         assinatura_data = form.cleaned_data.get('assinatura_base64')
@@ -429,3 +429,5 @@ class ImportarFerramentasView(LoginRequiredMixin, FormView):
             return self.form_invalid(form)
 
         return super().form_valid(form)
+    
+

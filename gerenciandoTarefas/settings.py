@@ -235,3 +235,4 @@ REST_FRAMEWORK = {
 LOGIN_URL = 'usuario:login'
 LOGIN_REDIRECT_URL = 'usuario:profile'
 LOGOUT_REDIRECT_URL = 'usuario:login'
+

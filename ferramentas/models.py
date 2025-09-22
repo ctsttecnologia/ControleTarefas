@@ -47,10 +47,10 @@ class Ferramenta(models.Model):
         return reverse('ferramentas:ferramenta_detail', kwargs={'pk': self.pk})
 
     def save(self, *args, **kwargs):
-        """ Gera o QR Code com base no código de identificação ou patrimônio antes de salvar. """
-        # Usa o código de identificação como prioridade para o QR Code, pois é único e obrigatório.
+        """ Gera o QR Code com base no código de identificação antes de salvar. """
         identifier_for_qr = self.codigo_identificacao or self.patrimonio
         
+        # Gera o QR Code apenas se houver um identificador e o campo qr_code estiver vazio
         if identifier_for_qr and not self.qr_code:
             qr = qrcode.QRCode(
                 version=1,
@@ -58,23 +58,21 @@ class Ferramenta(models.Model):
                 box_size=10,
                 border=4,
             )
-            # Idealmente, o QR Code deve apontar para a URL da própria ferramenta no sistema.
-            # Se você tiver o site configurado, pode usar a URL completa.
-            # Por enquanto, usaremos o identificador.
             qr_data = f"FERRAMENTA_ID:{identifier_for_qr}"
             qr.add_data(qr_data)
             qr.make(fit=True)
-
             qr_img = qr.make_image(fill_color="black", back_color="white")
             
             fname = f'qr_code-{identifier_for_qr}.png'
             buffer = BytesIO()
             qr_img.save(buffer, 'PNG')
+            buffer.seek(0)
             
-            # save=False é crucial para evitar um loop de salvamento infinito.
+            # Salva o arquivo no campo ImageField sem disparar o save do modelo novamente
             self.qr_code.save(fname, File(buffer), save=False)
 
         super().save(*args, **kwargs)
+        
 
 class Atividade(models.Model):
     """ Modelo para registrar um histórico de eventos importantes (log de auditoria). """
