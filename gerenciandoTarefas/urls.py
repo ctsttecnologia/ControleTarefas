@@ -26,7 +26,7 @@ urlpatterns = [
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
-    path('ferramentas/', include('ferramentas.urls')),
+    path('ferramentas/', include('ferramentas.urls', namespace='ferramentas')),
     path('core/', include('core.urls')),
     path('controle_de_telefone/', include('controle_de_telefone.urls')), 
 ]

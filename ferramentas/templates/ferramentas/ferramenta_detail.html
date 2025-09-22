@@ -28,7 +28,6 @@
     {% endif %}
 
     <div class="row">
-
         <div class="col-lg-4 mb-4">
 
             <div class="card shadow-sm mb-4">
@@ -48,13 +47,15 @@
                             <button type="submit" formaction="{% url 'ferramentas:iniciar_manutencao' pk=ferramenta.pk %}" class="btn btn-outline-secondary"><i class="fas fa-wrench me-2"></i>Iniciar Manutenção</button>
 
                         {% elif ferramenta.status == 'em_uso' %}
-                             <div class="text-center mb-3">
+                            <div class="text-center mb-3">
                                 <h4 class="text-warning"><i class="fas fa-user-clock fa-2x mb-2"></i><br>Em Uso</h4>
                                 {% if movimentacao_ativa %}
-                                    <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_username }}</strong></p>
+                                    <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_full_name|default:movimentacao_ativa.retirado_por.username }}</strong></p>
                                 {% endif %}
                             </div>
-                            <a href="{% url 'ferramentas:ferramenta_devolver' pk=movimentacao_ativa.pk %}" class="btn btn-success"><i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução</a>
+                            {% if movimentacao_ativa %}
+                                <a href="{% url 'ferramentas:ferramenta_devolver' pk=movimentacao_ativa.pk %}" class="btn btn-success"><i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução</a>
+                            {% endif %}
 
                         {% elif ferramenta.status == 'em_manutencao' %}
                             <div class="text-center mb-3">
@@ -78,7 +79,7 @@
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item"><strong>Fabricante:</strong> {{ ferramenta.fabricante|default:"N/D" }}</li>
-                        <li class="list-group-item"><strong>Localização:</strong> {{ ferramenta.localizacao_padrao }}</li>
+                        <li class="list-group-item"><strong>Localização:</strong> {{ ferramenta.localizacao_padrao|default:"N/D" }}</li>
                         <li class="list-group-item"><strong>Aquisição:</strong> {{ ferramenta.data_aquisicao|date:"d/m/Y" }}</li>
                         <li class="list-group-item"><strong>Próxima Manutenção:</strong> <span class="fw-bold">{{ ferramenta.proxima_manutencao|date:"d/m/Y"|default:"Não agendada" }}</span></li>
                     </ul>
@@ -96,7 +97,6 @@
                     {% endif %}
                 </div>
             </div>
-
         </div>
 
         <div class="col-lg-8">
@@ -122,9 +122,17 @@
                                         {% if mov.esta_ativa %}<span class="badge bg-warning">Em Uso</span>
                                         {% else %}<span class="badge bg-secondary">Concluída</span>{% endif %}
                                     </td>
-                                    <td>{{ mov.retirado_por.get_username }}</td>
+                                    <td>{{ mov.retirado_por.get_full_name|default:mov.retirado_por.username }}</td>
                                     <td>{{ mov.data_retirada|date:"d/m/y H:i" }}</td>
-                                    <td>{{ mov.recebido_por.get_username|default:"-" }}</td>
+                                    
+                                    <td>
+                                        {% if mov.recebido_por %}
+                                            {{ mov.recebido_por.get_full_name|default:mov.recebido_por.username }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
                                     <td>{{ mov.data_devolucao|date:"d/m/y H:i"|default:"-" }}</td>
                                 </tr>
                                 {% empty %}
@@ -135,11 +143,13 @@
                     </div>
                 </div>
             </div>
-
+            
             <div class="card shadow-sm mb-4">
                 <div class="card-header fw-bold"><i class="fas fa-chart-bar me-2"></i>Análise de Uso Mensal</div>
                 <div class="card-body">
-                    <canvas id="usageChart"></canvas>
+                    <div style="max-height: 250px;">
+                        <canvas id="usageChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -161,7 +171,6 @@
                     </ul>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -172,32 +181,35 @@ document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('usageChart').getContext('2d');
     
     const chart_labels = {{ chart_labels|safe|default:'[]' }};
+    
     const chart_data = {{ chart_data|safe|default:'[]' }};
 
-    if (chart_labels.length > 0) {
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: chart_labels,
-                datasets: [{
-                    label: 'Nº de Movimentações',
-                    data: chart_data,
-                    backgroundColor: 'rgba(0, 123, 255, 0.6)',
-                    borderColor: 'rgba(0, 123, 255, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                plugins: { legend: { display: false } }
-            }
-        });
-    } else {
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#999";
-        ctx.textAlign = "center";
-        ctx.fillText("Não há dados de uso para exibir no gráfico.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-    }
+        if (chart_labels.length > 0) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: { 
+                    labels: chart_labels,
+                    datasets: [{
+                        label: 'Nº de Movimentações',
+                        data: chart_data,
+                        backgroundColor: 'rgba(0, 123, 255, 0.6)',
+                        borderColor: 'rgba(0, 123, 255, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { display: false } }
+                    
+                }
+            });
+        } else {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#999";
+            ctx.textAlign = "center";
+            ctx.fillText("Não há dados de uso para exibir no gráfico.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+        }
 });
 </script>
 {% endblock %}
