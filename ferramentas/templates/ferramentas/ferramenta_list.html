@@ -20,22 +20,17 @@
                 <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-bar-chart-line-fill me-1"></i> Dashboard
                 </a>
-            </div>
-            <div class="btn-group">
+                <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Importar
+                </a>
+
                 <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i> Nova Ferramenta
-                </a>
-                <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-primary">
-                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Importar
                 </a>
                 <a href="{% url 'ferramentas:imprimir_qrcodes' %}" class="btn btn-primary   ">
                     <i class="bi bi-printer-fill me-1"></i> Imprimir Etiquetas
                 </a>
-            </div>
-        </div>
-
-        <div class="btn-toolbar">
-            {% if user.is_staff %}
+                {% if user.is_staff %}
                 <form action="{% url 'ferramentas:gerar_qrcodes_view' %}" method="post" class="ms-2">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-warning" onclick="return confirm('Isso pode levar alguns minutos, dependendo do número de ferramentas. Deseja continuar?');">
@@ -43,6 +38,7 @@
                     </button>
                 </form>
             {% endif %}
+            </div>            
         </div>
     </header>
 
