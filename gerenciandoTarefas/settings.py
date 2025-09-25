@@ -23,7 +23,7 @@ FIELD_ENCRYPTION_KEY = get_random_secret_key()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-SECRET_KEY= config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY')
 
 # Guarde esta chave em um local seguro, como variáveis de ambiente!
 FERNET_KEYS = config('KEYS')

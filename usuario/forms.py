@@ -1,11 +1,14 @@
 # usuario/forms.py (VERSÃO REFATORADA)
 
+# usuario/forms.py (VERSÃO CORRIGIDA E COMPLETA)
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, PasswordChangeForm
 from django.contrib.auth.models import Group, Permission
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db import transaction
-from .models import Usuario, Filial
+# Importe o modelo que faltava
+from .models import Usuario, Filial, GroupCardPermissions 
 from departamento_pessoal.models import Funcionario
 
 # =============================================================================
@@ -35,33 +38,11 @@ class CustomUserCreationForm(UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # --- BLOCO DE DIAGNÓSTICO DEFINITIVO ---
-        print("="*60)
-        print("DIAGNÓSTICO DA CLASSE CustomUserCreationForm")
-        print(f"A classe pai (super) é: {super().__class__}")
-        
-        if 'password' in self.fields:
-            print("✅ O CAMPO 'password' EXISTE NO FORMULÁRIO.")
-        else:
-            print("❌ ERRO CRÍTICO: O CAMPO 'password' NÃO EXISTE NO FORMULÁRIO.")
-        
-        if 'password2' in self.fields:
-            print("✅ O CAMPO 'password2' EXISTE NO FORMULÁRIO.")
-        else:
-            print("❌ ERRO: O CAMPO 'password2' NÃO EXISTE NO FORMULÁRIO.")
-        
-        print("\nTODOS OS CAMPOS DISPONÍVEIS:", list(self.fields.keys()))
-        print("="*60)
-        # --- FIM DO BLOCO DE DIAGNÓSTICO ---
-        
-        # Adicionando estilos (pode manter esta parte)
         for field_name, field in self.fields.items():
             if isinstance(field.widget, forms.Select):
                 field.widget.attrs.update({'class': 'form-select'})
             else:
                 field.widget.attrs.update({'class': 'form-control'})
-
 
     @transaction.atomic
     def save(self, commit=True):
@@ -78,13 +59,13 @@ class CustomUserCreationForm(UserCreationForm):
                 funcionario_selecionado.save()
         return user
 
+
 class CustomUserChangeForm(UserChangeForm):
     """
     Formulário para um administrador editar os dados de um usuário existente.
     - Usa o widget FilteredSelectMultiple para uma melhor UX na seleção de grupos e filiais.
     - Remove o campo de senha para evitar alterações acidentais.
     """
-    # A senha não é editada aqui diretamente, por isso a removemos
     password = None
 
     groups = forms.ModelMultipleChoiceField(
@@ -114,14 +95,12 @@ class CustomUserChangeForm(UserChangeForm):
         )
 
     def __init__(self, *args, **kwargs):
-        # Recebe o queryset personalizado
         filiais_permitidas_qs = kwargs.pop('filiais_permitidas_qs', None)
         super().__init__(*args, **kwargs)
 
         if filiais_permitidas_qs is not None:
             self.fields['filial_ativa'].queryset = filiais_permitidas_qs
 
-        # Preenche os campos ManyToMany com os valores iniciais da instância do usuário
         if self.instance.pk:
             self.fields['groups'].initial = self.instance.groups.all()
             self.fields['filiais_permitidas'].initial = self.instance.filiais_permitidas.all()
@@ -172,4 +151,34 @@ class FilialForm(forms.ModelForm):
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: São Paulo'}),
         }
-        
+
+# =============================================================================
+# == FORMULÁRIOS DE PERMISSÕES ESPECÍFICAS
+# =============================================================================
+
+
+CARD_CHOICES = [
+    ('tarefas', 'Tarefas'),
+    ('clientes', 'Clientes'),
+    ('dp', 'Departamento Pessoal'),
+    ('sst', 'Segurança do Trabalho'),
+    ('endereco', 'Endereço'),
+    ('ga', 'Gestão de Ativos'),
+    ('veiculos', 'Veículos'),
+    ('operacao', 'Operação'),
+    # Adicione outros cards que você tenha
+]
+
+class GroupCardPermissionsForm(forms.ModelForm):
+    # Use MultipleChoiceField com o widget de checkboxes
+    cards_visiveis = forms.MultipleChoiceField(
+        choices=CARD_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+        label="Cards Visíveis"
+    )
+
+    class Meta:
+        model = GroupCardPermissions
+        fields = '__all__'
+

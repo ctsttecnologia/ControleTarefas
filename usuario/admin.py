@@ -7,6 +7,7 @@ from django.contrib.auth.models import Group
 from django.db.models import Count
 from .models import Usuario, GrupoProxy, PermissaoProxy, Filial, GroupCardPermissions
 from django.forms import CheckboxSelectMultiple
+from .forms import GroupCardPermissionsForm 
 
 # -----------------------------------------------------------------------------
 # Admin para Filial (Necessário para o autocomplete no UsuarioAdmin)
@@ -90,8 +91,12 @@ class PermissaoProxyAdmin(admin.ModelAdmin):
 # No seu admin.py
 # -----------------------------------------------------------------------------
 
+@admin.register(GroupCardPermissions)
 class GroupCardPermissionsAdmin(admin.ModelAdmin):
+
+    form = GroupCardPermissionsForm
     list_display = ('group',)
+    search_fields = ('group__name',)
 
     # Para usar o campo JSONField, vamos sobrescrever o formulário de administração
     # e criar um widget de seleção múltipla com os IDs dos cards
@@ -116,4 +121,3 @@ class GroupCardPermissionsAdmin(admin.ModelAdmin):
         )
         return form
 
-admin.site.register(GroupCardPermissions, GroupCardPermissionsAdmin)
