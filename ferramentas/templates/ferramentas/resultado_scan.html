@@ -1,0 +1,54 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Detalhes da Ferramenta
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 600px;">
+    <div class="card shadow-lg rounded-4">
+        <div class="card-header bg-primary text-white text-center">
+            <h1 class="h3 mb-0 py-2"><i class="bi bi-upc-scan"></i> Leitura de Ferramenta</h1>
+        </div>
+        <div class="card-body p-4">
+            <h2 class="card-title text-center mb-3">{{ ferramenta.nome }}</h2>
+            <p class="text-center text-muted font-monospace">{{ ferramenta.codigo_identificacao }}</p>
+
+            <hr>
+
+            <div class="d-grid gap-3">
+                <div class="p-3 bg-light rounded-3 text-center">
+                    <h6 class="text-muted mb-1">Status Atual</h6>
+                    <span class="badge rounded-pill fs-5
+                        {% if ferramenta.status == 'disponivel' %} bg-success-subtle text-success-emphasis border border-success-subtle
+                        {% elif ferramenta.status == 'em_uso' %} bg-warning-subtle text-warning-emphasis border border-warning-subtle
+                        {% elif ferramenta.status == 'em_manutencao' %} bg-info-subtle text-info-emphasis border border-info-subtle
+                        {% else %} bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle {% endif %}">
+                        {{ ferramenta.get_status_display }}
+                    </span>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 text-center">
+                    <h6 class="text-muted mb-1">Localização Padrão</h6>
+                    <p class="h5 mb-0">{{ ferramenta.localizacao_padrao }}</p>
+                </div>
+
+                {% if ferramenta.status == 'em_uso' and movimentacao_ativa %}
+                <div class="p-3 bg-warning-subtle rounded-3 text-center border border-warning-subtle">
+                    <h6 class="text-warning-emphasis mb-1">Responsável Atual</h6>
+                    <p class="h5 mb-0 text-warning-emphasis">
+                        <i class="bi bi-person-fill"></i>
+                        {{ movimentacao_ativa.retirado_por.get_full_name|default:movimentacao_ativa.retirado_por.username }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-footer text-center">
+             <a href="{% url 'ferramentas:ferramenta_detail' pk=ferramenta.pk %}" class="btn btn-outline-primary">Ver Painel Completo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

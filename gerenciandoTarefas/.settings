@@ -34,7 +34,7 @@ DEBUG = config('DEBUG')
 # Isso gera uma chave segura. Armazene-a em um local seguro, como variáveis de ambiente.
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
-ALLOWED_HOSTS = ['bkrfdm.hospedagemelastica.com.br', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition

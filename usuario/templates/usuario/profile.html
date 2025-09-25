@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
@@ -19,10 +18,30 @@
     background-size: cover;
     background-repeat: no-repeat;
 }
+
+/* */
+#particles-js {
+    /* Garante que a animação cubra toda a tela e fique fixa no fundo */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    /* Coloca a animação atrás do conteúdo, mas na frente do background do body */
+    z-index: 0;
+}
+
+/* Garante que o container principal fique na frente da animação */
+.container {
+    position: relative;
+    z-index: 1;
+}
 </style>
 {% endblock %}
 
 {% block content %}
+
+<div id="particles-js"></div>
 
 <div class="container py-5">
     <div class="row g-4" id="card-container">
@@ -55,15 +74,44 @@
 {% endblock %}
 
 {% block extra_js %}
-{# O seu JavaScript para reordenar os cards continua funcionando perfeitamente! #}
-{# Ele não precisa de nenhuma alteração, pois ele se baseia no 'data-card-id' que estamos preservando. #}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+
+<script>
+// Configuração do particles.js para criar o efeito de teia com repulsão
+particlesJS('particles-js', {
+    "particles": {
+        "number": { "value": 100, "density": { "enable": true, "value_area": 800 } },
+        "color": { "value": "#ffffff" },
+        "shape": { "type": "circle" },
+        "opacity": { "value": 0.6, "random": true },
+        "size": { "value": 3, "random": true },
+        "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
+        "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+    },
+    "interactivity": {
+        "detect_on": "canvas",
+        "events": {
+            "onhover": { "enable": true, "mode": "repulse" }, // <-- A MÁGICA ACONTECE AQUI
+            "onclick": { "enable": true, "mode": "push" },
+            "resize": true
+        },
+        "modes": {
+            "repulse": { "distance": 100, "duration": 0.4 }, // Distância da repulsão
+            "push": { "particles_nb": 4 },
+        }
+    },
+    "retina_detect": true
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('card-container');
     const storageKey = 'profileCardOrder';
 
+    // ... (todo o seu código do SortableJS continua aqui, sem alterações)
     function restoreOrder() {
         const savedOrderJSON = localStorage.getItem(storageKey);
         if (savedOrderJSON) {

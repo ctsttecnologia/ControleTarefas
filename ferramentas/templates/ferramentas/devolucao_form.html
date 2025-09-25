@@ -1,5 +1,32 @@
+{% extends 'ferramentas/ferramentas_base.html' %}
+{% load static %}
+{% load widget_tweaks %}
 
+{% block title %}
+    Gerenciamento de Ferramentas
+{% endblock %}
 
+{% block extra_css %}
+<style>
+    .signature-pad-container {
+        position: relative;
+        width: 100%;
+        /* Aumente ou diminua este valor para ajustar a altura da área de assinatura */
+        height: 250px; 
+        border: 1px dashed #ced4da; /* Borda para visualizar a área */
+        border-radius: 0.25rem;
+        background-color: #fff;
+    }
+
+    .signature-pad {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -41,6 +68,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const canvas = document.getElementById('signature-pad');
+    
     // Ajusta o canvas para responsividade
     function resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
@@ -48,15 +76,17 @@ document.addEventListener('DOMContentLoaded', function () {
         canvas.height = canvas.offsetHeight * ratio;
         canvas.getContext("2d").scale(ratio, ratio);
     }
+    
+    // Redimensiona o canvas quando a janela muda de tamanho e na carga inicial
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
     
     const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(255, 255, 255)'
+        backgroundColor: 'rgb(255, 255, 255)' // Fundo branco
     });
 
     const form = canvas.closest('form');
-    // Usa o input hidden gerado pelo Django
+    // Usa o input hidden gerado pelo Django, se houver
     const signatureDataInput = document.getElementById('id_assinatura_base64');
 
     form.addEventListener('submit', function (event) {
@@ -64,7 +94,9 @@ document.addEventListener('DOMContentLoaded', function () {
             alert("Por favor, forneça uma assinatura para confirmar a devolução.");
             event.preventDefault();
         } else {
-            signatureDataInput.value = signaturePad.toDataURL('image/png');
+            if (signatureDataInput) {
+                signatureDataInput.value = signaturePad.toDataURL('image/png');
+            }
         }
     });
 
