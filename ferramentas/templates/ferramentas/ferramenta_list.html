@@ -1,5 +1,5 @@
 
-{% extends 'base.html' %}
+{% extends 'ferramentas/ferramentas_base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
@@ -25,10 +25,24 @@
                 <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-primary">
                     <i class="bi bi-plus-lg me-1"></i> Nova Ferramenta
                 </a>
-                <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-info text-white">
+                <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-primary">
                     <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Importar
                 </a>
+                <a href="{% url 'ferramentas:imprimir_qrcodes' %}" class="btn btn-primary   ">
+                    <i class="bi bi-printer-fill me-1"></i> Imprimir Etiquetas
+                </a>
             </div>
+        </div>
+
+        <div class="btn-toolbar">
+            {% if user.is_staff %}
+                <form action="{% url 'ferramentas:gerar_qrcodes_view' %}" method="post" class="ms-2">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('Isso pode levar alguns minutos, dependendo do número de ferramentas. Deseja continuar?');">
+                        <i class="bi bi-qr-code-scan me-1"></i> Gerar QR Codes Pendentes
+                    </button>
+                </form>
+            {% endif %}
         </div>
     </header>
 
@@ -67,17 +81,34 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for ferramenta in object_list %}
+                        {% for ferramenta in ferramentas %}
                         <tr>
                             <td class="ps-3">
-                                <a href="{{ ferramenta.get_absolute_url }}" class="fw-bold d-block text-decoration-none">{{ ferramenta.nome }}</a>
-                                <small class="text-muted">Patrimônio: {{ ferramenta.patrimonio|default:"N/A" }}</small>
-                            </td>
+                                    <div>
+                                        <a href="{{ ferramenta.get_absolute_url }}" class="fw-bold d-inline-block text-decoration-none">{{ ferramenta.nome }}</a>
+                                        
+                                        {# Sinalização de MALA (lógica inalterada) #}
+                                        {% if ferramenta.mala %}
+                                            <span class="ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Item da mala: {{ ferramenta.mala.nome }}">
+                                                <i class="bi bi-box-seam-fill text-secondary"></i>
+                                            </span>
+                                        {% endif %}
+
+                                        {# SINALIZAÇÃO DE "EM USO" CORRIGIDA #}
+                                        {# Agora usamos a propriedade inteligente do modelo #}
+                                        {% if ferramenta.esta_emprestada %}
+                                            <span class="ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Item atualmente em uso (emprestado)">
+                                            <i class="bi bi-person-up-arrow text-warning"></i>
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">Patrimônio: {{ ferramenta.patrimonio|default:"N/A" }}</small>
+                                </td>
                             <td>
                                 <span class="font-monospace">{{ ferramenta.codigo_identificacao|default:"N/A" }}</span>
                             </td>
                             <td>
-                                {% comment %} Classes de badge do Bootstrap 5.3 para melhor contraste e temas {% endcomment %}
+                                {# O seu código de badges de status continua aqui e está perfeito #}
                                 <span class="badge rounded-pill fs-6
                                     {% if ferramenta.status == 'disponivel' %} bg-success-subtle text-success-emphasis border border-success-subtle
                                     {% elif ferramenta.status == 'em_uso' %} bg-warning-subtle text-warning-emphasis border border-warning-subtle
@@ -90,7 +121,8 @@
                             <td>{{ ferramenta.localizacao_padrao|default:"-" }}</td>
                             <td>{{ ferramenta.data_aquisicao|date:"d/m/Y" }}</td>
                             <td class="text-center">
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Ações da Ferramenta">
+                                {# O restante do seu código para a coluna de ações continua aqui #}
+                                <div class="btn-group btn-group-sm" role="group">
                                     <a href="{{ ferramenta.get_absolute_url }}" class="btn btn-outline-primary" title="Ver Painel">
                                         <i class="bi bi-display"></i>
                                     </a>
@@ -105,7 +137,7 @@
                                             <i class="bi bi-trash-fill"></i>
                                         </button>
                                     {% else %}
-                                         <button type="button" class="btn btn-outline-danger" title="Não pode ser inativada neste status" disabled>
+                                        <button type="button" class="btn btn-outline-danger" title="Não pode ser inativada neste status" disabled>
                                             <i class="bi bi-trash-fill"></i>
                                         </button>
                                     {% endif %}
@@ -158,22 +190,22 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const confirmModal = document.getElementById('confirmInativarModal');
-    if (confirmModal) {
-        confirmModal.addEventListener('show.bs.modal', function (event) {
-            const button = event.relatedTarget;
-            const ferramentaNome = button.getAttribute('data-nome');
-            const formActionUrl = button.getAttribute('data-url');
-            
-            const modalBody = confirmModal.querySelector('#ferramentaNomeModal');
-            const inativarForm = confirmModal.querySelector('#inativarForm');
-            
-            modalBody.textContent = ferramentaNome;
-            inativarForm.action = formActionUrl;
-        });
-    }
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        const confirmModal = document.getElementById('confirmInativarModal');
+        if (confirmModal) {
+            confirmModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const ferramentaNome = button.getAttribute('data-nome');
+                const formActionUrl = button.getAttribute('data-url');
+                
+                const modalBody = confirmModal.querySelector('#ferramentaNomeModal');
+                const inativarForm = confirmModal.querySelector('#inativarForm');
+                
+                modalBody.textContent = ferramentaNome;
+                inativarForm.action = formActionUrl;
+            });
+        }
+    });
 </script>
 {% endblock %}
 

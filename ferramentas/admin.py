@@ -1,39 +1,81 @@
+# ferramentas/admin.py
+
 from django.contrib import admin
-from django.utils.html import format_html
-from django.core.mail import send_mail
-from django.contrib.auth import get_user_model
 from django.urls import reverse
-from django.conf import settings
-from .models import Ferramenta, Movimentacao, Atividade
+from django.utils.html import format_html
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
+# Importa o modelo MalaFerramentas
+from .models import Atividade, Ferramenta, MalaFerramentas, Movimentacao
 
-User = get_user_model()
 
-class AtividadeInline(admin.TabularInline):
-    model = Atividade
-    extra = 0
-    fields = ('timestamp', 'tipo_atividade', 'descricao', 'usuario')
-    readonly_fields = fields # Corrigido para tornar todos os campos readonly
-    can_delete = False
-    verbose_name = "Registro de Atividade"
-    verbose_name_plural = "Registros de Atividades"
+#  Inline para mostrar as ferramentas DENTRO de uma Mala
+class FerramentaInline(admin.TabularInline):
+    """Permite visualizar e editar as ferramentas que pertencem a uma mala."""
+    model = Ferramenta
+    extra = 0  # Não mostra formulários extras para adicionar novas
+    fields = ('nome', 'codigo_identificacao', 'status', 'link_para_ferramenta')
+    readonly_fields = ('nome', 'codigo_identificacao', 'status', 'link_para_ferramenta')
+    verbose_name = "Item na Mala"
+    verbose_name_plural = "Itens na Mala"
+
+    @admin.display(description="Acessar")
+    def link_para_ferramenta(self, obj):
+        url = reverse('admin:ferramentas_ferramenta_change', args=[obj.pk])
+        return format_html('<a href="{}">Ver Detalhes</a>', url)
 
     def has_add_permission(self, request, obj=None):
-        return False
+        return False # A adição de ferramentas a uma mala deve ser feita na própria ferramenta
 
-@admin.register(Ferramenta)
-class FerramentaAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    list_display = ('nome', 'patrimonio', 'status', 'filial', 'qr_code_preview')
-    list_filter = ('status', 'fabricante', 'filial')
-    search_fields = ('nome', 'patrimonio', 'codigo_identificacao')
-    readonly_fields = ('qr_code_preview', 'filial',)
-    inlines = [AtividadeInline]
+    def has_delete_permission(self, request, obj=None):
+        return False # A remoção também
+
+
+# Registro completo para o modelo MalaFerramentas
+@admin.register(MalaFerramentas)
+class MalaFerramentasAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    list_display = ('nome', 'codigo_identificacao', 'status', 'filial', 'contagem_itens', 'qr_code_preview')
+    list_filter = ('status', 'filial')
+    search_fields = ('nome', 'codigo_identificacao')
+    readonly_fields = ('qr_code_preview',)
+    inlines = [FerramentaInline] # Adiciona o inline de ferramentas aqui
+
     fieldsets = (
         ('Informações Principais', {
-            'fields': ('nome', 'filial', 'patrimonio', 'codigo_identificacao', 'fabricante', 'qr_code_preview')
+            'fields': ('nome', 'filial', 'codigo_identificacao', 'status', 'qr_code_preview')
         }),
-        ('Status e Localização', {
-            'fields': ('status', 'localizacao_padrao', 'data_aquisicao')
+        ('Localização', {
+            'fields': ('localizacao_padrao',)
+        }),
+    )
+
+    @admin.display(description="QR Code")
+    def qr_code_preview(self, obj):
+        if obj.qr_code:
+            return format_html('<img src="{}" width="100" />', obj.qr_code.url)
+        return "Será gerado ao salvar"
+
+    @admin.display(description="Nº de Itens")
+    def contagem_itens(self, obj):
+        return obj.itens.count()
+
+#  FerramentaAdmin agora mostra a qual mala pertence
+@admin.register(Ferramenta)
+class FerramentaAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+    # Adicionado 'mala' ao list_display e list_filter
+    list_display = ('nome', 'patrimonio', 'status', 'mala', 'filial', 'qr_code_preview')
+    list_filter = ('status', 'fabricante_marca', 'modelo', 'data_aquisicao', 'filial', 'mala')
+    search_fields = ('nome', 'patrimonio', 'codigo_identificacao')
+    readonly_fields = ('qr_code_preview',) # 'filial' removido daqui para ser editável se necessário
+    
+    #  Usando raw_id_fields para o campo 'mala' para melhor performance
+    raw_id_fields = ('mala',)
+
+    fieldsets = (
+        ('Informações Principais', {
+            'fields': ('nome', 'filial', 'patrimonio', 'codigo_identificacao', 'fabricante_marca', 'modelo', 'qr_code_preview')
+        }),
+        ('Status, Localização e Associação', {
+            'fields': ('status', 'localizacao_padrao', 'data_aquisicao', 'mala')
         }),
         ('Outras Informações', {
             'classes': ('collapse',),
@@ -44,85 +86,44 @@ class FerramentaAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mode
     @admin.display(description="QR Code")
     def qr_code_preview(self, obj):
         if obj.qr_code:
-            return format_html('<img src="{}" width="100" height="100" />', obj.qr_code.url)
+            return format_html('<img src="{}" width="100" />', obj.qr_code.url)
         return "Será gerado ao salvar"
 
-    def save_model(self, request, obj, form, change):
-        """
-        Sobrescreve o método de salvamento para enviar uma notificação por e-mail
-        na criação de uma nova ferramenta.
-        """
-        # Primeiro, salva o objeto no banco de dados como de costume.
-        super().save_model(request, obj, form, change)
-
-        # A lógica de notificação é executada apenas se for uma NOVA criação (change=False).
-        if not change:
-            # 1. Encontra todos os administradores (superusuários) para notificar
-            admins = User.objects.filter(is_superuser=True, is_active=True)
-            admin_emails = [admin.email for admin in admins if admin.email]
-
-            if not admin_emails:
-                return  # Não faz nada se nenhum admin com e-mail for encontrado
-
-            # 2. Prepara o conteúdo do e-mail
-            assunto = f"Nova Ferramenta Cadastrada: {obj.nome}"
-            
-            # Constrói a URL completa para a nova ferramenta no admin
-            admin_url = request.build_absolute_uri(
-                reverse('admin:ferramentas_ferramenta_change', args=[obj.pk])
-            )
-
-            mensagem = f"""
-            Olá,
-            
-            Uma nova ferramenta foi cadastrada no sistema.
-
-            Detalhes:
-            - Nome: {obj.nome}
-            - Patrimônio: {obj.patrimonio or 'N/A'}
-            - Código de Identificação: {obj.codigo_identificacao}
-            - Cadastrado por: {request.user.get_full_name() or request.user.username}
-            - Filial: {obj.filial.nome if obj.filial else 'N/A'}
-
-            Você pode visualizar e gerenciar a nova ferramenta no link abaixo:
-            {admin_url}
-
-            Atenciosamente,
-            Sistema de Gerenciamento.
-            """
-
-            # 3. Envia o e-mail
-            try:
-                send_mail(
-                    subject=assunto,
-                    message=mensagem,
-                    from_email=settings.DEFAULT_FROM_EMAIL,  # Garanta que esta variável esteja configurada em seu settings.py
-                    recipient_list=admin_emails,
-                    fail_silently=False,
-                )
-            except Exception as e:
-                # Adiciona uma mensagem de erro no admin caso o e-mail falhe
-                self.message_user(request, f"A ferramenta foi salva, mas ocorreu um erro ao enviar a notificação por e-mail: {e}", level='WARNING')
-
-
+#  MovimentacaoAdmin agora mostra o item correto (Ferramenta ou Mala)
 @admin.register(Movimentacao)
 class MovimentacaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    list_display = ('ferramenta', 'retirado_por', 'data_retirada', 'esta_ativa', 'filial')
-    list_filter = ('data_retirada', 'filial', 'ferramenta__nome')
-    search_fields = ('ferramenta__nome', 'retirado_por__username')
+    # 'item_movimentado_link' substitui 'ferramenta'
+    list_display = ('item_movimentado_link', 'retirado_por', 'data_retirada', 'esta_ativa', 'filial')
+    list_filter = ('data_retirada', 'filial')
+    # Busca por nome da ferramenta ou da mala
+    search_fields = ('ferramenta__nome', 'mala__nome', 'retirado_por__username')
     readonly_fields = (
-        'ferramenta', 'filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista',
+        'ferramenta', 'mala', 'filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista',
         'condicoes_retirada', 'assinatura_retirada_preview', 'recebido_por',
         'data_devolucao', 'condicoes_devolucao', 'assinatura_devolucao_preview'
     )
     fieldsets = (
+        ('Item Movimentado', {
+            'fields': ('ferramenta', 'mala')
+        }),
         ('Dados da Retirada', {
-            'fields': ('ferramenta', 'filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista', 'condicoes_retirada', 'assinatura_retirada_preview')
+            'fields': ('filial', 'retirado_por', 'data_retirada', 'data_devolucao_prevista', 'condicoes_retirada', 'assinatura_retirada_preview')
         }),
         ('Dados da Devolução', {
             'fields': ('recebido_por', 'data_devolucao', 'condicoes_devolucao', 'assinatura_devolucao_preview')
         }),
     )
+
+    @admin.display(description="Item Movimentado", ordering='ferramenta__nome')
+    def item_movimentado_link(self, obj):
+        item = obj.item_movimentado
+        if isinstance(item, Ferramenta):
+            url = reverse('admin:ferramentas_ferramenta_change', args=[item.pk])
+            return format_html('<b>Ferramenta:</b> <a href="{}">{}</a>', url, item)
+        if isinstance(item, MalaFerramentas):
+            url = reverse('admin:ferramentas_malaferramentas_change', args=[item.pk])
+            return format_html('<b>Mala:</b> <a href="{}">{}</a>', url, item)
+        return "N/A"
 
     @admin.display(description="Assinatura (Retirada)")
     def assinatura_retirada_preview(self, obj):
@@ -140,13 +141,21 @@ class MovimentacaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mo
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
 
+# [ATUALIZADO] AtividadeAdmin agora mostra o item correto (Ferramenta ou Mala)
 @admin.register(Atividade)
 class AtividadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    list_display = ('timestamp', 'ferramenta', 'tipo_atividade', 'usuario', 'filial')
+    # [MELHORIA] 'item_afetado' substitui 'ferramenta'
+    list_display = ('timestamp', 'item_afetado', 'tipo_atividade', 'usuario', 'filial')
     list_filter = ('tipo_atividade', 'timestamp', 'filial')
-    search_fields = ('ferramenta__nome', 'descricao', 'usuario__username')
-    readonly_fields = ('timestamp', 'ferramenta', 'tipo_atividade', 'descricao', 'usuario', 'filial')
+    search_fields = ('ferramenta__nome', 'mala__nome', 'descricao', 'usuario__username')
+    readonly_fields = ('timestamp', 'ferramenta', 'mala', 'tipo_atividade', 'descricao', 'usuario', 'filial')
+
+    @admin.display(description="Item Afetado")
+    def item_afetado(self, obj):
+        return obj.ferramenta or obj.mala or "N/A"
 
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
+
+    

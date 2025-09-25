@@ -1,0 +1,56 @@
+
+{% extends 'ferramentas/ferramentas_base.html' %}
+{% load static widget_tweaks %}
+
+{% block ferramentas_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Formulário de Devolução: {{ movimentacao.mala.nome }}</h4>
+                <p class="mb-0 text-muted">Retirado por: {{ movimentacao.retirado_por.get_full_name }}</p>
+            </div>
+            <div class="card-body p-4">
+
+                <div class="alert alert-warning">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Checklist de Devolução</h6>
+                    <p class="mb-0">Verifique se todos os itens da mala estão sendo devolvidos e descreva as condições gerais no campo abaixo.</p>
+                </div>
+                <ul class="list-group mb-4">
+                    {% for item in movimentacao.mala.itens.all %}
+                        <li class="list-group-item">{{ item.nome }} ({{ item.codigo_identificacao }})</li>
+                    {% endfor %}
+                </ul>
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.condicoes_devolucao.label }}</label>
+                        {% render_field form.condicoes_devolucao class+="form-control" rows="3" %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Assinatura (quem recebe de volta):</label>
+                        <div class="border rounded p-1" style="background-color: #fff;">
+                            <canvas id="signature-pad" class="w-100" height="200"></canvas>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar</button>
+                    </div>
+                    {% render_field form.assinatura_base64 %}
+
+                    <hr>
+                    <div class="d-flex justify-content-end mt-4">
+                        <a href="{{ movimentacao.mala.get_absolute_url }}" class="btn btn-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-success">Confirmar Devolução</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {% include 'ferramentas/partials/signature_pad_js.html' %}
+{% endblock %}

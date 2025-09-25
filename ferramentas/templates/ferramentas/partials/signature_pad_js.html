@@ -1,0 +1,61 @@
+
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Encontra os elementos essenciais na página
+    const canvas = document.getElementById('signature-pad');
+    const clearButton = document.getElementById('clear-signature');
+    
+    // Verificação de segurança: se os elementos não existirem, o script para.
+    if (!canvas || !clearButton) {
+        console.error("Elementos do canvas de assinatura não encontrados. Verifique os IDs 'signature-pad' e 'clear-signature' no HTML.");
+        return;
+    }
+
+    // 2. Encontra o formulário e o campo oculto de forma dinâmica e robusta
+    const form = canvas.closest('form');
+    const signatureDataInput = form.querySelector('[name="assinatura_base64"]');
+
+    if (!form || !signatureDataInput) {
+        console.error("O formulário ou o campo oculto 'assinatura_base64' não foi encontrado.");
+        return;
+    }
+
+    // 3. Lógica para tornar o canvas responsivo
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        // Limpa o canvas após redimensionar para não distorcer a assinatura existente
+        if (signaturePad) {
+            signaturePad.clear();
+        }
+    }
+    
+    window.addEventListener("resize", resizeCanvas);
+    
+    // 4. Inicializa o SignaturePad
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)' // Fundo branco
+    });
+
+    // Redimensiona o canvas pela primeira vez após a inicialização
+    resizeCanvas();
+
+    // 5. Adiciona os eventos ao formulário e ao botão
+    form.addEventListener('submit', function (event) {
+        if (signaturePad.isEmpty()) {
+            alert("Por favor, forneça uma assinatura para continuar.");
+            event.preventDefault(); // Impede o envio do formulário
+        } else {
+            // Preenche o campo oculto com a imagem da assinatura em base64
+            signatureDataInput.value = signaturePad.toDataURL('image/png');
+        }
+    });
+
+    clearButton.addEventListener('click', function () {
+        signaturePad.clear();
+    });
+});
+</script>

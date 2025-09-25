@@ -1,29 +1,70 @@
-
 {% extends 'ferramentas/ferramentas_base.html' %}
-{% block content %}
+{% load static widget_tweaks %}
+
+{% block title %}
+    Checklist de Retirada
+{% endblock %}
+
+{% block ferramentas_content %}
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0">Checklist de Retirada: {{ ferramenta.nome }}</h4>
+            <div class="card shadow-sm rounded-3">
+                <div class="card-header bg-light py-3">
+                    {# O título é dinâmico, mostrando o nome da ferramenta OU da mala #}
+                    <h4 class="mb-0 text-primary-emphasis">Checklist de Retirada: {{ item.nome }}</h4>
+                    <p class="mb-0 text-muted">A ser retirado por: {{ request.user.get_full_name|default:request.user.username }}</p>
                 </div>
-                <div class="card-body">
-                    <form method="post">
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
                         {% csrf_token %}
-                        {{ form.as_p }}
 
-                        <div class="mb-3">
-                            <label class="form-label">Assinatura (quem retira):</label>
-                            <div class="signature-pad-container">
-                                <canvas id="signature-pad" class="signature-pad"></canvas>
+                        {# Exibe erros gerais do formulário, se houver #}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar</button>
+                        {% endif %}
+
+                        {# Renderiza os campos do formulário com estilos do Bootstrap #}
+                        {% for field in form.visible_fields %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                                {% if field.name == 'condicoes_retirada' %}
+                                    {% render_field field class+="form-control" rows="3" placeholder="Descreva o estado do item (arranhões, funcionamento, etc.)" %}
+                                {% else %}
+                                    {% render_field field class+="form-control" %}
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+
+                        {# Campo da Assinatura Digital #}
+                        <div class="mb-3">
+                            <label for="signature-pad" class="form-label fw-bold">Assinatura (quem retira):</label>
+                            <div class="border rounded p-1" style="background-color: #f8f9fa;">
+                                <canvas id="signature-pad" class="w-100" height="200"></canvas>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">
+                                <i class="bi bi-eraser-fill"></i> Limpar
+                            </button>
                         </div>
                         
+                        {# Campo oculto que guardará a imagem da assinatura #}
+                        {% render_field form.assinatura_base64 id="id_assinatura_base64" %}
+
+                        <hr class="my-4">
+
                         <div class="d-flex justify-content-end">
-                            <a href="{{ ferramenta.get_absolute_url }}" class="btn btn-secondary me-2">Cancelar</a>
-                            <button type="submit" class="btn btn-success">Confirmar Retirada</button>
+                            {# O botão Cancelar leva de volta para a página de detalhes do item (seja ferramenta ou mala) #}
+                            <a href="{{ item.get_absolute_url }}" class="btn btn-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-lg me-1"></i> Confirmar Retirada
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -31,30 +72,50 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock ferramentas_content %}
+
 {% block extra_js %}
+{# O JavaScript para a assinatura é o mesmo para ambos os casos #}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const canvas = document.getElementById('signature-pad');
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgba(207, 231, 237, 1)'
-    });
+    if (!canvas) return; // Garante que o código não quebre em outras páginas
 
     const form = canvas.closest('form');
+    const signatureDataInput = document.getElementById('id_assinatura_base64');
+    const clearButton = document.getElementById('clear-signature');
+
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: '#f8f9fa'
+    });
+    signaturePad.clear();
+
     form.addEventListener('submit', function (event) {
         if (signaturePad.isEmpty()) {
-            alert("Por favor, forneça uma assinatura.");
+            alert("Por favor, forneça uma assinatura para confirmar a retirada.");
             event.preventDefault();
         } else {
-            const signatureDataInput = form.querySelector('input[name="assinatura_base64"]');
-            signatureDataInput.value = signaturePad.toDataURL('image/png');
+            if (signatureDataInput) {
+                signatureDataInput.value = signaturePad.toDataURL('image/png');
+            }
         }
     });
 
-    document.getElementById('clear-signature').addEventListener('click', function () {
+    clearButton.addEventListener('click', function () {
         signaturePad.clear();
     });
 });
 </script>
-{% endblock %}
+{% endblock extra_js %}
+
+

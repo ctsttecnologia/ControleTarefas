@@ -18,15 +18,6 @@
         </div>
     </div>
     
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
     <div class="row">
         <div class="col-lg-4 mb-4">
 
@@ -35,22 +26,21 @@
                     Status e Ações
                 </div>
                 <div class="card-body">
-                    <form method="post" class="d-grid gap-2">
-                        {% csrf_token %}
-                        
-                        {% if ferramenta.status == 'disponivel' %}
+                        {% if status_efetivo == 'disponivel' %}
                             <div class="text-center mb-3">
                                 <h4 class="text-success"><i class="fas fa-check-circle fa-2x mb-2"></i><br>Disponível</h4>
                                 <p class="text-muted small">Pronta para retirada ou manutenção.</p>
                             </div>
-                            <a href="{% url 'ferramentas:ferramenta_retirar' ferramenta_pk=ferramenta.pk %}" class="btn btn-primary"><i class="fas fa-sign-out-alt me-2"></i>Realizar Retirada</a>
-                            <button type="submit" formaction="{% url 'ferramentas:iniciar_manutencao' pk=ferramenta.pk %}" class="btn btn-outline-secondary"><i class="fas fa-wrench me-2"></i>Iniciar Manutenção</button>
+                             <a href="{% url 'ferramentas:retirar_ferramenta' ferramenta_pk=ferramenta.pk %}" class="btn btn-primary d-grid gap-2"><i class="fas fa-sign-out-alt me-2"></i>Realizar Retirada</a>
+                                <button type="submit" formaction="{% url 'ferramentas:iniciar_manutencao' pk=ferramenta.pk %}" class="btn btn-outline-secondary"><i class="fas fa-wrench me-2"></i>Iniciar Manutenção</button>
 
-                        {% elif ferramenta.status == 'em_uso' %}
+                        {% elif status_efetivo == 'em_uso' %}
                             <div class="text-center mb-3">
                                 <h4 class="text-warning"><i class="fas fa-user-clock fa-2x mb-2"></i><br>Em Uso</h4>
-                                {% if movimentacao_ativa %}
-                                    <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_full_name|default:movimentacao_ativa.retirado_por.username }}</strong></p>
+                                {% if ferramenta.mala %}
+                                    <p class="text-muted small">Este item está na mala<br><strong>{{ ferramenta.mala.nome }}</strong>, que está em uso.</p>
+                                {% elif movimentacao_ativa %}
+                                    <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_full_name }}</strong></p>
                                 {% endif %}
                             </div>
                             {% if movimentacao_ativa %}

@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied
 from .forms import ChangeFilialForm 
 from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
 from django.shortcuts import redirect
-
+from ferramentas.models import Atividade
 
 
 class SSTPermissionMixin(PermissionRequiredMixin):
@@ -165,4 +165,27 @@ class ChangeFilialAdminMixin:
 
     change_filial_action.short_description = "Alterar filial dos itens selecionados"
 
+class AtividadeLogMixin:
+    """
+    Mixin refatorado para criar logs de atividade para Ferramentas ou Malas.
+    """
+    def _log_atividade(self, tipo, descricao, ferramenta=None, mala=None):
+        """
+        Cria um log de atividade. Requer um tipo, uma descrição, e
+        exclusivamente um objeto 'ferramenta' OU 'mala'.
+        """
+        if not ferramenta and not mala:
+            # Lança um erro se nenhum item for fornecido para o log.
+            raise ValueError("A função _log_atividade requer um objeto 'ferramenta' ou 'mala'.")
 
+        # Pega a filial do objeto que foi passado (seja ferramenta ou mala)
+        item = ferramenta or mala
+        
+        Atividade.objects.create(
+            ferramenta=ferramenta,
+            mala=mala,
+            filial=item.filial,
+            tipo_atividade=tipo,
+            descricao=descricao,
+            usuario=self.request.user
+        )

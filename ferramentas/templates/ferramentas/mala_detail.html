@@ -1,0 +1,114 @@
+
+{% extends 'ferramentas/ferramentas_base.html' %}
+{% load static %}
+
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar para Lista
+    </a>
+    <a href="{% url 'ferramentas:mala_update' pk=mala.pk %}" class="btn btn-secondary">
+        <i class="fas fa-pencil-alt me-1"></i> Editar Mala
+    </a>
+{% endblock ferramentas_actions %}
+
+{% block ferramentas_content %}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-bold {% if mala.status == 'disponivel' %}text-bg-success{% else %}text-bg-warning{% endif %}">
+                Status e Ações
+            </div>
+            <div class="card-body text-center d-grid gap-2">
+                {% if mala.status == 'disponivel' %}
+                    <h4 class="text-success"><i class="fas fa-check-circle fa-2x mb-2"></i><br>Disponível</h4>
+                    <p class="text-muted small">Pronta para retirada.</p>
+                    <a href="{% url 'ferramentas:retirar_mala' mala_pk=mala.pk %}" class="btn btn-primary"><i class="fas fa-sign-out-alt me-2"></i>Realizar Retirada</a>
+                {% elif mala.status == 'em_uso' %}
+                    <h4 class="text-warning"><i class="fas fa-user-clock fa-2x mb-2"></i><br>Em Uso</h4>
+                    {% if movimentacao_ativa %}
+                        <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_full_name }}</strong></p>
+                        <a href="{% url 'ferramentas:mala_devolver' pk=movimentacao_ativa.pk %}" class="btn btn-success"><i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-bold"><i class="fas fa-info-circle me-2"></i>Ficha Técnica</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Código:</strong> {{ mala.codigo_identificacao }}</li>
+                <li class="list-group-item"><strong>Localização:</strong> {{ mala.localizacao_padrao }}</li>
+                <li class="list-group-item"><strong>Filial:</strong> {{ mala.filial.nome }}</li>
+            </ul>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold"><i class="fas fa-qrcode me-2"></i>Etiqueta QR Code</div>
+            <div class="card-body text-center">
+                {% if mala.qr_code %}
+                    <img src="{{ mala.qr_code.url }}" alt="QR Code" class="img-fluid mb-3 border p-2 bg-white" style="max-width: 180px;">
+                    <a href="{{ mala.qr_code.url }}" download="qrcode-mala-{{ mala.codigo_identificacao }}.png" class="btn btn-outline-primary w-100"><i class="fas fa-download me-2"></i>Baixar QR Code</a>
+                {% else %}
+                    <p class="text-muted">QR Code não gerado.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header fw-bold"><i class="fas fa-toolbox me-2"></i>Itens na Mala ({{ mala.itens.count }})</div>
+            <div class="list-group list-group-flush">
+                {% for item in mala.itens.all %}
+                <a href="{{ item.get_absolute_url }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ item.nome }}</strong>
+                        <small class="d-block text-muted">{{ item.codigo_identificacao }}</small>
+                    </div>
+                    {% if item.status == 'disponivel' %}<span class="badge bg-success">Disponível</span>
+                    {% elif item.status == 'em_uso' %}<span class="badge bg-warning">Em Uso</span>
+                    {% elif item.status == 'em_manutencao' %}<span class="badge bg-info">Manutenção</span>
+                    {% else %}<span class="badge bg-danger">Descartada</span>
+                    {% endif %}
+                </a>
+                {% empty %}
+                <div class="list-group-item text-center text-muted">Nenhuma ferramenta associada a esta mala.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold"><i class="fas fa-history me-2"></i>Histórico de Movimentações da Mala</div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover small mb-0">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Retirado por</th>
+                            <th>Data Retirada</th>
+                            <th>Recebido por</th>
+                            <th>Data Devolução</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mov in movimentacoes %}
+                        <tr>
+                            <td>
+                                {% if mov.esta_ativa %}<span class="badge bg-warning">Em Uso</span>
+                                {% else %}<span class="badge bg-secondary">Concluída</span>{% endif %}
+                            </td>
+                            <td>{{ mov.retirado_por.get_full_name }}</td>
+                            <td>{{ mov.data_retirada|date:"d/m/y H:i" }}</td>
+                            <td>{{ mov.recebido_por.get_full_name|default:"-" }}</td>
+                            <td>{{ mov.data_devolucao|date:"d/m/y H:i"|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted">Nenhuma movimentação registrada.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
