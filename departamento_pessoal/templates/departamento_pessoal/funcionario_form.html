@@ -1,3 +1,4 @@
+
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load widget_tweaks %}
 
@@ -92,7 +93,14 @@
                                 {% render_field form.cargo class+="form-select" %}
                                 {% for error in form.cargo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
-                            <div class="col-12">
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.funcao.label }}</label>
+                                {% render_field form.funcao class+="form-select" %}
+                                {% for error in form.funcao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                {% if form.funcao.help_text %}<small class="form-text text-muted">{{ form.funcao.help_text|safe }}</small>{% endif %}
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label">{{ form.cliente.label }}</label>
                                 {% render_field form.cliente class+="form-select" %}
                                 {% for error in form.cliente.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}

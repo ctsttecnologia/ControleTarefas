@@ -1,65 +1,77 @@
 // static/js/signature.js
 
-document.addEventListener('DOMContentLoaded', function() {
-    const formAssinatura = document.getElementById('formAssinatura');
-    const canvas = document.getElementById('signature-canvas');
-    const clearButton = document.getElementById('clear-signature');
-    const hiddenInput = document.getElementById('assinatura_base64');
-    const signatureTypeInput = document.getElementById('signature_type');
-    const drawTabButton = document.getElementById('draw-tab');
-    const uploadTabButton = document.getElementById('upload-tab');
-    const fileInput = document.getElementById('assinatura_imagem_upload');
+class SignaturePadComponent {
+    /**
+     * @param {HTMLElement} containerElement - O elemento que contém o canvas e os botões.
+     */
+    constructor(containerElement) {
+        this.container = containerElement;
 
-    // Agora a verificação de existência vai funcionar corretamente
-    if (!canvas || !formAssinatura || !clearButton || !hiddenInput || !signatureTypeInput || !drawTabButton || !uploadTabButton || !fileInput) {
-        console.error("Um ou mais elementos do formulário de assinatura não foram encontrados. Verifique os IDs no HTML.");
-        // Remova o 'return' temporariamente para ver qual elemento está faltando
-        // return; 
-    }
+        // Procura o canvas dentro do container, aceitando o novo data-attribute ou o ID antigo
+        this.canvas = this.container.querySelector('[data-signature-canvas], #signature-canvas');
 
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(248, 249, 250)'
-    });
-
-    drawTabButton.addEventListener('click', function() {
-        signatureTypeInput.value = 'draw';
-    });
-
-    uploadTabButton.addEventListener('click', function() {
-        signatureTypeInput.value = 'upload';
-    });
-
-    formAssinatura.addEventListener('submit', function(event) {
-        if (signatureTypeInput.value === 'draw') {
-            if (signaturePad.isEmpty()) {
-                alert("Por favor, desenhe uma assinatura para salvar.");
-                event.preventDefault();
-            } else {
-                hiddenInput.value = signaturePad.toDataURL('image/png');
-            }
-        } else if (signatureTypeInput.value === 'upload') {
-            if (fileInput.files.length === 0) {
-                alert("Por favor, selecione um arquivo de imagem para salvar.");
-                event.preventDefault();
-            }
+        if (!this.canvas) {
+            console.error("Elemento canvas não foi encontrado no container fornecido.", this.container);
+            return; // Aborta se o canvas não for encontrado
         }
-    });
 
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio, ratio);
-        signaturePad.clear();
+        // Isso permite que outros scripts acessem métodos como o resizeCanvas()
+        this.canvas.signaturePadInstance = this;
+        // Procura outros elementos de forma flexível
+        this.clearButton = this.container.querySelector('[data-signature-clear-button], #clear-signature');
+        this.hiddenInput = this.container.querySelector('[data-signature-hidden-input], #assinatura_base64');
+        this.form = this.container.closest('form');
+
+        if (!this.form || !this.hiddenInput) {
+            console.error("Componente de assinatura não encontrou o formulário pai ou o input hidden.");
+            return;
+        }
+
+        this.signaturePad = new SignaturePad(this.canvas, {
+            backgroundColor: 'rgb(255, 255, 255)'
+        });
+
+        this._setupEventListeners();
+        
+        // Usa um pequeno timeout para garantir que o layout da página está 100% estável antes de calibrar
+        setTimeout(() => this.resizeCanvas(), 150);
     }
 
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas(); // Chamada inicial para redimensionar o canvas
-    
-    // Apenas para garantir que funcione se a chamada inicial falhar.
-    setTimeout(resizeCanvas, 200); 
+    _setupEventListeners() {
+        window.addEventListener("resize", () => this.resizeCanvas());
+        if (this.clearButton) {
+            this.clearButton.addEventListener('click', () => this.signaturePad.clear());
+        }
+        this.form.addEventListener('submit', () => this._handleFormSubmit());
+    }
 
-    if (clearButton) {
-        clearButton.addEventListener('click', () => signaturePad.clear());
+    resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        this.canvas.width = this.canvas.offsetWidth * ratio;
+        this.canvas.height = this.canvas.offsetHeight * ratio;
+        this.canvas.getContext("2d").scale(ratio, ratio);
+        this.signaturePad.clear();
+    }
+
+    _handleFormSubmit() {
+        if (!this.signaturePad.isEmpty()) {
+            this.hiddenInput.value = this.signaturePad.toDataURL('image/png');
+        }
+    }
+}
+
+// INICIALIZADOR UNIVERSAL ATUALIZADO
+window.addEventListener('load', () => {
+    // 1. Prioriza a busca pela nova estrutura (data-attributes)
+    const signatureContainers = document.querySelectorAll('[data-signature-pad-container]');
+    if (signatureContainers.length > 0) {
+        signatureContainers.forEach(container => new SignaturePadComponent(container));
+    } else {
+        // 2. Se não encontrar, procura pela estrutura antiga (baseada no ID do formulário) como plano B
+        const legacyForm = document.getElementById('formAssinatura');
+        if (legacyForm) {
+            new SignaturePadComponent(legacyForm);
+        }
     }
 });
+

@@ -23,7 +23,8 @@ FIELD_ENCRYPTION_KEY = get_random_secret_key()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-SECRET_KEY = config('SECRET_KEY')
+
+#SECRET_KEY = config('SECRET_KEY')
 
 # Guarde esta chave em um local seguro, como variáveis de ambiente!
 FERNET_KEYS = config('KEYS')
@@ -34,8 +35,8 @@ DEBUG = config('DEBUG')
 # Isso gera uma chave segura. Armazene-a em um local seguro, como variáveis de ambiente.
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
-ALLOWED_HOSTS = ['bkrfdm.hospedagemelastica.com.br', 'localhost', '127.0.0.1']
-
+#ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['bkrfdm.hospedagemelastica.com.br']
 
 # Application definition
 
@@ -213,13 +214,14 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configuração de E-mail para DESENVOLVIMENTO (imprime no console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'smtp.seu-servidor.com'
+EMAIL_BACKEND = 'EMAIL_BACKEND'
+EMAIL_HOST = 'EMAIL_HOST'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'seu-email@dominio.com'
-EMAIL_HOST_PASSWORD = 'sua-senha'
-DEFAULT_FROM_EMAIL = 'seu-email@dominio.com'
+EMAIL_HOST_USER = 'EMAIL_HOST_USER'
+EMAIL_HOST_PASSWORD = 'MAIL_HOST_PASSWORD'
+DEFAULT_FROM_EMAIL = 'DEFAULT_FROM_EMAIL'
+
 
 # Configurações DRF
 REST_FRAMEWORK = {

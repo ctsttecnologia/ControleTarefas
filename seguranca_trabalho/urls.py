@@ -63,6 +63,8 @@ urlpatterns = [
     path('fichas/<int:pk>/', FichaEPIDetailView.as_view(), name='ficha_detail'),
     path('controle-epi-funcao/', ControleEPIPorFuncaoView.as_view(), name='controle_epi_por_funcao'),  
     path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='entrega_sign'),
+
+    path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='captura_teste'),
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),
     path('fichas/<int:pk>/update/', FichaEPIUpdateView.as_view(), name='ficha_update'),
     path('fichas/<int:pk>/delete/', FichaEPIDeleteView.as_view(), name='ficha_delete'),

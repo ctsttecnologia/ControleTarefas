@@ -28,8 +28,8 @@ urlpatterns = [
     # -- URLs de Movimentação (Retirada e Devolução) --
     path('retirar/ferramenta/<int:ferramenta_pk>/', views.MovimentacaoCreateView.as_view(), name='retirar_ferramenta'),
     path('retirar/mala/<int:mala_pk>/', views.MovimentacaoCreateView.as_view(), name='retirar_mala'),
-    path('devolver/ferramenta/<int:pk>/', views.DevolucaoUpdateView.as_view(), name='devolver_ferramenta'),
-    path('devolver/mala/<int:pk>/', views.MalaDevolucaoUpdateView.as_view(), name='mala_devolver'),
+    path('devolver/ferramenta/<int:pk>/', views.DevolucaoUpdateView.as_view(), name='devolver_form'),
+    path('devolver/mala/<int:pk>/', views.MalaDevolucaoUpdateView.as_view(), name='mala_devolucao_form'),
 
     # -- URLs Utilitárias (QR Code, Importação, etc.) --
     path('qrcodes/gerar/', views.GerarQRCodesView.as_view(), name='gerar_qrcodes_view'),
@@ -37,4 +37,13 @@ urlpatterns = [
     path('scan/<str:codigo_identificacao>/', views.ResultadoScanView.as_view(), name='resultado_scan'),
     path('importar/', views.ImportarFerramentasView.as_view(), name='importar_ferramentas'),
     path('importar/template/', views.DownloadTemplateView.as_view(), name='download_template'),
+
+    # URLS DE TERMOS ATUALIZADAS E NOVAS
+    path('termos/', views.TermoListView.as_view(), name='termo_list'),
+    path('termos/criar/', views.CriarTermoResponsabilidadeView.as_view(), name='criar_termo_responsabilidade'),
+    path('termos/<int:pk>/', views.TermoDetailView.as_view(), name='termo_detail'),
+    path('termos/<int:pk>/pdf/', views.DownloadTermoPDFView.as_view(), name='termo_pdf_download'),
+    path('termos/download-lote/', views.DownloadTermosLoteView.as_view(), name='termo_download_lote'),
+    path('termos/<int:pk>/reverter/', views.ReverterTermoView.as_view(), name='termo_reverter'),
+    
 ]

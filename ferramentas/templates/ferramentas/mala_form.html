@@ -4,10 +4,15 @@
 {% load widget_tweaks %}
 
 {% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Cancelar
-    </a>
+    <div class="row justify-content-cente">
+        
+        <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+    <div>
 {% endblock ferramentas_actions %}
+
+{# ... Bloco de actions ... #}
 
 {% block ferramentas_content %}
 <div class="row justify-content-center">
@@ -19,24 +24,49 @@
             <div class="card-body p-4">
                 <form method="post">
                     {% csrf_token %}
-                    
+
+                    {# BLOCO PARA ERROS GERAIS DO FORMULÁRIO        #}
+            
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
                     <div class="mb-3">
                         <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>
                         {% render_field form.nome class="form-control" %}
+                        {# erros específicos do campo #}
+                        <div class="text-danger small mt-1">{{ form.nome.errors }}</div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.codigo_identificacao.id_for_label }}" class="form-label">{{ form.codigo_identificacao.label }}</label>
                             {% render_field form.codigo_identificacao class="form-control" %}
+                            {# erros específicos do campo #}
+                            <div class="text-danger small mt-1">{{ form.codigo_identificacao.errors }}</div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.localizacao_padrao.id_for_label }}" class="form-label">{{ form.localizacao_padrao.label }}</label>
                             {% render_field form.localizacao_padrao class="form-control" %}
+                            {# erros específicos do campo #}
+                            <div class="text-danger small mt-1">{{ form.localizacao_padrao.errors }}</div>
                         </div>
                     </div>
-
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.quantidade.id_for_label }}" class="form-label">{{ form.quantidade.label }}</label>
+                        {% render_field form.quantidade class="form-control" type="number" %}
+                        <div class="text-danger small mt-1">{{ form.quantidade.errors }}</div>
+                    </div>
+                    
                     <div class="mb-3">
                         <label class="form-label">{{ form.itens.label }}</label>
+                        {# erros específicos do campo de itens #}
+                        <div class="text-danger small mb-1">{{ form.itens.errors }}</div>
                         <div class="card">
                             <div class="card-body" style="max-height: 250px; overflow-y: auto;">
                                 {% for checkbox in form.itens %}

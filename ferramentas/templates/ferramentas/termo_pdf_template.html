@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Termo de Responsabilidade #{{ termo.pk }}</title>
+    <style>
+        @page { size: A4; margin: 2cm; }
+        body { font-family: Arial, sans-serif; font-size: 11pt; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 16pt; margin: 0; }
+        .header h2 { font-size: 14pt; margin: 5px 0 20px 0; border-bottom: 2px solid #000; padding-bottom: 5px; }
+        .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .info-table td { padding: 5px; border: 1px solid #ccc; }
+        .info-table .label { font-weight: bold; width: 120px; }
+        .declaracao { text-align: justify; margin-bottom: 25px; line-height: 1.5; }
+        .items-table { width: 100%; border-collapse: collapse; }
+        .items-table th, .items-table td { border: 1px solid #000; padding: 8px; text-align: center; }
+        .items-table th { background-color: #f2f2f2; }
+        .assinatura { margin-top: 60px; }
+        .assinatura-linha { border-bottom: 1px solid #000; width: 300px; margin: 40px auto 0 auto; }
+        .assinatura-texto { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        [cite_start]<h1>CETEST [cite: 1]</h1>
+        [cite_start]<h2>TERMO DE RESPONSABILIDADE [cite: 2]</h2>
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td class="label">Separado por:</td>
+            <td>{{ termo.separado_por.nome_completo|default:"N/A" }}</td>
+            <td class="label">Data de Emissão:</td>
+            <td>{{ termo.data_emissao|date:"d/m/Y" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Responsável:</td>
+            <td>{{ termo.responsavel.nome_completo }}</td>
+            <td class="label">Recebido em:</td>
+            <td>{{ termo.data_recebimento|date:"d/m/Y H:i" }}</td>
+        </tr>
+        <tr>
+            <td class="label">Contrato:</td>
+            <td colspan="3">{{ termo.contrato }}</td>
+        </tr>
+    </table>
+
+    <p class="declaracao">
+        Declaro através deste Termo de Responsabilidade, que se encontra sob minha
+        [cite_start]responsabilidade os equipamentos conforme descrito abaixo. [cite: 10] Estou ciente que, em caso de
+        perda e uso indevido, ocasionando danos, será reembolsado a importância referente ao
+        [cite_start]preço de reposição da mesma. [cite: 10] [cite_start]A utilização é para fins das atividades Cetest não podendo ser utilizado para outros fins. [cite: 13, 14]
+    </p>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th style="width:15%;">QTDA.</th>
+                <th style="width:15%;">UN</th>
+                <th>ITEM</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in termo.itens.all %}
+            <tr>
+                <td>{{ item.quantidade }}</td>
+                <td>{{ item.unidade }}</td>
+                <td style="text-align: left;">{{ item.item }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Nenhum item associado a este termo.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="assinatura">
+        {% if termo.assinatura_data %}
+            <div class="assinatura-texto">
+                <img src="{{ termo.assinatura_data }}" alt="Assinatura" style="max-height: 80px; display: block; margin: 0 auto;">
+            </div>
+        {% endif %}
+        <div class="assinatura-linha"></div>
+        <div class="assinatura-texto">{{ termo.responsavel.nome_completo }}</div>
+    </div>
+</body>
+</html>

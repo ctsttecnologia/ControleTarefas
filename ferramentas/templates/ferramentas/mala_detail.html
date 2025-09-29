@@ -22,12 +22,16 @@
                 {% if mala.status == 'disponivel' %}
                     <h4 class="text-success"><i class="fas fa-check-circle fa-2x mb-2"></i><br>Disponível</h4>
                     <p class="text-muted small">Pronta para retirada.</p>
-                    <a href="{% url 'ferramentas:retirar_mala' mala_pk=mala.pk %}" class="btn btn-primary"><i class="fas fa-sign-out-alt me-2"></i>Realizar Retirada</a>
+                    <a href="{% url 'ferramentas:retirar_mala' mala_pk=mala.pk %}" class="btn btn-primary">
+                        <i class="fas fa-sign-out-alt me-2"></i>Realizar Retirada
+                    </a>
                 {% elif mala.status == 'em_uso' %}
                     <h4 class="text-warning"><i class="fas fa-user-clock fa-2x mb-2"></i><br>Em Uso</h4>
                     {% if movimentacao_ativa %}
                         <p class="text-muted small">Retirada por: <strong>{{ movimentacao_ativa.retirado_por.get_full_name }}</strong></p>
-                        <a href="{% url 'ferramentas:mala_devolver' pk=movimentacao_ativa.pk %}" class="btn btn-success"><i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução</a>
+                        <a href="{% url 'ferramentas:mala_devolucao_form' pk=movimentacao_ativa.pk %}" class="btn btn-success">
+                            <i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução
+                        </a>
                     {% endif %}
                 {% endif %}
             </div>

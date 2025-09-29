@@ -25,7 +25,7 @@
                 <div class="card-header fw-bold {% if ferramenta.status == 'disponivel' %}border-bottom-success{% elif ferramenta.status == 'em_uso' %}border-bottom-warning{% elif ferramenta.status == 'em_manutencao' %}border-bottom-info{% else %}border-bottom-danger{% endif %}">
                     Status e Ações
                 </div>
-                <div class="card-body">
+                <div class="card-body text-center d-grid gap-2">
                         {% if status_efetivo == 'disponivel' %}
                             <div class="text-center mb-3">
                                 <h4 class="text-success"><i class="fas fa-check-circle fa-2x mb-2"></i><br>Disponível</h4>
@@ -44,7 +44,9 @@
                                 {% endif %}
                             </div>
                             {% if movimentacao_ativa %}
-                                <a href="{% url 'ferramentas:ferramenta_devolver' pk=movimentacao_ativa.pk %}" class="btn btn-success"><i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução</a>
+                                <a href="{% url 'ferramentas:devolver_form' pk=movimentacao_ativa.pk %}" class="btn btn-success">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Realizar Devolução
+                                </a>
                             {% endif %}
 
                         {% elif ferramenta.status == 'em_manutencao' %}
@@ -152,6 +154,7 @@
                             <div>
                                 <strong>{{ atividade.get_tipo_atividade_display }}</strong>
                                 <p class="mb-0 text-muted">{{ atividade.descricao }}</p>
+                                <p class="mb-0 text-muted">{{ ferramenta.retirada_por.get_full_name }}</p>
                             </div>
                             <span class="badge bg-light text-dark ms-2 text-nowrap">{{ atividade.timestamp|date:"d/m/y H:i" }}</span>
                         </li>

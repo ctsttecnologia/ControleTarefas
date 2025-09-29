@@ -6,7 +6,11 @@ from django.utils.html import format_html
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 # Importa o modelo MalaFerramentas
 from .models import Atividade, Ferramenta, MalaFerramentas, Movimentacao
+from django.contrib import admin
+from .models import TermoDeResponsabilidade, ItemTermo
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 #  Inline para mostrar as ferramentas DENTRO de uma Mala
 class FerramentaInline(admin.TabularInline):
@@ -158,4 +162,48 @@ class AtividadeAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Model
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
 
+# Termos de responsabilidade
+
+class ItemTermoInline(admin.TabularInline):
+    model = ItemTermo
+    extra = 1 # Quantidade de formulários extras para adicionar
     
+    # Campos que serão exibidos no inline
+    fields = ['quantidade', 'unidade', 'item', 'ferramenta', 'mala'] 
+    
+    # Você pode querer customizar o formulário para ter lógica condicional aqui (mais complexo)
+    # Por exemplo: fazer 'ferramenta' ou 'mala' serem obrigatórios com base no termo principal.
+
+
+@admin.register(TermoDeResponsabilidade)
+class TermoDeResponsabilidadeAdmin(admin.ModelAdmin):
+    inlines = [ItemTermoInline]
+    
+    # ATUALIZADO: Trocamos 'data_criacao' por 'data_emissao' e adicionamos outros campos úteis.
+    list_display = ('id', 'responsavel', 'contrato', 'data_emissao', 'is_signed', 'filial')
+    
+    # ATUALIZADO: Adicionado filtro por filial e data de emissão.
+    list_filter = ('filial', 'tipo_uso', 'data_emissao')
+    
+    # CORRIGIDO: 'contrato' agora é um CharField e 'responsavel' busca pelo nome_completo.
+    search_fields = ('responsavel__nome_completo', 'contrato') 
+    
+    readonly_fields = ('data_recebimento', 'assinatura_data', 'movimentado_por')
+
+    # CORRIGIDO: Campos 'coordenador' e 'data_criacao' foram atualizados para 'separado_por' e 'data_emissao'.
+    fieldsets = (
+        ('Informações do Termo', {
+            'fields': ('tipo_uso', 'contrato', 'responsavel', 'separado_por', 'data_emissao', 'filial')
+        }),
+        ('Controle de Assinatura (Gerado pelo Sistema)', {
+            'classes': ('collapse',), # Oculta por padrão para uma interface mais limpa
+            'fields': ('data_recebimento', 'assinatura_data', 'movimentado_por')
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        # Garante que o usuário logado que está fazendo a movimentação seja registrado
+        if not obj.pk:
+            obj.movimentado_por = request.user
+        super().save_model(request, obj, form, change)
+

@@ -1,48 +1,120 @@
+
+
+{% load static %}
+
+{# ========================================================== #}
+{#      MODAL DE ASSINATURA EPI      #}
+{# ========================================================== #}
+
 <div class="modal fade" id="assinaturaModal" tabindex="-1" aria-labelledby="assinaturaModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    
+    <div class="modal-dialog modal-lg">
+        
         <div class="modal-content">
-            <form id="formAssinatura" method="post" action="" enctype="multipart/form-data">
+            <form id="formAssinaturaModal" method="post" action="" enctype="multipart/form-data">
                 {% csrf_token %}
-
-                <input type="hidden" name="signature_type" id="signature_type" value="draw">
-
                 <div class="modal-header">
                     <h5 class="modal-title" id="assinaturaModalLabel">Assinatura de Recebimento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Eu, {{ ficha.funcionario.nome_completo }}, confirmo o recebimento do EPI descrito.</p>
+                <div class="modal-body" style="width: 100%; height: outo;">
+                    <p>Eu, <strong id="modalFuncionarioNome"></strong>, confirmo o recebimento do EPI descrito.</p>
 
-                    <ul class="nav nav-tabs" id="myTab" role="tablist">
+                    <ul class="nav nav-tabs" id="assinaturaTabsModal" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="draw-tab" data-bs-toggle="tab" data-bs-target="#draw-pane" type="button" role="tab">Desenhar Assinatura</button>
+                            <button class="nav-link active" id="draw-tab-modal" data-bs-toggle="tab" data-bs-target="#draw-pane-modal" type="button">Desenhar Assinatura</button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">Anexar Imagem</button>
+                            <button class="nav-link" id="upload-tab-modal" data-bs-toggle="tab" data-bs-target="#upload-pane-modal" type="button">Anexar Imagem</button>
                         </li>
                     </ul>
 
-                    <div class="tab-content" id="myTabContent">
-                        <div class="tab-pane fade show active" id="draw-pane" role="tabpanel">
-                            <div class="wrapper-assinatura border rounded mt-2">
-                                <canvas id="signature-pad" class="signature-pad"></canvas>
+                    <div class="tab-content" id="assinaturaTabsContentModal">
+                        <div class="tab-pane fade show active" id="draw-pane-modal" role="tabpanel">
+                            <div class="mt-3">
+                                <label class="form-label fw-bold">Campo para Assinatura:</label>
+                                <div class="border rounded bg-white">
+                                    <canvas id="signature-canvas-modal" style="width: 100%; height: 200px; cursor: crosshair;"></canvas> </div>
+                                <input type="hidden" name="assinatura_base64" id="assinatura_base64_modal">
                             </div>
-                            <input type="hidden" name="assinatura_base64" id="assinatura_base64">
                         </div>
-                        <div class="tab-pane fade" id="upload-pane" role="tabpanel">
-                             <div class="mt-3">
-                                <label for="assinatura_imagem_upload" class="form-label">Selecione um arquivo de imagem:</label>
-                                <input class="form-control" type="file" id="assinatura_imagem_upload" name="assinatura_imagem" accept="image/png, image/jpeg">
-                             </div>
+                        <div class="tab-pane fade" id="upload-pane-modal" role="tabpanel">
+                            <div class="mt-3">
+                                <label for="assinatura_imagem_upload_modal" class="form-label fw-bold">Fazer Upload de Assinatura:</label>
+                                <input class="form-control" type="file" id="assinatura_imagem_upload_modal" name="assinatura_imagem" accept="image/png, image/jpeg">
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="clear-signature">Limpar Desenho</button>
-                    <button type="submit" class="btn btn-primary" id="save-signature">Salvar Assinatura</button>
+                    <button type="button" class="btn btn-outline-secondary" id="clear-signature-modal">Limpar Desenho</button>
+                    <button type="submit" class="btn btn-primary">Salvar Assinatura</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+{% block extra_js %}
+   
+
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script> 
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('assinaturaModal');
+        const canvas = document.getElementById('signature-canvas-modal');
+        const clearBtn = document.getElementById('clear-signature-modal');
+        const hiddenInput = document.getElementById('assinatura_base64_modal');
+        const form = document.getElementById('formAssinaturaModal');
+        let signaturePad;
+
+        // Função para calibrar o canvas
+        function resizeCanvas() {
+            if (canvas && signaturePad) {
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                canvas.width = canvas.offsetWidth * ratio;
+                canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+                signaturePad.clear();
+            }
+        }
+
+        // 1. Prepara os dados do modal quando ele é aberto
+        modal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const formUrl = button.getAttribute('data-form-url');
+            const funcionarioNome = button.getAttribute('data-funcionario-nome');
+            const modalForm = modal.querySelector('#formAssinaturaModal');
+            const modalNomeFuncionario = modal.querySelector('#modalFuncionarioNome');
+            
+            if (modalForm) modalForm.action = formUrl;
+            if (modalNomeFuncionario) modalNomeFuncionario.textContent = funcionarioNome;
+        });
+
+        // 2. Inicializa a assinatura DEPOIS que o modal está totalmente visível
+        modal.addEventListener('shown.bs.modal', function() {
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)'
+            });
+            resizeCanvas(); // Calibra o canvas
+            window.addEventListener('resize', resizeCanvas); // Recalibra se a janela mudar
+        });
+
+        // 3. Limpa a assinatura
+        clearBtn.addEventListener('click', function() {
+            if (signaturePad) {
+                signaturePad.clear();
+            }
+        });
+
+        // 4. Prepara o envio do formulário
+        form.addEventListener('submit', function() {
+            if (signaturePad && !signaturePad.isEmpty()) {
+                hiddenInput.value = signaturePad.toDataURL('image/png');
+            }
+        });
+    });
+    </script>
+{% endblock %}
 

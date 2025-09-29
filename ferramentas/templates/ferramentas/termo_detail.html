@@ -1,0 +1,113 @@
+
+{% extends 'ferramentas/ferramentas_base.html' %}
+{% load static %}
+
+{% block title %}{{ block.super }} | Detalhes do Termo #{{ termo.pk }}{% endblock %}
+
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+{% endblock %}
+
+
+{% block ferramentas_content %}
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-file-signature me-2"></i>
+            Termo de Responsabilidade #{{ termo.pk }}
+            <a href="{% url 'ferramentas:termo_download_lote' %}" class="btn btn-sm btn-outline-primary" title="Imprimir termos em lote" data-bs-toggle="tooltip" data-bs-placement="top">
+                <span class="icon text-white-50">
+                    <i class="fas fa-file-signature"></i> </span>
+                <span class="text">Termo</span>
+            </a>
+        </h5>
+
+        {% if pode_reverter %}
+            <form action="{% url 'ferramentas:termo_reverter' pk=termo.pk %}" method="post" onsubmit="return confirm('Tem certeza que deseja reverter este termo? Todos os itens associados serão devolvidos ao estoque.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-undo me-2"></i> Reverter Termo (Estorno)
+                </button>
+            </form>
+        {% else %}
+            <span class="badge bg-secondary p-2">
+                <i class="fas fa-check-circle me-1"></i>
+                Termo já finalizado ou parcialmente devolvido
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Responsável:</strong> {{ termo.responsavel }}</p>
+                <p><strong>Contrato Associado:</strong> {{ termo.contrato|default:"N/A" }}</p>
+                <p><strong>Coordenador:</strong> {{ termo.coordenador|default:"N/A" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Data de Criação:</strong> {{ termo.data_criacao|date:"d/m/Y H:i" }}</p>
+                <p><strong>Data de Recebimento (Assinatura):</strong> {{ termo.data_recebimento|date:"d/m/Y H:i" }}</p>
+                <p><strong>Movimentado por:</strong> {{ termo.movimentado_por.get_full_name|default:termo.movimentado_por.username }}</p>
+            </div>
+        </div>
+        
+        <hr>
+
+        <h5 class="mt-4">Itens Incluídos no Termo</h5>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Item (Descrição)</th>
+                        <th>Tipo</th>
+                        <th>Quantidade</th>
+                        <th>Unidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item_termo in termo.itens.all %}
+                    <tr>
+                        <td>
+                            {% if item_termo.ferramenta %}
+                                <a href="{{ item_termo.ferramenta.get_absolute_url }}">{{ item_termo.item }}</a>
+                            {% elif item_termo.mala %}
+                                <a href="{{ item_termo.mala.get_absolute_url }}">{{ item_termo.item }}</a>
+                            {% else %}
+                                {{ item_termo.item }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item_termo.ferramenta %}
+                                <span class="badge bg-primary">Ferramenta</span>
+                            {% elif item_termo.mala %}
+                                <span class="badge bg-info">Mala/Kit</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ item_termo.quantidade }}</td>
+                        <td>{{ item_termo.unidade }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nenhum item encontrado para este termo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <hr>
+
+        <div class="mt-4">
+            <h5>Assinatura Registrada:</h5>
+            {% if termo.assinatura_data %}
+                <img src="{{ termo.assinatura_data }}" alt="Assinatura do Responsável" class="img-fluid border p-2" style="max-width: 400px; background-color: #f8f9fa;">
+            {% else %}
+                <p class="text-muted">Nenhuma assinatura digital encontrada.</p>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

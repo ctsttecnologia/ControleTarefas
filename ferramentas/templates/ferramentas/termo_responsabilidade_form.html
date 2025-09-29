@@ -1,0 +1,191 @@
+{% extends 'ferramentas/ferramentas_base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Novo Termo de Responsabilidade{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+    <header class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Criar Termo de Responsabilidade</h1>
+        <a href="{% url 'ferramentas:termo_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Voltar à Lista
+        </a>
+    </header>
+
+    <form method="post" id="termoForm" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">1. Informações Gerais</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.contrato.id_for_label }}" class="form-label">{{ form.contrato.label }}</label>
+                        {% render_field form.contrato class="form-control" %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.data_emissao.id_for_label }}" class="form-label">{{ form.data_emissao.label }}</label>
+                        {% render_field form.data_emissao class="form-control" %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.responsavel.id_for_label }}" class="form-label">{{ form.responsavel.label }}</label>
+                        {% render_field form.responsavel class="form-select" %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.separado_por.id_for_label }}" class="form-label">{{ form.separado_por.label }}</label>
+                        {% render_field form.separado_por class="form-select" %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">2. Seleção de Itens</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="{{ form.tipo_uso.id_for_label }}" class="form-label fw-bold">{{ form.tipo_uso.label }}</label>
+                    {% render_field form.tipo_uso class="form-select" %}
+                </div>
+                <div id="ferramentas_container" class="item-container" style="display:none;">
+                    <label for="{{ form.ferramentas_selecionadas.id_for_label }}" class="form-label">{{ form.ferramentas_selecionadas.label }}</label>
+                    {% render_field form.ferramentas_selecionadas class="form-select" data-placeholder="Digite para buscar uma ferramenta..." %}
+                </div>
+                <div id="malas_container" class="item-container" style="display:none;">
+                    <label for="{{ form.malas_selecionadas.id_for_label }}" class="form-label">{{ form.malas_selecionadas.label }}</label>
+                    {% render_field form.malas_selecionadas class="form-select" data-placeholder="Digite para buscar uma mala ou kit..." %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">3. Assinatura do Responsável</h5>
+            </div>
+            <div class="card-body">
+                <div data-signature-pad-container>
+                    <canvas data-signature-canvas class="w-100 border rounded" style="height: 200px;"></canvas>
+                    <div class="text-end mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-signature-clear-button>Limpar</button>
+                    </div>
+                    <input type="hidden" name="assinatura_base64" data-signature-hidden-input>
+                </div>
+                <input type="hidden" name="itens_termo_json" id="itens_termo_json">
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mb-4">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-check-circle me-2"></i>Confirmar e Gerar Termo
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script> 
+
+<script src="{% static 'js/signature.js' %}"></script> 
+
+<script>
+// Usamos a forma segura do jQuery para garantir que o DOM está pronto.
+jQuery(function($) { 
+    // OBS: Toda a lógica de inicialização, calibragem e limpeza da assinatura
+    // já está no arquivo signature.js e é executada automaticamente.
+    // Não precisamos de nenhum código de assinatura aqui.
+
+    // --- LÓGICA DO SELECT2 ---
+    function initializeSelect2(selector) {
+        $(selector).select2({
+            theme: "bootstrap-5",
+            width: '100%',
+            closeOnSelect: false,
+        });
+    }
+
+    $('#id_responsavel, #id_separado_por').select2({ theme: "bootstrap-5" });
+
+    const tipoUsoSelect = $('#id_tipo_uso');
+    const ferramentasContainer = $('#ferramentas_container');
+    const malasContainer = $('#malas_container');
+
+    function toggleItemSelectors() {
+        const tipo = tipoUsoSelect.val();
+        $('.item-container').hide();
+
+        if (tipo === 'FER') {
+            ferramentasContainer.show();
+            if (!ferramentasContainer.data('select2-initialized')) {
+                initializeSelect2('#id_ferramentas_selecionadas');
+                ferramentasContainer.data('select2-initialized', true);
+            }
+        } else if (tipo === 'MAL') {
+            malasContainer.show();
+            if (!malasContainer.data('select2-initialized')) {
+                initializeSelect2('#id_malas_selecionadas');
+                malasContainer.data('select2-initialized', true);
+            }
+        }
+    }
+
+    tipoUsoSelect.on('change', toggleItemSelectors);
+    toggleItemSelectors();
+
+    // --- PREPARAÇÃO DOS DADOS PARA SUBMISSÃO ---
+    $('#termoForm').on('submit', function(event) {
+        // A lógica de preencher o campo hidden da assinatura já é feita pelo signature.js
+        // Aqui, só precisamos validar e preparar os outros campos.
+        
+        // Validação da assinatura
+        const signatureInput = document.querySelector('[data-signature-hidden-input]');
+        if (signatureInput && !signatureInput.value) {
+            alert("A assinatura do responsável é obrigatória.");
+            event.preventDefault();
+            return;
+        }
+        
+        // Preparação do JSON dos itens
+        const itensSelecionados = [];
+        const tipo = tipoUsoSelect.val();
+        let selected_options;
+
+        if (tipo === 'FER') {
+            selected_options = $('#id_ferramentas_selecionadas').select2('data');
+        } else if (tipo === 'MAL') {
+            selected_options = $('#id_malas_selecionadas').select2('data');
+        }
+
+        if (!selected_options || selected_options.length === 0) {
+            alert("Por favor, selecione pelo menos um item.");
+            event.preventDefault();
+            return;
+        }
+
+        selected_options.forEach(function(option) {
+            itensSelecionados.push({
+                pk: option.id,
+                item: option.text,
+                quantidade: 1,
+                unidade: 'pç',
+            });
+        });
+
+        $('#itens_termo_json').val(JSON.stringify(itensSelecionados));
+    });
+});
+</script>
+{% endblock %}
