@@ -11,32 +11,28 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
 from pathlib import Path
-from dotenv import load_dotenv
 from decouple import config
-from django.core.management.utils import get_random_secret_key
+# from dotenv import load_dotenv # <-- Removido, não é necessário
+# from django.core.management.utils import get_random_secret_key # <-- Removido, perigoso usar aqui
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(os.path.join(BASE_DIR, '.env'))
+# A linha abaixo foi removida, pois o decouple já faz isso automaticamente.
+# load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-FIELD_ENCRYPTION_KEY = get_random_secret_key()
+# --- CONFIGURAÇÕES DE SEGURANÇA ---
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
-#SECRET_KEY = config('SECRET_KEY')
-
-# Guarde esta chave em um local seguro, como variáveis de ambiente!
-#FERNET_KEYS = config('KEYS')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG=config('DEBUG', default=False, cast=bool)
-
-# Isso gera uma chave segura. Armazene-a em um local seguro, como variáveis de ambiente.
+# Lidas diretamente do seu arquivo .env
+SECRET_KEY = config('SECRET_KEY')
+FERNET_KEYS = config('KEYS') # Renomeei a variável para corresponder ao seu .env
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
-#ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-ALLOWED_HOSTS = ['bkrfdm.hospedagemelastica.com.br']
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+# ALLOWED_HOSTS
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # Application definition
 
