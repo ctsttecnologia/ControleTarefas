@@ -11,7 +11,7 @@ class DocumentoInline(admin.TabularInline):
     extra = 1
     # O campo 'filial' é removido. Ele deve ser herdado do Funcionário.
     # A lógica para isso deve ficar no método save() do modelo Documento.
-    fields = ('tipo', 'numero', 'anexo')
+    fields = ('numero', 'anexo')
     
 # --- Configurações dos Admins Principais ---
 
@@ -37,10 +37,10 @@ class CargoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmi
 class FuncionarioAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     inlines = [DocumentoInline]
     
-    list_display = ('nome_completo', 'filial', 'matricula', 'cargo', 'departamento', 'status')
+    list_display = ('nome_completo', 'filial', 'matricula', 'cargo', 'funcao', 'departamento', 'status')
     # O mixin já filtra por filial, então o filtro explícito é opcional.
     # Pode ser mantido se um superuser sem filial selecionada quiser filtrar manualmente.
-    list_filter = ('status', 'departamento', 'cargo', 'filial') 
+    list_filter = ('status', 'departamento', 'cargo', 'funcao', 'filial') 
     search_fields = ('nome_completo', 'matricula', 'usuario__username', 'usuario__email')
     
     list_select_related = ('usuario', 'cargo', 'departamento', 'filial')
@@ -52,7 +52,7 @@ class FuncionarioAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Mod
         }),
         # REATORADO: 'filial' adicionado aqui como readonly
         ('Vínculo Organizacional', {
-            'fields': ('filial', 'matricula', 'departamento', 'cargo', 'data_admissao', 'status', 'data_demissao')
+            'fields': ('filial', 'matricula', 'departamento', 'cargo', 'funcao', 'data_admissao', 'status', 'data_demissao')
         }),
         ('Informações Pessoais', {
             'fields': ('nome_completo', 'data_nascimento', 'idade', 'sexo', 'email_pessoal', 'telefone')

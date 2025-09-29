@@ -8,10 +8,45 @@ from django.core.files import File
 from django.core.exceptions import ValidationError
 from io import BytesIO
 import qrcode
+from django.db.models import Q
 from core.managers import FilialManager 
 from usuario.models import Filial, Usuario
 from django.utils import timezone
 from core.models import BaseModel
+from django.conf import settings
+import json # Para lidar com o campo 'assinatura_data'
+from core.managers import FilialQuerySet, FilialManager
+from departamento_pessoal.models import Funcionario
+from cliente.models import Cliente
+
+
+
+class FerramentaQuerySet(FilialQuerySet):
+        
+    # Este método já existia e deve ser mantido:
+    def ferramentas_disponiveis_para_mala(self, mala_instance_pk=None):
+        sem_mala = Q(mala__isnull=True)
+        if mala_instance_pk:
+            da_mala_atual = Q(mala__pk=mala_instance_pk)
+            return self.filter(sem_mala | da_mala_atual).distinct()
+        return self.filter(sem_mala).distinct()
+
+
+# Crie este novo Manager que herda do seu FilialManager
+class FerramentaManager(FilialManager):
+    def get_queryset(self):
+        # Conecta este manager ao nosso novo QuerySet
+        return FerramentaQuerySet(self.model, using=self._db)
+
+    # Este método "empresta" os métodos do QuerySet para o Manager
+    
+    def __getattr__(self, name):
+        # Se o atributo começar com '_', é um atributo interno.
+        # Não devemos interferir, então levantamos um AttributeError padrão.
+        if name.startswith('_'):
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        # Se não for um atributo interno, repassamos a chamada para o QuerySet.
+        return getattr(self.get_queryset(), name)
 
 # =============================================================================
 # == NOVO MODELO: MALA DE FERRAMENTAS
@@ -29,6 +64,7 @@ class MalaFerramentas(models.Model):
     codigo_identificacao = models.CharField(max_length=50, unique=True, verbose_name="Código de Identificação")
     localizacao_padrao = models.CharField(max_length=100, verbose_name="Localização Padrão")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DISPONIVEL)
+    quantidade = models.IntegerField(default=1, verbose_name="Quantidade (QTDA)")
     qr_code = models.ImageField(upload_to='qrcodes/malas/', blank=True, verbose_name="QR Code da Mala")
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='malas_ferramentas')
 
@@ -84,6 +120,7 @@ class Ferramenta(models.Model):
     modelo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Modelo")
     serie = models.CharField(max_length=50, blank=True, null=True, verbose_name="Série")
     tamanho_polegadas = models.CharField(max_length=20, blank=True, null=True, verbose_name="Tamanho/Polegada")
+    quantidade = models.IntegerField(default=0, verbose_name="Quantidade (QTDA)")
     numero_laudo_tecnico = models.CharField(max_length=20, blank=True, null=True)
     localizacao_padrao = models.CharField(max_length=100, verbose_name="Localização Padrão", help_text="Ex: Armário A, Gaveta 3")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DISPONIVEL, verbose_name="Status Interno")
@@ -103,7 +140,8 @@ class Ferramenta(models.Model):
         verbose_name="Mala de Ferramentas"
     )
 
-    objects = FilialManager()
+  
+    objects = FerramentaManager()
 
     class Meta:
         verbose_name = "Ferramenta"
@@ -151,14 +189,26 @@ class Ferramenta(models.Model):
         return self.status_efetivo == self.Status.DISPONIVEL
 
     @property
-    def get_status_display_efetivo(self):
-        # Retorna o texto amigável do status efetivo
+    def get_status_efetivo_display(self):
+        """ Retorna o texto legível do status efetivo. """
         return dict(self.Status.choices).get(self.status_efetivo)
 
     @property
     def esta_emprestada(self):
         """ Propriedade booleana para facilitar o uso no template. """
         return self.status_efetivo == Ferramenta.Status.EM_USO
+    
+    @property
+    def termo_ativo(self):
+        """
+        Se a ferramenta estiver em uma movimentação ativa ligada a um termo,
+        retorna esse termo. Caso contrário, retorna None.
+        """
+        if self.esta_emprestada:
+            movimentacao_ativa = self.movimentacoes.filter(data_devolucao__isnull=True).first()
+            if movimentacao_ativa and movimentacao_ativa.termo_responsabilidade:
+                return movimentacao_ativa.termo_responsabilidade
+        return None
 
     def save(self, *args, **kwargs):
         identifier_for_qr = self.codigo_identificacao or self.patrimonio
@@ -167,7 +217,7 @@ class Ferramenta(models.Model):
             qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=4)
             # --- MUDANÇA PRINCIPAL AQUI ---
             # Agora o QR Code conterá a URL para a página de scan
-            # ATENÇÃO: Você precisa configurar seu site para ser acessível externamente (ex: bkrfdm.hospedagemelastica.com.br)
+            # Precisa configurar seu site para ser acessível externamente 
             # para que isso funcione fora da sua rede local.
             qr_data = f"http://cetestgerenciandotarefas.com.br{self.get_scan_url()}" # Troque SEU_DOMINIO_AQUI pelo seu domínio real
 
@@ -196,6 +246,7 @@ class Atividade(models.Model):
         MANUTENCAO_INICIO = 'manutencao_inicio', 'Início da Manutenção'
         MANUTENCAO_FIM = 'manutencao_fim', 'Fim da Manutenção'
 
+  
     # Permitimos que o campo 'ferramenta' seja nulo, pois a atividade pode ser de uma mala.
     ferramenta = models.ForeignKey(
         Ferramenta, 
@@ -233,7 +284,14 @@ class Atividade(models.Model):
 # == MODELO MOVIMENTAÇÃO (MODIFICADO)
 # =============================================================================
 class Movimentacao(models.Model):
-    # CAMPO MODIFICADO: Agora pode estar nulo se a movimentação for de uma mala.
+    
+    # Tipo de uso da ferramenta
+    TIPOUSO_CHOICES = [
+        ('volante', ('VolanteDiária')),
+        ('permanete', ('Permanente')),
+
+    ]
+
     ferramenta = models.ForeignKey(
         Ferramenta, 
         on_delete=models.PROTECT, 
@@ -241,7 +299,7 @@ class Movimentacao(models.Model):
         null=True,
         blank=True
     )
-    # CAMPO ADICIONADO: Referência para a mala que está sendo movimentada.
+    
     mala = models.ForeignKey(
         MalaFerramentas,
         on_delete=models.PROTECT,
@@ -250,7 +308,17 @@ class Movimentacao(models.Model):
         blank=True
     )
 
+    termo_responsabilidade = models.ForeignKey(
+        'TermoDeResponsabilidade',  # Usando string para evitar import circular
+        on_delete=models.SET_NULL,
+        related_name="movimentacoes_geradas",
+        null=True,
+        blank=True,
+        verbose_name="Termo de Responsabilidade Associado"
+    )
+
     retirado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="ferramentas_retiradas", verbose_name="Retirado por (Responsável)")
+    tipo_uso = models.CharField(max_length=30, choices=TIPOUSO_CHOICES, default='volante', verbose_name="Tipo de Uso")
     data_retirada = models.DateTimeField(auto_now_add=True)
     data_devolucao_prevista = models.DateTimeField(verbose_name="Devolução Prevista")
     condicoes_retirada = models.TextField(verbose_name="Condições na Retirada", help_text="Descreva o estado do item (arranhões, funcionamento, etc.)")
@@ -284,4 +352,106 @@ class Movimentacao(models.Model):
         verbose_name_plural = "Movimentações"
         ordering = ['-data_retirada']
 
-        
+"""Modelo principal do Termo de Responsabilidade."""
+
+class TermoDeResponsabilidade(models.Model):
+    """
+    Representa o documento principal do Termo de Responsabilidade,
+    espelhando o layout do PDF fornecido.
+    """
+    class TipoUso(models.TextChoices):
+        FERRAMENTAL = 'FER', 'Ferramental'
+        MALA = 'MAL', 'Mala'
+
+    # CAMPOS DO CABEÇALHO DO PDF
+    contrato = models.CharField(max_length=200, verbose_name="Contrato")
+    responsavel = models.ForeignKey(
+        Funcionario,
+        on_delete=models.PROTECT,
+        related_name='termos_responsabilidade',
+        verbose_name="Responsável"
+    )
+    separado_por = models.ForeignKey(
+        Funcionario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='termos_separados',
+        verbose_name="Separado por (Coordenador)"
+    )
+    data_emissao = models.DateField(default=timezone.now, verbose_name="Data de Emissão")
+    data_recebimento = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Data de Recebimento (Assinatura)"
+    )
+    
+    # CAMPOS INTERNOS E DE CONTROLE
+    tipo_uso = models.CharField(
+        max_length=30,
+        choices=TipoUso.choices,
+        verbose_name="Tipo de Uso (Ferramental/Mala)"
+    )
+    assinatura_data = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Dados da Assinatura (Base64)"
+    )
+    movimentado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        verbose_name="Movimentado por"
+    )
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='termos_responsabilidade')
+
+    objects = FilialManager()
+
+    class Meta:
+        verbose_name = "Termo de Responsabilidade"
+        verbose_name_plural = "Termos de Responsabilidade"
+
+    def __str__(self):
+        return f"Termo #{self.pk} - {self.get_tipo_uso_display()} por {self.responsavel}"
+
+    def is_signed(self):
+        return bool(self.assinatura_data)
+
+
+class ItemTermo(models.Model):
+    """
+    Representa uma linha na tabela de itens do Termo de Responsabilidade.
+    """
+    termo = models.ForeignKey(
+        TermoDeResponsabilidade,
+        on_delete=models.CASCADE,
+        related_name='itens',
+        verbose_name="Termo"
+    )
+    
+    # CAMPOS DA TABELA DO PDF
+    quantidade = models.IntegerField(verbose_name="Quantidade (QTDA)")
+    unidade = models.CharField(max_length=10, verbose_name="Unidade (UN)")
+    item = models.CharField(max_length=255, verbose_name="Item (Descrição)")
+    
+    # RELAÇÕES INTERNAS PARA LIGAÇÃO COM O ESTOQUE
+    ferramenta = models.ForeignKey(
+        'Ferramenta',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Ferramenta Associada"
+    )
+    mala = models.ForeignKey(
+        'MalaFerramentas',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Mala Associada"
+    )
+
+    class Meta:
+        verbose_name = "Item do Termo"
+        verbose_name_plural = "Itens do Termo"
+
+    def __str__(self):
+        return f"{self.item} ({self.quantidade} {self.unidade})"

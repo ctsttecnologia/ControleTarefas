@@ -77,11 +77,12 @@
                         {% if not entrega.assinatura_recebimento and not entrega.assinatura_imagem %}
                             <td><span class="badge bg-warning text-dark">Pendente Assinatura</span></td>
                             <td class="text-end">
-                                <button type="button" class="btn btn-warning btn-sm"
-                                        data-bs-toggle="modal"
+                                <button type="button" class="btn btn-warning btn-sm" 
+                                        data-bs-toggle="modal" 
                                         data-bs-target="#assinaturaModal"
-                                        data-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}">
-                                    <i class="bi bi-pen-fill"></i> Assinar
+                                        data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"  {# Ajuste o nome da URL se for diferente #}
+                                        data-funcionario-nome="{{ ficha.funcionario.nome_completo }}">
+                                    <i class="fas fa-signature me-1"></i> Assinar
                                 </button>
                             </td>
                         {% elif not entrega.data_devolucao %}

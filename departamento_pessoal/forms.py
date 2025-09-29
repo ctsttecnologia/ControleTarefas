@@ -4,6 +4,8 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
+
+from seguranca_trabalho.models import Funcao
 from .models import Funcionario, Documento, Cargo, Departamento
 
 
@@ -40,13 +42,22 @@ class CargoForm(forms.ModelForm):
 # --- Formulário Principal de Funcionário ---
 
 class FuncionarioForm(forms.ModelForm):
+
+    funcao = forms.ModelChoiceField(
+        queryset=Funcao.objects.filter(ativo=True),
+        required=False, # Torna o campo não obrigatório
+        label="Função (SST)",
+        help_text="Função desempenhada para fins de SST e Matriz de EPI."
+    )
+
     class Meta:
         model = Funcionario
         # Lista todos os campos que o usuário pode preencher no formulário
         fields = [
-            'usuario', 'nome_completo', 'email_pessoal', 'telefone', 'data_nascimento', 'sexo',
-            'matricula', 'departamento', 'cargo', 'data_admissao', 'salario', 'status', 'data_demissao', 'cliente',
-            'foto_3x4', 
+            'foto_3x4', 'nome_completo', 'data_nascimento', 'email_pessoal', 
+            'telefone', 'sexo', 'usuario', 'matricula', 'departamento', 
+            'cargo', 'funcao', 'cliente', 'data_admissao', 'salario', 
+            'status', 'data_demissao'
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {
@@ -65,7 +76,17 @@ class FuncionarioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+
+        request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+
+        if request and hasattr(request, 'user') and hasattr(request.user, 'filial_ativa'):
+            filial_ativa = request.user.filial_ativa
+            if filial_ativa:
+                # Filtra as opções de 'funcao' para a filial ativa do usuário
+                self.fields['funcao'].queryset = Funcao.objects.filter(filial=filial_ativa, ativo=True)
+                # Você pode adicionar filtros para outros campos aqui também, se necessário
+                # Ex: self.fields['cargo'].queryset = Cargo.objects.filter(filial=filial_ativa)
 
         # Aplica a classe .form-control ou .form-select a todos os campos para consistência
         for field_name, field in self.fields.items():

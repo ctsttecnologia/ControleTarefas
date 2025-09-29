@@ -12,6 +12,7 @@
     <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i> Ferramenta Individuais
     </a>
+    
 {% endblock ferramentas_actions %}
 
 {% block ferramentas_content %}
@@ -22,11 +23,16 @@
             <div class="card border-start border-primary border-4 shadow-sm h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
+                        <div class="col mr-2" title="Total de Itens, ferramentas e malas, ferramentas descartadas">
                             <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total de Itens</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ stats_total.total|default:0 }}</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.total|default:0 }}</div>
+                            
                         </div>
-                        <div class="col-auto"><i class="fas fa-boxes-stacked fa-2x text-gray-300"></i></div>
+                        <div class="col-auto">
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.total_malas }}<il title="Malas de Ferramentas">M</il></div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.total_ferramentas }}<il title="Ferramentas">F</il></div>
+                            
+                        </div>
                     </div>
                 </div>
             </div>
@@ -36,10 +42,28 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">Malas Disponíveis</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ stats_total.disponivel|default:0 }}</div>
+                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                                Ferramentas Disponíveis
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.quantidade_ferramentas_disponiveis|default:0 }}</div>
+                            
                         </div>
-                        <div class="col-auto"><i class="fas fa-check-circle fa-2x text-gray-300"></i></div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+            
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                Malas Disponíveis
+                            </div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.quantidade_malas_disponiveis|default:0 }}</div>
+                            
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-suitcase fa-2x text-gray-300"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -50,7 +74,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs fw-bold text-warning text-uppercase mb-1">Em Uso</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ stats_total.em_uso|default:0 }}</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.em_uso|default:0 }}</div>
                         </div>
                         <div class="col-auto"><i class="fas fa-user-clock fa-2x text-gray-300"></i></div>
                     </div>
@@ -63,7 +87,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs fw-bold text-info text-uppercase mb-1">Em Manutenção</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ stats_total.em_manutencao|default:0 }}</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.em_manutencao|default:0 }}</div>
                         </div>
                         <div class="col-auto"><i class="fas fa-wrench fa-2x text-gray-300"></i></div>
                     </div>
@@ -71,7 +95,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="row">
         <div class="col-lg-6 mb-4">
             <div class="row">

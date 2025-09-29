@@ -204,7 +204,7 @@ class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
 
 class DocumentoListView(StaffRequiredMixin, ListView):
     model = Documento
-    template_name = 'departamento_pessoal/documentos_list.html'
+    template_name = 'departamento_pessoal/lista_documentos.html'
     context_object_name = 'documentos'
     paginate_by = 20
 

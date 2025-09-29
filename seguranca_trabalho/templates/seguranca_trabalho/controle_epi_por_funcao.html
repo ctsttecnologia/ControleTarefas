@@ -68,13 +68,16 @@
         z-index: 3;
     }
 
-    .matriz-table input[type="number"] {
-        width: 80px;
-        text-align: center;
-        border: 1px solid #ced4da;
-        border-radius: 0.25rem;
-        padding: 0.25rem;
+    matriz-table tbody th {
+        position: sticky;
+        left: 0;
+        background-color: var(--cor-coluna-fixa-azul);
+        z-index: 1;
+        text-align: left;
+        min-width: 250px; /* Aumentei um pouco para melhor visualização de nomes longos */
+        font-weight: 600;
     }
+
     .matriz-table input[type="number"]:focus {
         border-color: #86b7fe;
         outline: 0;
@@ -157,9 +160,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const headers = table.querySelectorAll('thead th');
     
-    headers.forEach(header => {
-        // Não adiciona manipulador à primeira coluna ("Função") para evitar conflito
-        if (header.style.minWidth === '100px') {
+    headers.forEach((header, index) => {
+        // Não adiciona manipulador à primeira coluna ("Função")
+        if (index === 0) {
             return;
         }
 

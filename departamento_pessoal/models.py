@@ -131,15 +131,24 @@ class Funcionario(models.Model):
         Filial,
         on_delete=models.PROTECT,
         related_name='funcionarios',  
-        verbose_name=_("Filial de Lotação"),
+        verbose_name=_("Filial"),
         null=True,
-        blank=False
+        blank=True
     )
     cargo = models.ForeignKey(
         Cargo,
         on_delete=models.PROTECT,
         related_name='funcionarios',
         verbose_name=_("Cargo")
+    )
+    funcao = models.ForeignKey(
+        'seguranca_trabalho.Funcao',
+        on_delete=models.SET_NULL,  # Se uma função for deletada, não deleta o funcionário
+        null=True,                  # Permite que o campo seja nulo no banco de dados
+        blank=True,                 # Permite que o campo seja opcional nos formulários
+        verbose_name=_("Função (SST)"),
+        help_text=_("Função desempenhada pelo funcionário para fins de SST e Matriz de EPI."),
+        related_name="funcionarios"
     )
     departamento = models.ForeignKey(
         Departamento,
