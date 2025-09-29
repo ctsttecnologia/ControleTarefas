@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- CONFIGURAÇÕES DE SEGURANÇA ---
 
 # Lidas diretamente do seu arquivo .env
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_CHAVE')
 FERNET_KEYS = config('KEYS') # Renomeei a variável para corresponder ao seu .env
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
