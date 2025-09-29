@@ -30,7 +30,7 @@ FIELD_ENCRYPTION_KEY = get_random_secret_key()
 #FERNET_KEYS = config('KEYS')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG')
+DEBUG=config('DEBUG', default=False, cast=bool)
 
 # Isso gera uma chave segura. Armazene-a em um local seguro, como variáveis de ambiente.
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
