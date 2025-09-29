@@ -27,7 +27,7 @@ FIELD_ENCRYPTION_KEY = get_random_secret_key()
 #SECRET_KEY = config('SECRET_KEY')
 
 # Guarde esta chave em um local seguro, como variáveis de ambiente!
-FERNET_KEYS = config('KEYS')
+#FERNET_KEYS = config('KEYS')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG')
