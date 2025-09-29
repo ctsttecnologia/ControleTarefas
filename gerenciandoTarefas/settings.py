@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Lidas diretamente do seu arquivo .env
 SECRET_KEY = config('SECRET_KEY')
-FERNET_KEYS = config('KEYS') # Renomeei a variável para corresponder ao seu .env
+FERNET_KEYS = config('FERNET_KEYS') # Renomeei a variável para corresponder ao seu .env
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     'localflavor',
     'template_partials',
 
-
     # 3. Seus Aplicativos Locais (em ordem de dependência)
     'usuario', 
     'home',
@@ -76,7 +75,6 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'notifications',    
 ]
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -116,8 +114,6 @@ WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-
 DATABASES = {
     'default': {
         'ENGINE': config('DB_ENGINE'),
@@ -135,7 +131,6 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -151,9 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 AUTH_USER_MODEL = 'usuario.Usuario'
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -168,9 +161,6 @@ USE_TZ = False
 # Mude 'UTC' para o fuso horário do Brasil
 TIME_ZONE = 'America/Sao_Paulo'
 
-
-
-#AUTH_USER_MODEL = 'usuario.Usuario'
 
 #Static files (CSS, JavaScript, Images)
 #https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -189,7 +179,6 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão
 MEDIA_URL = '/midia/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'midia')
 
-
 # Diretório PRIVADO para arquivos sensíveis
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 
@@ -205,8 +194,6 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configuração de E-mail para DESENVOLVIMENTO (imprime no console)
@@ -229,7 +216,6 @@ REST_FRAMEWORK = {
 }
 
 # LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
-
 LOGIN_URL = 'usuario:login'
 LOGIN_REDIRECT_URL = 'usuario:profile'
 LOGOUT_REDIRECT_URL = 'usuario:login'
