@@ -98,6 +98,7 @@ class DashboardView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
         Nenhuma consulta ao banco de dados é feita aqui.
         """
         context['status_malas'] = mala_stats
+        context['status_ferramentas'] = ferramenta_stats 
         # Combina os totais para os cards principais
         context['status_total'] = {
             'total': (ferramenta_stats.get('total_count') or 0) + (mala_stats.get('total_count') or 0),

@@ -1,14 +1,8 @@
+
 from django.http import HttpResponse
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-from reportlab.lib import colors
-from reportlab.platypus import Table, TableStyle
 from openpyxl import Workbook
 from .models import Carro, Agendamento
 from datetime import datetime
-from django.db.models import Count, Q
-
-
 
 def gerar_relatorio_excel(request, tipo):
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -19,21 +13,22 @@ def gerar_relatorio_excel(request, tipo):
     ws = wb.active
     ws.title = tipo.capitalize()
     
+    # Busca os dados já filtrados pelo manager
+    filial_qs = Carro.objects.for_request(request) if tipo == 'carros' else Agendamento.objects.for_request(request)
+    
     if tipo == 'carros':
-        dados = Carro.objects.for_request(request).filter(ativo=True)
-        ws.append(['Placa', 'Marca', 'Modelo', 'Ano', 'Cor', 'Status', 'Última Manutenção'])
+        dados = filial_qs.filter(ativo=True)
+        ws.append(['Placa', 'Marca', 'Modelo', 'Ano', 'Cor', 'Disponível', 'Última Manutenção'])
         for carro in dados:
+            # MUDANÇA: trocado 'carro.status' por um campo que existe
+            status_carro = "Sim" if carro.disponivel else "Não"
             ws.append([
-                carro.placa,
-                carro.marca,
-                carro.modelo,
-                carro.ano,
-                carro.cor,
-                carro.status,
+                carro.placa, carro.marca, carro.modelo, carro.ano, carro.cor,
+                status_carro,
                 carro.data_ultima_manutencao.strftime('%d/%m/%Y') if carro.data_ultima_manutencao else 'N/A'
             ])
-    else:
-        dados = Agendamento.objects.for_request(request).select_related('carro')
+    else: # Agendamentos
+        dados = filial_qs.select_related('carro')
         ws.append(['Veículo', 'Placa', 'Data', 'Serviço', 'Responsável', 'Status', 'KM Inicial'])
         for ag in dados:
             ws.append([
@@ -48,5 +43,4 @@ def gerar_relatorio_excel(request, tipo):
     
     wb.save(response)
     return response
-
     

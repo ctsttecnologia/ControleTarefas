@@ -1,56 +1,33 @@
 # seguranca_trabalho/forms.py
+# seguranca_trabalho/forms.py
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
-from .models import Equipamento, FichaEPI, EntregaEPI, Fabricante, Fornecedor
-from departamento_pessoal.models import Funcionario
 import pathlib
 
-class FabricanteForm(forms.ModelForm):
-    class Meta:
-        model = Fabricante
-        fields = ['nome', 'cnpj', 'contato', 'telefone', 'celular', 'email', 'site', 'observacoes', 'ativo']
-        widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
-            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
-            'contato': forms.TextInput(attrs={'class': 'form-control'}),
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'site': forms.URLInput(attrs={'class': 'form-control', 'placeholder': ' https://www.exemplo.com'}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
+# Importa apenas os modelos que realmente existem e são usados nos formulários desta app
+from .models import Equipamento, FichaEPI, EntregaEPI
+from departamento_pessoal.models import Funcionario
 
-class FornecedorForm(forms.ModelForm):
-    class Meta:
-        model = Fornecedor 
-        fields = ['razao_social', 'nome_fantasia', 'cnpj', 'endereco', 'email', 'telefone', 'celular', 'ativo']
-        widgets = {
-            'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
-            'nome_fantasia': forms.TextInput(attrs={'class': 'form-control'}),
-            'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
-            'endereco': forms.Select(attrs={'class': 'form-select'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
-            'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
-            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'data_validade_ca': forms.DateInput(attrs={'type': 'date'}),
-        }
+# NOTA: FabricanteForm e FornecedorForm foram REMOVIDOS pois seus modelos não existem mais.
+# A gestão de Parceiros deve ser feita através de formulários na aplicação 'suprimentos'.
+
 
 class EquipamentoForm(forms.ModelForm):
     class Meta:
         model = Equipamento
+        # REMOVIDO: 'fornecedor' foi retirado da lista de campos.
         fields = [
-            'nome', 'modelo', 'fabricante', 'fornecedor', 
+            'nome', 'modelo', 'fabricante',
             'certificado_aprovacao', 'data_validade_ca', 'vida_util_dias',
-            'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo', 
+            'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo',
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 1100'}),
+            # O campo 'fabricante' agora aponta para 'Parceiro', o widget pode ser mantido
+            # ou trocado por um de autocomplete na view, se preferir.
             'fabricante': forms.Select(attrs={'class': 'form-select'}),
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'certificado_aprovacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5745'}),
             'data_validade_ca': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'vida_util_dias': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
@@ -63,31 +40,31 @@ class EquipamentoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # Sua lógica de read-only para CA e Validade
+
+        # Lógica para tornar campos somente leitura na edição (mantida)
         if self.instance.pk:
-            # Torna o CA somente leitura
             self.fields['certificado_aprovacao'].widget.attrs['readonly'] = True
-            self.fields['certificado_aprovacao'].widget.attrs['class'] = 'form-control-plaintext'
-
-            # Torna a Data de Validade somente leitura
             self.fields['data_validade_ca'].widget.attrs['readonly'] = True
-            # **Ajuste o widget para um TextInput simples para garantir a renderização do valor**
-            self.fields['data_validade_ca'].widget = forms.TextInput(attrs={'class': 'form-control-plaintext'})
-
-            # Formata a data para o formato de exibição (opcional, mas recomendado)
+            self.fields['data_validade_ca'].widget = forms.TextInput(
+                attrs={'class': 'form-control-plaintext', 'readonly': True}
+            )
             if self.instance.data_validade_ca:
-                self.fields['data_validade_ca'].initial = self.instance.data_validade_ca.strftime('%d/%m/%Y')
+                self.initial['data_validade_ca'] = self.instance.data_validade_ca.strftime('%d/%m/%Y')
+
 
 class FichaEPIForm(forms.ModelForm):
+    class Meta:
+        model = FichaEPI
+        fields = ['funcionario']
+        widgets = {
+            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+        }
+
     def __init__(self, *args, **kwargs):
-        # 1. Use .pop() para extrair o 'request' e REMOVÊ-LO de kwargs.
         request = kwargs.pop('request', None)
-        
-        # 2. Chame o 'super' AGORA que kwargs não tem mais a chave 'request'.
         super().__init__(*args, **kwargs)
-        
-        # 3. Agora use o 'request' para filtrar o queryset do campo.
+
+        # Filtra funcionários pela filial ativa do usuário logado (lógica mantida)
         if request:
             filial_id = request.session.get('active_filial_id')
             if filial_id:
@@ -95,17 +72,9 @@ class FichaEPIForm(forms.ModelForm):
                     filial_id=filial_id, status='ATIVO'
                 ).order_by('nome_completo')
 
-    class Meta:
-        model = FichaEPI
-        fields = ['funcionario']
-        # Adicione widgets se necessário
-        widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
-        }
-
     def clean_funcionario(self):
-        funcionario = self.cleaned_data['funcionario']
-        if not hasattr(funcionario, 'cargo') or not funcionario.cargo:
+        funcionario = self.cleaned_data.get('funcionario')
+        if funcionario and (not hasattr(funcionario, 'cargo') or not funcionario.cargo):
             raise forms.ValidationError(
                 _("O funcionário selecionado não possui um cargo definido. Por favor, atualize o cadastro no Departamento Pessoal."),
                 code='sem_cargo'
@@ -123,51 +92,32 @@ class EntregaEPIForm(forms.ModelForm):
             'lote': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_serie': forms.TextInput(attrs={'class': 'form-control'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        # 1. Remove o argumento 'filial' de kwargs antes de chamar o construtor pai.
-        filial = kwargs.pop('filial', None)
-        
-        # 2. Chama o construtor pai de forma segura.
-        super().__init__(*args, **kwargs)
-        
-        # 3. Usa o argumento 'filial' para filtrar a queryset de equipamentos.
-        if filial:
-            self.fields['equipamento'].queryset = Equipamento.objects.filter(ativo=True, filial=filial)
-        else:
-            # Fallback para evitar que o campo fique sem opções caso a filial não seja passada.
-            self.fields['equipamento'].queryset = Equipamento.objects.filter(ativo=True)
 
-    @property
-    def get_assinatura_imagem_path_for_pdf(self):
-        """
-        Retorna o caminho da imagem de assinatura em formato de URI (file:///),
-        que é o formato correto para o gerador de PDF (WeasyPrint).
-        """
-        if self.assinatura_imagem and hasattr(self.assinatura_imagem, 'path'):
-            try:
-                return pathlib.Path(self.assinatura_imagem.path).as_uri()
-            except Exception:
-                return None
-        return None
-        
+    def __init__(self, *args, **kwargs):
+        filial = kwargs.pop('filial', None)
+        super().__init__(*args, **kwargs)
+
+        # Filtra equipamentos pela filial (lógica mantida)
+        queryset = Equipamento.objects.filter(ativo=True)
+        if filial:
+            queryset = queryset.filter(filial=filial)
+        self.fields['equipamento'].queryset = queryset
+
+
 class AssinaturaForm(forms.Form):
+    """ Formulário simples para capturar a assinatura em base64 do frontend. """
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput())
-        
+
+
 class AssinaturaEntregaForm(forms.ModelForm):
-    # Campos que a nova view vai lidar.
-    # Não defina widgets aqui, pois eles serão HiddenInput.
-    
+    """ Formulário para o processo de assinatura, atualizando a instância de EntregaEPI. """
     class Meta:
         model = EntregaEPI
-        # Inclua apenas os campos que serão atualizados pela view de assinatura
         fields = ['assinatura_recebimento', 'assinatura_imagem', 'data_assinatura']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Oculta todos os campos, pois a lógica da assinatura será feita via JavaScript no template
-        # e o Django só precisa que os campos existam para receber os dados via POST.
+        # Oculta os campos, pois seus valores são preenchidos via JavaScript.
         self.fields['assinatura_recebimento'].widget = forms.HiddenInput()
         self.fields['assinatura_imagem'].widget = forms.HiddenInput()
         self.fields['data_assinatura'].widget = forms.HiddenInput()
-

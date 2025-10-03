@@ -73,8 +73,14 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Em Uso</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.em_uso|default:0 }}</div>
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Ferramentas Em Uso</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ status_ferramentas.em_uso_count|default:"0" }}
+                            </div>
+                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Malas Em Uso</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">
+                                {{ status_malas.em_uso_count|default:"0" }}
+                            </div>
                         </div>
                         <div class="col-auto"><i class="fas fa-user-clock fa-2x text-gray-300"></i></div>
                     </div>
@@ -87,7 +93,11 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs fw-bold text-info text-uppercase mb-1">Em Manutenção</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.em_manutencao|default:0 }}</div>
+                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.em_manutencao|default:0 }}</div>   
+                        </div>
+                        <div class="col-auto fw-bold text-info">
+                            <i class="fas fa-wrench fa-2x text-gray-300"></i>
+                            <i class="bi bi-tools me-1"></i>
                         </div>
                         <div class="col-auto"><i class="fas fa-wrench fa-2x text-gray-300"></i></div>
                     </div>

@@ -16,21 +16,11 @@ from .views import (
     EquipamentoDeleteView,
 
     # CRUD de Fabricantes
-    FabricanteListView,
-    FabricanteDetailView,
-    FabricanteCreateView,
-    FabricanteUpdateView,
+ 
     FichaEPIDeleteView,
     FichaEPIUpdateView,
     # A view FabricanteDeleteView precisa ser criada se a funcionalidade for desejada.
-    
-    # CRUD de Fornecedores
-    FornecedorListView,
-    FornecedorDetailView,
-    FornecedorCreateView,
-    FornecedorUpdateView,
-    # A view FornecedorDeleteView precisa ser criada se a funcionalidade for desejada.
-
+   
     # Fichas de EPI e Ações relacionadas
     FichaEPIListView,
     FichaEPICreateView,
@@ -82,18 +72,5 @@ urlpatterns = [
     path('equipamentos/<int:pk>/editar/', EquipamentoUpdateView.as_view(), name='equipamento_update'),
     path('equipamentos/<int:pk>/excluir/', EquipamentoDeleteView.as_view(), name='equipamento_delete'),
 
-    # --- CRUD de Fabricantes ---
-    path('fabricantes/', FabricanteListView.as_view(), name='fabricante_list'),
-    path('fabricantes/novo/', FabricanteCreateView.as_view(), name='fabricante_create'),
-    path('fabricantes/<int:pk>/', FabricanteDetailView.as_view(), name='fabricante_detail'),
-    path('fabricantes/<int:pk>/editar/', FabricanteUpdateView.as_view(), name='fabricante_update'),
-    # path('catalogo/fabricantes/<int:pk>/excluir/', FabricanteDeleteView.as_view(), name='fabricante_delete'),
-
-    # --- CRUD de Fornecedores ---
-    path('fornecedores/', FornecedorListView.as_view(), name='fornecedor_list'),
-    path('fornecedores/novo/', FornecedorCreateView.as_view(), name='fornecedor_create'),
-    path('fornecedores/<int:pk>/', FornecedorDetailView.as_view(), name='fornecedor_detail'),
-    path('fornecedores/<int:pk>/editar/', FornecedorUpdateView.as_view(), name='fornecedor_update'),
-    # path('catalogo/fornecedores/<int:pk>/excluir/', FornecedorDeleteView.as_view(), name='fornecedor_delete'),
 ]
 

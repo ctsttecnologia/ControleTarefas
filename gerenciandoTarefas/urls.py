@@ -19,6 +19,7 @@ urlpatterns = [
     path('contas/', include('usuario.urls', namespace='usuario')),
     path('tarefas/', include('tarefas.urls', namespace='tarefas')),
     path('seguranca/', include('seguranca_trabalho.urls', namespace='seguranca_trabalho')),
+    path('suprimentos/', include('suprimentos.urls', namespace='suprimentos')),
     path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
     path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),
     path('cliente/', include('cliente.urls')),

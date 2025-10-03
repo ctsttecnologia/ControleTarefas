@@ -12,14 +12,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from decouple import config
-# from dotenv import load_dotenv # <-- Removido, não é necessário
-# from django.core.management.utils import get_random_secret_key # <-- Removido, perigoso usar aqui
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# A linha abaixo foi removida, pois o decouple já faz isso automaticamente.
-# load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 # --- CONFIGURAÇÕES DE SEGURANÇA ---
 
@@ -33,6 +30,7 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 # ALLOWED_HOSTS
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+
 
 # Application definition
 
@@ -66,6 +64,7 @@ INSTALLED_APPS = [
     'departamento_pessoal',   # Depende de 'cliente'
     'automovel.apps.AutomovelConfig',
     'seguranca_trabalho',
+    'suprimentos',
     'tarefas.apps.TarefasConfig',
     'treinamentos.apps.TreinamentosConfig',
     'gestao_riscos',

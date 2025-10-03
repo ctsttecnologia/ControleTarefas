@@ -1,0 +1,87 @@
+
+<!-- suprimentos/templates/suprimentos/parceiro_list.html -->
+ 
+{% extends "suprimentos/suprimentos_base.html" %}
+
+
+{% load static %}
+
+
+
+{% block title %}Lista de Fornecedores{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users me-2"></i> Parceiros (Fornecedores e Fabricantes)</h2>
+        <a href="{% url 'suprimentos:parceiro_create' %}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> Novo Fornecedor
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome Fantasia / Fabricante</th>
+                            <th>CNPJ</th>
+                            <th>Contato</th>
+                            <th>Telefone</th>
+                            <th>Tipo</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parceiro in parceiros %}
+                        <tr>
+                            <td>
+                                <a href="{{ parceiro.get_absolute_url }}">{{ parceiro.nome_fantasia }}</a>
+                                <small class="d-block text-muted">{{ parceiro.razao_social }}</small>
+                            </td>
+                            <td>{{ parceiro.cnpj|default:"-" }}</td>
+                            <td>{{ parceiro.contato|default:"-" }}</td>
+                            <td>{{ parceiro.telefone|default:"-" }}</td>
+                            <td>
+                                {% if parceiro.eh_fabricante %}<span class="badge bg-info">Fabricante</span>{% endif %}
+                                {% if parceiro.eh_fornecedor %}<span class="badge bg-warning text-dark">Fornecedor</span>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if parceiro.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ parceiro.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'suprimentos:parceiro_update' pk=parceiro.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <a href="{% url 'suprimentos:parceiro_delete' pk=parceiro.pk %}" class="btn btn-sm btn-outline-danger" title="Deletar">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Nenhum fornecedor encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% include 'partials/pagination.html' %}
+    
+        </div>
+    </div>
+</div>
+{% endblock %}
+

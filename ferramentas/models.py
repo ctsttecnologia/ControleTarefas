@@ -18,6 +18,7 @@ import json # Para lidar com o campo 'assinatura_data'
 from core.managers import FilialQuerySet, FilialManager
 from departamento_pessoal.models import Funcionario
 from cliente.models import Cliente
+from suprimentos.models import Parceiro 
 
 
 
@@ -129,6 +130,14 @@ class Ferramenta(models.Model):
     observacoes = models.TextField(blank=True, null=True)
     qr_code = models.ImageField(upload_to='qrcodes/ferramentas/', blank=True, verbose_name="QR Code")
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='ferramentas', null=True)
+    fornecedor = models.ForeignKey(
+        Parceiro,  # Referência ao modelo Fornecedor/Parceiro da app suprimentos
+        on_delete=models.SET_NULL,  # Não deleta a ferramenta se o fornecedor for deletado
+        related_name='ferramentas_fornecidas',  # Permite acessar: fornecedor.ferramentas_fornecidas.all()
+        null=True, 
+        blank=True, 
+        verbose_name="Fornecedor Principal"
+    )
     
     # CAMPO ADICIONADO: Relaciona a ferramenta a uma mala específica.
     mala = models.ForeignKey(
@@ -140,7 +149,6 @@ class Ferramenta(models.Model):
         verbose_name="Mala de Ferramentas"
     )
 
-  
     objects = FerramentaManager()
 
     class Meta:
