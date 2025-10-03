@@ -40,14 +40,14 @@
                                 {% for error in form.modelo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                              <div class="col-md-6">
-                                <label for="{{ form.fabricante.id_for_label }}" class="form-label">{{ form.fabricante.label }}</label>
-                                {% render_field form.fabricante class+="form-select" %}
-                                {% for error in form.fabricante.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                <label for="{{ form.parceiro.id_for_label }}" class="form-label">{{ form.fabricante.label }}</label>
+                                {% render_field form.parceiro class+="form-select" %}
+                                {% for error in form.parceiro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                             <div class="col-md-6">
-                                <label for="{{ form.fornecedor.id_for_label }}" class="form-label">{{ form.fornecedor.label }}</label>
-                                {% render_field form.fornecedor class+="form-select" %}
-                                {% for error in form.fornecedor.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                                <label for="{{ form.parceiro.id_for_label }}" class="form-label">{{ form.fornecedor.label }}</label>
+                                {% render_field form.parceiro class+="form-select" %}
+                                {% for error in form.parceiro.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                             </div>
                         </div>
 

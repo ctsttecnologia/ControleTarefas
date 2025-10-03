@@ -1,4 +1,3 @@
-
 # seguranca_trabalho/models.py
 
 from datetime import timedelta
@@ -7,86 +6,13 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-# Removido o import direto de Funcionario para evitar dependências circulares
-# from departamento_pessoal.models import Funcionario 
-
+from suprimentos.models import Parceiro
 from core.managers import FilialManager
-from logradouro.models import Logradouro
 from usuario.models import Filial
 
 # --- Modelos de Catálogo e Estrutura ---
-# As classes Fabricante, Fornecedor e Funcao estão bem estruturadas.
-# Apenas pequenas padronizações foram feitas.
-
-class Fabricante(models.Model):
-    nome = models.CharField(max_length=150, unique=True, verbose_name=_("Nome do Fabricante"))
-    cnpj = models.CharField(max_length=18, blank=True, null=True, verbose_name=_("CNPJ"))
-    contato = models.CharField(max_length=100, blank=True, verbose_name=_("Contato"))
-    telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone"))
-    celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
-    email = models.EmailField(blank=True, verbose_name=_("E-mail de Contato"))
-    site = models.URLField(blank=True, verbose_name=_("Site"))
-    observacoes = models.TextField(blank=True, verbose_name=_("Observações"))
-    ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
-    filial = models.ForeignKey(
-        Filial, 
-        on_delete=models.PROTECT,
-        related_name='fabricantes', 
-        verbose_name="Filial",
-        null=True,
-        blank=True
-    )
-    objects = FilialManager()
-    
-    class Meta:
-        verbose_name = _("Fabricante")
-        verbose_name_plural = _("Fabricantes")
-        ordering = ['nome']
-
-    def __str__(self):
-        return self.nome
-
-    def get_absolute_url(self):
-        return reverse('seguranca_trabalho:fabricante_detail', kwargs={'pk': self.pk})
-
-class Fornecedor(models.Model):
-    razao_social = models.CharField(max_length=255, verbose_name=_("Razão Social"))
-    nome_fantasia = models.CharField(max_length=255, blank=True, verbose_name=_("Nome Fantasia"))
-    cnpj = models.CharField(max_length=18, unique=True, verbose_name=_("CNPJ"))
-    inscricao_estadual = models.CharField(max_length=20, blank=True, verbose_name=_("Inscrição Estadual"))
-    contato = models.CharField(max_length=100, blank=True, verbose_name=_("Contato"))
-    telefone = models.CharField(max_length=20, blank=True, verbose_name=_("Telefone de Contato"))
-    celular = models.CharField(max_length=20, blank=True, verbose_name=_("Celular"))
-    email = models.EmailField(blank=True, verbose_name=_("E-mail de Contato"))
-    site = models.URLField(blank=True, verbose_name=_("Site"))
-    endereco = models.ForeignKey(
-        Logradouro,
-        on_delete=models.PROTECT,
-        related_name='fornecedores',
-        verbose_name="Endereço",
-        null=True
-    )
-    ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
-    filial = models.ForeignKey(
-        Filial,
-        on_delete=models.PROTECT,
-        related_name='fornecedores', 
-        verbose_name=_("Filial"),
-        null=True,
-        blank=True
-    )
-    objects = FilialManager()
-
-    class Meta:
-        verbose_name = _("Fornecedor")
-        verbose_name_plural = _("Fornecedores")
-        ordering = ['nome_fantasia']
-
-    def __str__(self):
-        return self.nome_fantasia or self.razao_social
-
-    def get_absolute_url(self):
-        return reverse('seguranca_trabalho:fornecedor_detail', kwargs={'pk': self.pk})
+# NOTA: Os modelos Fabricante e Fornecedor foram REMOVIDOS para completar a refatoração
+# para a aplicação 'suprimentos' e o modelo 'Parceiro'.
 
 class Funcao(models.Model):
     nome = models.CharField(max_length=100, unique=True, verbose_name=_("Nome da Função"))
@@ -95,7 +21,7 @@ class Funcao(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='funcoes', 
+        related_name='funcoes',
         verbose_name=_("Filial"),
         null=True,
         blank=True
@@ -113,8 +39,14 @@ class Funcao(models.Model):
 class Equipamento(models.Model):
     nome = models.CharField(max_length=150, verbose_name=_("Descrição EPI"))
     modelo = models.CharField(max_length=100, blank=True, verbose_name=_("Modelo"))
-    fabricante = models.ForeignKey(Fabricante, on_delete=models.PROTECT, related_name='equipamentos', null=True, blank=True)
-    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Fornecedor"))
+    fabricante = models.ForeignKey(
+        Parceiro,
+        on_delete=models.PROTECT,
+        limit_choices_to={'eh_fabricante': True},
+        related_name='equipamentos_fabricados'
+    )
+    # REMOVIDO: O campo 'fornecedor' foi removido. O fornecedor está ligado à compra (MovimentacaoEstoque),
+    # não ao tipo de equipamento, tornando o modelo mais flexível.
     certificado_aprovacao = models.CharField(max_length=50, verbose_name=_("Certificado de Aprovação (CA)"), help_text=_("Deixe em branco se não aplicável."), blank=True)
     data_cadastro = models.DateField(auto_now_add=True, verbose_name="Data de Cadastro", help_text="Data em que o equipamento foi cadastrado.", null=True)
     data_validade_ca = models.DateField(null=True, blank=True, verbose_name=_("Data de Validade do CA"))
@@ -127,11 +59,9 @@ class Equipamento(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='equipamentos', 
+        related_name='equipamentos',
         verbose_name=_("Filial"),
         null=True,
-        # ALTERADO: blank=True para consistência com outros modelos e para evitar
-        # erros de validação no admin antes do save_model ser executado.
         blank=True
     )
     objects = FilialManager()
@@ -163,13 +93,13 @@ class MatrizEPI(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='matrizepis', 
+        related_name='matrizepis',
         verbose_name=_("Filial"),
         null=True,
         blank=True
     )
     objects = FilialManager()
-    
+
     class Meta:
         verbose_name = _("Matriz de EPI por Função")
         verbose_name_plural = _("Matrizes de EPI por Função")
@@ -182,23 +112,18 @@ class MatrizEPI(models.Model):
 # --- Modelos Operacionais ---
 
 class FichaEPI(models.Model):
-    # O campo agora é OneToOneField para garantir uma única ficha por funcionário.
-    # Usamos a string para evitar importação circular.
     funcionario = models.OneToOneField(
-        'departamento_pessoal.Funcionario', 
-        on_delete=models.PROTECT, 
-        related_name='ficha_epi', 
+        'departamento_pessoal.Funcionario',
+        on_delete=models.PROTECT,
+        related_name='ficha_epi',
         verbose_name=_("Funcionário")
     )
-    # REMOVIDO: O campo 'funcao' foi removido daqui. A fonte da verdade agora é o funcionário.
-    # REMOVIDO: O campo 'data_admissao' foi removido, será uma property.
-    
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='fichaepis', 
+        related_name='fichaepis',
         verbose_name=_("Filial"),
         null=True,
         blank=True
@@ -208,25 +133,16 @@ class FichaEPI(models.Model):
     class Meta:
         verbose_name = _("Ficha de EPI")
         verbose_name_plural = _("Fichas de EPI")
-        # CORRIGIDO: ordering deve usar a relação correta via 'funcionario'
         ordering = ['funcionario__nome_completo']
 
-    # REMOVIDO: O método save() customizado foi removido.
-    # Sua lógica para criar Funcao a partir de Cargo era problemática e agora é desnecessária.
-    # A filial será atribuída via admin.py, como já corrigimos.
-
-    # ADICIONADO: Propriedade para acessar a função do funcionário de forma transparente.
     @property
     def funcao(self):
-        """Retorna a Função (SST) associada ao funcionário da ficha."""
         if self.funcionario and hasattr(self.funcionario, 'funcao'):
             return self.funcionario.funcao
         return None
 
-    # ADICIONADO: Propriedade para acessar a data de admissão do funcionário.
     @property
     def data_admissao(self):
-        """Retorna a data de admissão do funcionário da ficha."""
         if self.funcionario:
             return self.funcionario.data_admissao
         return None
@@ -237,14 +153,14 @@ class FichaEPI(models.Model):
     def get_absolute_url(self):
         return reverse('seguranca_trabalho:ficha_detail', args=[self.pk])
 
-
 class EntregaEPI(models.Model):
     ficha = models.ForeignKey(FichaEPI, on_delete=models.PROTECT, related_name='entregas')
     equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT, verbose_name=_("Equipamento"))
     quantidade = models.PositiveIntegerField(default=1, verbose_name=_("Quantidade"))
     lote = models.CharField(max_length=100, blank=True, verbose_name=_("Lote de Fabricação"))
     numero_serie = models.CharField(max_length=100, blank=True, verbose_name=_("Número de Série"))
-    data_entrega = models.DateField(null=True, blank=True, verbose_name=_("Data de Recebimento"))
+    # ALTERADO: O campo agora tem um valor padrão e não pode ser nulo para garantir integridade.
+    data_entrega = models.DateField(default=timezone.now, verbose_name=_("Data de Recebimento"))
     assinatura_recebimento = models.TextField(blank=True, null=True, verbose_name=_("Assinatura de Recebimento (Base64)"))
     assinatura_imagem = models.ImageField(
         verbose_name="Assinatura (Arquivo)", upload_to='assinaturas/%Y/%m/', null=True, blank=True
@@ -258,7 +174,7 @@ class EntregaEPI(models.Model):
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='entregaepis', 
+        related_name='entregaepis',
         verbose_name=_("Filial"),
         null=True,
         blank=True
@@ -268,7 +184,6 @@ class EntregaEPI(models.Model):
     class Meta:
         permissions = [
             ("assinar_entregaepi", "Pode assinar entrega de EPI"),
-            # Adicione outras permissões customizadas aqui se necessário
         ]
         verbose_name = _("Entrega de EPI")
         verbose_name_plural = _("Entregas de EPI")
@@ -291,24 +206,31 @@ class EntregaEPI(models.Model):
             return "Vencido"
         return "Ativo"
 
-
 class MovimentacaoEstoque(models.Model):
     MOVIMENTACAO = [('ENTRADA', 'Entrada'), ('SAIDA', 'Saída'), ('AJUSTE', 'Ajuste')]
     equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT, related_name='movimentacoes_estoque')
     tipo = models.CharField(max_length=7, choices=MOVIMENTACAO)
     quantidade = models.IntegerField()
-    fornecedor = models.ForeignKey(Fornecedor, on_delete=models.SET_NULL, null=True, blank=True)
+    # ALTERADO: O campo agora pode ser nulo, pois nem toda movimentação (ex: Saída) tem um fornecedor.
+    fornecedor = models.ForeignKey(
+        Parceiro,
+        on_delete=models.PROTECT,
+        limit_choices_to={'eh_fornecedor': True},
+        related_name='movimentacoes_por_fornecedor',
+        null=True,
+        blank=True
+    )
     lote = models.CharField(max_length=100, blank=True, verbose_name=_("Lote"))
     data_validade_fabricante = models.DateField(null=True, blank=True, verbose_name=_("Validade do Produto (Fabricante)"))
     custo_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name=_("Custo Unitário"))
-    data = models.DateTimeField(default=timezone.now)
+    data = models.DateTimeField(default=timezone.now, null=True, blank=True)
     responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     justificativa = models.CharField(max_length=255)
     entrega_associada = models.OneToOneField(EntregaEPI, on_delete=models.SET_NULL, null=True, blank=True)
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='movimentacaoestoques', 
+        related_name='movimentacaoestoques',
         verbose_name=_("Filial"),
         null=True,
         blank=True

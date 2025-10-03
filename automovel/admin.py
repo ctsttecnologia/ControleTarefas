@@ -5,19 +5,23 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 from .models import Carro, Agendamento, Checklist, Foto
-from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
+from core.mixins import AdminFilialScopedMixin # Supondo que você tenha este mixin
 
-# MELHORIA DE USABILIDADE: Definindo Inlines para Agendamento
+# MUDANÇA CRÍTICA: Removido 'km_inicial' e 'km_final' do inline.
 class ChecklistInline(admin.TabularInline):
-    """Permite visualizar e adicionar checklists diretamente na página do agendamento."""
     model = Checklist
-    extra = 0  # Não mostra formulários extras para adicionar por padrão
-    fields = ('tipo', 'data_hora', 'km_inicial', 'km_final', 'usuario')
-    readonly_fields = ('data_hora', 'filial',) # Impede a edição da filial após a criação.)
-    show_change_link = True # Adiciona um link para a página de detalhes do checklist
+    extra = 0
+    fields = ('tipo', 'data_hora', 'usuario', 'link_para_checklist') # Campos que existem no modelo
+    readonly_fields = ('data_hora', 'link_para_checklist')
+    
+    def link_para_checklist(self, obj):
+        if obj.pk:
+            link = reverse("admin:automovel_checklist_change", args=[obj.pk])
+            return format_html('<a href="{}">Ver/Editar Detalhes</a>', link)
+        return "N/A"
+    link_para_checklist.short_description = 'Ações'
 
 class FotoInline(admin.TabularInline):
-    """Permite visualizar e adicionar fotos diretamente na página do agendamento."""
     model = Foto
     extra = 0
     fields = ('imagem', 'observacao', 'image_preview')
@@ -29,71 +33,54 @@ class FotoInline(admin.TabularInline):
         return "Sem imagem"
     image_preview.short_description = 'Preview'
 
-
 @admin.register(Carro)
-class CarroAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class CarroAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('placa', 'modelo', 'marca', 'filial', 'disponivel', 'ativo')
     list_filter = ('filial', 'marca', 'disponivel', 'ativo')
     search_fields = ('placa', 'modelo', 'marca')
-    list_editable = ('disponivel', 'ativo')
-    list_per_page = 20
-    readonly_fields = ('filial',)
+    list_editable = ('disponivel',)
 
-    # ORGANIZAÇÃO: Agrupando campos na tela de edição
-    fieldsets = (
-        ('Informações Principais', {
-            'fields': ('placa', 'modelo', 'marca', 'cor', 'ano', 'renavan', 'filial')
-        }),
-        ('Status e Manutenção', {
-            'fields': ('disponivel', 'ativo', 'data_ultima_manutencao', 'data_proxima_manutencao')
-        }),
-        ('Outras Informações', {
-            'fields': ('observacoes',)
-        }),
-    )
+    # MUDANÇA: Boas práticas para definir valores automáticos no admin
+    def save_model(self, request, obj, form, change):
+        if not obj.pk: # Se for um novo objeto
+            obj.filial = request.user.filial_ativa
+        super().save_model(request, obj, form, change)
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj: # Se estiver editando um objeto existente
+            return ('filial',)
+        return ()
 
 @admin.register(Agendamento)
-class AgendamentoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class AgendamentoAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('id', 'link_para_carro', 'funcionario', 'data_hora_agenda', 'status', 'filial')
+    # ... (o resto da sua configuração do AgendamentoAdmin estava ótima)
     list_filter = ('filial', 'status', 'carro__marca', 'data_hora_agenda')
     search_fields = ('funcionario', 'carro__placa', 'usuario__username', 'id')
     autocomplete_fields = ('carro', 'usuario')
-    date_hierarchy = 'data_hora_agenda'
-    list_per_page = 20
-    readonly_fields = ('filial', 'usuario') # Usuário que criou não deve ser alterado
-    
-    # OTIMIZAÇÃO: Reduz queries na listagem
     list_select_related = ('carro', 'usuario', 'filial')
-
-    # ORGANIZAÇÃO: Agrupando campos na tela de edição
-    fieldsets = (
-        (None, {
-            'fields': ('status', 'cancelar_agenda', 'motivo_cancelamento')
-        }),
-        ('Detalhes do Agendamento', {
-            'fields': ('carro', 'funcionario', 'cm', 'data_hora_agenda', 'data_hora_devolucao', 'descricao')
-        }),
-        ('Informações da Viagem', {
-            'fields': ('pedagio', 'abastecimento', 'km_inicial', 'km_final', 'ocorrencia')
-        }),
-        ('Responsáveis', {
-            'fields': ('responsavel', 'usuario', 'filial', 'assinatura')
-        }),
-    )
-    
-    # USABILIDADE: Adicionando os inlines criados acima
     inlines = [ChecklistInline, FotoInline]
 
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.filial = request.user.filial_ativa
+            obj.usuario = request.user
+        super().save_model(request, obj, form, change)
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return ('filial', 'usuario')
+        return ()
+
     def link_para_carro(self, obj):
-        """Cria um link para a página de edição do carro."""
         link = reverse("admin:automovel_carro_change", args=[obj.carro.id])
         return format_html('<a href="{}">{}</a>', link, obj.carro)
     link_para_carro.short_description = 'Carro'
-    link_para_carro.admin_order_field = 'carro'
+
 
 
 @admin.register(Checklist)
-class ChecklistAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class ChecklistAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('id', 'link_para_agendamento', 'tipo', 'data_hora', 'filial')
     list_filter = ('filial', 'tipo', 'data_hora')
     search_fields = ('agendamento__carro__placa', 'agendamento__funcionario', 'agendamento__id')
@@ -112,9 +99,15 @@ class ChecklistAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Model
     link_para_agendamento.short_description = 'Agendamento'
     link_para_agendamento.admin_order_field = 'agendamento'
 
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.filial = request.user.filial_ativa
+            obj.usuario = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Foto)
-class FotoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
+class FotoAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('id', 'agendamento', 'data_criacao', 'image_preview', 'filial')
     list_filter = ('filial', 'data_criacao',)
     search_fields = ('agendamento__id',)

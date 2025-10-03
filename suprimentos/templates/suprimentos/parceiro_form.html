@@ -1,0 +1,64 @@
+
+<!-- suprimentos/templates/suprimentos/parceiro_form.html -->
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-edit me-2"></i> {{ titulo_pagina }}</h2>
+    <hr>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.nome_fantasia|as_crispy_field }}</div>
+                    <div class="col-md-6 mb-3">{{ form.razao_social|as_crispy_field }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.cnpj|as_crispy_field }}</div>
+                    <div class="col-md-6 mb-3">{{ form.inscricao_estadual|as_crispy_field }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-11">
+                        {{ form.endereco|as_crispy_field }}
+                    </div>
+                    
+                    <div class="col-1 d-flex align-items-center justify-content-between ">
+                        <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary mt-3" title="Incluir Novo Endereço">
+                           <i class="bi bi-plus-circle"></i> 
+                        </a>
+                    </div>
+                </div>
+                
+            </a>
+                <hr>
+                <h5>Informações de Contato</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.contato|as_crispy_field }}</div>
+                    <div class="col-md-6 mb-3">{{ form.email|as_crispy_field }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">{{ form.telefone|as_crispy_field }}</div>
+                    <div class="col-md-6 mb-3">{{ form.celular|as_crispy_field }}</div>
+                </div>
+                <div class="mb-3">{{ form.site|as_crispy_field }}</div>
+                <hr>
+                <h5>Configurações</h5>
+                <div class="mb-3">{{ form.observacoes|as_crispy_field }}</div>
+                <div class="form-check form-switch mb-2">{{ form.eh_fabricante|as_crispy_field }}</div>
+                <div class="form-check form-switch mb-2">{{ form.eh_fornecedor|as_crispy_field }}</div>
+                <div class="form-check form-switch mb-3">{{ form.ativo|as_crispy_field }}</div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i> Salvar</button>
+                    <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

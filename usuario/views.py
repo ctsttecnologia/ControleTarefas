@@ -172,7 +172,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
                     {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
-                    {'url': 'tarefas:listar_tarefas', 'text': 'Minhas Tarefas'},
+                    
                 ]
             },
             {
@@ -193,7 +193,9 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'ferramentas.view_ferramentas',
                 'icon': 'images/serviço.gif',
                 'links': [
+                    {'url': 'tarefas:listar_tarefas', 'text': 'Tarefas'},
                     {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
+                    {'url': 'suprimentos:parceiro_list', 'text': 'Suprimentos'},
                 ]
             },
             {

@@ -8,26 +8,47 @@ from django.core.validators import FileExtensionValidator
 from core.managers import FilialManager
 from usuario.models import Filial
 
-class Carro(models.Model):
+# 1. CLASSE BASE ABSTRATA
+# Centraliza a lógica de filial que se repete em todos os modelos.
+# Isso resolve o erro de coluna duplicada e limpa o código.
+class BaseFilialModel(models.Model):
+    """Um modelo abstrato que adiciona o campo 'filial' e o manager padrão."""
+    # O related_name com '%(class)s_set' cria um nome reverso único automaticamente
+    # Ex: para Carro, será 'carro_set'; para Agendamento, 'agendamento_set'
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT, 
+        related_name='%(class)s_set'
+    )
+    objects = FilialManager()
+
+    class Meta:
+        abstract = True
+
+# 2. MODELO CARRO ATUALIZADO
+class Carro(BaseFilialModel):
     placa = models.CharField(max_length=10, unique=True)
     modelo = models.CharField(max_length=50)
     marca = models.CharField(max_length=50)
     cor = models.CharField(max_length=30)
     ano = models.PositiveIntegerField()
     renavan = models.CharField(max_length=20, unique=True)
+    # 2.1 - Adicionado campo de quilometragem para a lógica do Checklist funcionar
+    quilometragem = models.PositiveIntegerField(default=0, verbose_name="Quilometragem")
     data_ultima_manutencao = models.DateField(null=True, blank=True)
     data_proxima_manutencao = models.DateField(null=True, blank=True)
     ativo = models.BooleanField(default=True)
     observacoes = models.TextField(blank=True, null=True)
     disponivel = models.BooleanField(default=True)
     foto = models.ImageField(
-            upload_to='carros/fotos/', 
-            null=True, 
-            blank=True, 
-            verbose_name="Foto do Carro"
+        upload_to='carros/fotos/', 
+        null=True, 
+        blank=True, 
+        verbose_name="Foto do Carro"
     )
-    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='carros', default='CETEST-SP', null=True, blank=False)
-    objects = FilialManager()
+    # 2.2 - Removido 'filial' e 'objects', que agora vêm de BaseFilialModel
+    # CORREÇÃO: O default de uma ForeignKey não deve ser uma string como 'CETEST-SP'.
+    # Isso deve ser tratado na lógica da sua view ou serializer ao criar um objeto.
 
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placa}"
@@ -37,7 +58,7 @@ class Carro(models.Model):
         verbose_name_plural = "Carros"
         ordering = ['marca', 'modelo']
 
-class Agendamento(models.Model):
+class Agendamento(BaseFilialModel):
     STATUS_CHOICES = [
         ('agendado', 'Agendado'),
         ('em_andamento', 'Em Andamento'),
@@ -63,8 +84,7 @@ class Agendamento(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='agendado')
     cancelar_agenda = models.BooleanField(default=False)
     motivo_cancelamento = models.TextField(blank=True, null=True)
-    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='agendamentos', null=True, blank=False)
-    objects = FilialManager()
+    # Removido 'filial' e 'objects'
 
     def __str__(self):
         return f"Agendamento #{self.id} - {self.carro.placa} para {self.funcionario}"
@@ -82,7 +102,7 @@ class Agendamento(models.Model):
     def checklist_retorno(self):
         return self.checklists.filter(tipo='retorno').first()
 
-class Checklist(models.Model):
+class Checklist(BaseFilialModel):
     TIPO_CHOICES = [('saida', 'Saída'), ('retorno', 'Retorno'), ('vistoria', 'Vistoria')]
     STATUS_CHOICES = [('ok', 'OK'), ('danificado', 'Danificado'), ('nao_aplicavel', 'Não Aplicável')]
 
@@ -90,8 +110,8 @@ class Checklist(models.Model):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     data_hora = models.DateTimeField(default=timezone.now, verbose_name="Data/Hora")
-    km_inicial = models.PositiveIntegerField()
-    km_final = models.PositiveIntegerField(null=True, blank=True)
+    # Removido km_inicial e km_final, pois já existem no agendamento.
+    # O ideal é capturá-los na interface e passá-los para o agendamento ao salvar.
     revisao_frontal_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
     foto_frontal = models.ImageField(upload_to='checklist/frontal/', validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
     revisao_trazeira_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
@@ -104,53 +124,33 @@ class Checklist(models.Model):
     anexo_ocorrencia = models.TextField(blank=True, null=True)
     assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
-    # related_name único e campo obrigatório.
-    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='checklists', null=True, blank=False)
-    
-    # Manager Padrão
-    objects = FilialManager()
+    # Removido 'filial' e 'objects'
 
-    # automovel/models.py (dentro da classe Checklist)
+    # 3. MÉTODO SAVE CORRIGIDO E REATORADO
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)  # Salva o checklist primeiro
 
-def save(self, *args, **kwargs):
-    """
-    Sobrescreve o método save para centralizar a lógica de negócio
-    após a criação de um checklist.
-    """
-    is_new = self._state.adding
-    super().save(*args, **kwargs)  # Salva o checklist primeiro
-
-    if is_new:
-        agendamento = self.agendamento
-        
-        if self.tipo == 'saida':
-            agendamento.status = 'em_andamento'
-            agendamento.save(update_fields=['status'])
-        
-        elif self.tipo == 'retorno':
-            agendamento.status = 'finalizado'
-            # É mais eficiente salvar o status junto com outras alterações, se houver
+        if is_new:
+            agendamento = self.agendamento
             
-            # Atualiza o KM do carro com o KM final do checklist
-            if self.km_final:
+            if self.tipo == 'saida':
+                agendamento.status = 'em_andamento'
+                agendamento.save(update_fields=['status'])
+            
+            elif self.tipo == 'retorno':
                 carro = agendamento.carro
+                agendamento.status = 'finalizado'
                 
-                # CORREÇÃO: Use o nome correto do campo de quilometragem do seu model Carro
-                # Substitua 'quilometragem' se o nome for outro (ex: km_hodometro)
-                nome_campo_km_do_carro = 'quilometragem'
+                # Assume que o KM final é passado para o agendamento no momento do checklist
+                if agendamento.km_final:
+                    carro.quilometragem = agendamento.km_final
+                    carro.save(update_fields=['quilometragem'])
                 
-                setattr(carro, nome_campo_km_do_carro, self.km_final)
-                carro.save(update_fields=[nome_campo_km_do_carro])
-
-                # Atualiza também o agendamento
-                agendamento.km_final = self.km_final
-                agendamento.save(update_fields=['status', 'km_final'])
-            else:
-                 agendamento.save(update_fields=['status'])
+                agendamento.save(update_fields=['status'])
 
     def __str__(self):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
-
 
     class Meta:
         verbose_name = "Checklist"
@@ -158,16 +158,14 @@ def save(self, *args, **kwargs):
         ordering = ['-data_hora']
         unique_together = ('agendamento', 'tipo')
 
-class Foto(models.Model):
-    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='fotos')
+class Foto(BaseFilialModel):
+    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='fotos_agendamento')
     imagem = models.ImageField(upload_to='fotos/')
     data_criacao = models.DateTimeField(default=timezone.now)
     observacao = models.TextField(blank=True, null=True)
-    # CORREÇÃO: related_name único e campo obrigatório.
-    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='fotos', null=True, blank=False)
-
-    # Manager Padrão
-    objects = FilialManager()
+    # Removido 'filial' e 'objects'
+    # 4. CORREÇÃO DE related_name: alterado o related_name de 'fotos' em agendamento
+    # para 'fotos_agendamento' para evitar conflito com o que BaseFilialModel gera.
 
     def __str__(self):
         return f"Foto #{self.id} - {self.agendamento}"
@@ -176,4 +174,3 @@ class Foto(models.Model):
         verbose_name = "Foto"
         verbose_name_plural = "Fotos"
         ordering = ['-data_criacao']
-
