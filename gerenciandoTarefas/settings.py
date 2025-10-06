@@ -26,11 +26,12 @@ FERNET_KEYS = config('FERNET_KEYS') # Renomeei a variável para corresponder ao 
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 # ALLOWED_HOSTS
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
 
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
@@ -40,6 +41,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'America/Sao_Paulo'
 
+# --- FIM DAS CONFIGURAÇÕES DE SEGURANÇA ---
 
 # Application definition
 
