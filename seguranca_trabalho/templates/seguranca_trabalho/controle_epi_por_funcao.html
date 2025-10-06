@@ -101,10 +101,31 @@
 {% endblock %}
 
 {% block sst_content %}
-<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+<div class="d-flex justify-content-between align-items-center mb-0 pb-2 border-bottom">
     <div>
-        <h1 class="h2">{{ titulo_pagina }}</h1>
+        <h1 class="h2 small">{{ titulo_pagina }}</h1>
+        
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    
+    <div>
+        <h2>Controle de EPI por Função</h2>
         <p class="text-muted mb-0">{% trans "Defina a frequência de troca (em meses) para cada EPI por função. Deixe em branco ou 0 para 'Quando Necessário'." %}</p>
+    </div>   
+        <button type="button" class="btn btn-primary"
+            hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
+            hx-target="#modal-content"
+            data-bs-toggle="modal"
+            data-bs-target="#genericModal"> <i class="fas fa-plus me-1"></i> Nova Função
+        </button>
+    
+    <div class="modal fade" id="genericModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" id="modal-content">
+            </div>
+        </div>
     </div>
 </div>
 

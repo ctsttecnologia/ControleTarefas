@@ -3,7 +3,6 @@
 import io
 import json
 from datetime import datetime, timedelta
-
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -22,24 +21,20 @@ from django.views.generic import (CreateView, DeleteView, DetailView, ListView,
 from django.views.generic.edit import FormMixin
 from docx import Document
 from weasyprint import HTML, default_url_fetcher
-
-from core.mixins import (FilialCreateMixin, SSTPermissionMixin,
+from core.mixins import (FilialCreateMixin, HTMXModalFormMixin, SSTPermissionMixin,
                          ViewFilialScopedMixin)
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
 from usuario.views import StaffRequiredMixin
-
-# Imports de Forms e Models atualizados
-from .forms import (AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FichaEPIForm)
+from .forms import (AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FichaEPIForm, FuncaoForm)
 from .models import (EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI)
-
-
-# --- Ações de Entrega ---
 import logging
+
+
+
 logger = logging.getLogger(__name__)
 
 
-# --- Funções Auxiliares ---
 
 def custom_url_fetcher(url):
     """ Permite que o WeasyPrint acesse arquivos de media locais. """
@@ -77,7 +72,7 @@ class EquipamentoUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateVie
     permission_required = 'seguranca_trabalho.change_equipamento'
 
     def get_queryset(self):
-        # CORRIGIDO: Removido 'fornecedor' do select_related pois o campo não existe mais no modelo Equipamento.
+        # Removido 'fornecedor' do select_related pois o campo não existe mais no modelo Equipamento.
         return super().get_queryset().select_related('fabricante')
 
 class EquipamentoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
@@ -90,7 +85,6 @@ class EquipamentoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteVie
 # ========================================================================
 # CRUD DE FICHAS DE EPI E AÇÕES
 # ========================================================================
-
 class FichaEPIListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_list.html'
@@ -422,7 +416,7 @@ class ControleEPIPorFuncaoView(SSTPermissionMixin, TemplateView):
         for item in dados_salvos:
             if item.funcao_id not in matriz_data:
                 matriz_data[item.funcao_id] = {}
-            # CORREÇÃO AQUI: Usando o nome correto do campo do modelo
+            # Usando o nome correto do campo do modelo
             matriz_data[item.funcao_id][item.equipamento_id] = item.frequencia_troca_meses
 
         context.update({
@@ -568,5 +562,101 @@ class ExportarFuncionariosWordView(StaffRequiredMixin, View):
         response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.docx"'
         return response
+
+
+
+
+
+#@login_required
+#def funcao_create_view(request):
+#    if request.method == 'POST':
+#        form = FuncaoForm(request.POST)
+#        if form.is_valid():
+#            nova_funcao = form.save(commit=False)
+#            # Assumindo que você tem a filial ativa no request.
+#            # Adapte esta linha à sua lógica de filiais.
+#            nova_funcao.filial = request.user.filial_ativa 
+#            nova_funcao.save()
+            
+#            messages.success(request, f"A função '{nova_funcao.nome}' foi criada com sucesso.")
+            
+#            # Resposta especial para o HTMX: recarrega a página inteira
+#            response = HttpResponse(status=204)
+#            response['HX-Redirect'] = request.META.get('HTTP_REFERER') # Redireciona para a página de onde veio
+#            return response
+#    else: # Se for um GET
+#        form = FuncaoForm()
+
+#    # Renderiza apenas o template parcial do formulário
+#    return render(request, 'seguranca_trabalho/partials/funcao_form.html', {
+#        'form': form
+#    })
+
+class FuncaoListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
+    """
+    Lista todas as funções da filial ativa.
+    """
+    model = Funcao
+    template_name = 'seguranca_trabalho/funcao_list.html'
+    context_object_name = 'funcoes'
+    permission_required = 'seguranca_trabalho.view_funcao'
+    paginate_by = 20
+
+
+    def get_queryset(self):
+        # Pega o queryset base, já filtrado pela filial pelo mixin
+        qs = super().get_queryset()
+
+        # Pega o termo de busca da URL (ex: ?q=minha-busca)
+        query_text = self.request.GET.get('q')
+
+        if query_text:
+            # Filtra o nome da função (case-insensitive)
+            qs = qs.filter(nome__icontains=query_text)
+
+        # Retorna o queryset ordenado
+        return qs.order_by('nome')    # Filtra as funções pela filial ativa na sessão e ordena por nome
     
+
+class FuncaoCreateView(HTMXModalFormMixin, FilialCreateMixin, SSTPermissionMixin, CreateView): # <-- ADICIONE O MIXIN
+    model = Funcao
+    form_class = FuncaoForm
+    # O template agora será escolhido dinamicamente pelo mixin
+    # template_name = 'seguranca_trabalho/funcao_form.html' # <- Pode remover esta linha
+    success_url = reverse_lazy('seguranca_trabalho:funcao_list')
+    permission_required = 'seguranca_trabalho.add_funcao'
+
+    def form_valid(self, form):
+        messages.success(self.request, f"A função '{form.instance.nome}' foi criada com sucesso.")
+        # A lógica de resposta HTMX será tratada pelo mixin
+        return super().form_valid(form)
+
+
+class FuncaoUpdateView(HTMXModalFormMixin, ViewFilialScopedMixin, SSTPermissionMixin, UpdateView): # <-- ADICIONE O MIXIN
+    model = Funcao
+    form_class = FuncaoForm
+    # template_name = 'seguranca_trabalho/funcao_form.html' # <- Pode remover esta linha
+    success_url = reverse_lazy('seguranca_trabalho:funcao_list')
+    permission_required = 'seguranca_trabalho.change_funcao'
+
+    def form_valid(self, form):
+        messages.success(self.request, f"A função '{form.instance.nome}' foi atualizada com sucesso.")
+        # A lógica de resposta HTMX será tratada pelo mixin
+        return super().form_valid(form)
+
+
+class FuncaoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
+    """
+    Exclui uma função.
+    """
+    model = Funcao
+    template_name = 'seguranca_trabalho/confirm_delete.html'  # Reutilizando o template de confirmação
+    success_url = reverse_lazy('seguranca_trabalho:funcao_list')
+    context_object_name = 'object'
+    permission_required = 'seguranca_trabalho.delete_funcao'
+
+    def form_valid(self, form):
+        messages.success(self.request, f"A função '{self.object.nome}' foi excluída com sucesso.")
+        return super().form_valid(form)
+
 

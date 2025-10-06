@@ -8,6 +8,7 @@ from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
 from django.shortcuts import redirect
 from ferramentas.models import Atividade
+from django.http import HttpResponse
 
 
 class SSTPermissionMixin(PermissionRequiredMixin):
@@ -189,3 +190,30 @@ class AtividadeLogMixin:
             descricao=descricao,
             usuario=self.request.user
         )
+
+class HTMXModalFormMixin:
+    """
+    Mixin para adaptar CreateView e UpdateView para funcionar com modais HTMX.
+    """
+    def get_template_names(self):
+        """
+        Se a requisição for HTMX, usa o template parcial, senão, o completo.
+        """
+        if self.request.htmx:
+            # Assumindo que seu template parcial segue um padrão de nome
+            return [f"{self.model._meta.app_label}/partials/{self.model._meta.model_name}_form.html"]
+        return [f"{self.model._meta.app_label}/{self.model._meta.model_name}_form.html"]
+
+    def form_valid(self, form):
+        """
+        Após salvar o formulário com sucesso, envia uma resposta para o HTMX
+        fechar o modal e redirecionar a página principal.
+        """
+        # Primeiro, executa a lógica padrão (salvar o objeto, etc.)
+        super().form_valid(form)
+
+        # Cria uma resposta vazia com status 204 (No Content)
+        response = HttpResponse(status=204)
+        # Adiciona o header que o HTMX usará para redirecionar a página de fundo
+        response['HX-Redirect'] = self.get_success_url()
+        return response
