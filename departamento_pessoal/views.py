@@ -2,6 +2,7 @@
 
 import json
 import io
+from os import error
 import pandas as pd
 from docx import Document as PyDocxDocument
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -10,7 +11,7 @@ from weasyprint import HTML
 from django.db.models import Q, Count
 from django.http import HttpResponse
 from django.urls import reverse_lazy, reverse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView, DeleteView
 from django.contrib import messages
@@ -18,13 +19,352 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
 
-# Módulos Locais
-from usuario.models import Filial
-from .models import Funcionario, Departamento, Cargo, Documento
+from seguranca_trabalho.models import Funcao
+from .models import Funcionario, Departamento, Cargo, Documento, Filial, Cliente
 from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
+from django.db import IntegrityError, transaction
+from django.utils.dateparse import parse_date
+from .forms import UploadFuncionariosForm
+from io import BytesIO
+from django.views import View
+from openpyxl.styles import Font, PatternFill, Alignment, NamedStyle
+from openpyxl.worksheet.datavalidation import DataValidation
+from django.db import IntegrityError
+import logging
 
+
+# --- Funções Auxiliares ---
+
+class ImportacaoError(Exception):
+    """Exceção customizada para erros durante a importação da planilha."""
+    def __init__(self, message, column_name=None):
+        self.message = message
+        self.column_name = column_name
+        super().__init__(self.message)
+
+    def __str__(self):
+        if self.column_name:
+            return f"Coluna '{self.column_name}': {self.message}"
+        return self.message
+
+# Nomes das colunas que estarão na planilha modelo
+COLUNAS_ESPERADAS = [
+    'matricula', 'nome_completo', 'data_admissao', 'data_nascimento',
+    'email_pessoal', 'telefone', 'salario', 'status', 'sexo',
+    'nome_cargo', 'cbo', 'nome_funcao', 'nome_departamento', 'nome_filial', 'nome_cliente'
+]
+
+
+class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
+    """
+    View para lidar com o upload e processamento da planilha de funcionários.
+    """
+    permission_required = 'departamento_pessoal.add_funcionario'
+    form_class = UploadFuncionariosForm
+    template_name = 'departamento_pessoal/upload_funcionarios.html'
+
+    def get(self, request, *args, **kwargs):
+        """Lida com a requisição GET, exibindo o formulário limpo."""
+        # A limpeza da sessão foi movida para a view 'baixar_relatorio_erros'.
+        form = self.form_class()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request, *args, **kwargs):
+        """
+        Lida com a requisição POST, orquestrando a validação e o processamento do arquivo.
+        """
+        form = self.form_class(request.POST, request.FILES)
+        if not form.is_valid():
+            return render(request, self.template_name, {'form': form})
+
+        arquivo_excel = request.FILES['arquivo']
+
+        # 1. Validações iniciais do arquivo e das colunas
+        try:
+            df = self._ler_e_validar_planilha(arquivo_excel)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return render(request, self.template_name, {'form': form})
+        
+        # 2. Processamento dos dados da planilha
+        sucessos_count, linhas_com_erro = self._processar_dataframe(df)
+
+        # 3. Feedback ao usuário com base no resultado
+        if linhas_com_erro:
+            request.session['upload_erros'] = linhas_com_erro
+            msg = (f"A importação falhou. Foram encontrados {len(linhas_com_erro)} erros. "
+                   "Nenhum funcionário foi salvo. Baixe o relatório de erros para corrigi-los.")
+            messages.error(request, msg)
+        else:
+            msg = f"Importação concluída com sucesso! {sucessos_count} funcionários foram criados/atualizados."
+            messages.success(request, msg)
+
+        return redirect(reverse('departamento_pessoal:upload_funcionarios'))
+
+    def _ler_e_validar_planilha(self, arquivo):
+        """
+        Lê o arquivo Excel para um DataFrame e valida sua estrutura.
+        Lança ValueError se houver problemas.
+        """
+        if not arquivo.name.endswith('.xlsx'):
+            raise ValueError('Erro: O arquivo deve ser do formato .xlsx')
+
+        try:
+            df = pd.read_excel(arquivo, dtype=str).fillna('')
+        except Exception as e:
+            raise ValueError(f"Erro ao ler o arquivo Excel: {e}")
+
+        if not all(col in df.columns for col in COLUNAS_ESPERADAS):
+            colunas_faltantes = set(COLUNAS_ESPERADAS) - set(df.columns)
+            raise ValueError(f"Erro: As seguintes colunas obrigatórias não foram encontradas na planilha: {', '.join(colunas_faltantes)}")
+        
+        return df
+
+    def _processar_dataframe(self, df):
+        """
+        Itera sobre o DataFrame, processando cada linha e formatando os erros de forma clara.
+        """
+        linhas_com_erro = []
+        sucessos_count = 0
+
+        try:
+            with transaction.atomic():
+                for index, row in df.iterrows():
+                    linha_num = index + 2  # Número da linha como visto no Excel
+                    try:
+                        self._processar_linha(row)
+                        sucessos_count += 1
+                    except ImportacaoError as e:
+                        # Captura nosso erro customizado e formata a mensagem
+                        erro_msg = f"Linha {linha_num}, {e}"
+                        linha_erro = row.to_dict()
+                        linha_erro['Erro'] = erro_msg
+                        linhas_com_erro.append(linha_erro)
+                    except Exception as e:
+                        # Captura qualquer outro erro inesperado e o reporta
+                        erro_msg = f"Linha {linha_num}: Erro inesperado. Contate o suporte. (Detalhe: {str(e)})"
+                        linha_erro = row.to_dict()
+                        linha_erro['Erro'] = erro_msg
+                        linhas_com_erro.append(linha_erro)
+                
+                if linhas_com_erro:
+                    raise IntegrityError("Erros encontrados durante a importação.")
+        
+        except IntegrityError:
+            return 0, linhas_com_erro
+        
+        return sucessos_count, linhas_com_erro
+
+    def _processar_linha(self, row):
+        """
+        Valida e salva os dados de uma única linha.
+        Exige que Filial e Cliente já existam no sistema.
+        Cria Cargos, Funções e Departamentos automaticamente se necessário.
+        """
+        # 1. Validação de datas (sem alterações, já estava correto)
+        data_admissao_str = row.get('data_admissao', '').strip()
+        if not data_admissao_str:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='data_admissao')
+        data_admissao = pd.to_datetime(data_admissao_str, dayfirst=True, errors='coerce')
+        if pd.isna(data_admissao):
+            raise ImportacaoError(f"O valor '{data_admissao_str}' está em um formato inválido. Use DD-MM-AAAA.", column_name='data_admissao')
+        
+        data_nascimento_str = row.get('data_nascimento', '').strip()
+        data_nascimento = pd.to_datetime(data_nascimento_str, dayfirst=True, errors='coerce') if data_nascimento_str else None
+        if data_nascimento_str and pd.isna(data_nascimento):
+                raise ImportacaoError(f"O valor '{data_nascimento_str}' está em um formato inválido. Use DD-MM-AAAA.", column_name='data_nascimento')
+
+        # 2. Busca de Objetos Relacionados
+        
+        # Etapa A: Filial (sem alterações, já estava correto)
+        nome_filial_excel = row['nome_filial'].strip()
+        if not nome_filial_excel:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='nome_filial')
+        try:
+            filial = Filial.objects.get(nome__iexact=nome_filial_excel)
+        except Filial.DoesNotExist:
+            raise ImportacaoError(f"A Filial '{nome_filial_excel}' não foi encontrada no sistema. Cadastre-a primeiro.", column_name='nome_filial')
+
+        # Etapa B: Garante que o CARGO exista (ou o cria), associado à filial e com o CBO correto.
+        nome_cargo_excel = row['nome_cargo'].strip()
+        if not nome_cargo_excel:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='nome_cargo')
+        
+        # Pega a string do CBO da planilha.
+        cbo_excel = row.get('cbo', '').strip() 
+        
+        # cria um novo usando os valores em 'defaults', incluindo o CBO.
+        cargo, _ = Cargo.objects.get_or_create(
+            nome__iexact=nome_cargo_excel,
+            filial=filial,
+            defaults={
+                'nome': nome_cargo_excel.title(), 
+                'filial': filial,
+                'cbo': cbo_excel  # Salva a STRING do CBO diretamente no Cargo.
+            }
+        )
+
+        # Etapa C: Garante que a FUNÇÃO exista (ou a cria), se informada. (Seu código está correto)
+        funcao = None
+        nome_funcao_excel = row.get('nome_funcao', '').strip()
+        if nome_funcao_excel:
+            funcao, _ = Funcao.objects.get_or_create(
+                nome__iexact=nome_funcao_excel,
+                filial=filial,
+                defaults={'nome': nome_funcao_excel.title(), 'filial': filial}
+            )
+
+        # Etapa D: Departamento 
+        nome_dpto_excel = row['nome_departamento'].strip()
+        if not nome_dpto_excel:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='nome_departamento')
+        departamento, _ = Departamento.objects.get_or_create(
+            nome__iexact=nome_dpto_excel, 
+            filial=filial, 
+            defaults={'nome': nome_dpto_excel.title(), 'filial': filial}
+        )
+
+        # Etapa E: Cliente 
+        cliente = None
+        nome_cliente_excel = row.get('nome_cliente', '').strip()
+        if nome_cliente_excel:
+            try:
+                cliente = Cliente.objects.get(nome__iexact=nome_cliente_excel)
+            except Cliente.DoesNotExist:
+                raise ImportacaoError(f"O Cliente '{nome_cliente_excel}' não foi encontrado no sistema. Cadastre-o primeiro.", column_name='nome_cliente')
+
+        # 3. Validação de campos de escolha 
+        status = row.get('status', '').upper().strip()
+        if not status:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='status')
+        if status not in dict(Funcionario.STATUS_CHOICES):
+            raise ImportacaoError(f"O valor '{row.get('status')}' é inválido.", column_name='status')
+        
+        sexo = row.get('sexo', '').upper().strip() or None
+        if sexo and sexo not in dict(Funcionario.SEXO_CHOICES):
+            raise ImportacaoError(f"O valor '{row.get('sexo')}' para 'sexo' é inválido.", column_name='sexo')
+
+        # 4. Criação ou atualização do funcionário (agora com a variável `cbo` correta)
+        Funcionario.objects.update_or_create(
+            matricula=row['matricula'].strip(),
+            defaults={
+                'nome_completo': row['nome_completo'].strip().upper(),
+                'data_admissao': data_admissao.date(),
+                'data_nascimento': data_nascimento.date() if pd.notna(data_nascimento) else None,
+                'cargo': cargo,
+                'funcao': funcao,
+                'departamento': departamento,
+                'filial': filial,
+                'cliente': cliente,
+                'status': status,
+                'salario': float(row['salario']) if row['salario'] else 0.00,
+                'email_pessoal': row['email_pessoal'].strip() or None,
+                'telefone': row['telefone'].strip(),
+                'sexo': sexo,
+            }
+        )
+    
+def baixar_modelo_funcionarios(request):
+    """
+    Gera e fornece o arquivo .xlsx modelo, agora com formatação profissional,
+    largura de colunas ajustada e validação de dados (dropdowns).
+    """
+    df_modelo = pd.DataFrame(columns=COLUNAS_ESPERADAS)
+    
+    output = BytesIO()
+    
+    # Usar ExcelWriter para ter acesso ao objeto da planilha (workbook/worksheet)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_modelo.to_excel(writer, index=False, sheet_name='Funcionarios')
+        
+        # Obter o worksheet para poder formatá-lo
+        workbook = writer.book
+        worksheet = writer.sheets['Funcionarios']
+
+        # Adicionar um estilo de texto
+        text_style = NamedStyle(name='text_style', number_format='@')
+        workbook.add_named_style(text_style)
+        
+        # 1. Definir Estilos para o Cabeçalho
+        header_font = Font(bold=True, color="FFFFFF", name="Calibri")
+        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # 2. Aplicar Estilos e Ajustar Largura das Colunas
+        for col_num, column_title in enumerate(df_modelo.columns, 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+            # Se a coluna for de data, aplica o estilo de texto a ela
+            if 'data_' in column_title:
+                for r in range(2, 5000): # Aplica para um número grande de linhas
+                    worksheet.cell(row=r, column=col_num).style = text_style
+            
+            # Ajustar a largura da coluna com base no tamanho do texto do cabeçalho
+            column_letter = cell.column_letter
+            worksheet.column_dimensions[column_letter].width = len(column_title) + 5
+
+        # 3. Adicionar Validação de Dados (Dropdowns) para 'status' e 'sexo'
+        
+        # Dropdown para STATUS (assumindo que a coluna 'status' é a 8ª, ou 'H')
+        status_options = f'"{",".join([choice[0] for choice in Funcionario.STATUS_CHOICES])}"'
+        dv_status = DataValidation(type="list", formula1=status_options, allow_blank=True)
+        dv_status.add('H2:H1048576') # Aplica a validação para toda a coluna H
+        worksheet.add_data_validation(dv_status)
+
+        # Dropdown para SEXO (assumindo que a coluna 'sexo' é a 9ª, ou 'I')
+        sexo_options = f'"{",".join([choice[0] for choice in Funcionario.SEXO_CHOICES])}"'
+        dv_sexo = DataValidation(type="list", formula1=sexo_options, allow_blank=True)
+        dv_sexo.add('I2:I1048576') # Aplica a validação para toda a coluna I
+        worksheet.add_data_validation(dv_sexo)
+        
+        # 4. Congelar o Painel do Cabeçalho
+        worksheet.freeze_panes = 'A2'
+
+    output.seek(0)
+    
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="modelo_importacao_funcionarios.xlsx"'
+    
+    return response
+
+
+def baixar_relatorio_erros(request):
+    """
+    Gera um arquivo Excel com as linhas que continham erros durante o upload.
+    """
+    linhas_com_erro = request.session.get('upload_erros', [])
+
+    if not linhas_com_erro:
+        messages.warning(request, "Não há relatório de erros para baixar.")
+        return redirect(reverse('departamento_pessoal:upload_funcionarios'))
+    
+    # Limpa a sessão LOGO APÓS usar os dados. Este é o lugar correto.
+    request.session.pop('upload_erros', None)
+
+    df_erros = pd.DataFrame(linhas_com_erro)
+    
+    # Limpa os dados da sessão após recuperá-los
+    request.session.pop('upload_erros', None)
+    
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_erros.to_excel(writer, index=False, sheet_name='Erros')
+    output.seek(0)
+
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="relatorio_erros_importacao.xlsx"'
+    return response
 
 
 class StaffRequiredMixin(PermissionRequiredMixin):
@@ -334,28 +674,45 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
             messages.error(self.request, "Selecione uma filial para visualizar o painel.")
             return context
 
-        # CORREÇÃO CRÍTICA: Filtrar todas as querysets pela filial da sessão.
+        # Querysets base filtrados por filial (seu código, já estava correto)
         funcionarios_qs = Funcionario.objects.filter(filial_id=filial_id)
         departamentos_qs = Departamento.objects.filter(filial_id=filial_id)
         
+        # KPIs (seu código, já estava correto)
         context['total_funcionarios_ativos'] = funcionarios_qs.filter(status='ATIVO').count()
         context['total_departamentos'] = departamentos_qs.filter(ativo=True).count()
         context['total_cargos'] = Cargo.objects.filter(filial_id=filial_id, ativo=True).count()
 
+        # --- DADOS PARA O GRÁFICO DE DEPARTAMENTOS (Pizza) ---
         func_por_depto = departamentos_qs.filter(ativo=True).annotate(
             num_funcionarios=Count('funcionarios', filter=Q(funcionarios__status='ATIVO'))
-        ).values('nome', 'num_funcionarios').order_by('-num_funcionarios')
-            
-        context['depto_labels'] = json.dumps([d['nome'] for d in func_por_depto])
-        context['depto_data'] = json.dumps([d['num_funcionarios'] for d in func_por_depto])
+            ).values('nome', 'num_funcionarios').order_by('-num_funcionarios')
+                
+        # MUDANÇA 1: Passar listas Python puras para o template, em vez de JSON.
+        # O template cuidará da conversão com |json_script.
+        context['depto_labels'] = [d['nome'] for d in func_por_depto]
+        context['depto_data'] = [d['num_funcionarios'] for d in func_por_depto]
 
+        # --- DADOS PARA O GRÁFICO DE STATUS (Doughnut) ---
         dist_status = funcionarios_qs.values('status').annotate(total=Count('status')).order_by('status')
-        context['status_labels'] = json.dumps([s['status'] for s in dist_status])
-        context['status_data'] = json.dumps([s['total'] for s in dist_status])
+        
+        # MUDANÇA 2: Corrigir os labels do gráfico de status para usar os nomes amigáveis.
+        status_labels = []
+        status_data = []
+        status_display_map = dict(Funcionario.STATUS_CHOICES) # Cria um mapa como {'ATIVO': 'Ativo', 'FERIAS': 'Férias'}
+
+        for s in dist_status:
+            # Usando o mapa de CHOICES para "traduzir" o valor do BD para o nome legível
+            label_amigavel = status_display_map.get(s['status'], s['status'])
+            status_labels.append(label_amigavel)
+            status_data.append(s['total'])
+
+        context['status_labels'] = status_labels
+        context['status_data'] = status_data
 
         context['titulo_pagina'] = "Painel de Controle DP"
         return context
-
+    
 class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get_scoped_queryset(self):
         filial_id = self.request.session.get('active_filial_id')

@@ -163,3 +163,9 @@ class AdmissaoForm(forms.ModelForm):
         # Adiciona help_text para campos importantes
         self.fields['data_demissao'].help_text = "Preencha apenas se o status do funcionário for 'Inativo'."
         self.fields['matricula'].help_text = "Pode ser deixado em branco para geração automática (requer lógica na view ou model)."
+
+class UploadFuncionariosForm(forms.Form):
+    arquivo = forms.FileField(
+        label='Selecione a planilha de funcionários (.xlsx)',
+        widget=forms.ClearableFileInput(attrs={'accept': '.xlsx'})
+    )

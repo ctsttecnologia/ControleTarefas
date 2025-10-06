@@ -1,0 +1,87 @@
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
+
+{% block title %}Lista de Funções{% endblock %}
+
+{% block sst_content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2><i class="fas fa-briefcase me-2"></i> Funções</h2>
+            <p class="mb-0">Atividade Ocupacional</p>
+        </div>
+        <a href="{% url 'seguranca_trabalho:funcao_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nova Função
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <form method="get" action="." class="row g-3 align-items-center">
+                <div class="col">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar por nome da função..." value="{{ request.GET.q | default:'' }}">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-eraser"></i> Limpar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome da Função</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for funcao in funcoes %}
+                    <tr>
+                        <td>{{ funcao.nome }}</td>
+                        <td>
+                            {% if funcao.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'seguranca_trabalho:funcao_update' funcao.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="bi bi-pencil-fill"></i>
+                            </a>
+                            <a href="{% url 'seguranca_trabalho:funcao_delete' funcao.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                <i class="bi bi-trash3-fill"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">
+                            {% if request.GET.q %}
+                                Nenhuma função encontrada para a busca "<strong>{{ request.GET.q }}</strong>".
+                            {% else %}
+                                Nenhuma função cadastrada.
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+         <div class="card-footer">
+             {% include 'partials/pagination.html' %}
+         </div>
+    </div>
+</div>
+{% endblock %}

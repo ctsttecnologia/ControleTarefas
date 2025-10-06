@@ -169,7 +169,7 @@ class TipoCursoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = TipoCurso
     template_name = 'treinamentos/lista_tipo_curso.html'
     context_object_name = 'cursos'
-    paginate_by = 10
+    paginate_by = 30
 
     def get_queryset(self):
         """Aplica filtros de status e busca textual."""
@@ -227,7 +227,7 @@ class EditarTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMe
     model = TipoCurso
     form_class = TipoCursoForm
     template_name = 'treinamentos/editar_tipo_curso.html'
-    success_url = reverse_lazy('treinamentos:lista_tipo_curso')
+    success_url = reverse_lazy('treinamentos:lista_tipos_curso')
     permission_required = 'treinamentos.change_tipocurso'
     success_message = "Tipo de curso atualizado com sucesso!"
 
@@ -242,7 +242,7 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
     """View para confirmar e excluir um tipo de curso."""
     model = TipoCurso
     template_name = 'treinamentos/excluir_tipo_curso.html'
-    success_url = reverse_lazy('treinamentos:lista_tipo_curso')
+    success_url = reverse_lazy('treinamentos:lista_tipos_curso')
     permission_required = 'treinamentos.delete_tipocurso'
     success_message = "Tipo de curso excluído com sucesso!"
 

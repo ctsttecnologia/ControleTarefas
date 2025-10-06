@@ -1,0 +1,103 @@
+
+{% extends "departamento_pessoal/_base_dp.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Importar Funcionários em Lote{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header align-items-center d-flex justify-content-between">
+            <h2>Importar Funcionários em Lote</h2>
+            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="nav-card">
+                <i class="bi bi-people"></i><h5 class="nav-title">Lista de Funcionários</h5>        
+            </a>
+        </div>
+        <div class="card-body">
+            <p>
+                Para importar múltiplos funcionários de uma vez, siga os passos:
+            </p>
+            <ol>
+                <li>
+                    Baixe a planilha modelo clicando no botão abaixo.
+                    <br>
+                    <a href="{% url 'departamento_pessoal:baixar_modelo_funcionarios' %}" class="btn btn-sm btn-info mt-2 mb-3">
+                        <i class="fas fa-download"></i> Baixar Modelo da Planilha
+                    </a>
+                </li>
+                <li>Preencha a planilha com os dados dos funcionários. <strong>Não altere o nome das colunas.</strong></li>
+                <li>Salve a planilha e faça o upload usando o formulário abaixo.</li>
+            </ol>
+            <hr>
+
+            {# Exibição de mensagens do Django #}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-secondary{% endif %} d-flex justify-content-between align-items-center" role="alert">
+                        <span>{{ message }}</span>
+
+                        {# Esta condição verifica se a mensagem é de ERRO (nível 40) e se há dados de erro na sessão #}
+                        {% if message.level == 40 and request.session.upload_erros %}
+                            <a href="{% url 'departamento_pessoal:baixar_relatorio_erros' %}" class="btn btn-danger btn-sm ml-3">
+                                <i class="fas fa-file-excel"></i> Baixar Relatório de Erros
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Enviar e Processar Planilha
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {# Área para exibir mensagens de sucesso e erro #}
+    {% if messages %}
+        <div class="mt-4">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if sucessos or erros %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Resultado do Processamento</h3>
+        </div>
+        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+            {% if erros %}
+                <div class="alert alert-danger">
+                    <h4>Erros Encontrados:</h4>
+                    <ul>
+                        {% for erro in erros %}
+                            <li>{{ erro }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            {% if sucessos and not erros %} {# Mostra sucessos apenas se não houver erros #}
+                 <div class="alert alert-success">
+                    <h4>Registros Processados:</h4>
+                    <ul>
+                        {% for sucesso in sucessos %}
+                            <li>{{ sucesso }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -54,6 +54,7 @@ class Carro(BaseFilialModel):
         return f"{self.marca} {self.modelo} - {self.placa}"
 
     class Meta:
+        db_table = 'carro'
         verbose_name = "Carro"
         verbose_name_plural = "Carros"
         ordering = ['marca', 'modelo']
@@ -90,6 +91,7 @@ class Agendamento(BaseFilialModel):
         return f"Agendamento #{self.id} - {self.carro.placa} para {self.funcionario}"
 
     class Meta:
+        db_table = 'agendamento'
         verbose_name = "Agendamento"
         verbose_name_plural = "Agendamentos"
         ordering = ['-data_hora_agenda']
@@ -153,6 +155,7 @@ class Checklist(BaseFilialModel):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
 
     class Meta:
+        db_table = 'checklist'
         verbose_name = "Checklist"
         verbose_name_plural = "Checklists"
         ordering = ['-data_hora']
@@ -171,6 +174,10 @@ class Foto(BaseFilialModel):
         return f"Foto #{self.id} - {self.agendamento}"
 
     class Meta:
+        db_table = 'foto'
         verbose_name = "Foto"
         verbose_name_plural = "Fotos"
         ordering = ['-data_criacao']
+        unique_together = ('agendamento', 'imagem')
+        
+

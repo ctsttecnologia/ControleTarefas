@@ -6,7 +6,8 @@ from .views import (
     FuncionarioAdmissaoView, FuncionarioListView, FuncionarioDetailView, 
     FuncionarioCreateView, FuncionarioUpdateView, FuncionarioDeleteView,
     DepartamentoListView, DepartamentoCreateView, DepartamentoUpdateView,
-    CargoListView, CargoCreateView, CargoUpdateView, PainelDPView
+    CargoListView, CargoCreateView, CargoUpdateView, PainelDPView, UploadFuncionariosView, baixar_modelo_funcionarios, baixar_relatorio_erros
+    
 )
 
 app_name = 'departamento_pessoal'
@@ -52,5 +53,10 @@ urlpatterns = [
     path('funcionarios/exportar/excel/', ExportarFuncionariosExcelView.as_view(), name='exportar_excel'),
     path('funcionarios/exportar/pdf/', ExportarFuncionariosPDFView.as_view(), name='exportar_pdf'),
     path('funcionarios/exportar/word/', ExportarFuncionariosWordView.as_view(), name='exportar_word'),
+
+    path('funcionarios/upload/', UploadFuncionariosView.as_view(), name='upload_funcionarios'),
+    path('funcionarios/upload/modelo/', baixar_modelo_funcionarios, name='baixar_modelo_funcionarios'),
+    path('funcionarios/upload/relatorio-erros/', baixar_relatorio_erros, name='baixar_relatorio_erros'),
 ]
+
 

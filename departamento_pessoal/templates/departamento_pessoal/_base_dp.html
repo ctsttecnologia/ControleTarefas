@@ -2,17 +2,20 @@
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dp/dp_base.css' %}">
 
 {% endblock %}
 
 {% block content %}
-
-    {% include "partials/_messages.html" %} 
     
     <div class="subnav-atas mb-4 p-3 bg-body-tertiary rounded-3 border sticky-top" style="top: 60px; z-index: 1020;">
         <div class="container-fluid">
             <ul class="nav nav">
+
+                <li class="nav-item">
+                    <a class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'departamento_pessoal:painel_dp' %}">
+                       <i class="bi bi-speedometer2 me-1"></i> Painel DP
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link {% if 'departamento' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'departamento_pessoal:lista_departamento' %}">
                        <i class="bi bi-diagram-3 me-1"></i> Departamentos
@@ -33,11 +36,7 @@
                         <i class="bi bi-briefcase me-1"></i> Documentos
                     </a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}" href="{% url 'departamento_pessoal:painel_dp' %}">
-                       <i class="bi bi-speedometer2 me-1"></i> Painel DP
-                    </a>
-                </li>
+                
             </ul>
         </div>
     </div>

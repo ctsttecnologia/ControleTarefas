@@ -31,7 +31,7 @@
         {# Botão para a Próxima Página #}
         {% if page_obj.has_next %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page.obj.next_page_number }}&q={{ search_query|default:'' }}">Próxima</a>
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|default:'' }}">Próxima</a>
             </li>
         {% endif %}
         

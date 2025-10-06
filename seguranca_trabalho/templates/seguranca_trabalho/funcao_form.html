@@ -1,0 +1,42 @@
+
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
+{% load widget_tweaks %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if object %}{% trans "Editar Função" %}{% else %}{% trans "Nova Função" %}{% endif %}
+{% endblock %}
+
+{% block sst_content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h3>
+                        {% if object %}
+                            <i class="fas fa-edit me-2"></i> {% trans "Editar Função:" %} {{ object.nome }}
+                        {% else %}
+                            <i class="fas fa-plus me-2"></i> {% trans "Nova Função" %}
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {# Incluímos os mesmos campos do formulário aqui #}
+                        {% include "seguranca_trabalho/partials/funcao_form_fields.html" %}
+
+                        <div class="mt-4 d-flex justify-content-end">
+                            <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-secondary me-2">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
