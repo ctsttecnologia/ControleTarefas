@@ -29,8 +29,6 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
     
-
-
 # =============================================================================
 # == VIEWS DE AUTENTICAÇÃO E SELEÇÃO DE FILIAL
 # =============================================================================
@@ -140,6 +138,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
                     {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
+                    {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
                 ]
             },
             {
@@ -171,7 +170,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
-                    {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
+                    {'url': 'suprimentos:parceiro_list', 'text': 'Suprimentos'},
                     
                 ]
             },
@@ -195,7 +194,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'tarefas:listar_tarefas', 'text': 'Tarefas'},
                     {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
-                    {'url': 'suprimentos:parceiro_list', 'text': 'Suprimentos'},
+                    
                 ]
             },
             {
@@ -359,7 +358,6 @@ class GroupDeleteView(SuperuserRequiredMixin, DeleteView):
     model = Group
     template_name = 'usuario/grupo_confirmar_exclusao.html'
     success_url = reverse_lazy('usuario:grupo_lista')
-
 
 # --- Views de Recuperação de Senha (usando as do Django com templates customizados) ---
 
@@ -549,5 +547,4 @@ class ManageCardPermissionsView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
 
         return redirect('usuario:gerenciar_cards')
-    
     

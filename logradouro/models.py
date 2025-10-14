@@ -38,7 +38,7 @@ class Logradouro(models.Model):
     )
     
     complemento = models.CharField(
-        max_length=50,
+        max_length=150,
         blank=True,
         null=True,
         verbose_name=_('Complemento')

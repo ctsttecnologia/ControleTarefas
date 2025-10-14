@@ -8,7 +8,7 @@ from tarefas.models import Comentario
 from .models import Filial, AtaReuniao, HistoricoAta
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
-
+from django.core.exceptions import ValidationError
 
 
 class AtaReuniaoForm(forms.ModelForm):
@@ -147,3 +147,22 @@ class ComentarioForm(forms.ModelForm):
             'comentario': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Adicione um comentário...'}),
         }
 
+class UploadAtaReuniaoForm(forms.Form):
+    """
+    Formulário para upload do arquivo Excel com as Atas de Reunião.
+    """
+    file = forms.FileField(
+        label=_("Arquivo Excel (.xlsx)"),
+        help_text=_("Selecione o arquivo .xlsx contendo os dados das atas de reunião."),
+        widget=forms.ClearableFileInput(attrs={'accept': '.xlsx'})
+    )
+
+    def clean_file(self):
+        """
+        Validação customizada para garantir que o arquivo é do tipo .xlsx.
+        """
+        uploaded_file = self.cleaned_data.get('file')
+        if uploaded_file:
+            if not uploaded_file.name.endswith('.xlsx'):
+                raise ValidationError(_("Erro: O arquivo deve ser do formato Excel (.xlsx)."))
+        return uploaded_file

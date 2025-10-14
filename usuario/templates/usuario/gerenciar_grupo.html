@@ -8,70 +8,73 @@
    
 {% endblock %}
 
-
 {% block content %}
-<div class="container py-6">
 
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <h2 class="h3 mb-0">
-            <i class="bi bi-people-fill me-2"></i>
-            Gerenciar Grupos de <span class="text-primary">{{ usuario.get_full_name|default:usuario.username }}</span>
-        </h2>
-        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-light">
-            <i class="bi bi-arrow-left-circle me-1"></i>
-            Voltar
-        </a>
-    </header>
+<div class="container-boxed">
+    <div class="container-fluid">      
+        <div class="container-fluid py-6">
+            <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <h2 class="h3 mb-0">
+                    <i class="bi bi-people-fill me-2"></i>
+                    Gerenciar Grupos de <span class="text-primary">{{ usuario.get_full_name|default:usuario.username }}</span>
+                </h2>
+                <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-light">
+                    <i class="bi bi-arrow-left-circle me-1"></i>
+                    Voltar
+                </a>
+            </header>
 
-    <div class="row g-4">
-        <div class="col-lg-6 d-flex flex-column">
-            <h6 class="text-uppercase small fw-bold text-muted mb-3">Grupos Atuais do Usuário</h6>
-            <div class="card shadow-sm flex-grow-1">
-                <div class="list-group list-group-flush">
-                    {% for grupo in grupos_usuario %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span class="fw-semibold">{{ grupo.name }}</span>
-                            <form method="post" class="d-inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="grupo" value="{{ grupo.pk }}">
-                                <input type="hidden" name="acao" value="remover">
-                                <button type="submit" class="btn btn-link text-danger p-0" title="Remover {{ grupo.name }}">
-                                    <i class="bi bi-trash3 fs-5"></i>
-                                </button>
-                            </form>
+            <div class="row g-4">
+                <div class="col-lg-6 d-flex flex-column">
+                    <h6 class="text-uppercase small fw-bold text-muted mb-3">Grupos Atuais do Usuário</h6>
+                    <div class="card shadow-sm flex-grow-1">
+                        <div class="list-group list-group-flush">
+                            {% for grupo in grupos_usuario %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold">{{ grupo.name }}</span>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                        <input type="hidden" name="acao" value="remover">
+                                        <button type="submit" class="btn btn-link text-danger p-0" title="Remover {{ grupo.name }}">
+                                            <i class="bi bi-trash3 fs-5"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            {% empty %}
+                                <div class="d-flex flex-column justify-content-center align-items-center text-center text-muted p-5 h-100">
+                                    <i class="bi bi-person-fill-slash fs-1"></i>
+                                    <p class="mb-0 mt-3">O usuário não pertence a nenhum grupo.</p>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% empty %}
-                        <div class="d-flex flex-column justify-content-center align-items-center text-center text-muted p-5 h-100">
-                            <i class="bi bi-person-fill-slash fs-1"></i>
-                            <p class="mb-0 mt-3">O usuário não pertence a nenhum grupo.</p>
-                        </div>
-                    {% endfor %}
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="col-lg-6 d-flex flex-column">
-            <h6 class="text-uppercase small fw-bold text-muted mb-3">Grupos Disponíveis para Adicionar</h6>
-            <div class="card shadow-sm flex-grow-1">
-                <div class="list-group list-group-flush">
-                    {% for grupo in grupos_disponiveis %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>{{ grupo.name }}</span>
-                            <form method="post" class="d-inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="grupo" value="{{ grupo.pk }}">
-                                <input type="hidden" name="acao" value="adicionar">
-                                <button type="submit" class="btn btn-link text-success p-0" title="Adicionar {{ grupo.name }}">
-                                    <i class="bi bi-arrow-right-circle-fill fs-5"></i>
-                                </button>
-                            </form>
+                <div class="col-lg-6 d-flex flex-column">
+                    <h6 class="text-uppercase small fw-bold text-muted mb-3">Grupos Disponíveis para Adicionar</h6>
+                    <div class="card shadow-sm flex-grow-1">
+                        <div class="list-group list-group-flush">
+                            {% for grupo in grupos_disponiveis %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ grupo.name }}</span>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="grupo" value="{{ grupo.pk }}">
+                                        <input type="hidden" name="acao" value="adicionar">
+                                        <button type="submit" class="btn btn-link text-success p-0" title="Adicionar {{ grupo.name }}">
+                                            <i class="bi bi-arrow-right-circle-fill fs-5"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            {% empty %}
+                                <div class="d-flex flex-column justify-content-center align-items-center text-center text-muted p-5 h-100">
+                                    <i class="bi bi-check2-all fs-1"></i>
+                                    <p class="mb-0 mt-3">Não há mais grupos para adicionar.</p>
+                                </div>
+                            {% endfor %}
                         </div>
-                    {% empty %}
-                        <div class="d-flex flex-column justify-content-center align-items-center text-center text-muted p-5 h-100">
-                            <i class="bi bi-check2-all fs-1"></i>
-                            <p class="mb-0 mt-3">Não há mais grupos para adicionar.</p>
-                        </div>
-                    {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>

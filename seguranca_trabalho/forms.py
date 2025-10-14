@@ -1,13 +1,15 @@
 # seguranca_trabalho/forms.py
-# seguranca_trabalho/forms.py
+
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
 import pathlib
-
-# Importa apenas os modelos que realmente existem e são usados nos formulários desta app
-from .models import Equipamento, FichaEPI, EntregaEPI, Funcao
+from .models import Equipamento, FichaEPI, EntregaEPI, Funcao, CargoFuncao
 from departamento_pessoal.models import Funcionario
+
+
+
+
 
 # NOTA: FabricanteForm e FornecedorForm foram REMOVIDOS pois seus modelos não existem mais.
 # A gestão de Parceiros deve ser feita através de formulários na aplicação 'suprimentos'.
@@ -136,5 +138,13 @@ class FuncaoForm(forms.ModelForm):
 
         }
 
+class CargoFuncaoForm(forms.ModelForm):
+    class Meta:
+        model = CargoFuncao
+        fields = ['cargo', 'funcao']
+        widgets = {
+            'cargo': forms.Select(attrs={'class': 'form-select'}),
+            'funcao': forms.Select(attrs={'class': 'form-select'}),
+        }
 
        

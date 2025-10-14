@@ -178,7 +178,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
 
         # 2. Busca de Objetos Relacionados
         
-        # Etapa A: Filial (sem alterações, já estava correto)
         nome_filial_excel = row['nome_filial'].strip()
         if not nome_filial_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_filial')

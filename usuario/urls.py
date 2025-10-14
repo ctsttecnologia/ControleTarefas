@@ -52,4 +52,5 @@ urlpatterns = [
     path('filiais/adicionar/', FilialCreateView.as_view(), name='filial_create'),
     path('filiais/<int:pk>/editar/', FilialUpdateView.as_view(), name='filial_update'),
     path('filiais/<int:pk>/excluir/', FilialDeleteView.as_view(), name='filial_delete'),
+    
 ]

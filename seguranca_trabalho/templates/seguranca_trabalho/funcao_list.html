@@ -13,9 +13,17 @@
             <h2><i class="fas fa-briefcase me-2"></i> Funções</h2>
             <p class="mb-0">Atividade Ocupacional</p>
         </div>
-        <a href="{% url 'seguranca_trabalho:funcao_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i> Nova Função
-        </a>
+        <div>
+            <a href="{% url 'seguranca_trabalho:funcao_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Nova Função
+            </a>
+            <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> lista de Associações
+            </a>
+            <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Associar Função a um Cargo
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm mb-3">

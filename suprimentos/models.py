@@ -5,7 +5,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 # Importe os modelos Filial e Logradouro de onde eles estiverem
-from core.models import Filial
+from usuario.models import Filial
 from core.managers import FilialManager
 from logradouro.models import Logradouro 
 

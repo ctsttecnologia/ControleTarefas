@@ -3,6 +3,7 @@
 import io
 import json
 from datetime import datetime, timedelta
+from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -26,9 +27,10 @@ from core.mixins import (FilialCreateMixin, HTMXModalFormMixin, SSTPermissionMix
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
 from usuario.views import StaffRequiredMixin
-from .forms import (AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FichaEPIForm, FuncaoForm)
-from .models import (EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI)
+from .forms import (AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FichaEPIForm, FuncaoForm, CargoFuncaoForm)
+from .models import (EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI, CargoFuncao)
 import logging
+
 
 
 
@@ -563,10 +565,6 @@ class ExportarFuncionariosWordView(StaffRequiredMixin, View):
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.docx"'
         return response
 
-
-
-
-
 #@login_required
 #def funcao_create_view(request):
 #    if request.method == 'POST':
@@ -659,4 +657,41 @@ class FuncaoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
         messages.success(self.request, f"A função '{self.object.nome}' foi excluída com sucesso.")
         return super().form_valid(form)
 
+# Cenário 1: Substitui a função lista_associacoes
+class AssociacaoListView(ListView):
+    """
+    Exibe uma lista de todas as associações entre Cargos e Funções.
+    """
+    model = CargoFuncao
+    template_name = 'seguranca_trabalho/lista_associacoes.html'
+    context_object_name = 'seguranca_trabalho:lista_de_associacoes' 
 
+
+class AssociacaoListView(ListView):
+    model = CargoFuncao
+    template_name = 'seguranca_trabalho/lista_associacoes.html'
+    context_object_name = 'lista_de_associacoes' 
+
+    def get_queryset(self):
+        # Pode deixar este método como estava antes, simples e limpo
+        return CargoFuncao.objects.select_related('cargo', 'funcao').all()
+
+        
+# Cenário 3: Substitui a função associar_funcao_cargo
+class AssociacaoCreateView(CreateView):
+    """
+    Exibe um formulário para criar uma nova associação entre Cargo e Função.
+    """
+    model = CargoFuncao
+    # CORREÇÃO: Aponte para a classe do formulário, não do modelo.
+    form_class = CargoFuncaoForm
+    template_name = 'seguranca_trabalho/formulario_associacao.html'
+    success_url = reverse_lazy('seguranca_trabalho:lista_associacoes')
+    permission_required = 'seguranca_trabalho.add_cargofuncao'
+
+    def form_valid(self, form):
+        messages.success(self.request, "Associação criada com sucesso!")
+        return super().form_valid(form)
+    
+
+    

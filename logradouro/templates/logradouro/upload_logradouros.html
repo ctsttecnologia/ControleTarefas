@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+
+{% load static %}
+{% load django_bootstrap5 %}
+
+{% block title %}Upload em Massa de Endereços{% endblock %}
+
+{% block content %}
+<div class="container-box">
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header">
+                <h2>Upload em Massa de Endereços</h2>
+            </div>
+            <div class="card-body">
+                <p>
+                    Selecione um arquivo <code>.xlsx</code> ou <code>.csv</code> contendo os endereços a serem importados.
+                    <br>
+                    <strong>Importante:</strong> A planilha deve seguir o modelo padrão, com todos os cabeçalhos obrigatórios na primeira linha.
+                </p>
+                
+                <div class="mb-4">
+                    <a href="{% url 'logradouro:download_logradouro_template' %}" class="btn btn-primary">
+                        <i class="fas fa-download"></i> Baixar Modelo da Planilha
+                    </a>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if relatorio_disponivel %}
+                <div class="alert alert-danger border-2" role="alert">
+                    <h4 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle"></i> Problemas na Importação!
+                    </h4>
+                    <p>
+                        Encontramos <strong>{{ total_erros }}</strong> linha(s) com erro(s) na sua planilha.
+                        A importação foi cancelada para evitar inconsistências nos dados.
+                    </p>
+                    <hr>
+                    <p class="mb-0">
+                        Para facilitar a correção, geramos um relatório com as linhas problemáticas e o detalhe do erro em cada uma.
+                        Baixe o arquivo, corrija os dados e tente o upload novamente.
+                    </p>
+                    <div class="mt-3">
+                        <a href="{% url 'logradouro:download_erros_logradouro' %}" class="btn btn-danger fw-bold">
+                            <i class="fas fa-file-excel"></i> Baixar Relatório de Erros
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                        
+                    {% bootstrap_form form %}
+                    
+                    <button type="submit" class="btn btn-success mt-3">
+                        <i class="fas fa-upload"></i> Enviar Arquivo e Validar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

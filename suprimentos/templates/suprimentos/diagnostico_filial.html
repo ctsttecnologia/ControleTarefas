@@ -1,0 +1,29 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Diagnóstico de Filial</title>
+</head>
+<body>
+    <h1>Diagnóstico de Filial</h1>
+    <ul>
+        <li>User ID: {{ user_id }}</li>
+        <li>Username: {{ username }}</li>
+        <li>Superuser: {{ is_superuser }}</li>
+        <li>Staff: {{ is_staff }}</li>
+        <li>Filial na Sessão: {{ session_filial_id }}</li>
+        <li>Tem atributo filial_ativa: {{ has_filial_ativa_attr }}</li>
+        <li>Filial Ativa: {{ filial_ativa }}</li>
+        <li>Tem atributo filiais_permitidas: {{ has_filiais_permitidas_attr }}</li>
+        <li>Filiais Permitidas: {{ filiais_permitidas_count }}</li>
+        <li>Filiais Ativas no Sistema: {{ filiais_ativas_sistema }}</li>
+        <li>Todas Filiais Ativas:
+            <ul>
+                {% for filial in todas_filiais_ativas %}
+                <li>{{ filial.id }} - {{ filial.nome }}</li>
+                {% endfor %}
+            </ul>
+        </li>
+    </ul>
+</body>
+</html>

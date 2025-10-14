@@ -4,11 +4,14 @@ from django.urls import path
 
 from logradouro.admin import consulta_cep
 from .views import (
+    DownloadErroRelatorioView,
+    DownloadTemplateView,
     LogradouroListView, 
     LogradouroCreateView, 
     LogradouroUpdateView, 
     LogradouroDeleteView,
-    LogradouroExportExcelView
+    LogradouroExportExcelView,
+    UploadLogradourosView
 )
 
 app_name = 'logradouro'
@@ -24,7 +27,10 @@ urlpatterns = [
     path('excluir/<int:pk>/', LogradouroDeleteView.as_view(), name='confirmar_exclusao'),
     # Caminho para a funcionalidade de exportar para Excel
     path('exportar-excel/', LogradouroExportExcelView.as_view(), name='exportar_excel'),
-    # ADICIONE ESTA LINHA:
+    # busca de cep
     path('consulta-cep/', consulta_cep, name='consulta_cep'),
-    
+    # Caminho para upload e de planilha para inserção de dados em massa
+    path('logradouros/upload/', UploadLogradourosView.as_view(), name='upload_logradouros'),
+    path('logradouros/upload/template/', DownloadTemplateView.as_view(), name='download_logradouro_template'),
+    path('logradouros/upload/download-erros/', DownloadErroRelatorioView.as_view(), name='download_erros_logradouro'),
 ]

@@ -5,6 +5,8 @@ from django.urls import path
 # Importando todas as views necessárias para um CRUD completo e ações.
 from .views import (
     # Dashboards
+    AssociacaoCreateView,
+    AssociacaoListView,
     ControleEPIPorFuncaoView,
     DashboardSSTView,
 
@@ -57,6 +59,9 @@ urlpatterns = [
     path('funcoes/nova/', FuncaoCreateView.as_view(), name='funcao_create'),
     path('funcoes/<int:pk>/editar/', FuncaoUpdateView.as_view(), name='funcao_update'),
     path('funcoes/<int:pk>/excluir/', FuncaoDeleteView.as_view(), name='funcao_delete'),
+    path('associacoes/', AssociacaoListView.as_view(), name='lista_associacoes'),
+    path('associar/', AssociacaoCreateView.as_view(), name='associar_funcao_cargo'),
+
     
     path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='captura_teste'),
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),

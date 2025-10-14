@@ -5,7 +5,7 @@ import csv
 import io
 import json
 from typing import Any
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 import openpyxl
 from django.conf import settings
 from django.contrib import messages
@@ -18,7 +18,7 @@ from django.template.loader import get_template
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import (CreateView, DeleteView, ListView, TemplateView, UpdateView, View, DetailView)
-from openpyxl.styles import Font
+from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from xhtml2pdf import pisa
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
@@ -28,6 +28,14 @@ from .models import AtaReuniao, HistoricoAta, Filial, Comentario
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.db.models import Q
+import pandas as pd
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+from django.contrib.auth.decorators import login_required
+from .forms import UploadAtaReuniaoForm
+from django.contrib.messages import get_messages
+
 
 
 User = get_user_model()
@@ -400,4 +408,249 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=300)
         
+# Decorador para exigir login em Class-Based Views
+login_required_m = method_decorator(login_required, name='dispatch')
+
+
+@login_required
+def download_ata_reuniao_template(request):
+    """
+    Gera e fornece para download uma planilha Excel (.xlsx) modelo para o
+    carregamento em massa de Atas de Reunião.
+    """
+    output = BytesIO()
+    workbook = Workbook()
+    
+    # --- Planilha de Dados ---
+    worksheet = workbook.active
+    worksheet.title = "Dados das Atas"
+
+    headers = [
+        "Contrato (ID)", "Coordenador (ID)", "Responsável (ID)", "Natureza", 
+        "Título", "Ação/Proposta", "Data de Entrada (DD/MM/AAAA)", 
+        "Prazo Final (DD/MM/AAAA)", "Status"
+    ]
+    
+    # Estilo do cabeçalho
+    header_font = Font(bold=True, color="FFFFFF")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    for col_num, header_title in enumerate(headers, 1):
+        cell = worksheet.cell(row=1, column=col_num, value=header_title)
+        cell.font = header_font
+        cell.alignment = header_alignment
+        worksheet.column_dimensions[get_column_letter(col_num)].width = 25
+        
+    # Colore o cabeçalho
+    for cell in worksheet["1:1"]:
+        cell.fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+
+    # --- Planilha de Instruções ---
+    instructions_ws = workbook.create_sheet(title="Instruções e Opções")
+    instructions_ws.column_dimensions['A'].width = 30
+    instructions_ws.column_dimensions['B'].width = 50
+
+    instructions_data = [
+        ("INSTRUÇÕES GERAIS", ""),
+        ("Contrato (ID)", "Insira o número ID do cliente/contrato. Ex: 15"),
+        ("Coordenador (ID)", "Insira o número ID do funcionário coordenador. Ex: 7"),
+        ("Responsável (ID)", "Insira o número ID do funcionário responsável. Ex: 12"),
+        ("Datas", "Use o formato DD/MM/AAAA. Ex: 25/12/2025"),
+        ("", ""),
+        ("OPÇÕES VÁLIDAS", "Não altere os valores desta coluna."),
+        ("Natureza", ", ".join([choice[0] for choice in AtaReuniao.Natureza.choices])),
+        ("Status", ", ".join([choice[0] for choice in AtaReuniao.Status.choices])),
+    ]
+
+    for row, data in enumerate(instructions_data, 1):
+        instructions_ws.cell(row=row, column=1, value=data[0]).font = Font(bold=True)
+        instructions_ws.cell(row=row, column=2, value=data[1])
+
+    workbook.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="modelo_importacao_atas.xlsx"'
+    return response
+
+
+@login_required_m
+class UploadAtaReuniaoView(View):
+    template_name = 'ata_reuniao/ata_reuniao_upload.html'
+    form_class = UploadAtaReuniaoForm
+    success_url = reverse_lazy('ata_reuniao:ata_reuniao_list') # Altere para sua URL de listagem
+
+    def get(self, request, *args, **kwargs):
+        """
+        Renderiza o formulário e verifica se há mensagens de erro 
+        para exibir o botão de download do relatório.
+        """
+        form = self.form_class()
+
+        # Lógica para verificar a existência de mensagens de 'warning'
+        storage = get_messages(request)
+        has_upload_errors = False
+        for message in storage:
+            if 'warning' in message.tags:
+                has_upload_errors = True
+                break  # Encontrou um, não precisa procurar mais
+        
+        # Limpa a sessão de erros antigos se não houver mais mensagens de warning
+        if not has_upload_errors and 'upload_error_details' in request.session:
+            del request.session['upload_error_details']
+
+        context = {
+            'form': form,
+            'has_upload_errors': has_upload_errors,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        form = self.form_class(request.POST, request.FILES)
+        if not form.is_valid():
+            # Limpa a sessão de erros se o formulário for inválido
+            if 'upload_error_details' in request.session:
+                del request.session['upload_error_details'] 
+            return render(request, self.template_name, {'form': form})
+
+        file = request.FILES['file']
+        
+        try:
+            df = pd.read_excel(file, dtype=str).fillna('') # Lê tudo como texto para preservar dados originais
+        except Exception as e:
+            messages.error(request, f"Erro ao ler o arquivo Excel: {e}")
+            return redirect(request.path)
+
+        # Verifica se o DataFrame está vazio (nenhuma linha de dados)
+        if df.empty:
+            messages.warning(request, "A planilha está vazia ou não contém dados para importar.")
+            return redirect(request.path)
+        
+        headers_map = {
+            "Contrato (ID)": "contrato_id",
+            "Coordenador (ID)": "coordenador_id",
+            "Responsável (ID)": "responsavel_id",
+            "Natureza": "natureza",
+            "Título": "titulo",
+            "Ação/Proposta": "acao",
+            "Data de Entrada (DD/MM/AAAA)": "entrada",
+            "Prazo Final (DD/MM/AAAA)": "prazo",
+            "Status": "status"
+        }
+        df.rename(columns=headers_map, inplace=True)
+
+        success_count = 0
+        errors = []
+        error_details_for_session = [] # Para armazenar dados para o relatório
+
+        valid_natureza = AtaReuniao.Natureza.values
+        valid_status = AtaReuniao.Status.values
+
+        for index, row in df.iterrows():
+            linha = index + 2
+            original_row_data = row.to_dict()
+
+            try:
+                # ... (todas as suas validações, como na implementação anterior) ...
+                # Validação de Contrato
+                try:
+                    contrato = Cliente.objects.get(pk=int(row['contrato_id']))
+                except Cliente.DoesNotExist:
+                    raise ValueError(f"Contrato com ID '{row['contrato_id']}' não encontrado.")
+                # ... etc ...
+
+                # Se tudo OK, cria o objeto
+                # ... (código de criação do objeto) ...
+
+                success_count += 1
+
+            except Exception as e:
+                error_message = f"Linha {linha}: {e}"
+                errors.append(error_message)
+                
+                # Adiciona dados da linha e o erro para o relatório
+                original_row_data['motivo_do_erro'] = str(e)
+                error_details_for_session.append(original_row_data)
+
+        # Armazena erros na sessão para download posterior
+        if error_details_for_session:
+            request.session['upload_error_details'] = error_details_for_session
+
+        # Mensagens de Feedback para o usuário
+        if success_count > 0:
+            messages.success(request, f"{success_count} ata(s) de reunião importada(s) com sucesso!")
+
+        if errors:
+            error_summary = f"<strong>{len(errors)} linha(s) não puderam ser importadas.</strong><br>Baixe o relatório de erros para corrigir e tente novamente."
+            messages.warning(request, error_summary, extra_tags='safe')
+            
+        # Redireciona para a mesma página para mostrar as mensagens e o botão de download
+        return redirect(request.path)
+
+
+@login_required
+def download_error_report(request):
+    """
+    Gera um arquivo Excel com as linhas que falharam durante o upload,
+    incluindo uma coluna com o motivo do erro.
+    """
+    error_details = request.session.get('upload_error_details')
+
+    if not error_details:
+        messages.error(request, "Nenhum relatório de erros encontrado na sessão.")
+        return redirect('ata_reuniao:ata_reuniao_upload')
+
+    # Cria um DataFrame do pandas com os detalhes do erro
+    df_errors = pd.DataFrame(error_details)
+    
+    # Reordena as colunas para o formato original e adiciona a coluna de erro no final
+    original_columns_order = [
+        "contrato_id", "coordenador_id", "responsavel_id", "natureza", "titulo",
+        "acao", "entrada", "prazo", "status"
+    ]
+    df_errors = df_errors[original_columns_order + ['motivo_do_erro']]
+
+    # Renomeia as colunas de volta para o formato amigável do template
+    friendly_headers = {
+        "contrato_id": "Contrato (ID)", "coordenador_id": "Coordenador (ID)",
+        "responsavel_id": "Responsável (ID)", "natureza": "Natureza", "titulo": "Título",
+        "acao": "Ação/Proposta", "entrada": "Data de Entrada (DD/MM/AAAA)",
+        "prazo": "Prazo Final (DD/MM/AAAA)", "status": "Status",
+        "motivo_do_erro": "Motivo do Erro"
+    }
+    df_errors.rename(columns=friendly_headers, inplace=True)
+    
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df_errors.to_excel(writer, index=False, sheet_name='Erros_Para_Correcao')
+        
+        # Formatação (opcional, mas recomendado)
+        workbook = writer.book
+        worksheet = writer.sheets['Erros_Para_Correcao']
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="C00000", end_color="C00000", fill_type="solid") # Vermelho para erros
+
+        for col_num, value in enumerate(df_errors.columns.values, 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.font = header_font
+            cell.fill = header_fill
+            worksheet.column_dimensions[get_column_letter(col_num)].width = 25
+        worksheet.column_dimensions[get_column_letter(len(df_errors.columns))].width = 50 # Coluna de erro maior
+
+
+    output.seek(0)
+
+    # Limpa a sessão após gerar o relatório
+    del request.session['upload_error_details']
+
+    response = HttpResponse(
+        output,
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="relatorio_erros_importacao.xlsx"'
+    return response
+    
 

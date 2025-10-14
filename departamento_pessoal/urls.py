@@ -35,7 +35,7 @@ urlpatterns = [
     # Rotas para o CRUD de Cargos
     path('cargos/', CargoListView.as_view(), name='lista_cargo'),
     path('cargos/novo/', CargoCreateView.as_view(), name='cargo_form'),
-    path('cargos/<int:pk>/editar/', CargoUpdateView.as_view(), name='cargo_update'),
+    path('cargo/editar/<int:pk>/', CargoUpdateView.as_view(), name='edita_cargo'),
 
     # Rota para exibir a lista de todos os documentos.
     # O nome 'lista_documentos' permite referenciar esta URL em templates.

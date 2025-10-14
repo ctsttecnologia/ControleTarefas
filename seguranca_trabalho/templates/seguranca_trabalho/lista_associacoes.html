@@ -1,0 +1,45 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Funções por Cargo</h1>
+    
+    <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="btn btn-primary">
+        + Associar Função
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Cargo</th>
+                    <th>Função Associada</th>
+                    <th class="text-center">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in lista_de_associacoes %}
+                    <tr>
+                      <td>{{ item.cargo.nome }}</td>
+                      <td>{{ item.funcao.nome }}</td>
+                      <td class="text-center">
+                        <a href="#" class="btn btn-sm btn-outline-secondary">Editar</a>
+                        <a href="#" class="btn btn-sm btn-outline-danger">Excluir</a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="3" class="text-center">Nenhuma associação encontrada.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
