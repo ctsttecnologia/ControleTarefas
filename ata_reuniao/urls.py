@@ -4,7 +4,7 @@ from django.urls import path
 from .views import (
     AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
     AtaReuniaoDeleteView, AtaReuniaoDashboardView, AtaReuniaoPDFExportView,
-    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, UpdateTaskStatusView # Adicionado DetailView
+    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, UpdateTaskStatusView, UploadAtaReuniaoView, download_ata_reuniao_template, download_error_report # Adicionado DetailView
 )
 
 app_name = 'ata_reuniao'
@@ -20,16 +20,15 @@ urlpatterns = [
     path('ata/<int:pk>/editar/', AtaReuniaoUpdateView.as_view(), name='ata_reuniao_update'),
     path('ata/<int:pk>/excluir/', AtaReuniaoDeleteView.as_view(), name='ata_confirm_delete'),
     path('ata/<int:pk>/add_comment/', AtaReuniaoAddCommentView.as_view(), name='ata_add_comment'),
-
-
-    # --- Rotas de Exportação ---
     # Usam a lista principal de atas como base
     path('exportar/pdf/', AtaReuniaoPDFExportView.as_view(), name='ata_reuniao_export_pdf'),
     path('exportar/excel/', AtaReuniaoExcelExportView.as_view(), name='ata_reuniao_export_excel'),
-
-
     # NOVO ENDPOINT PARA O DRAG AND DROP
     path('api/update-status/<int:pk>/', UpdateTaskStatusView.as_view(), name='api_update_status'),
+
+    path('upload/', UploadAtaReuniaoView.as_view(), name='ata_reuniao_upload'),
+    path('download-template/', download_ata_reuniao_template, name='download_template'),
+    path('download-error-report/', download_error_report, name='download_error_report'),
 ]
 
 

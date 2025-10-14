@@ -2,6 +2,9 @@
 # suprimentos/forms.py
 from django import forms
 from .models import Parceiro
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
+
 
 class ParceiroForm(forms.ModelForm):
     class Meta:
@@ -9,9 +12,10 @@ class ParceiroForm(forms.ModelForm):
         fields = [
             'nome_fantasia', 'razao_social', 'cnpj', 'inscricao_estadual',
             'endereco', 'email', 'telefone', 'celular', 'contato', 'site',
-            'observacoes', 'eh_fabricante', 'eh_fornecedor', 'ativo'
+            'observacoes', 'eh_fabricante', 'eh_fornecedor', 'ativo', 'filial'
         ]
         widgets = {
+            'filial': forms.Select(attrs={'class': 'form-select'}),
             'nome_fantasia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome Fantasia ou Nome do Fabricante'}),
             'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
@@ -31,3 +35,15 @@ class ParceiroForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+class UploadFileForm(forms.Form):
+    file = forms.FileField(
+        label=_("Selecione a planilha (.xlsx)"),
+        help_text=_("Apenas arquivos no formato .xlsx são aceitos."),
+    )
+
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            if not file.name.endswith('.xlsx'):
+                raise ValidationError(_("Arquivo inválido. Por favor, envie uma planilha no formato .xlsx."))
+        return file

@@ -50,4 +50,13 @@ def error_404_view(request, exception):
     """
     return render(request, '404.html', status=404)
 
+class SetFilialView(View):
+    def post(self, request, *args, **kwargs):
+        filial_id = request.POST.get('filial_id')
+        if filial_id:
+            request.session['filial_id'] = filial_id
+        
+        # Redirect to the previous page or a default page
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
 

@@ -1,6 +1,4 @@
 # tarefas/views.py
-
-# Imports Padrão
 import json
 import logging
 from collections import defaultdict

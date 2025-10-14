@@ -6,6 +6,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from departamento_pessoal.models import Cargo
 from suprimentos.models import Parceiro
 from core.managers import FilialManager
 from usuario.models import Filial
@@ -35,6 +36,36 @@ class Funcao(models.Model):
 
     def __str__(self):
         return self.nome
+
+class CargoFuncao(models.Model):
+    cargo = models.ForeignKey(Cargo, 
+        on_delete=models.CASCADE,
+        related_name='cargo_funcoes',
+        verbose_name=_("Cargo"),
+
+    )
+    funcao = models.ForeignKey(Funcao, 
+        on_delete=models.CASCADE,
+        related_name='funcoes_cargo',
+        verbose_name=_("Função")
+    )
+
+    class Meta:
+        
+        unique_together = ('cargo', 'funcao')
+        verbose_name = _("Cargo e Função Associados")
+        verbose_name_plural = _("Cargos e Funções Associados")
+
+    def __str__(self):
+        return f"{self.cargo.nome} - {self.funcao.nome}"
+    
+    @property
+    def cargo_nome(self):
+        return self.cargo.nome
+    
+    @property
+    def funcao_nome(self):
+        return self.funcao
 
 class Equipamento(models.Model):
     nome = models.CharField(max_length=150, verbose_name=_("Descrição EPI"))

@@ -88,127 +88,130 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <div>
-            <h1 class="h2">📊 Dashboard de Atas</h1>
-            <p class="text-muted mb-0">Performance e fluxo de trabalho das atividades.</p>
-        </div>
-        <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-list-ul me-1"></i> Ver Lista Completa
-        </a>
-    </div>
+<div class="container-box">
+    <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                <div>
+                    <h1 class="h2">📊 Dashboard de Atas</h1>
+                    <p class="text-muted mb-0">Performance e fluxo de trabalho das atividades.</p>
+                </div>
+                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-list-ul me-1"></i> Ver Lista Completa
+                </a>
+            </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-success-subtle h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title text-success">{{ total_concluido }}</h5>
-                        <p class="card-text text-muted mb-0">Total Concluído</p>
-                    </div>
-                    <i class="bi bi-check2-circle kpi-card-icon text-success"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-primary-subtle h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title text-primary">{{ concluido_no_prazo }}</h5>
-                        <p class="card-text text-muted mb-0">Concluído no Prazo</p>
-                    </div>
-                    <i class="bi bi-calendar2-check kpi-card-icon text-primary"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-danger-subtle h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title text-danger">{{ concluido_com_atraso }}</h5>
-                        <p class="card-text text-muted mb-0">Concluído com Atraso</p>
-                    </div>
-                    <i class="bi bi-calendar2-x kpi-card-icon text-danger"></i>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <div class="card shadow-sm kpi-card border-secondary-subtle h-100">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="card-title text-secondary">{{ total_cancelado }}</h5>
-                        <p class="card-text text-muted mb-0">Total Cancelado</p>
-                    </div>
-                    <i class="bi bi-x-circle kpi-card-icon text-secondary"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-5">
-        <div class="col-lg-7">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Pendências por Responsável</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="pendenciasChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-5">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Qualidade das Conclusões</h5>
-                </div>
-                <div class="card-body d-flex align-items-center justify-content-center">
-                    <canvas id="qualidadeChart" style="max-height: 300px;"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-4 pb-2 border-bottom">
-        <h2 class="h3">📋 Quadro Kanban de Atividades</h2>
-    </div>
-    <div class="kanban-board-container shadow-sm">
-        <div class="kanban-board">
-            {% for status_id, status_label in kanban_status_choices %}
-            <div class="kanban-column" data-status="{{ status_label }}">
-                <div class="kanban-column-header d-flex justify-content-between align-items-center">
-                    <span>{{ status_label }}</span>
-                    <span class="badge bg-dark-subtle text-dark-emphasis rounded-pill">
-                        {{ kanban_items|get_item:status_label|length }}
-                    </span>
-                </div>
-                <div class="kanban-cards" data-status-id="{{ status_id }}">
-                    {% for task in kanban_items|get_item:status_label %}
-                    <a href="{% url 'ata_reuniao:ata_reuniao_update' task.pk %}" 
-                       class="card kanban-card text-decoration-none text-dark shadow-sm"
-                       draggable="true" 
-                       data-id="{{ task.pk }}" 
-                       data-status-id="{{ task.status }}">
-                        <div class="card-body p-3">
-                            <p class="card-text fw-bold mb-2">{{ task.acao|truncatewords:20 }}</p>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <small class="text-muted" title="{{ task.responsavel.nome_completo }}">
-                                    <i class="bi bi-person-circle me-1"></i>{{ task.responsavel.nome_completo|truncatechars:20 }}
-                                </small>
-                                {% if task.prazo %}
-                                <span class="badge {% if task.is_overdue %}bg-danger-subtle text-danger-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}" title="Prazo">
-                                    <i class="bi bi-calendar-event me-1"></i>{{ task.prazo|date:"d/m/y" }}
-                                </span>
-                                {% endif %}
+            <div class="row g-4 mb-4">
+                <div class="col-md-6 col-xl-3">
+                    <div class="card shadow-sm kpi-card border-success-subtle h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title text-success">{{ total_concluido }}</h5>
+                                <p class="card-text text-muted mb-0">Total Concluído</p>
                             </div>
+                            <i class="bi bi-check2-circle kpi-card-icon text-success"></i>
                         </div>
-                    </a>
-                    {% empty %}
-                    <div class="text-center text-muted p-4" style="font-size: 0.9rem;">Nenhuma ata neste status.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card shadow-sm kpi-card border-primary-subtle h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title text-primary">{{ concluido_no_prazo }}</h5>
+                                <p class="card-text text-muted mb-0">Concluído no Prazo</p>
+                            </div>
+                            <i class="bi bi-calendar2-check kpi-card-icon text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card shadow-sm kpi-card border-danger-subtle h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title text-danger">{{ concluido_com_atraso }}</h5>
+                                <p class="card-text text-muted mb-0">Concluído com Atraso</p>
+                            </div>
+                            <i class="bi bi-calendar2-x kpi-card-icon text-danger"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="card shadow-sm kpi-card border-secondary-subtle h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title text-secondary">{{ total_cancelado }}</h5>
+                                <p class="card-text text-muted mb-0">Total Cancelado</p>
+                            </div>
+                            <i class="bi bi-x-circle kpi-card-icon text-secondary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-5">
+                <div class="col-lg-7">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Pendências por Responsável</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="pendenciasChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Qualidade das Conclusões</h5>
+                        </div>
+                        <div class="card-body d-flex align-items-center justify-content-center">
+                            <canvas id="qualidadeChart" style="max-height: 300px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4 pb-2 border-bottom">
+                <h2 class="h3">📋 Quadro Kanban de Atividades</h2>
+            </div>
+            <div class="kanban-board-container shadow-sm">
+                <div class="kanban-board">
+                    {% for status_id, status_label in kanban_status_choices %}
+                    <div class="kanban-column" data-status="{{ status_label }}">
+                        <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                            <span>{{ status_label }}</span>
+                            <span class="badge bg-dark-subtle text-dark-emphasis rounded-pill">
+                                {{ kanban_items|get_item:status_label|length }}
+                            </span>
+                        </div>
+                        <div class="kanban-cards" data-status-id="{{ status_id }}">
+                            {% for task in kanban_items|get_item:status_label %}
+                            <a href="{% url 'ata_reuniao:ata_reuniao_update' task.pk %}" 
+                            class="card kanban-card text-decoration-none text-dark shadow-sm"
+                            draggable="true" 
+                            data-id="{{ task.pk }}" 
+                            data-status-id="{{ task.status }}">
+                                <div class="card-body p-3">
+                                    <p class="card-text fw-bold mb-2">{{ task.acao|truncatewords:20 }}</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted" title="{{ task.responsavel.nome_completo }}">
+                                            <i class="bi bi-person-circle me-1"></i>{{ task.responsavel.nome_completo|truncatechars:20 }}
+                                        </small>
+                                        {% if task.prazo %}
+                                        <span class="badge {% if task.is_overdue %}bg-danger-subtle text-danger-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}" title="Prazo">
+                                            <i class="bi bi-calendar-event me-1"></i>{{ task.prazo|date:"d/m/y" }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="text-center text-muted p-4" style="font-size: 0.9rem;">Nenhuma ata neste status.</div>
+                            {% endfor %}
+                        </div>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
-            {% endfor %}
         </div>
     </div>
 </div>

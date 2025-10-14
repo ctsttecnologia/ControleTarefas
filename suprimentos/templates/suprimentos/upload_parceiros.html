@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Importação em Massa de Parceiros" %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">{% trans "Importar Planilha de Parceiros" %}</h4>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                {% blocktrans %}
+                Para importar múltiplos parceiros, baixe nosso modelo, preencha os dados e faça o upload do arquivo concluído.
+                {% endblocktrans %}
+            </p>
+            
+            <a href="{% url 'suprimentos:parceiro_download_template' %}" class="btn btn-info mb-4">
+                <i class="bi bi-download"></i> {% trans "Baixar Modelo da Planilha" %}
+            </a>
+
+            <hr>
+
+            <h5 class="mb-3">{% trans "Fazer Upload da Planilha" %}</h5>
+            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    {{ form|crispy }}
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-upload"></i> {% trans "Enviar e Processar" %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if errors %}
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">{% trans "Resultado do Processamento: Erros Encontrados" %}</h4>
+        </div>
+        <div class="card-body">
+            <p>{% trans "Os seguintes registros não puderam ser importados. Veja os detalhes abaixo:" %}</p>
+            
+            <ul class="list-group list-group-flush mb-3">
+                {% for error_msg in errors %}
+                    <li class="list-group-item list-group-item-danger">{{ error_msg }}</li>
+                {% endfor %}
+            </ul>
+
+            {% if error_report_available %}
+            <hr>
+            <p class="fw-bold">{% trans "Para facilitar a correção, baixe uma planilha contendo apenas as linhas com problemas." %}</p>
+            <a href="{% url 'suprimentos:parceiro_download_erros' %}" class="btn btn-danger">
+                <i class="bi bi-file-earmark-excel-fill"></i> {% trans "Baixar Planilha com Erros" %}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

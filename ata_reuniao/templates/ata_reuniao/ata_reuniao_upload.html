@@ -1,0 +1,74 @@
+<!-- templates/ata_reuniao/ata_reuniao_upload.html -->
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Upload em Massa de Atas de Reunião{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4 class="card-title">Importar Atas de Reunião em Massa</h4>
+        </div>
+        <div class="card-body">
+
+            {% if messages %}
+                {% if has_upload_errors %}
+                    <div class="mb-3 text-center">
+                        <a href="{% url 'ata_reuniao:download_error_report' %}" class="btn btn-danger fw-bold">
+                            <i class="fas fa-file-excel"></i> Baixar Relatório de Erros para Correção
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'warning' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}" role="alert">
+                        {% if 'safe' in message.tags %}{{ message|safe }}{% else %}{{ message }}{% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="alert alert-info" role="alert">
+                <strong>Instruções:</strong>
+                <ol>
+                    <li>
+                        <strong>Baixe o modelo:</strong> 
+                        <a href="{% url 'ata_reuniao:download_template' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download"></i> Baixar Planilha Modelo
+                        </a>
+                    </li>
+                    <li>Preencha a planilha com os dados. Consulte a aba "Instruções e Opções" dentro do arquivo para ver as opções válidas.</li>
+                    <li>Salve a planilha preenchida em seu computador.</li>
+                    <li>Selecione o arquivo abaixo e clique em "Enviar".</li>
+                </ol>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                
+                <div class="form-group mb-3">
+                    {{ form.file.label_tag }}
+                    {{ form.file }}
+                    {% if form.file.help_text %}
+                        <small class="form-text text-muted">{{ form.file.help_text }}</small>
+                    {% endif %}
+                    {% for error in form.file.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <hr>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-upload"></i> Enviar Arquivo
+                </button>
+                <a href="#" onclick="window.history.back();" class="btn btn-secondary">
+                    Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

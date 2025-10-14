@@ -1,19 +1,13 @@
-
-<!-- suprimentos/templates/suprimentos/parceiro_list.html -->
- 
 {% extends "suprimentos/suprimentos_base.html" %}
 
-
 {% load static %}
-
-
 
 {% block title %}Lista de Fornecedores{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-users me-2"></i> Parceiros (Fornecedores e Fabricantes)</h2>
+        <h2><i class="fas fa-users me-2"></i> Fornecedores </h2>
         <a href="{% url 'suprimentos:parceiro_create' %}" class="btn btn-success">
             <i class="fas fa-plus me-1"></i> Novo Fornecedor
         </a>
@@ -22,6 +16,16 @@
     <div class="card shadow-sm">
         <div class="card-body">
             
+            <!-- INÍCIO: Formulário de Busca -->
+            <form method="get" class="mb-4">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="q" placeholder="Buscar por Nome Fantasia, Razão Social ou CNPJ..." value="{{ request.GET.q }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search"></i> Buscar
+                    </button>
+                </div>
+            </form>
+            <!-- FIM: Formulário de Busca -->
             
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -78,7 +82,9 @@
                 </table>
             </div>
             
-            {% include 'partials/pagination.html' %}
+            {% if is_paginated %}
+                {% include 'partials/pagination.html' %}
+            {% endif %}
     
         </div>
     </div>

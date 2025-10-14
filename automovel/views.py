@@ -261,7 +261,7 @@ class ChecklistDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView)
 
 class ChecklistExportWordView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        # MUDANÇA: CORREÇÃO DE SEGURANÇA - usa o manager para garantir que o usuário pertence à filial
+        # CORREÇÃO DE SEGURANÇA - usa o manager para garantir que o usuário pertence à filial
         checklist = get_object_or_404(
             Checklist.objects.for_request(request).select_related('agendamento__carro'), 
             pk=kwargs.get('pk')

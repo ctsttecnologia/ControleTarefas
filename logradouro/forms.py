@@ -49,6 +49,20 @@ class LogradouroForm(forms.ModelForm):
         if cep and len(cep) != 8:
             raise forms.ValidationError("CEP deve conter exatamente 8 dígitos.")
         return cep
-    
 
+# Upload para planilha de inserção de dados em massa
+
+class UploadFileForm(forms.Form):
+    file = forms.FileField(
+        label='Selecione a planilha (.xlsx ou .csv)',
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        help_text='O arquivo deve seguir o modelo padrão com as colunas: filial_id, endereco, numero, etc.'
+    )
+
+    def clean_file(self):
+        file = self.cleaned_data['file']
+        # Valida a extensão do arquivo
+        if not file.name.endswith(('.csv', '.xlsx')):
+            raise forms.ValidationError('Formato de arquivo não suportado. Use .csv ou .xlsx.')
+        return file
     
