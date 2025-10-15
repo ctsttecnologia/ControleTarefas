@@ -29,7 +29,8 @@ urlpatterns = [
     path('', TarefaListView.as_view(), name='listar_tarefas'),
     path('admin/todas/', TarefaAdminListView.as_view(), name='tarefas_admin'),
     path('criar/', TarefaCreateView.as_view(), name='criar_tarefa'),
-    path('<int:pk>/', TarefaDetailView.as_view(), name='tarefa_detail'),
+    path('<int:pk>/detalhe/', TarefaDetailView.as_view(), name='tarefa_detail'),
+
     
     # Rota de edição (unificada)
     path('<int:pk>/editar/', TarefaUpdateView.as_view(), name='editar_tarefa'), 

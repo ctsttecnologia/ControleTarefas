@@ -355,18 +355,89 @@ class CalendarioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPer
     def get_queryset(self):
         """
         Garante que o mixin de filial receba o request para filtrar corretamente.
-        """   
-        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['cancelada'])
+        Filtra tarefas com prazo e exclui canceladas.
+        """
+        # Adicionamos .select_related para otimizar a consulta se houverem FKs comuns
+        return super().get_queryset().filter(prazo__isnull=False).exclude(status__in=['cancelada']).select_related(
+            # Adicione aqui os campos de ForeignKey que você usa
+        )
+    
+    def _determinar_classe_status_pela_data(self, tarefa):
+        """
+        Determina uma classe CSS para o evento com base na data de criação e prazo.
+        """
+        
+        # GARANTINDO QUE TUDO SEJA 'datetime.date'
+        hoje = timezone.now().date()
+        
+        # 1. Converte tarefa.prazo para date(). Se já for date, não muda.
+        if isinstance(tarefa.prazo, timezone.datetime):
+            prazo = tarefa.prazo.date()
+        else:
+            prazo = tarefa.prazo  # Já é date, ou DateField
+            
+        # 2. Converte tarefa.data_criacao para date(), assumindo que seja DateTimeField
+        data_criacao = tarefa.data_criacao.date()
+
+        # --- LÓGICA DE COMPARAÇÃO CORRIGIDA ---
+
+        # 1. Tarefa Atrasada (Prazo Expirado) - Linha 374
+        # AGORA AMBOS SÃO datetime.date, a comparação funciona.
+        if prazo < hoje:
+            return 'fc-event-status-atrasada' # Vermelho
+        
+        # 2. Tarefa Recente (Criada há menos de 3 dias e não atrasada)
+        limite_recente = hoje - timedelta(days=3)
+        if data_criacao >= limite_recente:
+            return 'fc-event-status-recente' # Verde/Azul Claro
+        
+        # 3. Tarefa Próxima do Vencimento (Faltam 7 dias ou menos para o prazo)
+        limite_prazo = hoje + timedelta(days=7)
+        if prazo <= limite_prazo:
+            return 'fc-event-status-proximo-prazo' # Amarelo/Laranja
+        
+        # 4. Status Padrão (Em Andamento)
+        return 'fc-event-status-em-andamento' # Azul Padrão
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        eventos = [
-            {'title': t.titulo, 'start': t.prazo.isoformat(), 'url': reverse('tarefas:tarefa_detail', kwargs={'pk': t.pk}), 'className': f'fc-event-prioridade-{t.prioridade}'}
-            for t in self.get_queryset()
-        ]
+        queryset = self.get_queryset()
+
+        eventos = []
+        for t in queryset:
+            classe_status = self._determinar_classe_status_pela_data(t)
+            classes_css = f'fc-event-prioridade-{t.prioridade} {classe_status}'
+
+            try:
+                # Formata o prazo para exibição
+                prazo_formatado = t.prazo.strftime('%d/%m/%Y')
+                
+                # --- ALTERAÇÃO PRINCIPAL AQUI ---
+                evento = {
+                    # 1. 'start' AGORA É A DATA DE CRIAÇÃO
+                    'start': t.data_criacao.strftime('%Y-%m-%d'), 
+                    
+                    # 2. O TÍTULO MOSTRA O PRAZO FINAL
+                    'title': f'{t.titulo} (Prazo: {prazo_formatado})',
+                    # ------------------------------
+                    
+                    'url': reverse('tarefas:tarefa_detail', kwargs={'pk': t.pk}),
+                    'className': classes_css,
+                    'allDay': True,
+                    'extendedProps': {
+                        'status': t.status, 
+                        'data_criacao': t.data_criacao.strftime('%Y-%m-%d %H:%M'),
+                        # 3. Adiciona o prazo como extendedProp (opcional, mas útil para o Tooltip)
+                        'prazo': prazo_formatado,
+                    }
+                }
+                eventos.append(evento)
+            except Exception as e:
+                print(f"ERRO ao processar Tarefa ID {t.pk}: {e}")
+
         context['eventos_json'] = json.dumps(eventos)
         return context
-
+    
 # =============================================================================
 # == VIEWS DE API E RELATÓRIOS
 # =============================================================================

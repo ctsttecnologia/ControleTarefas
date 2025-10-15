@@ -17,13 +17,13 @@ urlpatterns = [
 
     # Rotas das apps com seus prefixos
     path('contas/', include('usuario.urls', namespace='usuario')),
+    path('logradouro/', include('logradouro.urls')),
+    path('cliente/', include('cliente.urls')),
     path('tarefas/', include('tarefas.urls', namespace='tarefas')),
     path('seguranca/', include('seguranca_trabalho.urls', namespace='seguranca_trabalho')),
     path('suprimentos/', include('suprimentos.urls', namespace='suprimentos')),
     path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
-    path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),
-    path('cliente/', include('cliente.urls')),
-    path('logradouro/', include('logradouro.urls')), 
+    path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),  
     path('treinamentos/', include('treinamentos.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),

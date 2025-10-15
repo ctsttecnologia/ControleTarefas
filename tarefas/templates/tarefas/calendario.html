@@ -2,9 +2,29 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/tarefas/calendario.css' %}">
+<link rel="stylesheet" href="{% static 'css/tarefas/calendario.css' %}">
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css' rel='stylesheet' />
 {% endblock %}
-
+<style>
+    /* Exemplo no seu arquivo CSS */
+    .fc-event-status-atrasada {
+        background-color: #d9534f; /* Vermelho forte */
+        border-color: #d43f3a;
+    }
+    .fc-event-status-recente {
+        background-color: #5cb85c; /* Verde */
+        border-color: #4cae4c;
+    }
+    .fc-event-status-proximo-prazo {
+        background-color: #f0ad4e; /* Laranja */
+        border-color: #eea236;
+    }
+    .fc-event-status-em-andamento {
+        background-color: #337ab7; /* Azul Padrão */
+        border-color: #2e6da4;
+    }
+</style>
+{% block title %}Calendário de Tarefas{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -36,9 +56,13 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // Certifique-se de que a biblioteca Bootstrap JS, incluindo Tooltip, está carregada.
+    
     const calendarEl = document.getElementById('calendar');
-    const calendarEvents = JSON.parse('{{ eventos_json|safe }}');
-
+    // Adicionado tratamento de erro básico para o JSON
+    const calendarEvents = JSON.parse('{{ eventos_json|safe }}' || '[]');    
+    
     const calendar = new FullCalendar.Calendar(calendarEl, {
         // --- INTEGRAÇÃO COM BOOTSTRAP 5 E TEMA ---
         themeSystem: 'bootstrap5',
@@ -57,20 +81,49 @@ document.addEventListener('DOMContentLoaded', function() {
             week: 'Semana',
             list: 'Lista'
         },
-        navLinks: true, // permite clicar nos dias/semanas
-        editable: false, // desabilita arrastar e soltar
-        dayMaxEvents: true, // ativa o link "+ more" quando há muitos eventos
+        navLinks: true, 
+        editable: false,
+        dayMaxEvents: true,
         
         // --- DADOS DOS EVENTOS ---
         events: calendarEvents,
+        
+        // --- ADIÇÃO DA FUNCIONALIDADE ---
+        eventDidMount: function(info) {
+            // Pega o prazo formatado do extendedProps
+            const prazo = info.event.extendedProps.prazo || 'N/A'; 
+            
+            // Obtém os demais dados de extendedProps
+            const status = info.event.extendedProps.status || 'N/A';
+            const dataCriacao = info.event.extendedProps.data_criacao || 'N/A';
+
+            // Cria o conteúdo do tooltip (usando o título que já contém o prazo)
+            const tooltipContent = `
+                <strong>${info.event.title}</strong><br>
+                ---<br>
+                **Criado em:** ${dataCriacao.substring(0, 10)}<br>
+                **Status:** ${status}
+            `;
+
+            // Aplica o Tooltip do Bootstrap
+            if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+                 new bootstrap.Tooltip(info.el, {
+                    title: tooltipContent,
+                    placement: 'top', 
+                    trigger: 'hover', 
+                    html: true 
+                });
+            } else {
+                // Fallback simples
+                info.el.setAttribute('title', `Prazo: ${prazo} | Status: ${status} | Criado em: ${dataCriacao}`);
+            }
+        },
     });
 
     calendar.render();
 
     // --- SINCRONIZAÇÃO COM O TEMA GLOBAL ---
-    // Observa mudanças no atributo 'data-bs-theme' do <html>
     const themeObserver = new MutationObserver(() => {
-        // Força o FullCalendar a se re-renderizar para aplicar os novos estilos do tema
         calendar.render();
     });
 
@@ -81,3 +134,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
+
