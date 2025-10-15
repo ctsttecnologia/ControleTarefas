@@ -66,10 +66,10 @@ INSTALLED_APPS = [
     'template_partials',
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
-    'usuario', 
+    'usuario',                # Relacionado ao usuário
     'home',
     'core',
-    'logradouro',             # É uma dependência, deve vir antes               # Relacionado ao usuário
+    'logradouro',             # É uma dependência, deve vir antes               
     'cliente',                # Depende de 'logradouro'
     'departamento_pessoal',   # Depende de 'cliente'
     'automovel.apps.AutomovelConfig',

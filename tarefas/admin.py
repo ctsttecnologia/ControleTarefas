@@ -23,8 +23,8 @@ class HistoricoStatusInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admi
     model = HistoricoStatus
     extra = 0
     # Adicionado 'filial' para que o campo seja exibido
-    fields = ('novo_status', 'data_da_alteracao', 'alterado_por', 'filial',)
-    readonly_fields = ('filial',)
+    fields = ('novo_status', 'data_alteracao', 'alterado_por', 'filial',)
+    readonly_fields = ('filial', 'data_alteracao', 'alterado_por', 'novo_status')
     can_delete = False
     verbose_name = "Histórico de Status"
     verbose_name_plural = "Histórico de Status"

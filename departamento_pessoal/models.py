@@ -193,7 +193,7 @@ class Funcionario(models.Model):
     objects = FilialManager()
 
     class Meta:
-        db_table = 'departamento_pessoal_funcionario'
+        
         verbose_name = _("Funcionário")
         verbose_name_plural = _("Funcionários")
         ordering = ['nome_completo']
