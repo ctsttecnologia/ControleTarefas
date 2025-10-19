@@ -28,8 +28,8 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ['*']
-#ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+#ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
@@ -179,17 +179,15 @@ TIME_ZONE = 'America/Sao_Paulo'
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Configurações para arquivos estáticos
-STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),  # Pasta local dos estáticos  
-]
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os estáticos serão coletados
-
-# Diretório público para imagens, etc.
-MEDIA_URL = '/midia/'
+## 3. CAMINHOS (BASE_DIR é /var/www/gerenciandoTarefas)
+# Onde o Nginx vai LER os arquivos estáticos
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
+# Onde o Nginx vai LER os arquivos de upload (mídia)
 MEDIA_ROOT = os.path.join(BASE_DIR, 'midia')
 
+# URLs (estas estão corretas como estavam)
+STATIC_URL = '/static/'
+MEDIA_URL = '/midia/'
 # Diretório PRIVADO para arquivos sensíveis
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 
@@ -208,13 +206,13 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configuração de E-mail para DESENVOLVIMENTO (imprime no console)
-EMAIL_BACKEND = 'EMAIL_BACKEND'
-EMAIL_HOST = 'EMAIL_HOST'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'EMAIL_HOST_USER'
-EMAIL_HOST_PASSWORD = 'MAIL_HOST_PASSWORD'
-DEFAULT_FROM_EMAIL = 'DEFAULT_FROM_EMAIL'
+EMAIL_BACKEND = config('EMAIL_BACKEND')
+EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 
 # Configurações DRF
@@ -223,7 +221,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 30
 }
 
 # LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
