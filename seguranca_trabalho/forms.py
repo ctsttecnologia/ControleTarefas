@@ -6,16 +6,14 @@ from django.utils.translation import gettext_lazy as _
 import pathlib
 from .models import Equipamento, FichaEPI, EntregaEPI, Funcao, CargoFuncao
 from departamento_pessoal.models import Funcionario
-
-
-
+from suprimentos.models import Parceiro
+from django_select2.forms import ModelSelect2Widget
 
 
 # NOTA: FabricanteForm e FornecedorForm foram REMOVIDOS pois seus modelos não existem mais.
 # A gestão de Parceiros deve ser feita através de formulários na aplicação 'suprimentos'.
-
-
 class EquipamentoForm(forms.ModelForm):
+
     class Meta:
         model = Equipamento
         # REMOVIDO: 'fornecedor' foi retirado da lista de campos.
@@ -27,9 +25,17 @@ class EquipamentoForm(forms.ModelForm):
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 1100'}),
-            # O campo 'fabricante' agora aponta para 'Parceiro', o widget pode ser mantido
-            # ou trocado por um de autocomplete na view, se preferir.
-            'fabricante': forms.Select(attrs={'class': 'form-select'}),
+
+            'fabricante': ModelSelect2Widget(
+                model=Parceiro,
+                # Esta linha permite buscar por ambos os campos
+                search_fields=['nome_fantasia__icontains', 'razao_social__icontains'], 
+                # Esta linha garante que APENAS fabricantes sejam listados
+                queryset=Parceiro.objects.filter(eh_fabricante=True),
+                
+                attrs={'data-placeholder': 'Digite para buscar um fabricante...'}
+            ),
+            
             'certificado_aprovacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5745'}),
             'data_validade_ca': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'vida_util_dias': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),

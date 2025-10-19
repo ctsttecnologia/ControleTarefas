@@ -3,16 +3,16 @@
 {% block title %}Painel - Gestão de Veículos{% endblock %}
 
 {% block automovel_content %}
-<div class="container">
+<div class="container"><br>
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2 fw-bold"><i class="bi bi-speedometer2 me-1"></i>Painel de Gestão de Veículos</h1>
         <div class="btn-toolbar mb-2">
-            <a href="{% url 'automovel:agendamento_list' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar para Lista
-            </a>
-            <a href="{% url 'automovel:calendario' %}" class="btn btn-secondary">
-                <i class="fas fa-calendar-alt"></i> Calendário
-            </a>
+            <p><a href="{% url 'automovel:agendamento_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Lista
+            </a></p>
+            <p><a href="{% url 'automovel:calendario' %}" class="btn btn-secondary">
+                <i class="bi bi-calendar-alt"></i> Calendário
+            </a></p>
         </div>
     </div>
     <div class="row">
@@ -118,6 +118,9 @@
             </div>
         </div>
     </div>
+    {% if is_paginated %}
+        {% include 'partials/pagination.html' %}
+    {% endif %}
 </div>    
 {% endblock %}
 

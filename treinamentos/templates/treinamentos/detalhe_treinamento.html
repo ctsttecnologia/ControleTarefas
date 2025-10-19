@@ -1,11 +1,10 @@
-
 {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}Detalhes do Treinamento: {{ treinamento.nome }}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstreinamentos/detalhe_treinamento_styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/treinamentos/detalhe_treinamento_styles.css' %}">
 {% endblock %}
 
 
@@ -25,17 +24,17 @@
                 </a>
             </div>
             <div class="btn-group" role="group">
-                <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-primary">
-                    <i class="bi bi-pencil-square me-1"></i> Editar Treinamento
-                </a>
+                {% if perms.treinamentos.change_treinamento %}
+                    <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-1"></i> Editar Treinamento
+                    </a>
+                {% endif %}
             </div>
         </div>
     </header>
 
     <div class="row g-4">
-        <!-- Coluna da Esquerda: Detalhes e Participantes -->
         <div class="col-lg-8">
-            <!-- Card de Informações Gerais -->
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-body-tertiary">
                     <h5 class="mb-0"><i class="bi bi-info-circle-fill me-2"></i>Informações Gerais</h5>
@@ -59,11 +58,13 @@
 
                         <dt class="col-sm-4">Responsável</dt>
                         <dd class="col-sm-8">{{ treinamento.responsavel|default:"Não definido" }}</dd>
+
+                        <dt class="col-sm-4">Palestrante</dt>
+                        <dd class="col-sm-8">{{ treinamento.palestrante|default:"Não definido" }}</dd>
                     </dl>
                 </div>
             </div>
 
-            <!-- Card da Lista de Participantes -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-body-tertiary">
                     <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Lista de Participantes</h5>
@@ -71,11 +72,10 @@
                 <div class="card-body">
                     {% if participantes %}
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table class="table table-hover table-striped align-middle">
                                 <thead>
                                     <tr>
-                                        <th>Funcionário</th>
-                                        <th class="text-center">Presença</th>
+                                        <th style="width: 50%;">Funcionário</th> <th class="text-center">Presença</th>
                                         <th class="text-center">Aproveitamento</th>
                                         <th class="text-center">Certificado</th>
                                     </tr>
@@ -84,25 +84,31 @@
                                     {% for participante in participantes %}
                                     <tr>
                                         <td>
-                                            <div class="d-flex align-items-center">
-                                                <img src="https://ui-avatars.com/api/?name={{ participante.funcionario.nome }}&background=random&color=fff" 
-                                                     alt="Avatar" class="user-avatar">
-                                                <span>{{ participante.funcionario.nome }}</span>
-                                            </div>
+                                            {% with nome_display=participante.funcionario.get_full_name|default:participante.funcionario.username %}
+                                                <div class="d-flex align-items-center">
+                                                    <img src="https://ui-avatars.com/api/?name={{ nome_display|urlencode }}&background=random&color=fff" 
+                                                        alt="Avatar de {{ nome_display }}" 
+                                                        class="user-avatar">
+                                                    <div class="user-info">
+                                                    <div class="user-name">{{ nome_display }}</div>
+                                                    <div class="user-role">{{ participante.funcionario.cargo.nome|default:participante.funcionario.username }}</div>
+                                                    </div>
+                                                </div>
+                                            {% endwith %}
                                         </td>
                                         <td class="text-center">
                                             {% if participante.presente %}
-                                                <i class="bi bi-check-circle-fill text-success" title="Presente"></i>
+                                                <i class="bi bi-check-circle-fill text-success fs-5"></i>
                                             {% else %}
-                                                <i class="bi bi-x-circle-fill text-danger" title="Ausente"></i>
+                                                <i class="bi bi-x-circle-fill text-danger fs-5"></i>
                                             {% endif %}
                                         </td>
                                         <td class="text-center">{{ participante.nota_avaliacao|default:"-" }}%</td>
                                         <td class="text-center">
                                             {% if participante.certificado_emitido %}
-                                                <i class="bi bi-patch-check-fill text-primary" title="Emitido"></i>
+                                                <i class="bi bi-patch-check-fill text-primary fs-5"></i>
                                             {% else %}
-                                                <i class="bi bi-circle text-secondary" title="Não Emitido"></i>
+                                                <i class="bi bi-circle text-secondary fs-5"></i>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -120,7 +126,6 @@
             </div>
         </div>
 
-        <!-- Coluna da Direita: Painel de Resumo -->
         <div class="col-lg-4">
             <div class="summary-panel">
                 <div class="summary-header">
@@ -131,11 +136,12 @@
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between">
                             <span>Status</span>
+                            {# ----- CORREÇÃO APLICADA AQUI ----- #}
                             <span class="badge 
-                                {% if treinamento.status == 'agendado' %}text-bg-info
-                                {% elif treinamento.status == 'em_andamento' %}text-bg-primary
-                                {% elif treinamento.status == 'concluido' %}text-bg-success
-                                {% elif treinamento.status == 'cancelado' %}text-bg-danger
+                                {% if treinamento.status == 'P' %}text-bg-info
+                                {% elif treinamento.status == 'A' %}text-bg-primary
+                                {% elif treinamento.status == 'F' %}text-bg-success
+                                {% elif treinamento.status == 'C' %}text-bg-danger
                                 {% else %}text-bg-secondary{% endif %}">
                                 {{ treinamento.get_status_display }}
                             </span>

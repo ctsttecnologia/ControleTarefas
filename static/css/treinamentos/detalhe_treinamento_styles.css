@@ -1,0 +1,20 @@
+
+/* --- Estilos para a Tabela de Participantes --- */
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%; /* Garante o formato de círculo */
+    object-fit: cover; /* Garante que a imagem preencha o espaço sem distorcer */
+    margin-right: 15px; /* Espaçamento entre o avatar e o nome */
+}
+
+.user-info .user-name {
+    font-weight: 600; /* Um negrito mais suave */
+    color: #333;
+    margin-bottom: 0;
+}
+
+.user-info .user-role {
+    font-size: 0.85em;
+    color: #6c757d; /* Cinza padrão do Bootstrap */
+}

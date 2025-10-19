@@ -5,9 +5,8 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstreinamentos/tipo_curso_form_styles.css' %}">
+    
 {% endblock %}
-
 
 {% block content %}
 <div class="container py-4">
@@ -109,5 +108,9 @@
             </form>
         </div>
     </div>
+    {% if is_paginated %}
+        {% include 'partials/pagination.html' %}
+    {% endif %}    
 </div>
 {% endblock %}
+

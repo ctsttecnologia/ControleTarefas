@@ -71,6 +71,21 @@
                     </div>
                 </div>
 
+                {% with status=carro.status_manutencao %}
+                    {# Acessa a propriedade que criamos no modelo #}
+                    {% if status.0 == 'vencido' or status.0 == 'proximo' %}
+                        {# Acessa o primeiro item da tupla ('vencido' ou 'proximo') #}
+                        <div class="alert alert-{{ status.2 }} d-flex align-items-center" role="alert">
+                            {# Acessa o terceiro item ('danger' ou 'warning') para a cor do alerta #}
+                            <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+                            <div>
+                                <strong>Alerta de Manutenção:</strong> {{ status.1 }}
+                                {# Acessa o segundo item (a mensagem) #}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
                 {% if carro.observacoes %}
                 <div class="card mb-3">
                     <div class="card-header">

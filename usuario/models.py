@@ -21,6 +21,12 @@ class Filial(models.Model):
         verbose_name_plural = "Filiais"
         ordering = ['nome']
 
+        permissions = [
+            ("pode_ver_dashboard_geral", "Pode ver o dashboard principal"),
+            ("pode_acessar_relatorios_filial", "Pode acessar relatórios da filial"),
+            ("pode_editar_card_principal", "Pode editar os cards principais"),
+        ]
+
     def __str__(self):
         return self.nome
 

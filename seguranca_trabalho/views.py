@@ -7,7 +7,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q, Count, Func
@@ -23,7 +23,7 @@ from django.views.generic.edit import FormMixin
 from docx import Document
 from weasyprint import HTML, default_url_fetcher
 from core.mixins import (FilialCreateMixin, HTMXModalFormMixin, SSTPermissionMixin,
-                         ViewFilialScopedMixin)
+                         ViewFilialScopedMixin, TecnicoScopeMixin) 
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
 from usuario.views import StaffRequiredMixin
@@ -31,11 +31,7 @@ from .forms import (AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, Fich
 from .models import (EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI, CargoFuncao)
 import logging
 
-
-
-
 logger = logging.getLogger(__name__)
-
 
 
 def custom_url_fetcher(url):
@@ -87,14 +83,18 @@ class EquipamentoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteVie
 # ========================================================================
 # CRUD DE FICHAS DE EPI E AÇÕES
 # ========================================================================
-class FichaEPIListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
+class FichaEPIListView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMixin, ListView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
-    paginate_by = 20
+    paginate_by = 30
     permission_required = 'seguranca_trabalho.view_fichaepi'
+    
+    # Define o lookup para o TecnicoScopeMixin
+    tecnico_scope_lookup = 'funcionario__usuario'
 
     def get_queryset(self):
+        # O super() já filtra por Filial e por TÉCNICO
         qs = super().get_queryset().select_related('funcionario', 'funcionario__cargo')
         query_text = self.request.GET.get('q')
         if query_text:
@@ -121,19 +121,21 @@ class FichaEPICreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
         messages.success(self.request, "Ficha de EPI criada com sucesso!")
         return super().form_valid(form)
 
-class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, DetailView):
+class FichaEPIDetailView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMixin, FormMixin, DetailView):
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
     form_class = EntregaEPIForm
     permission_required = 'seguranca_trabalho.view_fichaepi'
+    
+    # Define o lookup para o TecnicoScopeMixin
+    tecnico_scope_lookup = 'funcionario__usuario'
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
     
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # Passa a filial da ficha para o formulário de entrega
         kwargs['filial'] = self.get_object().filial
         return kwargs
 
@@ -144,6 +146,7 @@ class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, D
         return context
 
     def post(self, request, *args, **kwargs):
+        # (Lógica de POST inalterada. TÉCNICO não deve ter a permissão 'add_entregaepi')
         if not request.user.has_perm('seguranca_trabalho.add_entregaepi'):
             raise PermissionDenied("Você não tem permissão para registrar uma nova entrega.")
         self.object = self.get_object()
@@ -159,15 +162,6 @@ class FichaEPIDetailView(ViewFilialScopedMixin, SSTPermissionMixin, FormMixin, D
         nova_entrega.save()
         messages.success(self.request, "Nova entrega de EPI registrada com sucesso!")
         return redirect(self.get_success_url())
-
-@login_required
-def minha_ficha_redirect_view(request):
-    try:
-        ficha = FichaEPI.objects.get(funcionario=request.user.funcionario)
-        return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
-    except (FichaEPI.DoesNotExist, AttributeError):
-        messages.error(request, "Seu usuário não possui uma ficha de EPI associada.")
-        return redirect('usuario:profile')
 
 class FichaEPIUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = FichaEPI
@@ -188,40 +182,53 @@ class FichaEPIDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
 
 # --- Ações de Entrega (Assinatura, Devolução, etc.) ---
 
-class AssinarEntregaView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
+class AssinarEntregaView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMixin, UpdateView):
     model = EntregaEPI
     form_class = AssinaturaEntregaForm
     template_name = 'seguranca_trabalho/entrega_sign.html'
     context_object_name = 'entrega'
     permission_required = 'seguranca_trabalho.assinar_entregaepi'
+    
+    # Define o lookup para o TecnicoScopeMixin
+    tecnico_scope_lookup = 'ficha__funcionario__usuario'
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.ficha.pk})
 
     def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
+        self.object = self.get_object() # self.get_object() agora é filtrado pelo mixin
         if self.object.data_devolucao or self.object.data_assinatura:
             messages.info(request, "Esta entrega já foi processada e não pode mais ser assinada.")
             return redirect(self.get_success_url())
         return super().get(request, *args, **kwargs)
 
     def form_valid(self, form):
-        # A lógica para salvar a assinatura (seja base64 ou imagem) é melhor tratada aqui
-        # assumindo que o formulário está apenas validando a presença dos dados.
         self.object.assinatura_recebimento = self.request.POST.get('assinatura_base64')
         self.object.data_assinatura = timezone.now()
         self.object.save()
         messages.success(self.request, "Assinatura registrada com sucesso!")
         return redirect(self.get_success_url())
 
-class RegistrarDevolucaoView(SSTPermissionMixin, View):
-    permission_required = 'seguranca_trabalho.change_entregaepi' # Permissão para 'mudar' a entrega
+class RegistrarDevolucaoView(TecnicoScopeMixin, SSTPermissionMixin, View):
+    permission_required = 'seguranca_trabalho.change_entregaepi'
     http_method_names = ['post']
+    
+    # Define o lookup para o TecnicoScopeMixin (usado no 'scope_tecnico_queryset')
+    tecnico_scope_lookup = 'ficha__funcionario__usuario'
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
         filial_id = request.session.get('active_filial_id')
-        entrega = get_object_or_404(EntregaEPI, pk=kwargs.get('pk'), filial_id=filial_id)
+        
+        # Constrói o queryset base
+        qs = EntregaEPI.objects.all()
+        
+        # Aplica o escopo do TÉCNICO manualmente usando o método do mixin
+        # Isso garante que um TÉCNICO só possa devolver seu próprio EPI
+        qs = self.scope_tecnico_queryset(qs) 
+        
+        # Busca o objeto dentro do queryset filtrado (por TÉCNICO e Filial)
+        entrega = get_object_or_404(qs, pk=kwargs.get('pk'), filial_id=filial_id)
         
         if entrega.data_devolucao:
             messages.warning(request, f"O EPI '{entrega.equipamento.nome}' já foi devolvido.")
@@ -233,17 +240,16 @@ class RegistrarDevolucaoView(SSTPermissionMixin, View):
             
         return redirect('seguranca_trabalho:ficha_detail', pk=entrega.ficha.pk)
 
-
 # --- Relatórios e Painéis ---
-
-class GerarFichaPDFView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
-    model = FichaEPI  # ADICIONADO: Informa ao DetailView qual modelo usar
+class GerarFichaPDFView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMixin, DetailView):
+    model = FichaEPI
     permission_required = 'seguranca_trabalho.view_fichaepi'
+    
+    # Define o lookup para o TecnicoScopeMixin
+    tecnico_scope_lookup = 'funcionario__usuario'
 
     def get(self, request, *args, **kwargs):
-        # A filial já é verificada pelo seu mixin, não precisamos repetir aqui.
-        
-        # AGORA FUNCIONA: self.get_object() é fornecido pelo DetailView
+        # self.get_object() agora é filtrado por Filial e TÉCNICO
         ficha = self.get_object() 
         
         entregas = EntregaEPI.objects.filter(ficha=ficha).order_by('data_entrega')
@@ -262,7 +268,6 @@ class GerarFichaPDFView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="ficha_epi_{ficha.funcionario.matricula}.pdf"'
         return response
-    
 
 # --- VIEW DO PAINEL ---
 
@@ -284,29 +289,57 @@ class DateAdd(Func):
         )
         super().__init__(date_expression, interval_expression, **extra)
 
-class DashboardSSTView(ViewFilialScopedMixin, SSTPermissionMixin, TemplateView):
-
+class DashboardSSTView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMixin, TemplateView):
     template_name = 'seguranca_trabalho/dashboard.html'
-    permission_required = 'seguranca_trabalho.view_equipamento'
-
+    # Permissão para ver o dashboard (mesmo que filtrado)
+    permission_required = 'seguranca_trabalho.view_fichaepi'
+    tecnico_scope_lookup = 'funcionario__usuario'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # O método get_queryset já filtra pela filial, vamos usá-lo
-        equipamentos_da_filial = self.get_queryset(Equipamento)
-        fichas_da_filial = self.get_queryset(FichaEPI)
-        entregas_da_filial = self.get_queryset(EntregaEPI)
-        matriz_da_filial = self.get_queryset(MatrizEPI)
+        # --- ETAPA 1: INICIALIZAR TODOS OS QUERYSETS ---
+        # Primeiro, buscamos os querysets base da filial usando o 
+        # método 'get_queryset_base' que você já tem.
+        
+        # Envolvemos em try/except para garantir que as variáveis existam
+        # mesmo se o 'get_queryset_base' falhar (embora não devesse).
+        try:
+            equipamentos_da_filial = self.get_queryset_base(Equipamento)
+            fichas_da_filial = self.get_queryset_base(FichaEPI)
+            entregas_da_filial = self.get_queryset_base(EntregaEPI)
+            matriz_da_filial = self.get_queryset_base(MatrizEPI)
+        except Exception as e:
+            logger.error(f"Erro ao buscar querysets base no DashboardSST: {e}")
+            # Se falhar, define como querysets vazios para evitar o UnboundLocalError
+            equipamentos_da_filial = Equipamento.objects.none()
+            fichas_da_filial = FichaEPI.objects.none()
+            entregas_da_filial = EntregaEPI.objects.none()
+            matriz_da_filial = MatrizEPI.objects.none()
 
-        # --- 1. DADOS PARA OS CARDS DE KPI (COM NOMES CORRIGIDOS) ---
+        # --- ETAPA 2: APLICAR ESCOPO DO TÉCNICO (SE APLICÁVEL) ---
+        # self._is_tecnico() é um helper do TecnicoScopeMixin
+        if self._is_tecnico(): 
+            # TÉCNICO não vê dados agregados de equipamentos ou matriz
+            equipamentos_da_filial = equipamentos_da_filial.none()
+            matriz_da_filial = matriz_da_filial.none()
+            
+            # TÉCNICO só vê sua própria ficha (usando o lookup corrigido)
+            fichas_da_filial = fichas_da_filial.filter(funcionario__usuario=self.request.user)
+            
+            # TÉCNICO só vê suas próprias entregas (usando o lookup corrigido)
+            entregas_da_filial = entregas_da_filial.filter(ficha__funcionario__usuario=self.request.user)
+        
+        # --- ETAPA 3: CALCULAR DADOS PARA O CONTEXTO ---
+        # Neste ponto, 'fichas_da_filial' SEMPRE existe (ou é um queryset
+        # filtrado, ou um queryset vazio). O UnboundLocalError é resolvido.
+
+        # --- 1. DADOS PARA OS CARDS DE KPI ---
         context['total_equipamentos_ativos'] = equipamentos_da_filial.filter(ativo=True).count()
-        # O template espera 'fichas_ativas'
-        context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count()
-        # O template espera 'entregas_pendentes_assinatura'
+        context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count() # <-- Linha 302 (Agora segura)
         context['entregas_pendentes_assinatura'] = entregas_da_filial.filter(
             data_devolucao__isnull=True, 
-            data_assinatura__isnull=True # Simplificado, já que a assinatura é uma data
+            data_assinatura__isnull=True
         ).count()
 
         # --- 2. CÁLCULO DE EPIs VENCENDO ---
@@ -325,46 +358,19 @@ class DashboardSSTView(ViewFilialScopedMixin, SSTPermissionMixin, TemplateView):
                 if today <= vencimento <= thirty_days_from_now:
                     epis_vencendo_30d_count += 1
         
-        # O template espera 'epis_vencendo_em_30_dias'
         context['epis_vencendo_em_30_dias'] = epis_vencendo_30d_count
 
-        # --- 3. DADOS PARA OS GRÁFICOS (mantido como JSON) ---
-        # Gráfico da Matriz de EPI por Função
+        # --- 3. DADOS PARA OS GRÁFICOS ---
         matriz_chart_data = matriz_da_filial.values('funcao__nome').annotate(
             num_epis=Count('equipamento')
-        ).order_by('-num_epis')[:10] # Limita aos 10 maiores
+        ).order_by('-num_epis')[:10]
         
-        if matriz_chart_data:
-            # CORREÇÃO: Nomes que o novo template usará
+        if matriz_chart_data: # (só será preenchido se não for TÉCNICO)
             context['matriz_labels'] = json.dumps([m['funcao__nome'] for m in matriz_chart_data])
             context['matriz_data'] = json.dumps([m['num_epis'] for m in matriz_chart_data])
 
-        # (A lógica do outro gráfico de situação foi removida para simplificar,
-        # pois o template não a usava e pode ser complexa. Focamos no que pode ser exibido.)
-
         context['titulo_pagina'] = "Painel de Segurança do Trabalho"
         return context
-
-    def get_queryset(self, model):
-        """
-        Método auxiliar para obter o queryset filtrado de forma robusta.
-        """
-        active_filial_id = self.request.session.get('active_filial_id')
-        
-        qs = model.objects.all()
-
-        if active_filial_id:
-            if hasattr(model, 'filial'):
-                return qs.filter(filial_id=active_filial_id)
-            # Para modelos como FichaEPI e EntregaEPI, o filtro pode ser através do funcionário
-            elif hasattr(model, 'funcionario') and hasattr(model.funcionario.field.related_model, 'filial'):
-                return qs.filter(funcionario__filial_id=active_filial_id)
-            return qs.none() # Se não sabe como filtrar, não mostra nada
-        
-        if self.request.user.is_superuser:
-            return qs
-
-        return qs.none()
 
 class BaseExportView(LoginRequiredMixin, View):
     def get_scoped_queryset(self, model, related_fields=None):
@@ -564,32 +570,8 @@ class ExportarFuncionariosWordView(StaffRequiredMixin, View):
         response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.docx"'
         return response
-
-#@login_required
-#def funcao_create_view(request):
-#    if request.method == 'POST':
-#        form = FuncaoForm(request.POST)
-#        if form.is_valid():
-#            nova_funcao = form.save(commit=False)
-#            # Assumindo que você tem a filial ativa no request.
-#            # Adapte esta linha à sua lógica de filiais.
-#            nova_funcao.filial = request.user.filial_ativa 
-#            nova_funcao.save()
-            
-#            messages.success(request, f"A função '{nova_funcao.nome}' foi criada com sucesso.")
-            
-#            # Resposta especial para o HTMX: recarrega a página inteira
-#            response = HttpResponse(status=204)
-#            response['HX-Redirect'] = request.META.get('HTTP_REFERER') # Redireciona para a página de onde veio
-#            return response
-#    else: # Se for um GET
-#        form = FuncaoForm()
-
-#    # Renderiza apenas o template parcial do formulário
-#    return render(request, 'seguranca_trabalho/partials/funcao_form.html', {
-#        'form': form
-#    })
-
+    
+# --- CRUD DE FUNÇÕES ---
 class FuncaoListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
     """
     Lista todas as funções da filial ativa.
@@ -614,7 +596,26 @@ class FuncaoListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
 
         # Retorna o queryset ordenado
         return qs.order_by('nome')    # Filtra as funções pela filial ativa na sessão e ordena por nome
+
+# busca da ficha.
+@login_required
+def minha_ficha_redirect_view(request):
+    try:
+        # --- A CORREÇÃO ESTÁ AQUI ---
+        funcionario_obj = get_object_or_404(Funcionario, usuario=request.user)
+        
+    except (Http404, AttributeError): 
+        messages.error(request, "Seu usuário não está associado a um perfil de funcionário.")
+        return redirect('usuario:profile')
+
+    try:
+        ficha = get_object_or_404(FichaEPI, funcionario=funcionario_obj)
+        
+    except Http404:
+        messages.error(request, "Seu usuário (como funcionário) não possui uma ficha de EPI associada.")
+        return redirect('usuario:profile')
     
+    return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
 
 class FuncaoCreateView(HTMXModalFormMixin, FilialCreateMixin, SSTPermissionMixin, CreateView): # <-- ADICIONE O MIXIN
     model = Funcao

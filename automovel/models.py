@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.core.validators import FileExtensionValidator
 from core.managers import FilialManager
 from usuario.models import Filial
+from datetime import date
+
 
 # 1. CLASSE BASE ABSTRATA
 # Centraliza a lógica de filial que se repete em todos os modelos.
@@ -49,6 +51,36 @@ class Carro(BaseFilialModel):
     # 2.2 - Removido 'filial' e 'objects', que agora vêm de BaseFilialModel
     # CORREÇÃO: O default de uma ForeignKey não deve ser uma string como 'CETEST-SP'.
     # Isso deve ser tratado na lógica da sua view ou serializer ao criar um objeto.
+
+    @property
+    def status_manutencao(self):
+        """
+        Retorna o status da próxima manutenção.
+        Formato: (chave, 'Mensagem para o usuário', 'cor_bootstrap')
+        """
+        if not self.data_proxima_manutencao:
+            return ('indefinido', 'Sem data de próxima manutenção definida', 'secondary')
+
+        hoje = date.today()
+        diferenca = self.data_proxima_manutencao - hoje
+        dias_restantes = diferenca.days
+        
+        # 1. Manutenção Vencida
+        if dias_restantes < 0:
+            return ('vencido', f'Manutenção vencida há {-dias_restantes} dias!', 'danger')
+        
+        # 2. Alerta de Proximidade (ex: 30 dias ou menos)
+        elif 0 <= dias_restantes <= 30:
+            if dias_restantes == 0:
+                return ('proximo', 'Manutenção vence hoje!', 'warning')
+            elif dias_restantes == 1:
+                return ('proximo', 'Manutenção vence amanhã!', 'warning')
+            else:
+                return ('proximo', f'Manutenção vence em {dias_restantes} dias.', 'warning')
+
+        # 3. Manutenção em Dia
+        else:
+            return ('ok', 'Manutenção em dia', 'success')
 
     def __str__(self):
         return f"{self.marca} {self.modelo} - {self.placa}"
@@ -112,21 +144,23 @@ class Checklist(BaseFilialModel):
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     data_hora = models.DateTimeField(default=timezone.now, verbose_name="Data/Hora")
-    # Removido km_inicial e km_final, pois já existem no agendamento.
-    # O ideal é capturá-los na interface e passá-los para o agendamento ao salvar.
+    
     revisao_frontal_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
     foto_frontal = models.ImageField(upload_to='checklist/frontal/', validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
+    
     revisao_trazeira_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
     foto_trazeira = models.ImageField(upload_to='checklist/trazeira/', validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
+    
     revisao_lado_motorista_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
     foto_lado_motorista = models.ImageField(upload_to='checklist/lado_motorista/', validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
+    
     revisao_lado_passageiro_status = models.CharField(max_length=15, choices=STATUS_CHOICES)
     foto_lado_passageiro = models.ImageField(upload_to='checklist/lado_passageiro/', validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])])
+    
     observacoes_gerais = models.TextField(blank=True, null=True)
-    anexo_ocorrencia = models.TextField(blank=True, null=True)
     assinatura = models.TextField(blank=True, null=True, verbose_name="Assinatura Digital")
     confirmacao = models.BooleanField(default=False)
-    # Removido 'filial' e 'objects'
+
 
     # 3. MÉTODO SAVE CORRIGIDO E REATORADO
     def save(self, *args, **kwargs):
@@ -153,7 +187,7 @@ class Checklist(BaseFilialModel):
 
     def __str__(self):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
-
+    
     class Meta:
         db_table = 'checklist'
         verbose_name = "Checklist"

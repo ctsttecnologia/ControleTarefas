@@ -28,8 +28,8 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# ALLOWED_HOSTS
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = ['*']
+#ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_bootstrap5',
     'django_htmx',
+    'django_select2',
 
     # 2. Aplicativos de Terceiros
     'rest_framework',

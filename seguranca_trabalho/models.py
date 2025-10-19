@@ -272,3 +272,6 @@ class MovimentacaoEstoque(models.Model):
         verbose_name = _("Movimentação de Estoque")
         verbose_name_plural = _("Movimentações de Estoque")
         ordering = ['-data']
+
+
+        

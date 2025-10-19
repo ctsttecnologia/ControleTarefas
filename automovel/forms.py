@@ -42,33 +42,67 @@ class AgendamentoForm(forms.ModelForm):
         }
 
 class ChecklistForm(forms.ModelForm):
-    # MUDANÇA: Fotos obrigatórias agora são definidas no modelo (blank=False, null=False)
-    # Não é mais necessário redefini-las aqui, a menos que queira customizar a label ou erro.
+
+    # Adicionado campo para coletar o KM inicial na SAÍDA.
+    km_inicial = forms.IntegerField(
+        label="Quilometragem Inicial do Veículo",
+        required=False,
+        widget=forms.NumberInput(attrs={'placeholder': 'Ex: 12500'})
+    )
+
+    # Adicionado campo para coletar o KM inicial no RETORNO.
+    km_final = forms.IntegerField(
+        label="Quilometragem Final do Veículo",
+        required=False,  # A obrigatoriedade será validada na view.
+        widget=forms.NumberInput(attrs={'placeholder': 'Ex: 15000'})
+    )
 
     class Meta:
         model = Checklist
-        # MUDANÇA CRÍTICA: Removidos 'km_inicial' e 'km_final'.
+
         fields = [
             'tipo', 'data_hora',
             'revisao_frontal_status', 'foto_frontal',
             'revisao_trazeira_status', 'foto_trazeira',
             'revisao_lado_motorista_status', 'foto_lado_motorista',
             'revisao_lado_passageiro_status', 'foto_lado_passageiro',
-            'observacoes_gerais', 'assinatura', 'confirmacao'
+            'observacoes_gerais', 'assinatura',
         ]
         widgets = {
-            'data_hora': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
-            'observacoes_gerais': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Danos, avarias ou outras observações...'}),
-            'assinatura': forms.HiddenInput(),
-            # Esconde o campo 'tipo', pois ele é definido pela view via URL
             'tipo': forms.HiddenInput(),
+            'data_hora': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+            'observacoes_gerais': forms.Textarea(attrs={'rows': 2}),
+            'assinatura': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
+
+        tipo_checklist = kwargs.pop('tipo_checklist', None)
+
         super().__init__(*args, **kwargs)
+
         if not self.instance.pk:
             self.fields['data_hora'].initial = timezone.now().strftime('%Y-%m-%dT%H:%M')
-        # MUDANÇA: Removida toda a lógica que dependia de 'km_inicial' e 'km_final'.
+
+        # Lógica para mostrar o campo km_final apenas se for um checklist de retorno.
+        if tipo_checklist != 'retorno':
+            if 'km_final' in self.fields:
+                del self.fields['km_final']
+        # Lógica para mostrar o campo correto para cada tipo.
+        if tipo_checklist == 'saida':
+            # Se for saída, removemos o km_final
+            if 'km_final' in self.fields:
+                del self.fields['km_final']
+        elif tipo_checklist == 'retorno':
+            # Se for retorno, removemos o km_inicial
+            if 'km_inicial' in self.fields:
+                del self.fields['km_inicial']
+        else:
+            # Se não for nenhum dos dois, removemos ambos
+            if 'km_inicial' in self.fields:
+                del self.fields['km_inicial']
+            if 'km_final' in self.fields:
+                del self.fields['km_final']
 
     def clean(self):
         cleaned_data = super().clean()
