@@ -50,7 +50,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
 
-    // Inicializa o plugin de Popover do Bootstrap para ser usado pelo calendário
     var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
     var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
       return new bootstrap.Popover(popoverTriggerEl)
@@ -66,16 +65,29 @@ document.addEventListener('DOMContentLoaded', function() {
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
         },
         
+        // --- MELHORIA ADICIONADA AQUI ---
+        buttonText: {
+            today:    'Hoje',
+            month:    'Mês',
+            week:     'Semana',
+            day:      'Dia',
+            list:     'Lista'
+        },
+        initialView: 'dayGridMonth',
+        height: 'auto',
+        selectable: true,
+        selectMirror: true,
+        dayMaxEvents: true,
+        
         // --- Configuração de Eventos ---
-        events: "{% url 'automovel:api_agendamentos' %}", // URL da nossa API
+        events: "{% url 'automovel:api_agendamentos' %}",
         
         // --- Interatividade ---
-        navLinks: true, // Permite clicar nos dias/semanas para navegar
-        dayMaxEvents: true, // Ativa o link "+mais" quando há muitos eventos
+        navLinks: true,
+        dayMaxEvents: true,
         
-        // --- Callbacks ---
+        // --- Callbacks (seu código continua aqui, sem alterações) ---
         eventDidMount: function(info) {
-            // Cria um popover do Bootstrap ao passar o mouse sobre um evento
             var props = info.event.extendedProps;
             var popoverContent = `
                 <ul class="event-details-list">
@@ -93,9 +105,8 @@ document.addEventListener('DOMContentLoaded', function() {
             new bootstrap.Popover(info.el);
         },
 
-        // Redireciona para a página de detalhes ao clicar no evento
         eventClick: function(info) {
-            info.jsEvent.preventDefault(); // Evita que o navegador siga o 'href' padrão
+            info.jsEvent.preventDefault();
             if (info.event.url) {
                 window.location.href = info.event.url;
             }
@@ -103,10 +114,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         loading: function(isLoading) {
             if (isLoading) {
-                // Opcional: mostrar um spinner de carregamento
                 calendarEl.style.opacity = '0.5';
             } else {
-                // Opcional: esconder o spinner
                 calendarEl.style.opacity = '1';
             }
         }
@@ -116,3 +125,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

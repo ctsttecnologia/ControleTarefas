@@ -41,7 +41,10 @@ class TipoCurso(models.Model):
     descricao = models.TextField("Descrição", blank=True, null=True,)
     
     certificado = models.BooleanField("Emite Certificado?", default=True)
-    validade_meses = models.PositiveIntegerField("Validade do Certificado (meses)", help_text="Insira 0 se o certificado não tiver validade.")
+    validade_meses = models.PositiveIntegerField("Validade do Certificado (meses)", 
+        default=0,
+        help_text="Insira 0 se o certificado não tiver validade."
+    )
     ativo = models.BooleanField("Ativo", default=True)
     data_cadastro = models.DateTimeField("Data de Cadastro", auto_now_add=True)
     data_atualizacao = models.DateTimeField("Data de Atualização", auto_now=True)
@@ -147,6 +150,7 @@ class Treinamento(models.Model):
             ('gerenciar_participantes', 'Pode gerenciar participantes do treinamento'),
             ('alterar_status', 'Pode alterar status do treinamento'),
             ('gerar_certificados', 'Pode gerar certificados de treinamento'),
+            ("ver_relatorios", "Pode visualizar o dashboard e relatórios"),
         ]
 
     def __str__(self):

@@ -24,16 +24,21 @@
                 <i class="fas fa-arrow-left me-1"></i> Voltar
             </a>    
             <div class="btn-group">
-                {# A correção é simplesmente usar a variável que está funcionando (object) para gerar os links. #}
-                <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-primary">
-                    <i class="fas fa-edit me-1"></i> Editar
-                </a>
-                {% if request.user|has_group:"Administrador,Gerente" %}
+                
+                {# O botão "Editar" só aparece se a tarefa não estiver finalizada OU se o usuário for um administrador. #}
+                {% if object.status != 'F' or request.user|has_group:"Administrador" %}
+                    <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i> Editar
+                    </a>
+                {% endif %}
+                
+                {# O botão "Excluir" só aparece se a tarefa não estiver finalizada E o usuário tiver permissão. #}
+                {% if object.status != 'F' and request.user|has_group:"Administrador,Gerente" %}
                     <a href="{% url 'tarefas:excluir_tarefa' object.pk %}" class="btn btn-danger">
                         <i class="fas fa-trash me-1"></i> Excluir
                     </a>
                 {% endif %}
-            </div>
+                </div>
         </div>
     </header><br>
 
@@ -143,5 +148,8 @@
             </div>
         </div>
     </div>
+    {% if is_paginated %}
+        {% include 'partials/pagination.html' %}
+    {% endif %}
 </div>
 {% endblock %}

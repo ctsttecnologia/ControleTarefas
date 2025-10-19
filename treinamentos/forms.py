@@ -7,17 +7,54 @@ from .models import Participante, Treinamento, TipoCurso
 class TipoCursoForm(forms.ModelForm):
     class Meta:
         model = TipoCurso
-        # CORREÇÃO: Use 'exclude' para garantir que a view controle a filial.
-        exclude = ['filial']
+         # Use 'exclude' para garantir que a view controle a filial.
+        fields = [
+            'nome', 
+            'area', 
+            'modalidade', 
+            'validade_meses', 
+            'descricao', 
+            'certificado', 
+            'ativo'
+        ]
+
+        # (Opcional, mas boa prática) Adicione widgets se precisar
+        widgets = {
+            'descricao': forms.Textarea(attrs={'rows': 3}),
+        }
 
 class TreinamentoForm(forms.ModelForm):
     class Meta:
         model = Treinamento
-        # CORREÇÃO: Removido 'fields = __all__'. Agora o 'exclude' vai funcionar.
-        exclude = ['filial']
+        # Mude de 'exclude' para 'fields'
+        fields = [
+            'tipo_curso', 
+            'responsavel', 
+            'nome', 
+            'local', 
+            'data_inicio', 
+            'data_vencimento', 
+            'duracao',  
+            'descricao',
+            'status', 
+            'custo',
+            'palestrante', 
+            'horas_homem',
+            'centro_custo',
+            'participantes_previstos',
+            'atividade', 
+            'cm',
+            
+        ]
         widgets = {
-            'data_inicio': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'data_vencimento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_inicio': forms.DateTimeInput(
+                format='%Y-%m-%dT%H:%M',
+                attrs={'type': 'datetime-local'}
+            ),
+            'data_vencimento': forms.DateInput(
+                format='%Y-%m-%d',
+                attrs={'type': 'date'}
+            ),
             'descricao': forms.Textarea(attrs={'rows': 4, 'class': 'form-control'}),
         }
 
@@ -29,6 +66,11 @@ class TreinamentoForm(forms.ModelForm):
         
         User = apps.get_model(settings.AUTH_USER_MODEL)
         self.fields['responsavel'].queryset = User.objects.filter(is_active=True)
+
+        if self.instance and self.instance.pk:
+            # Desabilita os campos de data
+            self.fields['data_inicio'].disabled = True
+            self.fields['data_vencimento'].disabled = True
 
 
 class BaseParticipanteFormSet(BaseInlineFormSet):
@@ -51,7 +93,6 @@ class BaseParticipanteFormSet(BaseInlineFormSet):
                 
                 participantes.append(funcionario)
 
-# ...
 
 ParticipanteFormSet = inlineformset_factory(
     Treinamento,

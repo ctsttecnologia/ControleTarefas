@@ -156,7 +156,6 @@ class FilialForm(forms.ModelForm):
 # == FORMULÁRIOS DE PERMISSÕES ESPECÍFICAS
 # =============================================================================
 
-
 CARD_CHOICES = [
     ('tarefas', 'Tarefas'),
     ('clientes', 'Clientes'),

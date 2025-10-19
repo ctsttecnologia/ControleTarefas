@@ -5,9 +5,7 @@
 {% block title %}Lista de Treinamentos{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstreinamentos/lista_treinamentos_styles.css' %}">
 {% endblock %}
-
 
 {% block content %}
 <div class="container py-4">
@@ -21,17 +19,23 @@
                 <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-list"></i> Lista de Cursos
                 </a>
-                <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
-                <a href="{% url 'treinamentos:relatorio_treinamentos' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-bar-chart-line-fill"></i> Relatórios
-                </a>
+                {% if perms.treinamentos.view_dashboard %}
+                    <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                {% endif %}
+                {% if perms.treinamentos.view_relatorio %}
+                    <a href="{% url 'treinamentos:relatorio_treinamentos' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-bar-chart-line-fill"></i> Relatórios
+                    </a>
+                {% endif %}
             </div>
             <div class="btn-group" role="group">
-                <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i> Novo Treinamento
-                </a>
+                {% if perms.treinamentos.add_treinamento %}
+                    <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Novo Treinamento
+                    </a>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -94,9 +98,11 @@
                                     <a href="{% url 'treinamentos:detalhe_treinamento' treinamento.pk %}" class="btn btn-outline-secondary" title="Ver Detalhes">
                                         <i class="bi bi-eye-fill"></i>
                                     </a>
-                                    <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-outline-primary" title="Editar Treinamento">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
+                                    {% if perms.treinamentos.view_editar_treinamento %}
+                                        <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-outline-primary" title="Editar Treinamento">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -119,5 +125,8 @@
             </div>
         </div>
     </div>
+    {% if is_paginated %}
+        {% include 'partials/pagination.html' %}
+    {% endif %}
 </div>
 {% endblock %}

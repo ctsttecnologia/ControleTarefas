@@ -2,8 +2,6 @@
 # Importe seus modelos e o módulo gerador
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Sum, Count, F, Q, FloatField
 from django.forms import inlineformset_factory
 from django.http import HttpResponse
@@ -22,12 +20,12 @@ from datetime import datetime
 from treinamentos import treinamento_generators
 from treinamentos.forms import ParticipanteFormSet, TipoCursoForm, TreinamentoForm
 from .models import Treinamento, TipoCurso, Participante
-from core.mixins import ViewFilialScopedMixin
 from django.db import transaction
 from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-
+from core.mixins import TecnicoScopeMixin 
+from core.mixins import ViewFilialScopedMixin
 
 # ==========================================================================
 # MIXIN - Agora é a fonte única de lógica para formsets
@@ -66,12 +64,14 @@ class TreinamentoFormsetMixin:
         return self.render_to_response(self.get_context_data(form=form, form_participantes=form_participantes))
 
     
-class CriarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, SuccessMessageMixin, CreateView):
+class CriarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, PermissionRequiredMixin, SuccessMessageMixin, CreateView):
     model = Treinamento
     form_class = TreinamentoForm
     template_name = 'treinamentos/criar_treinamento.html'
     success_url = reverse_lazy('treinamentos:lista_treinamentos')
     success_message = "✅ Treinamento cadastrado com sucesso!"
+
+    permission_required = 'treinamentos.add_treinamento'
 
     def get_form_kwargs(self):
         """ Passa o request para o formulário. """
@@ -87,16 +87,20 @@ class CriarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, SuccessM
 
 # --- Visualizações para Treinamento (CRUD) ---
 
-class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
     """Lista todos os treinamentos com filtros de busca."""
     model = Treinamento
     template_name = 'treinamentos/lista_treinamentos.html'
     context_object_name = 'treinamentos'
-    paginate_by = 15
+    paginate_by = 30
+
+    # Configura o mixin global para este app específico
+    tecnico_scope_lookup = 'participantes__funcionario'
+
 
     def get_queryset(self):
         """Aplica filtros de status, tipo de curso e busca textual."""
-        queryset = Treinamento.objects.select_related('tipo_curso').order_by('-data_inicio')
+        queryset = super().get_queryset().select_related('tipo_curso')
 
         status = self.request.GET.get('status')
         if status:
@@ -113,7 +117,7 @@ class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
                 Q(local__icontains=busca) |
                 Q(palestrante__icontains=busca)
             )
-        return queryset
+        return queryset.order_by('-data_inicio')
 
     def get_context_data(self, **kwargs):
         """Adiciona dados extras ao contexto para os filtros do template."""
@@ -122,11 +126,16 @@ class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         context['total_treinamentos'] = Treinamento.objects.count()
         return context
 
-class EditarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, SuccessMessageMixin, UpdateView):
+class EditarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, TreinamentoFormsetMixin, SuccessMessageMixin, UpdateView):
     model = Treinamento
     form_class = TreinamentoForm
     template_name = 'treinamentos/criar_treinamento.html' # Reutilizando o mesmo template
     success_message = "🔄 Treinamento atualizado com sucesso!"
+    permission_required = 'treinamentos.change_treinamento'
+
+    # O DetailView/UpdateView também usa get_queryset() para buscar o objeto.
+    # Se um técnico tentar editar a URL, ele receberá um 404.
+    tecnico_scope_lookup = 'participantes__funcionario'
 
     def get_success_url(self):
         return reverse_lazy('treinamentos:detalhe_treinamento', kwargs={'pk': self.object.pk})
@@ -142,10 +151,13 @@ class EditarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, Success
         context['titulo'] = 'Editar Treinamento'
         return context
 
-class DetalheTreinamentoView(LoginRequiredMixin, DetailView):
+class DetalheTreinamentoView(LoginRequiredMixin, TecnicoScopeMixin, DetailView):
     """Exibe os detalhes de um treinamento específico."""
     model = Treinamento
     template_name = 'treinamentos/detalhe_treinamento.html'
+
+    # O técnico só pode ver o detalhe se o lookup for verdadeiro
+    tecnico_scope_lookup = 'participantes__funcionario'
 
     def get_context_data(self, **kwargs):
         """Adiciona a lista de participantes otimizada ao contexto."""
@@ -162,7 +174,8 @@ class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, Succes
     success_url = reverse_lazy('treinamentos:lista_treinamentos')
     permission_required = 'treinamentos.delete_treinamento'
     success_message = "Treinamento excluído com sucesso!"
-
+    # Garante que um técnico não possa excluir um objeto nem pela URL
+    tecnico_scope_lookup = 'participantes__funcionario'
 
 class TipoCursoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
@@ -203,6 +216,7 @@ class CriarTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMes
     success_url = reverse_lazy('treinamentos:lista_tipos_curso')
     permission_required = 'treinamentos.add_tipocurso'
     success_message = "✅ Tipo de curso cadastrado com sucesso!"
+    
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -249,7 +263,7 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
 
 # --- Visualizações para Relatórios ---
 
-class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
     """
     Gera um relatório de treinamentos com base em filtros.
     Agora herda de ListView para buscar e listar os treinamentos.
@@ -257,7 +271,9 @@ class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, ListV
     model = Treinamento
     template_name = 'treinamentos/relatorio_treinamentos.html'
     context_object_name = 'object_list'  # O nome padrão, mas é bom ser explícito
-    paginate_by = 20 # Opcional: Adiciona paginação
+    paginate_by = 30 # Opcional: Adiciona paginação
+
+    tecnico_scope_lookup = 'participantes__funcionario'
 
     def get_queryset(self):
         """
@@ -287,11 +303,12 @@ class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, ListV
         context['tipos_curso'] = TipoCurso.objects.filter(ativo=True).order_by('nome')
         return context
   
-class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, View):
+class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMixin, View):
     """
     Gera e oferece para download o relatório de um treinamento específico em .docx.
     """
     permission_required = 'treinamentos.view_treinamento'
+    tecnico_scope_lookup = 'participantes__funcionario'
 
     def get(self, request, *args, **kwargs):
         """
@@ -301,11 +318,17 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
             # 1. Obter o objeto do treinamento a partir da URL
             treinamento_pk = self.kwargs.get('pk')
             treinamento = get_object_or_404(Treinamento, pk=treinamento_pk)
+            # 1. Define o queryset base
+            base_qs = Treinamento.objects.all()
 
             # 2. Construir o caminho para o arquivo da logomarca (Cenário A)
             caminho_logo = os.path.join(settings.MEDIA_ROOT, 'imagens', 'logocetest.png')
+            # Isso aplica o filtro de TÉCNICO (se for o caso)
+            scoped_qs = self.scope_tecnico_queryset(base_qs)
 
             # 3. (Opcional, mas recomendado) Adicionar prints para depuração
+            # 3. Busca o objeto DENTRO do queryset escopado
+            treinamento = get_object_or_404(scoped_qs, pk=treinamento_pk)
             #    Verifique a saída no console onde você rodou 'runserver'
             print(f"--- Gerando Relatório para Treinamento PK: {treinamento_pk} ---")
             print(f"Buscando logomarca em: {caminho_logo}")
@@ -349,7 +372,7 @@ class RelatorioGeralExcelView(LoginRequiredMixin, ViewFilialScopedMixin, Permiss
     """
     Gera e oferece para download um relatório geral de treinamentos em .xlsx.
     """
-    permission_required = 'treinamentos.view_report'
+    permission_required = 'treinamentos.ver_relatorios'
 
     def get(self, request, *args, **kwargs):
         # Esta linha assume que TreinamentoListView está definida acima neste mesmo arquivo.
@@ -381,21 +404,28 @@ class DecimalEncoder(json.JSONEncoder):
             return float(o)
         return super(DecimalEncoder, self).default(o)
 
-# --- Sua View, com a correção final e definitiva ---
-class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
+# --- Sua View, com a correção de lógica ---
+class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMixin, TemplateView):
     template_name = 'treinamentos/dashboard.html'
-    permission_required = 'treinamentos.view_report' # Verifique se o nome da app está correto
+    permission_required = 'treinamentos.ver_relatorios' # Verifique se o nome da app está correto
+    tecnico_scope_lookup = 'participantes__funcionario'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        # --- 1. FILTRAGEM PRIMEIRO! ---
+        # Define o queryset base
         base_queryset = Treinamento.objects.all()
-
+        # APLICA O FILTRO DO TÉCNICO IMEDIATAMENTE
+        base_queryset = self.scope_tecnico_queryset(base_queryset)
+  
         # Mapeamentos para tradução (usando as choices dos modelos)
+        # Definidos apenas uma vez
         area_map = dict(TipoCurso.AREA_CHOICES)
         status_map = dict(Treinamento.STATUS_CHOICES)
         modalidade_map = dict(TipoCurso.MODALIDADE_CHOICES)
         
-        # --- 1. DADOS PARA OS GRÁFICOS (Esta parte já estava correta) ---
+        # --- 2. DADOS PARA OS GRÁFICOS (Agora usam o queryset FILTRADO) ---
         area_data_db = base_queryset.values('tipo_curso__area').annotate(total=Count('id'))
         treinamentos_por_area = [
             {'nome_legivel': area_map.get(item['tipo_curso__area'], item['tipo_curso__area']), 'total': item['total']}
@@ -422,7 +452,7 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             for item in custo_data_db
         ]
         
-        # --- 2. MONTANDO O JSON ÚNICO (Esta parte já estava correta) ---
+        # --- 3. MONTANDO O JSON ÚNICO (Agora com dados filtrados) ---
         dashboard_data = {
             'area': treinamentos_por_area,
             'status': status_treinamentos,
@@ -430,19 +460,22 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
             'custo': custo_por_area,
         }
         
-        # --- 3. DADOS PARA CARDS E TABELA ---
+        # --- 4. DADOS PARA CARDS E TABELA (Já estavam corretos) ---
         total_treinamentos = base_queryset.count()
         em_andamento = base_queryset.filter(status='A').count()
         
-        # Adicionando o 'output_field'
         total_custo = base_queryset.aggregate(
             total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
         )['total']
         
-        total_participantes = Participante.objects.count() # Ajuste conforme sua regra
+        # Filtra participantes baseado nos treinamentos filtrados
+        total_participantes = Participante.objects.filter(
+            treinamento__in=base_queryset
+        ).count()
+        
         treinamentos_recentes = base_queryset.select_related('tipo_curso').order_by('-data_inicio')[:5]
 
-        # --- 4. ATUALIZAÇÃO FINAL DO CONTEXTO ---
+        # --- 5. ATUALIZAÇÃO FINAL DO CONTEXTO ---
         context.update({
             'total_treinamentos': total_treinamentos,
             'total_participantes': total_participantes,
@@ -453,5 +486,3 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TemplateView):
         })
         
         return context
-
-

@@ -5,42 +5,76 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
 from django.http import HttpResponse, Http404
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Q
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
+
 from .models import Logradouro, Filial 
-from .forms import LogradouroForm
+from .forms import LogradouroForm, UploadFileForm
 from .constant import ESTADOS_BRASIL
-from core.mixins import ViewFilialScopedMixin
+from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin
+
 import pandas as pd
 import io
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from .forms import UploadFileForm
 from openpyxl import load_workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 import base64 
 
 
-# --- Views de Logradouro (CRUD)
-class LogradouroListView(ViewFilialScopedMixin, LoginRequiredMixin, ListView):
+# --- Views de Logradouro (CRUD) ---
+
+class LogradouroListView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
     """
-    Lista os logradouros cadastrados, respeitando o escopo da filial.
+    Lista os logradouros cadastrados, aplicando escopo de filial e filtros de busca.
     """
     model = Logradouro
-    template_name = 'logradouro/listar_logradouros.html'
+    # O template é o que você definiu no seu código
+    template_name = 'logradouro/listar_logradouros.html' 
     context_object_name = 'logradouros'
     paginate_by = 15
 
+    # Permissão do Nível 1 (Página)
+    permission_required = 'logradouro.view_logradouro'
+
     def get_queryset(self):
-        """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset()
+        """
+        Sobrescreve o método para aplicar os filtros de busca sobre o
+        queryset que já foi filtrado por filial pelo `ViewFilialScopedMixin`.
+        """
+        # 1. `super().get_queryset()` chama o `ViewFilialScopedMixin` primeiro,
+        #    garantindo que `queryset` contém apenas dados da filial correta.
+        queryset = super().get_queryset()
+
+        # Armazena a contagem total para o cabeçalho da página
+        self.total_logradouros_na_filial = queryset.count()
+
+        # 2. Pega os valores dos campos de busca da URL (parâmetros GET)
+        query_endereco = self.request.GET.get('q_endereco', '').strip()
+        query_cep = self.request.GET.get('q_cep', '').strip()
+
+        # 3. Aplica o filtro de endereço se algo foi digitado
+        if query_endereco:
+            # 'icontains' faz uma busca case-insensitive que contém o texto
+            queryset = queryset.filter(endereco__icontains=query_endereco)
+        
+        # 4. Aplica o filtro de CEP se algo foi digitado
+        if query_cep:
+            # Filtra pelo campo 'cep' que contém o número digitado.
+            queryset = queryset.filter(cep__icontains=query_cep)
+
+        return queryset.order_by('endereco')
 
     def get_context_data(self, **kwargs):
+        """
+        Adiciona o total de logradouros (antes de filtrar) ao contexto.
+        """
         context = super().get_context_data(**kwargs)
-        # CORREÇÃO: Conta apenas os objetos da queryset já filtrada pelo mixin.
-        # 'object_list' é a variável de contexto que armazena a lista filtrada.
-        context['total_logradouros'] = self.object_list.count()
+        # Adiciona a contagem total de endereços na filial (antes da busca)
+        # para ser usado no cabeçalho.
+        context['total_logradouros'] = getattr(self, 'total_logradouros_na_filial', 0)
         return context
 
 # Removido o FilialScopedMixin, pois não tem efeito em CreateView.

@@ -5,7 +5,6 @@
 {% block title %}Tipos de Curso{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstreinamentos/lista_tipos_curso_styles.css' %}">
 {% endblock %}
 
 
@@ -24,9 +23,11 @@
                 </a>
             </div>
             <div class="btn-group" role="group">
-                <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle me-1"></i> Novo Tipo de Curso
-                </a>
+                {% if perms.treinamentos.add_tipocurso %}
+                    <a href="{% url 'treinamentos:criar_tipo_curso' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i> Novo Tipo de Curso
+                    </a>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -88,14 +89,16 @@
                                 </span>
                             </td>
                             <td class="text-end">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'treinamentos:editar_tipo_curso' curso.pk %}" class="btn btn-outline-primary" title="Editar Tipo de Curso">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
-                                    <a href="{% url 'treinamentos:excluir_tipo_curso' curso.pk %}" class="btn btn-outline-danger" title="Excluir Tipo de Curso">
-                                        <i class="bi bi-trash3-fill"></i>
-                                    </a>
-                                </div>
+                                {% if perms.treinamentos.view_editar_tipo_curso and perms.treinamentos.view_excluir_tipo_curso%}
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'treinamentos:editar_tipo_curso' curso.pk %}" class="btn btn-outline-primary" title="Editar Tipo de Curso">
+                                            <i class="bi bi-pencil-fill"></i>
+                                        </a>
+                                        <a href="{% url 'treinamentos:excluir_tipo_curso' curso.pk %}" class="btn btn-outline-danger" title="Excluir Tipo de Curso">
+                                            <i class="bi bi-trash3-fill"></i>
+                                        </a>
+                                    </div>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
@@ -117,5 +120,8 @@
             </div>
         </div>
     </div>
+    {% if is_paginated %}
+        {% include 'partials/pagination.html' %}
+    {% endif %}
 </div>
 {% endblock %}

@@ -58,7 +58,8 @@ class Parceiro(models.Model):
         
 
     def __str__(self):
-        return self.nome_parceiro or self.razao_social
+        # Usar 'or self.razao_social' garante que se o nome fantasia for vazio, ele mostra a razão social.
+        return self.nome_fantasia or self.razao_social
 
     def get_absolute_url(self):
         return reverse('suprimentos:parceiro_detail', kwargs={'pk': self.pk})

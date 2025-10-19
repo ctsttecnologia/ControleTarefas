@@ -29,7 +29,8 @@ urlpatterns = [
     path('atas/', include('ata_reuniao.urls')),
     path('ferramentas/', include('ferramentas.urls', namespace='ferramentas')),
     path('core/', include('core.urls')),
-    path('controle_de_telefone/', include('controle_de_telefone.urls')), 
+    path('controle_de_telefone/', include('controle_de_telefone.urls')),
+    path('select2/', include('django_select2.urls')), 
 ]
 
 # Configuração para servir arquivos de mídia e estáticos
