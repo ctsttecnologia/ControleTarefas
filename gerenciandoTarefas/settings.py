@@ -32,15 +32,6 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'America/Sao_Paulo'
-
-# --- FIM DAS CONFIGURAÇÕES DE SEGURANÇA ---
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -188,6 +179,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'midia')
 # URLs (estas estão corretas como estavam)
 STATIC_URL = '/static/'
 MEDIA_URL = '/midia/'
+
 # Diretório PRIVADO para arquivos sensíveis
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 
