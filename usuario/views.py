@@ -138,7 +138,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
                     {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
-                    {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
+                    {'url': 'treinamentos:lista_treinamentos', 'text': 'Treinamentos'},
                 ]
             },
             {

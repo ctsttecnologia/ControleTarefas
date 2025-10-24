@@ -36,7 +36,7 @@ class Incidente(models.Model):
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='incidentes', null=True, blank=False)
 
  
-    objects = models.Manager()
+    objects = FilialManager()
 
     class Meta:
         verbose_name = "Incidente"
@@ -67,7 +67,7 @@ class Inspecao(models.Model):
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='inspecoes', null=True, blank=False)
 
     # Usando o manager padrão do Django
-    objects = models.Manager()
+    objects = FilialManager()
 
     class Meta:
         verbose_name = "Inspeção"
@@ -111,7 +111,7 @@ class CartaoTag(models.Model):
         related_name='cartoes_tag'
     )
 
-    objects = models.Manager() # Usando o manager padrão
+    objects = FilialManager() # Usando o manager padrão
 
     class Meta:
         verbose_name = "Cartão de Bloqueio (Tag)"

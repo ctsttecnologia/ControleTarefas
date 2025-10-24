@@ -12,7 +12,7 @@
     <div class="subnav-automovel mb-3 p-3 bg-body-tertiary rounded-2 border sticky-top" style="top: 60px; z-index: 1020;">
         <ul class="nav nav">
             <li class="nav-item">
-                {% if not perms.seguranca_trabalho.view_fichaepi %}
+                {% if perms.seguranca_trabalho.view_fichaepi %}
                     <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard
                     </a>

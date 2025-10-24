@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.db.models import Sum, Count, F, Q, FloatField
 from django.forms import inlineformset_factory
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView, UpdateView, TemplateView)
@@ -26,6 +26,8 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.messages.views import SuccessMessageMixin
 from core.mixins import TecnicoScopeMixin 
 from core.mixins import ViewFilialScopedMixin
+
+
 
 # ==========================================================================
 # MIXIN - Agora é a fonte única de lógica para formsets
@@ -280,6 +282,9 @@ class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, Tecni
         Filtra os treinamentos por ano e tipo de curso, conforme os parâmetros da URL.
         """
         # Começa com todos os treinamentos e aplica os filtros
+        # O super().get_queryset() aqui refere-se ao ListView, que já aplica
+        # os mixins de escopo (Filial e Tecnico) se eles estiverem corretamente
+        # configurados para modificar o queryset base do ListView.
         queryset = super().get_queryset().select_related('tipo_curso', 'responsavel')
 
         ano = self.request.GET.get('ano')
@@ -297,12 +302,71 @@ class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, Tecni
         Adiciona os dados necessários para os menus de filtro (dropdowns) ao contexto.
         """
         context = super().get_context_data(**kwargs)
+        
         # Para o filtro de anos
-        context['anos'] = Treinamento.objects.dates('data_inicio', 'year', order='DESC')
+        # Usar o queryset filtrado (sem data) para pegar os anos pode ser mais performático
+        anos_qs = Treinamento.objects.dates('data_inicio', 'year', order='DESC')
+        context['anos'] = anos_qs
+        
         # Para o filtro de tipos de curso
         context['tipos_curso'] = TipoCurso.objects.filter(ativo=True).order_by('nome')
+        
+        # Passa os filtros atuais de volta para o template
+        context['current_ano'] = self.request.GET.get('ano')
+        context['current_tipo_curso'] = self.request.GET.get('tipo_curso')
         return context
-  
+ 
+class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
+    """
+    Gera um relatório de treinamentos com base em filtros.
+    Agora herda de ListView para buscar e listar os treinamentos.
+    """
+    model = Treinamento
+    template_name = 'treinamentos/relatorio_treinamentos.html'
+    context_object_name = 'object_list'  # O nome padrão, mas é bom ser explícito
+    paginate_by = 30 # Opcional: Adiciona paginação
+
+    tecnico_scope_lookup = 'participantes__funcionario'
+
+    def get_queryset(self):
+        """
+        Filtra os treinamentos por ano e tipo de curso, conforme os parâmetros da URL.
+        """
+        # Começa com todos os treinamentos e aplica os filtros
+        # O super().get_queryset() aqui refere-se ao ListView, que já aplica
+        # os mixins de escopo (Filial e Tecnico) se eles estiverem corretamente
+        # configurados para modificar o queryset base do ListView.
+        queryset = super().get_queryset().select_related('tipo_curso', 'responsavel')
+
+        ano = self.request.GET.get('ano')
+        if ano:
+            queryset = queryset.filter(data_inicio__year=ano)
+
+        tipo_curso_id = self.request.GET.get('tipo_curso')
+        if tipo_curso_id:
+            queryset = queryset.filter(tipo_curso_id=tipo_curso_id)
+
+        return queryset.order_by('-data_inicio')
+
+    def get_context_data(self, **kwargs):
+        """
+        Adiciona os dados necessários para os menus de filtro (dropdowns) ao contexto.
+        """
+        context = super().get_context_data(**kwargs)
+        
+        # Para o filtro de anos
+        # Usar o queryset filtrado (sem data) para pegar os anos pode ser mais performático
+        anos_qs = Treinamento.objects.dates('data_inicio', 'year', order='DESC')
+        context['anos'] = anos_qs
+        
+        # Para o filtro de tipos de curso
+        context['tipos_curso'] = TipoCurso.objects.filter(ativo=True).order_by('nome')
+        
+        # Passa os filtros atuais de volta para o template
+        context['current_ano'] = self.request.GET.get('ano')
+        context['current_tipo_curso'] = self.request.GET.get('tipo_curso')
+        return context
+ 
 class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMixin, View):
     """
     Gera e oferece para download o relatório de um treinamento específico em .docx.
@@ -315,35 +379,41 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
         Este método lida com a requisição GET, gera o relatório e o retorna.
         """
         try:
-            # 1. Obter o objeto do treinamento a partir da URL
             treinamento_pk = self.kwargs.get('pk')
-            treinamento = get_object_or_404(Treinamento, pk=treinamento_pk)
-            # 1. Define o queryset base
-            base_qs = Treinamento.objects.all()
+            
+            # 1. Define o queryset base (todos os treinamentos)
+            base_qs = Treinamento.objects.select_related(
+                'tipo_curso', 'responsavel'
+            ).prefetch_related(
+                
+                # 'participantes__funcionario' já é suficiente para o gerador de relatório.
+                'participantes__funcionario'
+            )
 
-            # 2. Construir o caminho para o arquivo da logomarca (Cenário A)
-            caminho_logo = os.path.join(settings.MEDIA_ROOT, 'imagens', 'logocetest.png')
-            # Isso aplica o filtro de TÉCNICO (se for o caso)
+            # 2. Isso aplica o filtro de TÉCNICO (se for o caso)
             scoped_qs = self.scope_tecnico_queryset(base_qs)
 
-            # 3. (Opcional, mas recomendado) Adicionar prints para depuração
-            # 3. Busca o objeto DENTRO do queryset escopado
+            # 3. Busca o objeto DIRETAMENTE do queryset escopado e otimizado.
             treinamento = get_object_or_404(scoped_qs, pk=treinamento_pk)
-            #    Verifique a saída no console onde você rodou 'runserver'
+            # -----------------
+
+            # 4. Construir o caminho para o arquivo da logomarca
+            caminho_logo = os.path.join(settings.MEDIA_ROOT, 'imagens', 'logocetest.png')
+            
             print(f"--- Gerando Relatório para Treinamento PK: {treinamento_pk} ---")
             print(f"Buscando logomarca em: {caminho_logo}")
 
-            # 4. Verificar se a logomarca realmente existe no caminho especificado
+            # 5. Verificar se a logomarca realmente existe no caminho especificado
             if not os.path.exists(caminho_logo):
                 print("!! ATENÇÃO: Arquivo de logomarca NÃO ENCONTRADO. O relatório será gerado sem a logo.")
                 caminho_logo = None  # Define como None se não encontrado
             else:
                 print("OK: Arquivo de logomarca encontrado.")
 
-            # 5. Chamar a função geradora, passando o treinamento E o caminho da logo
+            # 6. Chamar a função geradora, passando o treinamento E o caminho da logo
             buffer = treinamento_generators.gerar_relatorio_word(treinamento, caminho_logo)
 
-            # 6. Preparar e retornar a resposta HTTP com o arquivo .docx
+            # 7. Preparar e retornar a resposta HTTP com o arquivo .docx
             response = HttpResponse(
                 buffer,
                 content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
@@ -355,9 +425,8 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
             print("--- Relatório gerado e enviado com sucesso. ---")
             return response
 
-        except Treinamento.DoesNotExist:
-            # Este bloco é um backup, mas get_object_or_404 já lida com isso levantando um erro 404.
-            messages.error(request, "Treinamento não encontrado.")
+        except Http404:
+            messages.error(request, "Treinamento não encontrado ou você não tem permissão para acessá-lo.")
             return redirect('treinamentos:lista_treinamentos')
 
         except Exception as e:
@@ -373,15 +442,20 @@ class RelatorioGeralExcelView(LoginRequiredMixin, ViewFilialScopedMixin, Permiss
     Gera e oferece para download um relatório geral de treinamentos em .xlsx.
     """
     permission_required = 'treinamentos.ver_relatorios'
-
+    
     def get(self, request, *args, **kwargs):
-        # Esta linha assume que TreinamentoListView está definida acima neste mesmo arquivo.
-        list_view = TreinamentoListView() 
+        
+        # 1. Instancia a View que contém a lógica de filtro
+        list_view = RelatorioTreinamentosView() 
+        
+        # 2. Passa o request atual para a instância da view
         list_view.request = self.request
+        
+        # 3. Chama o get_queryset() da RelatorioTreinamentosView
         queryset = list_view.get_queryset()
 
         try:
-            # --- MUDANÇA 3: Chamamos a função a partir do novo módulo ---
+            # 4. Chama a função geradora de Excel
             buffer = treinamento_generators.gerar_relatorio_excel(queryset)
 
             response = HttpResponse(
@@ -395,7 +469,7 @@ class RelatorioGeralExcelView(LoginRequiredMixin, ViewFilialScopedMixin, Permiss
         except Exception as e:
             print(f"ERRO REAL AO GERAR EXCEL: {e}")
             messages.error(request, f"Ocorreu um erro ao gerar o relatório Excel.")
-            return redirect('treinamentos:lista_treinamentos')
+            return redirect('treinamentos:relatorio_treinamentos')
 
 # --- Classe auxiliar para o JSON (mantenha como está) ---
 class DecimalEncoder(json.JSONEncoder):
