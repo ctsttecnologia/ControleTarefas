@@ -1,7 +1,6 @@
-
 import io
 from datetime import datetime
-import pandas as pd # Mantido para contexto, mas não usado na função Word
+import pandas as pd
 from django.http import HttpResponse # Mantido para contexto
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches, Cm
@@ -14,6 +13,9 @@ matplotlib.use('Agg') # Usa um backend não-interativo, essencial para apps web
 import matplotlib.pyplot as plt
 
 
+# --- CORREÇÃO APLICADA AQUI ---
+# A definição da função foi simplificada. O caminho do logo é
+# responsabilidade da View, não desta função.
 def gerar_relatorio_word(treinamento, caminho_logo=None):
     """
     Gera um relatório .docx robusto e visual para um treinamento,
@@ -56,13 +58,17 @@ def gerar_relatorio_word(treinamento, caminho_logo=None):
     # ==================================================================
     # --- Cabeçalho com Logomarca ---
     if caminho_logo:
-        section = document.sections[0]
-        header = section.header
-        p_header = header.paragraphs[0]
-        p_header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        run_header = p_header.add_run()
-        # Adiciona a imagem com uma altura fixa, a largura será ajustada proporcionalmente
-        run_header.add_picture(caminho_logo, height=Cm(1.5))
+        try:
+            section = document.sections[0]
+            header = section.header
+            p_header = header.paragraphs[0]
+            p_header.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            run_header = p_header.add_run()
+            # Adiciona a imagem com uma altura fixa, a largura será ajustada proporcionalmente
+            run_header.add_picture(caminho_logo, height=Cm(1.5))
+        except Exception as e:
+            print(f"Erro ao adicionar logo no cabeçalho do Word: {e}")
+            # Continua sem o logo se falhar
 
     # --- Título Principal ---
     p_title = document.add_paragraph()
@@ -131,48 +137,55 @@ def gerar_relatorio_word(treinamento, caminho_logo=None):
     # --- Seção 3: Gráficos Visuais ---
     document.add_heading('3. Gráficos', level=1)
 
-    # Gráfico 1: Pizza de Presença
-    if total_inscritos > 0:
-        fig, ax = plt.subplots(figsize=(4, 3))
-        labels = ['Presentes', 'Ausentes']
-        sizes = [total_presentes, total_ausentes]
-        colors = ['#4CAF50', '#F44336']
-        ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors, wedgeprops={'edgecolor': 'white'})
-        ax.axis('equal') # Garante que a pizza seja um círculo
-        ax.set_title('Distribuição de Presença', fontsize=10)
+    try:
+        # Gráfico 1: Pizza de Presença
+        if total_inscritos > 0:
+            fig, ax = plt.subplots(figsize=(4, 3))
+            labels = ['Presentes', 'Ausentes']
+            sizes = [total_presentes, total_ausentes]
+            colors = ['#4CAF50', '#F44336']
+            ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90, colors=colors, wedgeprops={'edgecolor': 'white'})
+            ax.axis('equal') # Garante que a pizza seja um círculo
+            ax.set_title('Distribuição de Presença', fontsize=10)
 
-        chart_buffer = io.BytesIO()
-        plt.savefig(chart_buffer, format='png', dpi=200, bbox_inches='tight')
-        plt.close(fig)
-        chart_buffer.seek(0)
-        document.add_picture(chart_buffer, width=Inches(3.0))
-        # Centralizar a imagem
-        last_paragraph = document.paragraphs[-1]
-        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            chart_buffer = io.BytesIO()
+            plt.savefig(chart_buffer, format='png', dpi=200, bbox_inches='tight')
+            plt.close(fig)
+            chart_buffer.seek(0)
+            document.add_picture(chart_buffer, width=Inches(3.0))
+            # Centralizar a imagem
+            last_paragraph = document.paragraphs[-1]
+            last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Gráfico 2: Barras de Distribuição de Notas
-    if notas:
-        fig, ax = plt.subplots(figsize=(5, 3.5))
-        # Agrupa notas em faixas (0-4, 5-6, 7-8, 9-10)
-        bins = [-1, 4.9, 6.9, 8.9, 10.1]
-        labels = ['0-4 (Reprovado)', '5-6 (Recuperação)', '7-8 (Bom)', '9-10 (Excelente)']
-        nota_counts = pd.cut(notas, bins=bins, labels=labels, right=False).value_counts().sort_index()
+        # Gráfico 2: Barras de Distribuição de Notas
+        if notas:
+            fig, ax = plt.subplots(figsize=(5, 3.5))
+            bins = [-1, 4.9, 6.9, 8.9, 10.1]
+            labels = ['0-4 (Reprovado)', '5-6 (Recuperação)', '7-8 (Bom)', '9-10 (Excelente)']
+            
+            categorias = pd.CategoricalDtype(labels, ordered=True)
+            notas_cat = pd.cut(notas, bins=bins, labels=labels, right=False).astype(categorias)
+            nota_counts = notas_cat.value_counts().sort_index()
 
-        ax.bar(nota_counts.index, nota_counts.values, color=['#F44336', '#FFC107', '#2196F3', '#4CAF50'])
-        ax.set_ylabel('Nº de Participantes')
-        ax.set_title('Distribuição das Notas de Avaliação', fontsize=10)
-        plt.xticks(rotation=15, ha="right") # Rotaciona os labels do eixo x para melhor visualização
-        
-        chart_buffer = io.BytesIO()
-        plt.savefig(chart_buffer, format='png', dpi=200, bbox_inches='tight')
-        plt.close(fig)
-        chart_buffer.seek(0)
+            ax.bar(nota_counts.index, nota_counts.values, color=['#F44336', '#FFC107', '#2196F3', '#4CAF50'])
+            ax.set_ylabel('Nº de Participantes')
+            ax.set_title('Distribuição das Notas de Avaliação', fontsize=10)
+            plt.xticks(rotation=15, ha="right")
+            
+            chart_buffer = io.BytesIO()
+            plt.savefig(chart_buffer, format='png', dpi=200, bbox_inches='tight')
+            plt.close(fig)
+            chart_buffer.seek(0)
 
-        document.add_paragraph() # Espaço
-        document.add_picture(chart_buffer, width=Inches(5.0))
-        # Centralizar a imagem
-        last_paragraph = document.paragraphs[-1]
-        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            document.add_paragraph() # Espaço
+            document.add_picture(chart_buffer, width=Inches(5.0))
+            last_paragraph = document.paragraphs[-1]
+            last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            
+    except Exception as e:
+        print(f"Erro ao gerar gráficos: {e}")
+        document.add_paragraph(f"Ocorreu um erro ao gerar os gráficos: {e}")
+
 
     document.add_page_break()
 
@@ -188,11 +201,15 @@ def gerar_relatorio_word(treinamento, caminho_logo=None):
 
     for p in lista_participantes:
         row_cells = table_participantes.add_row().cells
-        row_cells[0].text = p.funcionario.get_full_name() or p.funcionario.username
-        row_cells[1].text = p.funcionario.username
+        try:
+            row_cells[0].text = p.funcionario.get_full_name() or p.funcionario.username
+            row_cells[1].text = p.funcionario.username
+        except Exception:
+             row_cells[0].text = "Funcionário Inválido"
+             row_cells[1].text = "N/A"
+             
         row_cells[2].text = 'Sim' if p.presente else 'Não'
         row_cells[3].text = str(p.nota_avaliacao) if p.nota_avaliacao is not None else 'N/A'
-        # Alinhamento das células de status e nota
         row_cells[2].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         row_cells[3].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
@@ -215,4 +232,79 @@ def gerar_relatorio_word(treinamento, caminho_logo=None):
     document.save(buffer)
     buffer.seek(0)
     
+    return buffer
+
+# ==================================================================
+# 6. FUNÇÃO DE EXCEL (ADICIONADA)
+# ==================================================================
+
+def gerar_relatorio_excel(queryset):
+    """
+    Gera um relatório .xlsx básico a partir de um queryset de Treinamentos,
+    usando Pandas para facilitar a exportação.
+    
+    Esta função é chamada pela RelatorioGeralExcelView.
+    """
+    
+    print(f"--- Gerando Relatório Excel para {queryset.count()} treinamentos ---")
+    
+    dados = []
+    for t in queryset.select_related('tipo_curso', 'responsavel'):
+        try:
+            responsavel_nome = t.responsavel.get_full_name()
+        except:
+            responsavel_nome = str(t.responsavel) if t.responsavel else "Não definido"
+
+        try:
+            tipo_curso_nome = t.tipo_curso.nome
+        except:
+            tipo_curso_nome = "Tipo não definido"
+            
+        dados.append({
+            "Nome do Treinamento": t.nome,
+            "Tipo de Curso": tipo_curso_nome,
+            "Data de Início": t.data_inicio,
+            "Data de Vencimento": t.data_vencimento,
+            "Status": t.get_status_display(),
+            "Responsável": responsavel_nome,
+            "Custo Total (R$)": t.custo,
+            "Carga Horária": t.duracao,
+            "Local": t.local,
+            "Palestrante": t.palestrante,
+            "Participantes Previstos": t.participantes_previstos,
+        })
+
+    colunas = [
+        "Nome do Treinamento", "Tipo de Curso", "Data de Início", 
+        "Data de Vencimento", "Status", "Responsável", "Custo Total (R$)",
+        "Carga Horária", "Local", "Palestrante", "Participantes Previstos"
+    ]
+
+    if not dados:
+        df = pd.DataFrame(columns=colunas)
+    else:
+        df = pd.DataFrame(dados, columns=colunas)
+
+    buffer = io.BytesIO()
+    
+    try:
+        with pd.ExcelWriter(buffer, engine='openpyxl', datetime_format='DD/MM/YYYY', date_format='DD/MM/YYYY') as writer:
+            df.to_excel(writer, sheet_name='Treinamentos', index=False)
+            
+            worksheet = writer.sheets['Treinamentos']
+            for i, col in enumerate(df.columns):
+                column_len = max(df[col].astype(str).map(len).max(), len(col))
+                worksheet.column_dimensions[chr(65 + i)].width = column_len + 2
+
+            col_custo_letra = chr(65 + colunas.index("Custo Total (R$)"))
+            for row in range(2, len(df) + 2):
+                worksheet[f'{col_custo_letra}{row}'].number_format = 'R$ #,##0.00'
+
+    except Exception as e:
+        print(f"Erro ao escrever Excel com Pandas: {e}")
+        df.to_excel(buffer, index=False)
+
+
+    print("--- Relatório Excel gerado com sucesso ---")
+    buffer.seek(0)
     return buffer

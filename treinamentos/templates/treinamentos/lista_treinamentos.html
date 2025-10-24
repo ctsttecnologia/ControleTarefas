@@ -16,9 +16,13 @@
         </h2>
         <div class="btn-toolbar" role="toolbar">
             <div class="btn-group me-2" role="group">
-                <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-list"></i> Lista de Cursos
-                </a>
+                {% if perms.treinamentos.view_lista_tipos_curso %}
+                    <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list"></i> Lista de Cursos
+                    </a>
+                {% endif %}
+            </div>
+            <div class="btn-group me-2" role="group">
                 {% if perms.treinamentos.view_dashboard %}
                     <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-speedometer2"></i> Dashboard
