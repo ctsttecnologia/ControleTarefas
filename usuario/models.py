@@ -65,6 +65,29 @@ class Usuario(AbstractUser):
     def __str__(self):
         return self.get_full_name() or self.username
     
+    # Propriedade para verificar se o usuário pertence ao grupo 'Gerente'
+    @property
+    def is_gerente(self):
+        # NOTA: O nome do grupo DEVE ser idêntico ao que está no painel Admin
+        return self.groups.filter(name='Gerente').exists()
+    
+    @property
+    def is_coordenador(self):
+        # NOTA: O nome do grupo DEVE ser idêntico ao que está no painel Admin
+        return self.groups.filter(name='Coordenador').exists()
+
+    @property
+    def is_tecnico(self):
+        # NOTA: O nome do grupo DEVE ser idêntico ao que está no painel Admin
+        return self.groups.filter(name='Técnico').exists()
+
+    # Propriedade para verificar se o usuário é Administrador
+    @property
+    def is_administrador(self):
+        # Verifica se é um Superusuário OU se pertence ao grupo 'Administrador'
+        return self.is_superuser or self.groups.filter(name='Administrador').exists()
+
+    
 class GroupCardPermissions(models.Model):
     # A Foreign Key para o modelo de grupo do Django
     group = models.OneToOneField(Group, on_delete=models.CASCADE)

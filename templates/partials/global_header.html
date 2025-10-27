@@ -61,8 +61,17 @@
                     {% endif %}
                 </ul>
             </div>
-
+            {# Botão de chat #}
+            
+            {% if user.is_authenticated %}
+                <button type="button" class="floating-chat-btn" id="chat-modal-trigger" 
+                    title="Abrir Chat" data-bs-toggle="modal" data-bs-target="#chatListModal">
+                    <i class="bi bi-chat-dots"></i>
+                </button>
+            {% endif %}
+            
             <div class="d-flex align-items-center">
+                
                 {% if user.is_authenticated %}
                     {# Botão de Notificações #}
                     <div class="dropdown text-end me-3">

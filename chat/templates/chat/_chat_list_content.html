@@ -1,0 +1,85 @@
+
+<div id="chat-list-content">
+    
+    <h4 class="mb-3">Iniciar Nova Conversa</h4>
+    
+    <form action="{% url 'chat:create_individual_chat' %}" method="post" class="mb-3">
+        {% csrf_token %}
+        <div class="input-group">
+            <select name="target_user_id" class="form-select">
+                <option value="">Iniciar DM com...</option>
+                {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Iniciar DM</button>
+        </div>
+    </form>
+
+    <form action="{% url 'chat:create_group_chat' %}" method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="input-group mb-2">
+            <span class="input-group-text">Nome:</span>
+            <input type="text" name="name" class="form-control" placeholder="Nome do grupo">
+        </div>
+        <div class="input-group mb-2">
+            <span class="input-group-text">Membros:</span>
+            <select name="participants" multiple class="form-select" style="height: 100px;">
+                {% for user in all_users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-info w-100">Criar Grupo</button>
+    </form>
+
+    <hr>
+
+    <h4 class="mt-4">Conversas Individuais</h4>
+    <div class="list-group mb-4">
+        {% for room in individual_rooms %}
+            <a href="{% url 'chat:room_view' room_id=room.id %}" class="list-group-item list-group-item-action">
+                {% if room.user1 == request.user %}
+                    DM com {{ room.user2.username }}
+                {% else %}
+                    DM com {{ room.user1.username }}
+                {% endif %}
+                <small class="text-muted float-end">{{ room.updated_at|date:"d M H:i" }}</small>
+            </a>
+        {% empty %}
+            <p class="text-muted">Você não tem conversas individuais.</p>
+        {% endfor %}
+    </div>
+
+    <h4 class="mt-4">Conversas em Grupo</h4>
+    <div class="list-group mb-4">
+        {% for room in group_rooms %}
+            <a href="{% url 'chat:room_view' room_id=room.id %}" class="list-group-item list-group-item-action">
+                {{ room.name }} ({{ room.participants.count }} membros)
+                <small class="text-muted float-end">{{ room.updated_at|date:"d M H:i" }}</small>
+            </a>
+        {% empty %}
+            <p class="text-muted">Você não participa de grupos.</p>
+        {% endfor %}
+    </div>
+
+    <h4 class="mt-4">Chats de Tarefas</h4>
+    <div class="list-group mb-4">
+        {% for room in task_rooms %}
+            <a href="{% url 'chat:room_view' room_id=room.id %}" class="list-group-item list-group-item-action">
+                {{ room.task.titulo }}
+                <small class="text-muted float-end">{{ room.updated_at|date:"d M H:i" }}</small>
+            </a>
+        {% empty %}
+            <p class="text-muted">Você não tem chats de tarefas.</p>
+        {% endfor %}
+    </div>
+    
+    {% if request.user.is_superuser %}
+    <hr>
+    <h4 class="mt-4">Administração</h4>
+    <button id="delete-old-messages-btn" class="btn btn-danger btn-sm">Excluir Mensagens Antigas (> 30 dias)</button>
+    <div id="admin-message" class="mt-2"></div>
+    {% endif %}
+
+</div>

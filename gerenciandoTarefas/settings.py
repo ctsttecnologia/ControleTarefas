@@ -13,7 +13,8 @@ import os
 from pathlib import Path
 from decouple import config
 
-
+# Seu asgi.py ou wsgi.py
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -36,6 +37,8 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.spl
 # Application definition
 
 INSTALLED_APPS = [
+
+    'daphne',
     # 1. Aplicativos do Framework Django (em ordem)
     'django.contrib.admin',
     'django.contrib.auth',
@@ -57,9 +60,12 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'localflavor',
     'template_partials',
+    'phonenumber_field',
+    'notifications',
+    'channels',
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
-    'usuario',                # Relacionado ao usuário
+    'usuario.apps.UsuarioConfig', 
     'home',
     'core',
     'logradouro',             # É uma dependência, deve vir antes               
@@ -74,8 +80,7 @@ INSTALLED_APPS = [
     'ata_reuniao',
     'ferramentas',
     'controle_de_telefone',
-    'phonenumber_field',
-    'notifications',    
+    'chat',  
 ]
 
 MIDDLEWARE = [
@@ -113,6 +118,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'  # ou 'bootstrap4', dependendo da versão
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
+ASGI_APPLICATION = 'gerenciandoTarefas.asgi.application'
 
 
 # Database
@@ -132,21 +138,12 @@ DATABASES = {
 }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+# --- AUTENTICAÇÃO E VALIDAÇÃO ---
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 AUTH_USER_MODEL = 'usuario.Usuario'
@@ -156,30 +153,27 @@ AUTH_USER_MODEL = 'usuario.Usuario'
 
 # Em seu settings.py
 LANGUAGE_CODE = 'pt-br'
-
 USE_I18N = True # Habilita a internacionalização
 USE_L10N = True # Habilita a localização (formato de datas, números, etc.)
-USE_TZ = False
+USE_TZ = True
 
 # Mude 'UTC' para o fuso horário do Brasil
 TIME_ZONE = 'America/Sao_Paulo'
 
 
-#Static files (CSS, JavaScript, Images)
-#https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-
-## 3. CAMINHOS (BASE_DIR é /var/www/gerenciandoTarefas)
-# Onde o Nginx vai LER os arquivos estáticos
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
-# Onde o Nginx vai LER os arquivos de upload (mídia)
-MEDIA_ROOT = os.path.join(BASE_DIR, 'midia')
-
-# URLs (estas estão corretas como estavam)
+# Configurações para arquivos estáticos
 STATIC_URL = '/static/'
+# <--- CORREÇÃO: Usando pathlib
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Diretório público para imagens, etc.
 MEDIA_URL = '/midia/'
+MEDIA_ROOT = BASE_DIR / 'midia'
+
+
 
 # Diretório PRIVADO para arquivos sensíveis
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
@@ -187,14 +181,13 @@ PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 # Configuração para servir arquivos privados com django-sendfile2
 # Crie uma pasta 'private_media' na raiz do projeto
 SENDFILE_BACKEND = 'sendfile2.backends.simple'
-SENDFILE_ROOT = os.path.join(BASE_DIR, 'private_media')
+SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
 SENDFILE_URL = '/private' # URL interna, não precisa ser servida publicamente
 
 
 # Tamanho máximo de upload (5MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
-
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -222,3 +215,11 @@ LOGIN_URL = 'usuario:login'
 LOGIN_REDIRECT_URL = 'usuario:profile'
 LOGOUT_REDIRECT_URL = 'usuario:login'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('177.131.142.229', 6379)], # Onde seu Redis está rodando
+        },
+    },
+}

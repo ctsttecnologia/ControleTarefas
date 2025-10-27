@@ -9,24 +9,32 @@
                     <i class="bi bi-people me-1"></i>Usuários
                 </a>
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'usuario_criar' %}active{% endif %}" href="{% url 'usuario:usuario_criar' %}">
-                    <i class="bi bi-person-plus me-1"></i>Adicionar Usuário
-                </a>
+                {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+                    <a class="nav-link {% if request.resolver_match.url_name == 'usuario_criar' %}active{% endif %}" href="{% url 'usuario:usuario_criar' %}">
+                        <i class="bi bi-person-plus me-1"></i>Adicionar Usuário
+                    </a>
+                {% endif %}
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'grupo_lista' %}active{% endif %}" href="{% url 'usuario:grupo_lista' %}">
-                    <i class="bi bi-collection me-1"></i>Grupos
-                </a>
+                {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+                    <a class="nav-link {% if request.resolver_match.url_name == 'grupo_lista' %}active{% endif %}" href="{% url 'usuario:grupo_lista' %}">
+                        <i class="bi bi-collection me-1"></i>Grupos
+                    </a>
+                {% endif %}
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'gerenciar_cards' %}active{% endif %}" href="{% url 'usuario:gerenciar_cards' %}">
-                    <i class="bi bi-card-list me-1"></i>Gerenciar Cards
-                </a>
+                {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+                    <a class="nav-link {% if request.resolver_match.url_name == 'gerenciar_cards' %}active{% endif %}" href="{% url 'usuario:gerenciar_cards' %}">
+                        <i class="bi bi-card-list me-1"></i>Gerenciar Cards
+                    </a>
+                {% endif %}
             </li>
             <li class="nav-item">
-                <a class="nav-link {% if request.resolver_match.url_name == 'filial_list' %}active{% endif %}" href="{% url 'usuario:filial_list' %}">
-                    <i class="bi bi-collection me-1"></i>Filiais
-                </a>
+                {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+                    <a class="nav-link {% if request.resolver_match.url_name == 'filial_list' %}active{% endif %}" href="{% url 'usuario:filial_list' %}">
+                        <i class="bi bi-collection me-1"></i>Filiais
+                    </a>
+                {% endif %}
             </li> 
         </ul>
     </div>
