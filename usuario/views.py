@@ -202,7 +202,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'title': '',
                 'permission': 'GARANT_ALL',  # Permissão especial para superusuários
                 'icon': 'images/favicon.ico',
-                'links': []
+                'links': [{'url': 'chat:chat_list', 'text': 'Lista de Chats'},]
             },
         ]
 

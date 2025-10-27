@@ -15,11 +15,15 @@
             </p>
         </div>
         <div>
-            <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">Gerar PDF</a>
-            <a href="{% url 'seguranca_trabalho:ficha_delete' ficha.pk %}" class="btn btn-outline-danger btn-sm">Excluir Ficha</a>
+            {% if user.is_superuser or user.is_gerente or user.is_administrador or user.is_coordenador or user.is_assistente %}
+                <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">Gerar PDF</a>
+            {% endif %}
+           {% if user.is_superuser or user.is_gerente or user.is_administrador %}    
+                <a href="{% url 'seguranca_trabalho:ficha_delete' ficha.pk %}" class="btn btn-outline-danger btn-sm">Excluir Ficha</a>
+            {% endif %}
         </div>
     </div>
-
+    {% if user.is_superuser or user.is_gerente or user.is_administrador or user.is_coordenador or user.is_assistente %}
         <div class="card shadow-sm mb-4">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Registrar Nova Entrega</h5>
@@ -40,7 +44,7 @@
                             <button type="submit" class="btn btn-primary w-100">Adicionar à Ficha</button>
                         </div>
                     </div>
-                 {% if form.errors %}
+                    {% if form.errors %}
                     <div class="alert alert-danger mt-3 small p-2">
                         <strong>Erro ao adicionar:</strong>
                         {{ entrega_form.non_field_errors }}
@@ -50,6 +54,7 @@
                 {% endif %}
             </form>
         </div>
+    {% endif %}    
 
     <h4 class="mt-4">Histórico de Entregas</h4>
     <div class="card shadow-sm">

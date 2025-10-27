@@ -4,8 +4,9 @@
 {% load static %}
 
 {% load widget_tweaks %}
-
-{% block title %}{% if form.instance.pk %}Editar Grupo{% else %}Criar Novo Grupo{% endif %}{% endblock %}
+{% if user.is_superuser or user.is_gerente or user.is_administrador %}
+    {% block title %}{% if form.instance.pk %}Editar Grupo{% else %}Criar Novo Grupo{% endif %}{% endblock %}
+{% endif %}    
 
 {% block extra_head %}
     {{ form.media.css }}
