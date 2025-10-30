@@ -251,34 +251,404 @@ body.has-submenu {
   }
 }
 
-/*
- * Classe que aplica a animação ao ícone dentro do botão
- */
-.btn-notify-blinking .bi-bell-fill {
-  animation: blink-red-icon 1.5s linear infinite;
-}
+/* ======================================================= */
+/* ============= CSS DO BOTÃO FLUTUANTE DE CHAT ============ */
+/* ======================================================= */
 
-/* Estilo para o Botão Flutuante de Chat */
 .floating-chat-btn {
-  position: flex; 
-  bottom: 30px;    /* 30px do fundo */
-  right: 30px;     /* 30px da direita */
-  width: 60px;
-  height: 60px;
-  border-radius: 70%; /* Deixa redondo */
-  background-color: #ffffff; /* Cor primária do Bootstrap */
-  color: rgb(0, 0, 0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px; /* Tamanho do ícone */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1050; /* Garante que fique acima de outros elementos */
-  text-decoration: none;
-  transition: background-color 0.2s;
+    position: fixed;
+    /* Posiciona no canto inferior direito */
+    bottom: 20px;
+    right: 20px;
+    /* Remove o transform que estava centralizando */
+    
+    /* Tamanho e forma */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    
+    /* Estilo */
+    background-color: var(--bs-primary);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    
+    /* Ícone centralizado */
+    display: grid;
+    place-items: center;
+    font-size: 1.8rem;
+    
+    /* Comportamento */
+    z-index: 1000;
+    cursor: pointer;
+    transition: all 0.2s ease-out;
 }
 
 .floating-chat-btn:hover {
-  background-color: #ffffff; /* Cor primária mais escura */
-  color: rgb(0, 44, 95);
+    /* Ajuste no hover também */
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
+
+/* ======================================================= */
+/* ============= CSS DO SIDEBAR DE CHAT (ESQUERDA) ========= */
+/* ======================================================= */
+
+/* 1. O Painel (Sidebar) */
+.chat-sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0; /* Alinhado à esquerda */
+    width: 380px; /* Largura do painel */
+    max-width: 90%;
+    height: 100vh;
+    z-index: 10001; /* Acima de tudo */
+    
+    background-color: var(--bs-body-bg, #ffffff);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    
+    /* COMEÇA ESCONDIDO À ESQUERDA */
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.215, 0.610, 0.355, 1);
+}
+
+/* 2. O Overlay (Fundo Escuro) */
+.chat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    
+    /* COMEÇA INVISÍVEL */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+/* 3. O ESTADO ATIVO (Quando o JS adiciona a classe no <body>) */
+body.chat-list-open .chat-sidebar-container {
+    /* MOSTRA O PAINEL */
+    transform: translateX(0);
+}
+
+body.chat-list-open .chat-overlay {
+    /* MOSTRA O OVERLAY */
+    opacity: 1;
+    visibility: visible;
+}
+
+
+/* --- CSS INTERNO DO PAINEL (Header, Body, etc.) --- */
+.chat-list-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.chat-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background-color: var(--bs-body-bg, #ffffff);
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    flex-shrink: 0;
+}
+
+.chat-list-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* Botão de fechar (X) no canto do painel */
+.chat-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--bs-secondary-color);
+    padding: 0.25rem;
+    line-height: 1;
+    border-radius: 6px;
+}
+.chat-close-btn:hover {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+}
+
+/* Corpo com scroll */
+.chat-list-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex-grow: 1;
+    background-color: var(--bs-light-bg-subtle, #f8f9fa);
+}
+
+/* Ação "Iniciar Nova Conversa" */
+.chat-list-action a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    background-color: var(--bs-primary-bg-subtle, #e6f0ff);
+    color: var(--bs-primary-text-emphasis, #004085);
+    border: 1px solid var(--bs-primary-border-subtle, #b6d4fe);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+.chat-list-action a:hover {
+    background-color: #d1e3ff;
+}
+.chat-list-action a i { font-size: 1.1rem; }
+
+/* Seções (Títulos) */
+.chat-list-section {
+    margin-top: 1.5rem;
+}
+.chat-list-section h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color, #6c757d);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* "Estado Vazio" (Sem chats) */
+.chat-list-empty-state {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: var(--bs-secondary-color, #6c757d);
+}
+.chat-list-empty-state i {
+    font-size: 2.5rem;
+    color: var(--bs-tertiary-color, #adb5bd);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.chat-list-empty-state p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* ============= FIM DO CSS DO SIDEBAR =================== */
+
+
+/* ======================================================= */
+/* --- CSS DO MODAL DE NOVA CONVERSA --- */
+/* ======================================================= */
+.user-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    text-decoration: none;
+    color: var(--bs-body-color);
+    transition: background-color 0.2s ease;
+}
+
+.user-list-item:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.user-list-item:last-child {
+    border-bottom: none;
+}
+
+.user-list-item i {
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    color: var(--bs-secondary-color);
+}
+
+.user-list-item .user-name {
+    font-weight: 500;
+}
+
+/* ======================================================= */
+/* =========== CSS DA JANELA DE CHAT FLUTUANTE ============= */
+/* ======================================================= */
+
+.chat-draggable-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 400px;
+    max-width: 90%;
+    height: 500px;
+    z-index: 10002; /* Acima de tudo */
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Para as bordas arredondadas */
+}
+
+/* Cabeçalho (arrastável) */
+.chat-dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color);
+    cursor: move; /* Indica que é arrastável */
+    flex-shrink: 0;
+}
+
+#chat-dialog-header-title {
+    font-weight: 600;
+}
+
+.close-chat-btn { /* Botão 'X' no topo da janela */
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    color: var(--bs-secondary-color);
+    padding: 0.25rem;
+    line-height: 1;
+    border-radius: 6px;
+}
+.close-chat-btn:hover {
+    background-color: var(--bs-secondary);
+    color: var(--bs-light);
+}
+
+/* Corpo (Log de Mensagens) */
+.chat-dialog-body {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Footer (Input de Texto) */
+.chat-dialog-footer {
+    display: flex;
+    align-items: flex-end; /* Alinha na base, útil para textareas */
+    padding: 0.75rem;
+    border-top: 1px solid var(--bs-border-color);
+    gap: 0.5rem;
+    background-color: var(--bs-body-bg);
+    flex-shrink: 0;
+}
+
+.chat-message-input {
+    flex-grow: 1;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    resize: none; /* Impede que o usuário redimensione */
+    max-height: 100px; /* Limita o crescimento */
+    overflow-y: auto;
+    background-color: var(--bs-tertiary-bg);
+}
+.chat-message-input:focus {
+    outline: none;
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 2px var(--bs-primary-bg-subtle);
+}
+
+.chat-footer-btn {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-secondary-color);
+    font-size: 1.1rem;
+    display: grid;
+    place-items: center;
+    transition: background-color 0.2s, color 0.2s;
+}
+.chat-footer-btn:hover {
+    background-color: var(--bs-primary);
+    color: var(--bs-light);
+}
+#chat-message-submit {
+    background-color: var(--bs-primary);
+    color: var(--bs-light);
+}
+#chat-message-submit:hover {
+    background-color: var(--bs-primary-dark);
+}
+
+/* --- Estilos das Mensagens (Bolhas) --- */
+.message-row {
+    display: flex;
+    flex-direction: column;
+}
+.message-bubble {
+    padding: 0.5rem 1rem;
+    border-radius: 1.25rem;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+.message-bubble p { margin-bottom: 0; }
+.message-info {
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    margin-top: 0.25rem;
+}
+.chat-img {
+    max-width: 100%;
+    border-radius: 10px;
+}
+
+/* Mensagem Recebida (Esquerda) */
+.message-row.receiver {
+    align-items: flex-start;
+}
+.message-bubble.receiver-bubble {
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    border-bottom-left-radius: 5px;
+}
+.message-row.receiver .message-info {
+    align-self: flex-start;
+    margin-left: 0.5rem;
+}
+
+/* Mensagem Enviada (Direita) */
+.message-row.sender {
+    align-items: flex-end;
+}
+.message-bubble.sender-bubble {
+    background-color: var(--bs-primary);
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+.message-row.sender .message-info {
+    align-self: flex-end;
+    margin-right: 0.5rem;
+}
+
+/* ======================================================= */
+/* =========== ESTADO MINIMIZADO DO CHAT ============= */
+/* ======================================================= */
+
+.chat-draggable-container.minimized {
+    height: 50px !important; /* Altura mínima quando minimizado */
+}
+
+.chat-draggable-container.minimized .chat-dialog-body,
+.chat-draggable-container.minimized .chat-dialog-footer {
+    display: none !important; /* Esconde corpo e footer quando minimizado */
+}
+
+.chat-draggable-container.minimized .chat-dialog-header {
+    cursor: pointer; /* Indica que é clicável para restaurar */
+}
+

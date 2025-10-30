@@ -6,8 +6,6 @@ from django.core.asgi import get_asgi_application
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings')
 
 # 2. CHAME get_asgi_application() AQUI.
-#    Isso força o Django a carregar os "Apps" (modelos, etc.)
-#    Esta é a linha que corrige o erro 'AppRegistryNotReady'.
 django_asgi_app = get_asgi_application()
 
 # 3. AGORA que o Django carregou, importe o Channels e suas rotas de chat
@@ -18,7 +16,7 @@ import chat.routing
 # 4. Configure a aplicação
 application = ProtocolTypeRouter({
     # Use a variável que criamos para o HTTP
-    "http": django_asgi_app, 
+    "http": django_asgi_app, # <-- Esta linha é a correta
     
     # Conexões WebSocket (Channels)
     "websocket": AuthMiddlewareStack( 
@@ -27,3 +25,6 @@ application = ProtocolTypeRouter({
         )
     ),
 })
+
+
+
