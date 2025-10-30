@@ -1,0 +1,36 @@
+
+{# _chat_dialog_content.html #}
+
+<div class="card-header chat-dialog-header" id="chat-dialog-header-bar">
+    <span id="chat-dialog-header-title">Conversa com: Nenhuma Selecionada</span>
+    
+
+    
+    <div class="d-flex align-items-center">
+        <span id="minimize-chat-btn" style="cursor: pointer; padding: 0 10px; font-weight: bold; color: var(--bs-secondary-color); line-height: 1;">_</span>
+        <button type="button" class="close-chat-btn" id="minimize-chat-btn" 
+        title="Minimizar" aria-label="Minimizar chat" 
+        style="font-weight: bold; padding-right: 10px;">
+        _
+        </button>
+        <span class="close-chat-btn" id="close-dialog-btn" style="cursor: pointer; padding-left: 10px; font-weight: bold; line-height: 1;">X</span> 
+    </div>
+</div>
+
+<div class="card-body chat-dialog-body" id="chat-log">
+    </div>
+
+<div class="card-footer chat-dialog-footer">
+    <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+    
+    <button class="chat-footer-btn" type="button" id="upload-image-btn" aria-label="Anexar imagem">
+        <i class="bi bi-image"></i>
+    </button>
+    
+    <textarea id="chat-message-input" class="chat-message-input" placeholder="Digite sua mensagem..." rows="1"></textarea>
+    
+    <button class="chat-footer-btn" id="chat-message-submit" aria-label="Enviar mensagem">
+        <i class="bi bi-send-fill"></i>
+    </button>
+</div>
+
