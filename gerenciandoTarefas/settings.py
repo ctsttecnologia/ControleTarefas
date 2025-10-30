@@ -11,8 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
 from pathlib import Path
-from decouple import config, Csv
+from decouple import config
 
+# Seu asgi.py ou wsgi.py
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,19 +28,10 @@ FERNET_KEYS = config('FERNET_KEYS') # Renomeei a variável para corresponder ao 
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-# ALLOWED_HOSTS
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv(), default='127.0.0.1,localhost')
-
-
-# --- CELERY ---
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'America/Sao_Paulo'
+#ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 
 # Application definition
@@ -73,8 +65,7 @@ INSTALLED_APPS = [
     'channels',
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
-    
-    'usuario.apps.UsuarioConfig',   
+    'usuario.apps.UsuarioConfig', 
     'home',
     'core',
     'logradouro',             # É uma dependência, deve vir antes               
@@ -89,8 +80,7 @@ INSTALLED_APPS = [
     'ata_reuniao',
     'ferramentas',
     'controle_de_telefone',
-    'chat',
-      
+    'chat',  
 ]
 
 MIDDLEWARE = [
@@ -109,7 +99,7 @@ ROOT_URLCONF = 'gerenciandoTarefas.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')], 
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -117,7 +107,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                #'core.context_processors.filial_context',
+                'core.context_processors.filial_context',
                 'usuario.context_processors.filial_context',                
             ],
         },
@@ -183,6 +173,8 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/midia/'
 MEDIA_ROOT = BASE_DIR / 'midia'
 
+
+
 # Diretório PRIVADO para arquivos sensíveis
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 
@@ -199,14 +191,14 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# No .env, defina um padrão para desenvolvimento (ex: 'django.core.mail.backends.console.EmailBackend')
-EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+# Configuração de E-mail para DESENVOLVIMENTO (imprime no console)
+EMAIL_BACKEND = config('EMAIL_BACKEND')
+EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='webmaster@localhost')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 
 # Configurações DRF
@@ -215,7 +207,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 30
 }
 
 # LOGIN_URL, LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL
@@ -227,9 +219,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)], # Onde seu Redis está rodando
+            "hosts": [('177.131.142.229', 6379)], # Onde seu Redis está rodando
         },
     },
 }
-
-
