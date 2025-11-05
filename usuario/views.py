@@ -1,7 +1,8 @@
 # usuario/views.py
 
+import json
 from django.db.models import Q
-from django.urls import reverse, reverse_lazy
+from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -15,6 +16,7 @@ from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
 from django.shortcuts import get_object_or_404, redirect, render
 
+from chat.models import ChatRoom
 from usuario.models import Usuario, Group, Filial, GroupCardPermissions
 from usuario.forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
 from django.contrib.auth.forms import SetPasswordForm
@@ -237,6 +239,43 @@ class ProfileView(LoginRequiredMixin, DetailView):
 
         # 3. Passe a lista de cards permitidos para o template
         context['allowed_cards'] = allowed_cards
+        
+    
+        # URLs do chat - CORRIGIDO
+        urls = {}
+        try:
+            urls['create_group_url'] = reverse('chat:create_group')
+            urls['user_list'] = reverse('chat:get_user_list')
+            urls['task_list'] = reverse('chat:get_task_list')
+            urls['start_dm_base'] = reverse('chat:start_dm', args=[0]).replace('0/', '')
+            urls['get_task_chat_base'] = reverse('chat:get_task_chat', args=[0]).replace('0/', '')
+            print(f"✅ URLs do chat resolvidas: {urls}")
+        except NoReverseMatch as e:
+            print(f"❌ Erro URLs chat: {e}")
+            # Define URLs vazias para evitar erro no template
+            urls = {
+                'create_group_url': '',
+                'user_list': '',
+                'task_list': '',
+                'start_dm_base': '',
+                'get_task_chat_base': ''
+            }
+
+        # Salas de chat do usuário
+        try:
+            user_chat_rooms = ChatRoom.objects.filter(
+                participants=self.request.user
+            ).distinct().order_by('-created_at')
+            print(f"✅ {user_chat_rooms.count()} salas de chat encontradas")
+        except Exception as e:
+            print(f"❌ Erro salas chat: {e}")
+            user_chat_rooms = []
+
+        context.update({
+            'chat_urls_json': json.dumps(urls),
+            'user_chat_rooms': user_chat_rooms,
+        })
+        
         return context
 
 

@@ -31,7 +31,7 @@ urlpatterns = [
     path('core/', include('core.urls')),
     path('controle_de_telefone/', include('controle_de_telefone.urls')),
     path('select2/', include('django_select2.urls')),
-    path('chat/', include('chat.urls')),  
+    path('chat/', include('chat.urls')),
 ]
 
 # Configuração para servir arquivos de mídia e estáticos
