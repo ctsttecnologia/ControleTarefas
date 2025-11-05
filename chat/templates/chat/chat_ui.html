@@ -1,0 +1,209 @@
+
+{% load static %}
+
+<!-- Sistema de Chat - Apenas para usuários autenticados -->
+<div class="chat-system-wrapper">
+    <!-- Botão Flutuante do Chat -->
+    <button type="button" class="floating-chat-btn" id="chat-modal-trigger"
+        title="Abrir Chat"
+        aria-label="Abrir Chat"
+        onclick="window.toggleChatListSidebar()">
+        <i class="bi bi-chat-dots"></i>
+    </button>
+
+    <!-- Overlay -->
+    <div class="chat-overlay" id="chatOverlay" onclick="window.toggleChatListSidebar()"></div>
+
+    <!-- Sidebar de Conversas -->
+    <aside class="chat-sidebar-container" id="chatListContainer">
+        <div class="chat-list-inner">
+            <header class="chat-list-header">
+                <h2>Conversas</h2>
+                <button type="button" class="chat-close-btn" onclick="window.toggleChatListSidebar()" aria-label="Fechar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </header>
+
+            <div class="chat-list-body">
+                <div class="chat-list-action">
+                    <a href="#" id="iniciar-nova-conversa" data-bs-toggle="modal" data-bs-target="#novaConversaModal">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>Nova Conversa</span>
+                    </a>
+                </div>
+                
+                <div id="active-chats-list">
+                    {% if user_chat_rooms %}
+                        {% for room in user_chat_rooms %}
+                            <a href="#" class="chat-list-item"
+                               onclick="window.chatManager.openChatDialog('{{ room.id }}', '{{ room.name|escapejs }}'); return false;">
+                                
+                                <div class="chat-item-avatar">
+                                    {% if room.room_type == 'DM' %}
+                                        <i class="bi bi-person-fill"></i>
+                                    {% elif room.room_type == 'TASK' %}
+                                        <i class="bi bi-check-square-fill"></i>
+                                    {% else %}
+                                        <i class="bi bi-people-fill"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="chat-item-info">
+                                    <div class="chat-item-name">{{ room.name }}</div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="bi bi-chat-left" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <p>Nenhuma conversa ativa</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Modal Nova Conversa -->
+    <div class="modal fade" id="novaConversaModal" tabindex="-1"
+        aria-labelledby="novaConversaModalLabel" aria-hidden="true">
+        
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="novaConversaModalLabel">Nova Conversa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                
+                <div class="modal-body p-0">
+                    <ul class="nav nav-tabs nav-fill" id="newChatTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="dm-tab-button" data-bs-toggle="tab" data-bs-target="#dm-tab-pane" type="button" role="tab">
+                                <i class="bi bi-person me-2"></i>Conversas Individuais
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="group-tab-button" data-bs-toggle="tab" data-bs-target="#group-tab-pane" type="button" role="tab">
+                                <i class="bi bi-people me-2"></i>Criar Grupo
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="task-tab-button" data-bs-toggle="tab" data-bs-target="#task-tab-pane" type="button" role="tab">
+                                <i class="bi bi-check-square me-2"></i>Tarefas
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="newChatTabContent" style="min-height: 400px;">
+                        
+                        <!-- Tab Conversas Individuais -->
+                        <div class="tab-pane fade show active" id="dm-tab-pane" role="tabpanel" aria-labelledby="dm-tab-button">
+                            <div class="p-3 border-bottom">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-search text-muted"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-start-0" id="dm-user-search" placeholder="Buscar usuário...">
+                                </div>
+                            </div>
+                            <div class="user-list-container" id="dm-user-list-container" style="max-height: 350px; overflow-y: auto;">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <p>Carregando usuários...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Criar Grupo -->
+                        <div class="tab-pane fade" id="group-tab-pane" role="tabpanel" aria-labelledby="group-tab-button">
+                            <form id="create-group-form">
+                                {% csrf_token %}
+                                <div class="p-3">
+                                    <div class="mb-3">
+                                        <label for="group-name" class="form-label fw-semibold">Nome do Grupo</label>
+                                        <input type="text" class="form-control" id="group-name" name="name"
+                                               placeholder="Digite o nome do grupo" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="group-participants-select" class="form-label fw-semibold">
+                                            Participantes <span class="text-muted">(Selecione múltiplos com Ctrl/Cmd)</span>
+                                        </label>
+                                        <select class="form-select" id="group-participants-select" name="participants"
+                                                multiple required size="8" style="min-height: 200px;">
+                                            <option value="" disabled>Carregando usuários...</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                                        <i class="bi bi-plus-circle me-2"></i>Criar Grupo
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Tab Tarefas -->
+                        <div class="tab-pane fade" id="task-tab-pane" role="tabpanel" aria-labelledby="task-tab-button">
+                            <div class="p-3 border-bottom">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0">
+                                        <i class="bi bi-search text-muted"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-start-0" id="task-search" placeholder="Buscar tarefa...">
+                                </div>
+                            </div>
+                            <div class="task-list-container" id="task-list-container" style="max-height: 350px; overflow-y: auto;">
+                                <div class="loading-state">
+                                    <div class="spinner"></div>
+                                    <p>Carregando tarefas...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Janela de Chat Draggable -->
+    <div class="chat-draggable-container" id="chat-draggable-container" style="display: none;">
+        <div class="chat-dialog-header" id="chat-dialog-header-bar">
+            <span id="chat-dialog-header-title">Chat</span>
+            <div class="header-buttons">
+                <button id="minimize-chat-btn" title="Minimizar" aria-label="Minimizar Chat">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <button id="close-dialog-btn" title="Fechar" aria-label="Fechar Chat">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="chat-log" id="chat-log" role="log" aria-live="polite">
+            <div class="welcome-state">
+                <i class="bi bi-chat-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <p>Selecione uma conversa para começar</p>
+            </div>
+        </div>
+        
+        <div class="chat-input-area">
+            <textarea id="chat-message-input" placeholder="Digite sua mensagem..."
+                      aria-label="Campo de mensagem do chat" rows="1"></textarea>
+            <button id="chat-message-submit" class="btn btn-sm btn-primary" aria-label="Enviar Mensagem">
+                <i class="bi bi-send"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Injeção de dados para JavaScript -->
+{{ request.user.username|json_script:"json-username" }}
+<script>
+    // URLs do chat injetadas do Django - CORRIGIDO
+    window.chatUrls = {{ chat_urls_json|safe }};
+    console.log('Chat URLs:', window.chatUrls);
+</script>
+
+<!-- CSS do Chat -->
+<link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
+
+<!-- JavaScript do Chat Corrigido -->
+<script src="{% static 'js/chat.js' %}"></script>
+

@@ -250,11 +250,3 @@ body.has-submenu {
     color: #dc3545; /* Cor vermelha do Bootstrap (btn-danger) */
   }
 }
-
-/*
- * Classe que aplica a animação ao ícone dentro do botão
- */
-.btn-notify-blinking .bi-bell-fill {
-  animation: blink-red-icon 1.5s linear infinite;
-}
-

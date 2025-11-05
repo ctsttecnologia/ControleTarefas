@@ -75,6 +75,7 @@
                             <th scope="col">Nome do Treinamento</th>
                             <th scope="col">Tipo</th>
                             <th scope="col">Data Início</th>
+                            <th scope="col">Data Fim</th>
                             <th scope="col">Local</th>
                             <th scope="col">Status</th>
                             <th scope="col" class="text-end">Ações</th>
@@ -86,6 +87,7 @@
                             <td class="fw-medium">{{ treinamento.nome }}</td>
                             <td>{{ treinamento.tipo_curso }}</td>
                             <td>{{ treinamento.data_inicio|date:"d/m/Y H:i" }}</td>
+                            <td>{{ treinamento.data_fim|date:"d/m/Y H:i" }}</td>
                             <td>{{ treinamento.local }}</td>
                             <td>
                                 <span class="badge 
