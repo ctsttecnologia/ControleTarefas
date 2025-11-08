@@ -1,3 +1,5 @@
+
+
 /**
  * Sistema de Chat - Estilos Modernos
  * Compatível com tema Bootstrap claro/escuro
@@ -261,6 +263,7 @@
     background: rgba(255,255,255,0.3);
 }
 
+/* ÁREA DE MENSAGENS - VERSÃO ORIGINAL FUNCIONAL */
 .chat-log {
     flex: 1;
     overflow-y: auto;
