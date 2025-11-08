@@ -915,6 +915,8 @@ class ChatManager {
 // Inicialização quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM carregado, inicializando ChatManager...');
+
+    
     
     // Pequeno delay para garantir que tudo está carregado
     setTimeout(() => {

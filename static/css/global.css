@@ -1,82 +1,136 @@
 /* =================================================================
-   ARQUIVO DE ESTILO GLOBAL (VERSÃO CORRIGIDA E REFINADA)
+   ARQUIVO DE ESTILO UNIFICADO
+   =================================================================
+   CONTÉM ESTILOS GLOBAIS E ESTILOS DO SISTEMA DE CHAT
    ================================================================= */
 
-/* 1. CONFIGURAÇÃO E TEMA
-/* ================================================================= */
+
+/* =================================================================
+   1. CONFIGURAÇÃO E TEMA (Estilos Globais)
+   ================================================================= */
+
+/* Importa a fonte 'Poppins' do Google Fonts para ser usada no site */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
+/* Define as variáveis CSS globais (cores, fontes) para o TEMA CLARO.
+  :root é o seletor de mais alto nível, e [data-bs-theme="light"] 
+  garante que o Bootstrap 5+ o reconheça como o tema claro padrão.
+*/
 :root, [data-bs-theme="light"] {
-    --bs-primary: #00b8d4;
-    --bs-primary-rgb: 0, 184, 212;
-    --bs-body-bg: #cfe5fc; 
-    --bs-body-color: #212529;
-    --bs-tertiary-bg: #ffffff; 
-    --bs-border-color: #c7c7c7;
-    --bs-font-sans-serif: 'Poppins', sans-serif;
+    --bs-primary: #00b8d4; /* Cor primária principal (azul ciano) */
+    --bs-primary-rgb: 0, 184, 212; /* Valor RGB da cor primária, usado pelo Bootstrap */
+    --bs-body-bg: #cfe5fc; /* Cor de fundo principal do corpo da página (azul claro) */
+    --bs-body-color: #212529; /* Cor do texto principal (preto/cinza escuro) */
+    --bs-tertiary-bg: #ffffff; /* Fundo "terciário", usado para cards, modais, etc. (branco) */
+    --bs-border-color: #c7c7c7; /* Cor padrão para bordas */
+    --bs-font-sans-serif: 'Poppins', sans-serif; /* Define a fonte padrão do site */
 }
 
+/* Sobrescreve as variáveis CSS globais quando o TEMA ESCURO está ativo.
+  Isso é ativado pelo Bootstrap quando o atributo [data-bs-theme="dark"] 
+  está presente (geralmente no <html> ou <body>).
+*/
 [data-bs-theme="dark"] {
-    --bs-primary: #00b8d4;
-    --bs-primary-rgb: 0, 184, 212;
-    --bs-body-bg: #1a202c; 
-    --bs-body-color: #e9ecef;
-    --bs-tertiary-bg: #283040;
-    --bs-border-color: #404a5a;
+    --bs-primary: #00b8d4; /* Cor primária (mesma) */
+    --bs-primary-rgb: 0, 184, 212; /* Valor RGB da cor primária */
+    --bs-body-bg: #1a202c; /* Cor de fundo principal (azul bem escuro) */
+    --bs-body-color: #e9ecef; /* Cor do texto principal (cinza claro/branco) */
+    --bs-tertiary-bg: #283040; /* Fundo "terciário" (azul escuro/cinza) */
+    --bs-border-color: #404a5a; /* Cor padrão para bordas (mais clara) */
 }
 
 
-/* 2. LAYOUT DE BASE
-/* ================================================================= */
+/* =================================================================
+   2. LAYOUT DE BASE (Estilos Globais)
+   ================================================================= */
+
 body {
+    /* Aplica as variáveis de fundo, cor e fonte definidas acima */
     background-color: var(--bs-body-bg);
     color: var(--bs-body-color);
     font-family: var(--bs-font-sans-serif);
+    /* Adiciona uma transição suave para quando o tema é trocado */
     transition: background-color 0.3s ease, color 0.3s ease;
-    
-    /* Adicionado para o Sticky Footer */
+
+    /* Início da técnica "Sticky Footer":
+      Define o body como um container flex em coluna
+      que ocupa no mínimo 100% da altura da tela (viewport).
+    */
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+
+    /* Espaçamento para o CABEÇALHO FIXO.
+      Empurra o conteúdo para baixo para não ficar escondido
+      atrás do #global-header (que tem 59px de altura).
+    */
+    padding-top: 59px;
+    /* Espaçamento para o RODAPÉ FIXO */
+    padding-bottom: 5px;
 }
 
-/* Modificado para o Sticky Footer */
+/* Aumenta o espaço no topo APENAS nas páginas que têm o submenu.
+  Isso é controlado adicionando a classe .has-submenu ao <body>
+  (provavelmente via template Django).
+*/
+body.has-submenu {
+    /* VALOR = (altura do header + altura do submenu) */
+    padding-top: 20px !important; /* !important pode ser necessário para sobrescrever o padding-top base */
+}
+
+/* Parte 2 do "Sticky Footer":
+  Faz o container de conteúdo principal (#main-content)
+  crescer e ocupar todo o espaço vago, empurrando o 
+  footer para o final da página, mesmo em páginas com pouco conteúdo.
+*/
 #main-content {
-    flex-grow: 1; /* Faz o conteúdo principal crescer e empurrar o footer para baixo */
+    flex-grow: 1;
     padding-top: 1.5rem;
     padding-bottom: 1.5rem;
 }
 
+/* Estilo "fantasma" para bibliotecas de arrastar e soltar (como Sortable.js).
+  Define a aparência do item enquanto ele está sendo arrastado.
+*/
 .sortable-ghost {
     opacity: 0.4;
     background-color: #c8ebfb;
 }
 
-/* 3. COMPONENTES GLOBAIS
-/* ================================================================= */
+
+/* =================================================================
+   3. COMPONENTES GLOBAIS
+   ================================================================= */
 
 /* Estilo do Header Global */
 #global-header {
-    background-color: var(--bs-primary);
+    background-color: var(--bs-primary); /* Usa a cor primária */
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* Remove o fundo/sombra padrão da navbar do Bootstrap dentro do nosso header */
 #global-header .navbar {
-    background-color: transparent !important; 
+    background-color: transparent !important;
     box-shadow: none;
 }
 
-/* Estilo do Footer Global (MODIFICADO) */
+/* Estilo do Footer Global */
 #global-footer {
-    background-color: var(--bs-primary);      /* Mesma cor de fundo do header */
-    color: rgba(255, 255, 255, 0.9);          /* Cor de texto clara para contraste */
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.1);  /* Sombra para cima, similar à do header */
+    background-color: var(--bs-primary); /* Mesma cor do header */
+    color: rgba(255, 255, 255, 0.9); /* Texto claro para contraste */
+    box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* Sombra para cima */
     font-size: 0.85rem;
     padding: 1rem 0;
-    margin-top: auto;                         /* Empurra para o fim do flex container */
+    /* Parte 3 do "Sticky Footer":
+      'margin-top: auto' é o que empurra o footer para o fim
+      do container flex (o <body>).
+      REMOVIDO: 'margin-top: 0;' foi adicionado depois para rodapés fixos,
+      indicando que a técnica sticky footer foi abandonada por um layout de padding.
+    */
+    margin-top: 0;
 }
 
-/* Adicionado: Garante que os links no footer também sejam claros */
+/* Garante que os links no footer também sejam claros */
 #global-footer a {
     color: #ffffff;
     font-weight: 500;
@@ -87,13 +141,13 @@ body {
     text-decoration: underline;
 }
 
-/* Estilo genérico para cards, usado em todo o sistema */
+/* Estilo genérico para 'cards', usado em todo o sistema */
 .card {
-    background-color: var(--bs-tertiary-bg);
-    border-color: var(--bs-border-color);
+    background-color: var(--bs-tertiary-bg); /* Fundo branco ou cinza-escuro */
+    border-color: var(--bs-border-color); /* Borda sutil */
 }
 
-/* Estilo para a sub-navegação */
+/* Estilo para a sub-navegação (provavelmente abaixo do header) */
 .subnav {
     background-color: var(--bs-tertiary-bg);
     border-bottom: 1px solid var(--bs-border-color);
@@ -101,15 +155,18 @@ body {
     padding: 0.5rem 0;
 }
 
-/* Ativa o menu dropdown do Bootstrap ao passar o mouse */
+/* Ativa o menu dropdown do Bootstrap ao PASSAR O MOUSE (hover) */
 .dropdown:hover .dropdown-menu {
     display: block;
     margin-top: 0;
 }
 
 
-/* 4. COMPONENTES DE PÁGINA (ESTILOS ESPECÍFICOS)
-/* ================================================================= */
+/* =================================================================
+   4. COMPONENTES DE PÁGINA (Estilos Específicos)
+   ================================================================= */
+
+/* Uma caixa de conteúdo padrão com sombra e bordas arredondadas */
 .content-box {
     padding: 30px;
     background-color: var(--bs-tertiary-bg);
@@ -117,6 +174,7 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
+/* Caixa usada para confirmações de exclusão, etc. */
 .confirmation-box {
     padding: 30px;
     background-color: var(--bs-tertiary-bg);
@@ -124,11 +182,11 @@ body {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     text-align: center;
     max-width: 600px;
-    margin: auto;
+    margin: auto; /* Centraliza a caixa na página */
 }
 
 .confirmation-box h2 {
-    color: #c0392b;
+    color: #c0392b; /* Vermelho para "atenção" */
     font-size: 2.2rem;
     font-weight: 700;
     margin-bottom: 25px;
@@ -155,6 +213,7 @@ body {
     margin-bottom: 30px;
 }
 
+/* Estilo para os formulários dentro da caixa de confirmação */
 .confirmation-box form {
     display: flex;
     justify-content: center;
@@ -163,13 +222,19 @@ body {
 }
 
 
-/* 5. PADRÕES DE PÁGINA (EX: LOGIN)
-/* ================================================================= */
+/* =================================================================
+   5. PADRÕES DE PÁGINA (EX: LOGIN)
+   ================================================================= */
+
+/* Se o <body> tiver a classe 'body-login', 
+  esconde o header e o footer.
+*/
 .body-login #global-header,
 .body-login #global-footer {
     display: none;
 }
 
+/* Container para centralizar o formulário de login na tela inteira */
 .login-container {
     display: flex;
     align-items: center;
@@ -178,14 +243,22 @@ body {
 }
 
 
-/* 6. ESTILOS DE IMPRESSÃO
-/* ================================================================= */
+/* =================================================================
+   6. ESTILOS DE IMPRESSÃO
+   ================================================================= */
+
+/* Bloco que define estilos aplicados APENAS ao imprimir a página */
 @media print {
+    /* Esconde o header, footer e qualquer elemento com a classe .no-print */
     #global-header,
     #global-footer,
     .no-print {
         display: none !important;
     }
+
+    /* Modo de impressão: esconde tudo, exceto o que 
+      estiver marcado como .printable-section.
+    */
     .print-mode #main-content > *:not(.printable-section) {
         display: none;
     }
@@ -196,57 +269,717 @@ body {
 }
 
 /* =================================================================
-   CÓDIGO PARA CABEÇALHOS E RODAPÉ FIXOS
+   7. ANIMAÇÕES GLOBAIS
    ================================================================= */
-body {
-    /* Espaço no topo para o header principal (fixed-top) */
-    padding-top: 59px;
 
-    /* Espaço embaixo para o rodapé */
-    padding-bottom: 5px; 
-}
-
-/* Aumenta o espaço no topo APENAS nas páginas que têm o submenu */
-body.has-submenu {
-    /* VALOR = (altura do header + altura do submenu) */
-    padding-top: 20px !important;
-}
-
-/* Garante que o footer não seja 'sticky' e se comporte normalmente */
-#global-footer {
-    margin-top: 0;
-}
-
-/*
- * Animação de Pulsação Vermelha
- */
+/* Define uma animação de "pulsação" vermelha */
 @keyframes pulse-red {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); /* Cor vermelha do Bootstrap (btn-danger) */
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-  }
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); /* Vermelho (btn-danger) */
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); /* Sombra desaparece */
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
 }
 
-/*
- * Classe que aplica a animação ao botão
- */
+/* Classe de utilidade para aplicar a animação de pulsação */
 .btn-notify-pulsing {
-  animation: pulse-red 2s infinite;
+    animation: pulse-red 2s infinite;
 }
 
-/*
- * Animação de Piscar Vermelho para o ícone
- */
+/* Define uma animação de "piscar" vermelho para ícones */
 @keyframes blink-red-icon {
-  50% {
-    color: #dc3545; /* Cor vermelha do Bootstrap (btn-danger) */
-  }
+    50% {
+        color: #dc3545; /* Vermelho (btn-danger) */
+        transform: scale(1.2);
+    }
+}
+
+
+/* =================================================================
+   =================================================================
+   8. SISTEMA DE CHAT
+   =================================================================
+   ================================================================= */
+
+/* Botão Flutuante do Chat (FAB - Floating Action Button) */
+.floating-chat-btn {
+    position: fixed; /* Fixo na tela, mesmo com rolagem */
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%; /* Círculo perfeito */
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 1000; /* Fica acima da maioria dos elementos */
+    transition: all 0.3s ease;
+}
+
+.floating-chat-btn:hover {
+    transform: scale(1.1); /* Efeito de zoom ao passar o mouse */
+    box-shadow: 0 6px 25px rgba(0,0,0,0.2);
+}
+
+/* Overlay (fundo escuro) para o sidebar de chat */
+.chat-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1998; /* Abaixo do sidebar, acima do resto */
+    opacity: 0;
+    visibility: hidden; /* Escondido por padrão */
+    transition: all 0.3s ease;
+}
+
+/* Classe 'active' (adicionada via JS) torna o overlay visível */
+.chat-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Sidebar de Conversas (Lista de chats) */
+.chat-sidebar-container {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Começa fora da tela, à direita */
+    width: 380px;
+    height: 100vh;
+    background: var(--bs-body-bg); /* Usa fundo do tema */
+    box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+    z-index: 1999; /* Acima do overlay */
+    transition: right 0.3s ease; /* Animação de deslizar */
+    display: flex;
+    flex-direction: column; /* Organiza o header e body verticalmente */
+    border-left: 1px solid var(--bs-border-color);
+}
+
+/* Classe 'active' (adicionada via JS) traz o sidebar para a tela */
+.chat-sidebar-container.active {
+    right: 0;
+}
+
+/* Cabeçalho do Sidebar (título "Conversas" e botão 'X') */
+.chat-list-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bs-secondary-bg); /* Fundo sutil */
+}
+
+.chat-list-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--bs-heading-color);
+}
+
+/* Botão de fechar o sidebar ('X') */
+.chat-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.chat-close-btn:hover {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-emphasis-color);
+}
+
+/* Corpo do Sidebar (onde a lista de chats aparece) */
+.chat-list-body {
+    flex: 1; /* Ocupa o espaço restante */
+    overflow-y: auto; /* Adiciona scroll se a lista for longa */
+    padding: 1rem 0;
+    background: var(--bs-body-bg);
+}
+
+/* Scrollbar personalizada para o corpo do sidebar (funciona no Chrome/Safari) */
+.chat-list-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-list-body::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+    border-radius: 3px;
+}
+
+.chat-list-body::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+    border-radius: 3px;
+    opacity: 0.5;
+}
+
+.chat-list-body::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-emphasis-color);
+    opacity: 0.7;
+}
+
+/* Botão "Nova Conversa" dentro do sidebar */
+.chat-list-action {
+    padding: 0 1.5rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    margin-bottom: 1rem;
+}
+
+.chat-list-action a {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--bs-secondary-bg);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--bs-body-color);
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid var(--bs-border-color);
+}
+
+.chat-list-action a:hover {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-emphasis-color);
+    text-decoration: none;
+}
+
+/* Item individual da lista de conversas */
+.chat-list-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid var(--bs-border-color);
+    transition: background 0.2s ease;
+    cursor: pointer;
+    background: var(--bs-body-bg);
+}
+
+.chat-list-item:hover {
+    background: var(--bs-secondary-bg);
+    text-decoration: none;
+    color: inherit;
+}
+
+/* Avatar (ou ícone) do item da lista de chat */
+.chat-item-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bs-tertiary-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.25rem;
+    color: var(--bs-secondary-color);
+    flex-shrink: 0; /* Impede que o avatar encolha */
+}
+
+.chat-item-info {
+    flex: 1; /* Ocupa o espaço restante */
+    min-width: 0; /* Permite que o 'text-overflow' funcione */
+}
+
+/* Nome da sala de chat (com corte de texto) */
+.chat-item-name {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: var(--bs-body-color);
+    white-space: nowrap; /* Impede quebra de linha */
+    overflow: hidden; /* Esconde o texto que transborda */
+    text-overflow: ellipsis; /* Adiciona "..." ao texto cortado */
+}
+
+/* Janela de Chat Draggable (Arrastável)
+  Esta é a seção que corrige o layout quebrado.
+*/
+#chat-draggable-container {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 350px;
+    height: 500px;
+    /* CORREÇÃO DE TEMA: Força o fundo correto,
+      sobrescrevendo fundos transparentes do tema global.
+    */
+    background: var(--bs-body-bg) !important;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    z-index: 2000; /* Acima de quase tudo, exceto o sidebar */
+    
+    /* CORREÇÃO DE LAYOUT: Força o container a ser um flex-column.
+      Isso permite "fixar" o input na base.
+    */
+    display: flex !important;
+    flex-direction: column !important;
+    
+    transition: all 0.3s ease;
+    border: 1px solid var(--bs-border-color);
+    resize: both; /* Permite ao usuário redimensionar a janela */
+    
+    /* CORREÇÃO DE LAYOUT: Impede que a *janela inteira* tenha scroll.
+      O scroll será interno, no .chat-log.
+    */
+    overflow: hidden;
+    min-width: 300px;
+    min-height: 400px;
+    max-width: 90vw;
+    max-height: 80vh;
+}
+
+/* Estilo para a janela minimizada */
+.chat-draggable-container.minimized {
+    height: 60px !important;
+    min-height: 60px;
+}
+
+/* Cabeçalho da Janela de Chat (barra azul arrastável) */
+.chat-dialog-header {
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-indigo) 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    cursor: move; /* Indica que pode ser arrastado */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none; /* Impede selecionar o texto ao arrastar */
+    
+    /* CORREÇÃO DE LAYOUT: Impede que o header encolha 
+      (parte da correção do layout flex).
+    */
+    flex-shrink: 0;
+}
+
+/* Botões de Minimizar/Fechar no header */
+.header-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.header-buttons button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.header-buttons button:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* Área de Mensagens (Log de Chat)
+  Regra mais específica para vencer o tema global.
+*/
+#chat-draggable-container .chat-log {
+    /* CORREÇÃO DE LAYOUT: Força o log a crescer e
+      ocupar todo o espaço disponível entre o header e o input.
+    */
+    flex: 1 !important;
+    
+    /* CORREÇÃO DE LAYOUT: Força o scroll a ser *interno*
+      a esta área de mensagens.
+    */
+    overflow-y: auto !important;
+    padding: 1rem;
+    
+    /* CORREÇÃO DE TEMA: Força o fundo correto para a
+      área de mensagens, vencendo o tema global.
+    */
+    background: var(--bs-secondary-bg) !important;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Scrollbar personalizada para área de mensagens */
+.chat-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+    background: var(--bs-tertiary-bg);
+    border-radius: 3px;
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+    border-radius: 3px;
+}
+
+.chat-log::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-emphasis-color);
+}
+
+/* Área de Input (Textarea e Botão Enviar)
+  Regra mais específica para vencer o tema global.
+*/
+#chat-draggable-container .chat-input-area {
+    padding: 1rem;
+    border-top: 1px solid var(--bs-border-color);
+    /* CORREÇÃO DE TEMA: Força o fundo correto para a
+      área de input, vencendo o tema global.
+    */
+    background: var(--bs-body-bg) !important;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end; /* Alinha o botão e o textarea na base */
+    
+    /* CORREÇÃO DE LAYOUT: A CHAVE! 
+      Impede que a área de input encolha.
+      Isso a "fixa" na base do container flex.
+    */
+    flex-shrink: 0 !important;
+}
+
+/* Campo de texto (textarea) */
+#chat-message-input {
+    flex: 1; /* Ocupa o espaço restante */
+    border: 1px solid var(--bs-border-color);
+    border-radius: 20px;
+    padding: 0.75rem 1rem;
+    resize: none; /* Impede que o usuário redimensione */
+    max-height: 120px; /* Limita o crescimento vertical */
+    font-family: inherit;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    transition: all 0.2s ease;
+}
+
+#chat-message-input:focus {
+    outline: none;
+    border-color: var(--bs-primary);
+    background: var(--bs-body-bg);
+}
+
+/* Botão de Enviar Mensagem */
+#chat-message-submit {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-primary);
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0; /* Impede que o botão encolha */
+}
+
+#chat-message-submit:hover {
+    background: var(--bs-primary-dark); /* (Variável do Bootstrap) */
+    transform: scale(1.05);
+}
+
+/* Estilos para estados vazios ou de carregamento */
+.empty-state, .welcome-state, .empty-chat-state, .loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--bs-secondary-color);
+    flex: 1; /* Ocupa todo o espaço disponível (útil no .chat-log) */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.empty-state i, .welcome-state i, .empty-chat-state i, .loading-state i {
+    margin-bottom: 1rem;
+}
+
+/* Animação de "spinner" de carregamento */
+.loading-state .spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid var(--bs-border-color);
+    border-top: 3px solid var(--bs-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estilos para os "balões" de mensagem */
+.message {
+    margin-bottom: 1rem;
+    display: flex;
+    max-width: 100%;
+}
+
+/* Mensagem própria (alinhada à direita) */
+.own-message {
+    justify-content: flex-end;
+}
+
+/* Mensagem de outros (alinhada à esquerda) */
+.other-message {
+    justify-content: flex-start;
+}
+
+/* Conteúdo do balão de mensagem */
+.message-content {
+    max-width: 85%;
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word; /* Quebra palavras longas */
+    overflow-wrap: break-word;
+}
+
+/* Estilo do balão de mensagem própria */
+.own-message .message-content {
+    background: var(--bs-primary);
+    color: white;
+    border-bottom-right-radius: 4px; /* "Rabicho" da mensagem */
+}
+
+/* Estilo do balão de mensagem de outros */
+.other-message .message-content {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-bottom-left-radius: 4px; /* "Rabicho" da mensagem */
+    color: var(--bs-body-color);
+}
+
+/* Cabeçalho da mensagem (nome, hora) */
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.message-text {
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+/* Estilo para imagens enviadas no chat */
+.message-image {
+    max-width: 100%;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+}
+
+/* Estilos para o Modal de "Nova Conversa" */
+.user-list-item, .task-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    background: var(--bs-body-bg);
+}
+
+.user-list-item:hover, .task-list-item:hover {
+    background: var(--bs-secondary-bg);
+}
+
+.user-avatar, .task-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bs-tertiary-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: var(--bs-secondary-color);
+    flex-shrink: 0;
+}
+
+.user-info, .task-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name, .task-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    color: var(--bs-body-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email, .task-details {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+}
+
+/* Containers com scroll dentro do modal */
+.user-list-container, .task-list-container {
+    max-height: 350px;
+    overflow-y: auto;
+    background: var(--bs-body-bg);
+}
+
+/* Scrollbar personalizada para o modal */
+.user-list-container::-webkit-scrollbar,
+.task-list-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.user-list-container::-webkit-scrollbar-track,
+.task-list-container::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+    border-radius: 3px;
+}
+
+.user-list-container::-webkit-scrollbar-thumb,
+.task-list-container::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+    border-radius: 3px;
+}
+
+/* Notificações (Pop-ups/Toasts) do Chat */
+.chat-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    z-index: 3000; /* Acima de tudo */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideInRight 0.3s ease;
+    max-width: 350px;
+}
+
+/* Cores das notificações (baseadas nas cores do Bootstrap) */
+.notification-success {
+    background: var(--bs-success);
+}
+
+.notification-error {
+    background: var(--bs-danger);
+}
+
+.notification-warning {
+    background: var(--bs-warning);
+    color: var(--bs-dark); /* Texto escuro para fundo amarelo */
+}
+
+.notification-info {
+    background: var(--bs-info);
+}
+
+/* Animação de entrada da notificação */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Estado de erro (ex: falha ao carregar lista) */
+.error-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--bs-secondary-color);
+}
+
+.error-state i {
+    margin-bottom: 1rem;
+}
+
+/* =================================================================
+   9. RESPONSIVIDADE (Media Queries)
+   ================================================================= */
+
+/* Para tablets e telas menores (largura máxima de 768px) */
+@media (max-width: 768px) {
+    /* O sidebar de chat ocupa a tela inteira */
+    .chat-sidebar-container {
+        width: 100%;
+        right: -100%; /* Começa 100% fora da tela */
+    }
+    
+    /* A janela de chat ocupa mais espaço na tela */
+    .chat-draggable-container {
+        width: calc(100vw - 40px); /* Largura total menos margens */
+        height: 70vh; /* 70% da altura da tela */
+        right: 20px;
+        left: 20px;
+        bottom: 20px;
+    }
+    
+    /* Balões de mensagem podem ser um pouco mais largos */
+    .message-content {
+        max-width: 90%;
+    }
+}
+
+/* Para celulares (largura máxima de 480px) */
+@media (max-width: 480px) {
+    /* Botão flutuante menor e mais próximo da borda */
+    .floating-chat-btn {
+        bottom: 10px;
+        right: 10px;
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    /* Janela de chat quase tela cheia */
+    .chat-draggable-container {
+        width: calc(100vw - 20px);
+        right: 10px;
+        left: 10px;
+    }
+    
+    /* Sidebar de chat sempre 100% da largura */
+    .chat-sidebar-container {
+        width: 100vw;
+    }
+}
+
+/* Transições suaves para mudanças de tema (dark/light mode).
+  Aplica a transição a quase todos os elementos dentro do chat.
+*/
+.chat-system-wrapper * {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease,
+                box-shadow 0.3s ease;
 }

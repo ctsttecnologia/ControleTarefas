@@ -1,9 +1,9 @@
 
+
 {% load static %}
 
-<!-- Sistema de Chat - Apenas para usuários autenticados -->
 <div class="chat-system-wrapper">
-    <!-- Botão Flutuante do Chat -->
+
     <button type="button" class="floating-chat-btn" id="chat-modal-trigger"
         title="Abrir Chat"
         aria-label="Abrir Chat"
@@ -11,12 +11,11 @@
         <i class="bi bi-chat-dots"></i>
     </button>
 
-    <!-- Overlay -->
     <div class="chat-overlay" id="chatOverlay" onclick="window.toggleChatListSidebar()"></div>
 
-    <!-- Sidebar de Conversas -->
     <aside class="chat-sidebar-container" id="chatListContainer">
         <div class="chat-list-inner">
+            
             <header class="chat-list-header">
                 <h2>Conversas</h2>
                 <button type="button" class="chat-close-btn" onclick="window.toggleChatListSidebar()" aria-label="Fechar">
@@ -25,6 +24,7 @@
             </header>
 
             <div class="chat-list-body">
+                
                 <div class="chat-list-action">
                     <a href="#" id="iniciar-nova-conversa" data-bs-toggle="modal" data-bs-target="#novaConversaModal">
                         <i class="bi bi-plus-circle"></i>
@@ -33,8 +33,11 @@
                 </div>
                 
                 <div id="active-chats-list">
+                    
                     {% if user_chat_rooms %}
+                        
                         {% for room in user_chat_rooms %}
+                            
                             <a href="#" class="chat-list-item"
                                onclick="window.chatManager.openChatDialog('{{ room.id }}', '{{ room.name|escapejs }}'); return false;">
                                 
@@ -47,34 +50,34 @@
                                         <i class="bi bi-people-fill"></i>
                                     {% endif %}
                                 </div>
+                                
                                 <div class="chat-item-info">
                                     <div class="chat-item-name">{{ room.name }}</div>
                                 </div>
                             </a>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="bi bi-chat-left" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                            <p>Nenhuma conversa ativa</p>
-                        </div>
-                    {% endif %}
+                        {% endfor %} {% else %}
+                            <div class="empty-state">
+                                <i class="bi bi-chat-left" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                                <p>Nenhuma conversa ativa</p>
+                            </div>
+                        {% endif %} </div>
                 </div>
-            </div>
         </div>
     </aside>
 
-    <!-- Modal Nova Conversa -->
     <div class="modal fade" id="novaConversaModal" tabindex="-1"
         aria-labelledby="novaConversaModalLabel" aria-hidden="true">
         
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
+                
                 <div class="modal-header">
                     <h5 class="modal-title" id="novaConversaModalLabel">Nova Conversa</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 
                 <div class="modal-body p-0">
+                    
                     <ul class="nav nav-tabs nav-fill" id="newChatTab" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="dm-tab-button" data-bs-toggle="tab" data-bs-target="#dm-tab-pane" type="button" role="tab">
@@ -95,7 +98,6 @@
 
                     <div class="tab-content" id="newChatTabContent" style="min-height: 400px;">
                         
-                        <!-- Tab Conversas Individuais -->
                         <div class="tab-pane fade show active" id="dm-tab-pane" role="tabpanel" aria-labelledby="dm-tab-button">
                             <div class="p-3 border-bottom">
                                 <div class="input-group">
@@ -113,7 +115,6 @@
                             </div>
                         </div>
 
-                        <!-- Tab Criar Grupo -->
                         <div class="tab-pane fade" id="group-tab-pane" role="tabpanel" aria-labelledby="group-tab-button">
                             <form id="create-group-form">
                                 {% csrf_token %}
@@ -139,7 +140,6 @@
                             </form>
                         </div>
 
-                        <!-- Tab Tarefas -->
                         <div class="tab-pane fade" id="task-tab-pane" role="tabpanel" aria-labelledby="task-tab-button">
                             <div class="p-3 border-bottom">
                                 <div class="input-group">
@@ -161,9 +161,9 @@
             </div>
         </div>
     </div>
-
-    <!-- Janela de Chat Draggable -->
+    
     <div class="chat-draggable-container" id="chat-draggable-container" style="display: none;">
+        
         <div class="chat-dialog-header" id="chat-dialog-header-bar">
             <span id="chat-dialog-header-title">Chat</span>
             <div class="header-buttons">
@@ -175,7 +175,7 @@
                 </button>
             </div>
         </div>
-        
+    
         <div class="chat-log" id="chat-log" role="log" aria-live="polite">
             <div class="welcome-state">
                 <i class="bi bi-chat-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
@@ -191,19 +191,16 @@
             </button>
         </div>
     </div>
-</div>
+</div> {{ request.user.username|json_script:"json-username" }}
 
-<!-- Injeção de dados para JavaScript -->
-{{ request.user.username|json_script:"json-username" }}
 <script>
-    // URLs do chat injetadas do Django - CORRIGIDO
+    // URLs do chat injetadas do Django
     window.chatUrls = {{ chat_urls_json|safe }};
     console.log('Chat URLs:', window.chatUrls);
 </script>
 
-<!-- CSS do Chat -->
 <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
 
-<!-- JavaScript do Chat Corrigido -->
 <script src="{% static 'js/chat.js' %}"></script>
+
 
