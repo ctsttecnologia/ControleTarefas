@@ -1,10 +1,7 @@
 
-
-/**
- * Sistema de Chat - Estilos Modernos
- * Compatível com tema Bootstrap claro/escuro
- * Design responsivo com controles de minimizar/fechar
- */
+/* =================================================================
+   SISTEMA DE CHAT - ESTILOS MODERNOS CORRIGIDOS
+   ================================================================= */
 
 /* Botão Flutuante do Chat */
 .floating-chat-btn {
@@ -199,7 +196,10 @@
     text-overflow: ellipsis;
 }
 
-/* Janela de Chat Draggable */
+/* =================================================================
+   JANELA DE CHAT DRAGGABLE
+   ================================================================= */
+
 .chat-draggable-container {
     position: fixed;
     bottom: 80px;
@@ -210,8 +210,11 @@
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.15);
     z-index: 2000;
+    
+    /* LAYOUT FLEX CORRIGIDO */
     display: flex;
-    flex-direction: column;
+    flex-direction: column !important;
+    
     transition: all 0.3s ease;
     border: 1px solid var(--bs-border-color);
     resize: both;
@@ -222,9 +225,23 @@
     max-height: 80vh;
 }
 
+/* ESTADO MINIMIZADO */
 .chat-draggable-container.minimized {
     height: 60px !important;
-    min-height: 60px;
+    min-height: 60px !important;
+    resize: none !important;
+}
+
+.chat-draggable-container.minimized .chat-dialog-content {
+    display: none !important;
+}
+
+/* CONTEÚDO DO CHAT - ESTRUTURA FLEX CORRETA */
+.chat-dialog-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0; /* IMPORTANTE: Permite que o flex funcione corretamente */
 }
 
 .chat-dialog-header {
@@ -237,7 +254,7 @@
     justify-content: space-between;
     align-items: center;
     user-select: none;
-    flex-shrink: 0;
+    flex-shrink: 0; /* IMPEDE QUE O HEADER ENCOLHA */
 }
 
 .header-buttons {
@@ -263,35 +280,18 @@
     background: rgba(255,255,255,0.3);
 }
 
-/* ÁREA DE MENSAGENS - VERSÃO ORIGINAL FUNCIONAL */
+/* ÁREA DE MENSAGENS - CORRIGIDA */
 .chat-log {
-    flex: 1;
+    flex: 1; /* OCUPA TODO O ESPAÇO DISPONÍVEL */
     overflow-y: auto;
     padding: 1rem;
     background: var(--bs-secondary-bg);
     display: flex;
     flex-direction: column;
+    min-height: 0; /* CRÍTICO: Permite scroll */
 }
 
-/* Scrollbar personalizada para área de mensagens */
-.chat-log::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-log::-webkit-scrollbar-track {
-    background: var(--bs-tertiary-bg);
-    border-radius: 3px;
-}
-
-.chat-log::-webkit-scrollbar-thumb {
-    background: var(--bs-secondary-color);
-    border-radius: 3px;
-}
-
-.chat-log::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-emphasis-color);
-}
-
+/* ÁREA DE INPUT */
 .chat-input-area {
     padding: 1rem;
     border-top: 1px solid var(--bs-border-color);
@@ -300,7 +300,8 @@
     display: flex;
     gap: 0.5rem;
     align-items: flex-end;
-    flex-shrink: 0;
+    flex-shrink: 0 !important; /* GARANTE QUE NÃO ENCOLHA */
+    margin-top: auto; /* EMPURRA PARA A BASE */
 }
 
 #chat-message-input {
@@ -314,6 +315,7 @@
     background: var(--bs-body-bg);
     color: var(--bs-body-color);
     transition: all 0.2s ease;
+    line-height: 1.4;
 }
 
 #chat-message-input:focus {
@@ -338,7 +340,47 @@
 }
 
 #chat-message-submit:hover {
-    background: var(--bs-primary-dark);
+    background: #0095b3;
+    transform: scale(1.05);
+}
+
+/* Scrollbar personalizada para área de mensagens */
+.chat-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-log::-webkit-scrollbar-track {
+    background: var(--bs-tertiary-bg);
+    border-radius: 3px;
+}
+
+.chat-log::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+    border-radius: 3px;
+}
+
+.chat-log::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-emphasis-color);
+}
+
+/* Estilo para o botão de anexar imagem */
+#attach-image-btn {
+    border-radius: 50%; /* Faz ele redondo */
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-secondary-bg); /* Ou a cor que preferir */
+    border: 1px solid var(--bs-border-color); /* Adiciona uma borda */
+    color: var(--bs-primary); /* Cor do ícone */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+#attach-image-btn:hover {
+    background: var(--bs-tertiary-bg);
     transform: scale(1.05);
 }
 
@@ -430,6 +472,8 @@
     margin-top: 0.5rem;
 }
 
+/* Restante do CSS permanece igual... */
+
 /* Modal de Nova Conversa */
 .user-list-item, .task-list-item {
     display: flex;
@@ -477,7 +521,6 @@
     color: var(--bs-secondary-color);
 }
 
-/* Containers com scroll no modal */
 .user-list-container, .task-list-container {
     max-height: 350px;
     overflow-y: auto;
@@ -543,7 +586,6 @@
     }
 }
 
-/* Estados de erro */
 .error-state {
     text-align: center;
     padding: 2rem;
@@ -593,13 +635,4 @@
         width: 100vw;
     }
 }
-
-/* Transições suaves para mudanças de tema */
-.chat-system-wrapper * {
-    transition: background-color 0.3s ease, 
-                color 0.3s ease, 
-                border-color 0.3s ease,
-                box-shadow 0.3s ease;
-}
-
 
