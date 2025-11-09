@@ -1,4 +1,3 @@
-
 /**
  * Sistema de Chat - Gerenciador Principal
  * Responsável por controle de UI, WebSocket e notificações
@@ -19,13 +18,109 @@ class ChatManager {
     }
 
     /**
-     * Inicializa todos os event listeners do chat
+     * Lida com o upload de imagem selecionada pelo usuário.
+     * * [!!! MOVIDO PARA CÁ !!!]
+     * Este método agora é parte da classe ChatManager.
      */
+    async handleImageUpload(event) {
+        const file = event.target.files[0]; // Pega o primeiro arquivo selecionado
+
+        if (file) {
+            // Verifica o tipo de arquivo
+            if (!file.type.startsWith('image/')) {
+                this.showNotification('Por favor, selecione um arquivo de imagem.', 'warning');
+                return;
+            }
+
+            // Verifica o tamanho do arquivo (ex: limite de 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5 MB
+            if (file.size > maxSize) {
+                this.showNotification('A imagem é muito grande. Tamanho máximo é 5MB.', 'warning');
+                return;
+            }
+
+            console.log('Imagem selecionada:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
+
+            // Limpa o input imediatamente
+            event.target.value = ''; 
+
+            // Mostra um feedback de "enviando"
+            this.showNotification('Enviando imagem...', 'info');
+
+            // Chama a nova função de upload
+            await this.uploadImage(file);
+        }
+    }
+
+    /**
+     * Faz o upload de um arquivo de imagem para o servidor.
+     * * [!!! MOVIDO PARA CÁ !!!]
+     * Este método agora é parte da classe ChatManager.
+     * @param {File} file - O arquivo de imagem a ser enviado.
+     */
+    async uploadImage(file) {
+        if (!this.urls.upload_image_url) {
+            console.error('❌ URL de upload de imagem não definida em chatUrls');
+            this.showError('Não foi possível enviar a imagem (configuração faltando).');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('image_file', file); // 'image_file' será o nome no request do Django
+        
+        try {
+            const response = await fetch(this.urls.upload_image_url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.getCSRFToken(), // Reutiliza seu método de pegar o token
+                    'X-Requested-With': 'XMLHttpRequest' // Útil para o Django saber que é AJAX
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                console.log('✅ Imagem enviada com sucesso:', data.image_url);
+                
+                // AGORA SIM, enviamos a URL pelo WebSocket
+                this.sendImageMessage(data.image_url);
+            } else {
+                console.error('❌ Erro no servidor ao enviar imagem:', data.error);
+                this.showError(data.error || 'Erro ao enviar imagem.');
+            }
+        } catch (error) {
+            console.error('❌ Erro de rede ao enviar imagem:', error);
+            this.showError('Erro de rede ao enviar imagem.');
+        }
+    }
+    
     /**
      * Inicializa todos os event listeners do chat
+     * * [!!! CORRIGIDO !!!]
+     * Agora este método contém *apenas* os listeners,
+     * e não as definições de outros métodos.
      */
     initializeEventListeners() {
         console.log('Inicializando event listeners do chat...');
+
+        // Botão de anexar imagem
+        const attachImageBtn = document.getElementById('attach-image-btn');
+        if (attachImageBtn) {
+            attachImageBtn.addEventListener('click', () => {
+                const imageUploadInput = document.getElementById('image-upload-input');
+                if (imageUploadInput) {
+                    imageUploadInput.click(); // Simula o clique no input de arquivo escondido
+                }
+            });
+        }
+
+        // Input de upload de imagem
+        const imageUploadInput = document.getElementById('image-upload-input');
+        if (imageUploadInput) {
+            // Agora isso vai funcionar, pois 'this.handleImageUpload' existe
+            imageUploadInput.addEventListener('change', (event) => this.handleImageUpload(event));
+        }
         
         // Botão de enviar mensagem
         const submitBtn = document.getElementById('chat-message-submit');
@@ -68,7 +163,6 @@ class ChatManager {
         
         console.log('Event listeners do chat inicializados com sucesso');
     }
-
 
     /**
      * Inicializa listeners do modal de nova conversa
@@ -158,7 +252,7 @@ class ChatManager {
         }
     }
 
-   /**
+    /**
      * Renderiza lista de usuários
      */
     renderUsers(users) {
@@ -187,7 +281,6 @@ class ChatManager {
             </div>
         `).join('');
     }
-
 
     /**
      * Filtra usuários na busca
@@ -421,37 +514,34 @@ class ChatManager {
     }
 
     /**
-     * Abre diálogo de chat
+     * Abre diálogo do chat - CORRIGIDO
      */
     openChatDialog(roomId, roomName) {
-        this.currentRoom = roomId;
-        
-        // Atualiza UI
-        const titleElement = document.getElementById('chat-dialog-header-title');
         const container = document.getElementById('chat-draggable-container');
+        const title = document.getElementById('chat-dialog-header-title');
+        const content = document.getElementById('chat-dialog-content');
         
-        if (titleElement) titleElement.textContent = roomName;
-        if (container) {
-            container.style.display = 'block';
+        if (container && title && content) {
+            // Garante que o container está visível e restaurado
+            container.style.display = 'flex';
+            this.isMinimized = false;
+            
+            // Mostra o conteúdo (caso estivesse minimizado)
+            content.style.display = 'flex';
             container.classList.remove('minimized');
+            
+            // Restaura altura padrão
+            container.style.height = '500px';
+            container.style.minHeight = '400px';
+            
+            // Atualiza título
+            title.textContent = roomName || 'Chat';
         }
         
-        this.isMinimized = false;
-        
-        // Conecta WebSocket
-        this.connectWebSocket(roomId);
-        
-        // Carrega histórico
+        // Sua lógica existente para carregar o chat...
+        this.currentRoom = roomId;
         this.loadChatHistory(roomId);
-        
-        // Foca no input de mensagem
-        setTimeout(() => {
-            const input = document.getElementById('chat-message-input');
-            if (input) input.focus();
-        }, 100);
-        
-        // Fecha lista de conversas
-        this.toggleChatListSidebar();
+        this.connectWebSocket(roomId);
     }
 
     /**
@@ -534,6 +624,26 @@ class ChatManager {
         } catch (error) {
             console.error('Erro ao enviar mensagem:', error);
             this.showNotification('Erro ao enviar mensagem', 'error');
+        }
+    }
+
+    /**
+     * Envia uma URL de imagem via WebSocket
+     */
+    sendImageMessage(imageUrl) {
+        if (!this.websocket || !this.isConnected) {
+            this.showError('Conexão não disponível.');
+            return;
+        }
+
+        try {
+            this.websocket.send(JSON.stringify({
+                'message': '', // Mensagem de texto vazia
+                'image_url': imageUrl // Envia a URL da imagem
+            }));
+        } catch (error) {
+            console.error('Erro ao enviar mensagem de imagem:', error);
+            this.showError('Erro ao enviar imagem.');
         }
     }
 
@@ -622,25 +732,32 @@ class ChatManager {
     }
 
     /**
-     * Minimiza/restaura janela do chat
+     * Minimiza/restaura janela do chat - CORRIGIDO
      */
     toggleMinimize() {
         const container = document.getElementById('chat-draggable-container');
-        const chatLog = document.getElementById('chat-log');
-        const inputArea = document.querySelector('.chat-input-area');
+        const content = document.getElementById('chat-dialog-content');
         
-        if (!container) return;
+        if (!container || !content) return;
         
         this.isMinimized = !this.isMinimized;
         
         if (this.isMinimized) {
-            if (chatLog) chatLog.style.display = 'none';
-            if (inputArea) inputArea.style.display = 'none';
+            // Minimizar: esconde o conteúdo, mantém só o header
+            content.style.display = 'none';
             container.classList.add('minimized');
+            
+            // Ajusta altura para mostrar apenas o header
+            container.style.height = '60px';
+            container.style.minHeight = '60px';
         } else {
-            if (chatLog) chatLog.style.display = 'block';
-            if (inputArea) inputArea.style.display = 'flex';
+            // Restaurar: mostra o conteúdo novamente
+            content.style.display = 'flex';
             container.classList.remove('minimized');
+            
+            // Restaura altura padrão
+            container.style.height = '500px';
+            container.style.minHeight = '400px';
         }
     }
 
@@ -648,16 +765,60 @@ class ChatManager {
      * Fecha janela do chat
      */
     closeChat() {
-        const container = document.getElementById('chat-draggable-container');
-        if (container) {
-            container.style.display = 'none';
-        }
-        
-        this.currentRoom = null;
-        
-        if (this.websocket) {
-            this.websocket.close(1000, 'Usuário fechou o chat');
-            this.websocket = null;
+        // 1. A função foi chamada?
+        console.log('--- DEBUG: 1. closeChat() FOI CHAMADA ---'); 
+    
+        try {
+            const container = document.getElementById('chat-draggable-container');
+            
+            // 2. O contêiner foi encontrado?
+            if (container) {
+                console.log('--- DEBUG: 2. Contêiner #chat-draggable-container ENCONTRADO ---');
+                
+                // 3. Esta é a linha que esconde o chat
+                container.style.display = 'none';
+                console.log('--- DEBUG: 3. container.style.display foi definido como "none" ---');
+                
+                container.classList.remove('minimized');
+            } else {
+                // Se o contêiner não for encontrado, este erro aparecerá
+                console.error('--- DEBUG: FALHA CRÍTICA: Contêiner #chat-draggable-container NÃO ENCONTRADO! ---');
+                return; 
+            }
+            
+            // --- O resto da sua lógica de limpeza ---
+            
+            this.isMinimized = false;
+            this.currentRoom = null;
+            
+            const chatLog = document.getElementById('chat-log');
+            if (chatLog) {
+                chatLog.innerHTML = `
+                    <div class="welcome-state">
+                        <i class="bi bi-chat-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                        <p>Selecione uma conversa para começar</p>
+                    </div>
+                `;
+            } else {
+                console.warn('--- DEBUG: Aviso: #chat-log não encontrado para limpar. ---');
+            }
+            
+            if (this.websocket) {
+                this.websocket.close(1000, 'Usuário fechou o chat');
+                this.websocket = null;
+                console.log('--- DEBUG: 4. WebSocket fechado. ---');
+            }
+            
+            const messageInput = document.getElementById('chat-message-input');
+            if (messageInput) {
+                messageInput.value = '';
+            }
+            
+            console.log('--- DEBUG: 5. Função closeChat() CONCLUÍDA ---');
+
+        } catch (error) {
+            // 6. Pega qualquer erro inesperado
+            console.error('--- DEBUG: ERRO INESPERADO DENTRO DE closeChat():', error);
         }
     }
 
@@ -917,7 +1078,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM carregado, inicializando ChatManager...');
 
     
-    
     // Pequeno delay para garantir que tudo está carregado
     setTimeout(() => {
         try {
@@ -944,10 +1104,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /// Tratamento de erros globais
 window.addEventListener('error', function(e) {
-    console.error('💥 Erro global no sistema de chat:', e.error);
+    console.error('💥 Erro global no sistema de chat:'),
+
+    console.error(e.message, 'em', e.filename, 'linha', e.lineno);
 });
-
-
 /**
  * Sistema de Tema Automático
  * Detecta preferência do usuário e aplica tema claro/escuro
@@ -989,7 +1149,7 @@ class ThemeManager {
         if (window.matchMedia) {
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
                 if (!localStorage.getItem('chat-theme')) {
-                    this.currentTheme = e.matches ? 'dark' : 'light';
+                    this.currentTheme = e.matches ? 'light' : 'dark';
                     this.applyTheme();
                 }
             });
@@ -1004,4 +1164,3 @@ document.addEventListener('DOMContentLoaded', function() {
     // Adiciona botão de toggle de tema (opcional)
     // Você pode adicionar um botão em sua UI se quiser
 });
-

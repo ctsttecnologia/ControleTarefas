@@ -10,6 +10,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from .models import ChatRoom, Message
 from django.contrib.auth import get_user_model
+import os
+from django.views import View
+from django.core.files.storage import default_storage
+from django.conf import settings
 
 User = get_user_model()
 
@@ -257,3 +261,30 @@ def get_chat_history(request, room_id):
             'status': 'error',
             'error': f'Erro ao carregar histórico: {str(e)}'
         }, status=500)
+    
+
+
+class ChatImageUploadView(View):
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'status': 'error', 'error': 'Não autorizado'}, status=401)
+
+        if 'image_file' not in request.FILES:
+            return JsonResponse({'status': 'error', 'error': 'Nenhum arquivo enviado'}, status=400)
+
+        file = request.FILES['image_file']
+
+        # Define um caminho seguro (ex: media/chat_images/nome_do_arquivo.png)
+        file_name = default_storage.save(f"chat_images/{file.name}", file)
+
+        # Gera a URL completa
+        file_url = os.path.join(settings.MEDIA_URL, file_name)
+
+        return JsonResponse({
+            'status': 'success',
+            'image_url': file_url
+        })
+    
+
+
