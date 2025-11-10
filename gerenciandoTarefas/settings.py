@@ -220,11 +220,11 @@ LOGOUT_REDIRECT_URL = 'usuario:login'
 # Configurações do Channel Layers para produção
 CHANNEL_LAYERS = {
     'default': {
-        #'BACKEND': 'channels.layers.InMemoryChannelLayer',  # Para desenvolvimento
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',  # Para produção
-        'CONFIG': {
-             "hosts": [('177.131.142.229', 6379)],
-        },
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # Para desenvolvimento
+        #'BACKEND': 'channels_redis.core.RedisChannelLayer',  # Para produção
+        #'CONFIG': {
+        #     "hosts": [('177.131.142.229', 6379)],
+        #},
     },
 }
 
