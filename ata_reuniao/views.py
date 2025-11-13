@@ -35,6 +35,8 @@ from openpyxl.utils import get_column_letter
 from django.contrib.auth.decorators import login_required
 from .forms import UploadAtaReuniaoForm
 from django.contrib.messages import get_messages
+from django.core.exceptions import ObjectDoesNotExist
+from usuario.models import Usuario 
 
 
 
@@ -94,27 +96,59 @@ class AtaReuniaoListView(LoginRequiredMixin, AtaQuerysetMixin, ListView):
     model = AtaReuniao
     template_name = 'ata_reuniao/ata_reuniao_list.html'
     context_object_name = 'atas'
-    paginate_by = 20
+    paginate_by = 25
+
+    def dispatch(self, request, *args, **kwargs):
+        """
+        Executado ANTES de qualquer outro método (como get_queryset ou get_context_data).
+        Verifica se o usuário logado está vinculado a um 'funcionario'.
+        """
+        try:
+            # Tenta acessar o objeto 'funcionario' relacionado ao usuário.
+            # Se não existir, ele pulará para o 'except'.
+            _ = request.user.funcionario
+            
+        except ObjectDoesNotExist:
+            # O usuário está logado, mas não tem um 'funcionario' associado.
+            # Retorna a tela amigável de acesso negado.
+            return render(request, 'ata_reuniao/acesso_negado.html', {
+                'titulo': 'Acesso Restrito',
+                'mensagem': (
+                    'Sua conta de usuário não está vinculada a um registro de funcionário, '
+                    'por isso você não pode acessar o módulo de Atas de Reunião.'
+                )
+            }, status=403) # 403 é o código para "Acesso Proibido"
+        
+        # Se o 'try' funcionou, o usuário é um funcionário.
+        # Permite que a view continue seu fluxo normal.
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        # Passe o modelo para a mixin
+        """
+        Este método agora é SEGURO, pois o dispatch() já garantiu
+        que self.request.user.funcionario existe.
+        """
         queryset = self.get_ata_queryset(self.request, model_class=self.model)
         return queryset
 
     def get_context_data(self, **kwargs):
+        """
+        Este método também é SEGURO pelo mesmo motivo.
+        """
         context = super().get_context_data(**kwargs)
-        # Garanta que o objeto do usuário seja serializável
+        
+        # Esta linha agora é segura e não vai mais quebrar
         user_data = {
             'username': self.request.user.username,
-            'filial': str(self.request.user.funcionario.filial) if self.request.user.is_authenticated else None
+            'filial': str(self.request.user.funcionario.filial)
         }
         context['user_data'] = user_data 
         
         # Filtros para o contexto da página
-        current_queryset = self.get_queryset()
+        current_queryset = context['atas'] # Reutiliza o queryset do contexto
         
         coordenador_ids = current_queryset.values_list('coordenador__usuario__id', flat=True).distinct()
-        context['coordenadores'] = User.objects.filter(id__in=coordenador_ids).order_by('first_name')
+        context['coordenadores'] = Usuario.objects.filter(id__in=coordenador_ids).order_by('first_name')
         
         contrato_ids = current_queryset.values_list('contrato_id', flat=True).distinct()
         context['contratos'] = Cliente.objects.filter(id__in=contrato_ids).order_by('nome')

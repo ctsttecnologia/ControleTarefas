@@ -4,7 +4,9 @@
  */
 
 class ChatManager {
+
     constructor() {
+        
         this.currentRoom = null;
         this.websocket = null;
         this.isMinimized = false;
@@ -15,11 +17,11 @@ class ChatManager {
         console.log('ChatManager inicializado com URLs:', this.urls);
         
         this.initializeEventListeners();
+        this.initializeNotificationSocket();
     }
 
     /**
      * Lida com o upload de imagem selecionada pelo usuário.
-     * * [!!! MOVIDO PARA CÁ !!!]
      * Este método agora é parte da classe ChatManager.
      */
     async handleImageUpload(event) {
@@ -54,7 +56,6 @@ class ChatManager {
 
     /**
      * Faz o upload de um arquivo de imagem para o servidor.
-     * * [!!! MOVIDO PARA CÁ !!!]
      * Este método agora é parte da classe ChatManager.
      * @param {File} file - O arquivo de imagem a ser enviado.
      */
@@ -97,7 +98,6 @@ class ChatManager {
     
     /**
      * Inicializa todos os event listeners do chat
-     * * [!!! CORRIGIDO !!!]
      * Agora este método contém *apenas* os listeners,
      * e não as definições de outros métodos.
      */
@@ -408,11 +408,14 @@ class ChatManager {
                 this.showNotification('Configuração de URL incompleta', 'error');
                 return;
             }
+            // =Setting .replace('0', userId);
+            const finalUrl = this.urls.start_dm_base.replace('0', userId);
+            
+            console.log(`Iniciando DM com usuário ${userId} em ${finalUrl}...`); 
 
-            console.log(`Iniciando DM com usuário ${userId}...`);
-            this.showLoading('Iniciando conversa...');
-
-            const response = await fetch(`${this.urls.start_dm_base}${userId}/`, {
+            // Use a 'finalUrl' corrigida
+            const response = await fetch(finalUrl, {
+            // =========================================================
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -490,14 +493,19 @@ class ChatManager {
      */
     async openTaskChat(taskId) {
         try {
-            if (!this.urls.get_task_chat_base) {
+            if (!this.urls.get_task_chat_base) { // O valor disto é '/chat/task/0/'
                 console.error('URL base para chat de tarefa não definida');
                 return;
             }
 
+            // =========================================================
+            // ✅ CORREÇÃO AQUI: Substitua o '0' pelo ID real
+            // =========================================================
+            const finalUrl = this.urls.get_task_chat_base.replace('0', taskId);
+
             this.showLoading('Abrindo chat da tarefa...');
 
-            const response = await fetch(`${this.urls.get_task_chat_base}${taskId}/`);
+            const response = await fetch(finalUrl); // Use a 'finalUrl' corrigida
             const data = await response.json();
             
             if (data.status === 'success') {
@@ -638,6 +646,7 @@ class ChatManager {
 
         try {
             this.websocket.send(JSON.stringify({
+                'type': 'chat_message',
                 'message': '', // Mensagem de texto vazia
                 'image_url': imageUrl // Envia a URL da imagem
             }));
@@ -672,7 +681,14 @@ class ChatManager {
         
         // Notificação para mensagens de outros usuários
         if (data.username !== this.getCurrentUsername()) {
-            this.showDesktopNotification(data.username, data.message);
+            
+            // Define um texto de fallback para a notificação
+            let notificationText = data.message;
+            if (!notificationText && data.image_url) {
+                notificationText = '[Enviou uma imagem]';
+            }
+
+            this.showDesktopNotification(data.username, notificationText);
         }
     }
 
@@ -947,7 +963,7 @@ class ChatManager {
             if (Notification.permission === 'granted') {
                 new Notification(title, {
                     body: message,
-                    icon: '/static/images/favicon.ico'
+                    icon: '/static/images/favicon.ico' // Certifique-se que este caminho está correto
                 });
             } else if (Notification.permission !== 'denied') {
                 Notification.requestPermission().then(permission => {
@@ -961,6 +977,94 @@ class ChatManager {
             }
         }
     }
+
+    // =================================================================
+    // 🧠 AQUI ESTÁ A "COLA" (AGORA DENTRO DA CLASSE E SENDO CHAMADA)
+    // =================================================================
+
+    initializeNotificationSocket() {
+        // Seu método está correto: ele espera o DOM carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. Pegue os indicadores persistentes (pontos vermelhos)
+            // Lembre-se de adicionar um ID 'header-notification-bell' ao seu sino
+            const bellElement = document.getElementById('header-notification-bell');
+            const chatButtonElement = document.getElementById('chat-modal-trigger'); // Correto!
+            
+            const bellIndicator = bellElement ? bellElement.querySelector('.notification-indicator') : null;
+            const chatIndicator = chatButtonElement ? chatButtonElement.querySelector('.notification-indicator') : null;
+
+            // 2. Conecte-se ao WebSocket de Notificação
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const notificationSocket = new WebSocket(
+                protocol + '//' + window.location.host + '/ws/notifications/'
+            );
+
+            notificationSocket.onopen = function(e) {
+                console.log('Socket de Notificação conectado.');
+            };
+
+            // Usar '=>' aqui é CRUCIAL e está CORRETO.
+            // Garante que o 'this' dentro desta função ainda é a classe 'ChatManager'
+            notificationSocket.onmessage = (e) => {
+
+                // -----------------------------------------------------------------
+                // ✅✅✅ ADICIONE ESTE CONSOLE.LOG ✅✅✅
+                // Este é o log mais importante. Ele dispara ANTES de qualquer
+                // 'if' ou 'JSON.parse'. Se isto não aparecer, o problema
+                // é no backend.
+                console.log("!!! [DEBUG NOTIFICAÇÃO] MENSAGEM CRUA RECEBIDA:", e.data);
+                // -----------------------------------------------------------------
+
+                const data = JSON.parse(e.data);
+                console.log('Notificação recebida:', data);
+
+                if (data.type === 'new_message') {
+                    
+                    const notificationTitle = 'Nova Mensagem';
+                    // Tente buscar o nome da sala no backend se for fácil, senão o ID está bom.
+                    const notificationMessage = `Você tem uma nova mensagem de ${data.sender_username}.`;
+
+                    // 1. CHAMA SEUS ALERTS MOMENTÂNEOS
+                    this.showNotification(notificationMessage, 'info'); 
+                    this.showDesktopNotification(notificationTitle, notificationMessage);
+                    
+                    // 2. ATIVA OS INDICADORES PERSISTENTES
+                    if (bellIndicator) {
+                        bellIndicator.style.display = 'block';
+                    }
+                    if (chatIndicator) {
+                        chatIndicator.style.display = 'block';
+                    }
+                }
+                
+                if (data.type === 'new_chat') {
+                    this.showNotification(`Você foi adicionado ao chat: ${data.room.name}`, 'info');
+                    // Você pode querer recarregar a lista de chats aqui
+                }
+            };
+
+            notificationSocket.onclose = (e) => {
+                console.error('Socket de Notificação fechou inesperadamente.');
+            };
+
+            // 3. Lógica para LIMPAR os indicadores
+            if (chatButtonElement) {
+                chatButtonElement.addEventListener('click', () => {
+                    if (chatIndicator) chatIndicator.style.display = 'none';
+                    // Também limpa o sino, já que abrir o chat conta como ver as mensagens
+                    if (bellIndicator) bellIndicator.style.display = 'none';
+                });
+            }
+            if (bellElement) {
+                bellElement.addEventListener('click', () => {
+                    if (bellIndicator) bellIndicator.style.display = 'none';
+                    // Nota: clicar no sino não limpa o indicador do chat
+                });
+            }
+        });
+    }
+
 
     /**
      * Faz janela ser arrastável
@@ -1076,12 +1180,11 @@ class ChatManager {
 // Inicialização quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM carregado, inicializando ChatManager...');
-
     
     // Pequeno delay para garantir que tudo está carregado
     setTimeout(() => {
         try {
-            window.chatManager = new ChatManager();
+            window.chatManager = new ChatManager(window.chatUrls);
             
             // Toggle global da sidebar
             window.toggleChatListSidebar = () => {

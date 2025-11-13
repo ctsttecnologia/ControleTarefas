@@ -636,3 +636,16 @@
     }
 }
 
+/* Indicador de Notificação no Ícone do Chat */
+
+.notification-indicator {
+    position: absolute;
+    top: 2px;  /* Pode precisar de ajuste para o sino */
+    right: 2px; /* Pode precisar de ajuste para o sino */
+    width: 10px;
+    height: 10px;
+    background-color: #dc3545; /* Vermelho */
+    border-radius: 50%;
+    border: 2px solid white;
+    display: none; /* O JS controla isso */
+}
