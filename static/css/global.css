@@ -210,3 +210,28 @@ body.has-submenu {
     opacity: 0.4;
     background-color: #c8ebfb;
 }
+
+/* * Estilo para o ponto vermelho da notificação em tempo real.
+ * Isso se aplica a QUALQUER elemento que tenha o indicador,
+ * mas o elemento PAI precisa ser 'position: relative'.
+*/
+/* O elemento pai (o link do sino) já é 'position-relative' no seu HTML */
+/* #header-notification-bell {
+    position: relative; 
+} */
+
+.notification-indicator {
+    position: absolute;
+    top: 2px;  /* Ajuste para descer/subir */
+    right: 0px; /* Ajuste para esquerda/direita */
+    
+    width: 10px;
+    height: 10px;
+    
+    background-color: #dc3545; /* Vermelho do Bootstrap (danger) */
+    border-radius: 50%;
+    border: 2px solid white; /* Borda branca para destacar do ícone */
+    
+    /* Garante que ele comece escondido */
+    display: none; 
+}

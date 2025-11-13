@@ -67,8 +67,11 @@
                 {% if user.is_authenticated %}
                     {# Botão de Notificações #}
                     <div class="dropdown text-end me-3">
-                        <a href="#" class="nav-link text-white" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a href="#" id="header-notification-bell" class="nav-link text-white" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bell-fill fs-5 position-relative">
+                         
+                                <span class="notification-indicator" style="display: none;"></span> 
+
                                 {% if notification_count > 0 %}
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6em;">
                                         {{ notification_count }}

@@ -1,6 +1,5 @@
 
 # chat/consumers.py
-# chat/consumers.py
 import json
 import base64
 from django.core.files.base import ContentFile
@@ -48,6 +47,14 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     # Chamado pelo ChatConsumer quando uma NOVA MENSAGEM chega
     async def new_message_notification(self, event):
         """ Envia uma notificação de nova mensagem. """
+
+        print(f"--- [DEBUG NOTIFICAÇÃO] ---")
+        print(f"Usuário {self.user.id} recebeu evento de notificação:")
+        print(event)
+        print(f"Enviando JSON para o cliente...")
+        print(f"-----------------------------")
+        # -----------------------------------------------------------------
+
         await self.send(text_data=json.dumps({
             'type': 'new_message',
             'room_id': event['room_id'],
@@ -92,16 +99,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             data = json.loads(text_data)
             message_content = data.get('message', '')
-            image_data_str = data.get('image', None)
+            image_url = data.get('image_url', None)
 
-            if not message_content and not image_data_str:
-                return # Ignora envios vazios
+            if not message_content and not image_url:
+                return
 
             message = await self.save_message(
                 room_id=self.room_id,
                 user=self.user,
                 content=message_content,
-                image_data_str=image_data_str
+                image_url_str=image_url
             )
             if message is None: return
 
@@ -120,7 +127,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             
             # ✅ NOVO: Envia notificação para os canais pessoais dos outros usuários
             other_participants = await self.get_other_participants(self.room_id, self.user)
+
+            print(f"--- [DEBUG CHAT] ---")
+            print(f"Mensagem de: {self.user.username}")
+            print(f"Outros participantes para notificar: {other_participants}")
+            print(f"-------------------------")
+        #
+
             for user_id in other_participants:
+
+                notification_group = f"notifications_{user_id}"
+                print(f"Enviando notificação para o grupo: {notification_group}")
+                # -----------------------------------------------------------------
+
                 await self.channel_layer.group_send(
                     f"notifications_{user_id}", # Grupo de notificação pessoal
                     {
@@ -168,28 +187,45 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return []
 
     @sync_to_async
-    def save_message(self, room_id, user, content, image_data_str=None):
+    def save_message(self, room_id, user, content, image_url_str=None):
+        """
+        Salva a mensagem no banco.
+        Agora, ele salva o CAMINHO da imagem, não o arquivo Base64.
+        """
         from .models import ChatRoom, Message
+        from django.conf import settings
+        import re
+
         try:
             room = ChatRoom.objects.get(id=self.room_id)
             
-            image_file = None
-            if image_data_str:
-                try:
-                    format, imgstr = image_data_str.split(';base64,') 
-                    ext = format.split('/')[-1] 
-                    image_file = ContentFile(base64.b64decode(imgstr), name=f'img_{user.id}_{room_id}.{ext}')
-                except Exception as e:
-                    print(f"❌ Erro ao decodificar imagem Base64: {e}")
-            
+            image_path = None
+            if image_url_str:
+                # O JavaScript envia a URL (ex: /midia/chat_images/nome.png)
+                # Precisamos converter a URL de volta para o caminho relativo 
+                # que o ImageField espera (ex: chat_images/nome.png)
+                
+                # Remove o prefixo MEDIA_URL
+                media_url_prefix = settings.MEDIA_URL
+                if image_url_str.startswith(media_url_prefix):
+                    image_path = image_url_str[len(media_url_prefix):]
+                else:
+                    # Fallback caso algo inesperado venha
+                    image_path = image_url_str
+
             message = Message.objects.create(
                 room=room,
                 user=user,
                 content=content if content else "",
-                image=image_file
+                # Salva o CAMINHO RELATIVO no ImageField
+                image=image_path 
             )
-            print(f"💾 Mensagem salva no banco: {message.id}")
+            print(f"💾 Mensagem salva no banco: {message.id} com imagem: {message.image}")
             return message
+        
         except Exception as e:
-            print(f"❌ Erro ao salvar mensagem: {e}")
+            print(f"❌ Erro ao salvar mensagem (nova lógica): {e}")
             return None
+        
+
+

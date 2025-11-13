@@ -2,6 +2,8 @@
 
 {% load static %}
 
+
+
 <div class="chat-system-wrapper">
 
     <button type="button" class="floating-chat-btn" id="chat-modal-trigger"
@@ -9,7 +11,9 @@
         aria-label="Abrir Chat"
         onclick="window.toggleChatListSidebar()">
         <i class="bi bi-chat-dots"></i>
+        <span class="notification-indicator" style="display: none;"></span>
     </button>
+    
 
     <div class="chat-overlay" id="chatOverlay" onclick="window.toggleChatListSidebar()"></div>
 
@@ -162,7 +166,7 @@
         </div>
     </div>
 
-    {## Chat Dialog Container CORRIGIDO ##}
+    <!-- Chat Dialog Container CORRIGIDO -->
     <div class="chat-draggable-container" id="chat-draggable-container" style="display: none;">
         
         <div class="chat-dialog-header" id="chat-dialog-header-bar">
@@ -184,7 +188,7 @@
                     <p>Selecione uma conversa para começar</p>
                 </div>
             </div>
-            {## Botão de enviar mensagem ##}
+            <!-- Botão de enviar mensagem -->
             <div class="chat-input-area" id="chat-input-area">
                 <button id="attach-image-btn" title="Anexar Imagem" aria-label="Anexar Imagem">
                     <i class="bi bi-image"></i>
@@ -202,12 +206,5 @@
 
 {{ request.user.username|json_script:"json-username" }}
 
-<script>
-    window.chatUrls = {{ chat_urls_json|safe }};
-</script>
-
 <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
-<script src="{% static 'js/chat.js' %}"></script>
-
-
 
