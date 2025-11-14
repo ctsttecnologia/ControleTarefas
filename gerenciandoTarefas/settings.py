@@ -235,16 +235,13 @@ LOGOUT_REDIRECT_URL = 'usuario:login'
 # Em desenvolvimento (DEBUG=True), define como Falso (permite HTTP)
 # HSTS (HTTP Strict Transport Security) - Protege contra ataques "man-in-the-middle"
 # O navegador se recusará a conectar via HTTP por 1 ano (31536000 segundos)
-# ATENÇÃO: Só ative isso quando tiver certeza que seu HTTPS funciona 100%.
+# Ative isso quando tiver certeza que seu HTTPS funciona 100%.
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
-# SECURE_HSTS_SECONDS = 31536000  # Descomente em produção
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
-
-
-
+SECURE_HSTS_SECONDS = 31536000  # Descomente em produção
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 
 # Configurações do Channel Layers
