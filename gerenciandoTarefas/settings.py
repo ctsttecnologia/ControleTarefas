@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Lidas diretamente do seu arquivo .env
 SECRET_KEY = config('SECRET_KEY')
-FERNET_KEYS = config('FERNET_KEYS') # Renomeei a variável para corresponder ao seu .env
+FERNET_KEYS = config('FERNET_KEYS')
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -48,7 +48,6 @@ CSRF_TRUSTED_ORIGINS = [
 INSTALLED_APPS = [
 
     'daphne',
-    # 1. Aplicativos do Framework Django (em ordem)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -78,9 +77,9 @@ INSTALLED_APPS = [
     'usuario.apps.UsuarioConfig', 
     'home',
     'core',
-    'logradouro',             # É uma dependência, deve vir antes               
-    'cliente',                # Depende de 'logradouro'
-    'departamento_pessoal',   # Depende de 'cliente'
+    'logradouro',
+    'cliente',
+    'departamento_pessoal',
     'automovel.apps.AutomovelConfig',
     'seguranca_trabalho',
     'suprimentos',
@@ -90,7 +89,7 @@ INSTALLED_APPS = [
     'ata_reuniao',
     'ferramentas',
     'controle_de_telefone',
-    'chat',  
+    'chat', 
 ]
 
 MIDDLEWARE = [
@@ -120,13 +119,13 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.filial_context',
                 'usuario.context_processors.filial_context',
-                'chat.context_processors.chat_global_data',                
+                'chat.context_processors.chat_global_data', 
             ],
         },
     },
 ]
 
-CRISPY_TEMPLATE_PACK = 'bootstrap5'  # ou 'bootstrap4', dependendo da versão
+CRISPY_TEMPLATE_PACK = 'bootstrap5'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
@@ -142,7 +141,7 @@ DATABASES = {
         'USER': config('DB_USER'),
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT', cast=int), # `cast=int` já converte para inteiro
+        'PORT': config('DB_PORT', cast=int),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
@@ -163,19 +162,17 @@ AUTH_USER_MODEL = 'usuario.Usuario'
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-# Em seu settings.py
 LANGUAGE_CODE = 'pt-br'
-USE_I18N = True # Habilita a internacionalização
-USE_L10N = True # Habilita a localização (formato de datas, números, etc.)
+USE_I18N = True
+USE_L10N = True
 USE_TZ = True
 
-# Mude 'UTC' para o fuso horário do Brasil
+# Fuso horário do Brasil
 TIME_ZONE = 'America/Sao_Paulo'
 
 
 # Configurações para arquivos estáticos
 STATIC_URL = '/static/'
-# <--- CORREÇÃO: Usando pathlib
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
@@ -194,7 +191,6 @@ MEDIA_ROOT = BASE_DIR / 'midia'
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 
 # Configuração para servir arquivos privados com django-sendfile2
-# Crie uma pasta 'private_media' na raiz do projeto
 SENDFILE_BACKEND = 'sendfile2.backends.simple'
 SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
 SENDFILE_URL = '/private' # URL interna, não precisa ser servida publicamente
@@ -206,7 +202,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configuração de E-mail para DESENVOLVIMENTO (imprime no console)
+# Configuração de E-mail
 EMAIL_BACKEND = config('EMAIL_BACKEND')
 EMAIL_HOST = config('EMAIL_HOST')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
@@ -230,38 +226,37 @@ LOGIN_URL = 'usuario:login'
 LOGIN_REDIRECT_URL = 'usuario:profile'
 LOGOUT_REDIRECT_URL = 'usuario:login'
 
+# --- CORREÇÃO DO REDIRECIONAMENTO SSL/PROXY ---
+# Esta linha informa ao Django para confiar no cabeçalho
+# 'X-Forwarded-Proto' enviado pelo seu proxy (Nginx, Load Balancer, etc.)
+# para determinar se a requisição original era HTTPS. Isso resolve o loop de redirecionamento.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+
 # Configurações de Cookie de Segurança
-# Em produção (DEBUG=False), define os cookies como Seguros (só HTTPS)
-# Em desenvolvimento (DEBUG=True), define como Falso (permite HTTP)
-# HSTS (HTTP Strict Transport Security) - Protege contra ataques "man-in-the-middle"
-# O navegador se recusará a conectar via HTTP por 1 ano (31536000 segundos)
-# Ative isso quando tiver certeza que seu HTTPS funciona 100%.
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = 31536000  # Descomente em produção
+SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 
 # Configurações do Channel Layers
 if DEBUG:
-    # Em desenvolvimento, use o backend 'in-memory' que é mais simples
+    # Em desenvolvimento, use o backend 'in-memory'
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
 else:
-    # Em produção, use o Redis (NECESSÁRIO para múltiplos workers)
+    # Em produção, use o Redis
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                # Você pode externalizar isso para seu .env se preferir
                 "hosts": [('177.131.142.229', 6379)], 
-                # Se seu Redis estiver em outro host ou tiver senha, ajuste aqui.
-                # Ex: "hosts": [(config('REDIS_HOST'), config('REDIS_PORT', cast=int))],
             },
         },
     }
@@ -271,6 +266,6 @@ CHAT_CONFIG = {
     'DESKTOP_NOTIFICATIONS': True,
     'SOUND_NOTIFICATIONS': True,
     'AUTO_RECONNECT': True,
-    'RECONNECT_INTERVAL': 3000,  # 3 segundos
+    'RECONNECT_INTERVAL': 3000,
 }
 
