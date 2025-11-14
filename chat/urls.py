@@ -11,7 +11,7 @@ urlpatterns = [
     path('get_tasks/', views.get_task_list, name='get_task_list'),
     path('dm/<int:user_id>/', views.start_or_get_dm_chat, name='start_dm'),
     path('task/<int:task_id>/', views.get_or_create_task_chat, name='get_task_chat'),
-
+    path('get_active_rooms/', views.get_active_chat_rooms, name='get_active_chat_rooms'),
     path('api/history/<uuid:room_id>/', views.get_chat_history, name='get_chat_history'),
  
     path('upload_image_url/', views.ChatImageUploadView.as_view(), name='chat_image_upload'),

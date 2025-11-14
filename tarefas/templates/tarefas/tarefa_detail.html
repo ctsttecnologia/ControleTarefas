@@ -104,7 +104,18 @@
 
                     <div class="meta-group">
                         <div class="meta-label">Responsável</div>
-                        <div class="meta-value"><i class="fas fa-user-check text-muted"></i> {{ object.responsavel.username|default:"Não atribuído" }}</div>
+                            <div class="meta-value"><i class="fas fa-user-check text-muted"></i> {{ object.responsavel.username|default:"Não atribuído" }}
+                        </div>
+                    </div>
+                    <div class="meta-group">
+                        <div class="meta-label">Participantes</div>
+                        <div class="meta-value"><i class="fas fa-users text-muted"></i> 
+                            {% if object.participantes.all %}
+                                {{ object.participantes.all|join:", " }}
+                            {% else %}
+                                Não atribuído
+                            {% endif %}
+                        </div>
                     </div>
                     <div class="meta-group">
                         <div class="meta-label">Projeto</div>

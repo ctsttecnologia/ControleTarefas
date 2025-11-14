@@ -72,6 +72,14 @@
                                     {{ form.responsavel }}
                                     <div class="invalid-feedback d-block">{{ form.responsavel.errors|first }}</div>
                                 </div>
+                                <div class="col-12">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.participantes.id_for_label }}" class="form-label fw-bold">Participantes</label>
+                                        {{ form.participantes }}
+                                        <small class="form-text text-muted">Selecione um ou mais funcionários.</small>
+                                        <div class="invalid-feedback d-block">{{ form.participantes.errors|first }}</div>
+                                    </div>
+                                </div>
                                 <div class="col-md-6 form-field-group">
                                     <label for="{{ form.projeto.id_for_label }}" class="form-label fw-bold">Projeto</label>
                                     {{ form.projeto }}

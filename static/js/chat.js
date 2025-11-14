@@ -18,6 +18,7 @@ class ChatManager {
         
         this.initializeEventListeners();
         this.initializeNotificationSocket();
+        this.loadActiveRoomList();
     }
 
     /**
@@ -1064,7 +1065,94 @@ class ChatManager {
             }
         });
     }
+    
+    /**
+     * NOVO: Carrega a lista principal de salas de chat ativas.
+     */
+    async loadActiveRoomList() {
+        // Verifica se a URL foi injetada (do context_processor)
+        if (!this.urls.active_room_list) {
+            console.error('❌ URL active_room_list não definida. Você adicionou ao context_processor?');
+            this.renderActiveRoomError('Falha ao carregar conversas (URL).');
+            return;
+        }
 
+        try {
+            const response = await fetch(this.urls.active_room_list);
+            const data = await response.json();
+
+            if (data.rooms && data.rooms.length > 0) {
+                // Encontrou salas, vamos renderizá-las
+                this.renderActiveRoomList(data.rooms);
+            } else {
+                // O backend funcionou, mas não há salas
+                this.renderActiveRoomEmpty();
+            }
+        } catch (error) {
+            console.error('❌ Erro ao buscar lista de salas ativas:', error);
+            this.renderActiveRoomError('Erro ao buscar conversas.');
+        }
+    }
+
+    /**
+     * NOVO: Renderiza a lista de salas ativas na sidebar.
+     */
+    renderActiveRoomList(rooms) {
+        
+        const container = document.getElementById('active-chats-list');
+        
+        if (!container) {
+            console.error('Container #active-chats-list não encontrado!');
+            return;
+        }
+
+        container.innerHTML = rooms.map(room => `
+            <div class="chat-list-item" onclick="window.chatManager.openChatDialog('${room.room_id}', '${this.escapeHtml(room.room_name)}')">
+                <div class="chat-list-avatar">
+                    <i class="bi ${room.room_type === 'DM' ? 'bi-person' : 'bi-people'}"></i>
+                </div>
+                <div class="chat-list-info">
+                    <div class="chat-list-name">${this.escapeHtml(room.room_name)}</div>
+                    <div class="chat-list-preview">${this.escapeHtml(room.last_message)}</div>
+                </div>
+                ${room.unread_count > 0 ? `<div class="chat-list-unread">${room.unread_count}</div>` : ''}
+            </div>
+        `).join('');
+    }
+
+    /**
+     * NOVO: Mostra o estado de "nenhuma conversa" (se necessário).
+     */
+    renderActiveRoomEmpty() {
+       
+        const container = document.getElementById('active-chats-list');
+        if (container) {
+            // Este HTML deve ser o mesmo que você tem por padrão
+            container.innerHTML = `
+                <div class="empty-state text-center p-4">
+                    <i class="bi bi-chat-dots" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2">Nenhuma conversa ativa</p>
+                    <small>Clique em "Nova Conversa" para começar</small>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * NOVO: Mostra estado de erro na sidebar.
+     */
+    renderActiveRoomError(message) {
+        
+        const container = document.getElementById('active-chats-list');
+        if (container) {
+            container.innerHTML = `
+                <div class="error-state text-center p-4">
+                     <i class="bi bi-exclamation-triangle text-warning" style="font-size: 2rem;"></i>
+                     <p class="text-muted mt-2">${message}</p>
+                </div>
+            `;
+        }
+    }
 
     /**
      * Faz janela ser arrastável
@@ -1259,6 +1347,7 @@ class ThemeManager {
         }
     }
 }
+
 
 // Inicializa o gerenciador de tema
 document.addEventListener('DOMContentLoaded', function() {
