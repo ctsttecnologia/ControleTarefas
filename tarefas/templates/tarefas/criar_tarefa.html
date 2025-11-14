@@ -1,8 +1,12 @@
+
 {% extends 'base.html' %}
 {% load static %}
+{% load widget_tweaks %} {# Carregando widget_tweaks se você o usar para classes #}
 
 {% block extra_css %}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    {# Adicione o CSS do Select2 se ainda não estiver no seu base.html #}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="{% static 'css/tarefas/criar_tarefa.css' %}">
 {% endblock %}
 
@@ -22,17 +26,6 @@
                 <div class="card-body p-4 p-md-5">
                     <form method="post" novalidate>
                         {% csrf_token %}
-
-                        {# Bloco para exibir mensagens do Django (ex: 'Tarefa criada com sucesso!') #}
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-
                         {# Bloco para exibir erros que não são de um campo específico #}
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger">
@@ -67,35 +60,47 @@
                         <div class="form-section">
                             <h2 class="form-section-header">Organização e Prazos</h2>
                             <div class="row g-3">
+                                
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-bold">Responsável</label>
                                         {{ form.responsavel }}
                                         <div class="invalid-feedback d-block">{{ form.responsavel.errors|first }}</div>
-                                        <div class="form-field-group">    
                                     </div>
-                                </div>    
+                                </div>
+                                
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.projeto.id_for_label }}" class="form-label fw-bold">Projeto</label>
                                         {{ form.projeto }}
                                         <div class="invalid-feedback d-block">{{ form.projeto.errors|first }}</div>
                                     </div>
-                                </div>    
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="form-field-group">
+                                        <label for="{{ form.participantes.id_for_label }}" class="form-label fw-bold">Participantes</label>
+                                        {{ form.participantes }}
+                                        <small class="form-text text-muted">Selecione um ou mais funcionários.</small>
+                                        <div class="invalid-feedback d-block">{{ form.participantes.errors|first }}</div>
+                                    </div>
+                                </div>
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.status.id_for_label }}" class="form-label fw-bold">Status</label>
                                         {{ form.status }}
                                         <div class="invalid-feedback d-block">{{ form.status.errors|first }}</div>
                                     </div>
-                                </div>    
+                                </div>
+                                
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.prioridade.id_for_label }}" class="form-label fw-bold">Prioridade</label>
                                         {{ form.prioridade }}
                                         <div class="invalid-feedback d-block">{{ form.prioridade.errors|first }}</div>
                                     </div>
-                                </div>    
+                                </div>
+                                
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.data_inicio.id_for_label }}" class="form-label fw-bold">Data de Início</label>
@@ -103,7 +108,8 @@
                                         {% if form.data_inicio.help_text %}<div class="form-text mt-1">{{ form.data_inicio.help_text }}</div>{% endif %}
                                         <div class="invalid-feedback d-block">{{ form.data_inicio.errors|first }}</div>
                                     </div>
-                                </div>    
+                                </div>
+                                
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.prazo.id_for_label }}" class="form-label fw-bold">Prazo Final</label>
@@ -139,7 +145,8 @@
                                         {% if form.duracao_prevista.help_text %}<div class="form-text mt-1">{{ form.duracao_prevista.help_text }}</div>{% endif %}
                                         <div class="invalid-feedback d-block">{{ form.duracao_prevista.errors|first }}</div>
                                     </div>
-                                </div>    
+                                </div>
+                                
                                 <div class="col-md-6">
                                     <div class="form-field-group">
                                         <label for="{{ form.tempo_gasto.id_for_label }}" class="form-label fw-bold">Tempo Gasto</label>
@@ -147,7 +154,8 @@
                                         {% if form.tempo_gasto.help_text %}<div class="form-text mt-1">{{ form.tempo_gasto.help_text }}</div>{% endif %}
                                         <div class="invalid-feedback d-block">{{ form.tempo_gasto.errors|first }}</div>
                                     </div>
-                                </div>    
+                                </div>
+                                
                             </div>
                         </div>
 
@@ -187,6 +195,9 @@
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/pt.js"></script>
+    {# Adicione o JS do Select2 se ainda não estiver no seu base.html #}
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Inicializa os seletores de data/hora
@@ -226,16 +237,25 @@
     });
     </script>
 
-    {# No final do seu template de formulário (ex: tarefa_form.html) #}
+    {# Bloco jQuery para Select2 #}
     <script>
         $(document).ready(function() {
             // Inicializa o Select2 em qualquer elemento com a classe 'select2-widget'
+            // (Usado pelo seu form.ata_reuniao)
             $('.select2-widget').select2({
                 placeholder: "Selecione uma atividade",
                 allowClear: true // Permite limpar a seleção
             });
+
+
+            // Inicializa o Select2 para o novo campo 'participantes'
+            $('#{{ form.participantes.auto_id }}').select2({
+                placeholder: "Selecione os participantes",
+                allowClear: true,
+                closeOnSelect: false // Mantém o dropdown aberto para multi-seleção
+            });
+        
         });
     </script>
 
 {% endblock %}
-

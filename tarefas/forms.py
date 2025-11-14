@@ -36,7 +36,7 @@ class TarefaForm(forms.ModelForm):
         model = Tarefas
         fields = [
             'titulo', 'descricao', 'status', 'prioridade',
-            'data_inicio', 'prazo', 'responsavel', 'projeto',
+            'data_inicio', 'prazo', 'responsavel', 'participantes', 'projeto',
             'duracao_prevista', 'tempo_gasto', 'dias_lembrete',
             'recorrente', 'frequencia_recorrencia', 'data_fim_recorrencia','ata_reuniao',
         ]
@@ -52,6 +52,12 @@ class TarefaForm(forms.ModelForm):
                 attrs={
                     'class': 'form-control datetime-picker', # Aproveite para adicionar no prazo também
                     'placeholder': 'Selecione o prazo final'
+                }
+            ),
+            'participantes': forms.SelectMultiple(
+                attrs={
+                    'class': 'form-control',
+                    
                 }
             ),
             # Adicione outros widgets para estilização se desejar
@@ -70,6 +76,17 @@ class TarefaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+
+        # Tenta pegar o queryset já filtrado do campo 'responsavel'
+        try:
+            # Pega a lista de usuários do campo 'responsavel'
+            user_queryset = self.fields['responsavel'].queryset
+        except KeyError:
+            # Se 'responsavel' não estiver no form, cria um queryset padrão
+            user_queryset = User.objects.filter(is_active=True)
+
+        # Aplica o mesmo queryset ao campo 'participantes'
+        self.fields['participantes'].queryset = user_queryset
 
         if self.instance and self.instance.pk:
             self.fields['recorrente'].initial = self.instance.recorrente

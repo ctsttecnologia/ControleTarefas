@@ -26,6 +26,9 @@ logger = logging.getLogger(__name__)
 
 User = settings.AUTH_USER_MODEL
 
+def relativedVelta(*args, **kwargs):
+    raise NotImplementedError
+
 class Tarefas(models.Model):
     
     PRIORIDADE_CHOICES = [
@@ -85,6 +88,20 @@ class Tarefas(models.Model):
     )
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tarefas_criadas', verbose_name=_('Criado por'))
     responsavel = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='tarefas_responsavel', verbose_name=_('Responsável'))
+    
+    # ==========================================================
+    # ▼▼ CAMPO ADICIONADO CONFORME SOLICITADO ▼▼
+    # ==========================================================
+    participantes = models.ManyToManyField(
+        User,
+        related_name='tarefas_participando',
+        blank=True, # Permite que a tarefa não tenha participantes
+        verbose_name=_('Participantes')
+    )
+    # ==========================================================
+    # ▲▲ FIM DA ADIÇÃO ▲▲
+    # ==========================================================
+    
     projeto = models.CharField(_('Projeto'), max_length=40, blank=True, null=True)
     duracao_prevista = models.DurationField(_('Duração Prevista'), null=True, blank=True)
     tempo_gasto = models.DurationField(_('Tempo Gasto'), null=True, blank=True)
@@ -269,8 +286,8 @@ class HistoricoStatus(models.Model):
         on_delete=models.PROTECT,
         related_name='historicos_status', 
         verbose_name="Filial",
-        null=True,                  
-        blank=False              
+        null=True,                
+        blank=False               
     )
     # Manager customizado para segregação de dados
     objects = FilialManager()
@@ -321,8 +338,8 @@ class Comentario(models.Model):
         on_delete=models.PROTECT,
         related_name='comentarios',
         verbose_name="Filial",
-        null=True,                  
-        blank=False              
+        null=True,                
+        blank=False               
     )
     # Manager customizado para segregação de dados
     objects = FilialManager()

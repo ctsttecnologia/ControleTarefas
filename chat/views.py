@@ -65,6 +65,41 @@ def get_task_list(request):
         return JsonResponse({'tasks': [], 'warning': 'App tarefas não encontrado'})
     except Exception as e:
         return JsonResponse({'error': f'Erro ao carregar tarefas: {str(e)}'}, status=500)
+    
+@login_required
+def get_active_chat_rooms(request):
+    """
+    Retorna as salas de chat (DM, Grupo, Tarefa) 
+    nas quais o usuário é participante, para a barra lateral principal.
+    """
+    try:
+        # 1. Pega as salas que o usuário participa
+        # (Idealmente, você deve ordenar pela última mensagem no futuro)
+        rooms = ChatRoom.objects.filter(
+            participants=request.user
+        ).distinct().order_by('-created_at')
+
+        room_list = []
+        for room in rooms:
+            # 2. Formata os dados usando os novos métodos do modelo
+            room_list.append({
+                'room_id': str(room.id),
+                'room_type': room.room_type,
+                
+                # 3. Define o nome de exibição (ex: "Italo Vieira" para DMs)
+                'room_name': room.get_room_display_name(request.user), 
+                
+                # 4. Pega a última mensagem
+                'last_message': room.get_last_message_preview(),
+                
+                # 5. TODO: Adicionar contagem de mensagens não lidas
+                'unread_count': 0 
+            })
+            
+        return JsonResponse({'rooms': room_list})
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Erro ao carregar salas de chat: {str(e)}'}, status=500)
 
 @login_required
 def start_or_get_dm_chat(request, user_id):
@@ -182,48 +217,55 @@ def get_or_create_task_chat(request, task_id):
     try:
         from tarefas.models import Tarefas
         from .models import ChatRoom
-       
+        
         task = get_object_or_404(Tarefas, id=task_id)
-       
+        
+        # 1. Verifica se o usuário tem acesso à tarefa
         has_access = (
             task.responsavel == request.user or
             task.usuario == request.user
         )
-           
+            
         if not has_access:
             return JsonResponse({
                 'status': 'error',
                 'error': 'Você não tem acesso a esta tarefa.'
             }, status=403)
-       
-        room = ChatRoom.objects.filter(tarefa=task, room_type='TASK').first()
+        
+        # 2. Tenta encontrar a sala. Se não existir, cria.
+        room, created = ChatRoom.objects.get_or_create(
+            tarefa=task, 
+            room_type='TASK',
+            defaults={
+                'name': f"Tarefa: {task.titulo}",
+                'is_group_chat': True
+            }
+        )
 
-        if not room:
-            room = ChatRoom.objects.create(
-                name=f"Tarefa: {task.titulo}",
-                room_type='TASK',
-                is_group_chat=True,
-                tarefa=task
-            )
-           
-            participants_to_add = [request.user]
-           
-            if task.usuario and task.usuario != request.user:
-                participants_to_add.append(task.usuario)
-               
-            if task.responsavel and task.responsavel != request.user:
-                participants_to_add.append(task.responsavel)
-           
-            unique_participants = list(set(participants_to_add))
-            room.participants.add(*unique_participants)
-            room.save()
-           
+        # 3. Garante que TODOS os participantes estejam na sala
+        #    Isso é crucial se a sala já existia (created=False)
+        participants_to_add = []
+        if task.usuario:
+            participants_to_add.append(task.usuario)
+        if task.responsavel:
+            participants_to_add.append(task.responsavel)
+        
+        # Adiciona o usuário atual por garantia (embora ele deva ser um dos acima)
+        participants_to_add.append(request.user)
+
+        # Usa set() para remover duplicatas
+        unique_participants = list(set(participants_to_add))
+        
+        # Adiciona todos os participantes de uma vez.
+        # O Django é inteligente e não adicionará quem já existe.
+        room.participants.add(*unique_participants)
+        
         return JsonResponse({
             'status': 'success',
             'room_id': str(room.id),
             'room_name': room.name
         })
-       
+        
     except Exception as e:
         return JsonResponse({
             'status': 'error',
