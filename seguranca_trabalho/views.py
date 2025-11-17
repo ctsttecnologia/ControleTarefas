@@ -620,8 +620,6 @@ def minha_ficha_redirect_view(request):
 class FuncaoCreateView(HTMXModalFormMixin, FilialCreateMixin, SSTPermissionMixin, CreateView): # <-- ADICIONE O MIXIN
     model = Funcao
     form_class = FuncaoForm
-    # O template agora será escolhido dinamicamente pelo mixin
-    # template_name = 'seguranca_trabalho/funcao_form.html' # <- Pode remover esta linha
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
     permission_required = 'seguranca_trabalho.add_funcao'
 

@@ -235,3 +235,37 @@ body.has-submenu {
     /* Garante que ele comece escondido */
     display: none; 
 }
+
+/* Estilos para os cards dos gráficos  DEPARTAMENTO PESSOAL*/
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+/* Melhorar a legibilidade dos gráficos */
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+/* Animações suaves */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsividade para gráficos */
+@media (max-width: 768px) {
+    .card-body canvas {
+        max-height: 200px !important;
+    }
+}

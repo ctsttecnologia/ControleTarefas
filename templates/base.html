@@ -9,48 +9,47 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Gerenciando Tarefas{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gerenciando Tarefas{% endblock %}</title>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
-    
-    <link rel="stylesheet" href="{% static 'css/global.css' %}">
-    <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+    
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
 
-    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
-    
-    
-    {% block extra_css %}{% endblock %}
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    
+    
+    {% block extra_css %}{% endblock %}
 
-    {{ form.media }}
+    {{ form.media }}
 
-    <script>
-      (() => {
-        const theme = localStorage.getItem('theme') || 'dark'; // Padrão 'dark'
-        document.documentElement.setAttribute('data-bs-theme', theme);
-      })();
-    </script>
-    
-    {% block extra_head %}{% endblock %}
+    <script>
+      (() => {
+        const theme = localStorage.getItem('theme') || 'dark'; // Padrão 'dark'
+        document.documentElement.setAttribute('data-bs-theme', theme);
+      })();
+    </script>
+    
+    {% block extra_head %}{% endblock %}
 </head>
 
-<body class="{% block body_class %}{% endblock %}">
+<body class="{% block body_layout_classes %}d-flex flex-column vh-100{% endblock %} {% block body_class %}{% endblock %}">
 
-    {% include 'partials/global_header.html' %}
+    {% include 'partials/global_header.html' %}
 
+        <main id="main-content" class="{% block main_layout_classes %}flex-grow-1{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% include 'partials/global_footer.html' %}
 
-    <main id="main-content">
-        {% block content %}{% endblock %}
-    </main>
-    
-    {% include 'partials/global_footer.html' %}
-
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -59,24 +58,38 @@
     <script src="{% static 'js/signature.js' %}"></script>
     <script src="{% static 'js/global.js' %}"></script>
 
-    <script>
-        // Esta variável 'chat_urls_json' agora vem do context_processor
-        // e estará disponível em TODAS as páginas.
-        window.chatUrls = {{ chat_urls_json|safe }};
-    </script>
+    <script>
+        // Esta variável 'chat_urls_json' agora vem do context_processor
+        // e estará disponível em TODAS as páginas.
+        window.chatUrls = {{ chat_urls_json|safe }};
+    </script>
 
-    <script src="{% static 'js/chat.js' %}"></script>
+    <script src="{% static 'js/chat.js' %}"></script>
 
-    <!-- Chat System (só para usuários autenticados) -->
-    {% if user.is_authenticated %}
-        {% include 'chat/chat_ui.html' %}
-    {% endif %}
+        {% if user.is_authenticated %}
+        {% include 'chat/chat_ui.html' %}
+    {% endif %}
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    {% block extra_js %}{% endblock %}
-      
-
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+      
 </body>
 </html>
+
+
+{% comment %}
+Como isso "não afeta outros apps"? Na rara chance de você ter um app que precise de um layout diferente, basta ir no template daquele app (ex: mapa.html) e adicionar o seguinte para "desligar" o comportamento:
+
+HTML
+
+{% extends "base.html" %}
+
+{% comment %} Desliga o layout flexível do rodapé fixo ----
+{% block body_layout_classes %}{% endblock %}
+{% block main_layout_classes %}{% endblock %}
+
+{% block content %}
+    {% endblock %}
+    
+{% endcomment %}

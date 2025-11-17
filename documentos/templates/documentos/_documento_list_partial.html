@@ -1,0 +1,71 @@
+
+{% load humanize %}
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Documentos Anexados</h5>
+        <a href="{% url 'documentos:adicionar' content_type.pk object.pk %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> Adicionar Documento
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Status</th>
+                    <th>Vencimento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in object.documentos.all %} {# Assumindo related_name='documentos' #}
+                    <tr>
+                        <td>
+                            <a href="{% url 'documentos:download' doc.pk %}" title="Baixar Documento">
+                                <i class="fas fa-file-download"></i> {{ doc.nome }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if doc.status == 'VENCIDO' %}
+                                <span class="badge bg-danger">{{ doc.get_status_display }}</span>
+                            {% elif doc.status == 'A_VENCER' %}
+                                <span class="badge bg-warning text-dark">{{ doc.get_status_display }}</span>
+                            {% elif doc.status == 'VIGENTE' %}
+                                <span class="badge bg-success">{{ doc.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ doc.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if doc.data_vencimento %}
+                                {{ doc.data_vencimento|date:"d/m/Y" }}
+                                <small class="text-muted">({{ doc.data_vencimento|naturaltime }})</small>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
+                            <a href="{% url 'documentos:renovar' doc.pk %}" class="btn btn-sm btn-info" title="Renovar">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'documentos:deletar' doc.pk %}" class="btn btn-sm btn-danger" title="Deletar">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted p-3">
+                            Nenhum documento anexado a este item.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+

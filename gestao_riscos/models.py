@@ -1,11 +1,14 @@
 # gestao_riscos/models.py
 from django.db import models
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from core.managers import FilialManager
 from usuario.models import Filial
 from departamento_pessoal.models import Cargo, Funcionario
+from django.utils.translation import gettext_lazy as _
+from seguranca_trabalho.models import Equipamento, EntregaEPI
 
 User = get_user_model()
 
@@ -17,15 +20,12 @@ class Incidente(models.Model):
         ('LOGISTICA', 'Logística'),
         ('MANUTENCAO', 'Manutenção'),
         ('ADMINISTRACAO', 'Administração'),
-        
     ]
     TIPO_INCIDENTE_CHOICES = [
         ('QUASE_ACIDENTE', 'Quase Acidente'),
         ('COM_AFASTAMENTO', 'Com Afastamento'),
         ('SEM_AFASTAMENTO', 'Sem Afastamento'),
-        
     ]
-    
     
     descricao = models.CharField(max_length=255, verbose_name="Título do Incidente")
     detalhes = models.TextField(verbose_name="Detalhes da Ocorrência")
@@ -35,7 +35,6 @@ class Incidente(models.Model):
     registrado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='incidentes_registrados')
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='incidentes', null=True, blank=False)
 
- 
     objects = FilialManager()
 
     class Meta:
@@ -50,23 +49,44 @@ class Incidente(models.Model):
 class Inspecao(models.Model):
     """Agenda e registra inspeções de segurança."""
     STATUS_CHOICES = [
-        ('PENDENTE', 'Pendente'), ('CONCLUIDA', 'Concluída'),
-        ('CANCELADA', 'Cancelada'),
+        ('PENDENTE_APROVACAO', _('Pendente de Aprovação')), # NOVO STATUS
+        ('PENDENTE', _('Pendente')),
+        ('CONCLUIDA', _('Concluída')),
+        ('CANCELADA', _('Cancelada')),
     ]
     
+    # MODIFICADO: Torna-se opcional, pois pode ser preenchido via entrega_epi
     equipamento = models.ForeignKey(
         'seguranca_trabalho.Equipamento', 
-        on_delete=models.CASCADE, 
-        related_name='inspecoes'
+        on_delete=models.SET_NULL, 
+        related_name='inspecoes',
+        null=True, blank=True # Agora é opcional
     )
+    
+    # NOVO CAMPO: Vincula a inspeção a um item de EPI específico
+    entrega_epi = models.ForeignKey(
+        'seguranca_trabalho.EntregaEPI',
+        on_delete=models.CASCADE,
+        related_name='inspecoes',
+        null=True, blank=True,
+        verbose_name=_("Item de EPI Específico")
+    )
+    
     data_agendada = models.DateField(verbose_name="Data Agendada")
     data_realizacao = models.DateField(verbose_name="Data de Realização", null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDENTE')
-    inspetor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='inspecoes_realizadas')
+    
+    # MODIFICADO: 'inspetor' -> 'responsavel' e 'blank=True'
+    # Isso corrige a inconsistência com seu TecnicoScopeMixin na view do dashboard
+    responsavel = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True, # Tornar opcional
+        related_name='inspecoes_realizadas'
+    )
     observacoes = models.TextField(blank=True)
     filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='inspecoes', null=True, blank=False)
 
-    # Usando o manager padrão do Django
     objects = FilialManager()
 
     class Meta:
@@ -75,7 +95,33 @@ class Inspecao(models.Model):
         ordering = ['-data_agendada']
 
     def __str__(self):
-        return f"Inspeção de {self.equipamento.nome} em {self.data_agendada}"
+        # Atualiza o __str__ para a nova lógica
+        if self.entrega_epi:
+            return f"Inspeção de {self.entrega_epi} em {self.data_agendada}"
+        if self.equipamento:
+            return f"Inspeção de {self.equipamento.nome} em {self.data_agendada}"
+        return f"Inspeção (ID: {self.id}) em {self.data_agendada}"
+        
+    def save(self, *args, **kwargs):
+        """
+        Sobrescreve o save para auto-popular equipamento e filial 
+        se a entrega_epi for fornecida.
+        """
+        if self.entrega_epi:
+            if not self.equipamento_id: # _id para evitar fetch
+                self.equipamento = self.entrega_epi.equipamento
+            if not self.filial_id:
+                self.filial = self.entrega_epi.filial
+        
+        # Garante que um dos dois campos está preenchido
+        if not self.equipamento_id and not self.entrega_epi_id:
+            raise ValueError("A inspeção deve estar ligada a um Equipamento ou a uma Entrega de EPI.")
+            
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        # Adiciona um URL (será usado no calendário)
+        return reverse_lazy('gestao_riscos:inspecao_detalhe', kwargs={'pk': self.pk})
     
 class CartaoTag(models.Model):
     """
@@ -96,7 +142,6 @@ class CartaoTag(models.Model):
         blank=True, 
         default=None,
     )
-
     fone = models.CharField(
         max_length=20,
         default="(11) 3045-9400",
@@ -120,4 +165,3 @@ class CartaoTag(models.Model):
 
     def __str__(self):
         return f"Cartão de {self.funcionario.nome_completo}"
-    

@@ -1,0 +1,88 @@
+{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
+{% load static %}
+
+{% block extra_css %}
+    {% comment %} Adiciona os estilos do FullCalendar {% endcomment %}
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+    <style>
+        /* Ajustes de estilo para o calendário */
+        #calendar {
+            max-width: 1100px;
+            margin: 40px auto;
+            
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        /* Cores dos eventos (para status) */
+        .fc-event {
+            border: none !important;
+            color: white !important;
+        }
+        .fc-daygrid-event-dot {
+             border: calc(var(--fc-daygrid-event-dot-width, 8px) / 2) solid var(--fc-event-main-color, #3788d8);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid background-white">
+    <h1>{{ titulo_pagina }}</h1>
+    
+    <div class="mb-3">
+        <span class="badge" style="background-color: #007bff; color: white;">Pendente</span>
+        <span class="badge" style="background-color: #ffc107; color: black;">Pendente Aprovação</span>
+        <span class="badge" style="background-color: #28a745; color: white;">Concluída</span>
+    </div>
+    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-danger btn-glow" title="Agendar Inspeção">
+         <i class="bi bi-speedometer2 me-1"></i> Agendar Inspeção
+    </a>
+    <div id="calendar"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {% comment %} Adiciona o JavaScript do FullCalendar {% endcomment %}
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script> {% comment %} Tradução PT-BR {% endcomment %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pt-br', // Define o idioma
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                
+                // --- Carrega os eventos da nossa API ---
+                events: '{% url "gestao_riscos:api_inspecao_events" %}',
+                
+                // --- Permite clicar em um dia para agendar ---
+                dateClick: function(info) {
+                    // info.dateStr contém a data clicada (ex: "2025-10-25")
+                    var agendarUrl = `{% url 'gestao_riscos:agendar_inspecao' %}?data=${info.dateStr}`;
+                    window.location.href = agendarUrl; // Redireciona para o formulário
+                },
+
+                // Não permite clicar em um evento (a URL do evento já faz isso)
+                // eventClick: function(info) {
+                //     info.jsEvent.preventDefault(); // Impede o link padrão
+                //     // Aqui você poderia abrir um modal, etc.
+                //     window.location.href = info.event.url; // Vai para a URL do evento
+                //},
+
+                editable: false, // Não permite arrastar eventos
+                selectable: true, // Permite selecionar datas
+                dayMaxEvents: true, // "mais" link quando muitos eventos
+            });
+            
+            calendar.render();
+        });
+    </script>
+{% endblock %}

@@ -8,6 +8,9 @@ from core.managers import FilialManager
 from usuario.models import Filial
 from datetime import timedelta
 
+# Necessário para a relação genérica
+from django.contrib.contenttypes.fields import GenericRelation
+
 class TipoCurso(models.Model):
     """
     Define os tipos de cursos que podem ser oferecidos,
@@ -140,6 +143,16 @@ class Treinamento(models.Model):
     )
     # Manager customizado para segregação de dados
     objects = FilialManager()
+
+    
+    # --- INTEGRAÇÃO COM A APP 'documentos' ---
+    # Adicione esta linha ao seu modelo.
+    # 'documentos.Documento' = app_label.ModelName
+    
+    documentos = GenericRelation(
+        'documentos.Documento',
+        related_query_name='documento' # <--- O argumento vai aqui
+    )
 
     class Meta:
         db_table = 'treinamento'
