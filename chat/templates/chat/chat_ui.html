@@ -38,7 +38,7 @@
                     {% if user_chat_rooms %}
                         {% for room in user_chat_rooms %}
                             <a href="#" class="chat-list-item"
-                               onclick="window.chatManager.openChatDialog('{{ room.id }}', '{{ room.name|escapejs }}'); return false;">
+                                onclick="window.chatManager.openChatDialog('{{ room.id }}', '{{ room.name|escapejs }}'); return false;">
                                 
                                 <div class="chat-item-avatar">
                                     {% if room.room_type == 'DM' %}
@@ -52,6 +52,15 @@
                                 
                                 <div class="chat-item-info">
                                     <div class="chat-item-name">{{ room.name }}</div>
+                                    
+                                    <div class="chat-item-last-message">
+                                        {% if room.last_message_type == 'image' %}
+                                            <i class="bi bi-image-fill"></i> [Imagem]
+                                        {% else %}
+                                            {{ room.last_message_content|default:"Nenhuma mensagem"|truncatechars:30 }}
+                                        {% endif %}
+                                    </div>
+                                    
                                 </div>
                             </a>
                         {% endfor %}

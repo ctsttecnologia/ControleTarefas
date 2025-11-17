@@ -1,0 +1,88 @@
+
+{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Detalhes da Inspeção</h4>
+                    
+                    {% comment %} Badge de Status (com cores) {% endcomment %}
+                    {% if inspecao.status == 'CONCLUIDA' %}
+                        <span class="badge bg-success fs-6">{{ inspecao.get_status_display }}</span>
+                    {% elif inspecao.status == 'PENDENTE_APROVACAO' %}
+                        <span class="badge bg-warning text-dark fs-6">{{ inspecao.get_status_display }}</span>
+                    {% else %}
+                        <span class="badge bg-primary fs-6">{{ inspecao.get_status_display }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    {% comment %} Verifica se a inspeção é de um item rastreável (EntregaEPI) {% endcomment %}
+                    {% if inspecao.entrega_epi %}
+                        <h5 class="card-title">
+                            Inspeção de Item Específico ({{ inspecao.entrega_epi.equipamento.nome }})
+                        </h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Equipamento:</strong> {{ inspecao.entrega_epi.equipamento.nome }}</li>
+                            <li class="list-group-item"><strong>Nº de Série:</strong> {{ inspecao.entrega_epi.numero_serie|default:"N/A" }}</li>
+                            <li class="list-group-item"><strong>Funcionário:</strong> {{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}</li>
+                        </ul>
+                    {% else %}
+                        <h5 class="card-title">
+                            Inspeção de Equipamento ({{ inspecao.equipamento.nome }})
+                        </h5>
+                    {% endif %}
+
+                    <hr>
+
+                    {% comment %} Detalhes Comuns da Inspeção {% endcomment %}
+                    <h5 class="mt-3">Detalhes do Agendamento</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Data Agendada:</strong> {{ inspecao.data_agendada|date:"d/m/Y" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Responsável:</strong> 
+                            {{ inspecao.responsavel.get_full_name|default:"Aguardando atribuição" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Data de Realização:</strong> 
+                            {{ inspecao.data_realizacao|date:"d/m/Y"|default:"--" }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Observações:</strong>
+                            <p class="text-muted mb-0">{{ inspecao.observacoes|default:"Nenhuma observação registrada."|linebreaksbr }}</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="card-footer text-end">
+                    <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-secondary">
+                        <i class="bi bi-calendar-event"></i> Voltar ao Calendário
+                    </a>
+                    
+                    {% comment %} Botão para marcar como 'Pendente' (Confirmar) {% endcomment %}
+                    {% if inspecao.status == 'PENDENTE_APROVACAO' and perms.gestao_riscos.change_inspecao %}
+                    <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST" class="d-inline ms-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Confirmar e Assumir
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {% comment %} Botão para 'Completar' (ir para o formulário de conclusão) {% endcomment %}
+                    {% if inspecao.status == 'PENDENTE' and perms.gestao_riscos.change_inspecao %}
+                    <a href="{% url 'gestao_riscos:inspecao_completar' inspecao.pk %}" class="btn btn-primary ms-2">
+                        <i class="bi bi-clipboard2-check"></i> Completar Inspeção
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

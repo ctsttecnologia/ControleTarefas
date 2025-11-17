@@ -150,7 +150,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'seguranca_trabalho.view_fichaepi', 
                 'icon': 'images/tst.gif',
                 'links': [
-                    {'url': 'seguranca_trabalho:dashboard', 'text': 'Dashboard'},
+                    {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel SST'},
                     {'url': 'seguranca_trabalho:ficha_list', 'text': 'Fichas de EPI'},
                     {'url': 'gestao_riscos:agendar_inspecao', 'text': 'Agendar Inspeção'},
                 ]
@@ -174,6 +174,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
                     {'url': 'suprimentos:parceiro_list', 'text': 'Suprimentos'},
+                    {'url': 'documentos:lista', 'text': 'Documentos'},
                     
                 ]
             },

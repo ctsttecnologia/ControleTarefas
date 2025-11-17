@@ -1,0 +1,32 @@
+
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">{{ titulo_pagina|default:"Formulário de Documento" }}</h2>
+                    
+                    {% if documento_antigo %}
+                        <div class="alert alert-warning" role="alert">
+                            <strong>Atenção:</strong> Você está a renovar o documento 
+                            "{{ documento_antigo.nome }}" 
+                            (vencido em {{ documento_antigo.data_vencimento|date:"d/m/Y" }}).
+                            O ficheiro antigo será arquivado.
+                        </div>
+                    {% endif %}
+
+                    {% crispy form %}
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+

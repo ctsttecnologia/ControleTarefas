@@ -1,17 +1,16 @@
 
-
-{% extends "base.html" %}
+{% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
 
-{% block title %}{{ titulo_pagina|default:"Painel DP" }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Painel DP Analytics" }}{% endblock %}
 
+{% block dp_content %}
+<div class="container-fluid mt-4">
 
-{% block content %}
-<div class="container mt-4">
-
+    <!-- KPIs Principais -->
     <div class="row">
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100 shadow-sm">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm border-primary">
                 <div class="card-body">
                     <i class="bi bi-people-fill fs-2 text-primary"></i>
                     <h2 class="display-6 fw-bold">{{ total_funcionarios_ativos|default:"0" }}</h2>
@@ -19,46 +18,153 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100 shadow-sm">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm border-success">
                 <div class="card-body">
-                    <i class="bi bi-building fs-2 text-primary"></i>
+                    <i class="bi bi-building fs-2 text-success"></i>
                     <h2 class="display-6 fw-bold">{{ total_departamentos|default:"0" }}</h2>
                     <p class="text-muted mb-0">Departamentos</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-center h-100 shadow-sm">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm border-info">
                 <div class="card-body">
-                    <i class="bi bi-person-badge fs-2 text-primary"></i>
+                    <i class="bi bi-person-badge fs-2 text-info"></i>
                     <h2 class="display-6 fw-bold">{{ total_cargos|default:"0" }}</h2>
                     <p class="text-muted mb-0">Cargos</p>
                 </div>
             </div>
         </div>
-    </div>
-
-    <h3 class="mt-4">Análises Rápidas</h3>
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">Funcionários por Departamento</div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm border-warning">
                 <div class="card-body">
-                    <canvas id="departmentChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header">Distribuição por Status</div>
-                <div class="card-body">
-                    <canvas id="statusChart"></canvas>
+                    <i class="bi bi-currency-dollar fs-2 text-warning"></i>
+                    <h2 class="display-6 fw-bold">R$ {{ salario_medio|floatformat:2|default:"0" }}</h2>
+                    <p class="text-muted mb-0">Salário Médio</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Estatísticas Detalhadas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Estatísticas da Empresa</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h6 class="text-muted">Salário Máximo</h6>
+                                <h4 class="text-success">R$ {{ salario_maximo|floatformat:2|default:"0" }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h6 class="text-muted">Salário Mínimo</h6>
+                                <h4 class="text-danger">R$ {{ salario_minimo|floatformat:2|default:"0" }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h6 class="text-muted">Idade Média</h6>
+                                <h4 class="text-info">{{ idade_media|floatformat:1|default:"0" }} anos</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div>
+                                <h6 class="text-muted">Total de Funcionários</h6>
+                                <h4 class="text-primary">{{ total_funcionarios_ativos|default:"0" }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Primeira Linha de Gráficos -->
+    <div class="row mt-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Distribuição por Departamento</span>
+                    <small class="text-muted">Quantitativo</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="departmentChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Status dos Funcionários</span>
+                    <small class="text-muted">Comparativo</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda Linha de Gráficos -->
+    <div class="row mt-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Top 10 Salários por Cargo</span>
+                    <small class="text-muted">Estatístico</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="salaryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Admissões Mensais (Últimos 12 meses)</span>
+                    <small class="text-muted">Temporal</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="admissionChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terceira Linha de Gráficos -->
+    <div class="row mt-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Distribuição por Gênero</span>
+                    <small class="text-muted">Demográfico</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="genderChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Idade vs Salário</span>
+                    <small class="text-muted">Correlação</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="scatterChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Navegação -->
     <h3 class="mt-4">Gerenciar</h3>
     <div class="row">
         <div class="col-md-4 mb-3">
@@ -96,65 +202,287 @@
 </div>
 {% endblock %}
 
-
-
 {% block extra_js %}
-    {{ block.super }} {# Inclui o conteúdo do bloco do base.html (o script do Chart.js) #}
+{{ block.super }}
 
-    {{ depto_labels|json_script:"department-labels" }}
-    {{ depto_data|json_script:"department-data" }}
-    {{ status_labels|json_script:"status-labels" }}
-    {{ status_data|json_script:"status-data" }}
+<!-- Passando dados do Django para JavaScript -->
+{{ depto_labels|json_script:"department-labels" }}
+{{ depto_data|json_script:"department-data" }}
+{{ status_labels|json_script:"status-labels" }}
+{{ status_data|json_script:"status-data" }}
+{{ cargo_salario_labels|json_script:"salary-labels" }}
+{{ cargo_salario_data|json_script:"salary-data" }}
+{{ admissoes_meses_labels|json_script:"admission-labels" }}
+{{ admissoes_meses_data|json_script:"admission-data" }}
+{{ genero_labels|json_script:"gender-labels" }}
+{{ genero_data|json_script:"gender-data" }}
+{{ dispersao_data|json_script:"scatter-data" }}
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        
-        // --- GRÁFICO 1: Funcionários por Departamento (Pizza) ---
-        const departmentLabels = JSON.parse(document.getElementById('department-labels').textContent);
-        const departmentData = JSON.parse(document.getElementById('department-data').textContent);
-        
-        const departmentCtx = document.getElementById('departmentChart').getContext('2d');
-        
-        if (departmentData.length > 0) {
-            new Chart(departmentCtx, {
-                type: 'pie',
-                data: {
-                    labels: departmentLabels,
-                    datasets: [{
-                        label: 'Nº de Funcionários',
-                        data: departmentData,
-                        backgroundColor: ['#0d6efd', '#6f42c1', '#198754', '#d63384', '#fd7e14', '#20c997', '#ffc107', '#0dcaf0', '#6c757d', '#343a40'],
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuração global do Chart.js
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+    // Paleta de cores profissional
+    const colorPalette = {
+        primary: ['#0d6efd', '#6f42c1', '#198754', '#d63384', '#fd7e14', '#20c997', '#ffc107', '#0dcaf0', '#6c757d', '#343a40'],
+        pastel: ['#4cc9f0', '#4361ee', '#3a0ca3', '#7209b7', '#f72585', '#4895ef', '#560bad', '#b5179e', '#f72585', '#7209b7'],
+        gradient: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140']
+    };
+
+    // --- GRÁFICO 1: Funcionários por Departamento (Pizza) ---
+    const departmentLabels = JSON.parse(document.getElementById('department-labels').textContent);
+    const departmentData = JSON.parse(document.getElementById('department-data').textContent);
+    
+    if (departmentData.length > 0) {
+        new Chart(document.getElementById('departmentChart'), {
+            type: 'pie',
+            data: {
+                labels: departmentLabels,
+                datasets: [{
+                    data: departmentData,
+                    backgroundColor: colorPalette.primary,
+                    borderColor: '#fff',
+                    borderWidth: 2,
+                    hoverOffset: 15
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'right',
+                        labels: { padding: 20 }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((value / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- GRÁFICO 2: Distribuição por Status (Doughnut) ---
+    const statusLabels = JSON.parse(document.getElementById('status-labels').textContent);
+    const statusData = JSON.parse(document.getElementById('status-data').textContent);
+    const statusColors = {'Ativo': '#198754', 'Férias': '#ffc107', 'Inativo': '#dc3545', 'Afastado': '#6c757d'};
+
+    if (statusData.length > 0) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusData,
+                    backgroundColor: statusLabels.map(label => statusColors[label] || '#0dcaf0'),
+                    borderColor: '#fff',
+                    borderWidth: 3,
+                    hoverOffset: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: { 
+                        position: 'bottom',
+                        labels: { padding: 15 }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- GRÁFICO 3: Salários por Cargo (Barras) ---
+    const salaryLabels = JSON.parse(document.getElementById('salary-labels').textContent);
+    const salaryData = JSON.parse(document.getElementById('salary-data').textContent);
+
+    if (salaryData.length > 0) {
+        new Chart(document.getElementById('salaryChart'), {
+            type: 'bar',
+            data: {
+                labels: salaryLabels,
+                datasets: [{
+                    label: 'Salário Médio (R$)',
+                    data: salaryData,
+                    backgroundColor: colorPalette.gradient[0],
+                    borderColor: colorPalette.gradient[1],
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
-            });
-        }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
 
-        // --- GRÁFICO 2: Distribuição por Status (Doughnut) ---
-        const statusLabels = JSON.parse(document.getElementById('status-labels').textContent);
-        const statusData = JSON.parse(document.getElementById('status-data').textContent);
+    // --- GRÁFICO 4: Admissões Mensais (Linha) ---
+    const admissionLabels = JSON.parse(document.getElementById('admission-labels').textContent);
+    const admissionData = JSON.parse(document.getElementById('admission-data').textContent);
 
-        const statusCtx = document.getElementById('statusChart').getContext('2d');
-        const statusColors = {'Ativo': '#198754', 'Férias': '#ffc107', 'Inativo': '#dc3545', 'Afastado': '#6c757d'};
-
-        if (statusData.length > 0) {
-            new Chart(statusCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: statusLabels,
-                    datasets: [{
-                        label: 'Nº de Funcionários',
-                        data: statusData,
-                        backgroundColor: statusLabels.map(label => statusColors[label] || '#0dcaf0'),
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    }]
+    if (admissionData.length > 0) {
+        new Chart(document.getElementById('admissionChart'), {
+            type: 'line',
+            data: {
+                labels: admissionLabels,
+                datasets: [{
+                    label: 'Admissões',
+                    data: admissionData,
+                    borderColor: colorPalette.primary[0],
+                    backgroundColor: colorPalette.primary[0] + '20',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: colorPalette.primary[0],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, cutout: '50%'}
-            });
-        }
-    });
-    </script>
-{% endblock %}<a href="#" class="btn btn-primary">Acessar</a>
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- GRÁFICO 5: Distribuição por Gênero (Polar Area) ---
+    const genderLabels = JSON.parse(document.getElementById('gender-labels').textContent);
+    const genderData = JSON.parse(document.getElementById('gender-data').textContent);
+
+    if (genderData.length > 0) {
+        new Chart(document.getElementById('genderChart'), {
+            type: 'polarArea',
+            data: {
+                labels: genderLabels,
+                datasets: [{
+                    data: genderData,
+                    backgroundColor: colorPalette.pastel,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { 
+                        position: 'right',
+                        labels: { padding: 15 }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- GRÁFICO 6: Dispersão Idade vs Salário ---
+    const scatterData = JSON.parse(document.getElementById('scatter-data').textContent);
+    
+    if (scatterData.length > 0) {
+        // Agrupar por gênero para cores diferentes
+        const genderGroups = {};
+        scatterData.forEach(point => {
+            if (!genderGroups[point.sexo]) {
+                genderGroups[point.sexo] = [];
+            }
+            genderGroups[point.sexo].push(point);
+        });
+
+        const scatterDatasets = Object.entries(genderGroups).map(([gender, points], index) => {
+            const colors = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0'];
+            return {
+                label: gender,
+                data: points.map(p => ({ x: p.x, y: p.y })),
+                backgroundColor: colors[index % colors.length],
+                borderColor: colors[index % colors.length],
+                pointRadius: 8,
+                pointHoverRadius: 10
+            };
+        });
+
+        new Chart(document.getElementById('scatterChart'), {
+            type: 'scatter',
+            data: {
+                datasets: scatterDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: Idade ${context.parsed.x}, Salário R$ ${context.parsed.y.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Idade'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Salário (R$)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return 'R$ ' + value.toLocaleString('pt-BR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

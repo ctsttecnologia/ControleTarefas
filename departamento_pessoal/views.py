@@ -8,7 +8,7 @@ from docx import Document as PyDocxDocument
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from weasyprint import HTML
 # Módulos Django
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Avg, Max, Min, F
 from django.http import HttpResponse
 from django.urls import reverse_lazy, reverse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -33,6 +33,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, NamedStyle
 from openpyxl.worksheet.datavalidation import DataValidation
 from django.db import IntegrityError
 import logging
+from datetime import timedelta
 
 
 # --- Funções Auxiliares ---
@@ -659,6 +660,7 @@ class DocumentoDeleteView(DocumentoScopedMixin, StaffRequiredMixin, DeleteView):
         messages.success(self.request, "Documento excluído com sucesso.")
         # self.object é o documento que foi excluído
         return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
+
     
 # --- VIEW DO PAINEL ---
 
@@ -673,35 +675,32 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
             messages.error(self.request, "Selecione uma filial para visualizar o painel.")
             return context
 
-        # Querysets base filtrados por filial (seu código, já estava correto)
+        # Querysets base
         funcionarios_qs = Funcionario.objects.filter(filial_id=filial_id)
         departamentos_qs = Departamento.objects.filter(filial_id=filial_id)
         
-        # KPIs (seu código, já estava correto)
+        # KPIs básicos
         context['total_funcionarios_ativos'] = funcionarios_qs.filter(status='ATIVO').count()
         context['total_departamentos'] = departamentos_qs.filter(ativo=True).count()
         context['total_cargos'] = Cargo.objects.filter(filial_id=filial_id, ativo=True).count()
 
-        # --- DADOS PARA O GRÁFICO DE DEPARTAMENTOS (Pizza) ---
+        # --- DADOS PARA OS NOVOS GRÁFICOS ---
+
+        # 1. Gráfico de Pizza - Funcionários por Departamento
         func_por_depto = departamentos_qs.filter(ativo=True).annotate(
             num_funcionarios=Count('funcionarios', filter=Q(funcionarios__status='ATIVO'))
-            ).values('nome', 'num_funcionarios').order_by('-num_funcionarios')
+        ).values('nome', 'num_funcionarios').order_by('-num_funcionarios')
                 
-        # MUDANÇA 1: Passar listas Python puras para o template, em vez de JSON.
-        # O template cuidará da conversão com |json_script.
         context['depto_labels'] = [d['nome'] for d in func_por_depto]
         context['depto_data'] = [d['num_funcionarios'] for d in func_por_depto]
 
-        # --- DADOS PARA O GRÁFICO DE STATUS (Doughnut) ---
+        # 2. Gráfico de Status
         dist_status = funcionarios_qs.values('status').annotate(total=Count('status')).order_by('status')
+        status_display_map = dict(Funcionario.STATUS_CHOICES)
         
-        # MUDANÇA 2: Corrigir os labels do gráfico de status para usar os nomes amigáveis.
         status_labels = []
         status_data = []
-        status_display_map = dict(Funcionario.STATUS_CHOICES) # Cria um mapa como {'ATIVO': 'Ativo', 'FERIAS': 'Férias'}
-
         for s in dist_status:
-            # Usando o mapa de CHOICES para "traduzir" o valor do BD para o nome legível
             label_amigavel = status_display_map.get(s['status'], s['status'])
             status_labels.append(label_amigavel)
             status_data.append(s['total'])
@@ -709,7 +708,102 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         context['status_labels'] = status_labels
         context['status_data'] = status_data
 
-        context['titulo_pagina'] = "Painel de Controle DP"
+        # 3. Gráfico de Barras - Distribuição Salarial por Cargo (TOP 10)
+        salarios_por_cargo = funcionarios_qs.filter(
+            status='ATIVO', 
+            salario__gt=0
+        ).values(
+            'cargo__nome'
+        ).annotate(
+            salario_medio=Avg('salario'),
+            total_funcionarios=Count('id')
+        ).order_by('-salario_medio')[:10]
+
+        context['cargo_salario_labels'] = [item['cargo__nome'] for item in salarios_por_cargo]
+        context['cargo_salario_data'] = [float(item['salario_medio']) for item in salarios_por_cargo]
+
+        # 4. Gráfico de Linha - Admissões por Mês (Últimos 12 meses)
+        doze_meses_atras = timezone.now().date() - timedelta(days=365)
+        admissoes_por_mes = funcionarios_qs.filter(
+            data_admissao__gte=doze_meses_atras
+        ).extra(
+            {'mes': "EXTRACT(month FROM data_admissao)", 'ano': "EXTRACT(year FROM data_admissao)"}
+        ).values('ano', 'mes').annotate(
+            total=Count('id')
+        ).order_by('ano', 'mes')
+
+        meses = []
+        totais = []
+        for adm in admissoes_por_mes:
+            mes_ano = f"{int(adm['mes'])}/{int(adm['ano'])}"
+            meses.append(mes_ano)
+            totais.append(adm['total'])
+
+        context['admissoes_meses_labels'] = meses
+        context['admissoes_meses_data'] = totais
+
+        # 5. Gráfico de Dispersão - Idade vs Salário
+        funcionarios_com_idade_salario = funcionarios_qs.filter(
+            status='ATIVO',
+            data_nascimento__isnull=False,
+            salario__gt=0
+        ).values('data_nascimento', 'salario', 'sexo')[:50]  # Limitar para performance
+
+        dispersao_data = []
+        for func in funcionarios_com_idade_salario:
+            if func['data_nascimento']:
+                idade = (timezone.now().date() - func['data_nascimento']).days // 365
+                dispersao_data.append({
+                    'x': idade,
+                    'y': float(func['salario']),
+                    'sexo': func['sexo'] or 'N/A'
+                })
+
+        context['dispersao_data'] = dispersao_data
+
+        # 6. Estatísticas Detalhadas
+        salarios_ativos = funcionarios_qs.filter(status='ATIVO', salario__gt=0)
+        
+        if salarios_ativos.exists():
+            context['salario_medio'] = salarios_ativos.aggregate(Avg('salario'))['salario__avg']
+            context['salario_maximo'] = salarios_ativos.aggregate(Max('salario'))['salario__max']
+            context['salario_minimo'] = salarios_ativos.aggregate(Min('salario'))['salario__min']
+            
+            # Cálculo da idade média
+            from datetime import date
+            hoje = date.today()
+            idades = []
+            for func in funcionarios_qs.filter(status='ATIVO', data_nascimento__isnull=False):
+                idade = hoje.year - func.data_nascimento.year - (
+                    (hoje.month, hoje.day) < (func.data_nascimento.month, func.data_nascimento.day)
+                )
+                idades.append(idade)
+            
+            context['idade_media'] = sum(idades) / len(idades) if idades else 0
+        else:
+            context['salario_medio'] = 0
+            context['salario_maximo'] = 0
+            context['salario_minimo'] = 0
+            context['idade_media'] = 0
+
+        # 7. Distribuição por Gênero
+        dist_genero = funcionarios_qs.filter(status='ATIVO').values('sexo').annotate(
+            total=Count('id')
+        )
+        
+        genero_labels = []
+        genero_data = []
+        genero_display_map = dict(Funcionario.SEXO_CHOICES)
+        
+        for g in dist_genero:
+            label = genero_display_map.get(g['sexo'], g['sexo'] or 'Não informado')
+            genero_labels.append(label)
+            genero_data.append(g['total'])
+
+        context['genero_labels'] = genero_labels
+        context['genero_data'] = genero_data
+
+        context['titulo_pagina'] = "Painel de Controle DP - Analytics"
         return context
     
 class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):

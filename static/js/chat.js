@@ -2,7 +2,6 @@
  * Sistema de Chat - Gerenciador Principal
  * Responsável por controle de UI, WebSocket e notificações
  */
-
 class ChatManager {
 
     constructor() {
@@ -62,7 +61,7 @@ class ChatManager {
      */
     async uploadImage(file) {
         if (!this.urls.upload_image_url) {
-            console.error('❌ URL de upload de imagem não definida em chatUrls');
+            console.error('URL de upload de imagem não definida em chatUrls');
             this.showError('Não foi possível enviar a imagem (configuração faltando).');
             return;
         }
@@ -83,16 +82,16 @@ class ChatManager {
             const data = await response.json();
 
             if (response.ok && data.status === 'success') {
-                console.log('✅ Imagem enviada com sucesso:', data.image_url);
+                console.log('Imagem enviada com sucesso:', data.image_url);
                 
                 // AGORA SIM, enviamos a URL pelo WebSocket
                 this.sendImageMessage(data.image_url);
             } else {
-                console.error('❌ Erro no servidor ao enviar imagem:', data.error);
+                console.error('Erro no servidor ao enviar imagem:', data.error);
                 this.showError(data.error || 'Erro ao enviar imagem.');
             }
         } catch (error) {
-            console.error('❌ Erro de rede ao enviar imagem:', error);
+            console.error('Erro de rede ao enviar imagem:', error);
             this.showError('Erro de rede ao enviar imagem.');
         }
     }
@@ -209,7 +208,7 @@ class ChatManager {
     async loadUsersForDM() {
         try {
             if (!this.urls.user_list) {
-                console.error('❌ URL de lista de usuários não definida');
+                console.error('URL de lista de usuários não definida');
                 this.showErrorInModal('dm-user-list-container', 'URL de usuários não configurada');
                 return;
             }
@@ -227,10 +226,10 @@ class ChatManager {
             if (container && data.users) {
                 this.allUsers = data.users;
                 this.renderUsers(this.allUsers);
-                console.log(`✅ ${data.users.length} usuários carregados para DM`);
+                console.log(`${data.users.length} usuários carregados para DM`);
             }
         } catch (error) {
-            console.error('❌ Erro ao carregar usuários:', error);
+            console.error('Erro ao carregar usuários:', error);
             this.showErrorInModal('dm-user-list-container', 'Erro ao carregar lista de usuários');
         }
     }
@@ -303,7 +302,7 @@ class ChatManager {
     async loadUsersForGroup() {
         try {
             if (!this.urls.user_list) {
-                console.error('❌ URL de lista de usuários não definida');
+                console.error('URL de lista de usuários não definida');
                 return;
             }
 
@@ -318,10 +317,10 @@ class ChatManager {
                         ${this.escapeHtml(user.name)} (${this.escapeHtml(user.email)})
                     </option>
                 `).join('');
-                console.log(`✅ ${data.users.length} usuários carregados para grupo`);
+                console.log(`${data.users.length} usuários carregados para grupo`);
             }
         } catch (error) {
-            console.error('❌ Erro ao carregar usuários para grupo:', error);
+            console.error('Erro ao carregar usuários para grupo:', error);
         }
     }
 
@@ -331,7 +330,7 @@ class ChatManager {
     async loadTasks() {
         try {
             if (!this.urls.task_list) {
-                console.error('❌ URL de lista de tarefas não definida');
+                console.error('URL de lista de tarefas não definida');
                 this.showErrorInModal('task-list-container', 'URL de tarefas não configurada');
                 return;
             }
@@ -344,10 +343,10 @@ class ChatManager {
             if (container && data.tasks) {
                 this.allTasks = data.tasks;
                 this.renderTasks(this.allTasks);
-                console.log(`✅ ${data.tasks.length} tarefas carregadas`);
+                console.log(`${data.tasks.length} tarefas carregadas`);
             }
         } catch (error) {
-            console.error('❌ Erro ao carregar tarefas:', error);
+            console.error('Erro ao carregar tarefas:', error);
             this.showErrorInModal('task-list-container', 'Erro ao carregar lista de tarefas');
         }
     }
@@ -405,7 +404,7 @@ class ChatManager {
     async startDM(userId) {
         try {
             if (!this.urls.start_dm_base) {
-                console.error('❌ URL base para DM não definida');
+                console.error('URL base para DM não definida');
                 this.showNotification('Configuração de URL incompleta', 'error');
                 return;
             }
@@ -414,9 +413,8 @@ class ChatManager {
             
             console.log(`Iniciando DM com usuário ${userId} em ${finalUrl}...`); 
 
-            // Use a 'finalUrl' corrigida
             const response = await fetch(finalUrl, {
-            // =========================================================
+
                 method: 'GET',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -426,16 +424,16 @@ class ChatManager {
             const data = await response.json();
             
             if (data.status === 'success') {
-                console.log(`✅ DM criada: ${data.room_id}`);
+                console.log(`DM criada: ${data.room_id}`);
                 this.openChatDialog(data.room_id, data.room_name);
                 this.hideModal('novaConversaModal');
                 this.showNotification('Conversa iniciada com sucesso!', 'success');
             } else {
-                console.error('❌ Erro ao criar DM:', data.error);
+                console.error('Erro ao criar DM:', data.error);
                 this.showNotification(data.error, 'error');
             }
         } catch (error) {
-            console.error('❌ Erro ao iniciar DM:', error);
+            console.error('Erro ao iniciar DM:', error);
             this.showNotification('Erro ao iniciar conversa', 'error');
         }
     }
@@ -499,9 +497,8 @@ class ChatManager {
                 return;
             }
 
-            // =========================================================
-            // ✅ CORREÇÃO AQUI: Substitua o '0' pelo ID real
-            // =========================================================
+            // Substitua o '0' pelo ID real
+
             const finalUrl = this.urls.get_task_chat_base.replace('0', taskId);
 
             this.showLoading('Abrindo chat da tarefa...');
@@ -596,7 +593,7 @@ class ChatManager {
         };
         
         this.websocket.onerror = (error) => {
-            console.error('❌ Erro WebSocket:', error);
+            console.error('Erro WebSocket:', error);
             this.showNotification('Erro de conexão com o chat', 'error');
         };
     }
@@ -859,8 +856,7 @@ class ChatManager {
         }
     }
 
-    // ========== MÉTODOS AUXILIARES ==========
-
+    // METODOS AUXILIARES
     /**
      * Esconde modal do Bootstrap
      */
@@ -979,9 +975,7 @@ class ChatManager {
         }
     }
 
-    // =================================================================
-    // 🧠 AQUI ESTÁ A "COLA" (AGORA DENTRO DA CLASSE E SENDO CHAMADA)
-    // =================================================================
+    //  (AGORA DENTRO DA CLASSE E SENDO CHAMADA)
 
     initializeNotificationSocket() {
         // Seu método está correto: ele espera o DOM carregar
@@ -1010,7 +1004,7 @@ class ChatManager {
             notificationSocket.onmessage = (e) => {
 
                 // -----------------------------------------------------------------
-                // ✅✅✅ ADICIONE ESTE CONSOLE.LOG ✅✅✅
+                // ADICIONE ESTE CONSOLE.LOG 
                 // Este é o log mais importante. Ele dispara ANTES de qualquer
                 // 'if' ou 'JSON.parse'. Se isto não aparecer, o problema
                 // é no backend.
@@ -1072,7 +1066,7 @@ class ChatManager {
     async loadActiveRoomList() {
         // Verifica se a URL foi injetada (do context_processor)
         if (!this.urls.active_room_list) {
-            console.error('❌ URL active_room_list não definida. Você adicionou ao context_processor?');
+            console.error('URL active_room_list não definida. Você adicionou ao context_processor?');
             this.renderActiveRoomError('Falha ao carregar conversas (URL).');
             return;
         }
@@ -1089,7 +1083,7 @@ class ChatManager {
                 this.renderActiveRoomEmpty();
             }
         } catch (error) {
-            console.error('❌ Erro ao buscar lista de salas ativas:', error);
+            console.error('Erro ao buscar lista de salas ativas:', error);
             this.renderActiveRoomError('Erro ao buscar conversas.');
         }
     }
@@ -1267,7 +1261,7 @@ class ChatManager {
 
 // Inicialização quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM carregado, inicializando ChatManager...');
+    console.log('DOM carregado, inicializando ChatManager...');
     
     // Pequeno delay para garantir que tudo está carregado
     setTimeout(() => {
@@ -1286,16 +1280,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.chatManager.openChatDialog(roomId, roomName);
             };
             
-            console.log('✅✅✅ Sistema de Chat inicializado com sucesso!');
+            console.log('Sistema de Chat inicializado com sucesso!');
         } catch (error) {
-            console.error('❌❌❌ Erro crítico ao inicializar ChatManager:', error);
+            console.error('Erro crítico ao inicializar ChatManager:', error);
         }
     }, 100);
 });
 
 /// Tratamento de erros globais
 window.addEventListener('error', function(e) {
-    console.error('💥 Erro global no sistema de chat:'),
+    console.error('Erro global no sistema de chat:'),
 
     console.error(e.message, 'em', e.filename, 'linha', e.lineno);
 });
@@ -1347,7 +1341,6 @@ class ThemeManager {
         }
     }
 }
-
 
 // Inicializa o gerenciador de tema
 document.addEventListener('DOMContentLoaded', function() {

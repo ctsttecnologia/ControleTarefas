@@ -45,7 +45,10 @@
     visibility: visible;
 }
 
-/* Sidebar de Conversas */
+/* =================================================================
+   ✨ SIDEBAR DE CONVERSAS - SEÇÃO ATUALIZADA ✨
+   ================================================================= */
+
 .chat-sidebar-container {
     position: fixed;
     top: 0;
@@ -65,6 +68,14 @@
     right: 0;
 }
 
+/* NOVO: Estrutura flex interna da sidebar */
+.chat-list-inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
 .chat-list-header {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--bs-border-color);
@@ -72,6 +83,7 @@
     justify-content: space-between;
     align-items: center;
     background: var(--bs-secondary-bg);
+    flex-shrink: 0; /* Impede que o header encolha */
 }
 
 .chat-list-header h2 {
@@ -97,38 +109,22 @@
     color: var(--bs-emphasis-color);
 }
 
+/* MODIFICADO: Corpo da lista agora é flex */
 .chat-list-body {
     flex: 1;
-    overflow-y: auto;
-    padding: 1rem 0;
+    padding: 0;
     background: var(--bs-body-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-/* Scrollbar personalizada para sidebar */
-.chat-list-body::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-list-body::-webkit-scrollbar-track {
-    background: var(--bs-secondary-bg);
-    border-radius: 3px;
-}
-
-.chat-list-body::-webkit-scrollbar-thumb {
-    background: var(--bs-secondary-color);
-    border-radius: 3px;
-    opacity: 0.5;
-}
-
-.chat-list-body::-webkit-scrollbar-thumb:hover {
-    background: var(--bs-emphasis-color);
-    opacity: 0.7;
-}
-
+/* MODIFICADO: Botão de Nova Conversa */
 .chat-list-action {
-    padding: 0 1.5rem 1rem;
+    padding: 1rem;
     border-bottom: 1px solid var(--bs-border-color);
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .chat-list-action a {
@@ -150,16 +146,40 @@
     text-decoration: none;
 }
 
+/* NOVO: Div da lista de chats (onde a rolagem acontece) */
+#active-chats-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* NOVO: Scrollbar personalizada para A LISTA */
+#active-chats-list::-webkit-scrollbar {
+    width: 6px;
+}
+#active-chats-list::-webkit-scrollbar-track {
+    background: var(--bs-secondary-bg);
+    border-radius: 3px;
+}
+#active-chats-list::-webkit-scrollbar-thumb {
+    background: var(--bs-secondary-color);
+    border-radius: 3px;
+}
+#active-chats-list::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-emphasis-color);
+}
+
+/* MODIFICADO: Novo visual dos itens da lista */
 .chat-list-item {
     display: flex;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: 0.85rem 0.75rem;
     text-decoration: none;
     color: inherit;
-    border-bottom: 1px solid var(--bs-border-color);
-    transition: background 0.2s ease;
+    transition: background-color 0.2s ease;
     cursor: pointer;
-    background: var(--bs-body-bg);
+    border-radius: 0.5rem;
+    margin-bottom: 4px;
 }
 
 .chat-list-item:hover {
@@ -168,33 +188,61 @@
     color: inherit;
 }
 
+/* MODIFICADO: Novo visual do avatar */
 .chat-item-avatar {
-    width: 40px;
-    height: 40px;
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
     border-radius: 50%;
-    background: var(--bs-tertiary-bg);
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-right: 1rem;
     font-size: 1.25rem;
-    color: var(--bs-secondary-color);
+    margin-right: 12px;
+    font-weight: 500;
     flex-shrink: 0;
+    background-color: var(--bs-secondary-color);
 }
 
+/* NOVO: Cores de avatar (baseado no seu HTML) */
+.chat-item-avatar .bi-person-fill { background-color: #0d6efd; }
+.chat-item-avatar .bi-check-square-fill { background-color: #198754; }
+.chat-item-avatar .bi-people-fill { background-color: #6f42c1; }
+
+/* MODIFICADO: Info do chat */
 .chat-item-info {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
 }
 
+/* MODIFICADO: Nome no chat */
 .chat-item-name {
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-    color: var(--bs-body-color);
+    font-weight: 600;
+    color: var(--bs-heading-color);
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* NOVO: Última mensagem */
+.chat-item-last-message {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.chat-item-last-message .bi {
+    font-size: 0.8rem;
+    margin-right: 4px;
+}
+
+/* =================================================================
+   FIM DAS ATUALIZAÇÕES - RESTO DO ARQUIVO PERMANECE IGUAL
+   ================================================================= */
 
 /* =================================================================
    JANELA DE CHAT DRAGGABLE
@@ -210,11 +258,8 @@
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0,0,0,0.15);
     z-index: 2000;
-    
-    /* LAYOUT FLEX CORRIGIDO */
     display: flex;
     flex-direction: column !important;
-    
     transition: all 0.3s ease;
     border: 1px solid var(--bs-border-color);
     resize: both;
@@ -241,7 +286,7 @@
     display: flex;
     flex-direction: column;
     flex: 1;
-    min-height: 0; /* IMPORTANTE: Permite que o flex funcione corretamente */
+    min-height: 0;
 }
 
 .chat-dialog-header {
@@ -254,7 +299,7 @@
     justify-content: space-between;
     align-items: center;
     user-select: none;
-    flex-shrink: 0; /* IMPEDE QUE O HEADER ENCOLHA */
+    flex-shrink: 0;
 }
 
 .header-buttons {
@@ -282,13 +327,13 @@
 
 /* ÁREA DE MENSAGENS - CORRIGIDA */
 .chat-log {
-    flex: 1; /* OCUPA TODO O ESPAÇO DISPONÍVEL */
+    flex: 1;
     overflow-y: auto;
     padding: 1rem;
     background: var(--bs-secondary-bg);
     display: flex;
     flex-direction: column;
-    min-height: 0; /* CRÍTICO: Permite scroll */
+    min-height: 0;
 }
 
 /* ÁREA DE INPUT */
@@ -300,8 +345,8 @@
     display: flex;
     gap: 0.5rem;
     align-items: flex-end;
-    flex-shrink: 0 !important; /* GARANTE QUE NÃO ENCOLHA */
-    margin-top: auto; /* EMPURRA PARA A BASE */
+    flex-shrink: 0 !important;
+    margin-top: auto;
 }
 
 #chat-message-input {
@@ -344,6 +389,27 @@
     transform: scale(1.05);
 }
 
+/* Estilo para o botão de anexar imagem */
+#attach-image-btn {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    color: var(--bs-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+#attach-image-btn:hover {
+    background: var(--bs-tertiary-bg);
+    transform: scale(1.05);
+}
+
 /* Scrollbar personalizada para área de mensagens */
 .chat-log::-webkit-scrollbar {
     width: 6px;
@@ -361,27 +427,6 @@
 
 .chat-log::-webkit-scrollbar-thumb:hover {
     background: var(--bs-emphasis-color);
-}
-
-/* Estilo para o botão de anexar imagem */
-#attach-image-btn {
-    border-radius: 50%; /* Faz ele redondo */
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--bs-secondary-bg); /* Ou a cor que preferir */
-    border: 1px solid var(--bs-border-color); /* Adiciona uma borda */
-    color: var(--bs-primary); /* Cor do ícone */
-    cursor: pointer;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-#attach-image-btn:hover {
-    background: var(--bs-tertiary-bg);
-    transform: scale(1.05);
 }
 
 /* Estados Vazios */
@@ -637,15 +682,14 @@
 }
 
 /* Indicador de Notificação no Ícone do Chat */
-
 .notification-indicator {
     position: absolute;
-    top: 2px;  /* Pode precisar de ajuste para o sino */
-    right: 2px; /* Pode precisar de ajuste para o sino */
+    top: 2px;
+    right: 2px;
     width: 10px;
     height: 10px;
-    background-color: #dc3545; /* Vermelho */
+    background-color: #dc3545;
     border-radius: 50%;
     border: 2px solid white;
-    display: none; /* O JS controla isso */
+    display: none;
 }

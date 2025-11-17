@@ -2,9 +2,9 @@
 # departamento_pessoal/tasks.py
 from celery import shared_task
 import pandas as pd
-from .models import Funcionario, Cargo, funcao, Departamento
+from .models import Funcionario, Cargo, Departamento
 from django.contrib.auth.models import User
-from .models import Notificacao
+from notifications.models import Notificacao
 
 @shared_task
 def processar_planilha_funcionarios_task(caminho_arquivo, user_id):

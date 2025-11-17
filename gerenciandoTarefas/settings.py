@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from decouple import config
 
+from celery.schedules import crontab
+
 # Seu asgi.py ou wsgi.py
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings')
 
@@ -89,7 +91,8 @@ INSTALLED_APPS = [
     'ata_reuniao',
     'ferramentas',
     'controle_de_telefone',
-    'chat', 
+    'chat',
+    'documentos', 
 ]
 
 MIDDLEWARE = [
@@ -269,3 +272,21 @@ CHAT_CONFIG = {
     'RECONNECT_INTERVAL': 3000,
 }
 
+# --- Configuração do Agendador (Celery Beat) ---
+
+CELERY_BEAT_SCHEDULE = {
+    # Dê um nome descritivo para a sua tarefa agendada
+    'verificar-vencimentos-diariamente': {
+        
+        # 1. O caminho para a sua tarefa
+        'task': 'documentos.verificar_vencimentos',
+        
+        # 2. A frequência (crontab)
+        # Este exemplo roda todo dia às 3:00 da manhã
+        'schedule': crontab(minute=0, hour=3),
+        
+        # 'args': (1, 2) # Se a sua tarefa precisasse de argumentos
+    },
+    
+    # ... você pode adicionar outras tarefas agendadas aqui ...
+}

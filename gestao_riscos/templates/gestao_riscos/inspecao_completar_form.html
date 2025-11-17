@@ -1,0 +1,97 @@
+
+{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
+{% load crispy_forms_tags %} {% comment %} Opcional: se você usa crispy-forms {% endcomment %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ titulo_pagina }}</h4>
+                </div>
+                
+                <div class="card-body">
+                    
+                    <div class="alert alert-info" role="alert">
+                        Você está marcando a inspeção de 
+                        <strong>{{ inspecao.equipamento.nome }}</strong> (agendada para 
+                        {{ inspecao.data_agendada|date:"d/m/Y" }}) como concluída.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <p>
+                            Por favor, informe a data de realização (se diferente de hoje) 
+                            e adicione as observações da inspeção.
+                        </p>
+                        
+                        {% comment %} 
+                        Método 1: Com django-crispy-forms (Recomendado)
+                        Se você tiver crispy_forms configurado:
+                        {{ form|crispy }} 
+                        
+                        Método 2: Renderização manual dos campos relevantes
+                        Isso assume que seu InspecaoForm tem os campos 
+                        'data_realizacao' e 'observacoes'.
+                        {% endcomment %}
+                        
+                        {% if form.data_realizacao %}
+                        <div class="mb-3">
+                            <label for="{{ form.data_realizacao.id_for_label }}" class="form-label">
+                                {{ form.data_realizacao.label }}
+                            </label>
+                            <input type="date" 
+                                   name="{{ form.data_realizacao.name }}" 
+                                   id="{{ form.data_realizacao.id_for_label }}"
+                                   value="{{ form.data_realizacao.value|default_if_none:''|date:'Y-m-d' }}"
+                                   class="form-control">
+                            {% if form.data_realizacao.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_realizacao.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Data em que a inspeção foi efetivamente realizada.</div>
+                        </div>
+                        {% endif %}
+
+                        {% if form.observacoes %}
+                        <div class="mb-3">
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                                {{ form.observacoes.label }}
+                            </label>
+                            <textarea name="{{ form.observacoes.name }}" 
+                                      id="{{ form.observacoes.id_for_label }}"
+                                      class="form-control" 
+                                      rows="4">{{ form.observacoes.value|default_if_none:'' }}</textarea>
+                            {% if form.observacoes.errors %}
+                                <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                            {% endif %}
+                            <div class="form-text">Adicione notas, resultados ou não-conformidades encontradas.</div>
+                        </div>
+                        {% endif %}
+
+                        {% comment %} 
+                        Renderiza todos os outros campos do formulário como ocultos 
+                        para garantir que o POST de atualização funcione corretamente.
+                        {% endcomment %}
+                        {% for field in form %}
+                            {% if field.name != 'data_realizacao' and field.name != 'observacoes' %}
+                                {{ field.as_hidden }}
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="text-end mt-4">
+                            <a href="{{ inspecao.get_absolute_url }}" class="btn btn-secondary">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Marcar como Concluída
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

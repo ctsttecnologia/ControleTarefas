@@ -16,10 +16,10 @@ class IncidenteAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Model
 @admin.register(Inspecao)
 class InspecaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
   
-    list_display = ('__str__', 'data_agendada', 'status', 'inspetor', 'filial')
+    list_display = ('__str__', 'data_agendada', 'status', 'responsavel', 'filial')
     list_filter = ('status', 'data_agendada', 'filial')
-    search_fields = ('equipamento__nome', 'inspetor__username')
-    autocomplete_fields = ['equipamento', 'inspetor']
+    search_fields = ('equipamento__nome', 'responsavel__username')
+    autocomplete_fields = ['equipamento', 'responsavel']
     readonly_fields = ('filial',) # Impede a edição da filial após a criação.
 
 @admin.register(CartaoTag)

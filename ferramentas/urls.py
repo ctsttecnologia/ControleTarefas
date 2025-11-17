@@ -39,7 +39,7 @@ urlpatterns = [
     path('importar/template/', views.DownloadTemplateView.as_view(), name='download_template'),
 
     # URLS DE TERMOS ATUALIZADAS E NOVAS
-    path('termos/', views.TermoListView.as_view(), name='termo_list'),
+    path('termos/', views.TermoListView.as_view(), name='termoderesponsabilidade_list'),
     path('termos/criar/', views.CriarTermoResponsabilidadeView.as_view(), name='criar_termo_responsabilidade'),
     path('termos/<int:pk>/', views.TermoDetailView.as_view(), name='termo_detail'),
     path('termos/<int:pk>/pdf/', views.DownloadTermoPDFView.as_view(), name='termo_pdf_download'),
