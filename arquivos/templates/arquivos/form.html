@@ -1,0 +1,112 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0">
+                        {% if form.instance.pk %}
+                            <i class="bi bi-pencil-square me-2"></i>Editar Arquivo
+                        {% else %}
+                            <i class="bi bi-cloud-upload me-2"></i>Novo Arquivo
+                        {% endif %}
+                    </h4>
+                </div>
+                
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong>Atenção!</strong> Verifique os erros no formulário.
+                                {{ form.non_field_errors }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endif %}
+
+                        <h5 class="text-primary mb-3 border-bottom pb-2">Dados Gerais</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">Nome do Documento</label>
+                                {{ form.nome }}
+                                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Tipo</label>
+                                {{ form.tipo }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Status do Arquivo</label>
+                                {{ form.status }}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Avisar vencimento com (dias)</label>
+                                {{ form.dias_aviso }}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Cliente Relacionado</label>
+                                {{ form.cliente }} </div>
+
+                            <div class="col-12">
+                                <label class="form-label">Descrição / Observações</label>
+                                {{ form.descricao }}
+                            </div>
+                        </div>
+
+                        <h5 class="text-primary mb-3 border-bottom pb-2">Arquivo e Prazos</h5>
+                        <div class="bg-light p-3 rounded border">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Arquivo (PDF, Imagem, Doc)</label>
+                                    {{ form.doc_arquivo }}
+                                    {% if form.instance.pk and form.instance.documento_vigente.arquivo %}
+                                        <div class="mt-2 small">
+                                            Arquivo Atual: 
+                                            <a href="{{ form.instance.documento_vigente.arquivo.url }}" target="_blank" class="fw-bold">
+                                                <i class="bi bi-file-earmark-check"></i> Visualizar
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if form.doc_arquivo.errors %}<div class="text-danger small">{{ form.doc_arquivo.errors }}</div>{% endif %}
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Data de Emissão</label>
+                                    {{ form.doc_inicio }}
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-danger">Data de Vencimento</label>
+                                    {{ form.doc_vencimento }}
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label class="form-label">Responsável</label>
+                                    {{ form.doc_responsavel }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                            <a href="{% url 'arquivos:lista_documentos' %}" class="btn btn-secondary px-4">Cancelar</a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

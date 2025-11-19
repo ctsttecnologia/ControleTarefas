@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'ferramentas',
     'controle_de_telefone',
     'chat',
+    'arquivos',
     'documentos', 
 ]
 

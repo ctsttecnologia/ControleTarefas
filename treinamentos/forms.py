@@ -1,3 +1,4 @@
+
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.apps import apps
@@ -13,14 +14,17 @@ class TipoCursoForm(forms.ModelForm):
             'area', 
             'modalidade', 
             'validade_meses', 
-            'descricao', 
+            'descricao_no_certificado', # Campo para a frente do certificado
+            'referencia_normativa',     # Campo para a norma (ex: NR-5)
+            'grade_curricular',         # Campo para o verso 
             'certificado', 
             'ativo'
         ]
 
         # (Opcional, mas boa prática) Adicione widgets se precisar
         widgets = {
-            'descricao': forms.Textarea(attrs={'rows': 3}),
+            'descricao_no_certificado': forms.Textarea(attrs={'rows': 3}),
+            'grade_curricular': forms.Textarea(attrs={'rows': 10}),  
         }
 
 class TreinamentoForm(forms.ModelForm):
@@ -102,3 +106,5 @@ ParticipanteFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+
+
