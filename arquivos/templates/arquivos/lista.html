@@ -1,0 +1,123 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Gestão de Arquivos</h2>
+            <p class="text-muted">Gerencie contratos, Relatórios e documentos diversos.</p>
+        </div>
+        <a href="{% url 'arquivos:criar_documento' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg"></i> Novo Arquivo
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 30%;">Nome / Descrição</th>
+                            <th>Tipo</th>
+                            <th>Vencimento</th>
+                            <th>Status</th>
+                            <th>Responsável</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in arquivos %}
+                            {% with doc=item.documento_vigente %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ item.nome }}</div>
+                                    {% if item.descricao %}
+                                        <small class="text-muted">{{ item.descricao|truncatechars:50 }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ item.get_tipo_display }}
+                                    </span>
+                                </td>
+                                
+                                <td>
+                                    {% if doc and doc.data_vencimento %}
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-calendar-event me-2 text-muted"></i>
+                                            {{ doc.data_vencimento|date:"d/m/Y" }}
+                                        </div>
+                                        {% if doc.dias_para_vencer <= item.dias_aviso and not doc.is_vencido %}
+                                            <small class="text-warning fw-bold">Vence em {{ doc.dias_para_vencer }} dias</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item.status == 'ARQUIVADO' %}
+                                        <span class="badge bg-secondary">Arquivado</span>
+                                    {% elif doc %}
+                                        {% if doc.is_vencido %}
+                                            <span class="badge bg-danger">Vencido</span>
+                                        {% elif doc.status == 'A_VENCER' or doc.dias_para_vencer <= item.dias_aviso %}
+                                            <span class="badge bg-warning text-dark">A Vencer</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Vigente</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-light text-muted">Sem Anexo</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if doc and doc.responsavel %}
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle bg-primary text-white small me-2" style="width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                                                {{ doc.responsavel.username|slice:":1"|upper }}
+                                            </div>
+                                            {{ doc.responsavel.username }}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-end">
+                                    {% if doc and doc.arquivo %}
+                                        <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Baixar Arquivo">
+                                            ⬇️ PDF
+                                        </a>
+                                    {% endif %}
+                                    
+                                    <div class="btn-group ms-2">
+                                        <a href="{% url 'arquivos:editar_documento' item.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                            ✏️
+                                        </a>
+                                        <a href="{% url 'arquivos:excluir_documento' item.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                            🗑️
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-folder2-open display-4 mb-3 d-block"></i>
+                                    Nenhum arquivo cadastrado nesta filial.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

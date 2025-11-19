@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Certificado - {{ participante.funcionario.get_full_name }}</title>
+    <link rel="stylesheet" href="{{ css_path }}">
+</head>
+<body>
+    
+    <div class="pagina frente">
+        
+        {% if gabarito.imagem_fundo %}
+            <img class="imagem-fundo" src="{{ gabarito.imagem_fundo.path }}" alt="">
+        {% endif %}
+        
+        <div class="conteudo">
+            <h1 class="empresa-nome">{{ gabarito.empresa_nome }}</h1>
+
+            <h2 class="titulo-certificado">CERTIFICADO</h2>
+
+            <div class="texto-principal">
+                {{ gabarito.renderizar_texto|safe }}
+            </div>
+
+            <div class="assinaturas">
+                <div class="assinatura-block">
+                    {% if assinatura_participante.esta_assinada %}
+                        <img src="{{ assinatura_participante.assinatura_json }}" class="assinatura-img">
+                    {% else %}
+                        <div class="assinatura-pendente">(Assinatura Pendente)</div>
+                    {% endif %}
+                    <div class="linha-assinatura"></div>
+                    <div class="nome-assinante">{{ participante.funcionario.get_full_name }}</div>
+                    <div class="cargo-assinante">Participante</div>
+                </div>
+
+                <div class="assinatura-block">
+                    {% if assinatura_responsavel.esta_assinada %}
+                        <img src="{{ assinatura_responsavel.assinatura_json }}" class="assinatura-img">
+                    {% else %}
+                        <div class="assinatura-pendente">(Assinatura Pendente)</div>
+                    {% endif %}
+                    <div class="linha-assinatura"></div>
+                    <div class="nome-assinante">{{ treinamento.palestrante }}</div>
+                    <div class="cargo-assinante">
+                        {{ treinamento.palestrante_cargo|default:"Instrutor" }}
+                        {% if treinamento.palestrante_registro %}
+                            <br>{{ treinamento.palestrante_registro }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="rodape">
+                Emitido em {{ data_emissao|date:"d/m/Y" }}
+            </div>
+        </div>
+    </div>
+
+    <div class="pagina verso">
+        
+        {% if gabarito.imagem_fundo %}
+            <img class="imagem-fundo" src="{{ gabarito.imagem_fundo.path }}" alt="">
+        {% endif %}
+        
+        <div class="conteudo">
+            
+            <div class="conteudo-verso">
+                {{ gabarito.renderizar_verso|safe }}
+            </div>
+
+            <div class="validacao-qr">
+                <div class="qr-code">
+                    {{ contexto_verso.qr_code_svg }}
+                </div>
+                <div class="qr-texto">
+                    <p>
+                        Protocolo: <strong>{{ contexto_verso.protocolo }}</strong>
+                        <br>
+                        Valide a autenticidade deste certificado
+                        apontando a câmera do seu celular para o QR Code
+                        ou acessando o link de verificação.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.http import HttpResponse
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 # Módulos Locais
@@ -144,3 +144,15 @@ class ExportarClientesExcelView(LoginRequiredMixin, ViewFilialScopedMixin, ListV
         wb.save(response)
         
         return response
+    
+class ClienteDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+    model = Cliente
+    template_name = 'cliente/cliente_detail.html'
+    context_object_name = 'cliente'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Busca os arquivos relacionados a este cliente
+        # O 'prefetch_related' otimiza a consulta para evitar lentidão no banco
+        context['arquivos_cliente'] = self.object.arquivos.all().select_related('filial')
+        return context

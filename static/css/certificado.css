@@ -1,0 +1,155 @@
+
+/* Configuração da página para WeasyPrint */
+@page {
+    size: A4 landscape; /* Formato paisagem (deitado) */
+    margin: 1cm;
+}
+
+body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+.pagina {
+    width: 27.7cm; /* A4 (29.7cm) - 2cm de margem */
+    height: 19cm;  /* A4 (21cm) - 2cm de margem */
+    padding: 1.5cm;
+    box-sizing: border-box;
+    position: relative; /* Para o rodapé e fundo */
+    
+    /* Centraliza o conteúdo (opcional) */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+}
+
+/* Imagem de fundo (opcional) */
+.imagem-fundo {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.1; /* Deixa o fundo mais claro */
+}
+
+/* Força a quebra de página para o verso */
+.verso {
+    page-break-before: always;
+}
+
+.conteudo {
+    width: 100%;
+    z-index: 1;
+}
+
+/* --- FRENTE --- */
+.empresa-nome {
+    font-size: 16pt;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.titulo-certificado {
+    font-size: 32pt;
+    font-weight: bold;
+    color: #000;
+    margin: 20px 0;
+}
+
+.texto-principal {
+    font-size: 16pt;
+    line-height: 1.6;
+    margin: 40px auto;
+    text-align: justify;
+    width: 90%;
+}
+
+.assinaturas {
+    margin-top: 60px;
+    display: table; /* Usar table é mais seguro em PDF */
+    width: 100%;
+}
+
+.assinatura-block {
+    display: table-cell;
+    width: 50%;
+    text-align: center;
+    vertical-align: top;
+}
+
+.assinatura-img {
+    max-height: 60px; /* Altura da assinatura desenhada */
+    width: auto;
+    max-width: 250px;
+}
+
+.assinatura-pendente {
+    height: 60px;
+    padding-top: 20px;
+    font-style: italic;
+    color: #999;
+}
+
+.linha-assinatura {
+    border-bottom: 1px solid #000;
+    width: 300px;
+    margin: 5px auto 5px auto;
+}
+
+.nome-assinante {
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+.cargo-assinante {
+    font-size: 10pt;
+    color: #555;
+}
+
+.rodape {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    font-size: 10pt;
+    color: #777;
+    text-align: center;
+}
+
+/* --- VERSO --- */
+.conteudo-verso {
+    text-align: left;
+    font-size: 11pt;
+    line-height: 1.5;
+    margin-bottom: 30px;
+    /* O CSS para o {grade_curricular} virá do GABARITO */
+}
+
+.validacao-qr {
+    display: table;
+    width: 100%;
+    margin-top: 40px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+.qr-code {
+    display: table-cell;
+    width: 150px;
+}
+.qr-code svg {
+    /* O SVG do QR Code */
+    width: 130px;
+    height: 130px;
+}
+.qr-texto {
+    display: table-cell;
+    text-align: left;
+    vertical-align: middle;
+    font-size: 10pt;
+    padding-left: 20px;
+}

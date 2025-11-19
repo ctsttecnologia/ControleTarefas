@@ -67,6 +67,7 @@ class Documento(models.Model):
     # Este campo é essencial para o FilialManager funcionar.
     # Na sua CreateView, defina este campo:
     # form.instance.filial = self.request.user.filial_ativa
+    
     filial = models.ForeignKey(
         Filial, 
         on_delete=models.PROTECT,

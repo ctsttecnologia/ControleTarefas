@@ -18,6 +18,7 @@
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i> 
                 Exportar
             </a>
+            
         </div>
     </header>
 
@@ -66,6 +67,9 @@
                             </td>
                             <td class="text-end px-3">
                                 <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'cliente:cliente_detail' cliente.pk %}" class="btn btn-outline-success ms-2 flex-grow-1 flex-md-grow-0">
+                                        <i class="bi bi-eye me-1"></i>
+                                    </a>
                                     <a href="{% url 'cliente:editar_cliente' cliente.pk %}" class="btn btn-outline-primary" title="Editar">
                                         <i class="bi bi-pencil-fill"></i>
                                     </a>

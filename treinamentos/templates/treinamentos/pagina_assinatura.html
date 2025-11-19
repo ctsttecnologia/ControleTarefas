@@ -1,0 +1,96 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h3><i class="fas fa-pencil-alt"></i> {{ titulo }}</h3>
+        </div>
+        <div class="card-body">
+            
+            {% if assinatura_obj.esta_assinada %}
+                <div class="alert alert-success text-center">
+                    <i class="fas fa-check-circle fa-2x"></i>
+                    <h4 class="mt-2">Documento Assinado</h4>
+                    <p>Este documento foi assinado por <strong>{{ assinatura_obj.nome_assinante }}</strong> em {{ assinatura_obj.data_assinatura|date:"d/m/Y \à\s H:i" }}.</p>
+                </div>
+            {% else %}
+                <p class="lead">Olá, <strong>{{ nome_assinante }}</strong>.</p>
+                <p>Por favor, desenhe sua assinatura no campo abaixo para validar o certificado.</p>
+                
+                <form id="signature-form" method="POST" action="{% url 'treinamentos:pagina_assinatura' token=token %}">
+                    {% csrf_token %}
+
+                    <div class="text-center border rounded bg-light p-2">
+                        <canvas id="signature-pad" class="signature-pad" width=600 height=250 style="border: 1px dashed #ccc; max-width: 100%;"></canvas>
+                    </div>
+
+                    <input type="hidden" name="assinatura_json" id="assinatura_json">
+                    
+                    <div class="mt-3 text-center">
+                        <button type="button" class="btn btn-outline-secondary" id="clear-button">
+                            <i class="fas fa-eraser"></i> Limpar
+                        </button>
+                        <button type="submit" class="btn btn-success" id="save-button">
+                            <i class="fas fa-save"></i> Salvar Assinatura
+                        </button>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/signature_pad.umd.min.js' %}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Só executa se o canvas existir na página
+    var canvas = document.getElementById('signature-pad');
+    if (!canvas) {
+        return;
+    }
+
+    var signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)' // Fundo branco
+    });
+
+    // Ajusta o canvas se a tela for redimensionada
+    function resizeCanvas() {
+        var ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        signaturePad.clear(); // Limpa o canvas após redimensionar
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas(); // Chama na primeira vez
+
+    // Botão de Salvar
+    document.getElementById('save-button').addEventListener('click', function (event) {
+        event.preventDefault(); // Impede o envio do formulário
+        if (signaturePad.isEmpty()) {
+            alert("Por favor, forneça sua assinatura.");
+        } else {
+            // SALVA COMO SVG (VETOR) - É o melhor formato para PDF
+            var data = signaturePad.toDataURL('image/svg+xml');
+            document.getElementById('assinatura_json').value = data;
+            
+            // Agora sim, envia o formulário
+            document.getElementById('signature-form').submit();
+        }
+    });
+
+    // Botão de Limpar
+    document.getElementById('clear-button').addEventListener('click', function () {
+        signaturePad.clear();
+    });
+});
+</script>
+{% endblock %}

@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib import messages
 from django.db.models import Sum, Count, F, Q, FloatField
 from django.forms import inlineformset_factory
-from django.http import HttpResponse, Http404
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import (CreateView, DeleteView, DetailView, ListView, UpdateView, TemplateView)
@@ -19,7 +18,6 @@ import traceback
 from datetime import datetime
 from treinamentos import treinamento_generators
 from treinamentos.forms import ParticipanteFormSet, TipoCursoForm, TreinamentoForm
-from .models import Treinamento, TipoCurso, Participante
 from django.db import transaction
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
@@ -27,6 +25,23 @@ from django.contrib.messages.views import SuccessMessageMixin
 from core.mixins import TecnicoScopeMixin 
 from core.mixins import ViewFilialScopedMixin
 
+from django.utils import timezone
+from django.template.loader import render_to_string, get_template
+from django.views.generic import View # Garanta que 'View' está importado
+from django.http import HttpResponse, Http404, JsonResponse
+from .models import GabaritoCertificado, Assinatura, Participante, Treinamento, TipoCurso
+from num2words import num2words # Biblioteca para converter números em extenso
+import qrcode
+import qrcode.image.svg
+from base64 import b64encode
+
+try:
+    from weasyprint import HTML, CSS
+    WEASYPRINT_DISPONIVEL = True
+except ImportError:
+    WEASYPRINT_DISPONIVEL = False
+    print("AVISO: WeasyPrint não instalado. Geração de PDF falhará.")
+    # TODO: Adicione aqui a importação do xhtml2pdf como fallback se desejar
 
 
 # ==========================================================================
@@ -560,3 +575,290 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMix
         })
         
         return context
+
+class VerificarCertificadoView(View):
+    """
+    Página PÚBLICA para validar um certificado através do protocolo (QR Code).
+    Não requer login.
+    """
+    template_name = 'treinamentos/verificar_certificado.html'
+
+    def get(self, request, *args, **kwargs):
+        protocolo = self.kwargs.get('protocolo')
+        try:
+            participante = Participante.objects.select_related(
+                'funcionario',
+                'treinamento__tipo_curso',
+            ).get(protocolo_validacao=protocolo)
+            
+            context = {
+                'valido': True,
+                'participante': participante,
+                'treinamento': participante.treinamento,
+                'data_emissao': participante.data_registro, # Ou a data de conclusão do curso
+            }
+            
+        except Participante.DoesNotExist:
+            context = {
+                'valido': False,
+                'protocolo': protocolo,
+            }
+            
+        return render(request, self.template_name, context)
+
+
+class PaginaAssinaturaView(LoginRequiredMixin, View):
+    """
+    Página onde o usuário (participante ou instrutor) desenha 
+    e salva sua assinatura digital.
+    """
+    template_name = 'treinamentos/pagina_assinatura.html'
+    
+    def get_assinatura_obj(self, token):
+        try:
+            # Otimiza a consulta buscando os dados relacionados
+            return Assinatura.objects.select_related(
+                'participante__funcionario',
+                'treinamento_responsavel__responsavel'
+            ).get(token_acesso=token)
+        except Assinatura.DoesNotExist:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        token = self.kwargs.get('token')
+        assinatura_obj = self.get_assinatura_obj(token)
+
+        if not assinatura_obj:
+            messages.error(request, "Link de assinatura inválido ou expirado.")
+            return redirect('core:index') # Redireciona para a home
+
+        # Verifica se o usuário logado é quem deve assinar
+        usuario_deve_assinar = None
+        if assinatura_obj.participante:
+            usuario_deve_assinar = assinatura_obj.participante.funcionario
+        elif assinatura_obj.treinamento_responsavel:
+            usuario_deve_assinar = assinatura_obj.treinamento_responsavel.responsavel
+            
+        if request.user != usuario_deve_assinar:
+            messages.warning(request, "Você está logado com um usuário diferente do esperado para esta assinatura. Por favor, acesse com o usuário correto.")
+            # Você pode optar por bloquear descomentando a linha abaixo:
+            # return redirect('core:index')
+
+        if assinatura_obj.esta_assinada:
+            messages.info(request, "Este documento já foi assinado.")
+
+        context = {
+            'titulo': 'Coleta de Assinatura',
+            'assinatura_obj': assinatura_obj,
+            'nome_assinante': assinatura_obj.get_signer(),
+            'token': token,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        token = self.kwargs.get('token')
+        assinatura_obj = self.get_assinatura_obj(token)
+        
+        if not assinatura_obj:
+            messages.error(request, "Link de assinatura inválido ou expirado.")
+            return redirect('core:index')
+            
+        if assinatura_obj.esta_assinada:
+            messages.error(request, "Este documento já foi assinado.")
+            return redirect('treinamentos:pagina_assinatura', token=token)
+
+        # Dados da assinatura vêm do JavaScript (ex: signature_pad.js)
+        # Estamos salvando como SVG (Base64), que é mais leve e vetorial
+        assinatura_data_svg_base64 = request.POST.get('assinatura_json')
+
+        if not assinatura_data_svg_base64:
+            messages.error(request, "Nenhuma assinatura foi fornecida.")
+            return render(request, self.template_name, {'assinatura_obj': assinatura_obj, 'nome_assinante': assinatura_obj.get_signer()})
+
+        # Salva a assinatura
+        assinatura_obj.assinatura_json = assinatura_data_svg_base64
+        assinatura_obj.data_assinatura = timezone.now()
+        assinatura_obj.save()
+
+        messages.success(request, "✅ Assinatura registrada com sucesso!")
+        return redirect('core:index') # Redireciona para home
+
+def mark_safe(value):
+    raise NotImplementedError
+
+def reverse(participante):
+    raise NotImplementedError
+
+
+class GerarCertificadoPDFView(LoginRequiredMixin, TecnicoScopeMixin, View):
+    """
+    Gera o certificado em PDF (Frente e Verso) para um participante.
+    """
+    # O técnico só pode ver o detalhe se o lookup for verdadeiro
+    # Corrigido para apontar para o treinamento via 'participante'
+    tecnico_scope_lookup = 'treinamento__participantes__funcionario'
+
+    def get_qrcode_svg(self, participante):
+        """
+Gera o QR Code para a URL de validação e retorna como uma string SVG.
+"""
+        # Monta a URL completa de verificação
+        url_validacao = self.request.build_absolute_uri(
+            reverse('treinamentos:verificar_certificado', 
+                    kwargs={'protocolo': participante.protocolo_validacao})
+        )
+        
+        # Gera o QR Code em memória
+        factory = qrcode.image.svg.SvgPathImage
+        img = qrcode.make(url_validacao, image_factory=factory, border=1)
+        
+        # Converte o SVG para uma string
+        buffer = io.BytesIO()
+        img.save(buffer)
+        svg_string = buffer.getvalue().decode('utf-8')
+        return svg_string
+
+    def get_context_data(self, participante):
+        treinamento = participante.treinamento
+        gabarito = GabaritoCertificado.objects.filter(ativo=True).first()
+        
+        if not gabarito:
+            raise Exception("Nenhum Gabarito de Certificado ativo foi encontrado.")
+            
+        documento = getattr(participante.funcionario, 'cpf', 
+                        getattr(participante.funcionario, 'rg', 'Não informado'))
+
+        data_inicio = treinamento.data_inicio.strftime('%d/%m/%Y')
+        data_fim = treinamento.data_fim.strftime('%d/%m/%Y') if treinamento.data_fim else data_inicio
+
+        try:
+            carga_horaria_extenso = num2words(treinamento.duracao, lang='pt_BR')
+        except Exception:
+            carga_horaria_extenso = str(treinamento.duracao)
+
+        # Contexto para a FRENTE
+        context_frente = {
+            'participante_nome': participante.funcionario.get_full_name(),
+            'participante_documento': documento,
+            'empresa_nome': gabarito.empresa_nome,
+            'nome_curso': treinamento.tipo_curso.nome,
+            'conteudo_programatico': treinamento.tipo_curso.descricao_no_certificado or "",
+            'referencia_normativa': treinamento.tipo_curso.referencia_normativa or "",
+            'data_inicio': data_inicio,
+            'data_fim': data_fim,
+            'carga_horaria': treinamento.duracao,
+            'carga_horaria_extenso': carga_horaria_extenso,
+            'local': treinamento.local,
+        }
+        
+        # Contexto para o VERSO
+        qr_code_svg = self.get_qrcode_svg(participante)
+        
+        # Formata a grade curricular (troca quebras de linha por <br>)
+        grade_formatada = (treinamento.tipo_curso.grade_curricular or "").replace('\n', '<br>')
+        
+        context_verso = {
+            'grade_curricular': mark_safe(grade_formatada),
+            'protocolo': str(participante.protocolo_validacao),
+            'qr_code_svg': mark_safe(qr_code_svg), # Passa o SVG do QR Code
+        }
+
+        # Assinaturas (passamos o OBJETO para o template)
+        assinatura_participante = getattr(participante, 'assinatura', None)
+        assinatura_responsavel = getattr(treinamento, 'assinatura_responsavel', None)
+
+        return {
+            'gabarito': gabarito,
+            'contexto_frente': context_frente,
+            'contexto_verso': context_verso,
+            'participante': participante,
+            'treinamento': treinamento,
+            'assinatura_participante': assinatura_participante,
+            'assinatura_responsavel': assinatura_responsavel,
+            'data_emissao': timezone.now()
+        }
+
+    def get(self, request, *args, **kwargs):
+        if not WEASYPRINT_DISPONIVEL:
+            messages.error(request, "A biblioteca 'WeasyPrint' não foi encontrada. Geração de PDF está desabilitada.")
+            return redirect(request.META.get('HTTP_REFERER', 'treinamentos:lista_treinamentos'))
+
+        try:
+            # Aplica o filtro de escopo do Técnico
+            base_qs = Participante.objects.select_related(
+                'funcionario',
+                'treinamento__tipo_curso',
+                'treinamento__responsavel',
+                'assinatura', # OnetoOne (participante)
+                'treinamento__assinatura_responsavel' # OnetoOne (treinamento)
+            )
+            
+            # O get_queryset do TecnicoScopeMixin espera ser chamado por uma ListView
+            # Vamos adaptar para usá-lo manualmente aqui
+            if hasattr(self, 'scope_tecnico_queryset'):
+                 base_qs = self.scope_tecnico_queryset(base_qs)
+
+            participante = get_object_or_404(base_qs, pk=self.kwargs.get('pk'))
+        
+        except Http404:
+            messages.error(request, "Participante não encontrado ou você não tem permissão.")
+            return redirect('treinamentos:lista_treinamentos')
+            
+        except Exception as e:
+            messages.error(request, f"Erro ao buscar participante: {e}")
+            return redirect('treinamentos:lista_treinamentos')
+
+
+        # --- Validações de Negócio ---
+        if not participante.treinamento.status == 'F':
+            messages.error(request, "Este treinamento ainda não foi finalizado.")
+            return redirect('treinamentos:detalhe_treinamento', pk=participante.treinamento.pk)
+            
+        if not participante.presente:
+            messages.error(request, "Este participante não teve a presença confirmada.")
+            return redirect('treinamentos:detalhe_treinamento', pk=participante.treinamento.pk)
+
+        # Descomente estas verificações quando o fluxo de assinatura estiver 100%
+        if not getattr(participante, 'assinatura', None) or not participante.assinatura.esta_assinada:
+             messages.error(request, "O participante ainda não assinou o certificado.")
+             return redirect('treinamentos:detalhe_treinamento', pk=participante.treinamento.pk)
+        
+        if not getattr(participante.treinamento, 'assinatura_responsavel', None) or not participante.treinamento.assinatura_responsavel.esta_assinada:
+             messages.error(request, "O instrutor responsável ainda não assinou o certificado.")
+             return redirect('treinamentos:detalhe_treinamento', pk=participante.treinamento.pk)
+
+
+        # --- Geração do PDF ---
+        try:
+            context_data = self.get_context_data(participante)
+            
+            # Renderiza o HTML do certificado
+            template = get_template('treinamentos/certificado_template.html')
+            html_string = template.render(context_data)
+
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'inline; filename="certificado_{participante.funcionario.username}.pdf"'
+            
+            # Crie um arquivo CSS para estilizar seu PDF
+            css_path = os.path.join(settings.STATIC_ROOT, 'css', 'certificado.css')
+            css_files = []
+            if os.path.exists(css_path):
+                 css_files.append(CSS(css_path))
+            
+            HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf(
+                response,
+                stylesheets=css_files
+            )
+            
+            # Marca o certificado como emitido
+            if not participante.certificado_emitido:
+                 participante.certificado_emitido = True
+                 participante.save(update_fields=['certificado_emitido'])
+
+            return response
+            
+        except Exception as e:
+            print(f"ERRO CRÍTICO AO GERAR PDF: {str(e)}")
+            print(traceback.format_exc())
+            messages.error(request, f"Ocorreu um erro inesperado ao gerar o PDF: {e}")
+            return redirect('treinamentos:detalhe_treinamento', pk=participante.treinamento.pk)

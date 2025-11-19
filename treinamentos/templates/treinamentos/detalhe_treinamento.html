@@ -85,15 +85,15 @@
                                     <tr>
                                         <td>
                                             {% with nome_display=participante.funcionario.get_full_name|default:participante.funcionario.username %}
-                                                <div class="d-flex align-items-center">
-                                                    <img src="https://ui-avatars.com/api/?name={{ nome_display|urlencode }}&background=random&color=fff" 
-                                                        alt="Avatar de {{ nome_display }}" 
-                                                        class="user-avatar">
-                                                    <div class="user-info">
-                                                    <div class="user-name">{{ nome_display }}</div>
-                                                    <div class="user-role">{{ participante.funcionario.cargo.nome|default:participante.funcionario.username }}</div>
-                                                    </div>
+                                            <div class="d-flex align-items-center">
+                                                <img src="https://ui-avatars.com/api/?name={{ nome_display|urlencode }}&background=random&color=fff" 
+                                                    alt="Avatar de {{ nome_display }}" 
+                                                    class="user-avatar">
+                                                <div class="user-info">
+                                                <div class="user-name">{{ nome_display }}</div>
+                                                <div class="user-role">{{ participante.funcionario.cargo.nome|default:participante.funcionario.username }}</div>
                                                 </div>
+                                            </div>
                                             {% endwith %}
                                         </td>
                                         <td class="text-center">
@@ -104,14 +104,26 @@
                                             {% endif %}
                                         </td>
                                         <td class="text-center">{{ participante.nota_avaliacao|default:"-" }}%</td>
-                                        <td class="text-center">
+                                        
+                                        <td class="text-center align-middle">
                                             {% if participante.certificado_emitido %}
-                                                <i class="bi bi-patch-check-fill text-primary fs-5"></i>
+                                                <i class="bi bi-patch-check-fill text-primary fs-5" 
+                                                data-bs-toggle="tooltip" title="Certificado já emitido"></i>
                                             {% else %}
-                                                <i class="bi bi-circle text-secondary fs-5"></i>
+                                                {% if treinamento.status == 'F' and participante.presente %}
+                                                    <a href="{% url 'treinamentos:gerar_certificado_participante' pk=participante.pk %}" 
+                                                    class="btn btn-sm btn-primary" 
+                                                    target="_blank"
+                                                    data-bs-toggle="tooltip" title="Gerar Certificado PDF">
+                                                        <i class="bi bi-file-earmark-pdf-fill"></i> Gerar
+                                                    </a>
+                                                {% else %}
+                                                    <i class="bi bi-circle text-secondary fs-5"
+                                                    data-bs-toggle="tooltip" title="Certificado não disponível"></i>
+                                                {% endif %}
                                             {% endif %}
                                         </td>
-                                    </tr>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>

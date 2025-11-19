@@ -1,0 +1,174 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0">{{ cliente.nome }}</h2>
+            <span class="text-muted">Detalhes do Cadastro</span>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <a href="{% url 'cliente:editar_cliente' cliente.pk %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Editar
+            </a>
+            </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-light fw-bold">
+                    <i class="bi bi-building me-2"></i>Dados da Empresa
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase">Razão Social</label>
+                            <div class="fw-bold">{{ cliente.razao_social }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase">CNPJ</label>
+                            <div class="fw-bold font-monospace">{{ cliente.cnpj_formatado }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase">Contrato</label>
+                            <div>{{ cliente.contrato|default:"-" }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase">Data Início</label>
+                            <div>{{ cliente.data_de_inicio|date:"d/m/Y"|default:"-" }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase">Status</label>
+                            <div>
+                                {% if cliente.estatus %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-folder2-open me-2"></i>Documentos do Cliente</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Tipo</th>
+                                    <th>Vencimento</th>
+                                    <th class="text-end">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for arquivo in arquivos_cliente %}
+                                    {% with doc=arquivo.documento_vigente %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ arquivo.nome }}</strong>
+                                            {% if arquivo.descricao %}
+                                                <br><small class="text-muted">{{ arquivo.descricao|truncatechars:30 }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge bg-light text-dark border">{{ arquivo.get_tipo_display }}</span></td>
+                                        <td>
+                                            {% if doc and doc.data_vencimento %}
+                                                <span class="{% if doc.is_vencido %}text-danger fw-bold{% endif %}">
+                                                    {{ doc.data_vencimento|date:"d/m/Y" }}
+                                                </span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if doc and doc.arquivo %}
+                                                <a href="{{ doc.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Baixar">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted small">Pendente</span>
+                                            {% endif %}
+                                            <a href="{% url 'arquivos:editar_documento' arquivo.pk %}" class="btn btn-sm btn-light border">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endwith %}
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                                            Nenhum documento vinculado a este cliente.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-white fw-bold text-primary">
+                    <i class="bi bi-telephone me-2"></i>Contatos
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <label class="text-muted small d-block">Email</label>
+                        {% if cliente.email %}
+                            <a href="mailto:{{ cliente.email }}" class="text-decoration-none">{{ cliente.email }}</a>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item">
+                        <label class="text-muted small d-block">Telefone</label>
+                        {% if cliente.telefone %}
+                            <a href="tel:{{ cliente.telefone }}" class="text-decoration-none">{{ cliente.telefone }}</a>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold text-primary">
+                    <i class="bi bi-geo-alt me-2"></i>Endereço
+                </div>
+                <div class="card-body">
+                    {% if cliente.logradouro %}
+                        <p class="mb-1"><strong>{{ cliente.logradouro.rua }}, {{ cliente.logradouro.numero }}</strong></p>
+                        <p class="mb-1">{{ cliente.logradouro.bairro }}</p>
+                        <p class="mb-1">{{ cliente.logradouro.cidade }} - {{ cliente.logradouro.estado }}</p>
+                        <p class="mb-0 text-muted small">CEP: {{ cliente.logradouro.cep }}</p>
+                        
+                        <div class="d-grid mt-3">
+                            <a href="https://maps.google.com/?q={{ cliente.logradouro.rua }},{{ cliente.logradouro.numero }},{{ cliente.logradouro.cidade }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-map"></i> Ver no Mapa
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Endereço não cadastrado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

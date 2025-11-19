@@ -1,0 +1,61 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+  {% if valido %}
+    Certificado Válido
+  {% else %}
+    Certificado Inválido
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            {% if valido %}
+                <div class="card shadow-sm border-success">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="mb-0"><i class="fas fa-check-circle"></i> Certificado Válido</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead">Este documento é autêntico e foi emitido para:</p>
+                        <h2 class="display-6">{{ participante.funcionario.get_full_name }}</h2>
+                        <hr>
+                        <dl class="row">
+                            <dt class="col-sm-3">Curso:</dt>
+                            <dd class="col-sm-9">{{ treinamento.nome }}</dd>
+                            
+                            <dt class="col-sm-3">Tipo:</dt>
+                            <dd class="col-sm-9">{{ treinamento.tipo_curso.nome }}</dd>
+
+                            <dt class="col-sm-3">Status:</dt>
+                            <dd class="col-sm-9">
+                                <span class="badge bg-success">Finalizado</span>
+                            </dd>
+
+                            <dt class="col-sm-3">Conclusão:</dt>
+                            <dd class="col-sm-9">{{ treinamento.data_fim|date:"d/m/Y" }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card shadow-sm border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h3 class="mb-0"><i class="fas fa-times-circle"></i> Certificado Inválido</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead">Não foi possível localizar um certificado com o seguinte protocolo:</p>
+                        <h4 class="text-muted"><code>{{ protocolo }}</code></h4>
+                        <hr>
+                        <p>Por favor, verifique o QR Code ou o link e tente novamente. Se o erro persistir, entre em contato com a empresa emissora.</p>
+                    </div>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
