@@ -174,6 +174,9 @@ USE_TZ = True
 # Fuso horário do Brasil
 TIME_ZONE = 'America/Sao_Paulo'
 
+# Mapbox (opcional - para mapas mais avançados)
+MAPBOX_ACCESS_TOKEN = 'your_mapbox_token_here'
+
 
 # Configurações para arquivos estáticos
 STATIC_URL = '/static/'

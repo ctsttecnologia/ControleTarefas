@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% load static crispy_forms_tags %}
 
@@ -5,7 +6,7 @@
 
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/automovel/automovel_styles.css' %}!important">
+<link rel="stylesheet" href="{% static 'css/automovel/automovel_styles.css' %}">
 <style>
     /* Seus estilos aqui... (mantidos da resposta anterior) */
     .photo-uploader {
@@ -30,10 +31,10 @@
 
         <div class="card shadow-sm">
             <div class="card-body">
-                <div class="row mb-4">
+                
                     <div class="col-md-6">{{ form.tipo|as_crispy_field }}</div>
                     <div class="col-md-6">{{ form.data_hora|as_crispy_field }}</div>
-                    
+
                     {% if 'km_inicial' in form.fields %}
                         <div class="col-md-6 mt-3">{{ form.km_inicial|as_crispy_field }}</div>
                     {% endif %}
@@ -41,7 +42,7 @@
                     {% if 'km_final' in form.fields %}
                         <div class="col-md-6 mt-3">{{ form.km_final|as_crispy_field }}</div>
                     {% endif %}
-                </div>
+                
 
                 <div class="accordion" id="vistoriaAccordion">
                     

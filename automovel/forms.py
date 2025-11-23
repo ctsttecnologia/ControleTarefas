@@ -1,6 +1,7 @@
 from django import forms
-from .models import Carro, Agendamento, Checklist, Foto
+from .models import Carro, Carro_agendamento, Carro_checklist, Carro_foto, Carro_manutencao
 from django.utils import timezone
+
 
 class CarroForm(forms.ModelForm):
     class Meta:
@@ -26,7 +27,7 @@ class AgendamentoForm(forms.ModelForm):
             self.fields['data_hora_agenda'].help_text = "A data de agendamento não pode ser alterada."
 
     class Meta:
-        model = Agendamento
+        model = Carro_agendamento
         # MUDANÇA: Lista explícita. Campos como 'usuario', 'filial', 'status' são controlados pelo sistema.
         fields = [
             'carro', 'funcionario', 'data_hora_agenda', 'data_hora_devolucao',
@@ -58,7 +59,7 @@ class ChecklistForm(forms.ModelForm):
     )
 
     class Meta:
-        model = Checklist
+        model = Carro_checklist
 
         fields = [
             'tipo', 'data_hora',
@@ -124,7 +125,23 @@ class ChecklistForm(forms.ModelForm):
 
 class FotoForm(forms.ModelForm):
     class Meta:
-        model = Foto
+        model = Carro_foto
         # MUDANÇA: Lista explícita. 'agendamento' e 'filial' são definidos pela view.
         fields = ['imagem', 'observacao']
+
+class ManutencaoForm(forms.ModelForm):
+    class Meta:
+        model = Carro_manutencao
+        fields = ['data_manutencao', 'tipo', 'descricao', 'custo', 'concluida', 'observacoes']
+        widgets = {
+            'data_manutencao': forms.DateInput(attrs={'type': 'date'}),
+            'descricao': forms.Textarea(attrs={'rows': 3}),
+            'observacoes': forms.Textarea(attrs={'rows': 2}),
+        }
+    
+    def clean_data_manutencao(self):
+        data_manutencao = self.cleaned_data.get('data_manutencao')
+        if data_manutencao and data_manutencao < timezone.now().date():
+            raise forms.ValidationError("A data da manutenção não pode ser no passado.")
+        return data_manutencao
 

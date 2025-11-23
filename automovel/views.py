@@ -3,6 +3,8 @@
 
 
 import io
+import json
+from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, View, TemplateView
 from django.urls import reverse_lazy, reverse
@@ -19,7 +21,7 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 import openpyxl
-from .models import Carro, Agendamento, Checklist
+from .models import Carro, Carro_agendamento, Carro_checklist
 from .forms import CarroForm, AgendamentoForm, ChecklistForm
 from core.mixins import ViewFilialScopedMixin
 from django.http import HttpResponse, HttpResponseBadRequest, Http404
@@ -28,6 +30,11 @@ from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 from datetime import datetime
 from openpyxl.cell import MergedCell
+from django.contrib.messages.views import SuccessMessageMixin
+from django.db.models import Prefetch
+from .models import Carro_rastreamento
+from .models import Carro_manutencao
+from .forms import ManutencaoForm
 
 
 # --- Mixins ---
@@ -41,7 +48,7 @@ class SuccessMessageMixin:
             messages.success(self.request, self.success_message)
         return response
 
-# MUDANÇA: Novo mixin para evitar repetição de código no formulário do Checklist
+# Novo mixin para evitar repetição de código no formulário do Checklist
 class ChecklistFormSectionsMixin:
     """ Organiza os campos do formulário de checklist em seções para o template. """
     def get_context_data(self, **kwargs):
@@ -62,10 +69,10 @@ class ChecklistFormSectionsMixin:
 class DashboardView(LoginRequiredMixin, ListView):
     template_name = 'automovel/dashboard.html'
     context_object_name = 'ultimos_agendamentos'
-    model = Agendamento
+    model = Carro_agendamento
 
     def get_queryset(self):
-        qs = Agendamento.objects.for_request(self.request)
+        qs = Carro_agendamento.objects.for_request(self.request)
         return qs.select_related('carro', 'usuario').order_by('-data_hora_agenda')[:5]
 
     def get_context_data(self, **kwargs):
@@ -73,7 +80,7 @@ class DashboardView(LoginRequiredMixin, ListView):
         hoje = timezone.now().date()
         
         carros_da_filial = Carro.objects.for_request(self.request).filter(ativo=True)
-        agendamentos_da_filial = Agendamento.objects.for_request(self.request)
+        agendamentos_da_filial = Carro_agendamento.objects.for_request(self.request)
         
         context['total_carros'] = carros_da_filial.count()
         context['carros_disponiveis'] = carros_da_filial.filter(disponivel=True).count()
@@ -89,7 +96,7 @@ class CalendarioView(LoginRequiredMixin, TemplateView):
 
 class CalendarioAPIView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
-        agendamentos = Agendamento.objects.for_request(request).filter(cancelar_agenda=False)
+        agendamentos = Carro_agendamento.objects.for_request(request).filter(cancelar_agenda=False)
         status_colors = {'agendado': '#0d6efd', 'em_andamento': '#ffc107', 'finalizado': '#198754'}
         eventos = [
             {
@@ -145,12 +152,29 @@ class CarroDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     template_name = 'automovel/carro_detail.html'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('filial').prefetch_related('agendamentos')
+        return super().get_queryset().select_related('filial').prefetch_related('agendamentos', 'manutencoes')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        carro = self.object
+        
+        # Últimos agendamentos
+        agendamentos = carro.agendamentos.all().select_related('usuario').order_by('-data_hora_agenda')[:10]
+        
+        # Histórico de manutenções
+        manutencoes = carro.manutencoes.all().order_by('-data_manutencao')[:10]
+        
+        context.update({
+            'agendamentos': agendamentos,
+            'manutencoes': manutencoes,
+        })
+        return context
+
     
 # --- Agendamento CRUD ---
 
 class AgendamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
-    model = Agendamento
+    model = Carro_agendamento
     template_name = 'automovel/agendamento_list.html'
     context_object_name = 'agendamentos'
     paginate_by = 20
@@ -160,7 +184,7 @@ class AgendamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
 
 class AgendamentoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     # MUDANÇA: Removido ViewFilialScopedMixin, pois não se aplica a CreateViews
-    model = Agendamento
+    model = Carro_agendamento
     form_class = AgendamentoForm
     template_name = 'automovel/agendamento_form.html'
     success_url = reverse_lazy('automovel:agendamento_list')
@@ -172,42 +196,70 @@ class AgendamentoCreateView(LoginRequiredMixin, SuccessMessageMixin, CreateView)
         return super().form_valid(form)
 
 class AgendamentoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
-    model = Agendamento
+    model = Carro_agendamento
     form_class = AgendamentoForm
     template_name = 'automovel/agendamento_form.html'
     success_message = "Agendamento atualizado com sucesso!"
     def get_success_url(self):
         return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.pk})
+    
 
 class AgendamentoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
-    model = Agendamento
+    model = Carro_agendamento
     template_name = 'automovel/agendamento_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        agendamento = self.object
+        
+        # Histórico de agendamentos para o mesmo carro
+        historico_agendamentos = Carro_agendamento.objects.for_request(self.request)\
+            .filter(carro=agendamento.carro)\
+            .exclude(id=agendamento.id)\
+            .select_related('usuario')\
+            .order_by('-data_hora_agenda')[:10]
+        
+        # Dados de rastreamento
+        rastreamentos = Carro_rastreamento.objects.filter(agendamento=agendamento)\
+            .order_by('-data_hora')[:50]
+        
+        # Checklist existente
+        checklist_saida = agendamento.checklists.filter(tipo='saida').first()
+        checklist_retorno = agendamento.checklists.filter(tipo='retorno').first()
+        
+        context.update({
+            'historico_agendamentos': historico_agendamentos,
+            'rastreamentos': rastreamentos,
+            'checklist_saida': checklist_saida,
+            'checklist_retorno': checklist_retorno,
+            'mapbox_access_token': settings.MAPBOX_ACCESS_TOKEN if hasattr(settings, 'MAPBOX_ACCESS_TOKEN') else '',
+        })
+        return context
+
 
 # --- Checklist CRUD ---
 
 class ChecklistListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
-    model = Checklist
+    model = Carro_checklist
     template_name = 'automovel/checklist_list.html'
     context_object_name = 'checklists'
-
     def get_queryset(self):
         # MUDANÇA: Simplificado para confiar apenas no mixin, removendo filtro redundante
         return super().get_queryset().select_related('agendamento__carro')
 
 class ChecklistCreateView(LoginRequiredMixin, SuccessMessageMixin, ChecklistFormSectionsMixin, CreateView):
-    model = Checklist
+    model = Carro_checklist
     form_class = ChecklistForm
     template_name = 'automovel/checklist_form.html'
-    # Mensagens de sucesso agora são tratadas no form_valid
 
     def dispatch(self, request, *args, **kwargs):
         self.agendamento = get_object_or_404(
-            Agendamento.objects.for_request(self.request).select_related('carro'),
+            Carro_agendamento.objects.for_request(self.request).select_related('carro'),
             pk=self.kwargs.get('agendamento_pk')
         )
         self.tipo_checklist = self.request.GET.get('tipo', 'saida')
 
-        if Checklist.objects.filter(agendamento=self.agendamento, tipo=self.tipo_checklist).exists():
+        if Carro_checklist.objects.filter(agendamento=self.agendamento, tipo=self.tipo_checklist).exists():
             messages.error(request, f"Um checklist de '{self.tipo_checklist}' já existe para este agendamento.")
             return redirect('automovel:agendamento_detail', pk=self.agendamento.pk)
             
@@ -231,40 +283,50 @@ class ChecklistCreateView(LoginRequiredMixin, SuccessMessageMixin, ChecklistForm
 
     def form_valid(self, form):
         agendamento = self.agendamento
+        usuario = self.request.user
 
-        # Lógica para tratar o KM inicial na SAÍDA.
+        # 1. VERIFICAÇÃO DE SEGURANÇA (Primeira coisa a fazer)
+        # Se não tiver funcionário, paramos TUDO aqui e retornamos erro.
+        if not hasattr(usuario, 'funcionario'):
+            messages.error(self.request, "Seu usuário não está vinculado a um cadastro de Funcionário. Contate o RH ou Administrador.")
+            return self.form_invalid(form)
+        
+        # Se passou daqui, é seguro usar usuario.funcionario
+        funcionario_logado = usuario.funcionario
+
+        # 2. LÓGICA DE VALIDAÇÃO E ATUALIZAÇÃO DO AGENDAMENTO (KM)
         if self.tipo_checklist == 'saida':
             km_inicial_informado = form.cleaned_data.get('km_inicial')
             if not km_inicial_informado:
                 form.add_error('km_inicial', 'A quilometragem inicial é obrigatória para o checklist de saída.')
                 return self.form_invalid(form)
             
-            # Atualiza o agendamento com o KM inicial.
             agendamento.km_inicial = km_inicial_informado
             agendamento.save(update_fields=['km_inicial'])
         
-        # MELHORIA: Lógica para tratar o KM final no retorno.
-        if self.tipo_checklist == 'retorno':
+        elif self.tipo_checklist == 'retorno':
             km_final_informado = form.cleaned_data.get('km_final')
             if not km_final_informado:
                 form.add_error('km_final', 'A quilometragem final é obrigatória para o checklist de retorno.')
                 return self.form_invalid(form)
             
-            # Atualiza o agendamento com o KM final ANTES de salvar o checklist.
             agendamento.km_final = km_final_informado
             agendamento.save(update_fields=['km_final'])
 
-        # --- PREENCHIMENTO AUTOMÁTICO DOS CAMPOS ---
+        # 3. PREENCHIMENTO AUTOMÁTICO DOS CAMPOS DO CHECKLIST
         form.instance.agendamento = agendamento
-        form.instance.usuario = self.request.user
-        # GARANTIA: Define a filial do usuário logado, usando o caminho correto.
-        form.instance.filial = self.request.user.funcionario.filial
+        form.instance.usuario = usuario # (Opcional, se o model tiver esse campo)
         
-        # Define a mensagem de sucesso
+        # Aqui usamos a variável segura que definimos no passo 1
+        form.instance.responsavel = funcionario_logado 
+        form.instance.filial = funcionario_logado.filial
+        
+        # 4. DEFINIÇÃO DA MENSAGEM DE SUCESSO
         self.success_message = f"Checklist de {self.tipo_checklist} registrado com sucesso!"
         if self.tipo_checklist == 'retorno':
             self.success_message += " Agendamento finalizado!"
 
+        # Finalmente salva o checklist
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -272,7 +334,7 @@ class ChecklistCreateView(LoginRequiredMixin, SuccessMessageMixin, ChecklistForm
     
 class ChecklistUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, ChecklistFormSectionsMixin, UpdateView):
     # MUDANÇA: Adicionado ViewFilialScopedMixin (falha de segurança) e SuccessMessageMixin
-    model = Checklist
+    model = Carro_checklist
     form_class = ChecklistForm
     template_name = 'automovel/checklist_form.html'
     success_message = 'Checklist atualizado com sucesso!'
@@ -286,7 +348,7 @@ class ChecklistUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMess
         return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.agendamento.pk})
 
 class ChecklistDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
-    model = Checklist
+    model = Carro_checklist
     template_name = 'automovel/checklist_detail.html'
 
 # --- Relatórios e APIs ---
@@ -444,7 +506,7 @@ def gerar_relatorio_word(request, tipo, pk):
     }
     
     models = {
-        'checklist': Checklist,
+        'checklist': Carro_checklist,
         # 'agendamento': Agendamento,
     }
 
@@ -589,7 +651,7 @@ class AgendamentoReportGenerator(BaseExcelReportGenerator):
 
     @classmethod
     def get_queryset(cls, request):
-        return Agendamento.objects.for_request(request).select_related('carro').order_by('-data_hora_agenda')
+        return Carro_agendamento.objects.for_request(request).select_related('carro').order_by('-data_hora_agenda')
     
     def get_report_title(self):
         return "Relatório de Agendamentos"
@@ -615,13 +677,11 @@ class AgendamentoReportGenerator(BaseExcelReportGenerator):
 # VIEW PRINCIPAL - Agora atua como um "despachante"
 # =============================================================================
 def gerar_relatorio_excel(request, tipo):
-    """
-    View que seleciona o gerador de relatório correto com base no 'tipo'
-    e inicia a geração do arquivo Excel.
-    """
     generators = {
         'carros': CarroReportGenerator,
-        'agendamentos': AgendamentoReportGenerator
+        'agendamentos': AgendamentoReportGenerator,
+        'checklists': ChecklistReportGenerator,  # Novo
+        'rastreamento': RastreamentoReportGenerator  # Novo
     }
     
     generator_class = generators.get(tipo)
@@ -634,7 +694,43 @@ def gerar_relatorio_excel(request, tipo):
     
     return generator.generate()
 
-# As APIs já estavam corretas, sem necessidade de mudanças.
+# Novo gerador para Checklists
+class ChecklistReportGenerator(BaseExcelReportGenerator):
+    def __init__(self, request, queryset):
+        super().__init__(request, queryset, "relatorio_checklists")
+
+    @classmethod
+    def get_queryset(cls, request):
+        return Carro_checklist.objects.for_request(request)\
+            .select_related('agendamento__carro', 'usuario')\
+            .order_by('-data_hora')
+
+    def get_report_title(self):
+        return "Relatório de Checklists"
+
+    def get_headers(self):
+        return [
+            'ID', 'Agendamento', 'Veículo', 'Tipo', 'Data/Hora', 'Usuário',
+            'Status Frontal', 'Status Traseiro', 'Status Motorista', 'Status Passageiro',
+            'Observações'
+        ]
+
+    def get_row_data(self, checklist):
+        return [
+            checklist.id,
+            f"#{checklist.agendamento.id}",
+            f"{checklist.agendamento.carro.placa}",
+            checklist.get_tipo_display(),
+            checklist.data_hora.strftime('%d/%m/%Y %H:%M'),
+            checklist.usuario.get_full_name(),
+            checklist.get_revisao_frontal_status_display(),
+            checklist.get_revisao_trazeira_status_display(),
+            checklist.get_revisao_lado_motorista_status_display(),
+            checklist.get_revisao_lado_passageiro_status_display(),
+            checklist.observacoes_gerais or 'Nenhuma'
+        ]
+
+# As APIs.
 class CarrosDisponiveisAPIView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         carros = Carro.objects.for_request(request).filter(disponivel=True, ativo=True)
@@ -650,3 +746,177 @@ class ProximaManutencaoAPIView(LoginRequiredMixin, View):
         ).order_by('data_proxima_manutencao')
         data = [{'id': c.id, 'placa': c.placa, 'modelo': c.modelo} for c in carros]
         return JsonResponse(data, safe=False)
+    
+
+class AgendarManutencaoView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        carro = get_object_or_404(Carro.objects.for_request(request), pk=pk)
+        
+        form = ManutencaoForm(request.POST)
+        if form.is_valid():
+            manutencao = form.save(commit=False)
+            manutencao.carro = carro
+            manutencao.usuario = request.user
+            manutencao.filial = request.user.filial_ativa
+            manutencao.save()
+            
+            messages.success(request, 'Manutenção agendada com sucesso!')
+            return redirect('automovel:carro_detail', pk=carro.pk)
+        else:
+            messages.error(request, 'Erro ao agendar manutenção. Verifique os dados.')
+            return redirect('automovel:carro_detail', pk=carro.pk)
+
+class CarroDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+    model = Carro
+    template_name = 'automovel/carro_detail.html'
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('filial').prefetch_related('agendamentos', 'manutencoes')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        carro = self.object
+        
+        # Últimos agendamentos
+        agendamentos = carro.agendamentos.all().select_related('usuario').order_by('-data_hora_agenda')[:10]
+        
+        # Histórico de manutenções
+        manutencoes = carro.manutencoes.all().order_by('-data_manutencao')[:10]
+        
+        context.update({
+            'agendamentos': agendamentos,
+            'manutencoes': manutencoes,
+        })
+        return context
+
+# Novo gerador para Rastreamento
+class RastreamentoReportGenerator(BaseExcelReportGenerator):
+    def __init__(self, request, queryset):
+        super().__init__(request, queryset, "relatorio_rastreamento")
+
+    @classmethod
+    def get_queryset(cls, request):
+        return Carro_rastreamento.objects.for_request(request)\
+            .select_related('agendamento__carro')\
+            .order_by('-data_hora')
+
+    def get_report_title(self):
+        return "Relatório de Rastreamento"
+
+    def get_headers(self):
+        return [
+            'ID', 'Agendamento', 'Veículo', 'Data/Hora', 'Latitude', 'Longitude',
+            'Velocidade (km/h)', 'Endereço Aproximado'
+        ]
+
+    def get_row_data(self, rastreamento):
+        return [
+            rastreamento.id,
+            f"#{rastreamento.agendamento.id}",
+            rastreamento.agendamento.carro.placa,
+            rastreamento.data_hora.strftime('%d/%m/%Y %H:%M'),
+            float(rastreamento.latitude),
+            float(rastreamento.longitude),
+            float(rastreamento.velocidade) if rastreamento.velocidade else 'N/A',
+            rastreamento.endereco_aproximado or 'N/A'
+        ]
+
+class ManutencaoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+    model = Carro_manutencao
+    template_name = 'automovel/manutencao_list.html'
+    context_object_name = 'manutencoes'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('carro', 'usuario')
+        
+        # Filtros
+        carro_id = self.request.GET.get('carro')
+        if carro_id:
+            queryset = queryset.filter(carro_id=carro_id)
+            
+        status = self.request.GET.get('status')
+        if status == 'concluidas':
+            queryset = queryset.filter(concluida=True)
+        elif status == 'pendentes':
+            queryset = queryset.filter(concluida=False)
+            
+        return queryset.order_by('-data_manutencao')
+
+class RastreamentoCreateView(LoginRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            agendamento_id = data.get('agendamento_id')
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
+            velocidade = data.get('velocidade')
+            
+            agendamento = get_object_or_404(
+                Carro_agendamento.objects.for_request(request),
+                pk=agendamento_id
+            )
+            
+            # Geocoding reverso simplificado (em produção, usar serviço como Mapbox/Google)
+            endereco_aproximado = self._reverse_geocode(latitude, longitude)
+            
+            rastreamento = Carro_rastreamento.objects.create(
+                agendamento=agendamento,
+                latitude=latitude,
+                longitude=longitude,
+                velocidade=velocidade,
+                endereco_aproximado=endereco_aproximado,
+                filial=request.user.filial_ativa
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'id': rastreamento.id,
+                'endereco': endereco_aproximado,
+                'data_hora': rastreamento.data_hora.strftime('%d/%m/%Y %H:%M')
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    
+    def _reverse_geocode(self, lat, lng):
+        # Implementação básica - em produção usar serviço profissional
+        try:
+            # Exemplo com OpenStreetMap Nominatim (gratuito)
+            import requests
+            response = requests.get(
+                f'https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&zoom=18'
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('display_name', 'Endereço não identificado')
+        except:
+            pass
+        return 'Endereço não disponível'
+
+class RastreamentoMapView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+    model = Carro_agendamento
+    template_name = 'automovel/rastreamento_map.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        agendamento = self.object
+        rastreamentos = Carro_rastreamento.objects.filter(agendamento=agendamento)\
+            .order_by('data_hora')
+        
+        pontos_rastreamento = [
+            {
+                'lat': float(r.latitude),
+                'lng': float(r.longitude),
+                'data_hora': r.data_hora.strftime('%d/%m/%Y %H:%M'),
+                'velocidade': r.velocidade,
+                'endereco': r.endereco_aproximado
+            }
+            for r in rastreamentos
+        ]
+        
+        context.update({
+            'pontos_rastreamento': pontos_rastreamento,
+            'mapbox_access_token': settings.MAPBOX_ACCESS_TOKEN if hasattr(settings, 'MAPBOX_ACCESS_TOKEN') else '',
+        })
+        return context

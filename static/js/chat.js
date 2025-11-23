@@ -5,6 +5,15 @@
 class ChatManager {
 
     constructor() {
+
+       
+        this.notificationSound = new Audio('/static/sounds/notification_1.mp3');
+        this.notificationSound.volume = 0.5; // 50% do volume
+        // --- Carrega preferência do usuário (Padrão: não mutado) ---
+        this.isMuted = localStorage.getItem('chat_is_muted') === 'true';
+        if (this.isMuted) {
+            this.notificationSound.muted = true;
+        }
         
         this.currentRoom = null;
         this.websocket = null;
@@ -18,6 +27,36 @@ class ChatManager {
         this.initializeEventListeners();
         this.initializeNotificationSocket();
         this.loadActiveRoomList();
+    }
+
+    /**
+     * Toca o som de notificação
+     */
+    playNotificationSound() {
+
+        const audio = new Audio('/static/sounds/notification_1.mp3');
+        audio.play().catch(error => {
+        console.warn("Autoplay bloqueado pelo navegador. O usuário precisa interagir com a página primeiro.", error);
+        });
+        // Reinicia o tempo para zero (permite tocar sons rápidos em sequência)
+        this.notificationSound.currentTime = 0;
+        
+        // Tenta tocar
+        //this.notificationSound.play().catch(error => {
+            // Se o navegador bloquear (Autoplay Policy), apenas loga um aviso silencioso
+           //console.warn('Som de notificação bloqueado pelo navegador (usuário precisa interagir com a página primeiro).');
+        //});
+
+        // --- VERIFICAÇÃO NOVA ---
+        if (this.isMuted) {
+            console.log('Som silenciado pelo usuário.');
+            return; 
+        }
+
+        this.notificationSound.currentTime = 0;
+        this.notificationSound.play().catch(error => {
+            console.warn('Som bloqueado pelo navegador (interação necessária).');
+        });
     }
 
     /**
@@ -162,6 +201,48 @@ class ChatManager {
         this.initializeModalListeners();
         
         console.log('Event listeners do chat inicializados com sucesso');
+
+        // --- Listener do botão de som ---
+        const soundBtn = document.getElementById('chat-sound-toggle');
+        if (soundBtn) {
+            // Define o ícone correto ao carregar a página
+            this.updateSoundIcon(soundBtn);
+            
+            soundBtn.addEventListener('click', () => {
+                this.toggleSound(soundBtn);
+            });
+        }
+    }
+
+    /**
+     * Alterna entre com som e sem som
+     */
+    toggleSound(btnElement) {
+        this.isMuted = !this.isMuted;
+        
+        // Salva no navegador para lembrar depois
+        localStorage.setItem('chat_is_muted', this.isMuted);
+        
+        // Atualiza o ícone visualmente
+        this.updateSoundIcon(btnElement);
+        
+        // Feedback visual rápido
+        const msg = this.isMuted ? 'Sons desativados' : 'Sons ativados';
+        this.showNotification(msg, 'info');
+    }
+
+    /**
+     * Atualiza o ícone do botão baseado no estado
+     */
+    updateSoundIcon(btnElement) {
+        const icon = btnElement.querySelector('i');
+        if (this.isMuted) {
+            icon.className = 'bi bi-volume-mute-fill text-danger'; // Ícone de mudo (vermelho opcional)
+            btnElement.title = "Ativar sons";
+        } else {
+            icon.className = 'bi bi-volume-up-fill'; // Ícone de som
+            btnElement.title = "Silenciar sons";
+        }
     }
 
     /**
@@ -551,12 +632,14 @@ class ChatManager {
     }
 
     /**
-     * Conecta ao WebSocket
+     * Conecta ao WebSocket (Versão com Debug de Notificação)
      */
     connectWebSocket(roomId) {
         if (this.websocket) {
+            this.websocket.onclose = null;
             this.websocket.close();
         }
+        if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
 
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/ws/chat/${roomId}/`;
@@ -564,37 +647,50 @@ class ChatManager {
         this.websocket = new WebSocket(wsUrl);
         
         this.websocket.onopen = () => {
-            console.log('✅ WebSocket conectado para sala:', roomId);
             this.isConnected = true;
-            this.showNotification('Conectado ao chat', 'success');
+            console.log('✅ Socket conectado.');
         };
         
         this.websocket.onmessage = (e) => {
             try {
                 const data = JSON.parse(e.data);
-                this.displayMessage(data);
+                
+                // --- DEBUG CRÍTICO ---
+                if (data.type === 'new_message') {
+                    const myUsername = this.getCurrentUsername();
+                    const sender = data.sender_username || data.username;
+                    
+                    console.log(`📩 Msg recebida. Sender: "${sender}" | Eu: "${myUsername}"`);
+
+                    // Lógica de Notificação
+                    if (sender && String(sender).trim() !== String(myUsername).trim()) {
+                        console.log('🔔 CONDIÇÃO ACEITA: Disparando notificação...');
+                        
+                        const msgContent = data.message || (data.image_url ? '📷 [Imagem]' : 'Nova mensagem');
+                        const title = `Mensagem de ${data.sender_name || sender}`;
+                        
+                        this.showNotificationWithAvatar(title, msgContent, data.avatar_url);
+                    } else {
+                        console.log('🔕 Notificação ignorada: Mensagem enviada por mim mesmo.');
+                    }
+                }
+                // ---------------------
+
+                // Renderiza mensagem na tela
+                if (String(this.currentRoom) === String(data.room_id) || !data.room_id) {
+                    this.displayMessage(data);
+                }
+
             } catch (error) {
-                console.error('Erro ao processar mensagem WebSocket:', error);
+                console.error('❌ Erro no onmessage:', error);
             }
         };
         
         this.websocket.onclose = (e) => {
-            console.log('🔴 WebSocket desconectado:', e.code, e.reason);
             this.isConnected = false;
-            
-            // Tentar reconectar se não foi um fechamento normal
             if (e.code !== 1000 && this.currentRoom) {
-                setTimeout(() => {
-                    if (this.currentRoom) {
-                        this.connectWebSocket(this.currentRoom);
-                    }
-                }, 3000);
+                this.reconnectTimer = setTimeout(() => this.connectWebSocket(this.currentRoom), 3000);
             }
-        };
-        
-        this.websocket.onerror = (error) => {
-            console.error('Erro WebSocket:', error);
-            this.showNotification('Erro de conexão com o chat', 'error');
         };
     }
 
@@ -879,11 +975,20 @@ class ChatManager {
     }
 
     /**
-     * Obtém username atual
+     * Obtém username atual do script JSON do Django
      */
     getCurrentUsername() {
-        const usernameElement = document.getElementById('json-username');
-        return usernameElement ? usernameElement.textContent : '';
+        const scriptTag = document.getElementById('json-username');
+        if (scriptTag) {
+            try {
+                // O JSON.parse remove as aspas extras que o json_script adiciona
+                return JSON.parse(scriptTag.textContent);
+            } catch (e) {
+                console.error('Erro ao ler username:', e);
+                return '';
+            }
+        }
+        return '';
     }
 
     /**
@@ -1002,47 +1107,43 @@ class ChatManager {
             // Usar '=>' aqui é CRUCIAL e está CORRETO.
             // Garante que o 'this' dentro desta função ainda é a classe 'ChatManager'
             notificationSocket.onmessage = (e) => {
-
-                // -----------------------------------------------------------------
-                // ADICIONE ESTE CONSOLE.LOG 
-                // Este é o log mais importante. Ele dispara ANTES de qualquer
-                // 'if' ou 'JSON.parse'. Se isto não aparecer, o problema
-                // é no backend.
                 console.log("!!! [DEBUG NOTIFICAÇÃO] MENSAGEM CRUA RECEBIDA:", e.data);
-                // -----------------------------------------------------------------
-
+                
                 const data = JSON.parse(e.data);
                 console.log('Notificação recebida:', data);
 
                 if (data.type === 'new_message') {
+                    // --- ATUALIZAÇÃO AQUI ---
+                    // Usamos os dados ricos que o backend agora envia
+                    const senderName = data.sender_name || data.sender_username;
+                    const notificationTitle = `Nova Mensagem de ${senderName}`;
                     
-                    const notificationTitle = 'Nova Mensagem';
-                    // Tente buscar o nome da sala no backend se for fácil, senão o ID está bom.
-                    const notificationMessage = `Você tem uma nova mensagem de ${data.sender_username}.`;
-
-                    // 1. CHAMA SEUS ALERTS MOMENTÂNEOS
-                    this.showNotification(notificationMessage, 'info'); 
-                    this.showDesktopNotification(notificationTitle, notificationMessage);
+                    // Usa o preview da mensagem se disponível, senão usa o texto padrão
+                    const messagePreview = data.preview ? `"${data.preview}"` : 'Você recebeu uma nova mensagem.';
+                    
+                    // Se tiver imagem (avatar), passamos para o método de notificação
+                    // Nota: Você precisará atualizar o showNotification para aceitar imagem
+                    this.showNotificationWithAvatar(notificationTitle, messagePreview, data.avatar_url); 
+                    
+                    // Notificação Desktop
+                    this.showDesktopNotification(notificationTitle, messagePreview);
                     
                     // 2. ATIVA OS INDICADORES PERSISTENTES
-                    if (bellIndicator) {
-                        bellIndicator.style.display = 'block';
-                    }
-                    if (chatIndicator) {
-                        chatIndicator.style.display = 'block';
-                    }
+                    if (bellIndicator) bellIndicator.style.display = 'block';
+                    if (chatIndicator) chatIndicator.style.display = 'block';
                 }
                 
                 if (data.type === 'new_chat') {
                     this.showNotification(`Você foi adicionado ao chat: ${data.room.name}`, 'info');
-                    // Você pode querer recarregar a lista de chats aqui
+                    // Recarrega a lista de salas para aparecer a nova sala imediatamente
+                    this.loadActiveRoomList();
                 }
             };
 
             notificationSocket.onclose = (e) => {
                 console.error('Socket de Notificação fechou inesperadamente.');
             };
-
+            
             // 3. Lógica para LIMPAR os indicadores
             if (chatButtonElement) {
                 chatButtonElement.addEventListener('click', () => {
@@ -1058,6 +1159,78 @@ class ChatManager {
                 });
             }
         });
+    }
+
+    /**
+     * Mostra notificação visual flutuante (CORREÇÃO Z-INDEX MÁXIMO)
+     */
+    showNotificationWithAvatar(title, message, avatarUrl) {
+        console.log('🚀 Tentando exibir notificação visual:', title);
+
+        // 1. Remove anterior
+        const existing = document.querySelector('.chat-notification-toast');
+        if (existing) existing.remove();
+
+        // 2. Cria elemento
+        const notification = document.createElement('div');
+        notification.className = 'chat-notification-toast'; // Classe para referência futura
+        
+        // 3. CSS "Nuclear" - Força bruta para garantir visibilidade
+        // Z-Index 2147483647 é o máximo valor de inteiro de 32bits (fica na frente de tudo)
+        notification.style.cssText = `
+            position: fixed !important; 
+            top: 20px !important; 
+            right: 20px !important; 
+            z-index: 2147483647 !important; 
+            background: #212529; /* Dark background para contraste */
+            color: white; 
+            padding: 15px 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            min-width: 320px;
+            font-family: system-ui, -apple-system, sans-serif;
+            cursor: pointer;
+            border-left: 5px solid #0d6efd; /* Borda azul bonita */
+            animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        `;
+
+        // 4. Monta o HTML com segurança
+        let imgHtml = `<div style="width: 45px; height: 45px; background: #343a40; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;"><i class="bi bi-chat-fill" style="color: white;"></i></div>`;
+        
+        if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== 'undefined') {
+            imgHtml = `<img src="${avatarUrl}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid #495057;">`;
+        }
+
+        notification.innerHTML = `
+            ${imgHtml}
+            <div>
+                <strong style="display: block; font-size: 15px; margin-bottom: 3px;">${this.escapeHtml(title)}</strong>
+                <span style="display: block; font-size: 13px; color: #ced4da; line-height: 1.3;">${this.escapeHtml(message)}</span>
+            </div>
+        `;
+
+        // 5. Adiciona ao Body
+        document.body.appendChild(notification);
+        
+        // 6. Toca o som (Tentativa forçada)
+        this.playNotificationSound();
+
+        // Eventos
+        notification.onclick = () => {
+            window.focus(); // Tenta focar a janela
+            notification.remove();
+        };
+
+        // Remove após 6 segundos
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.5s ease';
+                setTimeout(() => notification.remove(), 500);
+            }
+        }, 6000);
     }
     
     /**
@@ -1298,7 +1471,9 @@ window.addEventListener('error', function(e) {
  * Detecta preferência do usuário e aplica tema claro/escuro
  */
 class ThemeManager {
+
     constructor() {
+
         this.currentTheme = this.getPreferredTheme();
         this.applyTheme();
         this.initializeThemeListener();
@@ -1349,3 +1524,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Adiciona botão de toggle de tema (opcional)
     // Você pode adicionar um botão em sua UI se quiser
 });
+

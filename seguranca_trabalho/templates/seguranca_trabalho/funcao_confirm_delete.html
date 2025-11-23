@@ -1,0 +1,104 @@
+
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
+
+{% block title %}Excluir Função{% endblock %}
+
+{% block sst_content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7"> <div class="card border-danger shadow">
+                
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Confirmar Exclusão</h4>
+                </div>
+
+                <div class="card-body text-center p-4">
+                    
+                    <div class="alert alert-light border mb-4">
+                        <h3 class="text-dark fw-bold">{{ object.nome }}</h3>
+                        <p class="text-muted mb-0">{{ object.descricao|default:"Sem descrição definida" }}</p>
+                    </div>
+
+                    {% if object.funcoes_cargo.exists %}
+                        
+                        <div class="alert alert-warning text-start" role="alert" id="alerta-vinculos">
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="bi bi-exclamation-circle-fill fs-4 me-3"></i>
+                                <div>
+                                    <strong>Ação Necessária:</strong> Esta função ainda está vinculada a cargos.
+                                    <br>
+                                    <small>Você pode desvincular os cargos individualmente abaixo antes de excluir a função permanentemente.</small>
+                                </div>
+                            </div>
+
+                            <div class="card border-warning">
+                                <ul class="list-group list-group-flush text-dark">
+                                    {% for associacao in object.funcoes_cargo.all %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center bg-warning bg-opacity-10" id="vinculo-{{ associacao.cargo.id }}">
+                                            
+                                            <div>
+                                                <strong>{{ associacao.cargo.nome }}</strong>
+                                                {% if associacao.cargo.cbo %}
+                                                    <span class="text-muted small ms-2">({{ associacao.cargo.cbo }})</span>
+                                                {% endif %}
+                                            </div>
+
+                                            <button class="btn btn-sm btn-outline-danger bg-white"
+                                                    hx-post="{% url 'seguranca_trabalho:desvincular_funcao_cargo' object.pk associacao.cargo.pk %}"
+                                                    hx-target="#vinculo-{{ associacao.cargo.id }}"
+                                                    hx-swap="outerHTML"
+                                                    hx-confirm="Tem certeza que deseja remover o vínculo com {{ associacao.cargo.nome }}?"
+                                                    title="Remover apenas o vínculo">
+                                                <i class="bi bi-link-45deg"></i> Desvincular
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="text-muted small mb-3">
+                            * Ao clicar em "Confirmar Exclusão" abaixo, <strong>TODOS</strong> os vínculos restantes também serão apagados.
+                        </div>
+
+                    {% else %}
+                        <div class="alert alert-success d-flex align-items-center" role="alert">
+                            <i class="fas fa-check-circle fs-4 me-3"></i>
+                            <div>
+                                Esta função não possui vínculos ativos. É seguro excluir.
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-center gap-2 mt-4">
+                            <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-secondary px-4">
+                                Cancelar e Voltar
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="fas fa-trash-alt me-1"></i> Confirmar Exclusão da Função
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .htmx-swapping {
+        opacity: 0;
+        transition: opacity 0.5s ease-out;
+    }
+</style>
+
+<script>
+    document.body.addEventListener('htmx:configRequest', (event) => {
+        event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+    });
+</script>
+{% endblock %}

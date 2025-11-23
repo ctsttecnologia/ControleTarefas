@@ -1,5 +1,4 @@
 
-
 {% load crispy_forms_tags %}
 
 <div class="row g-3">
@@ -17,15 +16,15 @@
     </div>
 
     <div class="col-12">
-        {% csrf_token %}
         {{ form.descricao|as_crispy_field }}
     </div>
     
-    {% if form.non_field_errors %}
+    {% if form.cargos %}
     <div class="col-12">
-        <div class="alert alert-danger">
-            {{ form.non_field_errors }}
-        </div>
+        <label class="form-label fw-bold">Vincular aos Cargos (Opcional)</label>
+        {{ form.cargos|as_crispy_field }}
+        <div class="form-text">Selecione os cargos que exercem esta função.</div>
     </div>
     {% endif %}
 </div>
+

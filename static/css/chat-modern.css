@@ -594,13 +594,22 @@
     position: fixed;
     top: 20px;
     right: 20px;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); /* Fundo azul padrão */
     color: white;
-    z-index: 3000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: slideInRight 0.3s ease;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 9999; /* Garante que fique acima de tudo */
     max-width: 350px;
+    animation: slideInRight 0.3s ease-out;
+    display: flex;
+    align-items: center;
+}
+
+/* Garante texto branco */
+.chat-notification strong, 
+.chat-notification span {
+    color: white !important;
 }
 
 .notification-success {
@@ -693,3 +702,4 @@
     border: 2px solid white;
     display: none;
 }
+

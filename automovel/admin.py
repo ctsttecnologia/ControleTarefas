@@ -4,12 +4,12 @@
 from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
-from .models import Carro, Agendamento, Checklist, Foto
+from .models import Carro, Carro_agendamento, Carro_checklist, Carro_foto
 from core.mixins import AdminFilialScopedMixin # Supondo que você tenha este mixin
 
 # MUDANÇA CRÍTICA: Removido 'km_inicial' e 'km_final' do inline.
 class ChecklistInline(admin.TabularInline):
-    model = Checklist
+    model = Carro_checklist
     extra = 0
     fields = ('tipo', 'data_hora', 'usuario', 'link_para_checklist') # Campos que existem no modelo
     readonly_fields = ('data_hora', 'link_para_checklist')
@@ -22,7 +22,7 @@ class ChecklistInline(admin.TabularInline):
     link_para_checklist.short_description = 'Ações'
 
 class FotoInline(admin.TabularInline):
-    model = Foto
+    model = Carro_foto
     extra = 0
     fields = ('imagem', 'observacao', 'image_preview')
     readonly_fields = ('image_preview',)
@@ -51,7 +51,7 @@ class CarroAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
             return ('filial',)
         return ()
 
-@admin.register(Agendamento)
+@admin.register(Carro_agendamento)
 class AgendamentoAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('id', 'link_para_carro', 'funcionario', 'data_hora_agenda', 'status', 'filial')
     # ... (o resto da sua configuração do AgendamentoAdmin estava ótima)
@@ -79,14 +79,14 @@ class AgendamentoAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
 
 
 
-@admin.register(Checklist)
+@admin.register(Carro_checklist)
 class ChecklistAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('id', 'link_para_agendamento', 'tipo', 'data_hora', 'filial')
     list_filter = ('filial', 'tipo', 'data_hora')
     search_fields = ('agendamento__carro__placa', 'agendamento__funcionario', 'agendamento__id')
     autocomplete_fields = ('agendamento', 'usuario')
     date_hierarchy = 'data_hora'
-    list_per_page = 20
+    list_per_page = 30
     readonly_fields = ('filial',)
 
     # OTIMIZAÇÃO: Reduz queries na listagem
@@ -106,7 +106,7 @@ class ChecklistAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(Foto)
+@admin.register(Carro_foto)
 class FotoAdmin(AdminFilialScopedMixin, admin.ModelAdmin):
     list_display = ('id', 'agendamento', 'data_criacao', 'image_preview', 'filial')
     list_filter = ('filial', 'data_criacao',)
