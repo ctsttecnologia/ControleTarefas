@@ -222,11 +222,6 @@ class Funcionario(models.Model):
         except Documento.DoesNotExist:
             return "N/A"
         
-    # O decorador @property já torna o método acessível como um atributo,
-    # então o uso de 'idade.fget.short_description' não é necessário ou é um padrão antigo.
-    # O Django Admin pode inferir o nome do campo do próprio nome do método (@property).
-
-
 class Documento(models.Model):
     """
     Armazena documentos específicos (CPF, RG, etc.) associados a um funcionário.

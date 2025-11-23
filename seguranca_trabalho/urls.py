@@ -36,6 +36,7 @@ from .views import (
     GerarFichaPDFView,
     RegistrarDevolucaoView,
     RelatorioSSTPDFView,
+    desvincular_funcao_cargo,
     minha_ficha_redirect_view,
 )
 
@@ -62,7 +63,7 @@ urlpatterns = [
     path('associacoes/', AssociacaoListView.as_view(), name='lista_associacoes'),
     path('associar/', AssociacaoCreateView.as_view(), name='associar_funcao_cargo'),
 
-        path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='captura_teste'),
+    path('entregas/<int:pk>/assinar/', AssinarEntregaView.as_view(), name='captura_teste'),
     path('entregas/<int:pk>/devolver/', RegistrarDevolucaoView.as_view(), name='entrega_return'),
     path('fichas/<int:pk>/update/', FichaEPIUpdateView.as_view(), name='ficha_update'),
     path('fichas/<int:pk>/delete/', FichaEPIDeleteView.as_view(), name='ficha_delete'),
@@ -76,5 +77,8 @@ urlpatterns = [
     path('equipamentos/<int:pk>/editar/', EquipamentoUpdateView.as_view(), name='equipamento_update'),
     path('equipamentos/<int:pk>/excluir/', EquipamentoDeleteView.as_view(), name='equipamento_delete'),
 
+    path('funcao/<int:funcao_id>/desvincular/<int:cargo_id>/', desvincular_funcao_cargo, name='desvincular_funcao_cargo'),
 ]
+
+
 

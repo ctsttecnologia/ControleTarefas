@@ -36,6 +36,7 @@ import logging
 from datetime import timedelta
 
 
+
 # --- Funções Auxiliares ---
 
 class ImportacaoError(Exception):
@@ -549,30 +550,36 @@ class DocumentoListView(StaffRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
+        # Começa com o queryset base
         queryset = super().get_queryset()
+        
+        # Filtro obrigatório por Filial (Segurança)
         filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
             messages.error(self.request, "Por favor, selecione uma filial para ver os documentos.")
-            return self.model.objects.none() # Retorna queryset vazia em vez de erro
+            return self.model.objects.none()
         
-        # Filtra documentos cujo funcionário pertence à filial ativa.
-        queryset = super().get_queryset().filter(funcionario__filial_id=filial_id).select_related('funcionario')
+        queryset = queryset.filter(funcionario__filial_id=filial_id).select_related('funcionario', 'funcionario__cargo')
         
+        # 1. Filtro por Tipo de Documento
         tipo_documento = self.request.GET.get('tipo', '')
         if tipo_documento:
             queryset = queryset.filter(tipo_documento=tipo_documento)
 
-        return queryset
+        # 2. Filtro de Pesquisa (Nome do Funcionário OU Número do Documento)
+        query_text = self.request.GET.get('q', '')
+        if query_text:
+            queryset = queryset.filter(
+                Q(funcionario__nome_completo__icontains=query_text) |
+                Q(numero__icontains=query_text)
+            )
+
+        return queryset.order_by('funcionario__nome_completo', 'tipo_documento')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Adiciona a lista de tipos de documento para o filtro do template
+        # Passamos as opções para preencher o <select> no template
         context['tipos_documento'] = Documento.TIPO_CHOICES
-        
-        # Se você tiver um formulário de filtro mais complexo, pode adicioná-lo aqui
-        # context['form'] = DocumentoFilterForm(self.request.GET)
-        
         return context
 
 class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
@@ -581,48 +588,33 @@ class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     template_name = 'departamento_pessoal/documento_form.html'
 
     def get_initial(self):
-        """
-        Pré-seleciona o funcionário se um 'funcionario_pk' for passado na URL.
-        Isso ativará a lógica de HiddenInput no DocumentoForm.
-        """
         initial = super().get_initial()
         funcionario_pk = self.kwargs.get('funcionario_pk')
         if funcionario_pk:
-            # Garante que o funcionário pertence à filial ativa do usuário
             filial_id = self.request.session.get('active_filial_id')
-            funcionario = get_object_or_404(Funcionario, pk=funcionario_pk, filial_id=filial_id)
-            initial['funcionario'] = funcionario
+            # Usando filter().first() para evitar 404 se a filial mudar durante a sessão
+            funcionario = Funcionario.objects.filter(pk=funcionario_pk, filial_id=filial_id).first()
+            if funcionario:
+                initial['funcionario'] = funcionario
         return initial
 
     def get_context_data(self, **kwargs):
-        """
-        Adiciona o funcionário ao contexto para poder exibir seu nome no título da página.
-        """
         context = super().get_context_data(**kwargs)
         funcionario_pk = self.kwargs.get('funcionario_pk')
         if funcionario_pk:
-            # Reutiliza a busca do get_initial se possível, mas aqui garantimos que o contexto tenha o funcionário
-            context['funcionario'] = get_object_or_404(Funcionario, pk=funcionario_pk)
-            context['titulo_pagina'] = f"Adicionar Documento para {context['funcionario'].nome_completo}"
-        else:
-            context['titulo_pagina'] = "Adicionar Novo Documento"
+            context['funcionario'] = Funcionario.objects.filter(pk=funcionario_pk).first()
         return context
         
     def form_valid(self, form):
-        """
-        O FilialCreateMixin já associa a filial correta ao documento.
-        A lógica de associar o funcionário já foi resolvida pelo form
-        (seja pelo HiddenInput ou pelo select normal).
-        """
-        messages.success(self.request, f"Documento adicionado com sucesso para {form.instance.funcionario.nome_completo}.")
-        # Não precisamos chamar super().form_valid() aqui, pois o mixin já faz isso.
-        return super().form_valid(form)
+        try:
+            messages.success(self.request, "Documento adicionado com sucesso.")
+            return super().form_valid(form)
+        except IntegrityError:
+            # Captura erro de unicidade (ex: tentar cadastrar CPF duas vezes para o mesmo funcionário)
+            form.add_error('tipo_documento', 'Este funcionário já possui um documento deste tipo cadastrado.')
+            return self.form_invalid(form)
 
     def get_success_url(self):
-        """
-        Redireciona para a página de detalhes do funcionário ao qual o documento foi adicionado.
-        """
-        # self.object é a instância do Documento que acabou de ser salva
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
 
 # A lógica de update de documento precisa garantir que o usuário não edite
@@ -642,13 +634,17 @@ class DocumentoUpdateView(DocumentoScopedMixin, StaffRequiredMixin, UpdateView):
 
     def get_success_url(self):
         messages.success(self.request, "Documento atualizado com sucesso.")
-        # Retorna para a lista geral, pois o contexto do funcionário pode se perder.
-        return reverse_lazy('departamento_pessoal:lista_documentos')
+        # Retorna para o detalhe do funcionário é mais intuitivo que a lista geral
+        return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = f'Editar Documento de {self.object.funcionario.nome_completo}'
-        return context
+    def form_valid(self, form):
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            form.add_error('tipo_documento', 'Já existe outro registro deste tipo de documento para este funcionário.')
+            return self.form_invalid(form)
+    
+
     
 # Adicione a view de exclusão de documento
 class DocumentoDeleteView(DocumentoScopedMixin, StaffRequiredMixin, DeleteView):

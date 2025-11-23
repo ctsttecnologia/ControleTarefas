@@ -1,97 +1,287 @@
-
+{# Documento Form Template #}
 
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}{{ titulo_pagina|default:"Formulário de Documento" }}{% endblock %}
+{% block title %}
+    {% if object %}Editar Documento{% else %}Novo Documento{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* GRID DE CARDS SELETORES - COMPACTA */
+    .doc-selector-grid {
+        display: grid;
+        /* Cards menores: mínimo de 100px em vez de 130px */
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 0.8rem; /* Espaço menor entre eles */
+        margin-bottom: 1.5rem;
+    }
+
+    .doc-card {
+        background: #fff;
+        border: 1px solid #dee2e6; /* Borda mais fina */
+        border-radius: 8px;       /* Bordas menos arredondadas */
+        padding: 0.8rem 0.25rem;  /* Bem menos espaçamento interno */
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        color: #6c757d;
+    }
+
+    .doc-card:hover {
+        border-color: #adb5bd;
+        background-color: #f8f9fa;
+        transform: translateY(-2px);
+    }
+
+    /* ESTADO ATIVO (SELECIONADO) */
+    .doc-card.active {
+        border-color: #0d6efd;
+        background-color: #f0f7ff;
+        color: #0d6efd;
+        font-weight: bold;
+        box-shadow: 0 0 0 1px #0d6efd; /* Realce extra na borda */
+    }
+
+    .doc-card.active .doc-icon {
+        color: #0d6efd;
+        transform: scale(1.1);
+    }
+
+    .doc-icon {
+        font-size: 1.8rem; /* Ícone menor (era 2.5rem) */
+        display: block;
+        margin-bottom: 0.25rem;
+        transition: transform 0.2s;
+    }
+    
+    .doc-label {
+        font-size: 0.85rem; /* Texto menor */
+        line-height: 1.2;
+    }
+
+    /* ÁREA DE UPLOAD */
+    .file-upload-wrapper {
+        position: relative;
+        height: 100px; /* Área de upload um pouco mais baixa */
+        border: 2px dashed #ced4da;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        overflow: hidden;
+    }
+
+    .file-upload-wrapper:hover {
+        border-color: #0d6efd;
+        background-color: #fff;
+    }
+
+    .file-upload-wrapper input[type="file"] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 10;
+    }
+
+    .upload-content {
+        text-align: center;
+        pointer-events: none;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light py-3">
+            
+            <div class="card border-0 shadow-lg rounded-3">
+                <div class="card-header bg-white py-4 border-bottom-0">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">
-                            <i class="bi bi-file-earmark-text-fill me-2"></i>
-                            {{ titulo_pagina|default:"Formulário de Documento" }}
-                        </h4>
-                        
-                        {# LÓGICA DO BOTÃO CORRIGIDA #}
-                        {% if object %}
-                            {# Se 'object' existe, estamos na página de EDIÇÃO. #}
-                            {# O link de cancelar volta para o detalhe do funcionário associado a este documento. #}
-                            <a href="{% url 'departamento_pessoal:detalhe_funcionario' pk=object.funcionario.pk %}" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-x-lg me-1"></i> Cancelar
-                            </a>
-                        {% elif funcionario %}
-                            {# Se 'object' não existe mas 'funcionario' existe, estamos na página de CRIAÇÃO para um funcionário específico. #}
-                            <a href="{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-x-lg me-1"></i> Cancelar
-                            </a>
-                        {% else %}
-                            {# Caso geral: vai para a lista de todos os documentos. #}
-                            <a href="{% url 'departamento_pessoal:lista_documentos' %}" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
-                            </a>
-                        {% endif %}
+                        <div>
+                            <h6 class="text-uppercase text-muted mb-1 small fw-bold">Cadastro de Documento</h6>
+                            <h3 class="mb-0 fw-bold text-dark">
+                                {% if object %}Editar Documento{% else %}Novo Documento{% endif %}
+                            </h3>
+                            {% if funcionario %}
+                                <p class="text-muted mb-0 mt-1">Colaborador: <span class="text-primary fw-bold">{{ funcionario.nome_completo }}</span></p>
+                            {% endif %}
+                        </div>
+                        <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}" class="btn btn-light text-muted rounded-circle" title="Fechar">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
                     </div>
                 </div>
 
-                <div class="card-body p-4 p-md-5">
-                    <form method="post" enctype="multipart/form-data" novalidate>
+                <div class="card-body p-4 pt-0">
+                    <form method="post" enctype="multipart/form-data" novalidate id="documentForm">
                         {% csrf_token %}
 
+                        {# 0. CAMPOS OCULTOS (Funcionario) #}
+                        {% for hidden in form.hidden_fields %}
+                            {{ hidden }}
+                        {% endfor %}
+
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+                            <div class="alert alert-danger rounded-3 mb-4">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                {{ form.non_field_errors|join:", " }}
+                            </div>
                         {% endif %}
 
-                        {# Renderiza os campos do formulário CORRETO #}
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.funcionario.label }}</label>
-                            {% render_field form.funcionario class+="form-select" %}
-                            {% for error in form.funcionario.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        {# 1. SE O FUNCIONÁRIO NÃO ESTIVER PRÉ-SELECIONADO, MOSTRA O SELECT #}
+                        {% if form.funcionario.field.widget.input_type != 'hidden' and not funcionario %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small">SELECIONE O COLABORADOR</label>
+                            {% render_field form.funcionario class+="form-select form-select-lg bg-light border-0" %}
+                            {% for error in form.funcionario.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {# 2. SELETOR VISUAL DE TIPO (Substitui o Select Padrão) #}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small">QUAL O TIPO DO DOCUMENTO?</label>
+                            
+                            {% render_field form.tipo_documento class+="d-none" id="id_tipo_documento" %}
+
+                            <div class="doc-selector-grid">
+                                <div class="doc-card" onclick="selectDocType('CPF')">
+                                    <i class="bi bi-person-vcard doc-icon"></i>
+                                    <div class="doc-label">CPF</div>
+                                </div>
+                                <div class="doc-card" onclick="selectDocType('RG')">
+                                    <i class="bi bi-person-badge doc-icon"></i>
+                                    <div>RG</div>
+                                </div>
+                                <div class="doc-card" onclick="selectDocType('CNH')">
+                                    <i class="bi bi-car-front doc-icon"></i>
+                                    <div class="doc-label">CNH</div>
+                                </div>
+                                <div class="doc-card" onclick="selectDocType('CTPS')">
+                                    <i class="bi bi-briefcase doc-icon"></i>
+                                    <div>CTPS</div>
+                                </div>
+                                <div class="doc-card" onclick="selectDocType('PIS')">
+                                    <i class="bi bi-123 doc-icon"></i>
+                                    <div class="doc-label">PIS</div>
+                                </div>
+                                <div class="doc-card" onclick="selectDocType('OUTRO')">
+                                    <i class="bi bi-file-earmark-text doc-icon"></i>
+                                    <div class="doc-label">Outro</div>
+                                </div>
+                            </div>
+                            {% for error in form.tipo_documento.errors %}<div class="text-danger small mt-1 d-block">{{ error }}</div>{% endfor %}
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.tipo.label }}</label>
-                            {% render_field form.tipo class+="form-select" %}
-                            {% for error in form.tipo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        {# 3. NÚMERO DO DOCUMENTO #}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary small">NÚMERO OU CÓDIGO</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-hash"></i></span>
+                                {% render_field form.numero class+="form-control bg-light border-0" placeholder="Ex: 123.456.789-00" %}
+                            </div>
+                            {% for error in form.numero.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.numero.label }}</label>
-                            {% render_field form.numero class+="form-control" placeholder="Digite o número ou código do documento" %}
-                            {% for error in form.numero.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                        </div>
+                        {# 4. UPLOAD DO ARQUIVO #}
+                        <div class="mb-5">
+                            <label class="form-label fw-bold text-secondary small">ANEXAR ARQUIVO (PDF ou Imagem)</label>
+                            
+                            <div class="file-upload-wrapper" id="dropZone">
+                                <div class="upload-content" id="uploadContent">
+                                    <i class="bi bi-cloud-arrow-up fs-1 text-primary mb-2"></i>
+                                    <div class="text-dark fw-medium" id="fileName">Clique ou arraste o arquivo aqui</div>
+                                    <div class="small text-muted">Máximo: 5MB</div>
+                                </div>
+                                {% render_field form.anexo class+="form-control" id="fileInput" %}
+                            </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">{{ form.anexo.label }}</label>
-                            {% render_field form.anexo class+="form-control" %}
+                            {# Se já existir um anexo (edição), mostra ele #}
                             {% if object.anexo %}
-                                <small class="form-text text-muted mt-1 d-block">
-                                    Arquivo atual: <a href="{{ object.anexo.url }}" target="_blank">{{ object.anexo.name }}</a>
-                                </small>
+                                <div class="mt-2 p-2 bg-light rounded border d-flex align-items-center justify-content-between">
+                                    <div class="small text-muted text-truncate" style="max-width: 70%;">
+                                        <i class="bi bi-paperclip me-1"></i> Atual: 
+                                        <a href="{{ object.anexo.url }}" target="_blank" class="fw-bold text-decoration-none">{{ object.anexo.name }}</a>
+                                    </div>
+                                    <div class="form-check form-switch mb-0 ms-2">
+                                        <input class="form-check-input" type="checkbox" name="anexo-clear" id="anexo-clear_id">
+                                        <label class="form-check-label small text-danger" for="anexo-clear_id">Remover</label>
+                                    </div>
+                                </div>
                             {% endif %}
-                            {% for error in form.anexo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                            {% for error in form.anexo.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div>
 
-                        <div class="mt-4 pt-4 border-top text-end">
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-circle-fill me-1"></i> Salvar Documento
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                                <i class="bi bi-check-lg me-2"></i> Salvar Documento
                             </button>
                         </div>
+
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    // 1. Lógica de Seleção dos Cards
+    function selectDocType(value) {
+        // Atualiza o select escondido do Django
+        const hiddenSelect = document.getElementById('id_tipo_documento');
+        hiddenSelect.value = value;
 
+        // Atualiza o visual dos cards
+        document.querySelectorAll('.doc-card').forEach(card => card.classList.remove('active'));
+        
+        // Encontra o card clicado baseado no onclick e adiciona a classe active
+        // (Nota: num cenário ideal usaríamos data-attributes, mas onclick direto é robusto aqui)
+        const cards = document.querySelectorAll('.doc-card');
+        if (value === 'CPF') cards[0].classList.add('active');
+        if (value === 'RG') cards[1].classList.add('active');
+        if (value === 'CNH') cards[2].classList.add('active');
+        if (value === 'CTPS') cards[3].classList.add('active');
+        if (value === 'PIS') cards[4].classList.add('active');
+        if (value === 'OUTRO') cards[5].classList.add('active');
+    }
+
+    // Ao carregar, verifica se já tem valor (Edição) e ativa o card
+    document.addEventListener('DOMContentLoaded', function() {
+        const hiddenSelect = document.getElementById('id_tipo_documento');
+        if (hiddenSelect.value) {
+            selectDocType(hiddenSelect.value);
+        }
+    });
+
+    // 2. Lógica Visual do Upload
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+            fileNameDisplay.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i> ${this.files[0].name}</span>`;
+            dropZone.style.borderColor = '#198754';
+            dropZone.style.backgroundColor = '#f0fff4';
+        } else {
+            fileNameDisplay.innerHTML = 'Clique ou arraste o arquivo aqui';
+            dropZone.style.borderColor = '#ced4da';
+            dropZone.style.backgroundColor = '#f8f9fa';
+        }
+    });
+</script>
 {% endblock %}
-
-

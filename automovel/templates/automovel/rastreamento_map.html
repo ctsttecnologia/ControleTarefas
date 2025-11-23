@@ -1,0 +1,110 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Rastreamento - Agendamento #{{ object.id }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.css" />
+<style>
+    #map { height: 600px; }
+    .info-panel { 
+        position: absolute; 
+        top: 10px; 
+        right: 10px; 
+        background: white; 
+        padding: 15px; 
+        border-radius: 5px; 
+        z-index: 1000;
+        max-width: 300px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <nav class="navbar navbar-light bg-light">
+        <div class="container">
+            <a href="{% url 'automovel:agendamento_detail' object.pk %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar ao Agendamento
+            </a>
+            <h4 class="mb-0">Rastreamento - {{ object.carro.placa }}</h4>
+        </div>
+    </nav>
+    
+    <div class="position-relative">
+        <div id="map"></div>
+        <div class="info-panel">
+            <h6>Informações do Rastreamento</h6>
+            <p><strong>Veículo:</strong> {{ object.carro.placa }}</p>
+            <p><strong>Motorista:</strong> {{ object.funcionario }}</p>
+            <p><strong>Total de pontos:</strong> {{ pontos_rastreamento|length }}</p>
+            <button id="exportRoute" class="btn btn-sm btn-outline-primary w-100">
+                <i class="bi bi-download"></i> Exportar Rota
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+<script>
+var map = L.map('map').setView([-23.5505, -46.6333], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+var pontos = {{ pontos_rastreamento|safe }};
+var latlngs = [];
+
+// Adicionar marcadores e pontos da rota
+pontos.forEach(function(ponto, index) {
+    var latlng = [ponto.lat, ponto.lng];
+    latlngs.push(latlng);
+    
+    L.marker(latlng)
+        .addTo(map)
+        .bindPopup(`
+            <strong>Data/Hora:</strong> ${ponto.data_hora}<br>
+            <strong>Velocidade:</strong> ${ponto.velocidade || 'N/A'} km/h<br>
+            <strong>Local:</strong> ${ponto.endereco}
+        `);
+});
+
+// Desenhar rota
+if (latlngs.length > 1) {
+    var polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
+    
+    // Adicionar direção à rota
+    L.polylineDecorator(polyline, {
+        patterns: [
+            {offset: 0, repeat: 50, symbol: L.Symbol.arrowHead({pixelSize: 10, pathOptions: {color: 'red'}})}
+        ]
+    }).addTo(map);
+    
+    map.fitBounds(polyline.getBounds());
+}
+
+// Exportar rota
+$('#exportRoute').click(function() {
+    var wb = XLSX.utils.book_new();
+    var ws_data = [['Latitude', 'Longitude', 'Data/Hora', 'Velocidade (km/h)', 'Endereço']];
+    
+    pontos.forEach(function(ponto) {
+        ws_data.push([
+            ponto.lat, ponto.lng, ponto.data_hora, 
+            ponto.velocidade || 'N/A', ponto.endereco
+        ]);
+    });
+    
+    var ws = XLSX.utils.aoa_to_sheet(ws_data);
+    XLSX.utils.book_append_sheet(wb, ws, "Rota");
+    XLSX.writeFile(wb, "rota_agendamento_{{ object.id }}.xlsx");
+});
+</script>
+{% endblock %}

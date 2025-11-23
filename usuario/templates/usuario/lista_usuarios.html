@@ -21,6 +21,7 @@
                 <tr>
                     <th>Nome Completo</th>
                     <th>Email</th>
+                    <th>Usuário</th>
                     <th>Filial Ativa</th>
                     <th>Status</th>
                     <th>Ações</th>
@@ -31,6 +32,7 @@
                 <tr>
                     <td>{{ usuario.get_full_name }}</td>
                     <td>{{ usuario.email }}</td>
+                    <td>{{ usuario.username }}</td>
                     <td>{{ usuario.filial_ativa|default:"N/A" }}</td>
                     <td>
                         {% if usuario.is_active %}

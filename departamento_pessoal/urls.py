@@ -41,7 +41,7 @@ urlpatterns = [
     # O nome 'lista_documentos' permite referenciar esta URL em templates.
     path('documentos/', DocumentoListView.as_view(), name='lista_documentos'),
     # Rota para criar um novo documento sem um funcionário pré-definido.
-    path('documentos/novo/', DocumentoCreateView.as_view(), name='documento_create'),
+    path('documentos/novo/', DocumentoCreateView.as_view(), name='criar_documento'),
     # Rota para criar um novo documento, mas já associando a um funcionário específico
     # através de um parâmetro na URL (<int:funcionario_pk>).
     path('documentos/novo/<int:funcionario_pk>/', DocumentoCreateView.as_view(), name='adicionar_documento'),

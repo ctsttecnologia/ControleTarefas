@@ -144,13 +144,13 @@ class AtaReuniaoListView(LoginRequiredMixin, AtaQuerysetMixin, ListView):
         }
         context['user_data'] = user_data 
         
-        # Filtros para o contexto da página
-        current_queryset = context['atas'] # Reutiliza o queryset do contexto
+        # usamos self.object_list (que é a busca completa antes da paginação).
+        full_queryset = self.object_list
         
-        coordenador_ids = current_queryset.values_list('coordenador__usuario__id', flat=True).distinct()
+        coordenador_ids = full_queryset.values_list('coordenador__usuario__id', flat=True).distinct()
         context['coordenadores'] = Usuario.objects.filter(id__in=coordenador_ids).order_by('first_name')
         
-        contrato_ids = current_queryset.values_list('contrato_id', flat=True).distinct()
+        contrato_ids = full_queryset.values_list('contrato_id', flat=True).distinct()
         context['contratos'] = Cliente.objects.filter(id__in=contrato_ids).order_by('nome')
         
         context['current_contrato'] = self.request.GET.get('contrato', '')

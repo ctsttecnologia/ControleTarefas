@@ -1,0 +1,26 @@
+
+{% load widget_tweaks i18n crispy_forms_tags %}
+
+<form method="post" 
+      action="{{ request.path }}" 
+      hx-post="{{ request.path }}" 
+      hx-target="#modal-content-area">
+    
+    {% csrf_token %}
+    
+    <div class="modal-header">
+        <h5 class="modal-title">
+            {% if object %}Editar Função{% else %}Nova Função{% endif %}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+
+    <div class="modal-body">
+        {% include "seguranca_trabalho/partials/funcao_form_fields.html" %}
+    </div>
+
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+</form>

@@ -48,5 +48,12 @@ urlpatterns = [
     path('api/proxima-manutencao/', views.ProximaManutencaoAPIView.as_view(), name='api_proxima_manutencao'),
     path('api/agendamentos/', views.CalendarioAPIView.as_view(), name='api_agendamentos'),
 
+    # Rastreamento
+    path('rastreamento/create/', views.RastreamentoCreateView.as_view(), name='rastreamento_create'),
+    path('agendamento/<int:pk>/mapa/', views.RastreamentoMapView.as_view(), name='rastreamento_map'),
+
+    path('carro/<int:pk>/agendar-manutencao/', views.AgendarManutencaoView.as_view(), name='agendar_manutencao'),
+    path('manutencoes/', views.ManutencaoListView.as_view(), name='manutencao_list'),
+
 
 ]

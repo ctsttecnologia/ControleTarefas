@@ -30,6 +30,9 @@ from usuario.views import StaffRequiredMixin
 from .forms import (AssinaturaEntregaForm, EntregaEPIForm, EquipamentoForm, FichaEPIForm, FuncaoForm, CargoFuncaoForm)
 from .models import (EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI, CargoFuncao)
 import logging
+from django.views.decorators.http import require_POST
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -295,48 +298,54 @@ class DashboardSSTView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMi
     permission_required = 'seguranca_trabalho.view_fichaepi'
     tecnico_scope_lookup = 'funcionario__usuario'
 
+    # --- NOVO MÉTODO ADICIONADO PARA CORRIGIR O ERRO ---
+    def get_queryset_base(self, model_class):
+        """
+        Filtra um modelo genérico pela filial ativa na sessão.
+        """
+        filial_id = self.request.session.get('active_filial_id')
+        if not filial_id:
+            return model_class.objects.none()
+
+        # Tenta filtrar por campo direto 'filial'
+        if hasattr(model_class, 'filial'):
+            return model_class.objects.filter(filial_id=filial_id)
+        
+        # Tenta filtrar através de 'funcionario' (ex: FichaEPI)
+        elif hasattr(model_class, 'funcionario'):
+            return model_class.objects.filter(funcionario__filial_id=filial_id)
+        
+        # Se não achar como filtrar, retorna vazio por segurança
+        return model_class.objects.none()
+    # ---------------------------------------------------
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
         # --- ETAPA 1: INICIALIZAR TODOS OS QUERYSETS ---
-        # Primeiro, buscamos os querysets base da filial usando o 
-        # método 'get_queryset_base' que você já tem.
-        
-        # Envolvemos em try/except para garantir que as variáveis existam
-        # mesmo se o 'get_queryset_base' falhar (embora não devesse).
         try:
+            # Agora o método self.get_queryset_base existe!
             equipamentos_da_filial = self.get_queryset_base(Equipamento)
             fichas_da_filial = self.get_queryset_base(FichaEPI)
             entregas_da_filial = self.get_queryset_base(EntregaEPI)
             matriz_da_filial = self.get_queryset_base(MatrizEPI)
         except Exception as e:
             logger.error(f"Erro ao buscar querysets base no DashboardSST: {e}")
-            # Se falhar, define como querysets vazios para evitar o UnboundLocalError
             equipamentos_da_filial = Equipamento.objects.none()
             fichas_da_filial = FichaEPI.objects.none()
             entregas_da_filial = EntregaEPI.objects.none()
             matriz_da_filial = MatrizEPI.objects.none()
 
         # --- ETAPA 2: APLICAR ESCOPO DO TÉCNICO (SE APLICÁVEL) ---
-        # self._is_tecnico() é um helper do TecnicoScopeMixin
         if self._is_tecnico(): 
-            # TÉCNICO não vê dados agregados de equipamentos ou matriz
             equipamentos_da_filial = equipamentos_da_filial.none()
             matriz_da_filial = matriz_da_filial.none()
-            
-            # TÉCNICO só vê sua própria ficha (usando o lookup corrigido)
             fichas_da_filial = fichas_da_filial.filter(funcionario__usuario=self.request.user)
-            
-            # TÉCNICO só vê suas próprias entregas (usando o lookup corrigido)
             entregas_da_filial = entregas_da_filial.filter(ficha__funcionario__usuario=self.request.user)
         
         # --- ETAPA 3: CALCULAR DADOS PARA O CONTEXTO ---
-        # Neste ponto, 'fichas_da_filial' SEMPRE existe (ou é um queryset
-        # filtrado, ou um queryset vazio). O UnboundLocalError é resolvido.
-
-        # --- 1. DADOS PARA OS CARDS DE KPI ---
         context['total_equipamentos_ativos'] = equipamentos_da_filial.filter(ativo=True).count()
-        context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count() # <-- Linha 302 (Agora segura)
+        context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count()
         context['entregas_pendentes_assinatura'] = entregas_da_filial.filter(
             data_devolucao__isnull=True, 
             data_assinatura__isnull=True
@@ -365,7 +374,7 @@ class DashboardSSTView(ViewFilialScopedMixin, TecnicoScopeMixin, SSTPermissionMi
             num_epis=Count('equipamento')
         ).order_by('-num_epis')[:10]
         
-        if matriz_chart_data: # (só será preenchido se não for TÉCNICO)
+        if matriz_chart_data:
             context['matriz_labels'] = json.dumps([m['funcao__nome'] for m in matriz_chart_data])
             context['matriz_data'] = json.dumps([m['num_epis'] for m in matriz_chart_data])
 
@@ -572,30 +581,29 @@ class ExportarFuncionariosWordView(StaffRequiredMixin, View):
         return response
     
 # --- CRUD DE FUNÇÕES ---
-class FuncaoListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
-    """
-    Lista todas as funções da filial ativa.
-    """
+class FuncaoListView(ListView):
     model = Funcao
     template_name = 'seguranca_trabalho/funcao_list.html'
     context_object_name = 'funcoes'
-    permission_required = 'seguranca_trabalho.view_funcao'
-    paginate_by = 20
-
+    paginate_by = 10
 
     def get_queryset(self):
-        # Pega o queryset base, já filtrado pela filial pelo mixin
-        qs = super().get_queryset()
+        queryset = super().get_queryset()
 
-        # Pega o termo de busca da URL (ex: ?q=minha-busca)
-        query_text = self.request.GET.get('q')
+        # 1. 'funcoes_cargo' é o related_name definido no seu model CargoFuncao para o campo 'funcao'.
+        # 2. '__cargo' diz ao Django para pegar também os dados do Cargo vinculado a essa associação.
+        queryset = queryset.prefetch_related('funcoes_cargo__cargo')
 
-        if query_text:
-            # Filtra o nome da função (case-insensitive)
-            qs = qs.filter(nome__icontains=query_text)
+        query = self.request.GET.get('q')
+        if query:
+            queryset = queryset.filter(
+                Q(nome__icontains=query) |
+                Q(descricao__icontains=query) |
+                # Filtra pelo nome do cargo ATRAVÉS da tabela intermediária
+                Q(funcoes_cargo__cargo__nome__icontains=query)
+            ).distinct()
 
-        # Retorna o queryset ordenado
-        return qs.order_by('nome')    # Filtra as funções pela filial ativa na sessão e ordena por nome
+        return queryset.order_by('nome')
 
 # busca da ficha.
 @login_required
@@ -617,72 +625,84 @@ def minha_ficha_redirect_view(request):
     
     return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
 
-class FuncaoCreateView(HTMXModalFormMixin, FilialCreateMixin, SSTPermissionMixin, CreateView): # <-- ADICIONE O MIXIN
+class FuncaoCreateView(HTMXModalFormMixin, FilialCreateMixin, SSTPermissionMixin, CreateView):
     model = Funcao
     form_class = FuncaoForm
+    # CORREÇÃO 1: O nome da URL é funcao_list, não funcao_form
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
     permission_required = 'seguranca_trabalho.add_funcao'
 
     def form_valid(self, form):
         messages.success(self.request, f"A função '{form.instance.nome}' foi criada com sucesso.")
-        # A lógica de resposta HTMX será tratada pelo mixin
         return super().form_valid(form)
+    
+    # CORREÇÃO 2: Indentação corrigida e lógica blindada
+    def get_template_names(self):
+        if self.request.htmx:
+            # Garante que usa o arquivo que criamos, ignorando o padrão do Mixin
+            return ['seguranca_trabalho/partials/base_modal.html']
+        return ['seguranca_trabalho/funcao_form.html']
 
 
-class FuncaoUpdateView(HTMXModalFormMixin, ViewFilialScopedMixin, SSTPermissionMixin, UpdateView): # <-- ADICIONE O MIXIN
+class FuncaoUpdateView(HTMXModalFormMixin, ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
     model = Funcao
     form_class = FuncaoForm
-    # template_name = 'seguranca_trabalho/funcao_form.html' # <- Pode remover esta linha
+    # CORREÇÃO 1: O nome da URL é funcao_list
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
     permission_required = 'seguranca_trabalho.change_funcao'
 
     def form_valid(self, form):
         messages.success(self.request, f"A função '{form.instance.nome}' foi atualizada com sucesso.")
-        # A lógica de resposta HTMX será tratada pelo mixin
         return super().form_valid(form)
 
+    def get_template_names(self):
+        if self.request.htmx:
+            return ['seguranca_trabalho/partials/base_modal.html']
+        return ['seguranca_trabalho/funcao_form.html']
 
 class FuncaoDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     """
     Exclui uma função.
     """
     model = Funcao
-    template_name = 'seguranca_trabalho/confirm_delete.html'  # Reutilizando o template de confirmação
+    template_name = 'seguranca_trabalho/funcao_confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
-    context_object_name = 'object'
     permission_required = 'seguranca_trabalho.delete_funcao'
+    context_object_name = 'object'
 
     def form_valid(self, form):
-        messages.success(self.request, f"A função '{self.object.nome}' foi excluída com sucesso.")
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # Se você usar o sistema de mensagens:
+        messages.success(self.request, "Função excluída com sucesso.")
+        return response
 
 # Cenário 1: Substitui a função lista_associacoes
-class AssociacaoListView(ListView):
-    """
-    Exibe uma lista de todas as associações entre Cargos e Funções.
-    """
+class AssociacaoListView(LoginRequiredMixin, ListView):
     model = CargoFuncao
-    template_name = 'seguranca_trabalho/lista_associacoes.html'
-    context_object_name = 'seguranca_trabalho:lista_de_associacoes' 
-
-
-class AssociacaoListView(ListView):
-    model = CargoFuncao
-    template_name = 'seguranca_trabalho/lista_associacoes.html'
-    context_object_name = 'lista_de_associacoes' 
+    # Certifique-se de que esta linha está igual ao nome do arquivo que criamos acima
+    template_name = 'seguranca_trabalho/lista_associacoes.html' 
+    paginate_by = 20
 
     def get_queryset(self):
-        # Pode deixar este método como estava antes, simples e limpo
-        return CargoFuncao.objects.select_related('cargo', 'funcao').all()
-
+        # OTIMIZAÇÃO: select_related carrega os dados do Cargo e da Função na mesma consulta SQL
+        qs = CargoFuncao.objects.select_related('cargo', 'funcao').all()
         
-# Cenário 3: Substitui a função associar_funcao_cargo
+        # Lógica de busca (filtro)
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(
+                Q(cargo__nome__icontains=q) | 
+                Q(funcao__nome__icontains=q)
+            )
+        return qs.order_by('cargo__nome')
+       
+# Substitui a função associar_funcao_cargo
 class AssociacaoCreateView(CreateView):
     """
     Exibe um formulário para criar uma nova associação entre Cargo e Função.
     """
     model = CargoFuncao
-    # CORREÇÃO: Aponte para a classe do formulário, não do modelo.
+    # Aponte para a classe do formulário, não do modelo.
     form_class = CargoFuncaoForm
     template_name = 'seguranca_trabalho/formulario_associacao.html'
     success_url = reverse_lazy('seguranca_trabalho:lista_associacoes')
@@ -691,6 +711,17 @@ class AssociacaoCreateView(CreateView):
     def form_valid(self, form):
         messages.success(self.request, "Associação criada com sucesso!")
         return super().form_valid(form)
+    
+@require_POST
+def desvincular_funcao_cargo(request, funcao_id, cargo_id):
+    """
+    Remove o vínculo entre um cargo e uma função via HTMX.
+    """
+    associacao = get_object_or_404(CargoFuncao, funcao_id=funcao_id, cargo_id=cargo_id)
+    associacao.delete()
+    
+    # Retorna uma resposta vazia (200 OK), o que faz o HTMX remover o elemento do DOM
+    return HttpResponse("")
     
 
     

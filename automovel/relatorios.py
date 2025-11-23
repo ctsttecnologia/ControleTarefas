@@ -1,7 +1,7 @@
 
 from django.http import HttpResponse
 from openpyxl import Workbook
-from .models import Carro, Agendamento
+from .models import Carro, Carro_agendamento
 from datetime import datetime
 
 def gerar_relatorio_excel(request, tipo):
@@ -14,7 +14,7 @@ def gerar_relatorio_excel(request, tipo):
     ws.title = tipo.capitalize()
     
     # Busca os dados já filtrados pelo manager
-    filial_qs = Carro.objects.for_request(request) if tipo == 'carros' else Agendamento.objects.for_request(request)
+    filial_qs = Carro.objects.for_request(request) if tipo == 'carros' else Carro_agendamento.objects.for_request(request)
     
     if tipo == 'carros':
         dados = filial_qs.filter(ativo=True)

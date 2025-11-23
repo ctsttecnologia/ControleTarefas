@@ -1,6 +1,7 @@
 
 # automovel/models.py
 
+from django import forms
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -91,11 +92,12 @@ class Carro(BaseFilialModel):
         verbose_name_plural = "Carros"
         ordering = ['marca', 'modelo']
 
-class Agendamento(BaseFilialModel):
+class Carro_agendamento(BaseFilialModel):
     STATUS_CHOICES = [
         ('agendado', 'Agendado'),
         ('em_andamento', 'Em Andamento'),
         ('finalizado', 'Finalizado'),
+        ('manutencao', 'Em Manutenção'),
         ('cancelado', 'Cancelado'),
     ]
 
@@ -123,7 +125,7 @@ class Agendamento(BaseFilialModel):
         return f"Agendamento #{self.id} - {self.carro.placa} para {self.funcionario}"
 
     class Meta:
-        db_table = 'agendamento'
+        db_table = 'carro_agendamento'
         verbose_name = "Agendamento"
         verbose_name_plural = "Agendamentos"
         ordering = ['-data_hora_agenda']
@@ -136,11 +138,11 @@ class Agendamento(BaseFilialModel):
     def checklist_retorno(self):
         return self.checklists.filter(tipo='retorno').first()
 
-class Checklist(BaseFilialModel):
+class Carro_checklist(BaseFilialModel):
     TIPO_CHOICES = [('saida', 'Saída'), ('retorno', 'Retorno'), ('vistoria', 'Vistoria')]
     STATUS_CHOICES = [('ok', 'OK'), ('danificado', 'Danificado'), ('nao_aplicavel', 'Não Aplicável')]
 
-    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='checklists')
+    agendamento = models.ForeignKey(Carro_agendamento, on_delete=models.CASCADE, related_name='checklists')
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
     data_hora = models.DateTimeField(default=timezone.now, verbose_name="Data/Hora")
@@ -189,14 +191,14 @@ class Checklist(BaseFilialModel):
         return f"Checklist ({self.get_tipo_display()}) para Agendamento #{self.agendamento.id}"
     
     class Meta:
-        db_table = 'checklist'
+        db_table = 'carro_checklist'
         verbose_name = "Checklist"
         verbose_name_plural = "Checklists"
         ordering = ['-data_hora']
         unique_together = ('agendamento', 'tipo')
 
-class Foto(BaseFilialModel):
-    agendamento = models.ForeignKey(Agendamento, on_delete=models.CASCADE, related_name='fotos_agendamento')
+class Carro_foto(BaseFilialModel):
+    agendamento = models.ForeignKey(Carro_agendamento, on_delete=models.CASCADE, related_name='fotos_agendamento')
     imagem = models.ImageField(upload_to='fotos/')
     data_criacao = models.DateTimeField(default=timezone.now)
     observacao = models.TextField(blank=True, null=True)
@@ -208,10 +210,79 @@ class Foto(BaseFilialModel):
         return f"Foto #{self.id} - {self.agendamento}"
 
     class Meta:
-        db_table = 'foto'
+        db_table = 'carro_foto'
         verbose_name = "Foto"
         verbose_name_plural = "Fotos"
         ordering = ['-data_criacao']
         unique_together = ('agendamento', 'imagem')
         
+class Carro_rastreamento(BaseFilialModel):
+    agendamento = models.ForeignKey(Carro_agendamento, on_delete=models.CASCADE, related_name='rastreamentos')
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    velocidade = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    data_hora = models.DateTimeField(default=timezone.now)
+    endereco_aproximado = models.TextField(blank=True, null=True)
 
+    class Meta:
+        db_table = 'carro_rastreamento'
+        verbose_name = "Rastreamento"
+        verbose_name_plural = "Rastreamentos"
+        ordering = ['-data_hora']
+
+class Carro_manutencao(BaseFilialModel):
+    TIPO_CHOICES = [
+        ('preventiva', 'Preventiva'),
+        ('corretiva', 'Corretiva'),
+        ('pneu', 'Troca de Pneus'),
+        ('oleo', 'Troca de Óleo'),
+        ('freio', 'Sistema de Freio'),
+        ('outros', 'Outros'),
+    ]
+    
+    carro = models.ForeignKey(Carro, on_delete=models.CASCADE, related_name='manutencoes')
+    data_manutencao = models.DateField()
+    data_agendamento = models.DateTimeField(default=timezone.now)
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    descricao = models.TextField()
+    custo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    concluida = models.BooleanField(default=False)
+    observacoes = models.TextField(blank=True, null=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+
+    class Meta:
+        db_table = 'carro_manutencao'
+        verbose_name = "Manutenção"
+        verbose_name_plural = "Manutenções"
+        ordering = ['-data_manutencao']
+
+    def save(self, *args, **kwargs):
+        is_new = self._state.adding
+        super().save(*args, **kwargs)
+        
+        # Atualizar datas de manutenção do carro se esta for concluída
+        if self.concluida and self.carro:
+            self.carro.data_ultima_manutencao = self.data_manutencao
+            # Calcular próxima manutenção (ex: 6 meses depois)
+            from dateutil.relativedelta import relativedelta
+            self.carro.data_proxima_manutencao = self.data_manutencao + relativedelta(months=+6)
+            self.carro.save(update_fields=['data_ultima_manutencao', 'data_proxima_manutencao'])
+
+    def __str__(self):
+        return f"Manutenção {self.get_tipo_display()} - {self.carro.placa} - {self.data_manutencao}"
+    
+class ManutencaoForm(forms.ModelForm):
+    class Meta:
+        model = Carro_manutencao
+        fields = ['data_manutencao', 'tipo', 'descricao', 'custo', 'concluida', 'observacoes']
+        widgets = {
+            'data_manutencao': forms.DateInput(attrs={'type': 'date'}),
+            'descricao': forms.Textarea(attrs={'rows': 3}),
+            'observacoes': forms.Textarea(attrs={'rows': 2}),
+        }
+    
+    def clean_data_manutencao(self):
+        data_manutencao = self.cleaned_data.get('data_manutencao')
+        if data_manutencao and data_manutencao < timezone.now().date():
+            raise forms.ValidationError("A data da manutenção não pode ser no passado.")
+        return data_manutencao

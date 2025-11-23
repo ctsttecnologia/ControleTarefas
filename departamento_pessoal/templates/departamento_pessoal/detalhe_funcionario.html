@@ -98,6 +98,7 @@
                 {# Aba de Admissão #}
                 <div class="tab-pane fade" id="admissao-tab-pane" role="tabpanel" aria-labelledby="admissao-tab" tabindex="0">
                     <dl class="row">
+                        <dt class="col-sm-3">Contrato</dt><dd class="col-sm-9">{{ funcionario.cliente.contrato|default:"-" }} - {{ funcionario.cliente.nome|default:"-" }}</dd>
                         <dt class="col-sm-3">Matrícula</dt><dd class="col-sm-9">{{ funcionario.matricula }}</dd>
                         <dt class="col-sm-3">Cargo</dt><dd class="col-sm-9">{{ funcionario.cargo.nome }}</dd>
                         <dt class="col-sm-3">Departamento</dt><dd class="col-sm-9">{{ funcionario.departamento.nome }}</dd>
