@@ -92,7 +92,7 @@ def get_active_chat_rooms(request):
                 # 4. Pega a última mensagem
                 'last_message': room.get_last_message_preview(),
                 
-                # 5. TODO: Adicionar contagem de mensagens não lidas
+                # 5. Adicionar contagem de mensagens não lidas
                 'unread_count': 0 
             })
             

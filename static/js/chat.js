@@ -164,24 +164,25 @@ class ChatManager {
         // Botão de enviar mensagem
         const submitBtn = document.getElementById('chat-message-submit');
         if (submitBtn) {
-            submitBtn.addEventListener('click', () => this.sendMessage());
-        } else {
-            console.warn('Botão de enviar mensagem não encontrado');
+            submitBtn.addEventListener('click', (e) => { // <--- Adicione o 'e' (evento)
+                e.preventDefault(); // <--- IMPEDE O REFRESH DA PÁGINA
+                this.sendMessage();
+            });
         }
         
         // Enter para enviar mensagem
-        const messageInput = document.getElementById('chat-message-input');
-        if (messageInput) {
-            messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendMessage();
-                }
-            });
+        //const messageInput = document.getElementById('chat-message-input');
+        //if (messageInput) {
+            //messageInput.addEventListener('keypress', (e) => {
+                //if (e.key === 'Enter' && !e.shiftKey) {
+                    //e.preventDefault();
+                    //this.sendMessage();
+                //}
+            //});
 
             // Auto-resize da textarea
-            messageInput.addEventListener('input', () => this.autoResizeTextarea());
-        }
+            //messageInput.addEventListener('input', () => this.autoResizeTextarea());
+        //}
 
         // Botões de controle da janela
         const minimizeBtn = document.getElementById('minimize-chat-btn');
@@ -1462,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /// Tratamento de erros globais
 window.addEventListener('error', function(e) {
-    console.error('Erro global no sistema de chat:'),
+    console.error('Erro global no sistema de chat:');
 
     console.error(e.message, 'em', e.filename, 'linha', e.lineno);
 });
@@ -1509,7 +1510,7 @@ class ThemeManager {
         if (window.matchMedia) {
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
                 if (!localStorage.getItem('chat-theme')) {
-                    this.currentTheme = e.matches ? 'light' : 'dark';
+                    this.currentTheme = e.matches ? 'dark' : 'light';
                     this.applyTheme();
                 }
             });
@@ -1517,11 +1518,56 @@ class ThemeManager {
     }
 }
 
-// Inicializa o gerenciador de tema
-document.addEventListener('DOMContentLoaded', function() {
-    window.themeManager = new ThemeManager();
-    
-    // Adiciona botão de toggle de tema (opcional)
-    // Você pode adicionar um botão em sua UI se quiser
-});
+// --- Adicione isto ao final do chat.js ---
 
+/**
+ * RECUPERAÇÃO DOS ATALHOS GLOBAIS
+ * Define as funções que o HTML chama (onclick), conectando-as
+ * à instância existente ou executando a lógica de UI diretamente.
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // 1. Define o atalho para a Sidebar (Toggle)
+    window.toggleChatListSidebar = function() {
+        // Cenário A: Se o ChatManager "fantasma" estiver acessível globalmente
+        if (window.chatManager && typeof window.chatManager.toggleChatListSidebar === 'function') {
+            window.chatManager.toggleChatListSidebar();
+            return;
+        }
+
+        // Cenário B (Fallback): Executa a lógica visual manualmente se a classe não estiver acessível
+        // Isso garante que o botão funcione de qualquer jeito
+        const overlay = document.getElementById('chatOverlay');
+        const sidebar = document.getElementById('chatListContainer');
+        
+        if (sidebar) {
+            const isActive = sidebar.classList.contains('active');
+            if (isActive) {
+                sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            } else {
+                sidebar.classList.add('active');
+                if (overlay) overlay.classList.add('active');
+            }
+        } else {
+            console.warn('Elementos da sidebar não encontrados no DOM.');
+        }
+    };
+
+    // 2. Define o atalho para Abrir Chat (OpenDialog)
+    // Esse aqui precisa da classe, então tentamos acessá-la ou logamos erro
+    window.openChatDialog = function(roomId, roomName) {
+        if (window.chatManager) {
+            window.chatManager.openChatDialog(roomId, roomName);
+        } else {
+            console.error('ChatManager não está acessível globalmente para abrir o diálogo.');
+            // Tenta instanciar apenas se for emergência (raro acontecer se o chat já funciona)
+            if (typeof ChatManager !== 'undefined') {
+                window.chatManager = new ChatManager();
+                window.chatManager.openChatDialog(roomId, roomName);
+            }
+        }
+    };
+
+    console.log('✅ Atalhos globais (sidebar/dialog) restaurados.');
+});
