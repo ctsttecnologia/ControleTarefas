@@ -1,0 +1,216 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- VARIÁVEIS DE TEMA (CLARO/ESCURO) --- */
+    :root {
+        --card-bg: #ffffff;
+        --card-text: #212529;
+        --muted-text: #6c757d;
+        --border-color: #f0f0f0;
+        --shadow-color: rgba(0,0,0,0.05);
+        --item-bg: #ffffff;
+        --item-border: #eee;
+        --low-stock-bg: #fff5f5;
+        --low-stock-text: #dc3545;
+        --progress-bg: #e9ecef;
+    }
+
+    /* Suporte a Dark Mode */
+    [data-bs-theme="dark"], body.dark-mode {
+        --card-bg: #212529;
+        --card-text: #f8f9fa;
+        --muted-text: #adb5bd;
+        --border-color: #373b3e;
+        --shadow-color: rgba(0,0,0,0.3);
+        --item-bg: #212529;
+        --item-border: #373b3e;
+        --low-stock-bg: #2c0b0e;
+        --low-stock-text: #ff6b6b;
+        --progress-bg: #373b3e;
+    }
+
+    /* Estilos Gerais */
+    .dashboard-container { padding: 20px; }
+    
+    /* Cards de Métricas */
+    .metric-card { 
+        background: var(--card-bg); 
+        color: var(--card-text);
+        border-radius: 12px; padding: 1.5rem; 
+        box-shadow: 0 4px 10px var(--shadow-color); 
+        border-left: 5px solid #0d6efd; 
+        height: 100%; transition: transform 0.2s;
+    }
+    .metric-card:hover { transform: translateY(-3px); }
+    
+    .metric-value { font-size: 3rem; font-weight: 800; color: var(--card-text); line-height: 1; }
+    .metric-label { color: var(--muted-text); font-size: 0.9rem; text-transform: uppercase; font-weight: 600; margin-top: 5px; }
+    
+    /* Cards Genéricos */
+    .card { background-color: var(--card-bg); border: none; box-shadow: 0 4px 10px var(--shadow-color); border-radius: 12px; }
+    .card-header { 
+        background-color: var(--item-bg); 
+        color: var(--card-text); 
+        border-bottom: 1px solid var(--item-border); 
+    }
+    .card-footer {
+        background-color: var(--item-bg);
+        border-top: 1px solid var(--item-border);
+        color: var(--muted-text) !important;
+    }
+    .card-body { color: var(--card-text); }
+
+    /* Listas de Estoque */
+    .stock-item { 
+        background: var(--item-bg); 
+        border-bottom: 1px solid var(--item-border); 
+        padding: 15px; 
+        display: flex; justify-content: space-between; align-items: center; 
+        color: var(--card-text);
+    }
+    .stock-item:last-child { border-bottom: none; }
+    .stock-low { background-color: var(--low-stock-bg); border-left: 4px solid #dc3545; }
+    .stock-low h6 { color: var(--low-stock-text) !important; }
+
+    /* --- MODO TV PADRONIZADO --- */
+    .tv-badge { 
+        background: #dc3545; color: white; padding: 6px 12px; border-radius: 50px; 
+        font-size: 0.9rem; font-weight: bold; box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+        display: flex; align-items: center; gap: 8px;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+
+    .progress-bar-tv {
+        position: fixed; top: 0; left: 0; height: 5px; 
+        /* Gradiente Azul, Cinza e Branco */
+        background: linear-gradient(90deg, #007cba, #6c757d, #ffffff); 
+        z-index: 9999; width: 0%; transition: width {{ cycle_interval }}ms linear;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if is_cycling %}
+<div class="progress-bar-tv"></div>
+<style>
+    /* Oculta elementos de chat flutuante no modo TV */
+    #chat-widget, .chat-button, #chat-container, .floating-chat, button[aria-label="Chat"], #chat-modal-trigger, .floating-chat-btn { display: none !important; }
+</style>
+{% endif %}
+
+<div class="dashboard-container container-fluid py-4">
+    <!-- Cabeçalho Padronizado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-body"><i class="fas fa-hard-hat text-primary me-2"></i>{{ title }}</h2>
+        <div>
+            {% if not is_cycling %}
+                <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% endif %}
+
+            {% if is_cycling %}
+                <span class="tv-badge d-inline-flex"><i class="fas fa-tv"></i> MODO TV ATIVO</span>
+            {% else %}
+                <a href="?cycle=true" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-play me-1"></i> Iniciar TV
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_entregas }}</div>
+                <div class="metric-label">Entregas</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card" style="border-left-color: #ffc107;">
+                <div class="metric-value text-warning" style="color: #ffc107 !important;">{{ entregas_sem_assinatura }}</div>
+                <div class="metric-label">Pendentes</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card" style="border-left-color: #dc3545;">
+                <div class="metric-value text-danger">{{ entregas_vencimento_proximo }}</div>
+                <div class="metric-label">Vencendo (30d)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card" style="border-left-color: #198754;">
+                <div class="metric-value text-success">{{ total_entradas }}</div>
+                <div class="metric-label">Entradas Estoque</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Estoque Crítico -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-danger text-white py-3"><h5 class="mb-0 fw-bold">Estoque Crítico</h5></div>
+                <div class="card-body p-0">
+                    {% if equipamentos_estoque_baixo %}
+                        {% for item in equipamentos_estoque_baixo %}
+                        <div class="stock-item stock-low">
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ item.nome }}</h6>
+                                <small class="text-muted" style="color: var(--muted-text) !important;">Mínimo: {{ item.min }}</small>
+                            </div>
+                            <div class="text-center border border-danger rounded px-3 py-1" style="background-color: var(--card-bg);">
+                                <div class="h5 mb-0 text-danger fw-bold">{{ item.atual }}</div>
+                                <small style="font-size:0.6rem; color: #dc3545;">ATUAL</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="p-5 text-center text-success">
+                            <i class="fas fa-check-circle fa-3x mb-3 opacity-50"></i>
+                            <h5>Estoque Saudável</h5>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fluxo -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header py-3"><h5 class="mb-0 fw-bold">Fluxo</h5></div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div class="row w-100 text-center">
+                        <div class="col-6 border-end" style="border-color: var(--item-border) !important;">
+                            <h2 class="text-success fw-bold">{{ total_entradas }}</h2>
+                            <small class="text-uppercase fw-bold" style="color: var(--muted-text)">Entradas</small>
+                        </div>
+                        <div class="col-6">
+                            <h2 class="text-secondary fw-bold" style="color: var(--muted-text) !important;">{{ total_saidas }}</h2>
+                            <small class="text-uppercase fw-bold" style="color: var(--muted-text)">Saídas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center small py-3">
+                    Monitoramento em tempo real do almoxarifado.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if next_dashboard_url %}
+<script>
+    setTimeout(() => { window.location.href = "{% url next_dashboard_url %}?cycle=true"; }, {{ cycle_interval }});
+    requestAnimationFrame(() => { const b = document.querySelector('.progress-bar-tv'); if(b) b.style.width = '100%'; });
+</script>
+{% endif %}
+{% endblock %}
+
