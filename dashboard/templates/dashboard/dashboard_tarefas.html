@@ -1,0 +1,229 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- VARIÁVEIS DE TEMA (CLARO/ESCURO) --- */
+    :root {
+        --card-bg: #ffffff;
+        --card-text: #212529;
+        --muted-text: #6c757d;
+        --border-color: #f0f0f0;
+        --shadow-color: rgba(0,0,0,0.05);
+        --table-bg: #ffffff;
+        --table-hover: #f8f9fa;
+        --table-border: #f1f3f5;
+        --table-header-bg: #f8f9fa;
+        --table-header-text: #6c757d;
+        --progress-bg: #e9ecef;
+    }
+
+    /* Suporte a Dark Mode */
+    [data-bs-theme="dark"], body.dark-mode {
+        --card-bg: #212529;
+        --card-text: #f8f9fa;
+        --muted-text: #9ca2a8ff;
+        --border-color: #373b3e;
+        --shadow-color: rgba(0,0,0,0.3);
+        --table-bg: #212529;
+        --table-hover: #2c3034;
+        --table-border: #373b3e;
+        --table-header-bg: #2c3034;
+        --table-header-text: #ced4da;
+        --progress-bg: #373b3e;
+    }
+
+    /* Estilos Gerais */
+    .dashboard-container { padding: 20px; }
+    
+    /* Cards de Métricas */
+    .metric-card { 
+        background: var(--card-bg); 
+        color: var(--card-text);
+        border-radius: 12px; padding: 1.5rem; 
+        box-shadow: 0 4px 15px var(--shadow-color); 
+        border-left: 5px solid #0d6efd; 
+        height: 100%; transition: transform 0.2s;
+    }
+    .metric-card:hover { transform: translateY(-3px); }
+    
+    .metric-value { font-size: 3rem; font-weight: 800; color: var(--card-text); line-height: 1; }
+    .metric-label { color: var(--muted-text); font-size: 0.9rem; text-transform: uppercase; font-weight: 600; margin-top: 5px; }
+    
+    /* Tabela Customizada */
+    .custom-table-card { 
+        background: var(--card-bg); 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px var(--shadow-color); 
+        overflow: hidden;
+    }
+    .custom-table { width: 100%; margin-bottom: 0; color: var(--card-text); }
+    .custom-table thead { background-color: var(--table-header-bg); }
+    .custom-table th { 
+        font-weight: 600; text-transform: uppercase; font-size: 0.85rem; 
+        color: var(--table-header-text); padding: 1rem; border-bottom: 2px solid var(--table-border); 
+    }
+    .custom-table td { 
+        padding: 1rem; vertical-align: middle; 
+        border-bottom: 1px solid var(--table-border); 
+        color: var(--card-text);
+    }
+    .custom-table tr:hover { background-color: var(--table-hover); }
+    .custom-table tr:last-child td { border-bottom: none; }
+
+    /* Cards de Status */
+    .card { background-color: var(--card-bg); border: none; box-shadow: 0 4px 15px var(--shadow-color); border-radius: 12px; }
+    .card-header { 
+        background-color: var(--card-bg); 
+        border-bottom: 1px solid var(--border-color); 
+        padding: 1rem 1.5rem;
+    }
+    .card-header h5 { margin: 0; color: var(--card-text); }
+    .card-body { padding: 1.5rem; }
+    
+    .status-item {
+        background-color: var(--table-hover);
+        border: 1px solid var(--border-color);
+        color: var(--card-text);
+    }
+
+    /* Barra de Progresso interna */
+    .progress { background-color: var(--progress-bg); }
+
+    /* --- MODO TV PADRONIZADO --- */
+    .tv-badge { 
+        background: #dc3545; color: white; padding: 6px 12px; border-radius: 50px; 
+        font-size: 0.9rem; font-weight: bold; box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+        display: flex; align-items: center; gap: 8px;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+
+    .progress-bar-tv {
+        position: fixed; top: 0; left: 0; height: 5px; 
+        /* Gradiente Azul, Cinza e Branco */
+        background: linear-gradient(90deg, #007cba, #6c757d, #ffffff); 
+        z-index: 9999; width: 0%; transition: width {{ cycle_interval }}ms linear;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if is_cycling %}
+<div class="progress-bar-tv"></div>
+<style>
+    /* Oculta elementos de chat flutuante no modo TV */
+    #chat-widget, .chat-button, #chat-container, .floating-chat, button[aria-label="Chat"], #chat-modal-trigger, .floating-chat-btn { display: none !important; }
+</style>
+{% endif %}
+
+<div class="dashboard-container container-fluid py-4">
+    <!-- Cabeçalho Padronizado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-body"><i class="fas fa-tasks text-primary me-2"></i>{{ title }}</h2>
+        <div>
+            {% if not is_cycling %}
+                <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% endif %}
+
+            {% if is_cycling %}
+                <span class="tv-badge d-inline-flex"><i class="fas fa-tv"></i> MODO TV ATIVO</span>
+            {% else %}
+                <a href="?cycle=true" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-play me-1"></i> Iniciar TV
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Métricas Principais -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_tarefas }}</div>
+                <div class="metric-label">Total Geral</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card" style="border-left-color: #dc3545;">
+                <div class="metric-value text-danger">{{ tarefas_atrasadas }}</div>
+                <div class="metric-label">Atrasadas</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card" style="border-left-color: #0dcaf0;">
+                <div class="d-flex justify-content-between align-items-end">
+                    <div class="metric-value text-info">{{ progresso_medio }}%</div>
+                    <small class="fw-bold" style="color: var(--muted-text)">MÉDIA</small>
+                </div>
+                <div class="progress mt-2" style="height: 6px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ progresso_medio }}%"></div>
+                </div>
+                <div class="metric-label mt-2">Progresso Global</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Tabela de Próximas Entregas -->
+        <div class="col-lg-8">
+            <div class="custom-table-card h-100">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
+                    <h5 class="mb-0 fw-bold" style="color: var(--card-text)"><i class="far fa-clock me-2"></i>Próximas Entregas</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table custom-table mb-0">
+                        <thead>
+                            <tr><th>Tarefa</th><th>Prazo</th><th>Prioridade</th><th>Status</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for t in tarefas_proximas %}
+                            <tr>
+                                <td class="fw-bold">{{ t.titulo }}</td>
+                                <td>{{ t.prazo|date:"d/m H:i" }}</td>
+                                <td>
+                                    {% if t.prioridade == 'alta' %}<span class="badge bg-danger">Alta</span>
+                                    {% elif t.prioridade == 'media' %}<span class="badge bg-warning text-dark">Média</span>
+                                    {% else %}<span class="badge bg-success">Baixa</span>{% endif %}
+                                </td>
+                                <td><span class="badge bg-secondary">{{ t.status|title }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4" style="color: var(--muted-text)">Sem tarefas pendentes.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Status Lateral -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><h5 class="mb-0 fw-bold">Status</h5></div>
+                <div class="card-body">
+                    {% for s in status_data %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-2 rounded status-item">
+                        <span class="fw-bold text-uppercase" style="color: var(--muted-text)">{{ s.status }}</span>
+                        <span class="h5 mb-0 fw-bold">{{ s.total }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if next_dashboard_url %}
+<script>
+    setTimeout(() => { window.location.href = "{% url next_dashboard_url %}?cycle=true"; }, {{ cycle_interval }});
+    requestAnimationFrame(() => { const b = document.querySelector('.progress-bar-tv'); if(b) b.style.width = '100%'; });
+</script>
+{% endif %}
+{% endblock %}
+

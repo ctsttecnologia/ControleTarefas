@@ -180,6 +180,92 @@
                 </div>
             </div>
 
+            <!-- Finalizar manutenção-->    
+
+            <div class="modal fade" id="editarManutencaoModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Editar Manutenção</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="post" id="formEditarManutencao">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Data</label>
+                                    <input type="date" class="form-control" name="data_manutencao" id="edit_data_manutencao" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Tipo</label>
+                                    <select class="form-select" name="tipo" id="edit_tipo_manutencao" required>
+                                        <option value="preventiva">Preventiva</option>
+                                        <option value="corretiva">Corretiva</option>
+                                        <option value="pneu">Troca de Pneus</option>
+                                        <option value="oleo">Troca de Óleo</option>
+                                        <option value="freio">Sistema de Freio</option>
+                                        <option value="outros">Outros</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Descrição</label>
+                                    <textarea class="form-control" name="descricao" id="edit_descricao" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Custo (R$)</label>
+                                    <input type="number" class="form-control" name="custo" id="edit_custo" step="0.01">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Observações</label>
+                                    <textarea class="form-control" name="observacoes" id="edit_observacoes" rows="2"></textarea>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="concluida" id="edit_concluida">
+                                    <label class="form-check-label" for="edit_concluida">Concluída</label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="finalizarAgendamentoModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Finalizar Agendamento</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="post" id="formFinalizarAgendamento">
+                            {% csrf_token %}
+                            <div class="modal-body">
+                                <p>Confirmar devolução do veículo <strong><span id="fin_placa"></span></strong>?</p>
+                                <p class="text-muted small">Responsável: <span id="fin_motorista"></span></p>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">KM Final (Retorno)</label>
+                                    <input type="number" class="form-control" name="km_final" required min="0">
+                                    <div class="form-text">Informe a quilometragem atual do painel.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Observações de Devolução</label>
+                                    <textarea class="form-control" name="observacoes_devolucao" rows="2"></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success">Confirmar Devolução</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             <div class="col-md-8">
                 <!-- Informações Principais -->
                 <div class="card mb-4">
@@ -289,10 +375,25 @@
                                                 {{ agendamento.get_status_display }}
                                             </span>
                                             <br>
-                                            <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" 
-                                               class="btn btn-sm btn-outline-primary mt-1">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
+                                            <div class="btn-group mt-1">
+                                                <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" 
+                                                class="btn btn-sm btn-outline-primary" title="Ver Detalhes">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                
+                                                {% if agendamento.status != 'finalizado' and agendamento.status != 'cancelado' %}
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-success btn-finalizar-agenda" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#finalizarAgendamentoModal"
+                                                        data-id="{{ agendamento.id }}"
+                                                        data-placa="{{ carro.placa }}"
+                                                        data-motorista="{{ agendamento.funcionario }}"
+                                                        title="Finalizar Agenda">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -321,7 +422,7 @@
                                 <div class="timeline-item">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <strong>{{ manutencao.tipo }}</strong>
+                                            <strong>{{ manutencao.get_tipo_display }}</strong>
                                             <br>
                                             <small class="text-muted">
                                                 {{ manutencao.data_manutencao|date:"d/m/Y" }}
@@ -337,6 +438,21 @@
                                             <span class="badge bg-{% if manutencao.concluida %}success{% else %}warning{% endif %}">
                                                 {% if manutencao.concluida %}Concluída{% else %}Pendente{% endif %}
                                             </span>
+                                            <br>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-secondary mt-1 btn-editar-manutencao"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editarManutencaoModal"
+                                                    data-id="{{ manutencao.id }}"
+                                                    data-data="{{ manutencao.data_manutencao|date:'Y-m-d' }}"
+                                                    data-tipo="{{ manutencao.tipo }}"
+                                                    data-descricao="{{ manutencao.descricao }}"
+                                                    data-custo="{{ manutencao.custo|stringformat:'.2f' }}"
+                                                    data-concluida="{{ manutencao.concluida|yesno:'true,false' }}"
+                                                    data-observacoes="{{ manutencao.observacoes }}"
+                                                    title="Editar Manutenção">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -410,17 +526,63 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Definir data mínima como hoje para o agendamento
+    // --- Lógica Original (Data Mínima) ---
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('data_manutencao').min = today;
+    const dataManutencaoInput = document.getElementById('data_manutencao');
+    if(dataManutencaoInput) {
+        dataManutencaoInput.min = today;
+    }
     
-    // Se marcar como concluída, preencher data com hoje
-    document.getElementById('marcar_como_concluida').addEventListener('change', function() {
-        if (this.checked) {
-            document.getElementById('data_manutencao').value = today;
-        }
+    // --- Lógica para Finalizar Agendamento ---
+    const finalizaBtns = document.querySelectorAll('.btn-finalizar-agenda');
+    const formFinalizar = document.getElementById('formFinalizarAgendamento');
+    
+    finalizaBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const placa = this.dataset.placa;
+            const motorista = this.dataset.motorista;
+            
+            // Preencher textos do modal
+            document.getElementById('fin_placa').textContent = placa;
+            document.getElementById('fin_motorista').textContent = motorista;
+            
+            // Definir a URL de ação do formulário
+            // Nota: Você precisará ter uma URL configurada, ex: /automovel/agendamentos/1/finalizar/
+            // Aqui estou assumindo uma estrutura padrão, ajuste conforme suas urls.py
+            formFinalizar.action = `/automovel/agendamentos/${id}/finalizar/`; 
+        });
+    });
+
+    // --- Lógica para Editar Manutenção ---
+    const editBtns = document.querySelectorAll('.btn-editar-manutencao');
+    const formEditar = document.getElementById('formEditarManutencao');
+    
+    editBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            
+            // Popula os campos do modal com os dados do botão
+            document.getElementById('edit_data_manutencao').value = this.dataset.data;
+            document.getElementById('edit_tipo_manutencao').value = this.dataset.tipo;
+            document.getElementById('edit_descricao').value = this.dataset.descricao;
+            
+            // Tratamento do Custo (converter vírgula para ponto se necessário)
+            let custo = this.dataset.custo.replace(',', '.');
+            document.getElementById('edit_custo').value = custo;
+            
+            document.getElementById('edit_observacoes').value = this.dataset.observacoes;
+            
+            // Checkbox
+            document.getElementById('edit_concluida').checked = (this.dataset.concluida === 'true');
+            
+            // Definir a URL de ação
+            // Ajuste conforme sua urls.py. Ex: /automovel/manutencao/1/editar/
+            formEditar.action = `/automovel/manutencao/${id}/editar/`;
+        });
     });
 });
 </script>
 {% endblock %}
+
 

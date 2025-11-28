@@ -642,8 +642,8 @@ class ChatManager {
         }
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/chat/${roomId}/`;
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'wss:';
+        const wsUrl = `${protocol}//${window.location.host}/wss/chat/${roomId}/`;
         
         this.websocket = new WebSocket(wsUrl);
         
@@ -1096,9 +1096,9 @@ class ChatManager {
             const chatIndicator = chatButtonElement ? chatButtonElement.querySelector('.notification-indicator') : null;
 
             // 2. Conecte-se ao WebSocket de Notificação
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'wss:';
             const notificationSocket = new WebSocket(
-                protocol + '//' + window.location.host + '/ws/notifications/'
+                protocol + '//' + window.location.host + '/wss/notifications/'
             );
 
             notificationSocket.onopen = function(e) {
