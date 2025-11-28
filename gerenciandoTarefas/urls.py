@@ -3,20 +3,26 @@
 # Este ficheiro está CORRETO. Ele define o prefixo 'logradouro/'
 # e inclui as URLs da sua aplicação.
 
+# gerenciandoTarefas/urls.py
+
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from usuario.views import CustomLoginView
+# Remova: from usuario.views import CustomLoginView
+
+# Adicione esta importação para a sua ProfileView
+from usuario.views import ProfileView 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Rota raiz ('/') aponta para a página de Login.
-    path('', CustomLoginView.as_view(), name='home'),
+    # A Rota raiz ('/') agora aponta para a sua ProfileView
+    # Esta será a sua página inicial/dashboard após o login
+    path('', ProfileView.as_view(), name='home'), 
 
     # Rotas das apps com seus prefixos
-    path('contas/', include('usuario.urls', namespace='usuario')),
+    path('contas/', include('usuario.urls', namespace='usuario')), # Onde está o seu CustomLoginView
     path('logradouro/', include('logradouro.urls')),
     path('cliente/', include('cliente.urls')),
     path('tarefas/', include('tarefas.urls', namespace='tarefas')),
@@ -39,6 +45,7 @@ urlpatterns = [
     path('dashboard/', include('dashboard.urls')),
    
 ]
+
 
 # Configuração para servir arquivos de mídia e estáticos
 if settings.DEBUG:
