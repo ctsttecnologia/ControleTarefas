@@ -1,0 +1,247 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- VARIÁVEIS DE TEMA (CLARO/ESCURO) --- */
+    :root {
+        --card-bg: #ffffff;
+        --card-text: #212529;
+        --muted-text: #6c757d;
+        --border-color: #f0f0f0;
+        --shadow-color: rgba(0,0,0,0.05);
+        --item-bg: #ffffff;
+        --item-hover: #f8f9fa;
+        --item-border: #f1f3f5;
+        --progress-bg: #e9ecef;
+    }
+
+    /* Suporte a Dark Mode */
+    [data-bs-theme="dark"], body.dark-mode {
+        --card-bg: #212529;
+        --card-text: #f8f9fa;
+        --muted-text: #adb5bd;
+        --border-color: #373b3e;
+        --shadow-color: rgba(0,0,0,0.3);
+        --item-bg: #212529;
+        --item-hover: #2c3034;
+        --item-border: #373b3e;
+        --progress-bg: #373b3e;
+    }
+
+    /* Estilos Gerais */
+    .dashboard-container { padding: 20px; }
+    
+    /* Cards de Métricas */
+    .metric-card { 
+        background: var(--card-bg); 
+        color: var(--card-text);
+        border-radius: 12px; padding: 1.5rem; 
+        box-shadow: 0 4px 10px var(--shadow-color); 
+        border-left: 5px solid #0d6efd; 
+        height: 100%; transition: transform 0.2s;
+    }
+    .metric-card:hover { transform: translateY(-3px); }
+    
+    .metric-value { font-size: 3rem; font-weight: 800; color: var(--card-text); line-height: 1; }
+    .metric-label { color: var(--muted-text); font-size: 0.9rem; text-transform: uppercase; font-weight: 600; margin-top: 5px; }
+    
+    /* Cards Genéricos */
+    .card { background-color: var(--card-bg); border: none; box-shadow: 0 4px 10px var(--shadow-color); border-radius: 12px; }
+    .card-header { 
+        background-color: var(--card-bg); 
+        color: var(--card-text); 
+        border-bottom: 1px solid var(--border-color); 
+        padding: 1rem 1.5rem;
+    }
+    .card-body { color: var(--card-text); padding: 1.5rem; }
+
+    /* Estilos Específicos de Documentos */
+    .doc-item { 
+        background: var(--item-bg); 
+        border-bottom: 1px solid var(--item-border); 
+        padding: 1rem; margin-bottom: 0.5rem; 
+        border-left: 4px solid transparent; 
+        box-shadow: 0 2px 5px var(--shadow-color);
+        transition: transform 0.2s; 
+        display: flex; justify-content: space-between; align-items: center;
+        color: var(--card-text);
+        border-radius: 8px;
+    }
+    .doc-item:hover { transform: translateX(5px); background-color: var(--item-hover); }
+    
+    /* Status colors for doc items */
+    .doc-vencido { border-left-color: #dc3545; }
+    .doc-atencao { border-left-color: #ffc107; }
+    .doc-ok { border-left-color: #198754; }
+
+    /* Cores de Borda Auxiliares */
+    .border-danger { border-left-color: #dc3545 !important; }
+    .border-warning { border-left-color: #ffc107 !important; }
+    .border-success { border-left-color: #198754 !important; }
+
+    /* --- PADRONIZAÇÃO MODO TV --- */
+    .tv-badge { 
+        background: #dc3545; color: white; padding: 6px 12px; border-radius: 50px; 
+        font-size: 0.9rem; font-weight: bold; box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+        display: flex; align-items: center; gap: 8px;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+
+    .progress-bar-tv {
+        position: fixed; top: 0; left: 0; height: 5px; 
+        /* Gradiente Azul, Cinza e Branco */
+        background: linear-gradient(90deg, #007cba, #6c757d, #ffffff); 
+        z-index: 9999; width: 0%; transition: width {{ cycle_interval }}ms linear;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if is_cycling %}
+<div class="progress-bar-tv"></div>
+<style>
+    /* Oculta elementos de chat flutuante no modo TV */
+    #chat-widget, .chat-button, #chat-container, .floating-chat, button[aria-label="Chat"], #chat-modal-trigger, .floating-chat-btn { display: none !important; }
+</style>
+{% endif %}
+
+<div class="dashboard-container container-fluid py-4">
+    <!-- Cabeçalho Padronizado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-body"><i class="fas fa-file-contract text-primary me-2"></i>{{ title }}</h2>
+        <div>
+            {% if not is_cycling %}
+                <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% endif %}
+
+            {% if is_cycling %}
+                <span class="tv-badge d-inline-flex"><i class="fas fa-tv"></i> MODO TV ATIVO</span>
+            {% else %}
+                <a href="?cycle=true" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-play me-1"></i> Iniciar TV
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alerta de Topo -->
+    {% if documentos_vencidos > 0 %}
+    <div class="alert alert-danger border-0 shadow-sm d-flex align-items-center mb-4 rounded-3">
+        <div class="fs-1 me-3 text-danger"><i class="fas fa-exclamation-circle animate__animated animate__swing animate__infinite"></i></div>
+        <div>
+            <h4 class="alert-heading mb-1 fw-bold">Ação Necessária!</h4>
+            <p class="mb-0">Existem <strong>{{ documentos_vencidos }}</strong> documentos vencidos que precisam de renovação imediata.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Cards de Métricas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_documentos }}</div>
+                <div class="metric-label">Total Arquivado</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card" style="border-left-color: #dc3545;">
+                <div class="metric-value text-danger">{{ documentos_vencidos }}</div>
+                <div class="metric-label">Documentos Vencidos</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="metric-card" style="border-left-color: #ffc107;">
+                <div class="metric-value text-warning" style="color: #ffc107 !important;">{{ documentos_a_vencer }}</div>
+                <div class="metric-label">A Vencer (30 dias)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lista de Próximos Vencimentos -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-calendar-alt me-2"></i>Próximos Vencimentos e Pendências</h5>
+                </div>
+                <div class="card-body">
+                    {% for doc in proximos_vencimentos %}
+                    <div class="doc-item {% if doc.data_vencimento < today %}doc-vencido{% elif doc.status == 'A_VENCER' %}doc-atencao{% else %}doc-ok{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                {% if doc.data_vencimento < today %}
+                                    <span class="text-danger fs-4"><i class="fas fa-exclamation-triangle"></i></span>
+                                {% else %}
+                                    <span class="text-warning fs-4" style="color: #ffc107 !important;"><i class="fas fa-clock"></i></span>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">{{ doc.titulo }}</h6>
+                                <small style="color: var(--muted-text);">Vence em: <strong>{{ doc.data_vencimento|date:"d/m/Y" }}</strong></small>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            {% if doc.data_vencimento < today %}
+                                <span class="badge bg-danger rounded-pill">VENCIDO</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill" style="background-color: #ffc107; color: #000;">ATENÇÃO</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                        <div class="text-center py-5" style="color: var(--muted-text);">
+                            <i class="fas fa-clipboard-check fa-3x mb-3 opacity-50"></i>
+                            <p>Nenhum documento próximo do vencimento.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Visão Geral Lateral -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2"></i>Visão Geral</h5>
+                </div>
+                <div class="card-body">
+                    {% for st in status_data %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded" style="border-color: var(--border-color) !important; background-color: var(--item-hover);">
+                        <span class="fw-bold text-uppercase" style="color: var(--muted-text)">{{ st.status }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ st.total }}</span>
+                    </div>
+                    <div class="progress mb-4" style="height: 6px; background-color: var(--progress-bg);">
+                        <div class="progress-bar 
+                            {% if st.status == 'VENCIDO' %}bg-danger
+                            {% elif st.status == 'A_VENCER' %}bg-warning
+                            {% elif st.status == 'VIGENTE' %}bg-success
+                            {% else %}bg-primary{% endif %}" 
+                            role="progressbar" 
+                            style="width: 100%">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script de Rotação Automática -->
+{% if next_dashboard_url %}
+<script>
+    setTimeout(() => { window.location.href = "{% url next_dashboard_url %}?cycle=true"; }, {{ cycle_interval }});
+    requestAnimationFrame(() => { const b = document.querySelector('.progress-bar-tv'); if(b) b.style.width = '100%'; });
+</script>
+{% endif %}
+{% endblock %}
+

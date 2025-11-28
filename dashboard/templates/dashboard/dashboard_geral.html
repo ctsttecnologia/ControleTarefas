@@ -1,0 +1,210 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- VARIÁVEIS DE TEMA (CLARO/ESCURO) --- */
+    :root {
+        --card-bg: #ffffff;
+        --card-text: #212529;
+        --muted-text: #6c757d;
+        --border-color: #f0f0f0;
+        --shadow-color: rgba(0,0,0,0.05);
+        --nav-hover-bg: #f8f9fa;
+    }
+
+    /* Suporte a Dark Mode (Bootstrap 5.3+ ou classe customizada) */
+    [data-bs-theme="dark"], body.dark-mode {
+        --card-bg: #212529; /* Cinza escuro */
+        --card-text: #f8f9fa; /* Branco quase puro */
+        --muted-text: #adb5bd; /* Cinza claro */
+        --border-color: #373b3e;
+        --shadow-color: rgba(0,0,0,0.3);
+        --nav-hover-bg: #2c3034;
+    }
+
+    /* Estilos Gerais */
+    .dashboard-container { padding: 20px; }
+    
+    /* Cards */
+    .metric-card { 
+        background: var(--card-bg); 
+        color: var(--card-text);
+        border-radius: 12px; padding: 1.5rem; 
+        box-shadow: 0 4px 15px var(--shadow-color); 
+        border-left: 5px solid #0d6efd;
+        height: 100%; transition: transform 0.2s;
+    }
+    .metric-card:hover { transform: translateY(-3px); }
+    
+    .metric-value { font-size: 2.5em; font-weight: 800; color: var(--card-text); line-height: 1.2; }
+    .metric-label { color: var(--muted-text); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+    /* Cores de Alerta */
+    .alert-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; color: white; font-size: 0.85em; width: 100%; }
+    .alert-danger { background: #dc3545; }
+    .alert-warning { background: #ffc107; color: #000; }
+    
+    /* Navegação */
+    .nav-card {
+        background: var(--card-bg); 
+        color: var(--card-text);
+        border-radius: 12px; padding: 20px; text-align: center; 
+        text-decoration: none; 
+        box-shadow: 0 4px 6px var(--shadow-color);
+        transition: all 0.3s ease; 
+        border: 1px solid var(--border-color); 
+        display: block;
+    }
+    .nav-card:hover { 
+        transform: translateY(-5px); 
+        background-color: var(--nav-hover-bg);
+        box-shadow: 0 8px 20px var(--shadow-color);
+        border-color: #007cba; color: #007cba; 
+    }
+    .nav-card i { font-size: 2.5em; margin-bottom: 15px; display: block; }
+
+    /* Cabeçalho do Card de Alerta */
+    .card { background-color: var(--card-bg); border-color: var(--border-color); }
+    .card-body { color: var(--card-text); }
+
+    /* --- MODO TV --- */
+    .tv-badge { 
+        background: #dc3545; color: white; padding: 6px 12px; border-radius: 50px; 
+        font-size: 0.9rem; font-weight: bold; box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+        display: flex; align-items: center; gap: 8px;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+
+    .progress-bar-tv {
+        position: fixed; top: 0; left: 0; height: 5px; 
+        background: linear-gradient(90deg, #007cba, #6c757d, #ffffff); 
+        z-index: 9999; width: 0%; transition: width {{ cycle_interval }}ms linear;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if is_cycling %}
+<div class="progress-bar-tv"></div>
+<style>
+    /* Oculta elementos de chat flutuante no modo TV */
+    #chat-widget, .chat-button, #chat-container, .floating-chat, button[aria-label="Chat"], #chat-modal-trigger, .floating-chat-btn { display: none !important; }
+</style>
+{% endif %}
+
+<div class="dashboard-container container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-body"><i class="fas fa-chart-pie text-primary me-2"></i>{{ title }}</h2>
+        <div>
+            {% if is_cycling %}
+                <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-danger btn-sm me-2">
+                    <i class="fas fa-stop me-1"></i> Parar
+                </a>
+                <span class="tv-badge d-inline-flex"><i class="fas fa-tv"></i> MODO TV ATIVO</span>
+            {% else %}
+                <a href="?cycle=true" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-play me-1"></i> Iniciar TV
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    {% if alertas_criticos %}
+    <div class="card border-danger mb-4 shadow-sm">
+        <div class="card-header bg-danger text-white fw-bold">
+            <i class="fas fa-exclamation-triangle me-2"></i>Atenção Necessária
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for alerta in alertas_criticos %}
+                <div class="col-md-4">
+                    <div class="alert-badge alert-{{ alerta.tipo }} d-flex align-items-center">
+                        <i class="{{ alerta.icon }} me-2"></i> {{ alerta.msg }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Métricas -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_treinamentos }}</div>
+                <div class="metric-label">Treinamentos</div>
+                {% if treinamentos_vencimento_proximo > 0 %}
+                <small class="text-danger fw-bold mt-2 d-block"><i class="fas fa-clock"></i> {{ treinamentos_vencimento_proximo }} vencendo</small>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_tarefas }}</div>
+                <div class="metric-label">Tarefas</div>
+                {% if tarefas_atrasadas > 0 %}
+                <small class="text-danger fw-bold mt-2 d-block"><i class="fas fa-exclamation-circle"></i> {{ tarefas_atrasadas }} atrasadas</small>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_entregas_epi }}</div>
+                <div class="metric-label">Entregas EPI</div>
+                {% if entregas_sem_assinatura > 0 %}
+                <small class="text-warning fw-bold mt-2 d-block" style="color: #ffc107 !important"><i class="fas fa-signature"></i> {{ entregas_sem_assinatura }} pendentes</small>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_documentos }}</div>
+                <div class="metric-label">Documentos</div>
+                {% if documentos_a_vencer > 0 %}
+                <small class="text-warning fw-bold mt-2 d-block" style="color: #ffc107 !important"><i class="fas fa-file-contract"></i> {{ documentos_a_vencer }} a vencer</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegação -->
+    <h5 class="text-muted fw-bold mb-3 text-uppercase">Acesso Rápido</h5>
+    <div class="row g-4">
+        <div class="col-md-3">
+            <a href="{% url 'dashboard:dashboard_treinamentos' %}" class="nav-card">
+                <i class="fas fa-graduation-cap text-primary"></i> <h5 class="fw-bold m-0">Treinamentos</h5>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'dashboard:dashboard_tarefas' %}" class="nav-card">
+                <i class="fas fa-tasks text-success"></i> <h5 class="fw-bold m-0">Tarefas</h5>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'dashboard:dashboard_epi' %}" class="nav-card">
+                <i class="fas fa-hard-hat text-warning"></i> <h5 class="fw-bold m-0">EPI</h5>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'dashboard:dashboard_documentos' %}" class="nav-card">
+                <i class="fas fa-folder-open text-danger"></i> <h5 class="fw-bold m-0">Documentos</h5>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if next_dashboard_url %}
+<script>
+    setTimeout(function() { window.location.href = "{% url next_dashboard_url %}?cycle=true"; }, {{ cycle_interval }});
+    requestAnimationFrame(() => { const b = document.querySelector('.progress-bar-tv'); if(b) b.style.width = '100%'; });
+</script>
+{% endif %}
+{% endblock %}
+

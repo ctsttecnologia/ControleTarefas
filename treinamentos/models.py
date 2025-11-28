@@ -397,3 +397,6 @@ class Assinatura(models.Model):
         if self.treinamento_responsavel:
             return self.treinamento_responsavel.responsavel.get_full_name()
         return "Desconhecido"
+    
+
+    

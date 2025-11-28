@@ -202,14 +202,34 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 ]
             },
             {
-                'id': '',
-                'title': '',
-                'permission': 'GARANT_ALL',  # Permissão especial para superusuários
+                'id': 'main_dashboard',
+                'title': 'Dashboard Integrado',
+                'permission': 'GARANT_ALL', 
                 'icon': 'images/favicon.ico',
-                'links': []
-            },
-        ]
-
+                'links': [
+                    {
+                        'text': 'Visão Geral',
+                        'url': 'dashboard:dashboard_geral',
+                    },
+                    #{
+                    #    'text': 'Treinamentos',
+                    #    'url': 'dashboard:dashboard_treinamentos',
+                    ##},
+                    #{
+                    #    'text': 'Tarefas', 
+                    #    'url': 'dashboard:dashboard_tarefas',
+                    ##},
+                    #{
+                    #    'text': 'EPI',
+                    #    'url': 'dashboard:dashboard_epi',
+                    ##},
+                    #{
+                    #    'text': 'Documentos',
+                    #    'url': 'dashboard:dashboard_documentos',
+                    ##}
+                ]
+            }
+        ]      
         # 1. Obtenha os IDs dos cartões visíveis para o grupo do usuário
         allowed_card_ids = []
         if user.is_superuser:

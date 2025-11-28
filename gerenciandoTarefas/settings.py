@@ -21,9 +21,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings')
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # --- CONFIGURAÇÕES DE SEGURANÇA ---
-
 # Lidas diretamente do seu arquivo .env
 SECRET_KEY = config('SECRET_KEY')
 FERNET_KEYS = config('FERNET_KEYS')
@@ -34,7 +32,6 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 
 #ALLOWED_HOSTS = ['*']
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
-
 
 # Lista de domínios confiáveis para requisições POST
 CSRF_TRUSTED_ORIGINS = [
@@ -136,7 +133,6 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 WSGI_APPLICATION = 'gerenciandoTarefas.wsgi.application'
 ASGI_APPLICATION = 'gerenciandoTarefas.asgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
@@ -152,7 +148,6 @@ DATABASES = {
         }
     }
 }
-
 
 # --- AUTENTICAÇÃO E VALIDAÇÃO ---
 AUTH_PASSWORD_VALIDATORS = [
@@ -178,7 +173,6 @@ TIME_ZONE = 'America/Sao_Paulo'
 # Mapbox (opcional - para mapas mais avançados)
 MAPBOX_ACCESS_TOKEN = 'your_mapbox_token_here'
 
-
 # Configurações para arquivos estáticos
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
@@ -193,8 +187,6 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/midia/'
 MEDIA_ROOT = BASE_DIR / 'midia'
 
-
-
 # Diretório PRIVADO para arquivos sensíveis
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 
@@ -202,7 +194,6 @@ PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 SENDFILE_BACKEND = 'sendfile2.backends.simple'
 SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
 SENDFILE_URL = '/private' # URL interna, não precisa ser servida publicamente
-
 
 # Tamanho máximo de upload (5MB)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
@@ -218,7 +209,6 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
-
 
 # Configurações DRF
 REST_FRAMEWORK = {
@@ -240,7 +230,6 @@ LOGOUT_REDIRECT_URL = 'usuario:login'
 # para determinar se a requisição original era HTTPS. Isso resolve o loop de redirecionamento.
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-
 # Configurações de Cookie de Segurança
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
@@ -248,7 +237,6 @@ SECURE_SSL_REDIRECT = not DEBUG
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-
 
 # Configurações do Channel Layers
 if DEBUG:
