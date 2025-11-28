@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'channels',
 
     # 3. Seus Aplicativos Locais (em ordem de dependência)
+    'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig', 
     'home',
     'core',
