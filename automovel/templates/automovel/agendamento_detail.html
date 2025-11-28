@@ -10,19 +10,22 @@
     .checklist-status { padding: 5px 10px; border-radius: 4px; font-weight: bold; }
     .status-completo { background-color: #d4edda; color: #155724; }
     .status-pendente { background-color: #fff3cd; color: #856404; }
+    
+    /* Linha do Tempo */
     .timeline { position: relative; padding-left: 30px; }
     .timeline-item { position: relative; margin-bottom: 20px; }
     .timeline-item::before { 
         content: ''; position: absolute; left: -20px; top: 5px; 
         width: 12px; height: 12px; border-radius: 50%; background: #007bff; 
     }
-    .map-container { height: 400px; border-radius: 8px; overflow: hidden; }
+    
+    /* Container do Mapa */
+    .map-container { height: 400px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <!-- Cabeçalho -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Agendamento #{{ object.id }}</h1>
         <div>
@@ -34,11 +37,19 @@
                 <i class="bi bi-pencil"></i> Editar
             </a>
             {% endif %}
+            
+            {% if object.status == 'em_andamento' %}
+             <button type="button" 
+                    class="btn btn-success" 
+                    data-bs-toggle="modal" 
+                    data-bs-target="#finalizarAgendamentoModal">
+                <i class="bi bi-check-lg"></i> Finalizar Viagem
+            </button>
+            {% endif %}
         </div>
     </div>
 
     <div class="row">
-        <!-- Informações Principais -->
         <div class="col-md-8">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
@@ -53,8 +64,8 @@
                             <strong>CM/Contrato:</strong> {{ object.cm }}
                         </div>
                         <div class="col-md-6">
-                            <strong>Data/Hora Saída:</strong> {{ object.data_hora_agenda|date:"d/m/Y H:i" }}<br>
-                            <strong>Data/Hora Retorno:</strong> {{ object.data_hora_devolucao|date:"d/m/Y H:i" }}<br>
+                            <strong>Saída:</strong> {{ object.data_hora_agenda|date:"d/m/Y H:i" }}<br>
+                            <strong>Retorno Previsto:</strong> {{ object.data_hora_devolucao|date:"d/m/Y H:i" }}<br>
                             <strong>Status:</strong> 
                             <span class="badge bg-{% if object.status == 'finalizado' %}success{% elif object.status == 'cancelado' %}danger{% else %}warning{% endif %}">
                                 {{ object.get_status_display }}
@@ -63,205 +74,245 @@
                             <strong>KM Final:</strong> {{ object.km_final|default:"-" }}
                         </div>
                     </div>
-                    
                     {% if object.descricao %}
                     <div class="mt-3">
-                        <strong>Descrição:</strong>
-                        <p class="mb-0">{{ object.descricao }}</p>
+                        <p class="mb-0 text-muted"><strong>Obs:</strong> {{ object.descricao }}</p>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <!-- Checklists -->
+            {% if object.status == 'em_andamento' %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Rastreamento em Tempo Real</h5>
+                    <small class="text-muted">GPS Ativo</small>
+                </div>
+                <div class="card-body">
+                    <div id="map" class="map-container mb-3"></div>
+                    
+                    <div class="text-center d-grid gap-2 d-md-block">
+                        <button id="iniciarRastreamento" class="btn btn-success">
+                            <i class="bi bi-play-circle"></i> Iniciar Transmissão de GPS
+                        </button>
+                        <a href="{% url 'automovel:rastreamento_map' object.pk %}" class="btn btn-outline-primary">
+                            <i class="bi bi-map"></i> Ver Histórico no Mapa
+                        </a>
+                    </div>
+                    <div id="statusGPS" class="text-muted small mt-2 text-center"></div>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="card shadow-sm mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Checklists</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6 text-center">
+                        <div class="col-md-6 text-center border-end">
                             <h6>Checklist de Saída</h6>
                             {% if checklist_saida %}
-                                <span class="checklist-status status-completo">COMPLETO</span>
-                                <a href="{% url 'automovel:checklist_detail' checklist_saida.pk %}" 
-                                   class="btn btn-sm btn-outline-primary mt-2">
-                                    Ver Detalhes
-                                </a>
+                                <span class="checklist-status status-completo d-block mb-2">COMPLETO</span>
+                                <a href="{% url 'automovel:checklist_detail' checklist_saida.pk %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
                             {% else %}
-                                <span class="checklist-status status-pendente">PENDENTE</span>
+                                <span class="checklist-status status-pendente d-block mb-2">PENDENTE</span>
                                 {% if object.status == 'agendado' %}
-                                <a href="{% url 'automovel:checklist_create' object.pk %}?tipo=saida" 
-                                   class="btn btn-sm btn-success mt-2">
-                                    Realizar Checklist
-                                </a>
+                                <a href="{% url 'automovel:checklist_create' object.pk %}?tipo=saida" class="btn btn-sm btn-success">Realizar Checklist</a>
                                 {% endif %}
                             {% endif %}
                         </div>
                         <div class="col-md-6 text-center">
                             <h6>Checklist de Retorno</h6>
                             {% if checklist_retorno %}
-                                <span class="checklist-status status-completo">COMPLETO</span>
-                                <a href="{% url 'automovel:checklist_detail' checklist_retorno.pk %}" 
-                                   class="btn btn-sm btn-outline-primary mt-2">
-                                    Ver Detalhes
-                                </a>
+                                <span class="checklist-status status-completo d-block mb-2">COMPLETO</span>
+                                <a href="{% url 'automovel:checklist_detail' checklist_retorno.pk %}" class="btn btn-sm btn-outline-primary">Ver Detalhes</a>
                             {% else %}
-                                <span class="checklist-status status-pendente">PENDENTE</span>
+                                <span class="checklist-status status-pendente d-block mb-2">PENDENTE</span>
                                 {% if object.status == 'em_andamento' and checklist_saida %}
-                                <a href="{% url 'automovel:checklist_create' object.pk %}?tipo=retorno" 
-                                   class="btn btn-sm btn-success mt-2">
-                                    Realizar Checklist
-                                </a>
+                                <a href="{% url 'automovel:checklist_create' object.pk %}?tipo=retorno" class="btn btn-sm btn-success">Realizar Checklist</a>
                                 {% endif %}
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Rastreamento -->
-            {% if object.status == 'em_andamento' %}
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Rastreamento em Tempo Real</h5>
-                </div>
-                <div class="card-body">
-                    <div id="map" class="map-container mb-3"></div>
-                    <div class="text-center">
-                        <a href="{% url 'automovel:rastreamento_map' object.pk %}" 
-                           class="btn btn-primary">
-                            <i class="bi bi-map"></i> Ver Mapa Completo
-                        </a>
-                        <button id="iniciarRastreamento" class="btn btn-success">
-                            <i class="bi bi-play-circle"></i> Iniciar Rastreamento
-                        </button>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
-        <!-- Histórico e Sidebar -->
         <div class="col-md-4">
-            <!-- Histórico do Veículo -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico do Veículo</h5>
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Histórico Recente</h5>
                 </div>
                 <div class="card-body">
                     <div class="timeline">
                         {% for historico in historico_agendamentos %}
                         <div class="timeline-item">
-                            <strong>#{{ historico.id }} - {{ historico.funcionario }}</strong><br>
-                            <small class="text-muted">
-                                {{ historico.data_hora_agenda|date:"d/m/Y" }} - 
-                                {{ historico.get_status_display }}
-                            </small>
-                            {% if historico.descricao %}
-                            <p class="mb-1 small">{{ historico.descricao|truncatewords:10 }}</p>
-                            {% endif %}
-                            <a href="{% url 'automovel:agendamento_detail' historico.pk %}" 
-                               class="btn btn-sm btn-outline-secondary mt-1">
-                                Ver Detalhes
-                            </a>
+                            <strong>{{ historico.data_hora_agenda|date:"d/m" }}</strong> - {{ historico.funcionario }}<br>
+                            <small class="text-muted">{{ historico.get_status_display }}</small>
+                            <a href="{% url 'automovel:agendamento_detail' historico.pk %}" class="btn btn-sm btn-link p-0 d-block text-decoration-none">Ver</a>
                         </div>
                         {% empty %}
-                        <p class="text-muted">Nenhum histórico anterior</p>
+                        <p class="text-muted text-center">Nenhum histórico anterior.</p>
                         {% endfor %}
                     </div>
                 </div>
             </div>
-
-            <!-- Ações Rápidas -->
+            
             <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
-                </div>
                 <div class="card-body">
+                    <h6 class="card-title">Relatórios</h6>
                     <div class="d-grid gap-2">
-                        {% if object.status == 'agendado' %}
-                        <a href="{% url 'automovel:checklist_create' object.pk %}?tipo=saida" 
-                           class="btn btn-success">
-                            <i class="bi bi-clipboard-check"></i> Checklist Saída
-                        </a>
-                        {% endif %}
-                        
-                        {% if object.status == 'em_andamento' %}
-                        <a href="{% url 'automovel:checklist_create' object.pk %}?tipo=retorno" 
-                           class="btn btn-warning">
-                            <i class="bi bi-clipboard-check"></i> Checklist Retorno
-                        </a>
-                        {% endif %}
-                        
-                        <a href="{% url 'automovel:gerar_relatorio_word' 'checklist' object.pk %}" 
-                           class="btn btn-info">
-                            <i class="bi bi-download"></i> Exportar Relatório
-                        </a>
+                         {% if checklist_saida %}
+                         <a href="{% url 'automovel:gerar_relatorio_word' 'checklist' checklist_saida.pk %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-file-word"></i> Word (Saída)
+                         </a>
+                         {% endif %}
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if object.status == 'em_andamento' %}
+<div class="modal fade" id="finalizarAgendamentoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Finalizar Viagem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'automovel:agendamento_finalizar' object.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Confirmar devolução do veículo <strong>{{ object.carro.placa }}</strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label">KM Final (Painel)</label>
+                        <input type="number" class="form-control" name="km_final" required min="{{ object.km_inicial }}">
+                        <div class="form-text">KM Inicial foi: {{ object.km_inicial }}</div>
+                    </div>
+                    <div class="mb-3">
+                         <label class="form-label">Observações</label>
+                         <textarea class="form-control" name="observacoes_devolucao" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar e Encerrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-{% if object.status == 'em_andamento' %}
-// Mapa de rastreamento
-var map = L.map('map').setView([-23.5505, -46.6333], 13); // Centro em São Paulo
+document.addEventListener('DOMContentLoaded', function() {
+    {% if object.status == 'em_andamento' %}
+    
+    // 1. Inicializar Mapa
+    // Coordenadas padrão (São Paulo). Se tiver histórico, poderia centralizar no último ponto.
+    const map = L.map('map').setView([-23.5505, -46.6333], 13); 
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-}).addTo(map);
+    let currentMarker = null; // Para armazenar o marcador atual e removê-lo ao atualizar
+    let watchId = null;
 
-// Rastreamento em tempo real
-$('#iniciarRastreamento').click(function() {
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(
-            function(position) {
-                var lat = position.coords.latitude;
-                var lng = position.coords.longitude;
-                
-                // Enviar para o servidor
-                $.ajax({
-                    url: '{% url "automovel:rastreamento_create" %}',
-                    method: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                        agendamento_id: {{ object.id }},
-                        latitude: lat,
-                        longitude: lng,
-                        velocidade: position.coords.speed || null
-                    }),
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    }
-                });
-                
-                // Atualizar mapa
-                map.setView([lat, lng], 13);
-                L.marker([lat, lng]).addTo(map)
-                    .bindPopup('Posição atual: ' + new Date().toLocaleString())
-                    .openPopup();
-            },
-            function(error) {
-                alert('Erro ao obter localização: ' + error.message);
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
-            }
-        );
+    // 2. Botão Iniciar Rastreamento
+    const btnIniciar = document.getElementById('iniciarRastreamento');
+    const statusDiv = document.getElementById('statusGPS');
+
+    btnIniciar.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            alert('Seu navegador não suporta geolocalização.');
+            return;
+        }
+
+        // Alterar estado do botão
+        btnIniciar.disabled = true;
+        btnIniciar.innerHTML = '<span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span> Transmitindo...';
+        btnIniciar.classList.replace('btn-success', 'btn-warning');
+        statusDiv.innerHTML = 'Aguardando sinal GPS...';
+
+        // Iniciar WatchPosition
+        watchId = navigator.geolocation.watchPosition(successGPS, errorGPS, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        });
+    });
+
+    // 3. Sucesso ao pegar GPS
+    function successGPS(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const speed = position.coords.speed ? (position.coords.speed * 3.6) : 0; // m/s para km/h
+
+        statusDiv.innerHTML = `Sinal OK. Última atualização: ${new Date().toLocaleTimeString()}`;
+
+        // Atualizar Mapa
+        if (currentMarker) {
+            map.removeLayer(currentMarker);
+        }
+        currentMarker = L.marker([lat, lng]).addTo(map)
+            .bindPopup(`Velocidade: ${speed.toFixed(1)} km/h`).openPopup();
         
-        $(this).prop('disabled', true).text('Rastreamento Ativo');
-    } else {
-        alert('Geolocalização não suportada pelo navegador.');
+        map.setView([lat, lng], 16); // Zoom no carro
+
+        // Enviar para Servidor (API)
+        enviarPosicaoAPI(lat, lng, speed);
     }
+
+    // 4. Erro ao pegar GPS
+    function errorGPS(err) {
+        console.error("Erro GPS:", err);
+        statusDiv.innerHTML = `<span class="text-danger">Erro GPS: ${err.message}</span>`;
+        btnIniciar.disabled = false;
+        btnIniciar.textContent = 'Tentar Novamente';
+    }
+
+    // 5. Função de Envio (Fetch)
+    function enviarPosicaoAPI(lat, lng, speed) {
+        const url = "{% url 'automovel:rastreamento_create' %}"; // Confirme se o nome da URL está correto no urls.py
+        
+        const data = {
+            agendamento_id: {{ object.id }},
+            latitude: lat,
+            longitude: lng,
+            velocidade: speed
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}' // Importante para segurança
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erro na resposta do servidor');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Posição salva ID:', data.id);
+        })
+        .catch(error => {
+            console.error('Erro ao enviar:', error);
+            statusDiv.innerHTML += ' (Falha no envio)';
+        });
+    }
+
+    {% endif %}
 });
-{% endif %}
 </script>
 {% endblock %}

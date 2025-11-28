@@ -34,6 +34,10 @@ urlpatterns = [
     path('chat/', include('chat.urls')),
     path('arquivos/', include('arquivos.urls')),
     path('documentos/', include('documentos.urls', namespace='documentos')),
+
+    # Isso permite usar o namespace "dashboard:..."
+    path('dashboard/', include('dashboard.urls')),
+   
 ]
 
 # Configuração para servir arquivos de mídia e estáticos
@@ -48,3 +52,8 @@ handler404 = 'core.views.error_404_view'
 # Da mesma forma, você pode definir para outros erros comuns:
 # handler500 = 'core.views.error_500_view' # Para erros internos do servidor
 # handler403 = 'core.views.error_403_view' # Para erros de permissão negada
+
+# Configuração global
+admin.site.site_header = "Sistema de Gestão Integrada"
+admin.site.site_title = "Dashboard"
+admin.site.index_title = "Painel de Controle"

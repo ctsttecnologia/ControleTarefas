@@ -21,8 +21,8 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 import openpyxl
-from .models import Carro, Carro_agendamento, Carro_checklist
-from .forms import CarroForm, AgendamentoForm, ChecklistForm
+from .models import Carro, Carro_agendamento, Carro_checklist, Carro_rastreamento, Carro_manutencao
+from .forms import CarroForm, AgendamentoForm, ChecklistForm, ManutencaoForm
 from core.mixins import ViewFilialScopedMixin
 from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from openpyxl import Workbook
@@ -32,13 +32,10 @@ from datetime import datetime
 from openpyxl.cell import MergedCell
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Prefetch
-from .models import Carro_rastreamento
-from .models import Carro_manutencao
-from .forms import ManutencaoForm
-
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 # --- Mixins ---
-
 class SuccessMessageMixin:
     """ Adiciona uma mensagem de sucesso ao validar um formulário. """
     success_message = ""
@@ -96,19 +93,70 @@ class CalendarioView(LoginRequiredMixin, TemplateView):
 
 class CalendarioAPIView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+        eventos = []
+
+        # =======================================================
+        # 1. BUSCAR AGENDAMENTOS (Uso do veículo)
+        # =======================================================
         agendamentos = Carro_agendamento.objects.for_request(request).filter(cancelar_agenda=False)
-        status_colors = {'agendado': '#0d6efd', 'em_andamento': '#ffc107', 'finalizado': '#198754'}
-        eventos = [
-            {
-                'id': ag.id,
-                'title': f"{ag.carro.placa} - {ag.funcionario}",
-                'start': ag.data_hora_agenda.isoformat(),
-                'end': ag.data_hora_devolucao.isoformat(),
+        
+        status_colors = {
+            'agendado': '#0d6efd',      # Azul
+            'em_andamento': '#ffc107',  # Amarelo
+            'finalizado': '#198754',    # Verde
+            'atrasado': '#dc3545'       # Vermelho
+        }
+
+        for ag in agendamentos:
+            # Proteção caso a data de devolução seja nula (ainda não devolveu)
+            # Define duração padrão de 1 hora para visualização se não tiver fim
+            start_date = ag.data_hora_agenda
+            end_date = ag.data_hora_devolucao if ag.data_hora_devolucao else start_date + timedelta(hours=1)
+            
+            eventos.append({
+                'id': f"ag_{ag.id}", # Prefixo para não confundir com ID de manutenção
+                'title': f"{ag.carro.placa} - {ag.funcionario or 'Sem Motorista'}",
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat(),
                 'url': reverse('automovel:agendamento_detail', kwargs={'pk': ag.id}),
                 'color': status_colors.get(ag.status, '#6c757d'),
-            }
-            for ag in agendamentos
-        ]
+                'extendedProps': {
+                    'tipo': 'agendamento',
+                    'status': ag.get_status_display()
+                }
+            })
+
+        # =======================================================
+        # 2. BUSCAR MANUTENÇÕES (Revisões, Pneus, etc)
+        # =======================================================
+        # Filtramos apenas as que não foram concluídas ou todas? 
+        # Aqui estou pegando todas para histórico, mas você pode filtrar com .filter(concluida=False)
+        manutencoes = Carro_manutencao.objects.for_request(request)
+
+        for man in manutencoes:
+            # Define cor baseada na conclusão (Rosa para pendente, Cinza para concluída)
+            color_manutencao = '#6c757d' if man.concluida else '#d63384' # #d63384 é um Roxo/Rosa forte
+            
+            titulo_evento = f"🔧 {man.get_tipo_display()} - {man.carro.placa}"
+            if man.concluida:
+                titulo_evento = f"✅ (OK) {titulo_evento}"
+
+            eventos.append({
+                'id': f"man_{man.id}", # Prefixo diferente
+                'title': titulo_evento,
+                # Como data_manutencao é DateField (não tem hora), usamos isoformat data pura
+                'start': man.data_manutencao.isoformat(), 
+                'allDay': True, # Importante: Avisa o calendário que ocupa o dia todo
+                'color': color_manutencao,
+                # Se você tiver uma view de detalhes da manutenção, use reverse() aqui. 
+                # Caso contrário, deixe '#'
+                'url': '#', 
+                'extendedProps': {
+                    'tipo': 'manutencao',
+                    'descricao': man.descricao
+                }
+            })
+
         return JsonResponse(eventos, safe=False)
 
 # --- Carro CRUD ---
@@ -350,6 +398,10 @@ class ChecklistUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMess
 class ChecklistDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = Carro_checklist
     template_name = 'automovel/checklist_detail.html'
+
+    context_object_name = 'checklist'
+    
+
 
 # --- Relatórios e APIs ---
 
@@ -920,3 +972,133 @@ class RastreamentoMapView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView)
             'mapbox_access_token': settings.MAPBOX_ACCESS_TOKEN if hasattr(settings, 'MAPBOX_ACCESS_TOKEN') else '',
         })
         return context
+
+# Removemos LoginRequiredMixin e adicionamos csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
+class RastreamentoAPIView(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            
+            # SE FOR RASTREADOR FÍSICO (Geralmente enviam IMEI ou ID do dispositivo, não ID do agendamento)
+            # Você precisaria buscar qual agendamento está ativo para aquele carro.
+            # Para este exemplo, vamos manter sua lógica de receber o ID do agendamento.
+            
+            agendamento_id = data.get('agendamento_id')
+            latitude = data.get('latitude')
+            longitude = data.get('longitude')
+            velocidade = data.get('velocidade')
+            
+            # Aqui você pode adicionar uma validação de Token simples por segurança
+            # token = request.headers.get('Authorization')
+            # if token != 'SEU_TOKEN_SECRETO': return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+            agendamento = get_object_or_404(Carro_agendamento, pk=agendamento_id)
+            
+            # Geocoding reverso (Mantenha sua função _reverse_geocode aqui)
+            endereco_aproximado = self._reverse_geocode(latitude, longitude)
+            
+            rastreamento = Carro_rastreamento.objects.create(
+                agendamento=agendamento,
+                latitude=latitude,
+                longitude=longitude,
+                velocidade=velocidade,
+                endereco_aproximado=endereco_aproximado,
+                # Rastreador não tem usuário logado, então usamos a filial do agendamento
+                filial=agendamento.filial 
+            )
+            
+            return JsonResponse({
+                'status': 'success', 
+                'id': rastreamento.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    def _reverse_geocode(self, lat, lng):
+        try:
+            import requests
+            
+            # IDENTIFICAÇÃO CORRETA: NomeDoApp/Versão (seu email de contato)
+            # Isso evita ser bloqueado pelo servidor do mapa
+            headers = {
+                'User-Agent': 'ControleTarefas/1.0 (esg@cetestsp.com.br)'
+            }
+            
+            response = requests.get(
+                f'https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&zoom=18',
+                headers=headers,
+                timeout=5 # Bom adicionar um timeout para não travar o servidor se a internet estiver lenta
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('display_name', 'Endereço não identificado')
+                
+        except Exception as e:
+            print(f"Erro no Geocoding: {e}") # Útil para debug no terminal
+            pass
+            
+        return 'Endereço não disponível'
+
+
+# ============================================================================
+# VIEW PARA EDITAR MANUTENÇÃO (Modal)
+# ============================================================================
+class ManutencaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, UpdateView):
+    model = Carro_manutencao
+    form_class = ManutencaoForm
+    # Não precisa de template_name pois é submetido via Modal, 
+    # mas se der erro de validação, o Django precisaria de um. 
+    # Por segurança, pode usar o mesmo form de criação ou uma página genérica.
+    template_name = 'automovel/manutencao_form.html' 
+
+    def get_success_url(self):
+        messages.success(self.request, "Manutenção atualizada com sucesso!")
+        # Redireciona de volta para a tela do carro
+        return reverse('automovel:carro_detail', kwargs={'pk': self.object.carro.pk})
+
+# ============================================================================
+# VIEW PARA FINALIZAR AGENDAMENTO (Modal)
+# ============================================================================
+class AgendamentoFinalizarView(LoginRequiredMixin, ViewFilialScopedMixin, View):
+    def post(self, request, pk):
+        # Busca o agendamento (respeitando a filial do usuário via Mixin ou Query)
+        agendamento = get_object_or_404(Carro_agendamento, pk=pk)
+        
+        # Pega os dados do formulário do modal
+        km_final = request.POST.get('km_final')
+        observacoes = request.POST.get('observacoes_devolucao')
+        
+        # Validação Básica
+        if not km_final:
+            messages.error(request, "A Quilometragem Final é obrigatória.")
+            return redirect('automovel:carro_detail', pk=agendamento.carro.pk)
+        
+        try:
+            km_final_float = float(km_final)
+        except ValueError:
+            messages.error(request, "Valor de KM inválido.")
+            return redirect('automovel:carro_detail', pk=agendamento.carro.pk)
+
+        # Validação: KM Final não pode ser menor que o KM atual do carro
+        if km_final_float < agendamento.carro.quilometragem:
+            messages.error(request, f"Erro: O KM informado ({km_final_float}) é menor que o KM atual do veículo ({agendamento.carro.quilometragem}).")
+            return redirect('automovel:carro_detail', pk=agendamento.carro.pk)
+
+        # 1. Atualiza o Agendamento
+        agendamento.km_final = km_final_float
+        agendamento.observacoes_devolucao = observacoes
+        agendamento.status = 'finalizado'
+        agendamento.data_hora_devolucao = timezone.now()
+        agendamento.save()
+
+        # 2. Atualiza o Carro
+        carro = agendamento.carro
+        carro.quilometragem = km_final_float # Atualiza KM do carro
+        carro.disponivel = True # Libera o carro
+        carro.save()
+
+        messages.success(request, "Agendamento finalizado e veículo devolvido com sucesso!")
+        return redirect('automovel:carro_detail', pk=carro.pk)

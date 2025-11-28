@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -11,135 +12,143 @@
 
 {% block extra_head %}
 <style>
-.profile-page-background {
-    background-image: url('{% static "images/background.png" %}');
-    background-position: center center;
-    background-attachment: fixed;
-    background-size: cover;
-    background-repeat: no-repeat;
-}
+    .profile-page-background {
+        background-image: url('{% static "images/background.png" %}');
+        background-position: center center;
+        background-attachment: fixed;
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
 
-/* */
-#particles-js {
-    /* Garante que a animação cubra toda a tela e fique fixa no fundo */
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    /* Coloca a animação atrás do conteúdo, mas na frente do background do body */
-    z-index: 0;
-}
+    #particles-js {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 0;
+    }
 
-/* Garante que o container principal fique na frente da animação */
-.container {
-    position: relative;
-    z-index: 1;
-}
+    /* Garante que o container principal fique na frente da animação */
+    .container {
+        position: relative;
+        z-index: 1;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 
-<div id="particles-js"></div>
+    <div id="particles-js"></div>
 
-<div class="container py-5">
-    <div class="row g-4" id="card-container">
+    <div class="container py-5">
+        <div class="row g-4" id="card-container">
 
-        {# O loop do Django vai renderizar apenas os cards permitidos #}
-        {% for card in allowed_cards %}
+            {# O loop do Django vai renderizar apenas os cards permitidos #}
+            {% for card in allowed_cards %}
             <div class="col-lg-4 col-md-6" data-card-id="{{ card.id }}">
                 <div class="profile-card">
                     <div class="card-header-section">
                         <h5 class="card-title">{{ card.title }}</h5>
                     </div>
+                    
                     <div class="card-body-section">
                         <div class="card-links">
-                            {# Loop aninhado para criar os links dinamicamente #}
                             {% for link in card.links %}
-                                <a href="{% url link.url %}" class="card-link">{{ link.text }}</a>
+                                {% if link.url %}
+                                    {# --- CORREÇÃO DE LÓGICA DE URL --- #}
+                                    {# Se a URL contém uma barra '/', assume que é um link direto (ex: /admin/) #}
+                                    {# Caso contrário, tenta resolver o nome da URL do Django (ex: app:view) #}
+                                    
+                                    {% if '/' in link.url %}
+                                        <a href="{{ link.url }}" class="card-link">{{ link.text }}</a>
+                                    {% else %}
+                                        <a href="{% url link.url %}" class="card-link">{{ link.text }}</a>
+                                    {% endif %}
+                                    
+                                {% else %}
+                                    <span class="card-link disabled">{{ link.text }} (em breve)</span>
+                                {% endif %}
                             {% endfor %}
                         </div>
+                        
                         <div class="card-icon-wrapper">
                             <img src="{% static card.icon %}" class="card-icon" alt="Ícone de {{ card.title }}">
                         </div>
                     </div>
                 </div>
             </div>
-        {% endfor %}
+            {% endfor %}
 
-    </div> 
-</div>
+        </div> </div> {% endblock %} {# --- CORREÇÃO: FECHAMENTO DO BLOCO CONTENT QUE FALTAVA --- #}
 
-{% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 
 <script>
-// Configuração do particles.js para criar o efeito de teia com repulsão
-particlesJS('particles-js', {
-    "particles": {
-        "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
-        "color": { "value": "#ffffff" },
-        "shape": { "type": "circle" },
-        "opacity": { "value": 0.9, "random": true },
-        "size": { "value": 5, "random": true },
-        "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
-        "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
-    },
-    "interactivity": {
-        "detect_on": "canvas",
-        "events": {
-            "onhover": { "enable": true, "mode": "repulse" }, // <-- A MÁGICA ACONTECE AQUI
-            "onclick": { "enable": true, "mode": "push" },
-            "resize": true
+    // Configuração do particles.js
+    particlesJS('particles-js', {
+        "particles": {
+            "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
+            "color": { "value": "#ffffff" },
+            "shape": { "type": "circle" },
+            "opacity": { "value": 0.9, "random": true },
+            "size": { "value": 5, "random": true },
+            "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
+            "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
         },
-        "modes": {
-            "repulse": { "distance": 100, "duration": 0.4 }, // Distância da repulsão
-            "push": { "particles_nb": 4 },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": { "enable": true, "mode": "repulse" },
+                "onclick": { "enable": true, "mode": "push" },
+                "resize": true
+            },
+            "modes": {
+                "repulse": { "distance": 100, "duration": 0.4 },
+                "push": { "particles_nb": 4 },
+            }
+        },
+        "retina_detect": true
+    });
+
+    // Configuração do SortableJS
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('card-container');
+        const storageKey = 'profileCardOrder';
+
+        function restoreOrder() {
+            const savedOrderJSON = localStorage.getItem(storageKey);
+            if (savedOrderJSON) {
+                const savedOrder = JSON.parse(savedOrderJSON);
+                savedOrder.forEach(cardId => {
+                    const cardElement = container.querySelector(`[data-card-id="${cardId}"]`);
+                    if (cardElement) {
+                        container.appendChild(cardElement);
+                    }
+                });
+            }
         }
-    },
-    "retina_detect": true
-});
-</script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('card-container');
-    const storageKey = 'profileCardOrder';
+        function saveOrder(sortableInstance) {
+            const currentOrder = sortableInstance.toArray();
+            localStorage.setItem(storageKey, JSON.stringify(currentOrder));
+        }
 
-    // ... (todo o seu código do SortableJS continua aqui, sem alterações)
-    function restoreOrder() {
-        const savedOrderJSON = localStorage.getItem(storageKey);
-        if (savedOrderJSON) {
-            const savedOrder = JSON.parse(savedOrderJSON);
-            savedOrder.forEach(cardId => {
-                const cardElement = container.querySelector(`[data-card-id="${cardId}"]`);
-                if (cardElement) {
-                    container.appendChild(cardElement);
-                }
+        if (container) {
+            restoreOrder();
+            const sortable = new Sortable(container, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                dataIdAttr: 'data-card-id',
+                onEnd: function() {
+                    saveOrder(this);
+                },
             });
         }
-    }
-
-    function saveOrder(sortableInstance) {
-        const currentOrder = sortableInstance.toArray();
-        localStorage.setItem(storageKey, JSON.stringify(currentOrder));
-    }
-
-    restoreOrder();
-
-    const sortable = new Sortable(container, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        dataIdAttr: 'data-card-id',
-        onEnd: function() {
-            saveOrder(this);
-        },
     });
-});
 </script>
 {% endblock %}
+

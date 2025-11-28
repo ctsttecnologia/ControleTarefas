@@ -1,0 +1,197 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* --- VARIÁVEIS DE TEMA (CLARO/ESCURO) --- */
+    :root {
+        --card-bg: #ffffff;
+        --card-text: #212529;
+        --muted-text: #6c757d;
+        --border-color: #f0f0f0;
+        --shadow-color: rgba(0,0,0,0.05);
+        --list-group-bg: #ffffff;
+        --list-group-border: rgba(0,0,0,0.125);
+        --list-item-hover: #f8f9fa;
+    }
+
+    /* Suporte a Dark Mode */
+    [data-bs-theme="dark"], body.dark-mode {
+        --card-bg: #212529;
+        --card-text: #f8f9fa;
+        --muted-text: #adb5bd;
+        --border-color: #373b3e;
+        --shadow-color: rgba(0,0,0,0.3);
+        --list-group-bg: #212529;
+        --list-group-border: #373b3e;
+        --list-item-hover: #2c3034;
+    }
+
+    /* Estilos Gerais */
+    .dashboard-container { padding: 20px; }
+    
+    /* Cards de Métricas */
+    .metric-card { 
+        background: var(--card-bg); 
+        color: var(--card-text);
+        border-radius: 12px; padding: 1.5rem; 
+        box-shadow: 0 4px 15px var(--shadow-color); 
+        border-left: 5px solid #007cba;
+        height: 100%; transition: transform 0.2s;
+    }
+    .metric-card:hover { transform: translateY(-3px); }
+    
+    .metric-value { font-size: 2.8em; font-weight: 800; color: var(--card-text); line-height: 1; margin-bottom: 10px; }
+    .metric-label { color: var(--muted-text); font-size: 0.9em; text-transform: uppercase; font-weight: 700; }
+    
+    /* Ajustes para Listas e Cards no Dark Mode */
+    .card { background-color: var(--card-bg); border-color: var(--border-color); }
+    .card-header { 
+        background-color: var(--list-item-hover); 
+        color: var(--card-text); 
+        border-bottom: 1px solid var(--border-color); 
+    }
+    .list-group-item {
+        background-color: var(--list-group-bg);
+        border-color: var(--list-group-border);
+        color: var(--card-text);
+    }
+    .list-group-item:hover { background-color: var(--list-item-hover); }
+
+    /* --- MODO TV PADRONIZADO --- */
+    .tv-badge { 
+        background: #dc3545; color: white; padding: 6px 12px; border-radius: 50px; 
+        font-size: 0.9rem; font-weight: bold; box-shadow: 0 0 15px rgba(220, 53, 69, 0.6);
+        display: flex; align-items: center; gap: 8px;
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+
+    .progress-bar-tv {
+        position: fixed; top: 0; left: 0; height: 5px; 
+        /* Gradiente Azul, Cinza e Branco */
+        background: linear-gradient(90deg, #007cba, #6c757d, #ffffff); 
+        z-index: 9999; width: 0%; transition: width {{ cycle_interval }}ms linear;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Barra de Progresso e Ocultação de Chat no Modo TV -->
+{% if is_cycling %}
+<div class="progress-bar-tv"></div>
+<style>
+    /* Oculta elementos de chat flutuante no modo TV */
+    #chat-widget, .chat-button, #chat-container, .floating-chat, button[aria-label="Chat"], #chat-modal-trigger, .floating-chat-btn { display: none !important; }
+</style>
+{% endif %}
+
+<div class="dashboard-container container-fluid py-4">
+    <!-- Cabeçalho Padronizado -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold text-body"><i class="fas fa-graduation-cap text-primary me-2"></i>{{ title }}</h2>
+        <div>
+            {% if not is_cycling %}
+                <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-outline-secondary btn-sm me-2">
+                    <i class="fas fa-arrow-left me-1"></i> Voltar
+                </a>
+            {% endif %}
+            
+            {% if is_cycling %}
+                <span class="tv-badge d-inline-flex"><i class="fas fa-tv"></i> MODO TV ATIVO</span>
+            {% else %}
+                <a href="?cycle=true" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-play me-1"></i> Iniciar TV
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Alertas -->
+    {% if vencidos > 0 %}
+    <div class="alert alert-danger shadow-sm mb-4 border-0 d-flex align-items-center">
+        <i class="fas fa-exclamation-circle fa-2x me-3"></i>
+        <div><strong>Atenção:</strong> Existem {{ vencidos }} treinamentos vencidos.</div>
+    </div>
+    {% endif %}
+
+    <!-- Métricas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="metric-card">
+                <div class="metric-value">{{ total_treinamentos }}</div>
+                <div class="metric-label">Total Cadastrado</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card" style="border-left-color: #28a745;">
+                <div class="metric-value">{{ taxa_presenca }}%</div>
+                <div class="metric-label">Taxa de Presença</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card" style="border-left-color: #ffc107;">
+                <div class="metric-value">{{ vencimento_proximo }}</div>
+                <div class="metric-label">A Vencer (15 dias)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card" style="border-left-color: #dc3545;">
+                <div class="metric-value">{{ vencidos }}</div>
+                <div class="metric-label">Vencidos</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Próximos Treinamentos -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header py-3"><h5 class="mb-0 fw-bold">Próximos Treinamentos</h5></div>
+                <ul class="list-group list-group-flush">
+                    {% for t in proximos_treinamentos %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                        <span class="fw-bold">{{ t.nome }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ t.data_inicio|date:"d/m/Y" }}</span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item p-4 text-center text-muted">Nenhum agendamento próximo.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Status Geral -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header py-3"><h5 class="mb-0 fw-bold">Status Geral</h5></div>
+                <div class="card-body">
+                    {% for st in status_data %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="fw-bold text-secondary">{{ st.status|title }}</span>
+                            <span class="fw-bold">{{ st.total }}</span>
+                        </div>
+                        <div class="progress" style="height: 8px; background-color: var(--border-color);">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script de Rotação Automática -->
+{% if next_dashboard_url %}
+<script>
+    setTimeout(() => { window.location.href = "{% url next_dashboard_url %}?cycle=true"; }, {{ cycle_interval }});
+    requestAnimationFrame(() => { const b = document.querySelector('.progress-bar-tv'); if(b) b.style.width = '100%'; });
+</script>
+{% endif %}
+{% endblock %}
+

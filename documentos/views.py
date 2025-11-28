@@ -8,34 +8,28 @@ from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponseForbidden, Http404
 from django.db.models import Q
+from .models import Documento
+from .forms import DocumentoForm
 
 
 # Tenta usar django-sendfile2 se estiver instalado. Caso não esteja,
 # fornece um fallback simples baseado em django.http.FileResponse.
 try:
-    from sendfile2 import sendfilen
-
-except Exception:
+    # django-sendfile2 is distributed as 'django-sendfile2' but imported as 'sendfile'
+    from sendfile import sendfile  # type: ignore
+except ImportError:
     from django.http import FileResponse
     import os
     from django.http import Http404
 
     def sendfile(request, path, attachment=True):
-        """Fallback para servir ficheiros quando sendfile2 não está disponível.
-        Usa FileResponse para ler o ficheiro do disco. Levanta Http404 se o
-        ficheiro não existir.
-        """
+        """Fallback to serve files when django-sendfile2 isn't installed."""
         if not os.path.exists(path):
-            raise Http404("Ficheiro não encontrado")
-        fp = open(path, 'rb')
-        response = FileResponse(fp)
+            raise Http404("File not found")
+        resp = FileResponse(open(path, "rb"))
         if attachment:
-            filename = os.path.basename(path)
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-        return response
-
-from .models import Documento
-from .forms import DocumentoForm
+            resp["Content-Disposition"] = f'attachment; filename="{os.path.basename(path)}"'
+        return resp
 
 class DocumentoListView(LoginRequiredMixin, ListView):
     """
