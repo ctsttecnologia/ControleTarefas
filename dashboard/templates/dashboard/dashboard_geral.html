@@ -202,8 +202,19 @@
 
 {% if next_dashboard_url %}
 <script>
-    setTimeout(function() { window.location.href = "{% url next_dashboard_url %}?cycle=true"; }, {{ cycle_interval }});
-    requestAnimationFrame(() => { const b = document.querySelector('.progress-bar-tv'); if(b) b.style.width = '100%'; });
+    // Animação garantida com reinício forçado
+    const progressBar = document.querySelector('.progress-bar-tv');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        setTimeout(() => {
+            progressBar.style.width = '100%';
+        }, 50); // Delay mínimo para trigger de animação
+    }
+
+    // Redirecionamento com cache-busting
+    setTimeout(() => {
+        window.location.href = "{% url next_dashboard_url %}?cycle=true&nocache=" + Date.now();
+    }, {{ cycle_interval }});
 </script>
 {% endif %}
 {% endblock %}

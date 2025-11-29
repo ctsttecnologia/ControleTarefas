@@ -1,3 +1,4 @@
+
 # chat/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
@@ -13,15 +14,18 @@ class ChatRoom(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, blank=True, null=True) # Melhor deixar opcional para DMs
     room_type = models.CharField(max_length=10, choices=ROOM_TYPES, default='DM')
     is_group_chat = models.BooleanField(default=False)
     participants = models.ManyToManyField(User, related_name='chat_rooms')
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # NOVO: Adicione isso para saber qual sala teve mensagem recente
+    updated_at = models.DateTimeField(auto_now=True) 
 
-    # Relação com o modelo Tarefas existente
+    # Relação com o modelo Tarefas
     tarefa = models.ForeignKey(
-        'tarefas.Tarefas',  # Nome correto do seu modelo
+        'tarefas.Tarefas', 
         on_delete=models.CASCADE, 
         null=True, 
         blank=True,
@@ -33,33 +37,37 @@ class ChatRoom(models.Model):
         return f"{self.name} ({self.room_type})"
     
     def get_room_display_name(self, user):
-        """ Retorna o nome de exibição correto da sala para um usuário específico. """
+        """ Retorna o nome de exibição correto da sala. """
         if self.room_type == 'DM':
-            # Para DMs, retorna o nome do OUTRO participante
             other_user = self.participants.exclude(id=user.id).first()
             if other_user:
-                return other_user.get_full_name() or other_user.username
-            return "Chat Excluído"
-        
-        # Para Grupos ou Tarefas, retorna o nome da sala
-        return self.name
+                return f"{other_user.first_name} {other_user.last_name}".strip() or other_user.username
+            return "Usuário Desconhecido"
+        return self.name or "Chat Geral"
 
     def get_last_message_preview(self):
-        """ Retorna o conteúdo da última mensagem para a pré-visualização. """
+        """ Retorna o conteúdo da última mensagem. """
         last_msg = self.messages.order_by('-timestamp').first()
         if last_msg:
             if last_msg.image:
-                return "[Imagem]"
-            # Limita a pré-visualização para 40 caracteres
-            return (last_msg.content[:40] + '...') if len(last_msg.content) > 40 else last_msg.content
-        return "Nenhuma mensagem"
+                return "📷 [Imagem]"
+            # Garante que content não seja None antes de fatiar
+            content = last_msg.content or ""
+            return (content[:40] + '...') if len(content) > 40 else content
+        return ""
 
 class Message(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
+    
+    # ALTERAÇÃO: null=True, blank=True para permitir envio só de imagem
+    content = models.TextField(null=True, blank=True) 
+    
     timestamp = models.DateTimeField(auto_now_add=True)
     image = models.ImageField(upload_to='chat_images/', null=True, blank=True)
+    
+    # NOVO: Saber se foi lida
+    is_read = models.BooleanField(default=False) 
 
     class Meta:
         db_table = "chat"
@@ -68,5 +76,7 @@ class Message(models.Model):
         verbose_name_plural = "Mensagens de Chat"
 
     def __str__(self):
-        return f'{self.user.username}: {self.content[:100]}'
+        # Proteção caso content seja None
+        texto = self.content if self.content else "[Imagem]"
+        return f'{self.user.username}: {texto[:50]}'
 

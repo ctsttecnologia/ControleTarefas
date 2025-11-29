@@ -27,25 +27,34 @@ def get_user_list(request):
 
         user_list = []
         for user in users:
-            full_name = f"{user['first_name']} {user['last_name']}".strip()
+            # Garante que não quebre se first_name for None
+            f_name = user['first_name'] or ""
+            l_name = user['last_name'] or ""
+            full_name = f"{f_name} {l_name}".strip()
+            
             display_name = full_name or user['username']
             user_list.append({
                 'id': user['id'],
                 'name': display_name,
                 'email': user['email']
             })
-           
+            
         return JsonResponse({'users': user_list})
-   
+    
     except Exception as e:
+        print(f"Erro em get_user_list: {e}") # Log para debug
         return JsonResponse({'error': f'Erro ao carregar usuários: {str(e)}'}, status=500)
 
 @login_required
 def get_task_list(request):
     """Retorna a lista de tarefas para o modal de chat."""
     try:
-        from tarefas.models import Tarefas
-       
+        # Tenta importar, se falhar não quebra o chat inteiro
+        try:
+            from tarefas.models import Tarefas
+        except ImportError:
+            return JsonResponse({'tasks': []})
+
         tasks = Tarefas.objects.filter(
             models.Q(responsavel=request.user) |
             models.Q(usuario=request.user)
@@ -58,49 +67,50 @@ def get_task_list(request):
             'status': t.get('status', 'pendente'),
             'prioridade': t.get('prioridade', 'baixa')
         } for t in tasks]
-       
+        
         return JsonResponse({'tasks': task_data})
-   
-    except ImportError:
-        return JsonResponse({'tasks': [], 'warning': 'App tarefas não encontrado'})
+    
     except Exception as e:
+        print(f"Erro em get_task_list: {e}")
         return JsonResponse({'error': f'Erro ao carregar tarefas: {str(e)}'}, status=500)
     
 @login_required
 def get_active_chat_rooms(request):
-    """
-    Retorna as salas de chat (DM, Grupo, Tarefa) 
-    nas quais o usuário é participante, para a barra lateral principal.
-    """
     try:
-        # 1. Pega as salas que o usuário participa
-        # (Idealmente, você deve ordenar pela última mensagem no futuro)
-        rooms = ChatRoom.objects.filter(
-            participants=request.user
-        ).distinct().order_by('-created_at')
+        # Tenta ordenar por updated_at (se você fez a migração)
+        # Se não fez, ordena por created_at
+        try:
+            rooms = ChatRoom.objects.filter(
+                participants=request.user
+            ).distinct().order_by('-updated_at')
+        except Exception:
+            # Fallback para created_at se updated_at não existir
+            rooms = ChatRoom.objects.filter(
+                participants=request.user
+            ).distinct().order_by('-created_at')
 
         room_list = []
         for room in rooms:
-            # 2. Formata os dados usando os novos métodos do modelo
-            room_list.append({
-                'room_id': str(room.id),
-                'room_type': room.room_type,
+            try:
+                display_name = room.get_room_display_name(request.user)
+                last_message = room.get_last_message_preview()
                 
-                # 3. Define o nome de exibição (ex: "Italo Vieira" para DMs)
-                'room_name': room.get_room_display_name(request.user), 
-                
-                # 4. Pega a última mensagem
-                'last_message': room.get_last_message_preview(),
-                
-                # 5. Adicionar contagem de mensagens não lidas
-                'unread_count': 0 
-            })
+                room_list.append({
+                    'room_id': str(room.id),
+                    'room_type': room.room_type,
+                    'room_name': display_name,
+                    'last_message': last_message,
+                    'unread_count': 0 
+                })
+            except Exception as e:
+                print(f"Erro na sala {room.id}: {e}")
+                continue # Pula a sala problemática
             
         return JsonResponse({'rooms': room_list})
         
     except Exception as e:
-        return JsonResponse({'error': f'Erro ao carregar salas de chat: {str(e)}'}, status=500)
-
+        print(f"ERRO API CHAT: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
 @login_required
 def start_or_get_dm_chat(request, user_id):
     """Inicia ou retorna um Chat Individual (DM) existente."""

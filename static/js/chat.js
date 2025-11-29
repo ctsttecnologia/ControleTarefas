@@ -4,8 +4,16 @@
  */
 class ChatManager {
 
-    constructor() {
+    constructor(urls, currentUserId) {
 
+        // Validação Crítica
+        if (!urls || !urls.active_room_list) {
+            console.error("ERRO CRÍTICO: URL active_room_list não definida via Context Processor.");
+            return; // Aborta a inicialização para evitar erros em cascata
+        }
+
+        this.urls = urls;
+        this.currentUserId = currentUserId;
        
         this.notificationSound = new Audio('/static/sounds/notification_1.mp3');
         this.notificationSound.volume = 0.5; // 50% do volume
@@ -15,15 +23,15 @@ class ChatManager {
             this.notificationSound.muted = true;
         }
         
+        // Estado inicial
         this.currentRoom = null;
         this.websocket = null;
         this.isMinimized = false;
         this.isConnected = false;
+
+        console.log('ChatManager iniciado com sucesso. URLs:', this.urls, 'Usuário atual:', this.currentUserId);
         
-        // URLs da aplicação (injetadas do Django)
-        this.urls = window.chatUrls || {};
-        console.log('ChatManager inicializado com URLs:', this.urls);
-        
+        // Inicializadores
         this.initializeEventListeners();
         this.initializeNotificationSocket();
         this.loadActiveRoomList();
@@ -351,17 +359,20 @@ class ChatManager {
             return;
         }
 
-        container.innerHTML = users.map(user => `
-            <div class="user-list-item" onclick="window.chatManager.startDM(${user.id})">
-                <div class="user-avatar">
-                    <i class="bi bi-person-fill"></i>
+        // Verifique se 'container' e 'users' existem antes
+        if (container && Array.isArray(users)) {
+            container.innerHTML = users.map(user => `
+                <div class="user-list-item" onclick="window.chatManager.startDM('${user.id}')">
+                    <div class="user-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">${this.escapeHtml(user.name)}</div>
+                        <div class="user-email">${this.escapeHtml(user.email)}</div>
+                    </div>
                 </div>
-                <div class="user-info">
-                    <div class="user-name">${this.escapeHtml(user.name)}</div>
-                    <div class="user-email">${this.escapeHtml(user.email)}</div>
-                </div>
-            </div>
         `).join('');
+        }
     }
 
     /**
@@ -642,9 +653,11 @@ class ChatManager {
         }
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
 
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'wss:';
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${protocol}//${window.location.host}/wss/chat/${roomId}/`;
-        
+
+        console.log(`Tentando conectar WS em: ${wsUrl}`);
+
         this.websocket = new WebSocket(wsUrl);
         
         this.websocket.onopen = () => {
@@ -675,7 +688,6 @@ class ChatManager {
                         console.log('🔕 Notificação ignorada: Mensagem enviada por mim mesmo.');
                     }
                 }
-                // ---------------------
 
                 // Renderiza mensagem na tela
                 if (String(this.currentRoom) === String(data.room_id) || !data.room_id) {
@@ -1096,9 +1108,9 @@ class ChatManager {
             const chatIndicator = chatButtonElement ? chatButtonElement.querySelector('.notification-indicator') : null;
 
             // 2. Conecte-se ao WebSocket de Notificação
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'wss:';
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const notificationSocket = new WebSocket(
-                protocol + '//' + window.location.host + '/wss/notifications/'
+                `${protocol}//${window.location.host}/wss/notifications/`
             );
 
             notificationSocket.onopen = function(e) {
@@ -1433,40 +1445,7 @@ class ChatManager {
     }
 }
 
-// Inicialização quando DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM carregado, inicializando ChatManager...');
-    
-    // Pequeno delay para garantir que tudo está carregado
-    setTimeout(() => {
-        try {
-            window.chatManager = new ChatManager(window.chatUrls);
-            
-            // Toggle global da sidebar
-            window.toggleChatListSidebar = () => {
-                console.log('Toggle sidebar chamado');
-                window.chatManager.toggleChatListSidebar();
-            };
-            
-            // Abrir chat a partir de elementos HTML
-            window.openChatDialog = (roomId, roomName) => {
-                console.log(`Abrindo chat: ${roomId} - ${roomName}`);
-                window.chatManager.openChatDialog(roomId, roomName);
-            };
-            
-            console.log('Sistema de Chat inicializado com sucesso!');
-        } catch (error) {
-            console.error('Erro crítico ao inicializar ChatManager:', error);
-        }
-    }, 100);
-});
 
-/// Tratamento de erros globais
-window.addEventListener('error', function(e) {
-    console.error('Erro global no sistema de chat:');
-
-    console.error(e.message, 'em', e.filename, 'linha', e.lineno);
-});
 /**
  * Sistema de Tema Automático
  * Detecta preferência do usuário e aplica tema claro/escuro
@@ -1518,56 +1497,31 @@ class ThemeManager {
     }
 }
 
-// --- Adicione isto ao final do chat.js ---
 
 /**
- * RECUPERAÇÃO DOS ATALHOS GLOBAIS
- * Define as funções que o HTML chama (onclick), conectando-as
- * à instância existente ou executando a lógica de UI diretamente.
+ * ==========================================
+ * ATALHOS GLOBAIS (APENAS ISTO NO FINAL)
+ * ==========================================
  */
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // 1. Define o atalho para a Sidebar (Toggle)
-    window.toggleChatListSidebar = function() {
-        // Cenário A: Se o ChatManager "fantasma" estiver acessível globalmente
-        if (window.chatManager && typeof window.chatManager.toggleChatListSidebar === 'function') {
-            window.chatManager.toggleChatListSidebar();
-            return;
-        }
 
-        // Cenário B (Fallback): Executa a lógica visual manualmente se a classe não estiver acessível
-        // Isso garante que o botão funcione de qualquer jeito
-        const overlay = document.getElementById('chatOverlay');
+// Atalho para o Sidebar
+window.toggleChatListSidebar = function() {
+    if (window.chatManager && typeof window.chatManager.toggleChatListSidebar === 'function') {
+        window.chatManager.toggleChatListSidebar();
+    } else {
         const sidebar = document.getElementById('chatListContainer');
-        
-        if (sidebar) {
-            const isActive = sidebar.classList.contains('active');
-            if (isActive) {
-                sidebar.classList.remove('active');
-                if (overlay) overlay.classList.remove('active');
-            } else {
-                sidebar.classList.add('active');
-                if (overlay) overlay.classList.add('active');
-            }
-        } else {
-            console.warn('Elementos da sidebar não encontrados no DOM.');
-        }
-    };
+        if (sidebar) sidebar.classList.toggle('active');
+        const overlay = document.getElementById('chatOverlay');
+        if (overlay) overlay.classList.toggle('active');
+    }
+};
 
-    // 2. Define o atalho para Abrir Chat (OpenDialog)
-    // Esse aqui precisa da classe, então tentamos acessá-la ou logamos erro
-    window.openChatDialog = function(roomId, roomName) {
-        if (window.chatManager) {
-            window.chatManager.openChatDialog(roomId, roomName);
-        } else {
-            console.error('ChatManager não está acessível globalmente para abrir o diálogo.');
-            // Tenta instanciar apenas se for emergência (raro acontecer se o chat já funciona)
-            if (typeof ChatManager !== 'undefined') {
-                window.chatManager = new ChatManager();
-                window.chatManager.openChatDialog(roomId, roomName);
-            }
-        }
-    };
+// Atalho para abrir conversa
+window.openChatDialog = function(roomId, roomName) {
+    if (window.chatManager) {
+        window.chatManager.openChatDialog(roomId, roomName);
+    } else {
+        console.warn('O chat ainda está carregando...');
+    }
+};
 
-    console.log('✅ Atalhos globais (sidebar/dialog) restaurados.');
-});

@@ -1,0 +1,24 @@
+
+{% extends 'base.html' %}
+{% block title %}Erro Interno{% endblock %}
+
+{% block content %}
+<div class="container d-flex flex-column align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="text-center">
+        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+        <h1 class="display-4 fw-bold mt-3 text-secondary">500</h1>
+        <h2 class="mb-4">Erro Interno do Servidor</h2>
+        <p class="lead text-muted mb-5">
+            Algo deu errado do nosso lado. Já fomos notificados e estamos trabalhando nisso.<br>
+            Por favor, tente novamente em alguns instantes.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="{% url 'home' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-house-door"></i> Voltar para o Painel
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

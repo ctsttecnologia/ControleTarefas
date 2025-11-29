@@ -59,4 +59,16 @@ class SetFilialView(View):
         # Redirect to the previous page or a default page
         return redirect(request.META.get('HTTP_REFERER', '/'))
 
+from django.shortcuts import render
 
+def error_403_view(request, exception=None):
+    """
+    View personalizada para erro 403 (Permissão Negada).
+    """
+    return render(request, '403.html', status=403)
+
+def error_500_view(request):
+    """
+    View personalizada para erro 500 (Erro Interno do Servidor).
+    """
+    return render(request, '500.html', status=500)
