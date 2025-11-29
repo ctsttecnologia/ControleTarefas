@@ -35,12 +35,24 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.spl
 
 # Lista de domínios confiáveis para requisições POST
 CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-
     'https://www.cetestgerenciandotarefas.com.br',
     'https://cetestgerenciandotarefas.com.br',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
 ]
+# --- CORREÇÃO DO REDIRECIONAMENTO SSL/PROXY ---
+# Esta linha informa ao Django para confiar no cabeçalho
+# 'X-Forwarded-Proto' enviado pelo seu proxy (Nginx, Load Balancer, etc.)
+# para determinar se a requisição original era HTTPS. Isso resolve o loop de redirecionamento.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+# Configurações de Cookie de Segurança
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
 # Application definition
 
@@ -224,19 +236,6 @@ LOGIN_URL = 'usuario:login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'usuario:login'
 
-# --- CORREÇÃO DO REDIRECIONAMENTO SSL/PROXY ---
-# Esta linha informa ao Django para confiar no cabeçalho
-# 'X-Forwarded-Proto' enviado pelo seu proxy (Nginx, Load Balancer, etc.)
-# para determinar se a requisição original era HTTPS. Isso resolve o loop de redirecionamento.
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Configurações de Cookie de Segurança
-CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
 
 # Configurações do Channel Layers
 if DEBUG:
@@ -283,3 +282,5 @@ CELERY_BEAT_SCHEDULE = {
     
     # ... você pode adicionar outras tarefas agendadas aqui ...
 }
+
+

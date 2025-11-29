@@ -152,13 +152,13 @@
                 </div>
                 <div class="card-body">
                     {% if cliente.logradouro %}
-                        <p class="mb-1"><strong>{{ cliente.logradouro.rua }}, {{ cliente.logradouro.numero }}</strong></p>
+                        <p class="mb-1"><strong>{{ cliente.logradouro.endereco }}, {{ cliente.logradouro.numero }}</strong></p>
                         <p class="mb-1">{{ cliente.logradouro.bairro }}</p>
                         <p class="mb-1">{{ cliente.logradouro.cidade }} - {{ cliente.logradouro.estado }}</p>
                         <p class="mb-0 text-muted small">CEP: {{ cliente.logradouro.cep }}</p>
                         
                         <div class="d-grid mt-3">
-                            <a href="https://maps.google.com/?q={{ cliente.logradouro.rua }},{{ cliente.logradouro.numero }},{{ cliente.logradouro.cidade }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                            <a href="https://maps.google.com/?q={{ cliente.logradouro.endereco }},{{ cliente.logradouro.numero }},{{ cliente.logradouro.cidade }}" target="_blank" class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-map"></i> Ver no Mapa
                             </a>
                         </div>

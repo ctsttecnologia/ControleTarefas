@@ -31,8 +31,21 @@
             <h2 class="card-title text-center mb-4">Acessar sua Conta</h2>
 
             {% if form.errors %}
-                <div class="alert alert-danger text-center p-2" role="alert">
-                    Usuário ou senha inválidos.
+                <div class="alert alert-danger p-3" role="alert">
+                    <h5 class="alert-heading h6"><i class="bi bi-exclamation-triangle-fill"></i> Erro no Login:</h5>
+                    <ul class="mb-0 ps-3 small text-start">
+                        {# 1. Erros gerais (ex: usuário inativo, senha errada) #}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+
+                        {# 2. Erros específicos dos campos (ex: campo em branco) #}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
                 </div>
             {% endif %}
 

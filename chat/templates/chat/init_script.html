@@ -1,0 +1,29 @@
+<!-- Script de inicialização do chat incluído no base.html -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Configuração Centralizada das URLs (Geradas pelo Django)
+        const chatUrls = {
+            active_room_list:   "{% url 'chat:get_active_room_list' %}",
+            user_list:          "{% url 'chat:get_user_list' %}",
+            task_list:          "{% url 'chat:get_task_list' %}",
+            create_group_url:   "{% url 'chat:create_group' %}",
+            upload_image_url:   "{% url 'chat:chat_image_upload' %}",
+            
+            // URLs com placeholder (0) para substituição dinâmica no JS
+            start_dm_base:      "{% url 'chat:start_dm' 0 %}",
+            get_task_chat_base: "{% url 'chat:get_task_chat' 0 %}"
+        };
+
+        const currentUserId = "{{ request.user.id }}";
+
+        // Inicialização Segura
+        if (typeof ChatManager !== 'undefined') {
+            console.log("Iniciando ChatManager...");
+            window.chatManager = new ChatManager(chatUrls, currentUserId);
+        } else {
+            console.error("Erro: A classe ChatManager não foi carregada. Verifique o chat.js.");
+        }
+    });
+</script>
+
