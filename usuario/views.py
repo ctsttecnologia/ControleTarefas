@@ -22,6 +22,8 @@ from usuario.models import Usuario, Group, Filial, GroupCardPermissions
 from usuario.forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
 from django.contrib.auth.forms import SetPasswordForm
 from django.db.models import ProtectedError
+from django.contrib.auth import logout
+
 
 
 class StaffRequiredMixin(UserPassesTestMixin):
@@ -32,48 +34,77 @@ class SuperuserRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_superuser
     
-# =============================================================================
-# == VIEWS DE AUTENTICAÇÃO E SELEÇÃO DE FILIAL
-# =============================================================================
-
 class CustomLoginView(LoginView):
+    """
+    View customizada de login que gerencia a filial ativa do usuário na sessão.
+    Otimizada para não realizar escrita no DB (user.save) durante o fluxo de login.
+    """
     template_name = 'usuario/login.html'
     redirect_authenticated_user = True
 
     def form_valid(self, form):
-
-        # Executa o processo de login padrão primeiro
+        # 1. Executa o processo de login padrão PRIMEIRO
         response = super().form_valid(form)
         
-        user = self.request.user
-        filial_ativa = None
+        # 2. Configura a filial ativa do usuário (apenas leitura e sessão)
+        filial_ativa = self._determinar_filial_ativa()
 
-        # 1. Prioridade: Usa a filial ativa já definida no perfil do usuário.
-        if hasattr(user, 'filial_ativa') and user.filial_ativa:
-            filial_ativa = user.filial_ativa
-        # 2. Alternativa: Se não houver, pega a primeira filial da lista de permitidas.
-        elif hasattr(user, 'filiais_permitidas') and user.filiais_permitidas.exists():
-            filial_ativa = user.filiais_permitidas.first()
-            # Atualiza o perfil do usuário para referência futura
-            user.filial_ativa = filial_ativa
-            user.save()
-
-        # Armazena a ID da filial na sessão para ser usada em todo o sistema
         if filial_ativa:
-            self.request.session['active_filial_id'] = filial_ativa.id
-            messages.info(self.request, f"Você está conectado na filial: {filial_ativa.nome}")
+            self._registrar_filial_na_sessao(filial_ativa)
         else:
-            # Se o usuário não tem filial, limpa a sessão e envia mensagem de erro
-            messages.error(self.request, "Você não está associado a nenhuma filial. Contate o administrador.")
-            # Desloga o usuário se ele não tiver filial para operar
-            from django.contrib.auth import logout
-            logout(self.request)
-            return redirect('usuario:login')
+            return self._handle_usuario_sem_filial()
 
         return response
 
+    def _determinar_filial_ativa(self):
+        """
+        Determina a filial ativa do usuário.
+        Prioriza o campo 'filial_ativa' no perfil. Se não houver, usa a primeira permitida.
+        Retorna a filial ativa (apenas leitura) ou None.
+        """
+        user = self.request.user
+        
+        # 1. Prioridade: Usa a filial ativa já definida no perfil
+        if user.filial_ativa:
+            return user.filial_ativa
+        
+        # 2. Alternativa: Pega a primeira filial da lista de permitidas
+        # Otimizado para carregar apenas os campos necessários.
+        if user.filiais_permitidas.exists():
+            # A filial é determinada, mas não é salva no perfil neste momento para evitar DB write.
+            return user.filiais_permitidas.only('id', 'nome').first()
+        
+        return None
+
+    def _registrar_filial_na_sessao(self, filial):
+        """Armazena a filial na sessão e exibe mensagem de sucesso."""
+        self.request.session['active_filial_id'] = filial.id
+        messages.info(
+            self.request, 
+            f"Você está conectado na filial: {filial.nome}"
+        )
+
+    def _handle_usuario_sem_filial(self):
+        """Trata o caso de usuário sem filial associada."""
+        messages.error(
+            self.request, 
+            "Você não está associado a nenhuma filial. Contate o administrador."
+        )
+        logout(self.request)
+        return redirect('usuario:login')
+
+
 class CustomLogoutView(LogoutView):
+    """View customizada de logout, garante que a filial da sessão seja limpa."""
     next_page = reverse_lazy('usuario:login')
+    
+    def dispatch(self, request, *args, **kwargs):
+        # Limpa a filial da sessão ao fazer logout
+        if 'active_filial_id' in request.session:
+            del request.session['active_filial_id']
+        
+        return super().dispatch(request, *args, **kwargs)
+    
 
 class SelecionarFilialView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):

@@ -16,7 +16,7 @@ app_name = 'usuario'
 
 urlpatterns = [
     # --- Autenticação ---
-    path('login/', CustomLoginView.as_view(), name='login'),
+    path('login/', CustomLoginView.as_view(template_name='usuario/login.html'), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
 
     # --- Perfil do Usuário Logado ---

@@ -1,32 +1,57 @@
-
-
 {% load static %}
 
+<!-- Sistema de Chat Avançado v3.0 -->
 <div class="chat-system-wrapper">
 
+    <!-- Botão Flutuante do Chat -->
     <button type="button" class="floating-chat-btn" id="chat-modal-trigger"
         title="Abrir Chat"
-        aria-label="Abrir Chat"
-        onclick="window.toggleChatListSidebar()">
+        aria-label="Abrir Chat">
         <i class="bi bi-chat-dots"></i>
         <span class="notification-indicator" style="display: none;"></span>
     </button>
     
-
+    <!-- Overlay do Chat -->
     <div class="chat-overlay" id="chatOverlay" onclick="window.toggleChatListSidebar()"></div>
 
+    <!-- Sidebar de Conversas -->
     <aside class="chat-sidebar-container" id="chatListContainer">
         <div class="chat-list-inner">
             
+            <!-- Header do Sidebar -->
             <header class="chat-list-header">
-                <h2>Conversas</h2>
-                <button type="button" class="chat-close-btn" onclick="window.toggleChatListSidebar()" aria-label="Fechar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+                <h2>
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Conversas
+                </h2>
+                <div class="header-actions">
+                    <!-- 🆕 Botão de busca global -->
+                    <button type="button" class="btn btn-link text-white" id="global-search-btn" 
+                            title="Busca global de mensagens">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <button type="button" class="chat-close-btn" onclick="window.toggleChatListSidebar()" 
+                            aria-label="Fechar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </header>
 
+            <!-- 🆕 Container de busca global (inicialmente escondido) -->
+            <div id="global-search-container" class="global-search-container" style="display: none;">
+                <div class="search-input-group">
+                    <input type="text" id="global-search-input" placeholder="Buscar em todas as conversas..." class="form-control">
+                    <button type="button" id="global-search-execute" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                <div id="global-search-results" class="global-search-results"></div>
+            </div>
+
+            <!-- Body do Sidebar -->
             <div class="chat-list-body">
                 
+                <!-- Ação Nova Conversa -->
                 <div class="chat-list-action">
                     <a href="#" id="iniciar-nova-conversa" data-bs-toggle="modal" data-bs-target="#novaConversaModal">
                         <i class="bi bi-chat-dots-fill"></i> 
@@ -34,117 +59,117 @@
                     </a>
                 </div>
                 
+                <!-- Lista de Conversas Ativas -->
                 <div id="active-chats-list">
-                    {% if user_chat_rooms %}
-                        {% for room in user_chat_rooms %}
-                            <a href="#" class="chat-list-item"
-                                onclick="window.chatManager.openChatDialog('{{ room.id }}', '{{ room.name|escapejs }}'); return false;">
-                                
-                                <div class="chat-item-avatar">
-                                    {% if room.room_type == 'DM' %}
-                                        <i class="bi bi-person-fill"></i>
-                                    {% elif room.room_type == 'TASK' %}
-                                        <i class="bi bi-check-square-fill"></i>
-                                    {% else %}
-                                        <i class="bi bi-people-fill"></i>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="chat-item-info">
-                                    <div class="chat-item-name">{{ room.name }}</div>
-                                    
-                                    <div class="chat-item-last-message">
-                                        {% if room.last_message_type == 'image' %}
-                                            <i class="bi bi-image-fill"></i> [Imagem]
-                                        {% else %}
-                                            {{ room.last_message_content|default:"Nenhuma mensagem"|truncatechars:30 }}
-                                        {% endif %}
-                                    </div>
-                                    
-                                </div>
-                            </a>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <i class="bi bi-chat-left" style="font-size: 2rem; margin-bottom: 1rem;"></i>
-                            <p>Nenhuma conversa ativa</p>
+               
+                    <!-- 🔄 Esta seção será carregada dinamicamente via JavaScript -->
+                    <div id="dynamic-content-section" class="dynamic-content-section">
+                        <div class="loading-placeholder">
+                            <div class="spinner-border spinner-border-sm text-muted"></div>
+                            <span class="text-muted ms-2">Carregando conteúdo...</span>
                         </div>
-                    {% endif %}
+                    </div>
+                  
+                    <div class="loading-state text-center p-4">
+                        <div class="spinner-border spinner-border-sm" role="status"></div>
+                        <p class="mt-2 mb-0">Carregando conversas...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </aside>
 
-    <!-- Modal Nova Conversa -->
-    <div class="modal fade" id="novaConversaModal" tabindex="-1"
-        aria-labelledby="novaConversaModalLabel" aria-hidden="true">
-                
+    <!-- Modal Nova Conversa (Atualizado) -->
+    <div class="modal fade" id="novaConversaModal" tabindex="-1" aria-labelledby="novaConversaModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 
+                <!-- Header do Modal -->
                 <div class="modal-header">
-                    <h5 class="modal-title" id="novaConversaModalLabel">Nova Conversa</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar">
-                    
-                    </button>
+                    <h5 class="modal-title" id="novaConversaModalLabel">
+                        <i class="bi bi-chat-plus me-2"></i>
+                        Nova Conversa
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 
+                <!-- Body do Modal -->
                 <div class="modal-body p-0">
                     
+                    <!-- Tabs de Navegação -->
                     <ul class="nav nav-tabs nav-fill" id="newChatTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="dm-tab-button" data-bs-toggle="tab" data-bs-target="#dm-tab-pane" type="button" role="tab">
-                                <i class="bi bi-person me-2"></i>Conversas Individuais
+                            <button class="nav-link active" id="dm-tab-button" data-bs-toggle="tab" 
+                                    data-bs-target="#dm-tab-pane" type="button" role="tab">
+                                <i class="bi bi-person me-2"></i>
+                                Conversa Individual
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="group-tab-button" data-bs-toggle="tab" data-bs-target="#group-tab-pane" type="button" role="tab">
-                                <i class="bi bi-people me-2"></i>Criar Grupo
+                            <button class="nav-link" id="group-tab-button" data-bs-toggle="tab" 
+                                    data-bs-target="#group-tab-pane" type="button" role="tab">
+                                <i class="bi bi-people me-2"></i>
+                                Criar Grupo
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="task-tab-button" data-bs-toggle="tab" data-bs-target="#task-tab-pane" type="button" role="tab">
-                                <i class="bi bi-check-square me-2"></i>Tarefas
+                            <button class="nav-link" id="task-tab-button" data-bs-toggle="tab" 
+                                    data-bs-target="#task-tab-pane" type="button" role="tab">
+                                <i class="bi bi-check-square me-2"></i>
+                                Chat de Tarefa
                             </button>
                         </li>
                     </ul>
 
+                    <!-- Conteúdo das Tabs -->
                     <div class="tab-content" id="newChatTabContent" style="min-height: 400px;">
                         
+                        <!-- Tab: Conversa Individual -->
                         <div class="tab-pane fade show active" id="dm-tab-pane" role="tabpanel" aria-labelledby="dm-tab-button">
                             <div class="p-3 border-bottom">
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0">
                                         <i class="bi bi-search text-muted"></i>
                                     </span>
-                                    <input type="text" class="form-control border-start-0" id="dm-user-search" placeholder="Buscar usuário...">
+                                    <input type="text" class="form-control border-start-0" 
+                                           id="dm-user-search" placeholder="Buscar usuário por nome ou email...">
                                 </div>
                             </div>
                             <div class="user-list-container" id="dm-user-list-container" style="max-height: 350px; overflow-y: auto;">
                                 <div class="loading-state">
-                                    <div class="spinner"></div>
+                                    <div class="spinner-border spinner-border-sm"></div>
                                     <p>Carregando usuários...</p>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Tab: Criar Grupo -->
                         <div class="tab-pane fade" id="group-tab-pane" role="tabpanel" aria-labelledby="group-tab-button">
                             <form id="create-group-form">
                                 {% csrf_token %}
                                 <div class="p-3">
                                     <div class="mb-3">
-                                        <label for="group-name" class="form-label fw-semibold">Nome do Grupo</label>
+                                        <label for="group-name" class="form-label fw-semibold">
+                                            <i class="bi bi-people me-2"></i>
+                                            Nome do Grupo
+                                        </label>
                                         <input type="text" class="form-control" id="group-name" name="name"
-                                               placeholder="Digite o nome do grupo" required>
+                                               placeholder="Ex: Equipe de Desenvolvimento" required>
                                     </div>
                                     <div class="mb-3">
                                         <label for="group-participants-select" class="form-label fw-semibold">
-                                            Participantes <span class="text-muted">(Selecione múltiplos com Ctrl/Cmd)</span>
+                                            <i class="bi bi-person-plus me-2"></i>
+                                            Participantes 
+                                            <span class="text-muted">(Use Ctrl/Cmd + clique para múltipla seleção)</span>
                                         </label>
                                         <select class="form-select" id="group-participants-select" name="participants"
                                                 multiple required size="8" style="min-height: 200px;">
                                             <option value="" disabled>Carregando usuários...</option>
                                         </select>
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Selecione pelo menos 1 pessoa além de você
+                                        </div>
                                     </div>
                                     <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
                                         <i class="bi bi-plus-circle me-2"></i>Criar Grupo
@@ -153,18 +178,20 @@
                             </form>
                         </div>
 
+                        <!-- Tab: Chat de Tarefa -->
                         <div class="tab-pane fade" id="task-tab-pane" role="tabpanel" aria-labelledby="task-tab-button">
                             <div class="p-3 border-bottom">
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0">
                                         <i class="bi bi-search text-muted"></i>
                                     </span>
-                                    <input type="text" class="form-control border-start-0" id="task-search" placeholder="Buscar tarefa...">
+                                    <input type="text" class="form-control border-start-0" 
+                                           id="task-search" placeholder="Buscar tarefa por título...">
                                 </div>
                             </div>
                             <div class="task-list-container" id="task-list-container" style="max-height: 350px; overflow-y: auto;">
                                 <div class="loading-state">
-                                    <div class="spinner"></div>
+                                    <div class="spinner-border spinner-border-sm"></div>
                                     <p>Carregando tarefas...</p>
                                 </div>
                             </div>
@@ -175,48 +202,485 @@
         </div>
     </div>
 
-    <!-- Chat Dialog Container  -->
+    <!-- Chat Dialog Container Principal -->
     <div class="chat-draggable-container" id="chat-draggable-container" style="display: none;">
         
-        <div class="chat-dialog-header" id="chat-dialog-header-bar">
-            <span id="chat-dialog-header-title">Chat</span>
-            <div class="header-buttons">
-                <button id="chat-sound-toggle" class="btn btn-link text-white" title="Ativar/Desativar sons">
-                    <i class="bi bi-volume-up-fill"></i>
-                </button>
-                <button id="minimize-chat-btn" title="Minimizar" aria-label="Minimizar Chat">
-                    <i class="bi bi-dash-lg"></i>
-                </button>
-                <button id="close-dialog-btn" title="Fechar" aria-label="Fechar Chat">
-                    <i class="bi bi-x-lg"></i>
-                </button>
+        <!-- Header do Chat -->
+        <div class="chat-dialog-header" id="chat-dialog-header">
+            <div id="chat-dialog-header-bar" class="chat-dialog-header-bar">
+                <div class="header-info">
+                    <span id="chat-dialog-header-title" class="chat-title">Chat</span>
+                    <!-- 🆕 Status do usuário -->
+                    <div class="header-status">
+                        <span class="status-indicator offline"></span>
+                        <span class="last-seen">Último acesso: agora</span>
+                    </div>
+                </div>
+                
+                <div class="header-buttons">
+                    <!-- 🆕 Botão de busca no chat será adicionado aqui pelo JavaScript -->
+                    <div id="chat-search-button-container" class="chat-search-button-container">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                id="toggle-chat-search-btn" title="Buscar mensagens">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <!-- 🆕 Botão de informações da conversa -->
+                    <button id="chat-info-btn" class="btn btn-link text-white" title="Informações da conversa">
+                        <i class="bi bi-info-circle"></i>
+                    </button>
+                    
+                    <!-- Controle de som -->
+                    <button id="chat-sound-toggle" class="btn btn-link text-white" title="Ativar/Desativar sons">
+                        <i class="bi bi-volume-up-fill"></i>
+                    </button>
+                    <button id="minimize-chat-btn" class="btn btn-link text-white" title="Minimizar">
+                        <i class="bi bi-dash-lg"></i>
+                    </button>
+                    <button id="maximize-chat-btn" class="btn btn-link text-white" title="Maximizar" style="display:none;">
+                        <i class="bi bi-fullscreen"></i>
+                    </button>
+                    <button id="close-dialog-btn" class="btn btn-link text-white" title="Fechar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 🆕 Container de busca no chat será inserido aqui pelo JavaScript -->
+             <div id="chat-search-container" class="chat-search-container" style="display: none;">
+                <div class="chat-search-header">
+                    <i class="bi bi-search"></i>
+                    <input type="text" class="form-control form-control-sm" 
+                        id="chat-search-input" placeholder="Buscar mensagens...">
+                    <button type="button" class="btn btn-sm btn-link" id="close-chat-search-btn">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="chat-search-results" id="chat-search-results">
+                    <!-- Resultados da busca serão inseridos dinamicamente -->
+                </div>
             </div>
         </div>
     
+        <!-- Conteúdo do Chat -->
         <div class="chat-dialog-content" id="chat-dialog-content">
+            
+            <!-- Log de Mensagens -->
             <div class="chat-log" id="chat-log" role="log" aria-live="polite">
                 <div class="welcome-state">
                     <i class="bi bi-chat-heart" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem;"></i>
                     <p>Selecione uma conversa para começar</p>
+                    <div class="welcome-actions">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#novaConversaModal">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Iniciar Nova Conversa
+                        </button>
+                    </div>
                 </div>
             </div>
-            <!-- Botão de enviar mensagem -->
-            <div class="chat-input-area" id="chat-input-area">
-                <button id="attach-image-btn" title="Anexar Imagem" aria-label="Anexar Imagem">
-                    <i class="bi bi-image"></i>
-                </button>
-                <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
-                <textarea id="chat-message-input" placeholder="Digite sua mensagem..."
-                          aria-label="Campo de mensagem do chat" rows="1"></textarea>
-                <button type="button" id="chat-message-submit" class="btn btn-sm btn-primary" aria-label="Enviar Mensagem">
-                    <i class="bi bi-send"></i>
-                </button>
+            
+            <!-- 🆕 Indicadores de digitação -->
+            <div id="typing-indicators" class="typing-indicators"></div>
+            
+            <!-- 🆕 Preview de resposta será inserido aqui pelo JavaScript -->
+            <div id="response-preview-container" class="response-preview-container" style="display: none;">
+                <div class="response-preview-header">
+                    <i class="bi bi-eye"></i>
+                    <span>Preview da Mensagem</span>
+                    <button type="button" class="btn btn-sm btn-link text-muted" id="close-preview-btn">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="response-preview-content" id="response-preview-content">
+                    <!-- Conteúdo do preview será inserido dinamicamente -->
+                </div>
+                <div class="response-preview-actions">
+                    <button type="button" class="btn btn-sm btn-secondary" id="edit-preview-btn">
+                        <i class="bi bi-pencil"></i> Editar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-primary" id="send-preview-btn">
+                        <i class="bi bi-send"></i> Enviar
+                    </button>
+                </div>
+            </div>
+                        <!-- Área de Input -->
+            <div class="chat-input-section" id="chat-input-area">
+                <div class="input-group">
+                    <!-- 🆕 Botão de anexar arquivo (atualizado) -->
+                    <button id="attach-image-btn" class="btn btn-outline-light" type="button" title="Anexar arquivo">
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    
+                    <!-- Input de mensagem -->
+                    <textarea id="chat-message-input" 
+                             class="form-control" 
+                             placeholder="Digite sua mensagem..." 
+                             aria-label="Campo de mensagem do chat" 
+                             rows="1"
+                             style="resize: none; overflow: hidden;"></textarea>
+                    
+                    <!-- Botão de enviar -->
+                    <button type="button" id="chat-message-submit" class="btn btn-primary" aria-label="Enviar Mensagem">
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
+                
+                <!-- Input file oculto (atualizado para aceitar mais tipos) -->
+                <input type="file" 
+                       id="image-upload-input" 
+                       style="display: none;" 
+                       accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar">
             </div>
         </div>
     </div>
+
+    <!-- 🆕 Modal de Informações da Conversa -->
+    <div class="modal fade" id="chatInfoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Informações da Conversa
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="chat-info-content">
+                    <!-- Conteúdo será preenchido pelo JavaScript -->
+                    <div class="loading-state text-center p-4">
+                        <div class="spinner-border spinner-border-sm"></div>
+                        <p class="mt-2 mb-0">Carregando informações...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🆕 Container de Notificações Toast -->
+    <div id="chat-notifications-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <!-- Notificações serão inseridas aqui pelo JavaScript -->
+    </div>
+
 </div>
 
+<!-- Dados do usuário atual para o JavaScript -->
 {{ request.user.username|json_script:"json-username" }}
+{{ request.user.id|json_script:"json-user-id" }}
 
+<!-- CSS do Chat -->
 <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
+
+<!-- 🆕 CSS específico para funcionalidades avançadas -->
+<style>
+/* Estilos específicos para o template refatorado */
+
+/* Header Info */
+.header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.chat-title {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: white;
+}
+
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.last-seen {
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+/* Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Global Search */
+.global-search-container {
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.global-search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+/* Loading State */
+.loading-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.loading-state .spinner-border-sm {
+    margin-bottom: 0.5rem;
+}
+
+/* Welcome State */
+.welcome-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.welcome-actions {
+    margin-top: 1.5rem;
+}
+
+/* User/Task List Items */
+.user-list-container,
+.task-list-container {
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 8px;
+}
+
+.user-list-item,
+.task-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-list-item:hover,
+.task-list-item:hover {
+    background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+
+.user-list-item:last-child,
+.task-list-item:last-child {
+    border-bottom: none;
+}
+
+.user-avatar,
+.task-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--primary-color, #007bff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2em;
+    flex-shrink: 0;
+}
+
+.user-info,
+.task-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-name,
+.task-title {
+    font-weight: 500;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email,
+.task-details {
+    font-size: 0.85em;
+    color: var(--text-muted, #6c757d);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Chat List Items com contador */
+.chat-list-item.has-unread {
+    background: rgba(74, 171, 247, 0.1);
+    border-left: 3px solid #4dabf7;
+}
+
+.chat-list-unread {
+    background: #ff6b6b;
+    color: white;
+    font-size: 0.75em;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    margin-left: auto;
+}
+
+/* Status Indicators */
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid white;
+    display: inline-block;
+}
+
+.status-indicator.online {
+    background: #51cf66;
+}
+
+.status-indicator.offline {
+    background: #868e96;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted, #6c757d);
+}
+
+.empty-state i {
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}
+
+/* Error States */
+.error-state {
+    color: #dc3545;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Form Text */
+.form-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .header-info {
+        gap: 1px;
+    }
+    
+    .chat-title {
+        font-size: 1rem;
+    }
+    
+    .header-status {
+        font-size: 0.8em;
+    }
+    
+    .user-list-item,
+    .task-list-item {
+        padding: 10px;
+    }
+    
+    .user-avatar,
+    .task-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1.1em;
+    }
+}
+
+/* Temas */
+[data-bs-theme="dark"] .global-search-container {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .user-list-container,
+[data-bs-theme="dark"] .task-list-container {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-bs-theme="dark"] .user-list-item:hover,
+[data-bs-theme="dark"] .task-list-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+</style>
+
+<!-- Scripts de Monitoramento (apenas em produção) -->
+{% if not debug %}
+<script>
+document.addEventListener('chatSystemFullyReady', function(event) {
+    const loadTime = event.detail.loadTime;
+    
+    // Log para analytics (opcional)
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'chat_load_success', {
+            'load_time': loadTime,
+            'method': 'import_dynamic'
+        });
+    }
+    
+    console.log(`📊 Chat carregado em produção: ${loadTime}ms`);
+});
+
+// Monitor de erros
+document.addEventListener('chatEmergencyReady', function() {
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'chat_load_fallback', {
+            'method': 'emergency'
+        });
+    }
+    
+    console.warn('⚠️ Chat em modo emergência');
+});
+</script>
+{% endif %}
+
+
+<script data-main="{% static 'js/chat-optimized.js' %}" src="{% static 'js/chat-loader.js' %}" defer></script>
+
+<!-- <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Verifique se as variáveis necessárias existem
+    if (typeof chatConfig === 'object' && chatConfig.urls) {
+        window.chatManager = new ChatManager(chatConfig.urls, chatConfig.userId);
+    } else {
+        console.error('Configuração do chat não encontrada');
+    }
+});
+</script>-->
+
+
+<!-- Preload de recursos críticos -->
+<!--<link rel="preload" href="{% static 'sounds/notification_1.mp3' %}" as="audio" type="audio/mpeg">-->
+<!--<link rel="preload" href="{% static 'js/chat.js' %}" as="script" crossorigin="anonymous">-->
+<!--<link rel="preload" href="{% static 'js/chat-loader.js' %}" as="script" crossorigin="anonymous">-->
+<!-- Recursos Adicionais:
+
+
+
+<!-usca Rápida - Campo de busca na sidebar
+Status Online/Offline - Indicadores de presença
+Timestamps - Horário das últimas mensagens
+Estados Visuais - Loading, empty, error states
+Responsividade - Design mobile-first
+UI/UX Moderna - Visual mais clean e profissional
+Estrutura Melhorada:
+Componentes Organizados - Estrutura mais clara
+Acessibilidade - ARIA labels e semântica
+Performance - CSS otimizado
+Layout Flexível - Grid responsivo
+Animações - Transições suaves-->
 

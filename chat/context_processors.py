@@ -1,6 +1,5 @@
 # Em chat/context_processors.py (ARQUIVO CORRIGIDO)
 
-
 from django.urls import reverse, NoReverseMatch
 from django.conf import settings
 from chat.models import ChatRoom
@@ -79,45 +78,43 @@ def task_list(request):
         })
 
 def chat_global_data(request):
-    """
-    Injeta dados globais do chat (como URLs) em todos os templates.
-    """    
-    # Se não estiver logado, retorna dicionário vazio
+    """Injeta dados globais do chat em todos os templates."""
+    
     if not request.user.is_authenticated:
-        return {'chat_urls': {}} # Retorna dict vazio, não JSON string
+        return {'chat_urls': {}}
 
     urls = {}
     try:
-        # ===================================================================
-        # URLs
-        # ===================================================================
+        # URLs CORRETAS - sem duplicação
         urls['active_room_list'] = reverse('chat:get_active_room_list')
-        urls['active_room_list'] = reverse('chat:get_active_chat_rooms')
         urls['create_group_url'] = reverse('chat:create_group')
         urls['user_list'] = reverse('chat:get_user_list')
         urls['task_list'] = reverse('chat:get_task_list')
         urls['upload_image_url'] = reverse('chat:chat_image_upload')
         
-        # Placeholders
+        # Placeholders para URLs dinâmicas
         uuid_placeholder = '00000000-0000-0000-0000-000000000000'
         id_placeholder = 0
         
-        # Atenção: No JS você terá que substituir esses '0' pelo ID real
         urls['start_dm_base'] = reverse('chat:start_dm', args=[id_placeholder])
-        urls['get_task_chat_base'] = reverse('chat:get_task_chat', args=[id_placeholder])
         urls['get_chat_history'] = reverse('chat:get_chat_history', args=[uuid_placeholder])
         
-    except NoReverseMatch:
+        # URL condicional de tarefas
+        try:
+            urls['get_task_chat_base'] = reverse('chat:get_task_chat', args=[id_placeholder])
+        except NoReverseMatch:
+            urls['get_task_chat_base'] = None
+            
+    except NoReverseMatch as e:
+        print(f"❌ Erro nas URLs do chat: {e}")
         return {'chat_urls': {}}
 
-    # RETORNO CORRETO: Dicionário Python puro, sem json.dumps
-    # Mudei o nome da chave para 'chat_urls' para ficar mais claro
-    return {
-        'chat_urls': urls 
-    }
+    return {'chat_urls': urls}
 
 def chat_urls(request):
     return {
         'active_room_list': '/chat/api/active-rooms/',  # Ou sua URL real
         # outras URLs do chat...
     }
+
+
