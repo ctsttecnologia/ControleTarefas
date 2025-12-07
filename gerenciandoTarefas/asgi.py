@@ -1,6 +1,7 @@
 import os
 from django.core.asgi import get_asgi_application
 
+
 # 1. Configura o settings
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gerenciandoTarefas.settings')
 
@@ -11,19 +12,24 @@ django_asgi_app = get_asgi_application()
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
-import chat.routing
 
-# 4. Define o Roteador
+# 4. Importa routing de forma segura
+try:
+    import chat.routing
+    websocket_urlpatterns = chat.routing.websocket_urlpatterns
+except ImportError:
+    websocket_urlpatterns = []
+
+# 5. Define o Roteador
 application = ProtocolTypeRouter({
-    # http -> Django nativo
+    # HTTP -> Django nativo
     "http": django_asgi_app,
 
-    # websocket -> Django Channels
+    # WebSocket -> Django Channels
     "websocket": AllowedHostsOriginValidator(
         AuthMiddlewareStack(
-            URLRouter(
-                chat.routing.websocket_urlpatterns
-            )
+            URLRouter(websocket_urlpatterns)
         )
     ),
 })
+
