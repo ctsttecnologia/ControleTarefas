@@ -71,4 +71,4 @@ def error_500_view(request):
     """
     View personalizada para erro 500 (Erro Interno do Servidor).
     """
-    return render(request, '500.html', status=500)
+    return render(request, 'errors/500.html', status=500)
