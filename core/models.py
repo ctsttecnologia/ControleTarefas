@@ -12,6 +12,6 @@ class BaseModel(models.Model):
     class Meta:
         # Essencial: Isso diz ao Django para não criar uma tabela
         # no banco de dados para este modelo. Ele apenas serve de base.
-        abstract = True
+        abstract = False
         ordering = ['-criado_em']
 
