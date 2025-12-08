@@ -71,4 +71,9 @@ def error_500_view(request):
     """
     View personalizada para erro 500 (Erro Interno do Servidor).
     """
+    # Garantir que o request tenha user (mesmo que AnonymousUser)
+    if not hasattr(request, 'user'):
+        from django.contrib.auth.models import AnonymousUser
+        request.user = AnonymousUser()
+    
     return render(request, 'errors/500.html', status=500)
