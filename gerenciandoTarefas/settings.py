@@ -52,6 +52,7 @@ INSTALLED_APPS = []
 INSTALLED_APPS = [
     'daphne',
     'channels',
+    'core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -78,7 +79,6 @@ INSTALLED_APPS = [
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig', 
     'home',
-    'core',
     'logradouro',
     'cliente',
     'departamento_pessoal',
