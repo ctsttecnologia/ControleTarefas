@@ -50,7 +50,6 @@ class ChatRoom(models.Model):
         tarefa_titulo = models.CharField(max_length=200, null=True, blank=True, verbose_name="Título da Tarefa")
         tarefa_descricao = models.TextField(null=True, blank=True, verbose_name="Descrição da Tarefa")
 
-
     class Meta:
         db_table = "chat_rooms"
         verbose_name = "Sala de Chat"
@@ -181,6 +180,7 @@ class MessageRead(models.Model):
     read_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        
         unique_together = ['message', 'user']
         indexes = [
             models.Index(fields=['message', 'user']),
@@ -196,9 +196,9 @@ class PushNotificationSubscription(models.Model):
     """Modelo para armazenar subscrições de push notifications."""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    endpoint = models.TextField()
-    p256dh_key = models.TextField()
-    auth_key = models.TextField()
+    endpoint = models.CharField(max_length=512)
+    p256dh_key = models.CharField(max_length=128)
+    auth_key = models.CharField(max_length=128)
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
 
@@ -221,7 +221,7 @@ class ChatSearchIndex(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=['room', 'search_text']),
+            models.Index(fields=['room']),
         ]
         verbose_name = "Índice de Busca"
         verbose_name_plural = "Índices de Busca"

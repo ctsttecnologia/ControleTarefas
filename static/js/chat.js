@@ -11,6 +11,9 @@ class ChatManager {
         // Configuração de debug
         this.debugMode = localStorage.getItem('chat-debug-mode') === 'true';
         
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = 5;
+
         // Método helper para logs condicionais
         this.log = {
             info: (...args) => console.log('ℹ️', ...args),
@@ -24,22 +27,19 @@ class ChatManager {
         if (!urls || typeof urls !== 'object') {
             return this.handleCriticalError('URLs não fornecidas');
         }
-
+        
         // Configuração única de URLs baseada no template
         this.urls = {
-            // URLs do template Django
-            active_room_list: urls.active_room_list || '/api/chat/rooms/',
-            user_list: urls.user_list || '/api/chat/users/',
-            task_list: urls.task_list || '/api/tasks/',
-            start_dm_base: urls.start_dm_base || '/api/chat/start-dm/0/',
-            create_group_url: urls.create_group_url || '/api/chat/create-group/',
-            get_task_chat_base: urls.get_task_chat_base || '/api/chat/task/0/',
-            upload_file_url: urls.upload_file_url || '/api/chat/upload/',
-            search_messages_url: urls.search_messages_url || '/api/chat/search/',
-            // URLs do template específicas
-            ws_base: urls.ws_base || '/wss/chat/',
+            active_room_list: urls.active_room_list || '/chat/api/rooms/',
+            user_list: urls.user_list || '/chat/api/users/',
+            task_list: urls.task_list || '/chat/api/tasks/',
+            start_dm_base: urls.start_dm_base || '/chat/api/start-dm/0/',
+            create_group_url: urls.create_group_url || '/chat/api/create-group/',
+            get_task_chat_base: urls.get_task_chat_base || '/chat/api/task/0/',
+            upload_file_url: urls.upload_file_url || '/chat/api/upload/',
+            search_messages_url: urls.search_messages_url || '/chat/api/search/',
+            ws_base: urls.ws_base || '/ws/chat/',
             history_base: urls.history_base || '/chat/api/history/',
-            // Adicionadas pelo template
             ...urls
         };
 
@@ -63,35 +63,24 @@ class ChatManager {
         // UI state
         this.isMinimized = false;
         
-        // Sistema de som
+        // Sistema de som e Cache
         this.soundEnabled = localStorage.getItem('chat-sound-enabled') !== 'false';
         this.soundInitialized = false;
         this.audioContext = null;
         this.audioElements = {};
+        this.cache = { users: [], tasks: [], rooms: [], messages: {}, searchResults: {} };
         
-        // Cache
-        this.cache = { 
-            users: [], 
-            tasks: [], 
-            rooms: [],
-            messages: {}, // Cache de mensagens por sala
-            searchResults: {} // Cache de resultados de busca
-        };
-        
-        // Upload state
+        // Outros states
         this.uploadQueue = [];
         this.isUploading = false;
-        this.maxFileSize = 10 * 1024 * 1024; // 10MB
-        
-        // Search state
+        this.maxFileSize = 10 * 1024 * 1024;
         this.currentSearchQuery = '';
         this.searchResults = [];
-        
-        // Drag state
         this.dragData = { isDragging: false, offsetX: 0, offsetY: 0 };
-        
-        // Inicialização
-        this.initialize();
+
+        // Inicia os processos DEPOIS de tudo configurado.
+        this.initialize(); 
+        this.connectNotificationSocket(); // ADICIONE A ÚNICA CHAMADA AQUI!
     }
 
     // ==================== INICIALIZAÇÃO ====================
@@ -144,12 +133,17 @@ class ChatManager {
         }
         
         // Configura botão de fechar sidebar
+        // DIAGNÓSTICO: Verificando o botão de fechar
         const closeBtn = document.querySelector('.chat-close-btn');
         if (closeBtn) {
+            this.log.info('Botão de fechar (.chat-close-btn) encontrado. Adicionando listener de clique...');
             closeBtn.addEventListener('click', (e) => {
+                this.log.info('--- CLIQUE NO BOTÃO DE FECHAR DETECTADO! ---');
                 e.preventDefault();
                 this.toggleChatListSidebar();
             });
+        } else {
+            this.log.error('CRÍTICO: Botão de fechar (.chat-close-btn) NÃO foi encontrado no DOM.');
         }
         
         // Configura botão de nova conversa no modal
@@ -168,13 +162,12 @@ class ChatManager {
         this.log.success('Elementos do template configurados');
     }
 
-    configureGlobalSearch() {
+   configureGlobalSearch() {
         const globalSearchBtn = document.getElementById('global-search-btn');
         const globalSearchContainer = document.getElementById('global-search-container');
         const globalSearchInput = document.getElementById('global-search-input');
-        const globalSearchExecute = document.getElementById('global-search-execute');
-        const globalSearchResults = document.getElementById('global-search-results');
-        
+
+        // Restaura o evento de clique no ícone de lupa para mostrar/esconder a busca.
         if (globalSearchBtn && globalSearchContainer) {
             globalSearchBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -183,87 +176,62 @@ class ChatManager {
                 const isVisible = globalSearchContainer.style.display !== 'none';
                 globalSearchContainer.style.display = isVisible ? 'none' : 'block';
                 
+                // Foca no campo de busca quando ele se torna visível.
                 if (!isVisible && globalSearchInput) {
                     setTimeout(() => globalSearchInput.focus(), 100);
                 }
             });
         }
         
-        if (globalSearchExecute && globalSearchInput) {
-            globalSearchExecute.addEventListener('click', () => {
-                const query = globalSearchInput.value.trim();
-                if (query) {
-                    this.performGlobalSearch(query, globalSearchResults);
-                }
-            });
-            
-            globalSearchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    const query = globalSearchInput.value.trim();
-                    if (query) {
-                        this.performGlobalSearch(query, globalSearchResults);
-                    }
-                }
+        // Mantém a busca em tempo real no campo de input.
+        if (globalSearchInput) {
+            globalSearchInput.addEventListener('input', () => {
+                const query = globalSearchInput.value;
+                this.performGlobalSearch(query);
             });
         }
     }
 
-    async performGlobalSearch(query, resultsContainer) {
-        if (!query || query.length < 2) {
-            resultsContainer.innerHTML = `
-                <div class="text-center p-3 text-muted">
-                    <i class="bi bi-search"></i>
-                    <p>Digite pelo menos 2 caracteres</p>
-                </div>
-            `;
+    performGlobalSearch(query) {
+        this.log.debug(`Filtrando conversas locais com: "${query}"`);
+
+        // Garante que o cache de salas existe.
+        if (!this.cache.rooms) {
+            this.log.warn('Cache de salas vazio, não é possível filtrar.');
             return;
         }
-        
-        resultsContainer.innerHTML = `
-            <div class="text-center p-3">
-                <div class="spinner-border spinner-border-sm"></div>
-                <p class="mt-2 mb-0">Buscando "${query}" em todas as conversas...</p>
-            </div>
-        `;
-        
-        try {
-            if (!this.urls.search_messages_url) {
-                throw new Error('URL de busca não configurada');
+
+        const lowerCaseQuery = query.toLowerCase().trim();
+        const container = document.getElementById('active-chats-list');
+
+        // Se a busca estiver vazia, mostra todas as conversas originais.
+        if (!lowerCaseQuery) {
+            this.renderRoomList(this.cache.rooms);
+            // Se o container estiver vazio após renderizar, mostra o estado de "nenhuma conversa".
+            if (container && this.cache.rooms.length === 0) {
+                 this.renderEmptyState(container, 'chat-dots', 'Nenhuma conversa ativa', 'Clique em "Nova Conversa" para começar');
             }
-            
-            const response = await fetch(this.urls.search_messages_url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': this.getCSRFToken()
-                },
-                body: JSON.stringify({ query, user_id: this.currentUserId })
-            });
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            
-            const data = await response.json();
-            
-            if (data.status === 'success' && data.results?.length > 0) {
-                this.displayGlobalSearchResults(data.results, query, resultsContainer);
-            } else {
-                resultsContainer.innerHTML = `
+            return;
+        }
+
+        // Filtra a lista de conversas em cache com base no nome da sala.
+        const filteredRooms = this.cache.rooms.filter(room =>
+            room.room_name.toLowerCase().includes(lowerCaseQuery)
+        );
+
+        // Se houver resultados, renderiza a lista filtrada.
+        if (filteredRooms.length > 0) {
+            this.renderRoomList(filteredRooms);
+        } else {
+            // Se não houver resultados, mostra uma mensagem.
+            if (container) {
+                container.innerHTML = `
                     <div class="text-center p-3 text-muted">
                         <i class="bi bi-search"></i>
-                        <p>Nenhum resultado para "${query}"</p>
+                        <p class="mb-0">Nenhum resultado para "${query}"</p>
                     </div>
                 `;
             }
-            
-        } catch (error) {
-            this.log.error('Erro na busca global:', error);
-            resultsContainer.innerHTML = `
-                <div class="text-center p-3 text-danger">
-                    <i class="bi bi-exclamation-circle"></i>
-                    <p>Erro na busca</p>
-                    <small>${error.message}</small>
-                </div>
-            `;
         }
     }
 
@@ -989,65 +957,62 @@ class ChatManager {
 
     // ==================== WEBSOCKET ====================
     
-    async connectWebSocket(roomId) {
-        if (this.websocket) {
-            this.websocket.close();
-            this.websocket = null;
+    connectWebSocket(room_id) {
+        // GARANTE QUE A RECONEXÃO NÃO OCORRA COM ID INDEFINIDA
+        if (!room_id) {
+            this.log.error("Tentativa de conectar WebSocket com room_id indefinido. Abortando.");
+            return;
+        }
+
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            this.log.warn('Tentativa de conectar um WebSocket já conectado.');
+            return;
         }
         
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = this.urls.ws_base 
-            ? `${protocol}//${window.location.host}${this.urls.ws_base}${roomId}/`
-            : `${protocol}//${window.location.host}/wss/chat/${roomId}/`;
+        const ws_path = `${this.urls.ws_base}${room_id}/`;
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws_url = `${protocol}://${window.location.host}${ws_path}`;
         
-        this.log.info(`Conectando WebSocket: ${wsUrl}`);
+        this.log.info(`Conectando WebSocket: ${ws_url}`);
+        this.websocket = new WebSocket(ws_url);
         
-        try {
-            this.websocket = new WebSocket(wsUrl);
-            
-            this.websocket.onopen = () => {
-                this.isConnected = true;
-                this.log.success('WebSocket conectado');
+        this.websocket.onopen = (e) => {
+            this.log.success('✅ WebSocket conectado com sucesso!');
+            this.isConnected = true;
+            this.reconnectAttempts = 0; 
+            this.hideConnectionError(); 
+        };
+        
+        this.websocket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            this.handleWebSocketMessage(data);
+        };
+        
+        this.websocket.onclose = (e) => {
+            this.isConnected = false;
+            this.log.warn(`⚠️ WebSocket desconectado: ${e.code}`);
+
+            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.reconnectAttempts++;
+                const delay = Math.pow(2, this.reconnectAttempts) * 1000;
+                this.log.warn(`Tentando reconectar em ${delay / 1000}s... (tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                this.showConnectionError(`Conexão perdida. Tentando reconectar...`);
                 
-                // Atualiza status no header
-                this.updateConnectionStatus('online');
-            };
-            
-            this.websocket.onmessage = (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    this.handleWebSocketMessage(data);
-                } catch (error) {
-                    this.log.error('Erro ao processar mensagem WebSocket:', error);
-                }
-            };
-            
-            this.websocket.onclose = (e) => {
-                this.isConnected = false;
-                this.log.warn(`WebSocket desconectado: ${e.code} ${e.reason}`);
-                
-                // Atualiza status no header
-                this.updateConnectionStatus('offline');
-                
-                // Tenta reconectar após 5 segundos
-                if (this.currentRoom === roomId) {
-                    setTimeout(() => {
-                        this.log.info('Tentando reconectar WebSocket...');
-                        this.connectWebSocket(roomId);
-                    }, 5000);
-                }
-            };
-            
-            this.websocket.onerror = (error) => {
-                this.log.error('Erro WebSocket:', error);
-                this.updateConnectionStatus('error');
-            };
-            
-        } catch (error) {
-            this.log.error('Falha ao conectar WebSocket:', error);
-            this.updateConnectionStatus('error');
-        }
+                setTimeout(() => {
+                    // CORREÇÃO: Usando a variável 'room_id' do escopo original da função.
+                    this.connectWebSocket(room_id);
+                }, delay);
+            } else {
+                this.log.error(`Máximo de tentativas de reconexão atingido. Desistindo.`);
+                this.showConnectionError('Não foi possível conectar ao chat. Por favor, recarregue a página.');
+            }
+        };
+        
+        this.websocket.onerror = (e) => {
+            this.log.error('❌ Erro WebSocket:', e);
+        };
     }
+
 
     updateConnectionStatus(status) {
         const statusIndicator = document.querySelector('.status-indicator');
@@ -1066,6 +1031,161 @@ class ChatManager {
                 'connecting': 'Conectando...'
             };
             statusText.textContent = statusMessages[status] || '...';
+        }
+    }
+
+    // ==================== NOVO WEBSOCKET DE NOTIFICAÇÕES ====================
+
+    connectNotificationSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        // Nota: a URL NÃO inclui um ID de sala
+        const ws_url = `${protocol}://${window.location.host}/ws/notifications/`;
+
+        this.log.info(`Conectando WebSocket de Notificações: ${ws_url}`);
+        this.notificationSocket = new WebSocket(ws_url);
+
+        this.notificationSocket.onopen = (e) => {
+            this.log.success('✅ WebSocket de Notificações geral conectado.');
+        };
+
+        this.notificationSocket.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            this.log.info('🔔 Notificação Geral Recebida:', data);
+
+            // Roteador para diferentes tipos de notificações GERAIS
+            switch (data.type) {
+                case 'new_chat_notification':
+                    this.log.info(`Nova conversa recebida de ${data.room_name}`);
+                    this.handleNewChatRoomUI(data); // Chama a função para atualizar a UI
+                    this.playNotificationSound('connect');
+                    break;
+                
+                // Você pode adicionar outros casos aqui depois, como 'new_task_assigned', etc.
+
+                default:
+                    this.log.debug('Notificação geral não tratada:', data.type);
+            }
+        };
+
+        this.notificationSocket.onclose = (e) => {
+            this.log.warn(`⚠️ WebSocket de Notificações desconectado: ${e.code}. Tentando reconectar em 5s...`);
+            // Adicione uma lógica simples de reconexão se desejar
+            setTimeout(() => this.connectNotificationSocket(), 5000);
+        };
+
+        this.notificationSocket.onerror = (e) => {
+            this.log.error('❌ Erro no WebSocket de Notificações:', e);
+        };
+    }
+
+    // Em seu chat.js, substitua a função handleNewChatRoomUI por esta:
+
+// Em seu chat.js, substitua a função handleNewChatRoomUI por esta:
+
+handleNewChatRoomUI(roomData) {
+    // Verifica se a sala já existe na UI para não duplicar
+    const existingRoomElement = document.querySelector(`.chat-room-item[data-room-id="${roomData.room_id}"]`);
+    if (existingRoomElement) {
+        this.log.warn(`A sala ${roomData.room_id} já existe na UI. Apenas movendo para o topo.`);
+        existingRoomElement.parentElement.prepend(existingRoomElement);
+        return;
+    }
+
+    this.log.success(`🎨 Renderizando nova sala na UI: ${roomData.room_name}`);
+
+    // Encontra o container da lista de conversas
+    // **IMPORTANTE**: Verifique se o ID 'active-chat-list-container' corresponde ao seu HTML.
+    const chatListContainer = document.getElementById('active-chat-list-container');
+    
+    if (!chatListContainer) {
+        this.log.error("Container da lista de chats ('active-chat-list-container') não encontrado!");
+        return;
+    }
+    
+    // Remove a mensagem "Nenhuma conversa ativa", se ela existir
+    const emptyStateMessage = chatListContainer.querySelector('.chat-empty-state');
+    if (emptyStateMessage) {
+        emptyStateMessage.remove();
+    }
+
+    // Cria o elemento HTML para a nova sala
+    // **Adapte este HTML para ser exatamente igual ao de uma sala já existente**
+    const newRoomElement = document.createElement('div');
+    newRoomElement.className = 'chat-room-item'; // Use a classe correta do seu CSS
+    newRoomElement.setAttribute('data-room-id', roomData.room_id);
+    newRoomElement.innerHTML = `
+        <div class="avatar-placeholder"></div> <!-- Ou <img src="..."> -->
+        <div class="room-info">
+            <div class="room-name">${roomData.room_name}</div>
+            <div class="last-message-preview">Nova conversa iniciada...</div>
+        </div>
+        <div class="unread-badge">1</div>
+    `;
+
+    // Adiciona o evento de clique para abrir a conversa
+    newRoomElement.addEventListener('click', () => {
+        this.openChat(roomData.room_id, roomData.room_name);
+    });
+
+    // Adiciona a nova sala no topo da lista
+    chatListContainer.prepend(newRoomElement);
+    
+    // Adiciona ao cache interno para consistência
+    if (!this.cache.rooms.some(room => room.room_id === roomData.room_id)) {
+        this.cache.rooms.unshift(roomData);
+    }
+}
+    handleNewChatRoomUI(roomData) {
+        // Verifica se a sala já existe na UI para não duplicar
+        const existingRoomElement = document.querySelector(`.chat-room-item[data-room-id="${roomData.room_id}"]`);
+        if (existingRoomElement) {
+            this.log.warn(`A sala ${roomData.room_id} já existe na UI. Apenas movendo para o topo.`);
+            existingRoomElement.parentElement.prepend(existingRoomElement);
+            return;
+        }
+
+        this.log.success(`🎨 Renderizando nova sala na UI: ${roomData.room_name}`);
+
+        // Encontra o container da lista de conversas
+        // **IMPORTANTE**: Verifique se o ID 'active-chat-list-container' corresponde ao seu HTML.
+        const chatListContainer = document.getElementById('active-chats-list');
+        
+        if (!chatListContainer) {
+            this.log.error("Container da lista de chats ('active-chats-list') não encontrado!");
+            return;
+        }
+        
+        // Remove a mensagem "Nenhuma conversa ativa", se ela existir
+        const emptyStateMessage = chatListContainer.querySelector('.chat-empty-state');
+        if (emptyStateMessage) {
+            emptyStateMessage.remove();
+        }
+
+        // Cria o elemento HTML para a nova sala
+        // **Adapte este HTML para ser exatamente igual ao de uma sala já existente**
+        const newRoomElement = document.createElement('div');
+        newRoomElement.className = 'chat-room-item'; // Use a classe correta do seu CSS
+        newRoomElement.setAttribute('data-room-id', roomData.room_id);
+        newRoomElement.innerHTML = `
+            <div class="avatar-placeholder"></div> <!-- Ou <img src="..."> -->
+            <div class="room-info">
+                <div class="room-name">${roomData.room_name}</div>
+                <div class="last-message-preview">Nova conversa iniciada...</div>
+            </div>
+            <div class="unread-badge">1</div>
+        `;
+
+        // Adiciona o evento de clique para abrir a conversa
+        newRoomElement.addEventListener('click', () => {
+            this.openChat(roomData.room_id, roomData.room_name);
+        });
+
+        // Adiciona a nova sala no topo da lista
+        chatListContainer.prepend(newRoomElement);
+        
+        // Adiciona ao cache interno para consistência
+        if (!this.cache.rooms.some(room => room.room_id === roomData.room_id)) {
+            this.cache.rooms.unshift(roomData);
         }
     }
 
@@ -2335,6 +2455,9 @@ class ChatManager {
         this.currentRoom = null;
         this.currentRoomName = null;
         
+        // Atualiza o estado da conexão imediatamente ao fechar.
+        this.isConnected = false;
+
         // Desconecta WebSocket
         if (this.websocket) {
             this.websocket.close();
@@ -2346,20 +2469,43 @@ class ChatManager {
     }
 
     toggleChatListSidebar(show = null) {
+        this.log.info('A função toggleChatListSidebar() foi chamada.');
         const overlay = document.getElementById('chatOverlay');
         const sidebar = document.getElementById('chatListContainer');
         
         if (!overlay || !sidebar) {
-            this.log.warn('Elementos da sidebar não encontrados');
+            this.log.error('CRÍTICO: Elementos da sidebar (overlay ou container) não encontrados.');
             return;
         }
         
         const shouldShow = show !== null ? show : !sidebar.classList.contains('active');
-        
+        this.log.info(`Sidebar deve ser exibida: ${shouldShow}`);
+
+        // Mantém a lógica de classes para consistência de estado
         sidebar.classList.toggle('active', shouldShow);
         overlay.classList.toggle('active', shouldShow);
+
+        // ===== NOVO CÓDIGO PARA FORÇAR A MUDANÇA VISUAL =====
+        if (shouldShow) {
+            // MOSTRA a sidebar
+            sidebar.style.visibility = 'visible';
+            sidebar.style.transform = 'translateX(0)';
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+            }, 10);
+        } else {
+            // ESCONDE a sidebar
+            sidebar.style.transform = 'translateX(100%)';
+            overlay.style.opacity = '0';
+            
+            // Esconde os elementos após a transição para não atrapalharem
+            setTimeout(() => {
+                sidebar.style.visibility = 'hidden';
+                overlay.style.display = 'none';
+            }, 300); // Duração da animação em milissegundos
+        }
         
-        // Se está mostrando, carrega lista de conversas
         if (shouldShow && this.cache.rooms.length === 0) {
             this.loadActiveRoomList();
         }
@@ -2592,7 +2738,25 @@ class ChatManager {
     createPoll() {
         this.showNotification('Criação de enquetes não implementada', 'info');
     }
+
+    showConnectionError(message) {
+        const errorContainer = document.getElementById('chat-connection-error');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.style.display = 'block';
+        }
+    }
+
+    hideConnectionError() {
+        const errorContainer = document.getElementById('chat-connection-error');
+        if (errorContainer) {
+            errorContainer.style.display = 'none';
+        }
+    }
+
 }
+
+
 
 // ==================== GLOBAL SETUP ====================
 
