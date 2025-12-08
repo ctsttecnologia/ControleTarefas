@@ -16,6 +16,8 @@ from django.utils import timezone
 from django.views import View
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 # Imports opcionais
 try:
@@ -220,7 +222,36 @@ def start_or_get_dm_chat(request, user_id):
                 is_group_chat=False
             )
             room.participants.add(request.user, other_user)
-        
+            
+        # Se a sala for nova, notifica o outro usuário em tempo real
+        is_new_room = False
+        # tenta achar DM existente entre os dois usuários
+        room = ChatRoom.objects.filter(room_type='DM', participants=request.user).filter(participants=other_user).distinct().first()
+
+        if not room:
+            # cria e adiciona participantes
+            room = ChatRoom.objects.create(
+                name=f"DM: {request.user.username} & {other_user.username}",
+                room_type='DM',
+                is_group_chat=False
+            )
+            room.participants.add(request.user, other_user)
+            is_new_room = True
+
+        # Se a sala for nova, notifica o outro usuário em tempo real
+        if is_new_room:
+            channel_layer = get_channel_layer()
+            notification_data = {
+                'type': 'new_chat_notification',
+                'room_id': str(room.id),
+                'room_name': f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username,
+                'initiator_id': request.user.id,
+            }
+            async_to_sync(channel_layer.group_send)(
+                f"notifications_{other_user.id}",
+                notification_data
+            )
+
         return JsonResponse({
             'status': 'success',
             'room_id': str(room.id),

@@ -48,12 +48,10 @@ SECURE_HSTS_PRELOAD = not DEBUG
 # =============================================================================
 INSTALLED_APPS = []
 
-# Daphne e Channels são APENAS para produção (Linux)
-if not IS_WINDOWS:
-    INSTALLED_APPS.extend(['daphne', 'channels'])
-
 # Apps que rodam em todos os ambientes    
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -98,9 +96,6 @@ INSTALLED_APPS = [
     'documentos', 
 ]
 
-# Daphne apenas em produção
-if not IS_DEVELOPMENT:
-    INSTALLED_APPS.insert(0, 'daphne')
 
 # =============================================================================
 # MIDDLEWARE
