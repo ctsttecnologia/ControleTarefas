@@ -46,7 +46,6 @@ SECURE_HSTS_PRELOAD = not DEBUG
 
 # Apps que rodam em todos os ambientes    
 INSTALLED_APPS = [
-    'daphne',
     'channels',
     'core',
     'django.contrib.admin',
