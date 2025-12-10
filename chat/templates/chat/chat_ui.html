@@ -225,17 +225,16 @@
                 
                 <div class="header-buttons">
                     <!-- 🆕 Botão de busca no chat será adicionado aqui pelo JavaScript -->
-                    <div id="chat-search-button-container" class="chat-search-button-container">
+                    <!--<div id="chat-search-button-container" class="chat-search-button-container">
                         <button type="button" class="btn btn-sm btn-outline-secondary" 
                                 id="toggle-chat-search-btn" title="Buscar mensagens">
                             <i class="bi bi-search"></i>
                         </button>
-                    </div>
+                    </div>-->
                     <!-- 🆕 Botão de informações da conversa -->
                     <button id="chat-info-btn" class="btn btn-link text-white" title="Informações da conversa">
                         <i class="bi bi-info-circle"></i>
                     </button>
-                    
                     <!-- Controle de som -->
                     <button id="chat-sound-toggle" class="btn btn-link text-white" title="Ativar/Desativar sons">
                         <i class="bi bi-volume-up-fill"></i>
@@ -411,6 +410,14 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.header-buttons {
+    
+    display: flex;
+    justify-content: flex-end; /* Alinha os itens à direita */
+    align-items: center;        /* Alinha ao centro verticalmente */
+    gap: 6px;
 }
 
 /* Global Search */

@@ -43,10 +43,6 @@ SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 
-# =============================================================================
-# INSTALLED APPS
-# =============================================================================
-INSTALLED_APPS = []
 
 # Apps que rodam em todos os ambientes    
 INSTALLED_APPS = [
@@ -102,6 +98,7 @@ INSTALLED_APPS = [
 # =============================================================================
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -111,9 +108,6 @@ MIDDLEWARE = [
     'django_htmx.middleware.HtmxMiddleware',
 ]
 
-# WhiteNoise apenas em desenvolvimento
-if IS_DEVELOPMENT:
-    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 # =============================================================================
 # URLs E TEMPLATES
@@ -282,14 +276,5 @@ CHAT_CONFIG = {
     'AUTO_RECONNECT': True,
     'RECONNECT_INTERVAL': 3000,
 }
-
-# =============================================================================
-# LOG DE AMBIENTE
-# =============================================================================
-if IS_DEVELOPMENT:
-    print("🔧 DESENVOLVIMENTO (Windows/WSGI) - WhiteNoise ativado")
-else:
-    print("🚀 PRODUÇÃO (Linux/ASGI) - Nginx serve estáticos")
-
 
 
