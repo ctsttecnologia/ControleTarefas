@@ -7,6 +7,7 @@ from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # =============================================================================
@@ -25,6 +26,7 @@ FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+
 
 CSRF_TRUSTED_ORIGINS = [
     'https://www.cetestgerenciandotarefas.com.br',
@@ -227,8 +229,16 @@ REST_FRAMEWORK = {
 # =============================================================================
 # CELERY
 # =============================================================================
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+# Define a URL do Redis baseada no ambiente
+if IS_DEVELOPMENT:
+    # Em desenvolvimento, usa 'localhost' como padrão se não houver .env
+    REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
+else:
+    # Em produção (hospedagem), EXIGE que a variável de ambiente exista.
+    REDIS_URL = config('REDIS_URL')
+
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -260,11 +270,12 @@ if IS_DEVELOPMENT:
         },
     }
 else:
+    # Em produção, usa o Redis e EXIGE a variável de ambiente REDIS_URL
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
-                "hosts": [config('REDIS_URL', default='redis://localhost:6379/0')],
+                "hosts": [REDIS_URL],
             },
         },
     }
