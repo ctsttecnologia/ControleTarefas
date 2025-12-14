@@ -1,4 +1,4 @@
-# ASGI config for gerenciandoTarefas project.
+# ASGI config for gerenciandoTarefas
 
 import os
 from django.core.asgi import get_asgi_application
@@ -19,7 +19,12 @@ from channels.security.websocket import AllowedHostsOriginValidator
 try:
     import chat.routing
     websocket_urlpatterns = chat.routing.websocket_urlpatterns
-except ImportError:
+    # Adicione este print para confirmar que deu certo
+    print(f"✅ Rotas de WebSocket importadas com sucesso: {len(websocket_urlpatterns)} rotas encontradas.")
+except Exception as e:
+    # Captura QUALQUER erro e o imprime no console
+    print(f"❌ ERRO CRÍTICO ao importar 'chat.routing': {e}")
+    print("❌ O WebSocket NÃO irá funcionar até que este erro seja corrigido.")
     websocket_urlpatterns = []
 
 # 5. Define o Roteador

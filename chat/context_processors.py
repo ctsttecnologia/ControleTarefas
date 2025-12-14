@@ -122,6 +122,7 @@ def chat_global_data(request):
             'start_dm_base': '/chat/api/start-dm/0/',
             'get_chat_history': '/chat/api/history/00000000-0000-0000-0000-000000000000/',
             'get_task_chat_base': '/chat/api/task/0/',
+            'ws_base': '/ws/chat/',
         }
         chat_available = False
 
