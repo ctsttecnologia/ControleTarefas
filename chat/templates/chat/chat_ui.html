@@ -339,7 +339,7 @@
         </div>
     </div>
 
-    <!-- 🆕 Modal de Informações da Conversa -->
+    <!-- Modal de Informações da Conversa -->
     <div class="modal fade" id="chatInfoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -361,7 +361,7 @@
         </div>
     </div>
 
-    <!-- 🆕 Container de Notificações Toast -->
+    <!-- Container de Notificações Toast -->
     <div id="chat-notifications-container" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
         <!-- Notificações serão inseridas aqui pelo JavaScript -->
     </div>
@@ -375,7 +375,7 @@
 <!-- CSS do Chat -->
 <link rel="stylesheet" href="{% static 'css/chat-modern.css' %}">
 
-<!-- 🆕 CSS específico para funcionalidades avançadas -->
+<!-- CSS específico para funcionalidades avançadas -->
 <style>
 /* Estilos específicos para o template refatorado */
 
@@ -631,69 +631,6 @@
 }
 </style>
 
-<!-- Scripts de Monitoramento (apenas em produção) -->
-{% if not debug %}
-<script>
-document.addEventListener('chatSystemFullyReady', function(event) {
-    const loadTime = event.detail.loadTime;
-    
-    // Log para analytics (opcional)
-    if (typeof gtag !== 'undefined') {
-        gtag('event', 'chat_load_success', {
-            'load_time': loadTime,
-            'method': 'import_dynamic'
-        });
-    }
-    
-    console.log(`📊 Chat carregado em produção: ${loadTime}ms`);
-});
-
-// Monitor de erros
-document.addEventListener('chatEmergencyReady', function() {
-    if (typeof gtag !== 'undefined') {
-        gtag('event', 'chat_load_fallback', {
-            'method': 'emergency'
-        });
-    }
-    
-    console.warn('⚠️ Chat em modo emergência');
-});
-</script>
-{% endif %}
 
 
-<script data-main="{% static 'js/chat-optimized.js' %}" src="{% static 'js/chat-loader.js' %}" defer></script>
-
-<!-- <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Verifique se as variáveis necessárias existem
-    if (typeof chatConfig === 'object' && chatConfig.urls) {
-        window.chatManager = new ChatManager(chatConfig.urls, chatConfig.userId);
-    } else {
-        console.error('Configuração do chat não encontrada');
-    }
-});
-</script>-->
-
-
-<!-- Preload de recursos críticos -->
-<!--<link rel="preload" href="{% static 'sounds/notification_1.mp3' %}" as="audio" type="audio/mpeg">-->
-<!--<link rel="preload" href="{% static 'js/chat.js' %}" as="script" crossorigin="anonymous">-->
-<!--<link rel="preload" href="{% static 'js/chat-loader.js' %}" as="script" crossorigin="anonymous">-->
-<!-- Recursos Adicionais:
-
-
-
-<!-usca Rápida - Campo de busca na sidebar
-Status Online/Offline - Indicadores de presença
-Timestamps - Horário das últimas mensagens
-Estados Visuais - Loading, empty, error states
-Responsividade - Design mobile-first
-UI/UX Moderna - Visual mais clean e profissional
-Estrutura Melhorada:
-Componentes Organizados - Estrutura mais clara
-Acessibilidade - ARIA labels e semântica
-Performance - CSS otimizado
-Layout Flexível - Grid responsivo
-Animações - Transições suaves-->
 

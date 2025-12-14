@@ -6,6 +6,7 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 
 User = get_user_model()
@@ -36,7 +37,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     async def new_chat_notification(self, event):
         await self.send(text_data=json.dumps(event))
 
-
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_id = self.scope['url_route']['kwargs']['room_id']
@@ -47,6 +47,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
+        # Verifica se o usuário tem acesso à sala
+        if not await self.is_user_in_room(self.user, self.room_id):
+            await self.close(code=4003)
+            return
+
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
         
@@ -54,179 +59,253 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        print(f"💬 ChatConsumer: Usuário {self.user.username} desconectado da sala {self.room_id}")
 
     async def receive(self, text_data):
+        """Recebe mensagem do WebSocket do cliente"""
         try:
             data = json.loads(text_data)
             message_type = data.get('type', 'chat_message')
+            
+            print(f"📩 Mensagem recebida: {message_type} - {data}")
 
-             # ✅ Verifica se o usuário está na sala
-            if not await self.is_user_in_room(self.user, self.room_id):
-                await self.close(code=4003)  # Código para acesso negado
-                return
             if message_type == 'chat_message':
                 await self.handle_chat_message(data)
-            elif message_type == 'mark_as_read':
-                await self.handle_mark_as_read(data)
+            elif message_type == 'file_message':
+                await self.handle_file_message(data)
             elif message_type == 'typing':
                 await self.handle_typing(data)
+            elif message_type == 'mark_as_read':
+                await self.handle_mark_as_read(data)
                 
+        except json.JSONDecodeError as e:
+            print(f"❌ Erro ao decodificar JSON: {e}")
         except Exception as e:
             print(f"❌ Erro no WebSocket receive: {e}")
+            import traceback
+            traceback.print_exc()
 
-    @database_sync_to_async
-    def is_user_in_room(self, user, room_id):
-        """Verifica se o usuário está na sala."""
-        from .models import ChatRoom
-        return ChatRoom.objects.filter(id=room_id, participants=user).exists()
-
-    async def handle_chat_message(self, data):
-        """Processa mensagem de chat."""
+    async def handle_file_message(self, data):
+        """Processa mensagem com arquivo/imagem"""
         try:
-            message_text = data.get('message', '')
-            image_url = data.get('image_url', '')
-            file_url = data.get('file_url', '')
-            file_name = data.get('file_name', '')
-            file_size = data.get('file_size', 0)
-            file_type = data.get('file_type', '')
-            reply_to_id = data.get('reply_to_id')
-
-            # Salva mensagem no banco
-            message_obj = await self.save_message_to_db(
-                message_text, image_url, file_url, file_name, file_size, file_type, reply_to_id
-            )
+            file_data = data.get('file_data', {})
+            
+            if not file_data:
+                print("⚠️ file_data vazio")
+                return
+            
+            print(f"📎 Processando arquivo: {file_data.get('name')} de {self.user.username}")
+            
+            # Salva no banco de dados
+            message_obj = await self.save_file_message_to_db(file_data)
             
             if message_obj:
-                # Cria índice de busca
-                await self.create_search_index(message_obj)
-                
-                # Prepara dados para envio
+                # Prepara dados para broadcast
                 message_data = {
                     'type': 'chat_message',
                     'message_id': str(message_obj.id),
+                    'message': '',  # Mensagem vazia para arquivos
+                    'message_type': 'file',
+                    'file_data': file_data,
+                    'username': self.user.get_full_name() or self.user.username,
+                    'user_id': self.user.id,
+                    'timestamp': message_obj.timestamp.isoformat(),
+                    'room_id': str(self.room_id),
+                }
+                
+                print(f"📤 Enviando arquivo para grupo {self.room_group_name}")
+                
+                # Envia para TODOS no grupo
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    message_data
+                )
+                
+                print(f"✅ Mensagem de arquivo enviada!")
+            else:
+                print("❌ Falha ao salvar arquivo no banco")
+                
+        except Exception as e:
+            print(f"❌ Erro ao processar arquivo: {e}")
+            import traceback
+            traceback.print_exc()
+
+    @database_sync_to_async
+    def save_file_message_to_db(self, file_data):
+        """Salva mensagem com arquivo no banco de dados"""
+        try:
+            from .models import ChatRoom, Message
+            
+            room = ChatRoom.objects.get(id=self.room_id)
+            
+            # Extrai dados do arquivo
+            file_url = file_data.get('url', '')
+            file_name = file_data.get('name', 'arquivo')
+            file_size = file_data.get('size', 0)
+            file_type = file_data.get('type', 'application/octet-stream')
+            
+            # Determina se é imagem ou arquivo
+            is_image = file_type.startswith('image/')
+            
+            # Cria a mensagem
+            message_obj = Message.objects.create(
+                room=room,
+                user=self.user,
+                content='',  # Sem texto
+                original_filename=file_name,
+                file_size=file_size,
+                file_type=file_type,
+            )
+            
+            # Se for imagem, salva no campo image, senão no file_attachment
+            # Como o arquivo já foi salvo pelo upload, só guardamos a referência
+            if is_image:
+                # Remove o prefixo '/midia/' ou '/media/' se existir
+                relative_path = file_url
+                if relative_path.startswith('/midia/'):
+                    relative_path = relative_path[7:]  # Remove '/midia/'
+                elif relative_path.startswith('/media/'):
+                    relative_path = relative_path[7:]  # Remove '/media/'
+                
+                message_obj.image = relative_path
+            else:
+                relative_path = file_url
+                if relative_path.startswith('/midia/'):
+                    relative_path = relative_path[7:]
+                elif relative_path.startswith('/media/'):
+                    relative_path = relative_path[7:]
+                
+                message_obj.file_attachment = relative_path
+            
+            message_obj.save()
+            
+            # Atualiza timestamp da sala
+            room.updated_at = timezone.now()
+            room.save(update_fields=['updated_at'])
+            
+            print(f"✅ Mensagem de arquivo salva: ID={message_obj.id}, imagem={message_obj.image}, arquivo={message_obj.file_attachment}")
+            
+            return message_obj
+            
+        except Exception as e:
+            print(f"❌ Erro ao salvar arquivo: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+
+    async def handle_chat_message(self, data):
+        """Processa e salva mensagem de chat"""
+        try:
+            message_text = data.get('message', '').strip()
+            
+            if not message_text:
+                print("⚠️ Mensagem vazia ignorada")
+                return
+            
+            print(f"💬 Processando mensagem: '{message_text}' de {self.user.username}")
+            
+            # Salva no banco de dados
+            message_obj = await self.save_message_to_db(message_text)
+            
+            if message_obj:
+                # Prepara dados para broadcast
+                message_data = {
+                    'type': 'chat_message',  # Este é o método que será chamado
+                    'message_id': str(message_obj.id),
                     'message': message_text,
-                    'image_url': image_url,
-                    'file_url': file_url,
-                    'file_name': file_name,
-                    'file_size': message_obj.get_file_size_display() if hasattr(message_obj, 'get_file_size_display') else '',
-                    'file_type': file_type,
-                    'file_emoji': message_obj.get_file_type_emoji() if hasattr(message_obj, 'get_file_type_emoji') else '📄',
                     'username': self.user.username,
                     'user_id': self.user.id,
                     'timestamp': message_obj.timestamp.isoformat(),
                     'room_id': str(self.room_id),
-                    'is_edited': False,
-                    'reply_to': await self.get_reply_data(reply_to_id) if reply_to_id else None
+                    'is_own': False,  # Será ajustado no cliente
                 }
                 
-                # Envia para o grupo do chat
-                await self.channel_layer.group_send(self.room_group_name, message_data)
+                print(f"📤 Enviando para grupo {self.room_group_name}: {message_data}")
+                
+                # Envia para TODOS no grupo (incluindo o remetente)
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    message_data
+                )
+                
+                print(f"✅ Mensagem enviada para o grupo!")
+            else:
+                print("❌ Falha ao salvar mensagem no banco")
                 
         except Exception as e:
             print(f"❌ Erro ao processar mensagem: {e}")
-
-    async def handle_mark_as_read(self, data):
-        """Marca mensagem como lida."""
-        try:
-            message_id = data.get('message_id')
-            if message_id:
-                await self.mark_message_as_read(message_id)
-                
-                # Notifica outros usuários sobre a leitura
-                await self.channel_layer.group_send(
-                    self.room_group_name,
-                    {
-                        'type': 'message_read',
-                        'message_id': message_id,
-                        'read_by': self.user.username,
-                        'read_by_id': self.user.id
-                    }
-                )
-        except Exception as e:
-            print(f"❌ Erro ao marcar como lida: {e}")
-
-    async def handle_typing(self, data):
-        """Processa indicador de digitação."""
-        try:
-            is_typing = data.get('is_typing', False)
-            
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'typing_indicator',
-                    'username': self.user.username,
-                    'user_id': self.user.id,
-                    'is_typing': is_typing
-                }
-            )
-        except Exception as e:
-            print(f"❌ Erro no indicador de digitação: {e}")
+            import traceback
+            traceback.print_exc()
 
     async def chat_message(self, event):
-        """Envia mensagem para o WebSocket."""
+        """Envia mensagem para o WebSocket do cliente"""
+        print(f"📨 chat_message chamado para {self.user.username}: {event}")
+        
+        # Ajusta flag is_own baseado no usuário atual
+        event['is_own'] = (event.get('user_id') == self.user.id)
+        
+        # Envia para o cliente
         await self.send(text_data=json.dumps({
             'type': 'new_message',
             **event
         }))
+        
+        print(f"✅ Mensagem enviada para cliente {self.user.username}")
 
-    async def message_read(self, event):
-        """Envia notificação de leitura."""
-        await self.send(text_data=json.dumps({
-            'type': 'message_read',
-            **event
-        }))
+    async def handle_typing(self, data):
+        """Processa indicador de digitação"""
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'typing_indicator',
+                'username': self.user.username,
+                'user_id': self.user.id,
+                'is_typing': data.get('is_typing', False)
+            }
+        )
 
     async def typing_indicator(self, event):
-        """Envia indicador de digitação."""
-        # Não envia para o próprio usuário
+        """Envia indicador de digitação (exceto para o próprio usuário)"""
         if event['user_id'] != self.user.id:
             await self.send(text_data=json.dumps({
                 'type': 'typing',
                 **event
             }))
 
+    async def handle_mark_as_read(self, data):
+        """Marca mensagem como lida"""
+        message_id = data.get('message_id')
+        if message_id:
+            await self.mark_message_as_read(message_id)
+
+# ==================== DATABASE OPERATIONS ====================
+
     @database_sync_to_async
-    def save_message_to_db(self, message_text, image_url, file_url, file_name, file_size, file_type, reply_to_id):
-        """Salva mensagem no banco com suporte a arquivos."""
+    def is_user_in_room(self, user, room_id):
+        """Verifica se o usuário está na sala"""
+        from .models import ChatRoom
+        return ChatRoom.objects.filter(id=room_id, participants=user).exists()
+
+    @database_sync_to_async
+    def save_message_to_db(self, message_text):
+        """Salva mensagem no banco de dados"""
         try:
-            from django.conf import settings
             from .models import ChatRoom, Message
             
             room = ChatRoom.objects.get(id=self.room_id)
             
-            # Busca mensagem de resposta se especificada
-            reply_to = None
-            if reply_to_id:
-                try:
-                    reply_to = Message.objects.get(id=reply_to_id, room=room)
-                except Message.DoesNotExist:
-                    pass
-            
-            # Cria a mensagem
             message_obj = Message.objects.create(
                 room=room,
                 user=self.user,
-                content=message_text or '',
-                reply_to=reply_to,
-                file_size=file_size if file_size else None,
-                file_type=file_type if file_type else None,
-                original_filename=file_name if file_name else None
+                content=message_text,
             )
             
-            # Processa imagem
-            if image_url and image_url.strip():
-                image_path = self.extract_media_path(image_url, settings.MEDIA_URL)
-                message_obj.image = image_path
-                message_obj.save()
-            
-            # Processa arquivo
-            if file_url and file_url.strip():
-                file_path = self.extract_media_path(file_url, settings.MEDIA_URL)
-                message_obj.file_attachment = file_path
-                message_obj.save()
-            
             # Atualiza timestamp da sala
-            room.save()
+            room.updated_at = timezone.now()
+            room.save(update_fields=['updated_at'])
+            
+            print(f"✅ Mensagem salva no banco: ID={message_obj.id}")
             
             return message_obj
             
@@ -236,17 +315,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             traceback.print_exc()
             return None
 
-    def extract_media_path(self, url, media_url):
-        """Extrai o path relativo da URL do media."""
-        if url.startswith(media_url):
-            return url[len(media_url):]
-        elif '/media/' in url:
-            return url.split('/media/', 1)[1]
-        return url
-
     @database_sync_to_async
     def mark_message_as_read(self, message_id):
-        """Marca mensagem como lida."""
+        """Marca mensagem como lida"""
         try:
             from .models import Message, MessageRead
             message = Message.objects.get(id=message_id)
@@ -257,42 +328,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"❌ Erro ao marcar mensagem como lida: {e}")
 
-    @database_sync_to_async
-    def create_search_index(self, message):
-        """Cria índice de busca para a mensagem."""
-        try:
-            from .models import ChatSearchIndex
-            search_text = ""
-            
-            if message.content:
-                search_text += message.content + " "
-            
-            if message.original_filename:
-                search_text += message.original_filename
-            
-            if search_text.strip():
-                ChatSearchIndex.objects.create(
-                    message=message,
-                    search_text=search_text.strip(),
-                    room=message.room
-                )
-        except Exception as e:
-            print(f"❌ Erro ao criar índice de busca: {e}")
-
-    @database_sync_to_async
-    def get_reply_data(self, reply_to_id):
-        """Obtém dados da mensagem de resposta."""
-        try:
-            from .models import Message
-            reply_msg = Message.objects.get(id=reply_to_id)
-            return {
-                'id': str(reply_msg.id),
-                'content': reply_msg.content[:50] if reply_msg.content else None,
-                'username': reply_msg.user.username,
-                'has_file': bool(reply_msg.file_attachment),
-                'has_image': bool(reply_msg.image)
-            }
-        except Exception:
-            return None
 
     

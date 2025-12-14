@@ -78,43 +78,57 @@ def task_list(request):
         })
 
 def chat_global_data(request):
-    """Injeta dados globais do chat em todos os templates."""
+    """Context processor para dados globais do chat."""
     
     if not request.user.is_authenticated:
-        return {'chat_urls': {}}
+        return {
+            'chat_urls': {},
+            'chat_user_id': 0,
+            'chat_available': False
+        }
 
     urls = {}
+    
     try:
-        # URLs CORRETAS - sem duplicação
+        # URLs sempre disponíveis
         urls['active_room_list'] = reverse('chat:get_active_room_list')
-        urls['create_group_url'] = reverse('chat:create_group')
         urls['user_list'] = reverse('chat:get_user_list')
         urls['task_list'] = reverse('chat:get_task_list')
+        urls['create_group_url'] = reverse('chat:create_group')
         urls['upload_image_url'] = reverse('chat:chat_image_upload')
         
-        # Placeholders para URLs dinâmicas
-        uuid_placeholder = '00000000-0000-0000-0000-000000000000'
-        id_placeholder = 0
+        # URLs com placeholders
+        urls['start_dm_base'] = reverse('chat:start_dm', args=[999]).replace('999', '0')
+        urls['get_chat_history'] = reverse('chat:get_chat_history', args=['00000000-0000-0000-0000-000000000000'])
         
-        urls['start_dm_base'] = reverse('chat:start_dm', args=[id_placeholder])
-        urls['get_chat_history'] = reverse('chat:get_chat_history', args=[uuid_placeholder])
-        
-        # URL condicional de tarefas
+        # URL condicional
         try:
-            urls['get_task_chat_base'] = reverse('chat:get_task_chat', args=[id_placeholder])
+            urls['get_task_chat_base'] = reverse('chat:get_task_chat', args=[999]).replace('999', '0')
         except NoReverseMatch:
             urls['get_task_chat_base'] = None
             
-    except NoReverseMatch as e:
-        print(f"❌ Erro nas URLs do chat: {e}")
-        return {'chat_urls': {}}
+        chat_available = True
+        
+    except Exception as e:
+        print(f"❌ Erro no context processor do chat: {e}")
+        # Fallback URLs
+        urls = {
+            #'active_room_list': '/chat/api/active-rooms/',
+            'active_room_list': '/chat/api/rooms/',
+            'user_list': '/chat/api/users/',
+            'task_list': '/chat/api/tasks/',
+            'create_group_url': '/chat/api/create-group/',
+            'upload_image_url': '/chat/api/upload/',
+            'start_dm_base': '/chat/api/start-dm/0/',
+            'get_chat_history': '/chat/api/history/00000000-0000-0000-0000-000000000000/',
+            'get_task_chat_base': '/chat/api/task/0/',
+        }
+        chat_available = False
 
-    return {'chat_urls': urls}
-
-def chat_urls(request):
     return {
-        'active_room_list': '/chat/api/active-rooms/',  # Ou sua URL real
-        # outras URLs do chat...
+        'chat_urls': urls,
+        'chat_user_id': request.user.id,
+        'chat_available': chat_available
     }
 
 

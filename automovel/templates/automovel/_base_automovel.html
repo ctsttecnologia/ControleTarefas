@@ -14,17 +14,16 @@
     <div class="subnav-automovel mb-3 p-3 bg-body-tertiary rounded-2 border sticky-top" style="top: 60px; z-index: 1020;">
         <ul class="nav nav">
             <li class="nav-item">
-                <a href="{% url 'automovel:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">
-                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                </a>
+                <a href="{% url 'automovel:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
             </li>
             <li class="nav-item">
-                <a href="{% url 'automovel:carro_list' %}" class="nav-link {% if 'carro_' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'automovel:carro_list' %}" class="nav-link {% if 'carro_' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-car-front-fill"></i> Lista de Carro
                 </a>  
             </li>
             <li class="nav-item">
-                <a href="{% url 'automovel:agendamento_list' %}" class="nav-link {% if 'agendamento_' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'automovel:agendamento_list' %}" class="nav-link {% if 'agendamento_' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-calendar3"></i> Agendamentos
                 </a>
             </li>
