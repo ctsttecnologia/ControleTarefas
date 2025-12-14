@@ -7,6 +7,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from .utils import sanitize_message, validate_message_content
+from .validators import validate_uploaded_file
 
 
 User = get_user_model()
@@ -69,6 +71,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
             
             print(f"📩 Mensagem recebida: {message_type} - {data}")
 
+             # ✅ RATE LIMITING no WebSocket
+            if not await self.check_rate_limit():
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': 'Muitas mensagens. Aguarde alguns segundos.'
+                }))
+                return
+
             if message_type == 'chat_message':
                 await self.handle_chat_message(data)
             elif message_type == 'file_message':
@@ -77,6 +87,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.handle_typing(data)
             elif message_type == 'mark_as_read':
                 await self.handle_mark_as_read(data)
+
+        except json.JSONDecodeError:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': 'Dados inválidos'
+            }))
                 
         except json.JSONDecodeError as e:
             print(f"❌ Erro ao decodificar JSON: {e}")
@@ -199,6 +215,20 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             message_text = data.get('message', '').strip()
             
+            # ✅ VALIDAÇÃO
+            is_valid, error = validate_message_content(message_text)
+            if not is_valid:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': error
+                }))
+                return
+            # ✅ SANITIZAÇÃO
+            sanitized_message = sanitize_message(message_text)
+            
+            # Salva e envia...
+            message_obj = await self.save_message_to_db(sanitized_message)
+
             if not message_text:
                 print("⚠️ Mensagem vazia ignorada")
                 return
@@ -328,5 +358,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"❌ Erro ao marcar mensagem como lida: {e}")
 
-
+    @database_sync_to_async
+    def check_rate_limit(self):
+        """Verifica rate limit do usuário"""
+        from django.core.cache import cache
+        import time
+        
+        cache_key = f"ws_rate_{self.user.id}"
+        data = cache.get(cache_key, {'count': 0, 'reset': time.time() + 60})
+        
+        if time.time() > data['reset']:
+            data = {'count': 0, 'reset': time.time() + 60}
+        
+        if data['count'] >= 60:  # Max 60 msgs/min via WebSocket
+            return False
+        
+        data['count'] += 1
+        cache.set(cache_key, data, timeout=70)
+        return True
     

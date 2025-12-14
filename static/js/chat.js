@@ -509,7 +509,7 @@ class ChatManager {
             }
         }
         
-        // ✅ CORREÇÃO: Garante que username nunca seja vazio
+        // Garante que username nunca seja vazio
         const username = data.username || 'Usuário';
         
         // Conteúdo da mensagem (texto ou arquivo)
@@ -915,22 +915,20 @@ class ChatManager {
             console.log('📤 Resposta do upload:', data);
             
             if (data.status === 'success' && data.file_data) {
-                // ✅ CORREÇÃO: Envia via WebSocket para broadcast
+                // Envia via WebSocket para broadcast
                 await this.sendFileMessage(data.file_data);
-                this.log.success(`Arquivo ${file.name} enviado com sucesso`);
+                this.showNotification(`Arquivo ${file.name} enviado`, 'success');
             } else {
                 throw new Error(data.error || 'Erro no upload');
             }
             
-        } catch (error) {
-            this.log.error('Erro no upload:', error);
-            throw error;
         } finally {
             // Remove indicador de upload
             this.hideUploadIndicator(file.name);
         }
     }
 
+    // Adicione após o método uploadFile
     async sendFileMessage(fileData) {
         if (!this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
             this.log.error('WebSocket não conectado para enviar arquivo');
@@ -938,7 +936,7 @@ class ChatManager {
         }
         
         const message = {
-            type: 'file_message',
+            type: 'file_message',  // Tipo específico para arquivo
             file_data: fileData,
             room_id: this.currentRoom,
             timestamp: new Date().toISOString()
@@ -1106,7 +1104,8 @@ class ChatManager {
         
         this.isConnecting = true;
         
-        const ws_path = `${this.urls.ws_base}${room_id}/`;
+        //const ws_path = `${this.urls.ws_base}${room_id}/`;
+        const ws_path = `/ws/chat/${room_id}/`;
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const ws_url = `${protocol}://${window.location.host}${ws_path}`;
         
@@ -1409,7 +1408,7 @@ class ChatManager {
             return;
         }
         
-        // ✅ CORREÇÃO: Prepara dados da mensagem com suporte a arquivos
+        // ✅ CORREÇÃO: Prepara dados da mensagem com fallbacks
         const messageData = {
             id: data.message_id || data.id,
             message: data.message || data.content || '',
@@ -1422,8 +1421,6 @@ class ChatManager {
             is_own: data.user_id == this.currentUserId
         };
         
-        console.log('📝 Dados preparados para exibição:', messageData);
-        
         // Exibe a mensagem na interface
         this.displayMessage(messageData);
         
@@ -1434,7 +1431,7 @@ class ChatManager {
             if (document.hidden || this.isMinimized) {
                 const preview = data.message_type === 'file' 
                     ? '📎 Arquivo enviado' 
-                    : (data.message || '').substring(0, 50);
+                    : (data.message || data.content || '').substring(0, 50);
                 this.showDesktopNotification(`${data.username}: ${preview}`);
             }
         }
