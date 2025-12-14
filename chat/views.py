@@ -18,6 +18,10 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.views.decorators.http import require_GET, require_POST
+from django.conf import settings
+from .models import ChatRoom, Message
+
 
 # Imports opcionais
 try:
@@ -60,98 +64,74 @@ def get_user_list(request):
         print(f"❌ Erro get_user_list: {e}")
         return JsonResponse({'status': 'error', 'error': str(e)})
 
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_active_chat_rooms(request):
-    """Lista salas ativas do usuário - 100% ORM"""
-    if not request.user.is_authenticated:
-        return JsonResponse({'status': 'error', 'error': 'Não autenticado'}, status=401)
-    
+
+@login_required
+@require_GET
+def get_chat_history(request, room_id):
+    """Retorna o histórico de mensagens de uma sala"""
     try:
-        print(f"🔍 DEBUG: Listando salas para {request.user.username}")
-        
-        # APENAS ORM - SEM SQL BRUTO
-        user_rooms = ChatRoom.objects.filter(
+        # Verifica se a sala existe e o usuário tem acesso
+        room = ChatRoom.objects.filter(
+            id=room_id,
             participants=request.user
-        ).prefetch_related('participants').order_by('-updated_at')
+        ).first()
         
-        rooms_data = []
+        if not room:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Sala não encontrada ou acesso negado'
+            }, status=404)
         
-        for room in user_rooms:
-            try:
-                all_participants = list(room.participants.all())
-                
-                if room.is_group_chat and room.name:
-                    display_name = room.name
-                elif room.room_type == 'TASK':
-                    display_name = room.name or "Chat da Tarefa"
-                else:
-                    other_names = []
-                    for p in all_participants:
-                        if p.id != request.user.id:
-                            full_name = f"{p.first_name} {p.last_name}".strip()
-                            other_names.append(full_name or p.username)
-                    display_name = ", ".join(other_names) if other_names else "Chat Vazio"
-                
-                rooms_data.append({
-                    'room_id': str(room.id),
-                    'room_name': display_name,
-                    'room_type': room.room_type,
-                    'is_group_chat': bool(room.is_group_chat),
-                    'participants': [p.username for p in all_participants],
-                    'participant_count': len(all_participants),
-                    'last_message': "",
-                    'last_activity': room.updated_at.isoformat() if room.updated_at else None,
-                    'unread_count': 0,
-                    'is_online': True
+        # Busca as mensagens (últimas 100)
+        messages = Message.objects.filter(room=room).select_related('user').order_by('timestamp')[:100]
+        
+        # Serializa as mensagens
+        messages_data = []
+        for msg in messages:
+            message_dict = {
+                'id': str(msg.id),
+                'message': msg.content or '',
+                'content': msg.content or '',  # Alias para compatibilidade
+                'username': msg.user.get_full_name() or msg.user.username,
+                'user_id': msg.user.id,
+                'timestamp': msg.timestamp.isoformat(),
+                'is_edited': msg.is_edited,
+            }
+            
+            # Adiciona dados de arquivo se existir
+            if msg.file_attachment:
+                message_dict['message_type'] = 'file'
+                message_dict['file_data'] = json.dumps({
+                    'url': msg.file_attachment.url if msg.file_attachment else None,
+                    'name': msg.original_filename or 'arquivo',
+                    'size': msg.file_size,
+                    'type': msg.file_type,
                 })
-                
-            except Exception as e:
-                print(f"❌ Erro sala {room.id}: {e}")
-                continue
+            elif msg.image:
+                message_dict['message_type'] = 'image'
+                message_dict['image_url'] = msg.image.url if msg.image else None
+            else:
+                message_dict['message_type'] = 'text'
+            
+            messages_data.append(message_dict)
         
-        print(f"✅ {len(rooms_data)} salas processadas")
+        print(f"📜 Retornando {len(messages_data)} mensagens para sala {room_id}")
         
         return JsonResponse({
             'status': 'success',
-            'rooms': rooms_data,
-            'count': len(rooms_data)
+            'messages': messages_data,
+            'room_id': str(room_id),
+            'room_name': room.get_room_display_name(request.user),
         })
         
     except Exception as e:
-        print(f"❌ ERRO: {e}")
         import traceback
         traceback.print_exc()
         return JsonResponse({
             'status': 'error',
-            'error': str(e),
-            'rooms': []
-        })
+            'error': str(e)
+        }, status=500)
 
-@csrf_exempt
-@require_http_methods(["GET"])
-def get_chat_history(request, room_id):
-    """Histórico de mensagens"""
-    if not request.user.is_authenticated:
-        return JsonResponse({'error': 'Não autenticado'}, status=401)
-    
-    try:
-        room = get_object_or_404(ChatRoom, id=room_id)
-        
-        if not room.participants.filter(id=request.user.id).exists():
-            return JsonResponse({'error': 'Sem acesso'}, status=403)
-        
-        # Por enquanto retorna lista vazia (implementar modelo Message depois)
-        return JsonResponse({
-            'status': 'success',
-            'messages': [],
-            'room_id': str(room.id),
-            'room_name': room.name
-        })
-        
-    except Exception as e:
-        print(f"❌ Erro get_chat_history: {e}")
-        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -192,6 +172,39 @@ def get_task_list(request):
     except Exception as e:
         print(f"❌ Erro get_task_list: {e}")
         return JsonResponse({'error': str(e)}, status=500)
+    
+@login_required
+@require_GET
+def get_active_room_list(request):
+    """Retorna lista de salas ativas do usuário"""
+    try:
+        rooms = ChatRoom.objects.filter(
+            participants=request.user
+        ).prefetch_related('participants').order_by('-updated_at')
+        
+        rooms_data = []
+        for room in rooms:
+            rooms_data.append({
+                'room_id': str(room.id),
+                'room_name': room.get_room_display_name(request.user),
+                'room_type': room.room_type,
+                'last_message': room.get_last_message_preview(),
+                'unread_count': room.get_unread_count(request.user),
+                'updated_at': room.updated_at.isoformat() if room.updated_at else None,
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'rooms': rooms_data
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        }, status=500)
 
 @login_required
 def start_or_get_dm_chat(request, user_id):
@@ -372,3 +385,72 @@ class ChatImageUploadView(View):
         except Exception as e:
             print(f"❌ Upload erro: {e}")
             return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_POST
+def chat_file_upload(request):
+    """Upload de arquivo para o chat"""
+    try:
+        file = request.FILES.get('file')
+        room_id = request.POST.get('room_id')
+        
+        if not file:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Nenhum arquivo enviado'
+            }, status=400)
+        
+        if not room_id:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'room_id é obrigatório'
+            }, status=400)
+        
+        # Validação de tamanho (10MB)
+        max_size = 10 * 1024 * 1024
+        if file.size > max_size:
+            return JsonResponse({
+                'status': 'error',
+                'error': 'Arquivo muito grande (máximo 10MB)'
+            }, status=400)
+        
+        # Gera nome único
+        ext = os.path.splitext(file.name)[1]
+        unique_name = f"{uuid.uuid4()}{ext}"
+        file_path = f"chat_uploads/{room_id}/{unique_name}"
+        
+        # Salva o arquivo
+        saved_path = default_storage.save(file_path, file)
+        file_url = default_storage.url(saved_path)
+        
+        # Detecta tipo de arquivo
+        content_type = file.content_type or 'application/octet-stream'
+        
+        return JsonResponse({
+            'status': 'success',
+            'file_data': {
+                'url': file_url,
+                'name': file.name,
+                'size': file.size,
+                'type': content_type,
+            },
+            'message': {
+                'id': str(uuid.uuid4()),
+                'message_type': 'file',
+                'file_data': {
+                    'url': file_url,
+                    'name': file.name,
+                    'size': file.size,
+                    'type': content_type,
+                }
+            }
+        })
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        }, status=500)
+

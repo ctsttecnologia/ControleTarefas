@@ -13,40 +13,40 @@
         <ul class="nav nav">
             <li class="nav-item">
                 {% if perms.seguranca_trabalho.view_fichaepi %}
-                    <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard
                     </a>
                 {% endif %}
             </li>
             <li class="nav-item">
                 {% if perms.seguranca_trabalho.add_fichaepi %}
-                    <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="nav-link {% if 'ficha_' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="nav-link {% if 'ficha_' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-file-person me-1"></i> Fichas de EPI
                     </a>
                  {% endif %}
             </li>
             <li class="nav-item">
                 {% if not perms.seguranca_trabalho.add_fichaepi %}
-                    <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}" class="nav-link {% if 'minha_ficha_redirect' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}" class="nav-link {% if 'minha_ficha_redirect' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-file-person me-1"></i> Minha Ficha de EPI
                     </a>
                 {% endif %}
             </li>
             <li class="nav-item">
-                <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-link {% if 'equipamento_' in request.resolver_match.view_name %}active{% endif %}">
+                <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-hdd-stack me-1"></i> Equipamentos
                 </a>
             </li>
             <li class="nav-item">
                 {% if perms.seguranca_trabalho.change_matrizepi %}
-                    <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="nav-link {% if 'controle_' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="nav-link {% if 'controle_' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-speedometer2 me-1"></i> Controle de EPIs por Função
                     </a>
                 {% endif %}
             </li>               
             <li class="nav-item">
                 {% if perms.seguranca_trabalho.change_matrizepi %}
-                    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="nav-link {% if 'gestao_' in request.resolver_match.view_name %}active{% endif %}">
+                    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="nav-link {% if 'gestao_' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="bi bi-hdd-stack me-1"></i> Gestão de Riscos
                     </a>
                 {% endif %}
