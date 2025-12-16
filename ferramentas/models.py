@@ -463,3 +463,5 @@ class ItemTermo(models.Model):
 
     def __str__(self):
         return f"{self.item} ({self.quantidade} {self.unidade})"
+    
+    

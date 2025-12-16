@@ -9,7 +9,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# Remova: from usuario.views import CustomLoginView
+from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required
+
+# Adicione esta view simples para redirecionar
+def home_redirect(request):
+    if request.user.is_authenticated:
+        return redirect('usuario:profile')
+    else:
+        return redirect('usuario:login')
+
 
 # Adicione esta importação para a sua ProfileView
 from usuario.views import ProfileView 
@@ -43,6 +52,10 @@ urlpatterns = [
 
     # Isso permite usar o namespace "dashboard:..."
     path('dashboard/', include('dashboard.urls')),
+    # API URLs
+    path('api/', include('api.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),
+
    
 ]
 

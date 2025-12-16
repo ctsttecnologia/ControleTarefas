@@ -286,3 +286,6 @@ class ManutencaoForm(forms.ModelForm):
         if data_manutencao and data_manutencao < timezone.now().date():
             raise forms.ValidationError("A data da manutenção não pode ser no passado.")
         return data_manutencao
+    
+
+    
