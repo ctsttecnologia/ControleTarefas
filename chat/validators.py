@@ -1,8 +1,14 @@
 
 # chat/validators.py
-import magic
 import os
 from django.core.exceptions import ValidationError
+
+# Tenta importar magic, mas não falha se não estiver disponível
+try:
+    import magic
+    MAGIC_AVAILABLE = True
+except (ImportError, OSError):
+    MAGIC_AVAILABLE = False
 
 ALLOWED_MIME_TYPES = {
     'image/jpeg': ['.jpg', '.jpeg'],
@@ -38,24 +44,31 @@ def validate_uploaded_file(file):
     if ext not in valid_extensions:
         errors.append(f"Extensão {ext} não permitida")
     
-    # 3. Verifica MIME type real do arquivo (não confia no header)
-    try:
-        file.seek(0)
-        mime = magic.from_buffer(file.read(2048), mime=True)
-        file.seek(0)
-        
-        if mime not in ALLOWED_MIME_TYPES:
-            errors.append(f"Tipo de arquivo {mime} não permitido")
-        
-        # Verifica se extensão corresponde ao MIME type
-        if ext not in ALLOWED_MIME_TYPES.get(mime, []):
-            errors.append("Extensão não corresponde ao tipo de arquivo")
+    # 3. Verifica MIME type real do arquivo (se magic estiver disponível)
+    if MAGIC_AVAILABLE:
+        try:
+            file.seek(0)
+            mime = magic.from_buffer(file.read(2048), mime=True)
+            file.seek(0)
             
-    except Exception as e:
-        errors.append(f"Erro ao validar arquivo: {str(e)}")
+            if mime not in ALLOWED_MIME_TYPES:
+                errors.append(f"Tipo de arquivo {mime} não permitido")
+            
+            # Verifica se extensão corresponde ao MIME type
+            if ext not in ALLOWED_MIME_TYPES.get(mime, []):
+                errors.append("Extensão não corresponde ao tipo de arquivo")
+                
+        except Exception as e:
+            errors.append(f"Erro ao validar arquivo: {str(e)}")
+    else:
+        # Fallback: valida apenas pelo content_type do upload (menos seguro)
+        content_type = getattr(file, 'content_type', None)
+        if content_type and content_type not in ALLOWED_MIME_TYPES:
+            errors.append(f"Tipo de arquivo {content_type} não permitido")
     
     if errors:
         raise ValidationError(errors)
     
     return True
+
 
