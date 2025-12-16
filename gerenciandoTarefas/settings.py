@@ -69,6 +69,13 @@ else:
     SECURE_HSTS_PRELOAD = False
     print("Configurações de segurança HTTP ativadas (Desenvolvimento)")
 
+# ADICIONE AQUI SUA NOVA CONDIÇÃO PARA DESENVOLVIMENTO
+if IS_DEVELOPMENT:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    print("Configurações de SSL desativadas para ambiente de desenvolvimento")
+
 # Configurações de segurança que se aplicam em qualquer ambiente
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -76,6 +83,7 @@ X_FRAME_OPTIONS = 'DENY'
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
+
 
 # Apps que rodam em todos os ambientes    
 INSTALLED_APPS = [
@@ -97,6 +105,8 @@ INSTALLED_APPS = [
     'django_htmx',
     'django_select2',
     'rest_framework',
+    'rest_framework.authtoken',
+    'dj_rest_auth', 
     'widget_tweaks',
     'crispy_forms',
     'crispy_bootstrap5',
@@ -122,8 +132,10 @@ INSTALLED_APPS = [
     'controle_de_telefone',
     'chat',
     'arquivos',
-    'documentos', 
+    'documentos',
+    'api', 
 ]
+
 
 # =============================================================================
 # MIDDLEWARE - ADAPTATIVO POR AMBIENTE
@@ -261,10 +273,20 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 # REST FRAMEWORK
 # =============================================================================
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated'
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 30
+    'PAGE_SIZE': 30,
+    'DATETIME_FORMAT': '%d/%m/%Y %H:%M',
+    'DATE_FORMAT': '%d/%m/%Y',
 }
+
 
 # =============================================================================
 # CELERY - CONFIGURAÇÃO ADAPTATIVA
@@ -364,12 +386,12 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'WARNING',  # Só mostra WARNING, ERROR e CRITICAL
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO' if IS_PRE_PRODUCTION else 'DEBUG',
+            'level': 'WARNING',
             'propagate': False,
         },
     },
