@@ -29,6 +29,7 @@ FERNET_KEYS = config('FERNET_KEYS')
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY')
 
 DEBUG = config('DEBUG', default=IS_DEVELOPMENT, cast=bool)
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
 
 # CSRF Origins - adaptativo por ambiente
