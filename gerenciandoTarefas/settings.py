@@ -14,8 +14,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # DETECÇÃO AUTOMÁTICA DE AMBIENTE - CORRIGIDO
 # =============================================================================
 IS_WINDOWS = sys.platform == 'win32'
-IS_RUNSERVER = 'runserver' in sys.argv
-IS_DEVELOPMENT = IS_WINDOWS and IS_RUNSERVER
+IS_RUNSERVER = 'runserver' in sys.argv or any('uvicorn' in arg for arg in sys.argv)
+IS_UVICORN = any('uvicorn' in arg for arg in sys.argv)  # NOVA LINHA
+IS_DEVELOPMENT = IS_WINDOWS and (IS_RUNSERVER or IS_UVICORN)  # ATUALIZADA
 IS_PRE_PRODUCTION = not IS_DEVELOPMENT
 
 # Debug adicional para verificar ambiente (remova depois)
