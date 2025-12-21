@@ -171,4 +171,5 @@ djangorestframework-simplejwt==5.5.1
 dj-rest-auth==7.0.1
 daphne
 waitress==3.0.2
+honcho
 
