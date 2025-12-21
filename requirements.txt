@@ -36,6 +36,7 @@ defusedxml==0.7.1
 dj-rest-auth==7.0.1
 Django==5.2
 django-appconf==1.1.0
+django-bootstrap-v5==1.0.11
 django-bootstrap5==25.2
 django-crispy-forms==2.4
 django-encrypted-model-fields==0.6.5
@@ -102,7 +103,11 @@ plotly==6.2.0
 plyer==2.1.0
 prompt_toolkit==3.0.52
 protobuf==6.32.0
+<<<<<<< HEAD
 psutil==7.1.3
+=======
+psycopg2==2.9.10
+>>>>>>> 53336e75047eeb97a0dae47213abd2578dee27dc
 pyarrow==21.0.0
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
