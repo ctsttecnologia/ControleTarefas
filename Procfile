@@ -1,1 +1,1 @@
-﻿"web: daphne gerenciandoTarefas.asgi:application --port 8000 --bind 0.0.0.0" | Out-File -FilePath Procfile -Encoding utf8
+web: daphne gerenciandoTarefas.asgi:application --port $PORT --bind 0.0.0.0 -v 2
