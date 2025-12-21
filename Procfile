@@ -1,1 +1,1 @@
-web: daphne gerenciandoTarefas.asgi:application --port 8000 --bind 0.0.0.0
+web: daphne gerenciandoTarefas.asgi:application --port $PORT --bind 127.0.0.1
