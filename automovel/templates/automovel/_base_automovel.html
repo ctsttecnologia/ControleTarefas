@@ -10,12 +10,13 @@
 {% block content %}
 <div class="container-fluid">
     {% include "partials/_messages.html" %} 
-    {# ✅ MUDANÇA: O valor de 'top' foi ajustado para a altura do header principal #}
+    {# O valor de 'top' foi ajustado para a altura do header principal #}
     <div class="subnav-automovel mb-3 p-3 bg-body-tertiary rounded-2 border sticky-top" style="top: 60px; z-index: 1020;">
         <ul class="nav nav">
             <li class="nav-item">
                 <a href="{% url 'automovel:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
             </li>
             <li class="nav-item">
                 <a href="{% url 'automovel:carro_list' %}" class="nav-link {% if 'carro_' in request.resolver_match.url_name %}active{% endif %}">
