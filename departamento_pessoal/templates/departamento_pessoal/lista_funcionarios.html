@@ -76,9 +76,21 @@
                                 </td>
                                 <td>{{ funcionario.matricula|default:"-" }}</td>
                                 <td>{{ funcionario.usuario.email|default:"-" }}</td>
-                                <td>{{ funcionario.cargo.nome|default:"-" }}</td>
+                                <td>
+                                    {% if funcionario.cargo %}
+                                        {{ funcionario.cargo.nome }}
+                                    {% else %}
+                                        <span class="text-muted">-- Sem Cargo --</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ funcionario.funcao.nome|default:"-" }}</td>
-                                <td>{{ funcionario.departamento.nome|default:"-" }}</td>
+                                <td>
+                                    {% if funcionario.departamento %}
+                                        {{ funcionario.departamento.nome }}
+                                    {% else %}
+                                        <span class="text-muted">-- Sem Depto. --</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ funcionario.data_admissao|date:"d/m/Y" }}</td>
                                 <td>
                                     {% if funcionario.status == 'ATIVO' %}
