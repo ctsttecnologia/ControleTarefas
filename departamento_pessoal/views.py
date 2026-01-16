@@ -373,7 +373,7 @@ class StaffRequiredMixin(PermissionRequiredMixin):
     Mixin que garante que o usuário tem permissão para acessar
     as views do departamento pessoal.
     """
-    permission_required = 'auth.view_user' # Exemplo: apenas quem pode ver usuários
+    permission_required = 'usuario.view_usuario' # Exemplo: apenas quem pode ver usuários
     raise_exception = True # Levanta um erro 403 (Forbidden) se não tiver permissão
 
 # --- VIEWS PARA FUNCIONÁRIOS ---
@@ -802,6 +802,7 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         context['titulo_pagina'] = "Painel de Controle DP - Analytics"
         return context
     
+        
 class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):
     def get_scoped_queryset(self):
         filial_id = self.request.session.get('active_filial_id')
