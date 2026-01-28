@@ -12,6 +12,15 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 
+# Importar as views de erro
+from core.views import (
+    error_400_view,
+    error_403_view,
+    error_404_view,
+    error_500_view,
+    error_503_view
+)
+
 # Adicione esta view simples para redirecionar
 def home_redirect(request):
     if request.user.is_authenticated:
@@ -25,12 +34,15 @@ from usuario.views import ProfileView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-
+    
     # A Rota raiz ('/') agora aponta para a sua ProfileView
     # Esta será a sua página inicial/dashboard após o login
-    path('', ProfileView.as_view(), name='home'), 
+    path('', ProfileView.as_view(), name='home'),
+
+    path('', include('core.urls')), 
 
     # Rotas das apps com seus prefixos
+    
     path('contas/', include('usuario.urls', namespace='usuario')), # Onde está o seu CustomLoginView
     path('logradouro/', include('logradouro.urls')),
     path('cliente/', include('cliente.urls')),
@@ -43,14 +55,13 @@ urlpatterns = [
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
     path('ferramentas/', include('ferramentas.urls', namespace='ferramentas')),
-    path('core/', include('core.urls')),
     path('controle_de_telefone/', include('controle_de_telefone.urls')),
     path('select2/', include('django_select2.urls')),
     path('chat/', include('chat.urls')),
     path('arquivos/', include('arquivos.urls')),
     path('documentos/', include('documentos.urls', namespace='documentos')),
 
-    # Isso permite usar o namespace "dashboard:..."
+    # Isso permite usar o namespace "dashboard..."
     path('dashboard/', include('dashboard.urls')),
     # API URLs
     path('api/', include('api.urls')),
@@ -60,18 +71,19 @@ urlpatterns = [
 ]
 
 
-# Configuração para servir arquivos de mídia e estáticos
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-# Definição da variável que o Django usará para qualquer erro 404 na aplicação.
-# Fica no mesmo nível do urlpatterns, não dentro dele.
+# Configurar handlers de erro
+handler400 = 'core.views.error_400_view'
+handler403 = 'core.views.error_403_view'
 handler404 = 'core.views.error_404_view'
-handler500 = 'core.views.error_500_view' # Para erros internos do servidor
-handler403 = 'core.views.error_403_view' # Para erros de permissão negada
+handler500 = 'core.views.error_500_view'
+handler503 = 'core.views.error_503_view'
 
 # Configuração global
 admin.site.site_header = "Sistema de Gestão Integrada"
 admin.site.site_title = "Dashboard"
 admin.site.index_title = "Painel de Controle"
+
+# Configuração para servir arquivos de mídia e estáticos
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

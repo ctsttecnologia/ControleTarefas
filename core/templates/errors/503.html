@@ -1,0 +1,67 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}503 - Serviço Indisponível{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-template">
+                <h1 class="display-1 text-warning">
+                    <i class="fas fa-tools"></i> 503
+                </h1>
+                <h2 class="mb-4">Serviço Temporariamente Indisponível</h2>
+                <p class="lead mb-4">
+                    Estamos realizando manutenção para melhorar sua experiência. 
+                    Por favor, tente novamente em alguns minutos.
+                </p>
+                
+                <div class="maintenance-info mb-4">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Manutenção Programada</strong><br>
+                        Nosso sistema estará disponível em breve.
+                    </div>
+                </div>
+
+                <div class="error-actions">
+                    <button onclick="location.reload()" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sync-alt"></i> Tentar Novamente
+                    </button>
+                </div>
+
+                <div class="mt-4">
+                    <p class="text-muted">
+                        <small>
+                            Se o problema persistir, entre em contato com o suporte.
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .error-template {
+        padding: 40px 15px;
+    }
+    .error-template h1 {
+        font-size: 8em;
+        font-weight: 700;
+    }
+    .maintenance-info {
+        margin: 30px 0;
+    }
+</style>
+
+<script>
+    // Auto-refresh a cada 30 segundos
+    setTimeout(function() {
+        location.reload();
+    }, 30000);
+</script>
+{% endblock %}
+
