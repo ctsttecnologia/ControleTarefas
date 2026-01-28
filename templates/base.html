@@ -14,6 +14,7 @@
     <title>{% block title %}Gerenciando Tarefas{% endblock %}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- NOTA: Esta linha abaixo é opcional se o form.media.css já a incluir. Pode manter por segurança. -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
@@ -24,7 +25,8 @@
 
     {% block extra_css %}{% endblock %}
 
-    {{ form.media }}
+    <!-- ALTERAÇÃO 1: Trocamos 'form.media' por 'form.media.css' aqui -->
+    {{ form.media.css }}
 
     <script>
       (() => {
@@ -49,8 +51,14 @@
     <!-- Scripts Principais -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- ALTERAÇÃO 2: Adicionamos o 'form.media.js' AQUI, logo depois do jQuery -->
+    {{ form.media.js }}
+
+    <!-- NOTA: A linha abaixo se torna redundante, pois o form.media.js já carrega o select2. Pode ser removida. -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script> -->
+    
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 
     <script src="{% static 'js/signature.js' %}"></script>
@@ -69,5 +77,6 @@
       
 </body>
 </html>
+
 
 

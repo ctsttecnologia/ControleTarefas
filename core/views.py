@@ -1,14 +1,13 @@
+
 # core/views.py
 
 from django.shortcuts import redirect, render
 from django.views import View
 from django.contrib import messages
-from django.contrib.auth.mixins import UserPassesTestMixin # 1. Importar o Mixin de permissão
+from django.contrib.auth.mixins import UserPassesTestMixin
 from usuario.models import Filial
 
 
-# 2. Usar o Mixin para verificar a permissão ANTES de executar a view.
-#    O Django automaticamente redirecionará usuários não autorizados.
 class SelecionarFilialView(UserPassesTestMixin, View):
     
     def test_func(self):
@@ -18,37 +17,26 @@ class SelecionarFilialView(UserPassesTestMixin, View):
         return self.request.user.is_authenticated
 
     def post(self, request, *args, **kwargs):
-        # A verificação de superusuário já foi feita pelo mixin,
-        # então podemos remover o `if` daqui.
         filial_id = request.POST.get('filial_id')
 
         if filial_id:
             try:
-                # O valor '0' é um caso especial para limpar a sessão e ver todas as filiais.
                 if filial_id == '0':
                     if 'active_filial_id' in request.session:
                         del request.session['active_filial_id']
                     messages.success(request, "Visão alterada para Todas as Filiais.")
                 else:
-                    # 3. Bloco try/except mais robusto, capturando também ValueError.
                     filial = Filial.objects.get(pk=filial_id)
                     request.session['active_filial_id'] = filial.id
                     messages.success(request, f"Visão alterada para a filial: {filial.nome}.")
             
             except (Filial.DoesNotExist, ValueError):
-                # Captura tanto IDs que não existem quanto valores que não são números.
                 messages.error(request, "A filial selecionada é inválida ou ocorreu um erro.")
         else:
             messages.warning(request, "Nenhuma filial foi selecionada.")
         
-        # 4. Redireciona apenas uma vez no final, simplificando o fluxo.
         return redirect(request.META.get('HTTP_REFERER', 'ferramentas:dashboard'))
-    
-def error_404_view(request, exception):
-    """
-    View para renderizar a página 404 personalizada.
-    """
-    return render(request, '404.html', status=404)
+
 
 class SetFilialView(View):
     def post(self, request, *args, **kwargs):
@@ -56,24 +44,66 @@ class SetFilialView(View):
         if filial_id:
             request.session['filial_id'] = filial_id
         
-        # Redirect to the previous page or a default page
         return redirect(request.META.get('HTTP_REFERER', '/'))
 
-from django.shortcuts import render
+
+# ============================================================
+# VIEWS DE ERRO PERSONALIZADAS
+# ============================================================
+
+def error_400_view(request, exception=None):
+    """
+    View personalizada para erro 400 (Bad Request).
+    Ocorre quando há dados malformados na requisição.
+    """
+    if not hasattr(request, 'user'):
+        from django.contrib.auth.models import AnonymousUser
+        request.user = AnonymousUser()
+    
+    return render(request, 'errors/400.html', status=400)
+
 
 def error_403_view(request, exception=None):
     """
     View personalizada para erro 403 (Permissão Negada).
     """
-    return render(request, '403.html', status=403)
+    if not hasattr(request, 'user'):
+        from django.contrib.auth.models import AnonymousUser
+        request.user = AnonymousUser()
+    
+    return render(request, 'errors/403.html', status=403)
+
+
+def error_404_view(request, exception):
+    """
+    View personalizada para erro 404 (Página Não Encontrada).
+    """
+    if not hasattr(request, 'user'):
+        from django.contrib.auth.models import AnonymousUser
+        request.user = AnonymousUser()
+    
+    return render(request, 'errors/404.html', status=404)
+
 
 def error_500_view(request):
     """
     View personalizada para erro 500 (Erro Interno do Servidor).
     """
-    # Garantir que o request tenha user (mesmo que AnonymousUser)
     if not hasattr(request, 'user'):
         from django.contrib.auth.models import AnonymousUser
         request.user = AnonymousUser()
     
     return render(request, 'errors/500.html', status=500)
+
+
+def error_503_view(request, exception=None):
+    """
+    View personalizada para erro 503 (Serviço Indisponível).
+    Útil para páginas de manutenção.
+    """
+    if not hasattr(request, 'user'):
+        from django.contrib.auth.models import AnonymousUser
+        request.user = AnonymousUser()
+    
+    return render(request, 'errors/503.html', status=503)
+

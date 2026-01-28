@@ -2,27 +2,31 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}403 - Acesso Negado{% endblock %}
+{% block title %}400 - Requisição Inválida{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8 text-center">
             <div class="error-template">
-                <h1 class="display-1 text-warning">
-                    <i class="fas fa-ban"></i> 403
+                <h1 class="display-1 text-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 400
                 </h1>
-                <h2 class="mb-4">Acesso Negado</h2>
+                <h2 class="mb-4">Requisição Inválida</h2>
                 <p class="lead mb-4">
-                    Você não tem permissão para acessar este recurso.
+                    Os dados enviados não puderam ser processados. 
+                    Verifique as informações e tente novamente.
                 </p>
                 
                 <div class="error-details mb-4">
-                    <div class="alert alert-warning">
-                        <i class="fas fa-shield-alt"></i> 
-                        <strong>Permissões Insuficientes</strong><br>
-                        Entre em contato com o administrador do sistema se você acredita que deveria ter acesso.
-                    </div>
+                    <p class="text-muted">
+                        Possíveis causas:
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-circle-notch fa-xs"></i> Formulário incompleto ou com dados inválidos</li>
+                        <li><i class="fas fa-circle-notch fa-xs"></i> Formato de dados incorreto</li>
+                        <li><i class="fas fa-circle-notch fa-xs"></i> Requisição malformada</li>
+                    </ul>
                 </div>
 
                 <div class="error-actions">
@@ -46,8 +50,9 @@
         font-size: 8em;
         font-weight: 700;
     }
+    .error-details ul li {
+        margin: 10px 0;
+    }
 </style>
 {% endblock %}
-
-
 

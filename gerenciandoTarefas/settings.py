@@ -158,7 +158,11 @@ MIDDLEWARE.extend([
     'django.contrib.messages.middleware.MessageMiddleware', 
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    'core.middleware.MaintenanceModeMiddleware',
 ])
+
+# Ativar/desativar modo de manutenção
+MAINTENANCE_MODE = False  # Altere para True quando necessário
 
 # =============================================================================
 # URLs E TEMPLATES
@@ -248,8 +252,49 @@ else:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     print("Usando storage comprimido para arquivos estáticos (Pré-produção)")
 
-MEDIA_URL = '/midia/'
-MEDIA_ROOT = BASE_DIR / 'midia'
+# =============================================================================
+# ARQUIVOS MÍDIA - STORAGE_PROVIDER SERVIÇO EM NUVENS
+# =============================================================================
+
+# No seu painel de hospedagem (em "Variável Ambiente"), você definirá:
+# STORAGE_PROVIDER="AWS" ou STORAGE_PROVIDER="GCS"
+# Se a variável não existir, usaremos o armazenamento local (para desenvolvimento)
+STORAGE_PROVIDER = os.getenv('STORAGE_PROVIDER', 'LOCAL')
+
+
+#if STORAGE_PROVIDER == 'AWS':
+#    # --- Configurações para AWS S3 ---
+#    print("Usando AWS S3 para armazenamento de mídia.")
+#    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+#    # Essas variáveis devem ser configuradas no seu painel de hospedagem
+#    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+#    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+#    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+#    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'sa-east-1') # Ex: São Paulo
+#    AWS_S3_FILE_OVERWRITE = False
+#    AWS_DEFAULT_ACL = None # Recomendado para segurança
+#    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    
+#elif STORAGE_PROVIDER == 'GCS':
+#    # --- Configurações para Google Cloud Storage ---
+#    print("Usando Google Cloud Storage para armazenamento de mídia.")
+#    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    
+#    # Essas variáveis devem ser configuradas no seu painel de hospedagem
+#    GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')
+    
+#    # O Google usa um arquivo JSON para credenciais. Você tem duas opções:
+#    # 1. Colocar o caminho para o arquivo em uma variável de ambiente (mais comum em servidores)
+#    # GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
+        
+#else: # STORAGE_PROVIDER == 'LOCAL'
+#    # --- Configurações para Ambiente Local (Desenvolvimento) ---
+#    print("Usando armazenamento local para mídia.")
+#    MEDIA_URL = '/media/'
+#    MEDIA_ROOT = BASE_DIR / 'media'
+#    # Aqui você pode usar a solução com WhiteNoise se quiser simular o ambiente de produção
+#    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 SENDFILE_BACKEND = 'sendfile2.backends.simple'
