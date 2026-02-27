@@ -36,8 +36,12 @@ defusedxml==0.7.1
 dj-rest-auth==7.0.1
 Django==4.2.16
 django-appconf==1.1.0
+<<<<<<< Updated upstream
 django-bootstrap5>=24.3
 django-bootstrap5==25.2
+=======
+django-bootstrap-v5==1.0.11
+>>>>>>> Stashed changes
 django-crispy-forms==2.4
 django-encrypted-model-fields==0.6.5
 django-extensions==4.1
@@ -127,7 +131,6 @@ python-decouple==3.8
 python-docx==1.1.2
 python-dotenv==1.1.1
 python-magic==0.4.27
-python-magic-bin==0.4.14
 python-stdnum==2.1
 pytz==2025.2
 PyYAML==6.0.2
