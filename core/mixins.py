@@ -61,10 +61,15 @@ class ViewFilialScopedMixin:
     IMPORTANTE: O modelo desta View DEVE usar o 'FilialManager'.
     """
     def get_queryset(self):
-        # A assinatura correta para CBVs
         qs = super().get_queryset()
-        # Delega a lógica de filtragem para o manager do modelo
-        return qs.for_request(self.request)
+
+        # Só chama for_request se o manager tiver esse método
+        if hasattr(qs, 'for_request'):
+            return qs.for_request(self.request)
+        
+        # Se não tem for_request, retorna o queryset normal
+        return qs
+
 
 
 class TecnicoScopeMixin:

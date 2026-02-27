@@ -1,0 +1,121 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ form.instance.empresa.get_absolute_url }}">{{ form.instance.empresa.razao_social|default:'Empresas' }}</a></li>
+<li class="breadcrumb-item active">{{ title }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-map-pin"></i> {{ title }}</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="{{ form.empresa.id_for_label }}" class="form-label">Empresa Contratante</label>
+                        {% render_field form.empresa class="form-select" %}
+                        {% if form.empresa.errors %}<div class="text-danger">{{ form.empresa.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="{{ form.razao_social.id_for_label }}" class="form-label">Razão Social do Local</label>
+                        {% render_field form.razao_social class="form-control" %}
+                        {% if form.razao_social.errors %}<div class="text-danger">{{ form.razao_social.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="{{ form.cnpj.id_for_label }}" class="form-label">CNPJ (Opcional)</label>
+                        {% render_field form.cnpj class="form-control" %}
+                        {% if form.cnpj.errors %}<div class="text-danger">{{ form.cnpj.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                     <div class="mb-3">
+                        <label for="{{ form.cep.id_for_label }}" class="form-label">CEP</label>
+                        {% render_field form.cep class="form-control" %}
+                        {% if form.cep.errors %}<div class="text-danger">{{ form.cep.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                 <div class="col-md-9">
+                    <div class="mb-3">
+                        <label for="{{ form.endereco.id_for_label }}" class="form-label">Endereço</label>
+                        {% render_field form.endereco class="form-control" %}
+                        {% if form.endereco.errors %}<div class="text-danger">{{ form.endereco.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                 <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="{{ form.numero.id_for_label }}" class="form-label">Número</label>
+                        {% render_field form.numero class="form-control" %}
+                        {% if form.numero.errors %}<div class="text-danger">{{ form.numero.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                 <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="{{ form.bairro.id_for_label }}" class="form-label">Bairro</label>
+                        {% render_field form.bairro class="form-control" %}
+                        {% if form.bairro.errors %}<div class="text-danger">{{ form.bairro.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                 <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="{{ form.cidade.id_for_label }}" class="form-label">Cidade</label>
+                        {% render_field form.cidade class="form-control" %}
+                        {% if form.cidade.errors %}<div class="text-danger">{{ form.cidade.errors }}</div>{% endif %}
+                    </div>
+                </div>
+                 <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="{{ form.estado.id_for_label }}" class="form-label">Estado (UF)</label>
+                        {% render_field form.estado class="form-control" %}
+                        {% if form.estado.errors %}<div class="text-danger">{{ form.estado.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+                {% render_field form.descricao class="form-control" %}
+                {% if form.descricao.errors %}<div class="text-danger">{{ form.descricao.errors }}</div>{% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% if object %}{{ object.empresa.get_absolute_url }}{% else %}{% url 'pgr_gestao:empresa_list' %}{% endif %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

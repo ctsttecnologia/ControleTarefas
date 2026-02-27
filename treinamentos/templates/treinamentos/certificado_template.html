@@ -1,71 +1,386 @@
-
+<!-- Certificado Gerado -->
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <title>Certificado - {{ participante.funcionario.get_full_name }}</title>
-    <link rel="stylesheet" href="{{ css_path }}">
+    <style>
+        /* ═══════════════════════════════════════════════════════ */
+        /* CERTIFICADO PDF — WEASYPRINT OPTIMIZED                 */
+        /* ═══════════════════════════════════════════════════════ */
+
+        @page {
+            size: A4 landscape;
+            margin: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #1a1a2e;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ═══ PÁGINA ═══ */
+        .pagina {
+            width: 297mm;
+            height: 210mm;
+            position: relative;
+            overflow: hidden;
+            page-break-after: always;
+        }
+        .pagina:last-child {
+            page-break-after: auto;
+        }
+
+        .imagem-fundo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        /* ═══ FALLBACK: SEM IMAGEM DE FUNDO ═══ */
+        .pagina.frente {
+            background: linear-gradient(135deg, #f8f9fc 0%, #eef0f7 100%);
+        }
+        .pagina.verso {
+            background: linear-gradient(135deg, #f0f2f5 0%, #e8eaf0 100%);
+        }
+
+        /* ═══ BORDA DECORATIVA (SEM IMAGEM) ═══ */
+        .borda-decorativa {
+            position: absolute;
+            top: 10mm;
+            left: 10mm;
+            right: 10mm;
+            bottom: 10mm;
+            border: 2px solid #c9a84c;
+            border-radius: 4px;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .borda-decorativa::before {
+            content: '';
+            position: absolute;
+            top: 3mm;
+            left: 3mm;
+            right: 3mm;
+            bottom: 3mm;
+            border: 0.5px solid rgba(201, 168, 76, 0.4);
+            border-radius: 2px;
+        }
+
+        /* ═══ CONTEÚDO ═══ */
+        .conteudo {
+            position: relative;
+            z-index: 2;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20mm 30mm;
+            text-align: center;
+        }
+
+        /* ═══ FRENTE — ELEMENTOS ═══ */
+
+        /* Emblema topo */
+        .emblema {
+            width: 16mm;
+            height: 16mm;
+            border-radius: 50%;
+            border: 2px solid #c9a84c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5mm;
+            color: #c9a84c;
+            font-size: 8mm;
+        }
+
+        .empresa-nome {
+            font-size: 11pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #4a5568;
+            margin-bottom: 6mm;
+        }
+
+        .titulo-certificado {
+            font-size: 36pt;
+            font-weight: 300;
+            letter-spacing: 12px;
+            color: #1a1a2e;
+            margin-bottom: 3mm;
+            text-transform: uppercase;
+        }
+
+        .subtitulo {
+            font-size: 9pt;
+            color: #858796;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 10mm;
+        }
+
+        .separador {
+            width: 60mm;
+            height: 0.3mm;
+            background: linear-gradient(90deg, transparent, #c9a84c, transparent);
+            margin: 0 auto 8mm;
+        }
+
+        .texto-principal {
+            font-size: 11pt;
+            line-height: 1.8;
+            color: #2d3748;
+            max-width: 220mm;
+            margin-bottom: 12mm;
+        }
+        .texto-principal strong {
+            color: #1a1a2e;
+            font-weight: 700;
+        }
+
+        /* ═══ ASSINATURAS ═══ */
+        .assinaturas {
+            display: flex;
+            justify-content: center;
+            gap: 40mm;
+            margin-top: auto;
+            margin-bottom: 8mm;
+            width: 100%;
+        }
+
+        .assinatura-block {
+            text-align: center;
+            min-width: 65mm;
+        }
+
+        .assinatura-img {
+            height: 18mm;
+            max-width: 60mm;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 2mm;
+        }
+
+        .assinatura-pendente {
+            height: 18mm;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: 8pt;
+            color: #adb5bd;
+            font-style: italic;
+            padding-bottom: 2mm;
+        }
+
+        .linha-assinatura {
+            width: 100%;
+            height: 0.3mm;
+            background: #2d3748;
+            margin-bottom: 2mm;
+        }
+
+        .nome-assinante {
+            font-size: 9pt;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .cargo-assinante {
+            font-size: 7.5pt;
+            color: #858796;
+            line-height: 1.4;
+        }
+
+        /* ═══ RODAPÉ ═══ */
+        .rodape {
+            font-size: 7pt;
+            color: #a0aec0;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: auto;
+        }
+
+        /* ═══════════════════════════════════════ */
+        /* VERSO                                    */
+        /* ═══════════════════════════════════════ */
+
+        .conteudo-verso {
+            text-align: left;
+            width: 100%;
+            max-width: 220mm;
+            font-size: 9.5pt;
+            line-height: 1.7;
+            color: #4a5568;
+            margin-bottom: auto;
+        }
+        .conteudo-verso h3 {
+            font-size: 12pt;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 4mm;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .conteudo-verso p {
+            margin-bottom: 3mm;
+        }
+        .conteudo-verso ul {
+            padding-left: 6mm;
+            margin-bottom: 4mm;
+        }
+        .conteudo-verso li {
+            margin-bottom: 1.5mm;
+        }
+
+        /* ═══ VALIDAÇÃO / QR CODE ═══ */
+        .validacao-qr {
+            display: flex;
+            align-items: center;
+            gap: 6mm;
+            margin-top: auto;
+            padding: 5mm 6mm;
+            background: rgba(0,0,0,0.03);
+            border: 0.5px solid rgba(0,0,0,0.08);
+            border-radius: 3mm;
+            width: 100%;
+        }
+
+        .qr-code {
+            flex-shrink: 0;
+            width: 28mm;
+            height: 28mm;
+        }
+        .qr-code svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .qr-texto {
+            font-size: 7.5pt;
+            color: #858796;
+            line-height: 1.5;
+        }
+        .qr-texto strong {
+            color: #2d3748;
+            font-size: 8.5pt;
+            letter-spacing: 0.5px;
+        }
+        .qr-texto p {
+            margin: 0;
+        }
+
+        .protocolo-label {
+            font-size: 6.5pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #a0aec0;
+            margin-bottom: 0.5mm;
+        }
+        .protocolo-valor {
+            font-family: 'Courier New', monospace;
+            font-size: 9pt;
+            font-weight: 700;
+            color: #2d3748;
+            letter-spacing: 0.5px;
+        }
+    </style>
 </head>
 <body>
-    
-    <div class="pagina frente">
-        
-        {% if gabarito.imagem_fundo %}
-            <img class="imagem-fundo" src="{{ gabarito.imagem_fundo.path }}" alt="">
-        {% endif %}
-        
-        <div class="conteudo">
-            <h1 class="empresa-nome">{{ gabarito.empresa_nome }}</h1>
 
-            <h2 class="titulo-certificado">CERTIFICADO</h2>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- FRENTE DO CERTIFICADO                       -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="pagina frente">
+
+        {% if gabarito.imagem_fundo %}
+        <img class="imagem-fundo" src="{{ gabarito.imagem_fundo.path }}" alt="">
+        {% else %}
+        <div class="borda-decorativa"></div>
+        {% endif %}
+
+        <div class="conteudo">
+
+            <div class="emblema">✦</div>
+
+            <div class="empresa-nome">{{ gabarito.empresa_nome }}</div>
+
+            <h1 class="titulo-certificado">Certificado</h1>
+
+            <div class="subtitulo">de conclusão de treinamento</div>
+
+            <div class="separador"></div>
 
             <div class="texto-principal">
                 {{ gabarito.renderizar_texto|safe }}
             </div>
 
             <div class="assinaturas">
+                <!-- Participante -->
                 <div class="assinatura-block">
                     {% if assinatura_participante.esta_assinada %}
-                        <img src="{{ assinatura_participante.assinatura_json }}" class="assinatura-img">
+                    <img src="{{ assinatura_participante.assinatura_json }}" class="assinatura-img" alt="Assinatura">
                     {% else %}
-                        <div class="assinatura-pendente">(Assinatura Pendente)</div>
+                    <div class="assinatura-pendente">(Assinatura Pendente)</div>
                     {% endif %}
                     <div class="linha-assinatura"></div>
                     <div class="nome-assinante">{{ participante.funcionario.get_full_name }}</div>
                     <div class="cargo-assinante">Participante</div>
                 </div>
 
+                <!-- Responsável / Instrutor -->
                 <div class="assinatura-block">
                     {% if assinatura_responsavel.esta_assinada %}
-                        <img src="{{ assinatura_responsavel.assinatura_json }}" class="assinatura-img">
+                    <img src="{{ assinatura_responsavel.assinatura_json }}" class="assinatura-img" alt="Assinatura">
                     {% else %}
-                        <div class="assinatura-pendente">(Assinatura Pendente)</div>
+                    <div class="assinatura-pendente">(Assinatura Pendente)</div>
                     {% endif %}
                     <div class="linha-assinatura"></div>
                     <div class="nome-assinante">{{ treinamento.palestrante }}</div>
                     <div class="cargo-assinante">
                         {{ treinamento.palestrante_cargo|default:"Instrutor" }}
                         {% if treinamento.palestrante_registro %}
-                            <br>{{ treinamento.palestrante_registro }}
+                        <br>{{ treinamento.palestrante_registro }}
                         {% endif %}
                     </div>
                 </div>
             </div>
 
             <div class="rodape">
-                Emitido em {{ data_emissao|date:"d/m/Y" }}
+                Emitido em {{ data_emissao|date:"d \d\e F \d\e Y" }}
             </div>
+
         </div>
     </div>
 
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- VERSO DO CERTIFICADO                        -->
+    <!-- ═══════════════════════════════════════════ -->
     <div class="pagina verso">
-        
+
         {% if gabarito.imagem_fundo %}
-            <img class="imagem-fundo" src="{{ gabarito.imagem_fundo.path }}" alt="">
+        <img class="imagem-fundo" src="{{ gabarito.imagem_fundo.path }}" alt="">
+        {% else %}
+        <div class="borda-decorativa"></div>
         {% endif %}
-        
+
         <div class="conteudo">
-            
+
             <div class="conteudo-verso">
                 {{ gabarito.renderizar_verso|safe }}
             </div>
@@ -75,9 +390,9 @@
                     {{ contexto_verso.qr_code_svg }}
                 </div>
                 <div class="qr-texto">
-                    <p>
-                        Protocolo: <strong>{{ contexto_verso.protocolo }}</strong>
-                        <br>
+                    <div class="protocolo-label">Protocolo de Verificação</div>
+                    <div class="protocolo-valor">{{ contexto_verso.protocolo }}</div>
+                    <p style="margin-top: 2mm;">
                         Valide a autenticidade deste certificado
                         apontando a câmera do seu celular para o QR Code
                         ou acessando o link de verificação.
@@ -87,5 +402,7 @@
 
         </div>
     </div>
+
 </body>
 </html>
+

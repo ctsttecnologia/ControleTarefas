@@ -6,169 +6,243 @@
 
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
-    <!-- Cabeçalho da Página -->
-    <header class="page-header d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
-        <h2 class="h3 mb-3 mb-md-0"><i class="bi bi-people-fill me-2"></i>Lista de Clientes <i class="bi bi-forward"></i> {{ total_clientes }}</h2>
-        <div class="d-flex">
-            <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-primary flex-grow-1 flex-md-grow-0">
-                <i class="bi bi-plus-circle me-1"></i> 
-                Novo Cliente
+
+    <!-- Cabeçalho -->
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
+        <div class="mb-3 mb-md-0">
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-people-fill text-primary me-2"></i>Clientes
+            </h2>
+            <small class="text-muted">
+                {{ total_clientes }} cliente{{ total_clientes|pluralize:"s" }} cadastrado{{ total_clientes|pluralize:"s" }}
+            </small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Novo Cliente
             </a>
-            <a href="{% url 'cliente:exportar_excel' %}" class="btn btn-outline-success ms-2 flex-grow-1 flex-md-grow-0">
-                <i class="bi bi-file-earmark-spreadsheet me-1"></i> 
-                Exportar
+            <a href="{% url 'cliente:exportar_excel' %}" class="btn btn-outline-success">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar
             </a>
-            
         </div>
     </header>
 
-    <!-- Card da Tabela -->
+    <!-- Card Principal -->
     <div class="card border-0 shadow-sm rounded-3">
-        <div class="card-body">
-            <!-- Formulário de Pesquisa -->
-            <div class="p-3 bg-light rounded-top">
-                <form method="get">
-                    <div class="input-group">
-                        <input type="text" name="q" class="form-control form-control-lg" placeholder="Pesquisar por nome, CNPJ, contrato..." value="{{ termo_pesquisa }}">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
 
-            <!-- Tabela Responsiva -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col" class="py-3 px-3">Nome / Razão Social</th>
-                            <th scope="col" class="py-3 px-3">CNPJ</th>
-                            <th scope="col" class="py-3 px-3">Contrato</th>
-                            <th scope="col" class="py-3 px-3">Telefone</th>
-                            <th scope="col" class="py-3 px-3">Status</th>
-                            <th scope="col" class="text-end py-3 px-3">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for cliente in object_list %}
-                        <tr>
-                            <td class="px-3">
-                                <div class="fw-bold">{{ cliente.nome }}</div>
-                                <small class="text-muted">{{ cliente.razao_social }}</small>
-                            </td>
-                            <td class="px-3">{{ cliente.cnpj_formatado }}</td>
-                            <td class="px-3">{{ cliente.contrato }}</td>
-                            <td class="px-3">{{ cliente.telefone|default:"—" }}</td>
-                            <td class="px-3">
-                                <span class="badge rounded-pill {% if cliente.estatus %}bg-success-subtle text-success-emphasis{% else %}bg-danger-subtle text-danger-emphasis{% endif %}">
-                                    {{ cliente.estatus|yesno:"Ativo,Inativo" }}
-                                </span>
-                            </td>
-                            <td class="text-end px-3">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'cliente:cliente_detail' cliente.pk %}" class="btn btn-outline-success ms-2 flex-grow-1 flex-md-grow-0">
-                                        <i class="bi bi-eye me-1"></i>
-                                    </a>
-                                    <a href="{% url 'cliente:editar_cliente' cliente.pk %}" class="btn btn-outline-primary" title="Editar">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
-                                    <a href="#" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal" data-cliente-pk="{{ cliente.pk }}" data-cliente-nome="{{ cliente.nome }}" title="Excluir">
-                                        <i class="bi bi-trash3-fill"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <div class="text-center text-muted">
-                                    <i class="bi bi-search fs-1"></i>
-                                    <h5 class="mt-3">Nenhum cliente encontrado.</h5>
-                                    <p>Tente ajustar sua busca ou <a href="{% url 'cliente:cadastro_cliente' %}">adicione um novo cliente</a>.</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Paginação -->
-            {% if is_paginated %}
-            <nav class="mt-3 p-3 border-top" aria-label="Paginação de clientes">
-                <ul class="pagination justify-content-center mb-0">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">&laquo;</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+        <!-- Pesquisa -->
+        <div class="card-header bg-white border-bottom py-3">
+            <form method="get">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control border-start-0 ps-0"
+                           placeholder="Pesquisar por nome, CNPJ, contrato..."
+                           value="{{ termo_pesquisa }}">
+                    {% if termo_pesquisa %}
+                    <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary" title="Limpar busca">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
                     {% endif %}
-
-                    {% for i in paginator.page_range %}
-                        <li class="page-item {% if page_obj.number == i %}active{% endif %}">
-                            <a class="page-link" href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
-                        </li>
-                    {% endfor %}
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">&raquo;</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+                    <button class="btn btn-primary" type="submit">Buscar</button>
+                </div>
+            </form>
         </div>
+
+        <!-- Tabela -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-muted" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <th class="fw-semibold py-3 px-3 border-bottom">Nome / Razão Social</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom">CNPJ</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom">Contrato</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom">Telefone</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-center">Status</th>
+                        <th class="fw-semibold py-3 px-3 border-bottom text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in object_list %}
+                    <tr>
+                        <td class="px-3">
+                            <div class="fw-semibold text-dark">{{ cliente.nome }}</div>
+                            <small class="text-muted">{{ cliente.razao_social }}</small>
+                        </td>
+                        <td class="px-3">
+                            <span class="font-monospace text-muted" style="font-size: 0.85rem;">{{ cliente.cnpj_formatado }}</span>
+                        </td>
+                        <td class="px-3">
+                            <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
+                                CM {{ cliente.contrato }}
+                            </span>
+                        </td>
+                        <td class="px-3 text-muted">{{ cliente.telefone|default:"—" }}</td>
+                        <td class="px-3 text-center">
+                            {% if cliente.estatus %}
+                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-check-circle me-1"></i>Ativo
+                            </span>
+                            {% else %}
+                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger">
+                                <i class="bi bi-x-circle me-1"></i>Inativo
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end px-3">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'cliente:cliente_detail' cliente.pk %}"
+                                   class="btn btn-outline-secondary" title="Visualizar">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'cliente:editar_cliente' cliente.pk %}"
+                                   class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger"
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                        data-cliente-pk="{{ cliente.pk }}"
+                                        data-cliente-nome="{{ cliente.nome }}"
+                                        title="Excluir">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-people text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                                <h6 class="mt-3 text-muted fw-semibold">Nenhum cliente encontrado</h6>
+                                {% if termo_pesquisa %}
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">
+                                    Nenhum resultado para "<strong>{{ termo_pesquisa }}</strong>"
+                                </p>
+                                <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-x-lg me-1"></i>Limpar busca
+                                </a>
+                                {% else %}
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">
+                                    Comece cadastrando seu primeiro cliente
+                                </p>
+                                <a href="{% url 'cliente:cadastro_cliente' %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i>Novo Cliente
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if is_paginated %}
+        <div class="card-footer bg-white border-top py-3">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <small class="text-muted">
+                    Página {{ page_obj.number }} de {{ paginator.num_pages }}
+                    <span class="mx-1">·</span>
+                    {{ paginator.count }} registro{{ paginator.count|pluralize:"s" }}
+                </small>
+                <nav aria-label="Paginação">
+                    <ul class="pagination pagination-sm mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for i in paginator.page_range %}
+                            {% if page_obj.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                            {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
+                            </li>
+                            {% elif i == 1 or i == paginator.num_pages %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
+                            </li>
+                            {% elif i == page_obj.number|add:"-3" or i == page_obj.number|add:"3" %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </div>
 
 <!-- Modal de Exclusão -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <p>Tem certeza que deseja excluir o cliente <strong id="clienteNomeModal"></strong>?</p>
-        <p class="text-danger fw-bold">Esta ação não pode ser desfeita.</p>
-      </div>
-      <div class="modal-footer">
-        <form id="deleteForm" method="post">
-            {% csrf_token %}
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-danger">Sim, Excluir</button>
-        </form>
-      </div>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center"
+                         style="width: 48px; height: 48px;">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="deleteModalLabel">Excluir Cliente</h5>
+                        <small class="text-muted">Esta ação não pode ser desfeita</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0">
+                    Tem certeza que deseja excluir permanentemente o cliente
+                    <strong id="clienteNomeModal" class="text-danger"></strong>?
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i>Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    var deleteModal = document.getElementById('deleteModal');
-    deleteModal.addEventListener('show.bs.modal', function (event) {
-        // Botão que acionou o modal
-        var button = event.relatedTarget;
-        
-        // Extrai informações dos atributos data-*
-        var clientePk = button.getAttribute('data-cliente-pk');
-        var clienteNome = button.getAttribute('data-cliente-nome');
-        
-        // Atualiza o conteúdo do modal
-        var modalTitle = deleteModal.querySelector('.modal-title');
-        var modalBodyNome = deleteModal.querySelector('#clienteNomeModal');
-        var deleteForm = deleteModal.querySelector('#deleteForm');
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteModal = document.getElementById('deleteModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const pk = button.getAttribute('data-cliente-pk');
+            const nome = button.getAttribute('data-cliente-nome');
 
-        modalBodyNome.textContent = `"${clienteNome}"`;
-        // ATENÇÃO: A URL de exclusão precisa ser definida dinamicamente.
-        // O ideal é ter uma URL base e adicionar o PK.
-        // Ex: /clientes/excluir/1/
-        deleteForm.action = `/clientes/excluir/${clientePk}/`; 
-    });
+            deleteModal.querySelector('#clienteNomeModal').textContent = `"${nome}"`;
+            deleteModal.querySelector('#deleteForm').action = `/clientes/excluir/${pk}/`;
+        });
+    }
 });
 </script>
 {% endblock %}

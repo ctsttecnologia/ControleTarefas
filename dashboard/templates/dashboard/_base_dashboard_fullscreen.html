@@ -1,0 +1,89 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="{{ cycle_interval_seconds|default:'35' }};url={% if next_dashboard_url %}{% url next_dashboard_url %}?cycle=true{% endif %}">
+    <title>{% block title %}Painel{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background: #0f1117; color: #e2e8f0; font-family: 'Inter', system-ui, sans-serif; }
+        .tv-container { padding: 1.5rem 2rem; min-height: 100vh; }
+
+        .tv-hero {
+            background: linear-gradient(135deg, rgba(78,115,223,0.15), rgba(78,115,223,0.05));
+            border: 1px solid rgba(78,115,223,0.2);
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .tv-hero h1 { font-weight: 700; font-size: 1.5rem; color: #e2e8f0; }
+        .tv-hero p { color: #718096; font-size: 0.85rem; margin: 0; }
+
+        .tv-kpi {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 0.875rem;
+            padding: 1.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .tv-kpi-indicator {
+            position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            border-radius: 0.875rem 0 0 0.875rem;
+        }
+        .tv-kpi-value { font-size: 2rem; font-weight: 800; }
+        .tv-kpi-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #718096; }
+
+        .tv-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 0.875rem;
+        }
+        .tv-card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .progress-bar-tv {
+            position: fixed; top: 0; left: 0; height: 3px; z-index: 9999;
+            background: linear-gradient(90deg, #4e73df, #1cc88a, #f6c23e);
+            width: 0%;
+            transition: width {{ cycle_interval|default:'30000' }}ms linear;
+        }
+        .tv-live-badge {
+            background: #e74a3b;
+            color: #fff;
+            padding: 0.3rem 0.85rem;
+            border-radius: 50rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            animation: tv-blink 2s infinite;
+        }
+        @keyframes tv-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+    </style>
+    {% block tv_css %}{% endblock %}
+</head>
+<body>
+    <div class="progress-bar-tv" id="tvBar"></div>
+    <div class="tv-container">
+        {% block tv_content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const bar = document.getElementById('tvBar');
+            if (bar) requestAnimationFrame(() => bar.style.width = '100%');
+        });
+    </script>
+    {% block tv_js %}{% endblock %}
+</body>
+</html>
+

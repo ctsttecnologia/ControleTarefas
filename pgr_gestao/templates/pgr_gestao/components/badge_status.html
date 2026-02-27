@@ -1,0 +1,213 @@
+
+{% comment %}
+Componente para exibir badges de status padronizados
+Uso: {% include 'pgr_gestao/components/badge_status.html' with tipo='risco' valor='critico' texto='Crítico' %}
+{% endcomment %}
+
+{% if tipo == 'risco' %}
+    {# Badges para Classificação de Riscos #}
+    {% if valor == 'critico' %}
+        <span class="badge badge-risco-critico {{ classes }}">
+            <i class="fas fa-radiation"></i> {{ texto|default:"Crítico" }}
+        </span>
+    {% elif valor == 'muito_grave' %}
+        <span class="badge badge-risco-muito-grave {{ classes }}">
+            <i class="fas fa-exclamation-triangle"></i> {{ texto|default:"Muito Grave" }}
+        </span>
+    {% elif valor == 'moderado' %}
+        <span class="badge badge-risco-moderado {{ classes }}">
+            <i class="fas fa-exclamation-circle"></i> {{ texto|default:"Moderado" }}
+        </span>
+    {% elif valor == 'marginal' %}
+        <span class="badge badge-risco-marginal {{ classes }}">
+            <i class="fas fa-info-circle"></i> {{ texto|default:"Marginal" }}
+        </span>
+    {% elif valor == 'negligenciavel' %}
+        <span class="badge badge-risco-negligenciavel {{ classes }}">
+            <i class="fas fa-check-circle"></i> {{ texto|default:"Negligenciável" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% elif tipo == 'status_pgr' %}
+    {# Badges para Status do PGR #}
+    {% if valor == 'vigente' %}
+        <span class="badge badge-status-vigente {{ classes }}">
+            <i class="fas fa-check-circle"></i> {{ texto|default:"Vigente" }}
+        </span>
+    {% elif valor == 'vencido' %}
+        <span class="badge badge-status-vencido {{ classes }}">
+            <i class="fas fa-times-circle"></i> {{ texto|default:"Vencido" }}
+        </span>
+    {% elif valor == 'em_revisao' %}
+        <span class="badge badge-status-em-revisao {{ classes }}">
+            <i class="fas fa-sync-alt"></i> {{ texto|default:"Em Revisão" }}
+        </span>
+    {% elif valor == 'elaboracao' %}
+        <span class="badge bg-info {{ classes }}">
+            <i class="fas fa-edit"></i> {{ texto|default:"Em Elaboração" }}
+        </span>
+    {% elif valor == 'cancelado' %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-ban"></i> {{ texto|default:"Cancelado" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% elif tipo == 'status_controle' %}
+    {# Badges para Status de Controle de Riscos #}
+    {% if valor == 'controlado' %}
+        <span class="badge bg-success {{ classes }}">
+            <i class="fas fa-shield-alt"></i> {{ texto|default:"Controlado" }}
+        </span>
+    {% elif valor == 'em_controle' %}
+        <span class="badge bg-info {{ classes }}">
+            <i class="fas fa-tools"></i> {{ texto|default:"Em Controle" }}
+        </span>
+    {% elif valor == 'identificado' %}
+        <span class="badge bg-warning text-dark {{ classes }}">
+            <i class="fas fa-eye"></i> {{ texto|default:"Identificado" }}
+        </span>
+    {% elif valor == 'eliminado' %}
+        <span class="badge bg-dark {{ classes }}">
+            <i class="fas fa-trash-alt"></i> {{ texto|default:"Eliminado" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% elif tipo == 'prioridade' %}
+    {# Badges para Prioridade #}
+    {% if valor == 'critica' %}
+        <span class="badge bg-danger {{ classes }}">
+            <i class="fas fa-exclamation"></i> {{ texto|default:"Crítica" }}
+        </span>
+    {% elif valor == 'alta' %}
+        <span class="badge bg-warning text-dark {{ classes }}">
+            <i class="fas fa-arrow-up"></i> {{ texto|default:"Alta" }}
+        </span>
+    {% elif valor == 'media' %}
+        <span class="badge bg-info {{ classes }}">
+            <i class="fas fa-minus"></i> {{ texto|default:"Média" }}
+        </span>
+    {% elif valor == 'baixa' %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-arrow-down"></i> {{ texto|default:"Baixa" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% elif tipo == 'status_plano' %}
+    {# Badges para Status de Plano de Ação #}
+    {% if valor == 'concluido' %}
+        <span class="badge bg-success {{ classes }}">
+            <i class="fas fa-check-circle"></i> {{ texto|default:"Concluído" }}
+        </span>
+    {% elif valor == 'em_andamento' %}
+        <span class="badge bg-info {{ classes }}">
+            <i class="fas fa-spinner"></i> {{ texto|default:"Em Andamento" }}
+        </span>
+    {% elif valor == 'pendente' %}
+        <span class="badge bg-warning text-dark {{ classes }}">
+            <i class="fas fa-clock"></i> {{ texto|default:"Pendente" }}
+        </span>
+    {% elif valor == 'atrasado' %}
+        <span class="badge bg-danger {{ classes }}">
+            <i class="fas fa-exclamation-triangle"></i> {{ texto|default:"Atrasado" }}
+        </span>
+    {% elif valor == 'cancelado' %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-ban"></i> {{ texto|default:"Cancelado" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% elif tipo == 'tipo_risco' %}
+    {# Badges para Categorias de Riscos #}
+    {% if valor == 'fisico' %}
+        <span class="badge bg-primary {{ classes }}">
+            <i class="fas fa-thermometer-half"></i> {{ texto|default:"Físico" }}
+        </span>
+    {% elif valor == 'quimico' %}
+        <span class="badge bg-danger {{ classes }}">
+            <i class="fas fa-flask"></i> {{ texto|default:"Químico" }}
+        </span>
+    {% elif valor == 'biologico' %}
+        <span class="badge bg-success {{ classes }}">
+            <i class="fas fa-bacteria"></i> {{ texto|default:"Biológico" }}
+        </span>
+    {% elif valor == 'ergonomico' %}
+        <span class="badge bg-warning text-dark {{ classes }}">
+            <i class="fas fa-user"></i> {{ texto|default:"Ergonômico" }}
+        </span>
+    {% elif valor == 'acidente' %}
+        <span class="badge bg-dark {{ classes }}">
+            <i class="fas fa-car-crash"></i> {{ texto|default:"Acidente" }}
+        </span>
+    {% elif valor == 'mecanico' %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-cogs"></i> {{ texto|default:"Mecânico" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% elif tipo == 'conformidade' %}
+    {# Badges para Conformidade #}
+    {% if valor == True or valor == 'conforme' %}
+        <span class="badge bg-success {{ classes }}">
+            <i class="fas fa-check-circle"></i> {{ texto|default:"Conforme" }}
+        </span>
+    {% elif valor == False or valor == 'nao_conforme' %}
+        <span class="badge bg-danger {{ classes }}">
+            <i class="fas fa-times-circle"></i> {{ texto|default:"Não Conforme" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-question-circle"></i> {{ texto|default:"N/A" }}
+        </span>
+    {% endif %}
+
+{% elif tipo == 'ativo' %}
+    {# Badges para Status Ativo/Inativo #}
+    {% if valor == True or valor == 'ativo' %}
+        <span class="badge bg-success {{ classes }}">
+            <i class="fas fa-check"></i> {{ texto|default:"Ativo" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-times"></i> {{ texto|default:"Inativo" }}
+        </span>
+    {% endif %}
+
+{% elif tipo == 'perfil_exposicao' %}
+    {# Badges para Perfil de Exposição #}
+    {% if valor == 'continua' %}
+        <span class="badge bg-danger {{ classes }}">
+            <i class="fas fa-clock"></i> {{ texto|default:"Contínua" }}
+        </span>
+    {% elif valor == 'intermitente' %}
+        <span class="badge bg-warning text-dark {{ classes }}">
+            <i class="fas fa-exchange-alt"></i> {{ texto|default:"Intermitente" }}
+        </span>
+    {% elif valor == 'eventual' %}
+        <span class="badge bg-info {{ classes }}">
+            <i class="fas fa-calendar-day"></i> {{ texto|default:"Eventual" }}
+        </span>
+    {% elif valor == 'ocasional' %}
+        <span class="badge bg-secondary {{ classes }}">
+            <i class="fas fa-calendar-check"></i> {{ texto|default:"Ocasional" }}
+        </span>
+    {% else %}
+        <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+    {% endif %}
+
+{% else %}
+    {# Badge genérico #}
+    <span class="badge bg-secondary {{ classes }}">{{ texto|default:"N/A" }}</span>
+{% endif %}
+

@@ -1,0 +1,49 @@
+
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:profissional_list' %}">Profissionais</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-trash-alt text-danger"></i>
+        {{ page_title }}
+    </h1>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        Atenção! Esta ação é irreversível.
+    </div>
+    <div class="card-body">
+        <p class="card-text">
+            Você tem certeza que deseja excluir permanentemente o profissional:
+        </p>
+        <h4 class="text-center my-4">{{ object.nome_completo }}</h4>
+        <p class="text-center text-muted">
+            {{ object.funcao }}<br>
+            Registro: {{ object.registro_classe }}
+        </p>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-center mt-4">
+                <a href="{{ cancel_url }}" class="btn btn-secondary me-3">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> Sim, tenho certeza. Excluir.
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

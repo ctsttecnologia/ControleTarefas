@@ -1,129 +1,124 @@
 
-{% extends "seguranca_trabalho/_base_sst.html" %}
-{% load static %}
 
-{% block title %}Associações: Cargo x Função{% endblock %}
+{% extends "seguranca_trabalho/_base_sst.html" %}
+
+{% block title %}Associações Cargo × Função{% endblock %}
 
 {% block sst_content %}
-<div class="container mt-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1 text-primary">
-                <i class="bi bi-diagram-2 me-2"></i> Cargos e Funções
-            </h2>
-            <p class="text-muted mb-0">Gerencie quais funções (SST) estão vinculadas a quais cargos (RH).</p>
-        </div>
-        <div>
-            <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-secondary shadow-sm">
-                <i class="fas fa-link me-1"></i> Lista de Funções
-            </a>
-
-            <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="btn btn-outline-primary">
-                <i class="bi bi-link-45deg"></i> Gerenciar Associações
-            </a>
-        </div>
-    </div>
-
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body bg-light rounded">
-            <form method="get" class="row g-3 align-items-center">
-                <div class="col-md-10">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        <input type="text" name="q" class="form-control border-start-0" 
-                               placeholder="Pesquisar por nome do cargo ou da função..." 
-                               value="{{ request.GET.q|default:'' }}">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-primary w-100">Filtrar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light text-secondary">
-                        <tr>
-                            <th class="ps-4" style="width: 40%;">Cargo (RH)</th>
-                            <th class="text-center" style="width: 5%;"><i class="bi bi-arrow-left-right"></i></th>
-                            <th style="width: 40%;">Função (SST)</th>
-                            <th class="text-end pe-4" style="width: 15%;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for associacao in object_list %}
-                        <tr>
-                            <td class="ps-4">
-                                <span class="fw-bold text-dark">{{ associacao.cargo.nome }}</span>
-                                {% if associacao.cargo.cbo %}
-                                    <br><small class="text-muted">CBO: {{ associacao.cargo.cbo }}</small>
-                                {% endif %}
-                            </td>
-
-                            <td class="text-center text-muted">
-                                <i class="bi bi-link-45deg fs-4"></i>
-                            </td>
-
-                            <td>
-                                <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-3 py-2">
-                                    <i class="fas fa-briefcase me-1"></i> {{ associacao.funcao.nome }}
-                                </span>
-                            </td>
-
-                            <td class="text-end pe-4">
-                                {% if not perms.seguranca_trabalho.delete_cargofuncao %}
-                                    <span class="text-muted small" title="Apenas administradores podem excluir">
-                                        <i class="bi bi-slash-circle"></i> Restrito
-                                    </span>
-                                {% else %}
-                                    <button class="btn btn-sm btn-outline-danger" 
-                                            title="Remover Associação"
-                                            hx-post="{% url 'seguranca_trabalho:desvincular_funcao_cargo' associacao.funcao.id associacao.cargo.id %}"
-                                            hx-confirm="Tem certeza que deseja remover o vínculo entre '{{ associacao.cargo.nome }}' e '{{ associacao.funcao.nome }}'?"
-                                            hx-target="closest tr"
-                                            hx-swap="outerHTML swap:1s">
-                                        <i class="bi bi-trash3"></i>
-                                    </button>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-5">
-                                <div class="text-muted">
-                                    <i class="bi bi-link-45deg display-4 opacity-50"></i>
-                                    <p class="mt-2">Nenhuma associação cadastrada ainda.</p>
-                                    <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="btn btn-sm btn-primary mt-2">
-                                        Criar Primeira Associação
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-diagram-3 me-2"></i>Associações Cargo × Função
+                </h4>
+                <small class="opacity-75">Vincule cargos às funções de segurança</small>
             </div>
+            {% if perms.seguranca_trabalho.add_cargofuncao %}
+            <a href="{% url 'seguranca_trabalho:associar_funcao_cargo' %}" class="btn btn-light">
+                <i class="bi bi-plus-circle me-1"></i> Nova Associação
+            </a>
+            {% endif %}
         </div>
-        
-        {% if is_paginated %}
-        <div class="card-footer bg-white border-top-0 py-3">
-            {% include 'partials/pagination.html' %}
-        </div>
-        {% endif %}
     </div>
 </div>
 
-<style>
-    tr.htmx-swapping td {
-        opacity: 0;
-        transition: opacity 1s ease-out;
-    }
-</style>
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white py-2">
+        <i class="bi bi-funnel me-1"></i> <strong>Filtros</strong>
+    </div>
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label for="q" class="form-label small fw-semibold">Buscar</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="q" name="q" 
+                               value="{{ request.GET.q }}" placeholder="Nome do cargo ou função...">
+                    </div>
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="bi bi-search me-1"></i> Filtrar
+                    </button>
+                    <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-outline-secondary" title="Limpar">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela -->
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <h6 class="mb-0">
+            <i class="bi bi-table me-2"></i>Lista de Associações
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cargo</th>
+                        <th>Função</th>
+                        <th class="text-center" style="width: 100px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assoc in object_list %}
+                    <tr id="assoc-{{ assoc.funcao_id }}-{{ assoc.cargo_id }}">
+                        <td>
+                            <i class="bi bi-person-badge me-1 text-muted"></i>
+                            <strong>{{ assoc.cargo.nome }}</strong>
+                        </td>
+                        <td>
+                            <i class="bi bi-briefcase me-1 text-muted"></i>
+                            {{ assoc.funcao.nome }}
+                        </td>
+                        <td class="text-center">
+                            {% if perms.seguranca_trabalho.delete_cargofuncao %}
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    hx-post="{% url 'seguranca_trabalho:desvincular_funcao_cargo' assoc.funcao_id assoc.cargo_id %}"
+                                    hx-target="#assoc-{{ assoc.funcao_id }}-{{ assoc.cargo_id }}"
+                                    hx-swap="outerHTML"
+                                    hx-confirm="Deseja remover esta associação?"
+                                    title="Remover">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-5">
+                            <i class="bi bi-inbox text-muted fs-1"></i>
+                            <h6 class="mt-3 text-muted">Nenhuma associação encontrada</h6>
+                            {% if perms.seguranca_trabalho.add_cargofuncao %}
+                            <a href="{% url 'seguranca_trabalho:criar_associacao' %}" class="btn btn-primary btn-sm mt-2">
+                                <i class="bi bi-plus-circle me-1"></i> Criar primeira associação
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if is_paginated %}
+    <div class="card-footer bg-white">
+        {% include 'partials/pagination.html' %}
+    </div>
+    {% endif %}
+</div>
+
 {% endblock %}
+

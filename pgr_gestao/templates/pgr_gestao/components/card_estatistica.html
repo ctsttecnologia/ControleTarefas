@@ -1,0 +1,119 @@
+
+{% comment %}
+Componente para exibir cards de estatísticas
+Uso: {% include 'pgr_gestao/components/card_estatistica.html' with titulo='Total de Riscos' valor=100 icone='fa-exclamation-triangle' cor='primary' %}
+{% endcomment %}
+
+{% load static %}
+
+<div class="card stats-card {% if cor %}{{ cor }}{% endif %} {{ classes|default:'' }}" {% if animacao %}data-aos="fade-up"{% endif %}>
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="flex-grow-1">
+                {% if subtitulo %}
+                <small class="text-muted text-uppercase d-block mb-1">{{ subtitulo }}</small>
+                {% endif %}
+                
+                <h6 class="text-muted mb-2">{{ titulo }}</h6>
+                
+                <h2 class="mb-0 {% if cor_valor %}text-{{ cor_valor }}{% endif %}">
+                    {% if prefixo %}{{ prefixo }}{% endif %}
+                    {{ valor|default:"0" }}
+                    {% if sufixo %}{{ sufixo }}{% endif %}
+                </h2>
+                
+                {% if descricao %}
+                <small class="{% if cor_descricao %}text-{{ cor_descricao }}{% else %}text-muted{% endif %}">
+                    {% if icone_descricao %}
+                    <i class="fas {{ icone_descricao }}"></i>
+                    {% endif %}
+                    {{ descricao }}
+                </small>
+                {% endif %}
+
+                {% if badge_texto %}
+                <div class="mt-2">
+                    <span class="badge bg-{{ badge_cor|default:'primary' }}">{{ badge_texto }}</span>
+                </div>
+                {% endif %}
+
+                {% if link_url %}
+                <div class="mt-2">
+                    <a href="{{ link_url }}" class="btn btn-sm btn-outline-{{ cor|default:'primary' }}">
+                        {% if link_icone %}<i class="fas {{ link_icone }}"></i>{% endif %}
+                        {{ link_texto|default:"Ver Detalhes" }}
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if icone %}
+            <div class="{% if cor_icone %}text-{{ cor_icone }}{% elif cor %}text-{{ cor }}{% else %}text-primary{% endif %}" 
+                 style="font-size: {% if tamanho_icone %}{{ tamanho_icone }}{% else %}3rem{% endif %}; opacity: 0.7;">
+                <i class="fas {{ icone }}"></i>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if mostrar_progresso %}
+        <div class="progress mt-3" style="height: 5px;">
+            <div class="progress-bar bg-{{ cor_progresso|default:cor|default:'primary' }}" 
+                 role="progressbar" 
+                 style="width: {{ valor_progresso|default:valor }}%"
+                 aria-valuenow="{{ valor_progresso|default:valor }}" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+            </div>
+        </div>
+        {% endif %}
+
+        {% if grafico_sparkline %}
+        <div class="mt-3">
+            <canvas id="sparkline-{{ id|default:'chart' }}" height="40"></canvas>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if rodape %}
+    <div class="card-footer bg-transparent border-top-0">
+        <small class="text-muted">{{ rodape }}</small>
+    </div>
+    {% endif %}
+</div>
+
+{% if grafico_sparkline %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('sparkline-{{ id|default:'chart' }}');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ grafico_labels|safe|default:'[]' }},
+                datasets: [{
+                    data: {{ grafico_data|safe|default:'[]' }},
+                    borderColor: '{{ grafico_cor|default:'#003366' }}',
+                    borderWidth: 2,
+                    fill: false,
+                    pointRadius: 0,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+

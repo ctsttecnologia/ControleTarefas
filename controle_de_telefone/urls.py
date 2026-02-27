@@ -13,6 +13,9 @@ from .views import (
     OperadoraListView, OperadoraCreateView, OperadoraUpdateView, OperadoraDeleteView,
     PlanoListView, PlanoCreateView, PlanoUpdateView, PlanoDeleteView,
     DashboardView, DownloadTermoView, RegenerarTermoView, NotificarAssinaturaView,
+    RecargaCreditoListView, RecargaCreditoCreateView, RecargaCreditoUpdateView,
+    RecargaCreditoDetailView, RecargaCreditoDeleteView,
+    recarga_aprovar, recarga_realizar, recarga_cancelar,
 )
 
 app_name = 'controle_de_telefone'
@@ -78,7 +81,15 @@ urlpatterns = [
     path('planos/<int:pk>/editar/', PlanoUpdateView.as_view(), name='plano_update'),
     path('planos/<int:pk>/excluir/', PlanoDeleteView.as_view(), name='plano_delete'),
 
-
+    # Recargas de Crédito
+    path('recargas/', RecargaCreditoListView.as_view(), name='recarga_list'),
+    path('recargas/nova/', RecargaCreditoCreateView.as_view(), name='recarga_create'),
+    path('recargas/<int:pk>/', RecargaCreditoDetailView.as_view(), name='recarga_detail'),
+    path('recargas/<int:pk>/editar/', RecargaCreditoUpdateView.as_view(), name='recarga_update'),
+    path('recargas/<int:pk>/excluir/', RecargaCreditoDeleteView.as_view(), name='recarga_delete'),
+    path('recargas/<int:pk>/aprovar/', recarga_aprovar, name='recarga_aprovar'),
+    path('recargas/<int:pk>/realizar/', recarga_realizar, name='recarga_realizar'),
+    path('recargas/<int:pk>/cancelar/', recarga_cancelar, name='recarga_cancelar'),
 
 ]
 

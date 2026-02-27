@@ -1,103 +1,118 @@
-
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Importar Funcionários em Lote{% endblock %}
+{% block title %}Importar Funcionários{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header align-items-center d-flex justify-content-between">
-            <h2>Importar Funcionários em Lote</h2>
-            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="nav-card">
-                <i class="bi bi-people"></i><h5 class="nav-title">Lista de Funcionários</h5>        
-            </a>
-        </div>
-        <div class="card-body">
-            <p>
-                Para importar múltiplos funcionários de uma vez, siga os passos:
-            </p>
-            <ol>
-                <li>
-                    Baixe a planilha modelo clicando no botão abaixo.
-                    <br>
-                    <a href="{% url 'departamento_pessoal:baixar_modelo_funcionarios' %}" class="btn btn-sm btn-info mt-2 mb-3">
-                        <i class="fas fa-download"></i> Baixar Modelo da Planilha
-                    </a>
-                </li>
-                <li>Preencha a planilha com os dados dos funcionários. <strong>Não altere o nome das colunas.</strong></li>
-                <li>Salve a planilha e faça o upload usando o formulário abaixo.</li>
-            </ol>
-            <hr>
+{% block dp_content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Cabeçalho -->
+            <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <h2 class="h4 mb-0">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Importar Funcionários em Lote
+                </h2>
+                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+            </header>
 
-            {# Exibição de mensagens do Django #}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-secondary{% endif %} d-flex justify-content-between align-items-center" role="alert">
-                        <span>{{ message }}</span>
-
-                        {# Esta condição verifica se a mensagem é de ERRO (nível 40) e se há dados de erro na sessão #}
-                        {% if message.level == 40 and request.session.upload_erros %}
-                            <a href="{% url 'departamento_pessoal:baixar_relatorio_erros' %}" class="btn btn-danger btn-sm ml-3">
-                                <i class="fas fa-file-excel"></i> Baixar Relatório de Erros
-                            </a>
-                        {% endif %}
+            <!-- Card Principal -->
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <!-- Instruções -->
+                    <div class="alert alert-light border mb-4">
+                        <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Instruções</h6>
+                        <ol class="mb-0 ps-3">
+                            <li class="mb-2">
+                                Baixe a planilha modelo clicando no botão abaixo.
+                                <div class="mt-2">
+                                    <a href="{% url 'departamento_pessoal:baixar_modelo_funcionarios' %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download me-1"></i> Baixar Modelo
+                                    </a>
+                                </div>
+                            </li>
+                            <li class="mb-2">Preencha a planilha com os dados dos funcionários. <strong>Não altere o nome das colunas.</strong></li>
+                            <li>Salve a planilha e faça o upload usando o formulário abaixo.</li>
+                        </ol>
                     </div>
-                {% endfor %}
-            {% endif %}
-            <form method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="form-group">
-                    {{ form.as_p }}
+
+                    <!-- Mensagens -->
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} d-flex justify-content-between align-items-center" role="alert">
+                            <span>
+                                {% if message.tags == 'error' or message.tags == 'danger' %}
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                {% elif message.tags == 'success' %}
+                                    <i class="bi bi-check-circle me-2"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle me-2"></i>
+                                {% endif %}
+                                {{ message }}
+                            </span>
+                            {% if message.level == 40 and request.session.upload_erros %}
+                                <a href="{% url 'departamento_pessoal:baixar_relatorio_erros' %}" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-file-earmark-excel me-1"></i> Baixar Relatório de Erros
+                                </a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Formulário de Upload -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Selecione o arquivo Excel (.xlsx)</label>
+                            {% render_field form.arquivo class+="form-control form-control-lg" %}
+                            {% if form.arquivo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.arquivo.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-upload me-2"></i> Enviar e Processar Planilha
+                        </button>
+                    </form>
                 </div>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> Enviar e Processar Planilha
-                </button>
-            </form>
+            </div>
+
+            <!-- Resultado do Processamento -->
+            {% if sucessos or erros %}
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Resultado do Processamento</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if erros %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">Erros Encontrados:</h6>
+                        <ul class="mb-0">
+                            {% for erro in erros %}
+                                <li>{{ erro }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    {% if sucessos and not erros %}
+                    <div class="alert alert-success">
+                        <h6 class="alert-heading">Registros Processados:</h6>
+                        <ul class="mb-0">
+                            {% for sucesso in sucessos %}
+                                <li>{{ sucesso }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
-
-    {# Área para exibir mensagens de sucesso e erro #}
-    {% if messages %}
-        <div class="mt-4">
-            {% for message in messages %}
-                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}" role="alert">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {% if sucessos or erros %}
-    <div class="card mt-4">
-        <div class="card-header">
-            <h3>Resultado do Processamento</h3>
-        </div>
-        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-            {% if erros %}
-                <div class="alert alert-danger">
-                    <h4>Erros Encontrados:</h4>
-                    <ul>
-                        {% for erro in erros %}
-                            <li>{{ erro }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-
-            {% if sucessos and not erros %} {# Mostra sucessos apenas se não houver erros #}
-                 <div class="alert alert-success">
-                    <h4>Registros Processados:</h4>
-                    <ul>
-                        {% for sucesso in sucessos %}
-                            <li>{{ sucesso }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
+

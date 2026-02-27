@@ -1,88 +1,117 @@
-{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
+
+<!-- Template para exibir o calendário de inspeções -->
+{% extends "base.html" %}
 {% load static %}
 
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
 {% block extra_css %}
-    {% comment %} Adiciona os estilos do FullCalendar {% endcomment %}
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-    <style>
-        /* Ajustes de estilo para o calendário */
-        #calendar {
-            max-width: 1100px;
-            margin: 40px auto;
-            
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        
-        /* Cores dos eventos (para status) */
-        .fc-event {
-            border: none !important;
-            color: white !important;
-        }
-        .fc-daygrid-event-dot {
-             border: calc(var(--fc-daygrid-event-dot-width, 8px) / 2) solid var(--fc-event-main-color, #3788d8);
-        }
-    </style>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<style>
+    #calendar {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+    }
+    .fc-event {
+        border: none !important;
+        cursor: pointer;
+    }
+    .fc-daygrid-day:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid background-white">
-    <h1>{{ titulo_pagina }}</h1>
-    
-    <div class="mb-3">
-        <span class="badge" style="background-color: #007bff; color: white;">Pendente</span>
-        <span class="badge" style="background-color: #ffc107; color: black;">Pendente Aprovação</span>
-        <span class="badge" style="background-color: #28a745; color: white;">Concluída</span>
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-primary text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-calendar3 me-2"></i>{{ titulo_pagina }}
+                    </h4>
+                    <small class="opacity-75">Clique em um dia para agendar uma nova inspeção</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
+                    </a>
+                    <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
+                        <i class="bi bi-plus-circle me-1"></i> Nova Inspeção
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-danger btn-glow" title="Agendar Inspeção">
-         <i class="bi bi-speedometer2 me-1"></i> Agendar Inspeção
-    </a>
-    <div id="calendar"></div>
+
+    <!-- Legenda -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-2">
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <strong class="me-2">Legenda:</strong>
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-primary me-1">&nbsp;&nbsp;</span> Pendente
+                </span>
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-warning me-1">&nbsp;&nbsp;</span> Aguardando Aprovação
+                </span>
+                <span class="d-flex align-items-center">
+                    <span class="badge bg-success me-1">&nbsp;&nbsp;</span> Concluída
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendário -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div id="calendar"></div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
-    {% comment %} Adiciona o JavaScript do FullCalendar {% endcomment %}
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script> {% comment %} Tradução PT-BR {% endcomment %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/pt-br.js"></script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('calendar');
-            
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                locale: 'pt-br', // Define o idioma
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listWeek'
-                },
-                
-                // --- Carrega os eventos da nossa API ---
-                events: '{% url "gestao_riscos:api_inspecao_events" %}',
-                
-                // --- Permite clicar em um dia para agendar ---
-                dateClick: function(info) {
-                    // info.dateStr contém a data clicada (ex: "2025-10-25")
-                    var agendarUrl = `{% url 'gestao_riscos:agendar_inspecao' %}?data=${info.dateStr}`;
-                    window.location.href = agendarUrl; // Redireciona para o formulário
-                },
-
-                // Não permite clicar em um evento (a URL do evento já faz isso)
-                // eventClick: function(info) {
-                //     info.jsEvent.preventDefault(); // Impede o link padrão
-                //     // Aqui você poderia abrir um modal, etc.
-                //     window.location.href = info.event.url; // Vai para a URL do evento
-                //},
-
-                editable: false, // Não permite arrastar eventos
-                selectable: true, // Permite selecionar datas
-                dayMaxEvents: true, // "mais" link quando muitos eventos
-            });
-            
-            calendar.render();
-        });
-    </script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'pt-br',
+        height: 'auto',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,listWeek'
+        },
+        buttonText: {
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            list: 'Lista'
+        },
+        events: '{% url "gestao_riscos:api_inspecao_events" %}',
+        dateClick: function(info) {
+            var agendarUrl = `{% url 'gestao_riscos:agendar_inspecao' %}?data=${info.dateStr}`;
+            window.location.href = agendarUrl;
+        },
+        editable: false,
+        selectable: true,
+        dayMaxEvents: 3,
+        eventDisplay: 'block'
+    });
+    
+    calendar.render();
+});
+</script>
 {% endblock %}
+

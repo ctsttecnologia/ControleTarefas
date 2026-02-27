@@ -1,50 +1,85 @@
+
 {% extends "base.html" %}
-{% load static widget_tweaks %}
+{% load static %}
 
-{# 1. Define o título específico desta seção da página #}
-{% block title %}Gestão de Atas - {{ block.super }}{% endblock %}
+{% block title %}Gestão de Atas{% endblock %}
 
-{# 2. Adiciona o CSS específico para esta seção #}
 {% block extra_css %}
-    <link rel="stylesheet" type="text/css" href="{% static 'cssata/styles.css' %}">
-{% endblock extra_css %}
+<style>
+    /* ═══ MODULE NAV ═══ */
+    .module-nav {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.75rem;
+        padding: 0.5rem;
+        margin-bottom: 1.5rem;
+        position: sticky;
+        top: 70px;
+        z-index: 1020;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .module-nav .nav-link {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #858796;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s;
+    }
+    .module-nav .nav-link:hover { color: #4e73df; background: rgba(78,115,223,0.06); }
+    .module-nav .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #4e73df, #224abe);
+    }
+    .module-nav .nav-link i { margin-right: 6px; }
 
-{# Inclui o template de mensagens de alerta #}
-{% include "partials/_messages.html" %}
+    [data-bs-theme="dark"] .module-nav {
+        background: var(--bs-body-bg);
+        border-color: rgba(255,255,255,0.06);
+    }
+    [data-bs-theme="dark"] .module-nav .nav-link { color: #a0aec0; }
+    [data-bs-theme="dark"] .module-nav .nav-link:hover { color: #4e73df; background: rgba(78,115,223,0.08); }
+</style>
+{% block module_css %}{% endblock %}
+{% endblock %}
 
-{# 3. Preenche o bloco de conteúdo principal herdado do base.html #}
 {% block content %}
-<div class="container-fluid">
-    
-    {# Cria um submenu consistente com o resto do site #}
-    <div class="subnav-atas mb-4 p-3 bg-body-tertiary rounded-3 border sticky-top" style="top: 60px; z-index: 1020;">
-        <ul class="nav nav">
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Module Navigation -->
+    <nav class="module-nav no-print">
+        <ul class="nav nav-pills">
             <li class="nav-item">
-                <a href="#" class="nav-link"> 
-                    <i class="bi bi-speedometer2 me-1"></i> Painel de Atas
+                <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}"
+                   class="nav-link {% block nav_dashboard %}{% endblock %}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link active"> 
-                    <i class="bi bi-list-ul me-1"></i> Lista de Atas
-                </a>  
+                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}"
+                   class="nav-link {% block nav_lista %}{% endblock %}">
+                    <i class="bi bi-list-ul"></i> Lista de Atas
+                </a>
             </li>
             <li class="nav-item">
-                <a href="{% url 'ata_reuniao_create' %}" class="nav-link">
-                    <i class="bi bi-plus-circle me-1"></i> Nova Ata
+                <a href="{% url 'ata_reuniao:ata_reuniao_create' %}"
+                   class="nav-link {% block nav_nova %}{% endblock %}">
+                    <i class="bi bi-plus-circle"></i> Nova Ata
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{% url 'ata_reuniao:ata_reuniao_upload' %}"
+                   class="nav-link {% block nav_import %}{% endblock %}">
+                    <i class="bi bi-cloud-arrow-up"></i> Importar
                 </a>
             </li>
         </ul>
-    </div>
+    </nav>
 
-    {# 4. Bloco para o conteúdo específico das páginas de "Atas" (ex: a tabela de atas) #}
-    {% block atas_content %}
-    
-        {% endblock atas_content %}
-
+    {% block atas_content %}{% endblock %}
 </div>
-{% endblock content %}
+{% endblock %}
 
-{# 5. Bloco para adicionar JavaScript específico se necessário #}
 {% block extra_js %}
-    {% endblock extra_js %}
+{% block module_js %}{% endblock %}
+{% endblock %}

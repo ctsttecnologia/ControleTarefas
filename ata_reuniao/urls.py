@@ -1,10 +1,12 @@
 # ata_reuniao/urls.py
 
 from django.urls import path
+
+from api import views
 from .views import (
     AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
     AtaReuniaoDeleteView, AtaReuniaoDashboardView, AtaReuniaoPDFExportView,
-    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, UpdateTaskStatusView, UploadAtaReuniaoView, download_ata_reuniao_template, download_error_report # Adicionado DetailView
+    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, AtaUpdateStatusAPIView, UpdateTaskStatusView, UploadAtaReuniaoView, download_ata_reuniao_template, download_error_report 
 )
 
 app_name = 'ata_reuniao'
@@ -13,6 +15,8 @@ urlpatterns = [
     # --- Rota Principal e Dashboard ---
     path('', AtaReuniaoListView.as_view(), name='ata_reuniao_list'),
     path('dashboard/', AtaReuniaoDashboardView.as_view(), name='ata_reuniao_dashboard'),
+    path('api/ata/<int:pk>/status/', AtaUpdateStatusAPIView.as_view(), name='api_update_status'),
+ 
 
     # --- Rotas de CRUD para Atas ---
     path('ata/nova/', AtaReuniaoCreateView.as_view(), name='ata_reuniao_create'),

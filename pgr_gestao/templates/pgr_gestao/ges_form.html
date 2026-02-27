@@ -1,0 +1,380 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} GES{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:ges_list' %}">GES</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-users"></i>
+        {% if form.instance.pk %}Editar GES{% else %}Novo GES{% endif %}
+    </h1>
+    <p class="mb-0">Grupo de Exposição Similar</p>
+</div>
+
+<div class="row">
+    <div class="col-md-9">
+        <form method="post" enctype="multipart/form-data" id="formGES">
+            {% csrf_token %}
+            
+            <!-- Erros Gerais -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- SEÇÃO 1: Identificação do GES -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-id-card"></i> 1. Identificação do GES
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.pgr_documento.id_for_label }}" class="form-label required-field">
+                                    Documento PGR
+                                </label>
+                                {% render_field form.pgr_documento class="form-select" %}
+                                {% if form.pgr_documento.errors %}
+                                <div class="text-danger">{{ form.pgr_documento.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.codigo.id_for_label }}" class="form-label">
+                                    Código do GES
+                                </label>
+                                {% render_field form.codigo class="form-control" placeholder="Ex: GES-001" %}
+                                {% if form.codigo.errors %}
+                                <div class="text-danger">{{ form.codigo.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Será gerado automaticamente se deixado em branco</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.nome.id_for_label }}" class="form-label required-field">
+                            Nome do GES
+                        </label>
+                        {% render_field form.nome class="form-control" placeholder="Ex: Operadores de Máquinas - Setor de Produção" %}
+                        {% if form.nome.errors %}
+                        <div class="text-danger">{{ form.nome.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.ambiente_trabalho.id_for_label }}" class="form-label">
+                                    Ambiente de Trabalho
+                                </label>
+                                {% render_field form.ambiente_trabalho class="form-select" %}
+                                {% if form.ambiente_trabalho.errors %}
+                                <div class="text-danger">{{ form.ambiente_trabalho.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.numero_trabalhadores.id_for_label }}" class="form-label">
+                                    Número de Trabalhadores
+                                </label>
+                                {% render_field form.numero_trabalhadores class="form-control" type="number" min="1" placeholder="Ex: 10" %}
+                                {% if form.numero_trabalhadores.errors %}
+                                <div class="text-danger">{{ form.numero_trabalhadores.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 2: Cargo e Função -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-briefcase"></i> 2. Cargo e Função
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.cargo.id_for_label }}" class="form-label">
+                                    Cargo
+                                </label>
+                                {% render_field form.cargo class="form-select" %}
+                                {% if form.cargo.errors %}
+                                <div class="text-danger">{{ form.cargo.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Cargo conforme CBO</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.funcao.id_for_label }}" class="form-label">
+                                    Função
+                                </label>
+                                {% render_field form.funcao class="form-select" %}
+                                {% if form.funcao.errors %}
+                                <div class="text-danger">{{ form.funcao.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.descricao_atividades.id_for_label }}" class="form-label required-field">
+                            Descrição das Atividades
+                        </label>
+                        {% render_field form.descricao_atividades class="form-control" rows="5" placeholder="Descreva as atividades desenvolvidas pelos trabalhadores deste GES..." %}
+                        {% if form.descricao_atividades.errors %}
+                        <div class="text-danger">{{ form.descricao_atividades.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Seja detalhado na descrição das atividades</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 3: Jornada de Trabalho -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-clock"></i> 3. Jornada de Trabalho
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.jornada_trabalho.id_for_label }}" class="form-label">
+                                    Jornada de Trabalho
+                                </label>
+                                {% render_field form.jornada_trabalho class="form-control" placeholder="Ex: 44 horas semanais" %}
+                                {% if form.jornada_trabalho.errors %}
+                                <div class="text-danger">{{ form.jornada_trabalho.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.horario_trabalho.id_for_label }}" class="form-label">
+                                    Horário de Trabalho
+                                </label>
+                                {% render_field form.horario_trabalho class="form-control" placeholder="Ex: 08:00 às 17:00" %}
+                                {% if form.horario_trabalho.errors %}
+                                <div class="text-danger">{{ form.horario_trabalho.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.turnos.id_for_label }}" class="form-label">
+                            Turnos
+                        </label>
+                        {% render_field form.turnos class="form-control" placeholder="Ex: Matutino, Vespertino" %}
+                        {% if form.turnos.errors %}
+                        <div class="text-danger">{{ form.turnos.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 4: Informações Complementares -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-info-circle"></i> 4. Informações Complementares
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.caracteristicas_ambiente.id_for_label }}" class="form-label">
+                            Características do Ambiente
+                        </label>
+                        {% render_field form.caracteristicas_ambiente class="form-control" rows="3" placeholder="Descreva as características físicas do ambiente..." %}
+                        {% if form.caracteristicas_ambiente.errors %}
+                        <div class="text-danger">{{ form.caracteristicas_ambiente.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.equipamentos_utilizados.id_for_label }}" class="form-label">
+                            Equipamentos Utilizados
+                        </label>
+                        {% render_field form.equipamentos_utilizados class="form-control" rows="3" placeholder="Liste os equipamentos e ferramentas utilizados..." %}
+                        {% if form.equipamentos_utilizados.errors %}
+                        <div class="text-danger">{{ form.equipamentos_utilizados.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                            Observações
+                        </label>
+                        {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais..." %}
+                        {% if form.observacoes.errors %}
+                        <div class="text-danger">{{ form.observacoes.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- STATUS DO GES -->
+                    <div class="border rounded p-3 {% if form.instance.pk and not form.instance.ativo %}bg-light border-danger{% else %}bg-light border-success{% endif %}">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="form-check form-switch">
+                                    {% render_field form.ativo class="form-check-input" role="switch" id="id_ativo" %}
+                                    <label class="form-check-label fw-bold" for="id_ativo">
+                                        GES Ativo
+                                    </label>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i>
+                                    GES inativo <strong>não será incluído</strong> no relatório PDF do PGR.
+                                </small>
+                            </div>
+                            <div id="statusBadge">
+                                {% if form.instance.pk and not form.instance.ativo %}
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-ban"></i> Inativo
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check-circle"></i> Ativo
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if form.instance.pk and not form.instance.ativo %}
+                        <div class="alert alert-warning mt-3 mb-0 py-2">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Atenção:</strong> Este GES está inativo e não aparecerá no 
+                            inventário de riscos do PDF.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.ativo.errors %}
+                    <div class="text-danger mt-1">{{ form.ativo.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'pgr_gestao:ges_list' %}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <div>
+                            <button type="submit" name="save" class="btn btn-primary btn-lg me-2">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            {% if not form.instance.pk %}
+                            <button type="submit" name="save_and_add_risk" class="btn btn-success btn-lg">
+                                <i class="fas fa-arrow-right"></i> Salvar e Adicionar Riscos
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sidebar com Ajuda -->
+    <div class="col-md-3">
+        <div class="card sticky-top" style="top: 20px;">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-question-circle"></i> O que é GES?
+            </div>
+            <div class="card-body">
+                <p class="small">
+                    <strong>GES (Grupo de Exposição Similar)</strong> é um conjunto de trabalhadores 
+                    que experimentam exposição semelhante aos riscos ocupacionais.
+                </p>
+
+                <hr>
+
+                <h6>Critérios para agrupar</h6>
+                <ul class="small">
+                    <li>Mesmo cargo/função</li>
+                    <li>Mesmas atividades</li>
+                    <li>Mesmo ambiente</li>
+                    <li>Mesmos riscos</li>
+                    <li>Mesma jornada</li>
+                </ul>
+
+                <hr>
+
+                <h6>Exemplo</h6>
+                <p class="small">
+                    <strong>GES-001:</strong> Operadores de Empilhadeira
+                    <br>
+                    - Cargo: Operador de Empilhadeira
+                    <br>
+                    - Local: Almoxarifado
+                    <br>
+                    - Trabalhadores: 5
+                    <br>
+                    - Jornada: 44h semanais
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Gerar nome do GES automaticamente
+    function gerarNomeGES() {
+        const cargo = $('#id_cargo option:selected').text();
+        const ambiente = $('#id_ambiente_trabalho option:selected').text();
+        
+        if (cargo !== '---------' && ambiente !== '---------') {
+            const nome = `${cargo} - ${ambiente}`;
+            if ($('#id_nome').val() === '') {
+                $('#id_nome').val(nome);
+            }
+        }
+    }
+
+    $('#id_cargo, #id_ambiente_trabalho').on('change', gerarNomeGES);
+
+    // Sugestão de jornada padrão
+    $('#id_jornada_trabalho').on('focus', function() {
+        if ($(this).val() === '') {
+            $(this).val('44 horas semanais');
+        }
+    });
+
+    // Sugestão de horário padrão
+    $('#id_horario_trabalho').on('focus', function() {
+        if ($(this).val() === '') {
+            $(this).val('08:00 às 17:00');
+        }
+    });
+});
+</script>
+{% endblock %}
+
+

@@ -1,163 +1,157 @@
+
 # ferramentas/forms.py
 
 from django import forms
 from django.db import transaction
-from ata_reuniao import models
-from .models import Ferramenta, Movimentacao, MalaFerramentas, Usuario, Atividade
-from django.db.models import Q
 
-from .models import TermoDeResponsabilidade, ItemTermo
+from .models import (
+    Ferramenta, Movimentacao, MalaFerramentas,
+    TermoDeResponsabilidade, ItemTermo
+)
 
 
 # =============================================================================
-# == FORMULÁRIOS DE ITENS (Ferramentas e Malas)
+# FORMULÁRIOS DE ITENS
 # =============================================================================
 
 class FerramentaForm(forms.ModelForm):
+    """
+    Formulário para criar/editar Ferramentas.
+    Recebe 'request' via kwargs para filtrar querysets por filial.
+    """
+
     class Meta:
         model = Ferramenta
-        # Removido 'status' para que seja controlado por ações (retirada, manutenção)
-        # e não por edição manual. O campo 'mala' é adicionado para contexto.
         fields = [
-            'nome', 'id', 'codigo_identificacao', 'data_aquisicao', 'localizacao_padrao', 'patrimonio', 'fabricante_marca', 'modelo',
-            'serie', 'tamanho_polegadas', 'numero_laudo_tecnico', 'filial', 'mala', 'observacoes', 'quantidade'
+            'nome', 'codigo_identificacao', 'data_aquisicao',
+            'localizacao_padrao', 'patrimonio', 'fabricante_marca',
+            'modelo', 'serie', 'tamanho_polegadas',
+            'numero_laudo_tecnico', 'fornecedor', 'mala',
+            'observacoes', 'quantidade',
         ]
-        
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Furadeira de Impacto'}),
-            'patrimonio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº de patrimônio ou ativo fixo'}),
-            'codigo_identificacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código, ex: '
-            'Patrimônio-Nome do Equipamento'}),
-            'fabricante_marca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Bosch, DeWalt'}),
-            'modelo ': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: PL56843'}),
+            'patrimonio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº de patrimônio'}),
+            'codigo_identificacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: PAT-001-FURADEIRA'}),
+            'fabricante_marca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Bosch'}),
+            'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: PL56843'}),
             'serie': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 56843'}),
             'tamanho_polegadas': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 12'}),
-            'numero_laudo_tecnico': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 215231'}), 
-            'localizacao_padrao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Armário 2, Prateleira A'}),
+            'numero_laudo_tecnico': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 215231'}),
+            'localizacao_padrao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Armário 2, Prateleira A'}),
             'data_aquisicao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'data_descarte': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'mala': forms.Select(attrs={'class': 'form-select', 'disabled': 'disabled'}), # Aparece desabilitado
-            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-        }
-        help_texts = {
-            'mala': 'Para alterar a mala de uma ferramenta, edite a mala diretamente.'
+            'mala': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
         }
 
-        def __init__(self, *args, **kwargs):
-                # Primeiro, execute o __init__ da classe pai
-                super().__init__(*args, **kwargs)
-                
-                # Agora, adicione a nossa lógica customizada.
-                # 'self.instance' é o objeto que está sendo editado.
-                # 'self.instance.pk' só existe se o objeto já foi salvo no banco (ou seja, é uma edição).
-                if self.instance and self.instance.pk:
-                    # Se estamos editando um objeto existente, desabilite o campo.
-                    self.fields['data_aquisicao'].disabled = True
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
 
+        if self.request:
+            from suprimentos.models import Parceiro
 
-    # Garante que o código seja sempre salvo em maiúsculas para consistência.
+            # Filtra malas pela filial ativa
+            self.fields['mala'].queryset = (
+                MalaFerramentas.objects.for_request(self.request).order_by('nome')
+            )
+
+            # Filtra fornecedores pela filial (se Parceiro usa FilialManager)
+            # Se Parceiro NÃO tem FilialManager, remova este bloco
+            try:
+                self.fields['fornecedor'].queryset = (
+                    Parceiro.objects.for_request(self.request).order_by('razao_social')
+                )
+            except AttributeError:
+                # Parceiro não tem for_request — mantém queryset padrão
+                pass
+
+        # Desabilita campos na edição
+        if self.instance and self.instance.pk:
+            self.fields['data_aquisicao'].disabled = True
+            self.fields['mala'].disabled = True
+
     def clean_codigo_identificacao(self):
-        return self.cleaned_data['codigo_identificacao'].upper()
-
-
-# Campo customizado para exibir mais detalhes na seleção de ferramentas
-class MalaItemChoiceField(forms.ModelMultipleChoiceField):
-    def label_from_instance(self, obj):
-        # Exibe "Nome da Ferramenta (COD123)" na lista de checkboxes
-        return f"{obj.nome} ({obj.codigo_identificacao})"
+        return self.cleaned_data['codigo_identificacao'].upper().strip()
 
 
 class MalaFerramentasForm(forms.ModelForm):
+    """
+    Formulário para criar/editar Malas com seleção de ferramentas.
+    Recebe 'request' para filtrar ferramentas pela filial ativa.
+    """
 
-    
     itens = forms.ModelMultipleChoiceField(
         queryset=Ferramenta.objects.none(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Ferramentas na Mala"
     )
-    """
-    Formulário para criar e atualizar Malas de Ferramentas.
 
-    Este formulário customiza a lógica para:
-    1. Exibir dinamicamente apenas as ferramentas que podem ser adicionadas a uma mala.
-    2. Calcular e salvar automaticamente a 'quantidade' com base no número de 
-       itens selecionados.
-    """
     class Meta:
         model = MalaFerramentas
-        fields = ['nome', 'id', 'codigo_identificacao', 'localizacao_padrao', 'quantidade']
+        fields = ['nome', 'codigo_identificacao', 'localizacao_padrao']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Kit de Manutenção Elétrica'}),
-            'codigo_identificacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código, ex: MALA-ELETR-01'}),
-            'localizacao_padrao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Local onde a mala é guardada'}),
+            'codigo_identificacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'MALA-ELETR-01'}),
+            'localizacao_padrao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Local de guarda'}),
         }
-        # O campo 'itens' é declarado explicitamente abaixo, então não precisamos 
-        # nos preocupar com o widget aqui.
 
     def __init__(self, *args, **kwargs):
-        """
-        Sobrescreve o __init__ para customizar o campo 'itens' dinamicamente.
-        """
+        self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
-        
-        # Determina o queryset base para as ferramentas disponíveis.
-        # Ao criar uma nova mala, pegamos todas as ferramentas que não estão em nenhuma mala.
-        # Ao editar, pegamos as que não estão em nenhuma mala OU as que já estão nesta mala.
-        mala_instance_pk = self.instance.pk if self.instance else None
-        queryset_ferramentas = Ferramenta.objects.ferramentas_disponiveis_para_mala(
-            mala_instance_pk=mala_instance_pk
-        )
-        
-        # Define ou atualiza o campo 'itens' com o queryset dinâmico.
-        self.fields['itens'] = forms.ModelMultipleChoiceField(
-            queryset=queryset_ferramentas,
-            widget=forms.CheckboxSelectMultiple,
-            required=False,
-            label="Ferramentas na Mala"
-        )
+
+        mala_pk = self.instance.pk if self.instance else None
+
+        # Base: ferramentas disponíveis para mala
+        qs = Ferramenta.objects.ferramentas_disponiveis_para_mala(mala_instance_pk=mala_pk)
+
+        # Filtra pela filial ativa do request
+        if self.request:
+            qs = qs.for_request(self.request)
+
+        self.fields['itens'].queryset = qs.order_by('nome')
+
         if self.instance and self.instance.pk:
-            # Pré-seleciona os itens que já pertencem a esta mala
             self.fields['itens'].initial = self.instance.itens.all()
 
+    def clean_codigo_identificacao(self):
+        return self.cleaned_data['codigo_identificacao'].upper().strip()
+
+    @transaction.atomic
     def save(self, commit=True):
-        # 1. Salva a instância da Mala primeiro, para garantir que ela exista.
-        mala_instance = super().save(commit=True)
-        
-        # 2. Pega a lista de ferramentas que foram SELECIONADAS no formulário.
-        ferramentas_selecionadas = self.cleaned_data['itens']
-        
-        # 3. Pega a lista de ferramentas que ATUALMENTE estão associadas a esta mala.
-        ferramentas_atuais = mala_instance.itens.all()
-        
-        # 4. Remove a associação das ferramentas que foram desmarcadas.
-        #    Para cada ferramenta que ESTAVA na mala mas NÃO ESTÁ na nova seleção,
-        #    definimos sua 'mala' como None.
-        for ferramenta in ferramentas_atuais:
-            if ferramenta not in ferramentas_selecionadas:
-                ferramenta.mala = None
-                ferramenta.save()
+        mala = super().save(commit=True)
+        ferramentas_selecionadas = set(self.cleaned_data['itens'])
+        ferramentas_atuais = set(mala.itens.all())
 
-        # 5. Adiciona a associação para as novas ferramentas marcadas.
-        #    Para cada ferramenta que foi SELECIONADA, definimos sua 'mala'
-        #    para ser a instância da mala que estamos salvando.
-        for ferramenta in ferramentas_selecionadas:
-            if ferramenta.mala != mala_instance:
-                ferramenta.mala = mala_instance
-                ferramenta.save()
+        # Remove ferramentas desmarcadas
+        for f in ferramentas_atuais - ferramentas_selecionadas:
+            f.mala = None
+            f.save(update_fields=['mala'])
 
-        # 6. Atualiza a contagem de itens na mala.
-        mala_instance.quantidade = ferramentas_selecionadas.count()
-        mala_instance.save(update_fields=['quantidade'])
-            
-        return mala_instance
+        # Adiciona novas ferramentas
+        for f in ferramentas_selecionadas - ferramentas_atuais:
+            f.mala = mala
+            f.save(update_fields=['mala'])
+
+        # Atualiza contagem
+        mala.quantidade = len(ferramentas_selecionadas)
+        mala.save(update_fields=['quantidade'])
+
+        return mala
 
 
 # =============================================================================
-# == FORMULÁRIOS DE MOVIMENTAÇÃO (Reutilizáveis para Ferramentas e Malas)
+# FORMULÁRIOS DE MOVIMENTAÇÃO
 # =============================================================================
 
 class MovimentacaoForm(forms.ModelForm):
+    """
+    Formulário de retirada (Movimentação).
+    O campo 'retirado_por' é filtrado por usuários da filial ativa.
+    """
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=True)
 
     class Meta:
@@ -165,116 +159,154 @@ class MovimentacaoForm(forms.ModelForm):
         fields = ['retirado_por', 'data_devolucao_prevista', 'condicoes_retirada']
         widgets = {
             'retirado_por': forms.Select(attrs={'class': 'form-select'}),
-            'data_devolucao_prevista': forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'condicoes_retirada': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'data_devolucao_prevista': forms.DateTimeInput(
+                attrs={'type': 'datetime-local', 'class': 'form-control'}
+            ),
+            'condicoes_retirada': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Descreva o estado do item (arranhões, funcionamento, etc.)'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
-        # Captura a ferramenta ou a mala passada pela view
         self.ferramenta = kwargs.pop('ferramenta', None)
         self.mala = kwargs.pop('mala', None)
+        self.request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
 
-    def clean(self):
-        # Pega os dados já validados dos campos individuais
-        cleaned_data = super().clean()
+        # Filtra usuários pela filial ativa
+        if self.request:
+            from usuario.models import Usuario
 
-        # Agora, a validação usa self.ferramenta e self.mala, que foram definidos no __init__
+            filial_ativa = self.request.user.filial_ativa
+            if filial_ativa:
+                self.fields['retirado_por'].queryset = (
+                    Usuario.objects.filter(
+                        filiais_permitidas=filial_ativa,
+                        is_active=True
+                    ).order_by('first_name', 'last_name')
+                )
+
+    def clean(self):
+        cleaned_data = super().clean()
         if not self.ferramenta and not self.mala:
-            raise forms.ValidationError(
-                "A movimentação não está associada a nenhum item. Contate o administrador do sistema."
-            )
-        
+            raise forms.ValidationError("Movimentação sem item associado.")
         if self.ferramenta and self.mala:
             raise forms.ValidationError(
-                "Erro do sistema: A movimentação não pode ser de uma ferramenta e uma mala ao mesmo tempo."
+                "Movimentação não pode ser de ferramenta e mala simultaneamente."
             )
-            
         return cleaned_data
 
     def save(self, commit=True):
-        # Associa a ferramenta ou a mala antes de salvar
         instance = super().save(commit=False)
         if self.ferramenta:
             instance.ferramenta = self.ferramenta
         if self.mala:
             instance.mala = self.mala
-        
         if commit:
             instance.save()
         return instance
 
 
 class DevolucaoForm(forms.ModelForm):
-    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=True)
-    
+    """Formulário de devolução de ferramenta/mala."""
+    assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
+
     class Meta:
         model = Movimentacao
         fields = ['condicoes_devolucao']
-        
         widgets = {
-            'condicoes_devolucao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Descreva como o item foi devolvido. Aponte qualquer dano ou problema.'}),
+            'condicoes_devolucao': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Descreva como o item foi devolvido. Aponte qualquer dano ou problema.'
+            }),
         }
 
+
 # =============================================================================
-# == FORMULÁRIOS UTILITÁRIOS
+# FORMULÁRIOS UTILITÁRIOS
 # =============================================================================
 
 class UploadFileForm(forms.Form):
-    """ Formulário simples para o upload de um arquivo de planilha. """
+    """Upload de planilha Excel para importação."""
     file = forms.FileField(
         label="Selecione a planilha (.xlsx)",
         widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.xlsx'})
     )
 
+    def clean_file(self):
+        f = self.cleaned_data['file']
+        if not f.name.endswith('.xlsx'):
+            raise forms.ValidationError("Apenas arquivos .xlsx são aceitos.")
+        if f.size > 5 * 1024 * 1024:  # 5MB
+            raise forms.ValidationError("Arquivo muito grande. Máximo: 5MB.")
+        return f
 
-# Form termos de responsabilidade
+
+# =============================================================================
+# FORMULÁRIO DO TERMO DE RESPONSABILIDADE
+# =============================================================================
 
 class TermoResponsabilidadeForm(forms.ModelForm):
-    
+    """
+    Formulário para criar Termos de Responsabilidade.
+    Todos os campos de FK são filtrados pela filial ativa via request.
+    """
     assinatura_base64 = forms.CharField(widget=forms.HiddenInput(), required=False)
-        
-   # Campos para selecionar itens. Transformados em caixas de pesquisa pelo Select2.
 
     ferramentas_selecionadas = forms.ModelMultipleChoiceField(
-        queryset=Ferramenta.objects.filter(status=Ferramenta.Status.DISPONIVEL),
+        queryset=Ferramenta.objects.none(),
         required=False,
         label="Ferramentas"
     )
     malas_selecionadas = forms.ModelMultipleChoiceField(
-        queryset=MalaFerramentas.objects.filter(status=MalaFerramentas.Status.DISPONIVEL),
+        queryset=MalaFerramentas.objects.none(),
         required=False,
         label="Malas/Kits"
     )
-    
-    assinatura_base64 = forms.CharField(
-        widget=forms.HiddenInput(),
-        required=False
-    )
-    
+
     class Meta:
         model = TermoDeResponsabilidade
         fields = ['contrato', 'responsavel', 'separado_por', 'data_emissao', 'tipo_uso']
         widgets = {
-            'data_emissao': forms.DateInput(
-                attrs={'type': 'date'},
-                format='%Y-%m-%d' # Garante o formato correto para o input date
-            ),
+            'contrato': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Contrato CETEST-2026/001'}),
+            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'separado_por': forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}, format='%Y-%m-%d'),
+            'tipo_uso': forms.Select(attrs={'class': 'form-select'}),
         }
+
     def __init__(self, *args, **kwargs):
-        # Filtra os QuerySets para a filial do usuário que está fazendo a requisição
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
-        
-        if request:
-            # Garante que apenas itens da filial do usuário sejam exibidos para seleção
-            self.fields['ferramentas_selecionadas'].queryset = Ferramenta.objects.for_request(request).filter(status=Ferramenta.Status.DISPONIVEL)
-            self.fields['malas_selecionadas'].queryset = MalaFerramentas.objects.for_request(request).filter(status=MalaFerramentas.Status.DISPONIVEL)
 
-# Este formulário é apenas para a lógica, a submissão será feita no TermoResponsabilidadeForm
+        if request:
+            from departamento_pessoal.models import Funcionario
+
+            # ==========================================================
+            # FUNCIONÁRIOS: filtrados pela filial ativa + apenas ativos
+            # ==========================================================
+            funcionarios_filial = Funcionario.objects.for_request(request).filter(
+                status='ATIVO'
+            ).order_by('nome_completo')
+
+            self.fields['responsavel'].queryset = funcionarios_filial
+            self.fields['separado_por'].queryset = funcionarios_filial
+
+            # ==========================================================
+            # FERRAMENTAS E MALAS: filtradas por filial + disponíveis
+            # ==========================================================
+            self.fields['ferramentas_selecionadas'].queryset = (
+                Ferramenta.objects.for_request(request).disponiveis()
+            )
+            self.fields['malas_selecionadas'].queryset = (
+                MalaFerramentas.objects.for_request(request).filter(
+                    status=MalaFerramentas.Status.DISPONIVEL
+                )
+            )
+
 class ItemTermoForm(forms.ModelForm):
     class Meta:
         model = ItemTermo
         fields = ['quantidade', 'unidade', 'item']
-
 

@@ -1,71 +1,216 @@
 {# templates/usuario/grupo_form.html #}
-
-{% extends 'base.html' %}
-{% load static %}
-
+{% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
-{% if user.is_superuser or user.is_gerente or user.is_administrador %}
-    {% block title %}{% if form.instance.pk %}Editar Grupo{% else %}Criar Novo Grupo{% endif %}{% endblock %}
-{% endif %}    
+
+{% block title %}{% if form.instance.pk %}Editar Grupo{% else %}Novo Grupo{% endif %}{% endblock %}
 
 {% block extra_head %}
     {{ form.media.css }}
     <style>
-        .container { max-width: 900px; }
-        .card-body.p-4.p-md-5 { padding: 2rem !important; }
-        .selector { display: flex; justify-content: space-between; gap: 15px; flex-wrap: wrap; }
-        .selector .selector-available, .selector .selector-chosen { flex: 1; min-width: 280px; border: 1px solid #dee2e6; border-radius: 0.25rem; overflow: hidden; display: flex; flex-direction: column; }
-        .selector-filter input { width: calc(100% - 10px) !important; margin: 5px !important; border: 1px solid #ced4da; border-radius: 0.25rem; }
-        .selector-available h2, .selector-chosen h2 { font-size: 1.1rem; background-color: #f8f9fa; padding: 0.75rem 1rem; margin-bottom: 0; border-bottom: 1px solid #dee2e6; }
-        .selector select { border: none; height: 250px; flex-grow: 1; }
-        .selector .selector-control { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px; }
-        .selector .selector-control a { font-size: 1.5rem; border: 1px solid #ced4da; border-radius: 0.25rem; text-decoration: none; color: #343a40; background-color: #e9ecef; padding: 0 5px; }
+        .section-divider {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6c757d;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        /* =============================================
+           WIDGET FilteredSelectMultiple — OVERRIDE
+           ============================================= */
+        .selector {
+            display: flex !important;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 0.75rem;
+        }
+        .selector .selector-available,
+        .selector .selector-chosen {
+            flex: 1 !important;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            background: #fff;
+            overflow: hidden;
+            float: none !important;
+            width: auto !important;
+        }
+        .selector h2 {
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            padding: 0.6rem 0.75rem !important;
+            margin: 0 !important;
+            background: #f8f9fa !important;
+            border-bottom: 1px solid #dee2e6 !important;
+            color: #495057 !important;
+        }
+        .selector .selector-filter {
+            padding: 0.4rem 0.5rem !important;
+            border-bottom: 1px solid #e9ecef !important;
+        }
+        .selector .selector-filter label { display: none !important; }
+        .selector .selector-filter input {
+            width: 100% !important;
+            padding: 0.35rem 0.6rem !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.375rem !important;
+            font-size: 0.82rem !important;
+            outline: none !important;
+        }
+        .selector .selector-filter input:focus {
+            border-color: #86b7fe !important;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15) !important;
+        }
+        .selector select {
+            flex-grow: 1;
+            border: none !important;
+            padding: 0.35rem !important;
+            min-height: 250px;
+            font-size: 0.82rem !important;
+            outline: none !important;
+        }
+        .selector select option {
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.25rem;
+        }
+        .selector select option:hover,
+        .selector select option:checked {
+            background: #e7f1ff;
+        }
+        .selector .selector-control {
+            display: flex !important;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0 0.25rem;
+            float: none !important;
+            width: auto !important;
+        }
+        .selector .selector-control a {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 32px !important;
+            height: 32px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.375rem !important;
+            background: #fff !important;
+            text-decoration: none !important;
+            transition: all 0.15s ease-in-out;
+            opacity: 1 !important;
+        }
+        .selector .selector-control a:hover {
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+        .selector .selector-control a:hover img {
+            filter: brightness(0) invert(1);
+        }
+        .selector .selector-chooseall,
+        .selector .selector-clearall {
+            font-size: 0.72rem !important;
+            padding: 0.3rem 0.6rem !important;
+            display: inline-block !important;
+            color: #0d6efd !important;
+            text-decoration: none !important;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            background: #f8f9fa;
+            margin: 0.3rem 0.5rem !important;
+            transition: all 0.15s;
+        }
+        .selector .selector-chooseall:hover,
+        .selector .selector-clearall:hover {
+            background: #0d6efd;
+            color: #fff !important;
+            border-color: #0d6efd;
+        }
+        .selector-available p.help,
+        .selector-chosen p.help {
+            display: none !important;
+        }
+        @media (max-width: 576px) {
+            .selector { flex-direction: column; }
+            .selector .selector-control { flex-direction: row; padding: 0.25rem 0; }
+        }
     </style>
 {% endblock %}
 
-{% block content %}
-    {% include 'usuario/includes/submenu.html' %}
-    <div class="container-boxed">
-        <div class="container-fluid">      
-                <div class="container-fluid py-6">
-                <div class="row justify-content-center">
-                    <div class="col-lg-12">
-                        <div class="card shadow-sm">
-                            <div class="card-header"><h2 class="h4 mb-0">Gerenciar Grupo</h2></div>
-                            <div class="card-body p-4 p-md-5">
-                                <form method="post">
-                                    {% csrf_token %}
-                                    <fieldset class="module aligned">
-                                        
-                                        <div class="row mb-3 align-items-center">
-                                            <label for="{{ form.name.id_for_label }}" class="col-md-3 col-form-label text-md-end">{{ form.name.label }}</label>
-                                            <div class="col-md-9">
-                                                {{ form.name|add_class:"form-control" }}
-                                            </div>
-                                        </div>
-                                        <hr class="my-4">
+{% block usuario_content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white py-3">
+        <h5 class="mb-0">
+            {% if form.instance.pk %}
+                <i class="bi bi-pencil-square me-2"></i>Editar Grupo: {{ form.instance.name }}
+            {% else %}
+                <i class="bi bi-collection me-2"></i>Novo Grupo
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body p-4">
+        <form method="post" novalidate>
+            {% csrf_token %}
 
-                                        <div class="mt-4">
-                                            <h5 class="mb-3">{{ form.permissions.label }}</h5>
-                                            {{ form.permissions }}
-                                        </div>
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
-                                    </fieldset>
-                                    <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
-                                        <a href="{% url 'usuario:grupo_lista' %}" class="btn btn-secondary">Cancelar</a>
-                                        <button type="submit" class="btn btn-primary px-4">Salvar</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+            {# Nome do Grupo #}
+            <div class="section-divider">
+                <i class="bi bi-tag me-1"></i>Identificação
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
+                        Nome do Grupo <span class="text-danger">*</span>
+                    </label>
+                    {% render_field form.name class="form-control form-control-lg" placeholder="Ex: Coordenador" %}
+                    {% for error in form.name.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
                 </div>
             </div>
-        </div>
+
+            {# Permissões (FilteredSelectMultiple) #}
+            <div class="section-divider">
+                <i class="bi bi-shield-check me-1"></i>Permissões
+            </div>
+
+            <div class="mb-3">
+                {{ form.permissions }}
+                {% for error in form.permissions.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            {# Ações #}
+            <hr class="my-4">
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'usuario:grupo_lista' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
     <script src="{% url 'admin:jsi18n' %}"></script>
     {{ form.media.js }}
 {% endblock %}
+

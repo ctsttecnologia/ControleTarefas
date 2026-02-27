@@ -1,74 +1,174 @@
+{# templates/logradouro/upload_logradouros.html #}
+{# templates/logradouro/upload_logradouros.html #}
 {% extends "base.html" %}
-
-
 {% load static %}
+{% load i18n %}
 {% load django_bootstrap5 %}
 
-{% block title %}Upload em Massa de Endereços{% endblock %}
+{% block title %}{% trans "Importar Endereços" %}{% endblock %}
 
 {% block content %}
-<div class="container-box">
-    <div class="container mt-4">
-        <div class="card">
-            <div class="card-header">
-                <h2>Upload em Massa de Endereços</h2>
-            </div>
-            <div class="card-body">
-                <p>
-                    Selecione um arquivo <code>.xlsx</code> ou <code>.csv</code> contendo os endereços a serem importados.
-                    <br>
-                    <strong>Importante:</strong> A planilha deve seguir o modelo padrão, com todos os cabeçalhos obrigatórios na primeira linha.
-                </p>
-                
-                <div class="mb-4">
-                    <a href="{% url 'logradouro:download_logradouro_template' %}" class="btn btn-primary">
-                        <i class="fas fa-download"></i> Baixar Modelo da Planilha
-                    </a>
-                </div>
+<div class="container-fluid py-4">
 
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                {% if relatorio_disponivel %}
-                <div class="alert alert-danger border-2" role="alert">
-                    <h4 class="alert-heading">
-                        <i class="fas fa-exclamation-triangle"></i> Problemas na Importação!
+    <!-- Header -->
+    <div class="card bg-primary text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-upload me-2"></i>{% trans "Importar Endereços" %}
                     </h4>
-                    <p>
-                        Encontramos <strong>{{ total_erros }}</strong> linha(s) com erro(s) na sua planilha.
-                        A importação foi cancelada para evitar inconsistências nos dados.
-                    </p>
-                    <hr>
-                    <p class="mb-0">
-                        Para facilitar a correção, geramos um relatório com as linhas problemáticas e o detalhe do erro em cada uma.
-                        Baixe o arquivo, corrija os dados e tente o upload novamente.
-                    </p>
-                    <div class="mt-3">
-                        <a href="{% url 'logradouro:download_erros_logradouro' %}" class="btn btn-danger fw-bold">
-                            <i class="fas fa-file-excel"></i> Baixar Relatório de Erros
-                        </a>
-                    </div>
+                    <small class="opacity-75">{% trans "Upload em massa via planilha Excel" %}</small>
                 </div>
-                {% endif %}
-
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                        
-                    {% bootstrap_form form %}
-                    
-                    <button type="submit" class="btn btn-success mt-3">
-                        <i class="fas fa-upload"></i> Enviar Arquivo e Validar
-                    </button>
-                </form>
+                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Voltar" %}
+                </a>
             </div>
         </div>
     </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Mensagens -->
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {% if message.tags == 'success' %}
+                <i class="bi bi-check-circle-fill me-2"></i>
+                {% elif message.tags == 'error' or message.tags == 'danger' %}
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {% else %}
+                <i class="bi bi-info-circle-fill me-2"></i>
+                {% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Relatório de Erros -->
+            {% if relatorio_disponivel %}
+            <div class="alert alert-danger border-2 shadow-sm mb-4">
+                <div class="d-flex align-items-start">
+                    <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-3">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2">{% trans "Problemas na Importação" %}</h5>
+                        <p class="mb-2">
+                            {% blocktrans %}Encontramos <strong>{{ total_erros }}</strong> linha(s) com erro(s) na sua planilha. A importação foi cancelada para evitar inconsistências.{% endblocktrans %}
+                        </p>
+                        <hr>
+                        <p class="mb-3 small">
+                            {% trans "Baixe o relatório, corrija os dados destacados e tente novamente." %}
+                        </p>
+                        <a href="{% url 'logradouro:download_erros_logradouro' %}" class="btn btn-danger">
+                            <i class="bi bi-file-earmark-excel me-1"></i> {% trans "Baixar Relatório de Erros" %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Card Principal -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-file-earmark-spreadsheet text-success me-2"></i>
+                        {% trans "Enviar Planilha" %}
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <!-- Instruções -->
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle me-1"></i> {% trans "Instruções" %}
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>{% trans "Selecione um arquivo .xlsx ou .csv" %}</li>
+                            <li>{% trans "A planilha deve seguir o modelo padrão com os cabeçalhos obrigatórios" %}</li>
+                            <li>{% trans "Baixe o modelo abaixo para garantir o formato correto" %}</li>
+                        </ul>
+                    </div>
+
+                    <!-- Botão Download Modelo -->
+                    <div class="d-grid mb-4">
+                        <a href="{% url 'logradouro:download_logradouro_template' %}" class="btn btn-outline-primary btn-lg">
+                            <i class="bi bi-download me-2"></i> {% trans "Baixar Modelo da Planilha" %}
+                        </a>
+                    </div>
+
+                    <hr>
+
+                    <!-- Formulário de Upload -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="id_file" class="form-label fw-semibold">
+                                {% trans "Selecione o arquivo" %} <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" 
+                                   class="form-control form-control-lg" 
+                                   name="file" 
+                                   id="id_file" 
+                                   accept=".xlsx,.csv"
+                                   required>
+                            <div class="form-text">
+                                {% trans "Formatos aceitos: .xlsx, .csv (máx. 5MB)" %}
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-upload me-2"></i> {% trans "Enviar e Validar" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Dicas -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb text-warning me-2"></i>{% trans "Dicas" %}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                                <small>{% trans "Use sempre o modelo fornecido para evitar erros de formatação" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                                <small>{% trans "O CEP deve conter apenas 8 dígitos, sem traços" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                                <small>{% trans "O estado deve ser a sigla (ex: SP, RJ, MG)" %}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex">
+                                <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                                <small>{% trans "Verifique se o ID da filial existe no sistema" %}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
 </div>
 {% endblock %}
-

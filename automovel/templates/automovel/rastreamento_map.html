@@ -1,48 +1,72 @@
-
+<!-- Página de Rastreamento do Agendamento -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Rastreamento - Agendamento #{{ object.id }}{% endblock %}
+{% block title %}Rastreamento — {{ object.carro.placa }}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.css" />
 <style>
-    #map { height: 600px; }
-    .info-panel { 
-        position: absolute; 
-        top: 10px; 
-        right: 10px; 
-        background: white; 
-        padding: 15px; 
-        border-radius: 5px; 
-        z-index: 1000;
-        max-width: 300px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    .map-hero {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        border-radius: 1rem; color: #fff; padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem; position: relative; overflow: hidden;
     }
+    .map-hero::after {
+        content: ''; position: absolute; top: -30%; right: -8%;
+        width: 200px; height: 200px; background: rgba(255,255,255,0.06);
+        border-radius: 50%; pointer-events: none;
+    }
+    .map-hero h1 { font-weight: 700; font-size: 1.35rem; margin-bottom: 0; }
+    .map-hero p { opacity: 0.85; font-size: 0.85rem; margin: 0; }
+
+    .map-container {
+        height: 550px; border-radius: 0.875rem; overflow: hidden;
+        border: 2px solid #e9ecef; position: relative;
+    }
+    #map { height: 100%; width: 100%; }
+
+    .map-info-panel {
+        position: absolute; top: 12px; right: 12px; z-index: 1000;
+        background: #fff; border-radius: 0.75rem; padding: 1.25rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12); max-width: 280px;
+    }
+    .map-info-panel h6 { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.75rem; color: #2d3748; }
+    .map-info-panel p { font-size: 0.82rem; color: #4a5568; margin-bottom: 0.4rem; }
+    .map-info-panel strong { color: #2d3748; }
+
+    [data-bs-theme="dark"] .map-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
+    [data-bs-theme="dark"] .map-container { border-color: rgba(255,255,255,0.08); }
+    [data-bs-theme="dark"] .map-info-panel { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .map-info-panel h6 { color: #e2e8f0; }
+    [data-bs-theme="dark"] .map-info-panel p { color: #a0aec0; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid p-0">
-    <nav class="navbar navbar-light bg-light">
-        <div class="container">
-            <a href="{% url 'automovel:agendamento_detail' object.pk %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar ao Agendamento
+<div class="container-fluid py-4 px-lg-5">
+
+    <div class="map-hero">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-geo-alt-fill me-2"></i>Rastreamento — {{ object.carro.placa }}</h1>
+                <p>{{ object.funcionario }} — Agendamento #{{ object.id }}</p>
+            </div>
+            <a href="{% url 'automovel:agendamento_detail' object.pk %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
-            <h4 class="mb-0">Rastreamento - {{ object.carro.placa }}</h4>
         </div>
-    </nav>
-    
-    <div class="position-relative">
+    </div>
+
+    <div class="map-container">
         <div id="map"></div>
-        <div class="info-panel">
-            <h6>Informações do Rastreamento</h6>
+        <div class="map-info-panel no-print">
+            <h6><i class="bi bi-info-circle me-1"></i>Informações</h6>
             <p><strong>Veículo:</strong> {{ object.carro.placa }}</p>
             <p><strong>Motorista:</strong> {{ object.funcionario }}</p>
-            <p><strong>Total de pontos:</strong> {{ pontos_rastreamento|length }}</p>
-            <button id="exportRoute" class="btn btn-sm btn-outline-primary w-100">
-                <i class="bi bi-download"></i> Exportar Rota
+            <p><strong>Pontos:</strong> {{ pontos_rastreamento|length }}</p>
+            <button id="exportRoute" class="btn btn-sm btn-outline-primary w-100 mt-2" style="border-radius: 0.625rem;">
+                <i class="bi bi-download me-1"></i> Exportar Rota
             </button>
         </div>
     </div>
@@ -52,59 +76,45 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-var map = L.map('map').setView([-23.5505, -46.6333], 13);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-}).addTo(map);
-
-var pontos = {{ pontos_rastreamento|safe }};
-var latlngs = [];
-
-// Adicionar marcadores e pontos da rota
-pontos.forEach(function(ponto, index) {
-    var latlng = [ponto.lat, ponto.lng];
-    latlngs.push(latlng);
-    
-    L.marker(latlng)
-        .addTo(map)
-        .bindPopup(`
-            <strong>Data/Hora:</strong> ${ponto.data_hora}<br>
-            <strong>Velocidade:</strong> ${ponto.velocidade || 'N/A'} km/h<br>
-            <strong>Local:</strong> ${ponto.endereco}
-        `);
-});
-
-// Desenhar rota
-if (latlngs.length > 1) {
-    var polyline = L.polyline(latlngs, {color: 'blue'}).addTo(map);
-    
-    // Adicionar direção à rota
-    L.polylineDecorator(polyline, {
-        patterns: [
-            {offset: 0, repeat: 50, symbol: L.Symbol.arrowHead({pixelSize: 10, pathOptions: {color: 'red'}})}
-        ]
+document.addEventListener('DOMContentLoaded', function() {
+    const map = L.map('map').setView([-23.5505, -46.6333], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap'
     }).addTo(map);
-    
-    map.fitBounds(polyline.getBounds());
-}
 
-// Exportar rota
-$('#exportRoute').click(function() {
-    var wb = XLSX.utils.book_new();
-    var ws_data = [['Latitude', 'Longitude', 'Data/Hora', 'Velocidade (km/h)', 'Endereço']];
-    
-    pontos.forEach(function(ponto) {
-        ws_data.push([
-            ponto.lat, ponto.lng, ponto.data_hora, 
-            ponto.velocidade || 'N/A', ponto.endereco
-        ]);
+    const pontos = {{ pontos_rastreamento|safe }};
+    const latlngs = [];
+
+    pontos.forEach(function(p) {
+        const ll = [p.lat, p.lng];
+        latlngs.push(ll);
+        L.marker(ll).addTo(map).bindPopup(
+            `<strong>Data/Hora:</strong> ${p.data_hora}<br>` +
+            `<strong>Velocidade:</strong> ${p.velocidade || 'N/A'} km/h<br>` +
+            `<strong>Local:</strong> ${p.endereco || '—'}`
+        );
     });
-    
-    var ws = XLSX.utils.aoa_to_sheet(ws_data);
-    XLSX.utils.book_append_sheet(wb, ws, "Rota");
-    XLSX.writeFile(wb, "rota_agendamento_{{ object.id }}.xlsx");
+
+    if (latlngs.length > 1) {
+        const polyline = L.polyline(latlngs, { color: '#4e73df', weight: 4 }).addTo(map);
+        L.polylineDecorator(polyline, {
+            patterns: [{ offset: 0, repeat: 50, symbol: L.Symbol.arrowHead({ pixelSize: 10, pathOptions: { color: '#e74a3b' } }) }]
+        }).addTo(map);
+        map.fitBounds(polyline.getBounds(), { padding: [30, 30] });
+    } else if (latlngs.length === 1) {
+        map.setView(latlngs[0], 16);
+    }
+
+    // Export
+    document.getElementById('exportRoute').addEventListener('click', function() {
+        const wb = XLSX.utils.book_new();
+        const data = [['Latitude', 'Longitude', 'Data/Hora', 'Velocidade (km/h)', 'Endereço']];
+        pontos.forEach(p => data.push([p.lat, p.lng, p.data_hora, p.velocidade || 'N/A', p.endereco || '']));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Rota');
+        XLSX.writeFile(wb, 'rota_agendamento_{{ object.id }}.xlsx');
+    });
 });
 </script>
 {% endblock %}

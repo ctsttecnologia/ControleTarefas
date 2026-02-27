@@ -10,7 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.files.base import ContentFile
-from django.db.models import Count, ProtectedError, Q
+from django.db.models import Count, ProtectedError, Q, Sum, Count
 from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -39,6 +39,9 @@ from django.conf import settings
 from weasyprint import HTML
 from xhtml2pdf import pisa  # Garanta que você tem o xhtml2pdf instalado
 from .utils import get_logo_base64
+
+from .models import RecargaCredito
+from .forms import RecargaCreditoForm, RecargaCreditoRealizarForm
 
 
 class StaffRequiredMixin(PermissionRequiredMixin):
@@ -850,5 +853,212 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
+# ══════════════════════════════════════════════════════════════
+# RECARGAS DE CRÉDITO
+# ══════════════════════════════════════════════════════════════
 
+class RecargaCreditoListView(LoginRequiredMixin, ListView):
+    """Lista de recargas de crédito da filial ativa."""
+    model = RecargaCredito
+    template_name = 'controle_de_telefone/recarga_list.html'
+    context_object_name = 'recargas'
+    paginate_by = 20
+
+    def get_queryset(self):
+        filial_id = self.request.session.get('filial_ativa_id')
+        qs = RecargaCredito.objects.filter(filial_id=filial_id).select_related(
+            'linha', 'linha__plano__operadora',
+            'responsavel', 'usuario_credito'
+        ).order_by('-data_solicitacao')
+        
+        # Filtros
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        
+        linha = self.request.GET.get('linha')
+        if linha:
+            qs = qs.filter(linha_id=linha)
+        
+        q = self.request.GET.get('q')
+        if q:
+            qs = qs.filter(
+                Q(linha__numero__icontains=q) |
+                Q(usuario_credito__nome_completo__icontains=q) |
+                Q(responsavel__nome_completo__icontains=q) |
+                Q(codigo_transacao__icontains=q)
+            )
+        
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        filial_id = self.request.session.get('filial_ativa_id')
+        
+        # Estatísticas
+        qs_filial = RecargaCredito.objects.filter(filial_id=filial_id)
+        context['total_recargas'] = qs_filial.count()
+        context['total_pendentes'] = qs_filial.filter(status='pendente').count()
+        context['total_mes'] = qs_filial.filter(
+            data_recarga__month=timezone.now().month,
+            data_recarga__year=timezone.now().year
+        ).aggregate(total=Sum('valor'))['total'] or 0
+        
+        # Filtros
+        context['linhas'] = LinhaTelefonica.objects.filter(filial_id=filial_id)
+        context['status_choices'] = RecargaCredito.StatusRecarga.choices
+        context['search_query'] = self.request.GET.get('q', '')
+        context['status_filtro'] = self.request.GET.get('status', '')
+        
+        return context
+
+
+class RecargaCreditoCreateView(LoginRequiredMixin, CreateView):
+    """Criar nova recarga de crédito."""
+    model = RecargaCredito
+    form_class = RecargaCreditoForm
+    template_name = 'controle_de_telefone/recarga_form.html'
+    success_url = reverse_lazy('controle_de_telefone:recarga_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['filial_id'] = self.request.session.get('filial_ativa_id')
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.filial_id = self.request.session.get('filial_ativa_id')
+        form.instance.criado_por = self.request.user
+        messages.success(self.request, 'Recarga cadastrada com sucesso!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Nova Recarga de Crédito'
+        return context
+
+
+class RecargaCreditoUpdateView(LoginRequiredMixin, UpdateView):
+    """Editar recarga de crédito."""
+    model = RecargaCredito
+    form_class = RecargaCreditoForm
+    template_name = 'controle_de_telefone/recarga_form.html'
+    success_url = reverse_lazy('controle_de_telefone:recarga_list')
+
+    def get_queryset(self):
+        filial_id = self.request.session.get('filial_ativa_id')
+        return RecargaCredito.objects.filter(filial_id=filial_id)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['filial_id'] = self.request.session.get('filial_ativa_id')
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Recarga atualizada com sucesso!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = f'Editar Recarga — {self.object.linha.numero}'
+        return context
+
+
+class RecargaCreditoDetailView(LoginRequiredMixin, DetailView):
+    """Detalhes da recarga de crédito."""
+    model = RecargaCredito
+    template_name = 'controle_de_telefone/recarga_detail.html'
+    context_object_name = 'recarga'
+
+    def get_queryset(self):
+        filial_id = self.request.session.get('filial_ativa_id')
+        return RecargaCredito.objects.filter(filial_id=filial_id).select_related(
+            'linha', 'linha__plano__operadora',
+            'responsavel', 'usuario_credito', 'criado_por'
+        )
+
+
+class RecargaCreditoDeleteView(LoginRequiredMixin, DeleteView):
+    """Excluir recarga de crédito."""
+    model = RecargaCredito
+    template_name = 'controle_de_telefone/recarga_confirm_delete.html'
+    success_url = reverse_lazy('controle_de_telefone:recarga_list')
+
+    def get_queryset(self):
+        filial_id = self.request.session.get('filial_ativa_id')
+        return RecargaCredito.objects.filter(filial_id=filial_id)
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Recarga excluída com sucesso!')
+        return super().form_valid(form)
+
+
+@login_required
+def recarga_aprovar(request, pk):
+    """Aprovar uma recarga pendente."""
+    filial_id = request.session.get('filial_ativa_id')
+    recarga = get_object_or_404(RecargaCredito, pk=pk, filial_id=filial_id)
+    
+    if recarga.status != RecargaCredito.StatusRecarga.PENDENTE:
+        messages.error(request, 'Esta recarga não pode ser aprovada.')
+        return redirect('controle_de_telefone:recarga_detail', pk=pk)
+    
+    if not request.user.has_perm('controle_de_telefone.aprovar_recarga'):
+        messages.error(request, 'Você não tem permissão para aprovar recargas.')
+        return redirect('controle_de_telefone:recarga_detail', pk=pk)
+    
+    recarga.aprovar(user=request.user)
+    messages.success(request, 'Recarga aprovada com sucesso!')
+    return redirect('controle_de_telefone:recarga_detail', pk=pk)
+
+
+@login_required
+def recarga_realizar(request, pk):
+    """Marcar recarga como realizada."""
+    filial_id = request.session.get('filial_ativa_id')
+    recarga = get_object_or_404(RecargaCredito, pk=pk, filial_id=filial_id)
+    
+    if recarga.status not in [RecargaCredito.StatusRecarga.PENDENTE, RecargaCredito.StatusRecarga.APROVADA]:
+        messages.error(request, 'Esta recarga não pode ser marcada como realizada.')
+        return redirect('controle_de_telefone:recarga_detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = RecargaCreditoRealizarForm(request.POST, request.FILES, instance=recarga)
+        if form.is_valid():
+            recarga = form.save(commit=False)
+            recarga.status = RecargaCredito.StatusRecarga.REALIZADA
+            recarga.save()
+            messages.success(request, 'Recarga marcada como realizada!')
+            return redirect('controle_de_telefone:recarga_detail', pk=pk)
+    else:
+        form = RecargaCreditoRealizarForm(instance=recarga)
+    
+    return render(request, 'controle_de_telefone/recarga_realizar.html', {
+        'form': form,
+        'recarga': recarga,
+    })
+
+
+@login_required
+def recarga_cancelar(request, pk):
+    """Cancelar uma recarga."""
+    filial_id = request.session.get('filial_ativa_id')
+    recarga = get_object_or_404(RecargaCredito, pk=pk, filial_id=filial_id)
+    
+    if recarga.status == RecargaCredito.StatusRecarga.REALIZADA:
+        messages.error(request, 'Recargas realizadas não podem ser canceladas.')
+        return redirect('controle_de_telefone:recarga_detail', pk=pk)
+    
+    if not request.user.has_perm('controle_de_telefone.cancelar_recarga'):
+        messages.error(request, 'Você não tem permissão para cancelar recargas.')
+        return redirect('controle_de_telefone:recarga_detail', pk=pk)
+    
+    if request.method == 'POST':
+        motivo = request.POST.get('motivo_cancelamento', '')
+        recarga.cancelar(motivo_cancelamento=motivo, user=request.user)
+        messages.success(request, 'Recarga cancelada com sucesso!')
+        return redirect('controle_de_telefone:recarga_list')
+    
+    return render(request, 'controle_de_telefone/recarga_cancelar.html', {
+        'recarga': recarga,
+    })
 

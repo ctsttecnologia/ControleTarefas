@@ -1,26 +1,33 @@
 
-{% load widget_tweaks i18n crispy_forms_tags %}
+{# templates/seguranca_trabalho/partials/base_modal.html #}
+{% load crispy_forms_tags %}
 
 <form method="post" 
       action="{{ request.path }}" 
       hx-post="{{ request.path }}" 
-      hx-target="#modal-content-area">
+      hx-target="#modal-content-area"
+      hx-swap="innerHTML">
     
     {% csrf_token %}
     
-    <div class="modal-header">
+    <div class="modal-header bg-primary text-white">
         <h5 class="modal-title">
+            <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
             {% if object %}Editar Função{% else %}Nova Função{% endif %}
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
     </div>
 
     <div class="modal-body">
         {% include "seguranca_trabalho/partials/funcao_form_fields.html" %}
     </div>
 
-    <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Salvar</button>
+    <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i> Salvar
+        </button>
     </div>
 </form>

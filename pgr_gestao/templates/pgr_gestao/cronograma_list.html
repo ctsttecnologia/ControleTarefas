@@ -1,0 +1,149 @@
+
+{% extends 'pgr_gestao/base.html' %}
+
+{% block title %}Cronograma de Ações{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Cronograma de Ações</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-calendar-alt"></i> Cronograma de Ações</h1>
+            <p class="mb-0">Programação de Atividades do PGR</p>
+        </div>
+        {% if perms.pgr_gestao.add_cronogramaacaopgr %}
+            <a href="{% url 'pgr_gestao:cronograma_create_geral' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus"></i> Nova Ação
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Documento PGR</label>
+                <select name="pgr" class="form-select">
+                    <option value="">Todos</option>
+                    {% for doc in documentos_pgr %}
+                    <option value="{{ doc.id }}" {% if request.GET.pgr == doc.id|stringformat:"s" %}selected{% endif %}>
+                        {{ doc.codigo_documento }} - {{ doc.empresa.razao_social }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="pendente" {% if request.GET.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                    <option value="em_andamento" {% if request.GET.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                    <option value="concluido" {% if request.GET.status == 'concluido' %}selected{% endif %}>Concluído</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="search" class="form-control" placeholder="Ação, responsável..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela de Ações -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list"></i> Lista de Ações Programadas
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Ação Necessária</th>
+                        <th>PGR</th>
+                        <th>Periodicidade</th>
+                        <th>Status</th>
+                        <th>Responsável</th>
+                        <th>Próxima Avaliação</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for acao in acoes %}
+                    <tr>
+                        <td><strong>{{ acao.numero_item|stringformat:"02d" }}</strong></td>
+                        <td>{{ acao.acao_necessaria }}</td>
+                        <td>{{ acao.pgr_documento.codigo_documento }}</td>
+                        <td>{{ acao.get_periodicidade_display }}</td>
+                        <td>
+                            {% if acao.status == 'concluido' %}
+                            <span class="badge bg-success">{{ acao.get_status_display }}</span>
+                            {% elif acao.status == 'em_andamento' %}
+                            <span class="badge bg-info">{{ acao.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ acao.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ acao.responsavel }}</td>
+                        <td>
+                            {{ acao.data_proxima_avaliacao|date:"d/m/Y" }}
+                            {% if acao.esta_atrasado %}
+                            <br><small class="text-danger"><i class="fas fa-clock"></i> ATRASADO</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                {% if perms.pgr_gestao.change_cronogramaacaopgr %}
+                                <a href="{% url 'pgr_gestao:cronograma_detail' acao.pk %}" class="btn btn-warning" title="Detalhar"><i class="fas fa-eye"></i></a>
+                                {% endif %}
+                                {% if perms.pgr_gestao.change_cronogramaacaopgr %}
+                                <a href="{% url 'pgr_gestao:cronograma_update' acao.pk %}" class="btn btn-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                {% endif %}
+                                {% if perms.pgr_gestao.delete_cronogramaacaopgr %}
+                                <a href="{% url 'pgr_gestao:cronograma_delete' acao.pk %}" class="btn btn-danger" title="Excluir"><i class="fas fa-trash"></i></a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Nenhuma ação encontrada no cronograma.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação (se houver) -->
+        {% if is_paginated %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}"><i class="fas fa-chevron-left"></i></a></li>
+                {% endif %}
+
+                <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}"><i class="fas fa-chevron-right"></i></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

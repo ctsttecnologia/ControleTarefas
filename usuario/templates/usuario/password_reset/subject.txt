@@ -1,2 +1,0 @@
-
-Redefinição de senha no site {{ gerniciandoTarefas }}

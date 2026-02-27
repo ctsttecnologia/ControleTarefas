@@ -1,0 +1,67 @@
+
+{% extends "controle_de_telefone/_base_telefone.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Marcar Recarga como Realizada{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-check-circle text-success me-2"></i>Marcar Recarga como Realizada
+            </h2>
+            <small class="text-muted">{{ recarga.linha.numero }} — R$ {{ recarga.valor|floatformat:2 }}</small>
+        </div>
+        <a href="{% url 'controle_de_telefone:recarga_detail' recarga.pk %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </header>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label for="{{ form.codigo_transacao.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
+                                Código da Transação <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.codigo_transacao class+="form-control" placeholder="Código/protocolo da operadora" %}
+                            <div class="form-text">Código ou protocolo fornecido pela operadora</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.comprovante.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
+                                Comprovante
+                            </label>
+                            {% render_field form.comprovante class+="form-control" %}
+                            <div class="form-text">Comprovante da recarga (PDF ou imagem)</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.observacao.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
+                                Observações
+                            </label>
+                            {% render_field form.observacao class+="form-control" rows="3" %}
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4 pt-4 border-top gap-2">
+                            <a href="{% url 'controle_de_telefone:recarga_detail' recarga.pk %}" class="btn btn-light px-4">
+                                <i class="bi bi-x-lg me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-circle me-1"></i>Confirmar Realização
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

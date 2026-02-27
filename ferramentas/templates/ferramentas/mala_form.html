@@ -1,89 +1,88 @@
 
-
+{# ferramentas/mala_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load widget_tweaks %}
 
-{% block ferramentas_actions %}
-    <div class="row justify-content-cente">
-        
-        <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Cancelar
-        </a>
-    <div>
-{% endblock ferramentas_actions %}
+{% block ferramentas_page_title %}
+    {% if form.instance.pk %}Editar Mala{% else %}Nova Mala{% endif %}
+{% endblock %}
 
-{# ... Bloco de actions ... #}
+{% block ferramentas_title %}
+    {% if form.instance.pk %}
+        <i class="bi bi-pencil-square me-2"></i>Editar: {{ form.instance.nome }}
+    {% else %}
+        <i class="bi bi-plus-circle me-2"></i>Nova Mala de Ferramentas
+    {% endif %}
+{% endblock %}
+
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Cancelar
+    </a>
+{% endblock %}
 
 {% block ferramentas_content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">{% if form.instance.pk %}Editar Mala de Ferramentas{% else %}Adicionar Nova Mala{% endif %}</h5>
-            </div>
             <div class="card-body p-4">
-                <form method="post">
+                <form method="post" novalidate>
                     {% csrf_token %}
 
-                    {# BLOCO PARA ERROS GERAIS DO FORMULÁRIO        #}
-            
                     {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                                <p class="mb-0">{{ error }}</p>
-                            {% endfor %}
-                        </div>
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                    </div>
                     {% endif %}
 
+                    {# Dados da mala #}
                     <div class="mb-3">
-                        <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>
+                        <label for="{{ form.nome.id_for_label }}" class="form-label">Nome da Mala <span class="text-danger">*</span></label>
                         {% render_field form.nome class="form-control" %}
-                        {# erros específicos do campo #}
-                        <div class="text-danger small mt-1">{{ form.nome.errors }}</div>
+                        {% for e in form.nome.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.codigo_identificacao.id_for_label }}" class="form-label">{{ form.codigo_identificacao.label }}</label>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.codigo_identificacao.id_for_label }}" class="form-label">Código <span class="text-danger">*</span></label>
                             {% render_field form.codigo_identificacao class="form-control" %}
-                            {# erros específicos do campo #}
-                            <div class="text-danger small mt-1">{{ form.codigo_identificacao.errors }}</div>
+                            {% for e in form.codigo_identificacao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.localizacao_padrao.id_for_label }}" class="form-label">{{ form.localizacao_padrao.label }}</label>
+                        <div class="col-md-6">
+                            <label for="{{ form.localizacao_padrao.id_for_label }}" class="form-label">Localização <span class="text-danger">*</span></label>
                             {% render_field form.localizacao_padrao class="form-control" %}
-                            {# erros específicos do campo #}
-                            <div class="text-danger small mt-1">{{ form.localizacao_padrao.errors }}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="{{ form.quantidade.id_for_label }}" class="form-label">{{ form.quantidade.label }}</label>
-                        {% render_field form.quantidade class="form-control" type="number" %}
-                        <div class="text-danger small mt-1">{{ form.quantidade.errors }}</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">{{ form.itens.label }}</label>
-                        {# erros específicos do campo de itens #}
-                        <div class="text-danger small mb-1">{{ form.itens.errors }}</div>
-                        <div class="card">
-                            <div class="card-body" style="max-height: 250px; overflow-y: auto;">
-                                {% for checkbox in form.itens %}
-                                    <div class="form-check">
-                                        {{ checkbox.tag }}
-                                        <label for="{{ checkbox.id_for_label }}" class="form-check-label">{{ checkbox.choice_label }}</label>
-                                    </div>
-                                {% empty %}
-                                    <p class="text-muted text-center mb-0">Nenhuma ferramenta individual disponível para ser adicionada a uma mala.</p>
-                                {% endfor %}
-                            </div>
+                            {% for e in form.localizacao_padrao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-end mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i> Salvar Alterações
+                    {# Seleção de ferramentas #}
+                    <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-tools me-1"></i>Ferramentas na Mala
+                    </h6>
+                    {% for e in form.itens.errors %}<div class="alert alert-danger small">{{ e }}</div>{% endfor %}
+                    <div class="card mb-4">
+                        <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                            {% for checkbox in form.itens %}
+                            <div class="form-check py-1">
+                                {{ checkbox.tag }}
+                                <label for="{{ checkbox.id_for_label }}" class="form-check-label">
+                                    {{ checkbox.choice_label }}
+                                </label>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted text-center mb-0 small">
+                                <i class="bi bi-info-circle me-1"></i>Nenhuma ferramenta disponível para associar.
+                            </p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Rodapé #}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><span class="text-danger">*</span> Campos obrigatórios</small>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i>Salvar
                         </button>
                     </div>
                 </form>
@@ -92,3 +91,5 @@
     </div>
 </div>
 {% endblock %}
+
+

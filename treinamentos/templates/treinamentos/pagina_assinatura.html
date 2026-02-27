@@ -1,96 +1,267 @@
-
+<!-- Pagina de Assinatura -->
 {% extends "base.html" %}
 {% load static %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .sign-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        background: #f0f2f5;
+    }
+
+    .sign-card {
+        max-width: 700px;
+        width: 100%;
+        border: none;
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .sign-header {
+        padding: 2rem 2.5rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .sign-header::after {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -15%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .sign-header-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+    .sign-header h3 { font-weight: 700; font-size: 1.25rem; margin-bottom: 0; }
+
+    /* Success variant */
+    .sign-header-success { background: linear-gradient(135deg, #1cc88a, #13855c); color: #fff; }
+    .sign-header-success .sign-header-icon { background: rgba(255,255,255,0.15); }
+
+    /* Pending variant */
+    .sign-header-pending { background: linear-gradient(135deg, #4e73df, #224abe); color: #fff; }
+    .sign-header-pending .sign-header-icon { background: rgba(255,255,255,0.15); }
+
+    .sign-body { padding: 2rem 2.5rem; }
+    .sign-body .lead { font-size: 1rem; color: #4a5568; }
+    .sign-body .lead strong { color: #2d3748; }
+
+    /* Success State */
+    .success-details {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        margin-top: 1.25rem;
+    }
+    .success-details dl { margin: 0; }
+    .success-details dt { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; color: #858796; font-weight: 700; }
+    .success-details dd { font-weight: 600; color: #2d3748; margin-bottom: 0.75rem; }
+    .success-details dd:last-child { margin-bottom: 0; }
+
+    /* Signature Pad */
+    .signature-wrapper {
+        background: #fff;
+        border: 2px dashed #d1d5db;
+        border-radius: 0.875rem;
+        padding: 0.75rem;
+        text-align: center;
+        transition: border-color 0.2s;
+    }
+    .signature-wrapper:hover,
+    .signature-wrapper.active { border-color: #4e73df; }
+    .signature-wrapper canvas {
+        display: block;
+        max-width: 100%;
+        border-radius: 0.5rem;
+        cursor: crosshair;
+    }
+    .signature-hint {
+        margin-top: 0.5rem;
+        font-size: 0.78rem;
+        color: #a0aec0;
+    }
+    .signature-hint i { font-size: 0.7rem; }
+
+    .btn-sign-action {
+        padding: 0.75rem 2rem;
+        border-radius: 0.625rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    .btn-sign-save {
+        background: linear-gradient(135deg, #1cc88a, #17a673);
+        border: none;
+        color: #fff;
+    }
+    .btn-sign-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(28,200,138,0.35);
+        color: #fff;
+    }
+    .btn-sign-clear {
+        border: 2px solid #e2e8f0;
+        color: #718096;
+        background: transparent;
+    }
+    .btn-sign-clear:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
+
+    [data-bs-theme="dark"] .sign-container { background: #1a1d23; }
+    [data-bs-theme="dark"] .sign-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    [data-bs-theme="dark"] .sign-body { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .sign-body .lead { color: #a0aec0; }
+    [data-bs-theme="dark"] .sign-body .lead strong { color: #e2e8f0; }
+    [data-bs-theme="dark"] .signature-wrapper { border-color: #2d3748; background: rgba(255,255,255,0.02); }
+    [data-bs-theme="dark"] .success-details { background: rgba(28,200,138,0.08); border-color: rgba(28,200,138,0.2); }
+    [data-bs-theme="dark"] .success-details dd { color: #e2e8f0; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header">
-            <h3><i class="fas fa-pencil-alt"></i> {{ titulo }}</h3>
+<div class="sign-container">
+    <div class="card sign-card">
+
+        {% if assinatura_obj.esta_assinada %}
+        <!-- ═══ ASSINADO ═══ -->
+        <div class="sign-header sign-header-success">
+            <div class="sign-header-icon">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h3>Documento Assinado com Sucesso</h3>
         </div>
-        <div class="card-body">
-            
-            {% if assinatura_obj.esta_assinada %}
-                <div class="alert alert-success text-center">
-                    <i class="fas fa-check-circle fa-2x"></i>
-                    <h4 class="mt-2">Documento Assinado</h4>
-                    <p>Este documento foi assinado por <strong>{{ assinatura_obj.nome_assinante }}</strong> em {{ assinatura_obj.data_assinatura|date:"d/m/Y \à\s H:i" }}.</p>
+        <div class="sign-body text-center">
+            <p class="lead">
+                Este documento foi assinado por <strong>{{ assinatura_obj.nome_assinante }}</strong>
+                em {{ assinatura_obj.data_assinatura|date:"d/m/Y" }} às {{ assinatura_obj.data_assinatura|date:"H:i" }}.
+            </p>
+            <div class="success-details text-start">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Assinante</dt>
+                    <dd class="col-sm-8">{{ assinatura_obj.nome_assinante }}</dd>
+                    <dt class="col-sm-4">Data/Hora</dt>
+                    <dd class="col-sm-8">{{ assinatura_obj.data_assinatura|date:"d/m/Y \à\s H:i" }}</dd>
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        <span class="badge bg-success" style="border-radius: 50rem;">
+                            <i class="bi bi-shield-check me-1"></i> Validado
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- ═══ PENDENTE ASSINATURA ═══ -->
+        <div class="sign-header sign-header-pending">
+            <div class="sign-header-icon">
+                <i class="bi bi-pen-fill"></i>
+            </div>
+            <h3>{{ titulo }}</h3>
+        </div>
+        <div class="sign-body">
+            <p class="lead mb-1">Olá, <strong>{{ nome_assinante }}</strong>.</p>
+            <p class="text-muted mb-4">Desenhe sua assinatura no campo abaixo para validar o certificado.</p>
+
+            <form id="signature-form" method="POST" action="{% url 'treinamentos:pagina_assinatura' token=token %}">
+                {% csrf_token %}
+
+                <div class="signature-wrapper" id="signatureWrapper">
+                    <canvas id="signature-pad" width="600" height="250"></canvas>
                 </div>
-            {% else %}
-                <p class="lead">Olá, <strong>{{ nome_assinante }}</strong>.</p>
-                <p>Por favor, desenhe sua assinatura no campo abaixo para validar o certificado.</p>
-                
-                <form id="signature-form" method="POST" action="{% url 'treinamentos:pagina_assinatura' token=token %}">
-                    {% csrf_token %}
+                <div class="signature-hint text-center">
+                    <i class="bi bi-hand-index-thumb me-1"></i>
+                    Use o mouse ou o dedo para assinar dentro da área pontilhada
+                </div>
 
-                    <div class="text-center border rounded bg-light p-2">
-                        <canvas id="signature-pad" class="signature-pad" width=600 height=250 style="border: 1px dashed #ccc; max-width: 100%;"></canvas>
-                    </div>
+                <input type="hidden" name="assinatura_json" id="assinatura_json">
 
-                    <input type="hidden" name="assinatura_json" id="assinatura_json">
-                    
-                    <div class="mt-3 text-center">
-                        <button type="button" class="btn btn-outline-secondary" id="clear-button">
-                            <i class="fas fa-eraser"></i> Limpar
-                        </button>
-                        <button type="submit" class="btn btn-success" id="save-button">
-                            <i class="fas fa-save"></i> Salvar Assinatura
-                        </button>
-                    </div>
-                </form>
-            {% endif %}
+                <div class="d-flex justify-content-center gap-3 mt-4">
+                    <button type="button" class="btn btn-sign-action btn-sign-clear" id="clear-button">
+                        <i class="bi bi-eraser me-1"></i> Limpar
+                    </button>
+                    <button type="submit" class="btn btn-sign-action btn-sign-save" id="save-button">
+                        <i class="bi bi-check-circle-fill me-1"></i> Salvar Assinatura
+                    </button>
+                </div>
+            </form>
         </div>
+        {% endif %}
+
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/signature_pad.umd.min.js' %}"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Só executa se o canvas existir na página
-    var canvas = document.getElementById('signature-pad');
-    if (!canvas) {
-        return;
-    }
+    const canvas = document.getElementById('signature-pad');
+    if (!canvas) return;
 
-    var signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(255, 255, 255)' // Fundo branco
+    const wrapper = document.getElementById('signatureWrapper');
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)',
+        penColor: '#1a1a2e',
+        minWidth: 1,
+        maxWidth: 2.5,
     });
 
-    // Ajusta o canvas se a tela for redimensionada
+    // Resize
     function resizeCanvas() {
-        var ratio =  Math.max(window.devicePixelRatio || 1, 1);
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio, ratio);
-        signaturePad.clear(); // Limpa o canvas após redimensionar
-    }
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas(); // Chama na primeira vez
-
-    // Botão de Salvar
-    document.getElementById('save-button').addEventListener('click', function (event) {
-        event.preventDefault(); // Impede o envio do formulário
-        if (signaturePad.isEmpty()) {
-            alert("Por favor, forneça sua assinatura.");
-        } else {
-            // SALVA COMO SVG (VETOR) - É o melhor formato para PDF
-            var data = signaturePad.toDataURL('image/svg+xml');
-            document.getElementById('assinatura_json').value = data;
-            
-            // Agora sim, envia o formulário
-            document.getElementById('signature-form').submit();
-        }
-    });
-
-    // Botão de Limpar
-    document.getElementById('clear-button').addEventListener('click', function () {
+        canvas.getContext('2d').scale(ratio, ratio);
         signaturePad.clear();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Active state
+    canvas.addEventListener('pointerdown', () => wrapper.classList.add('active'));
+    canvas.addEventListener('pointerup', () => wrapper.classList.remove('active'));
+
+    // Save
+    document.getElementById('save-button').addEventListener('click', function(e) {
+        e.preventDefault();
+        if (signaturePad.isEmpty()) {
+            // Shake animation
+            wrapper.style.transition = 'transform 0.1s';
+            wrapper.style.transform = 'translateX(-5px)';
+            setTimeout(() => wrapper.style.transform = 'translateX(5px)', 100);
+            setTimeout(() => wrapper.style.transform = 'translateX(-3px)', 200);
+            setTimeout(() => wrapper.style.transform = 'translateX(0)', 300);
+
+            alert('Por favor, forneça sua assinatura.');
+            return;
+        }
+        document.getElementById('assinatura_json').value = signaturePad.toDataURL('image/svg+xml');
+        document.getElementById('signature-form').submit();
     });
+
+    // Clear
+    document.getElementById('clear-button').addEventListener('click', () => signaturePad.clear());
 });
 </script>
 {% endblock %}
+

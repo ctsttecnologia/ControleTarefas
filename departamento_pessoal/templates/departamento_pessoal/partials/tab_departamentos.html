@@ -1,84 +1,92 @@
-
-<!-- departamento_pessoal/partials/tab_departamentos.html -->
- {% extends "departamento_pessoal/_base_dp.html" %}
+{# departamento_pessoal/partials/tab_departamentos.html #}
+{# Este é um partial - NÃO deve ter {% extends %} #}
 {% load widget_tweaks %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="h5 mb-0">Departamentos Cadastrados</h4>
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoDepartamento">
+    <h5 class="mb-0">Departamentos Cadastrados</h5>
+    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoDepartamento">
         <i class="bi bi-plus-circle me-1"></i> Novo Departamento
     </button>
 </div>
 
 <div class="table-responsive">
-    <table class="table table-hover align-middle">
-        <thead>
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
             <tr>
-                <th>Nome</th><th>Sigla</th><th>Tipo</th><th>Status</th><th class="text-end">Ações</th>
+                <th>Nome</th>
+                <th>Centro de Custo</th>
+                <th>Status</th>
+                <th class="text-end">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for depto in departamentos %}
             <tr>
-                <td>{{ depto.nome }}</td>
-                <td>{{ depto.sigla }}</td>
-                <td>{{ depto.get_tipo_display }}</td>
+                <td><strong>{{ depto.nome }}</strong></td>
+                <td><code>{{ depto.centro_custo|default:"-" }}</code></td>
                 <td>
-                    <span class="badge {% if depto.ativo %}text-bg-success{% else %}text-bg-secondary{% endif %}">
-                        {{ depto.ativo|yesno:"Ativo,Inativo" }}
-                    </span>
+                    {% if depto.ativo %}
+                        <span class="badge text-bg-success">Ativo</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary">Inativo</span>
+                    {% endif %}
                 </td>
                 <td class="text-end">
-                    <a href="{% url 'departamento_pessoal:departamento_editar' depto.pk %}" class="btn btn-sm btn-outline-primary" title="Editar departamento">
-                        <i class="bi bi-pencil-fill"></i>
+                    <a href="{% url 'departamento_pessoal:departamento_update' depto.pk %}" 
+                       class="btn btn-sm btn-outline-primary" title="Editar departamento">
+                        <i class="bi bi-pencil"></i>
                     </a>
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" class="text-center text-muted py-3">Nenhum departamento cadastrado.</td></tr>
+            <tr>
+                <td colspan="4" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                    Nenhum departamento cadastrado.
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 
 <!-- Modal Novo Departamento -->
-<div class="modal fade" id="modalNovoDepartamento" tabindex="-1">
+<div class="modal fade" id="modalNovoDepartamento" tabindex="-1" aria-labelledby="modalNovoDepartamentoLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <form method="post" action="{% url 'departamento_pessoal:cadastro_auxiliar' %}">
+            <form method="post" action="{% url 'departamento_pessoal:departamento_form' %}">
                 {% csrf_token %}
-                <input type="hidden" name="form_type" value="departamento">
                 <div class="modal-header">
-                    <h5 class="modal-title">
-                        Novo Departamento
+                    <h5 class="modal-title" id="modalNovoDepartamentoLabel">
+                        <i class="bi bi-diagram-3 me-2"></i>Novo Departamento
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal">
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
                 <div class="modal-body">
-                    {% for field in departamento_form %}
-                        <div class="form-floating mb-3">
-                            {% render_field field class+="form-control form-select" placeholder=field.label %}
-                            <label for="{{ field.id_for_label }}">
-                                {{ field.label }}
-                            </label>
-                            {% if field.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ field.errors.as_text }}
+                    {% if departamento_form %}
+                        {% for field in departamento_form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <div class="form-check">
+                                    {% render_field field class+="form-check-input" %}
                                 </div>
+                            {% else %}
+                                {% render_field field class+="form-control" placeholder=field.label %}
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block">{{ field.errors|striptags }}</div>
                             {% endif %}
                         </div>
-                    {% endfor %}
+                        {% endfor %}
+                    {% endif %}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        Salvar
-                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+

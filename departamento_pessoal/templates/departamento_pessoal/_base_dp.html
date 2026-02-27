@@ -2,48 +2,543 @@
 {% load static %}
 
 {% block extra_css %}
+<style>
+    /* ============================================
+       CSS VARIABLES - ADAPTÁVEIS AO TEMA
+       ============================================ */
+    :root {
+        /* Cores do módulo */
+        --dp-primary: #1e40af;
+        --dp-primary-light: #3b82f6;
+        --dp-primary-dark: #1e3a8a;
+        
+        /* Backgrounds */
+        --dp-bg-page: #f0f4f8;
+        --dp-bg-card: #ffffff;
+        --dp-bg-card-header: #f8fafc;
+        --dp-bg-subnav: #ffffff;
+        --dp-bg-table-header: #f8fafc;
+        --dp-bg-table-hover: #f1f5f9;
+        --dp-bg-empty-icon: #f1f5f9;
+        
+        /* Textos */
+        --dp-text-primary: #1e293b;
+        --dp-text-secondary: #64748b;
+        --dp-text-muted: #94a3b8;
+        
+        /* Bordas */
+        --dp-border-color: #e2e8f0;
+        --dp-border-light: #f1f5f9;
+        
+        /* KPI Soft Colors */
+        --dp-primary-soft-bg: #dbeafe;
+        --dp-primary-soft-text: #2563eb;
+        --dp-success-soft-bg: #d1fae5;
+        --dp-success-soft-text: #059669;
+        --dp-warning-soft-bg: #fef3c7;
+        --dp-warning-soft-text: #d97706;
+        --dp-danger-soft-bg: #fee2e2;
+        --dp-danger-soft-text: #dc2626;
+        --dp-info-soft-bg: #cffafe;
+        --dp-info-soft-text: #0891b2;
+        
+        /* Shadows */
+        --dp-shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+        --dp-shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    }
 
+    /* === DARK MODE === */
+    [data-bs-theme="dark"] {
+        --dp-primary: #3b82f6;
+        --dp-primary-light: #60a5fa;
+        --dp-primary-dark: #2563eb;
+        
+        --dp-bg-page: #0f172a;
+        --dp-bg-card: #1e293b;
+        --dp-bg-card-header: #334155;
+        --dp-bg-subnav: #1e293b;
+        --dp-bg-table-header: #334155;
+        --dp-bg-table-hover: #334155;
+        --dp-bg-empty-icon: #334155;
+        
+        --dp-text-primary: #f1f5f9;
+        --dp-text-secondary: #94a3b8;
+        --dp-text-muted: #64748b;
+        
+        --dp-border-color: #334155;
+        --dp-border-light: #475569;
+        
+        /* KPI Soft Colors - Dark */
+        --dp-primary-soft-bg: rgba(59, 130, 246, 0.15);
+        --dp-primary-soft-text: #60a5fa;
+        --dp-success-soft-bg: rgba(16, 185, 129, 0.15);
+        --dp-success-soft-text: #34d399;
+        --dp-warning-soft-bg: rgba(245, 158, 11, 0.15);
+        --dp-warning-soft-text: #fbbf24;
+        --dp-danger-soft-bg: rgba(239, 68, 68, 0.15);
+        --dp-danger-soft-text: #f87171;
+        --dp-info-soft-bg: rgba(6, 182, 212, 0.15);
+        --dp-info-soft-text: #22d3ee;
+        
+        --dp-shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+        --dp-shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    /* ============================================
+       LAYOUT GERAL
+       ============================================ */
+    .module-wrapper {
+        background-color: var(--dp-bg-page);
+        min-height: calc(100vh - 56px);
+    }
+
+    /* ============================================
+       SUBNAV / TABS
+       ============================================ */
+    .module-subnav {
+        background-color: var(--dp-bg-subnav);
+        border-radius: 50px;
+        padding: 0.5rem;
+        display: inline-flex;
+        gap: 0.25rem;
+        box-shadow: var(--dp-shadow-sm);
+    }
+    .module-subnav .nav-link {
+        border-radius: 50px;
+        padding: 0.6rem 1.25rem;
+        color: var(--dp-text-secondary);
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border: none;
+    }
+    .module-subnav .nav-link:hover {
+        color: var(--dp-primary-light);
+        background-color: var(--dp-primary-soft-bg);
+    }
+    .module-subnav .nav-link.active {
+        background: linear-gradient(135deg, var(--dp-primary) 0%, var(--dp-primary-light) 100%);
+        color: #fff;
+    }
+
+    /* ============================================
+       HEADER DO MÓDULO (Gradiente)
+       ============================================ */
+    .module-header {
+        background: linear-gradient(135deg, var(--dp-primary-dark) 0%, var(--dp-primary) 50%, var(--dp-primary-light) 100%);
+        border-radius: 1rem;
+        padding: 1.75rem 2rem;
+        color: #fff;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--dp-shadow-md);
+    }
+    .module-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+    .module-header p {
+        opacity: 0.85;
+        margin-bottom: 0;
+        font-size: 0.9rem;
+    }
+    .module-header .btn-header {
+        background-color: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.25);
+        color: #fff;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .module-header .btn-header:hover {
+        background-color: rgba(255,255,255,0.25);
+        color: #fff;
+    }
+    .module-header .btn-header-primary {
+        background-color: #fff;
+        color: var(--dp-primary);
+        border: none;
+    }
+    .module-header .btn-header-primary:hover {
+        background-color: #f1f5f9;
+    }
+
+    /* ============================================
+       PROFILE HEADER (Detalhe do Funcionário)
+       ============================================ */
+    .profile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding: 1.5rem 0;
+    }
+    .profile-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .profile-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid var(--dp-border-color);
+    }
+    .profile-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--dp-text-primary);
+        margin-bottom: 0.15rem;
+    }
+    .profile-role {
+        color: var(--dp-text-secondary);
+        font-size: 0.9rem;
+    }
+    .profile-actions .btn {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    .profile-actions .btn-outline-secondary {
+        border-color: var(--dp-border-color);
+        color: var(--dp-text-secondary);
+    }
+    .profile-actions .btn-outline-secondary:hover {
+        background-color: var(--dp-bg-table-hover);
+        border-color: var(--dp-border-color);
+        color: var(--dp-text-primary);
+    }
+    .profile-actions .btn-outline-primary {
+        border-color: var(--dp-primary-light);
+        color: var(--dp-primary-light);
+    }
+    .profile-actions .btn-outline-primary:hover {
+        background-color: var(--dp-primary-light);
+        color: #fff;
+    }
+    .profile-actions .btn-outline-danger {
+        border-color: var(--dp-danger-soft-text);
+        color: var(--dp-danger-soft-text);
+    }
+    .profile-actions .btn-outline-danger:hover {
+        background-color: var(--dp-danger-soft-text);
+        color: #fff;
+    }
+
+    /* ============================================
+       KPI CARDS
+       ============================================ */
+    .kpi-card {
+        background: var(--dp-bg-card);
+        border-radius: 1rem;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: var(--dp-shadow-sm);
+        border-left: 4px solid transparent;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--dp-shadow-md);
+    }
+    .kpi-card.kpi-primary { border-left-color: var(--dp-primary-soft-text); }
+    .kpi-card.kpi-success { border-left-color: var(--dp-success-soft-text); }
+    .kpi-card.kpi-warning { border-left-color: var(--dp-warning-soft-text); }
+    .kpi-card.kpi-info { border-left-color: var(--dp-info-soft-text); }
+    .kpi-card.kpi-danger { border-left-color: var(--dp-danger-soft-text); }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.35rem;
+    }
+    .kpi-icon.bg-primary-soft { background-color: var(--dp-primary-soft-bg); color: var(--dp-primary-soft-text); }
+    .kpi-icon.bg-success-soft { background-color: var(--dp-success-soft-bg); color: var(--dp-success-soft-text); }
+    .kpi-icon.bg-warning-soft { background-color: var(--dp-warning-soft-bg); color: var(--dp-warning-soft-text); }
+    .kpi-icon.bg-info-soft { background-color: var(--dp-info-soft-bg); color: var(--dp-info-soft-text); }
+    .kpi-icon.bg-danger-soft { background-color: var(--dp-danger-soft-bg); color: var(--dp-danger-soft-text); }
+
+    .kpi-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: var(--dp-text-primary);
+    }
+    .kpi-label {
+        font-size: 0.75rem;
+        color: var(--dp-text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+
+    /* ============================================
+       CONTENT CARD
+       ============================================ */
+    .content-card {
+        background: var(--dp-bg-card);
+        border-radius: 1rem;
+        box-shadow: var(--dp-shadow-sm);
+        overflow: hidden;
+    }
+    .content-card-header {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--dp-border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--dp-bg-card-header);
+    }
+    .content-card-header h5 {
+        margin: 0;
+        font-weight: 600;
+        color: var(--dp-text-primary);
+        font-size: 1rem;
+    }
+    .content-card-body {
+        padding: 1.5rem;
+    }
+
+    /* ============================================
+       TABS INTERNAS (Dados Pessoais, Admissão, etc)
+       ============================================ */
+    .detail-tabs {
+        border-bottom: 1px solid var(--dp-border-color);
+        background-color: var(--dp-bg-card);
+    }
+    .detail-tabs .nav-link {
+        border: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        padding: 1rem 1.25rem;
+        color: var(--dp-text-secondary);
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .detail-tabs .nav-link:hover {
+        color: var(--dp-primary-light);
+        border-bottom-color: var(--dp-primary-soft-bg);
+    }
+    .detail-tabs .nav-link.active {
+        color: var(--dp-primary-light);
+        border-bottom-color: var(--dp-primary-light);
+        background-color: transparent;
+    }
+
+    /* ============================================
+       DATA LIST (dl/dt/dd)
+       ============================================ */
+    .data-list dt {
+        color: var(--dp-text-secondary);
+        font-weight: 500;
+        font-size: 0.875rem;
+    }
+    .data-list dd {
+        color: var(--dp-text-primary);
+        font-weight: 400;
+    }
+    .data-list dd code {
+        background-color: var(--dp-primary-soft-bg);
+        color: var(--dp-primary-soft-text);
+        padding: 0.15rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.85rem;
+    }
+    .data-list dd .text-success {
+        color: var(--dp-success-soft-text) !important;
+    }
+
+    /* ============================================
+       EMPTY STATE
+       ============================================ */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        background-color: var(--dp-bg-empty-icon);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .empty-state-icon i {
+        font-size: 2rem;
+        color: var(--dp-text-muted);
+    }
+    .empty-state h5 {
+        color: var(--dp-text-primary);
+        font-weight: 600;
+    }
+    .empty-state p {
+        color: var(--dp-text-secondary);
+    }
+    .empty-state .btn {
+        border-radius: 50px;
+        padding: 0.65rem 1.5rem;
+    }
+
+    /* ============================================
+       TABLE MODERNA
+       ============================================ */
+    .table-modern {
+        margin-bottom: 0;
+    }
+    .table-modern thead th {
+        background-color: var(--dp-bg-table-header);
+        border-bottom: 1px solid var(--dp-border-color);
+        color: var(--dp-text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+        padding: 0.85rem 1rem;
+    }
+    .table-modern tbody td {
+        padding: 0.85rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--dp-border-light);
+        color: var(--dp-text-primary);
+    }
+    .table-modern tbody tr:hover {
+        background-color: var(--dp-bg-table-hover);
+    }
+    .table-modern tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .table-modern code {
+        background-color: var(--dp-primary-soft-bg);
+        color: var(--dp-primary-soft-text);
+        padding: 0.15rem 0.4rem;
+        border-radius: 0.25rem;
+    }
+    .table-modern a {
+        color: var(--dp-primary-light);
+        text-decoration: none;
+    }
+    .table-modern a:hover {
+        text-decoration: underline;
+    }
+
+    /* ============================================
+       SEARCH BOX
+       ============================================ */
+    .search-box {
+        position: relative;
+    }
+    .search-box input {
+        border: 1px solid var(--dp-border-color);
+        border-radius: 0.5rem;
+        padding: 0.7rem 1rem;
+        padding-right: 3rem;
+        width: 100%;
+        background-color: var(--dp-bg-card);
+        color: var(--dp-text-primary);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box input::placeholder {
+        color: var(--dp-text-muted);
+    }
+    .search-box input:focus {
+        border-color: var(--dp-primary-light);
+        box-shadow: 0 0 0 3px var(--dp-primary-soft-bg);
+        outline: none;
+    }
+    .search-box button {
+        position: absolute;
+        right: 0.4rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background-color: var(--dp-primary-light);
+        border: none;
+        border-radius: 0.375rem;
+        color: #fff;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .search-box button:hover {
+        background-color: var(--dp-primary);
+    }
+
+    /* ============================================
+       BADGES / STATUS
+       ============================================ */
+    .badge-status {
+        padding: 0.3rem 0.7rem;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    .bg-primary-soft { background-color: var(--dp-primary-soft-bg) !important; }
+    .text-primary-soft { color: var(--dp-primary-soft-text) !important; }
+    .bg-success-soft { background-color: var(--dp-success-soft-bg) !important; }
+    .text-success-soft { color: var(--dp-success-soft-text) !important; }
+    .bg-warning-soft { background-color: var(--dp-warning-soft-bg) !important; }
+    .text-warning-soft { color: var(--dp-warning-soft-text) !important; }
+    .bg-danger-soft { background-color: var(--dp-danger-soft-bg) !important; }
+    .text-danger-soft { color: var(--dp-danger-soft-text) !important; }
+    .bg-info-soft { background-color: var(--dp-info-soft-bg) !important; }
+    .text-info-soft { color: var(--dp-info-soft-text) !important; }
+
+    /* Compat com classes do Bootstrap */
+    .text-success { color: var(--dp-success-soft-text) !important; }
+    .text-danger { color: var(--dp-danger-soft-text) !important; }
+    .text-warning { color: var(--dp-warning-soft-text) !important; }
+    .text-info { color: var(--dp-info-soft-text) !important; }
+    .text-muted { color: var(--dp-text-muted) !important; }
+</style>
 {% endblock %}
 
 {% block content %}
-    
-    <div class="subnav-atas mb-4 p-3 bg-body-tertiary rounded-3 border sticky-top" style="top: 60px; z-index: 1020;">
-        <div class="container-fluid">
-            <ul class="nav nav">
-
-                <li class="nav-item">
-                    <a class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'departamento_pessoal:painel_dp' %}">
-                       <i class="bi bi-speedometer2 me-1"></i> Painel DP
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'departamento' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'departamento_pessoal:lista_departamento' %}">
-                       <i class="bi bi-diagram-3 me-1"></i> Departamentos
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'funcionario' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'departamento_pessoal:lista_funcionarios' %}">
-                       <i class="bi bi-people me-1"></i> Funcionários
-                    </a>
-                </li>                
-                <li class="nav-item">
-                    <a class="nav-link {% if 'cargo' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'departamento_pessoal:lista_cargo' %}">
-                        <i class="bi bi-person-badge kpi-card-icon"></i> Cargos
-                    </a>
-                </li>
-                    <li class="nav-item">
-                    <a class="nav-link {% if 'documento' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'departamento_pessoal:lista_documentos' %}">
-                        <i class="bi bi-briefcase me-1"></i> Documentos
-                    </a>
-                </li>
-                
-            </ul>
+<div class="module-wrapper">
+    <div class="container-fluid py-4">
+        <!-- Subnav / Tabs -->
+        <div class="mb-4">
+            <nav class="module-subnav">
+                <a class="nav-link {% if 'painel' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'departamento_pessoal:painel_dp' %}">
+                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                </a>
+                <a class="nav-link {% if 'funcionario' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'departamento_pessoal:lista_funcionarios' %}">
+                    <i class="bi bi-people me-1"></i> Funcionários
+                </a>
+                <a class="nav-link {% if 'departamento' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'departamento_pessoal:lista_departamento' %}">
+                    <i class="bi bi-diagram-3 me-1"></i> Departamentos
+                </a>
+                <a class="nav-link {% if 'cargo' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'departamento_pessoal:lista_cargo' %}">
+                    <i class="bi bi-briefcase me-1"></i> Cargos
+                </a>
+                <a class="nav-link {% if 'documento' in request.resolver_match.url_name %}active{% endif %}" 
+                   href="{% url 'departamento_pessoal:lista_documentos' %}">
+                    <i class="bi bi-file-earmark-text me-1"></i> Documentos
+                </a>
+            </nav>
         </div>
-    </div>
 
-    <main class="container-fluid py-4">
+        <!-- Toast Messages -->
+        {% include 'departamento_pessoal/partials/_toast_messages.html' %}
+
+        <!-- Conteúdo do Módulo -->
         {% block dp_content %}{% endblock %}
-    </main>
+    </div>
+</div>
 {% endblock %}
-
 

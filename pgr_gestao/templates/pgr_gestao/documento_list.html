@@ -1,0 +1,213 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Documentos PGR{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Documentos PGR</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-file-alt"></i> Documentos PGR</h1>
+            <p class="mb-0">Gerenciamento de Programas de Gerenciamento de Riscos</p>
+        </div>
+        {% if perms.pgr_gestao.add_pgrdocumento %}
+        <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> Novo Documento
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">Todos</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Empresa</label>
+                <select name="empresa" class="form-select">
+                    <option value="">Todas</option>
+                    {% for empresa in empresas %}
+                    <option value="{{ empresa.id }}" {% if request.GET.empresa == empresa.id|stringformat:"s" %}selected{% endif %}>
+                        {{ empresa.razao_social }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="search" class="form-control" placeholder="Código ou empresa..." 
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Estatísticas Rápidas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ documentos|length }}</h3>
+                <small class="text-muted">Total de Documentos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Documentos -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list"></i> Lista de Documentos PGR
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Empresa</th>
+                        <th>Local</th>
+                        <th>Status</th>
+                        <th>Data Elaboração</th>
+                        <th>Vencimento</th>
+                        <th>Versão</th>
+                        <th>Conclusão</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documentos %}
+                    <tr onclick="window.location='{% url 'pgr_gestao:documento_detail' doc.pk %}'" style="cursor: pointer;">
+                        <td><strong>{{ doc.codigo_documento }}</strong></td>
+                        <td>{{ doc.empresa.razao_social }}</td>
+                        <td>{{ doc.local_prestacao.razao_social|default:"N/A" }}</td>
+                        <td>
+                            {% if doc.status == 'vigente' %}
+                            <span class="badge badge-status-vigente">Vigente</span>
+                            {% elif doc.status == 'vencido' %}
+                            <span class="badge badge-status-vencido">Vencido</span>
+                            {% elif doc.status == 'em_revisao' %}
+                            <span class="badge badge-status-em-revisao">Em Revisão</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ doc.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ doc.data_elaboracao|date:"d/m/Y" }}</td>
+                        <td>
+                            {{ doc.data_vencimento|date:"d/m/Y" }}
+                            {% if doc.dias_para_vencimento < 0 %}
+                            <br><small class="text-danger">Vencido há {{ doc.dias_vencido }} dias</small>
+                            
+                            {% elif doc.dias_para_vencimento <= 30 %}
+                            <br><small class="text-warning">Vence em {{ doc.dias_para_vencimento }} dias</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ doc.versao_atual }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar 
+                                    {% if doc.percentual_conclusao >= 90 %}bg-success
+                                    {% elif doc.percentual_conclusao >= 70 %}bg-info
+                                    {% elif doc.percentual_conclusao >= 50 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ doc.percentual_conclusao }}%">
+                                    {{ doc.percentual_conclusao|floatformat:0 }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center" onclick="event.stopPropagation();">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'pgr_gestao:documento_detail' doc.pk %}" 
+                                   class="btn btn-info" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if perms.pgr_gestao.change_pgrdocumento %}
+                                <a href="{% url 'pgr_gestao:documento_update' doc.pk %}" 
+                                   class="btn btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'pgr_gestao:relatorio_completo_pdf' doc.pk %}" 
+                                   class="btn btn-danger" title="Gerar PDF">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Nenhum documento PGR encontrado.</p>
+                            {% if perms.pgr_gestao.add_pgrdocumento %}
+                            <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Criar Primeiro Documento
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if documentos.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if documentos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ documentos.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.empresa %}&empresa={{ request.GET.empresa }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in documentos.paginator.page_range %}
+                {% if documentos.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > documentos.number|add:'-3' and num < documentos.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.empresa %}&empresa={{ request.GET.empresa }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if documentos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ documentos.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.empresa %}&empresa={{ request.GET.empresa }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

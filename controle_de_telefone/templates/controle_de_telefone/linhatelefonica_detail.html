@@ -1,117 +1,173 @@
+
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Detalhes da Linha {{ object.numero }}{% endblock %}
+{% block title %}Linha {{ object.numero }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="card">
-        <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">Detalhes da Linha: {{ object.numero }}</h4>
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Cabeçalho -->
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
+        <div class="mb-3 mb-md-0">
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-sim text-success me-2"></i>Linha {{ object.numero }}
+            </h2>
+            <div class="d-flex align-items-center gap-2">
+                {% if object.status == 'disponivel' %}
+                <span class="badge bg-success bg-opacity-10 text-success">{{ object.get_status_display }}</span>
+                {% elif object.status == 'ativa' %}
+                <span class="badge bg-info bg-opacity-10 text-info">{{ object.get_status_display }}</span>
+                {% elif object.status == 'bloqueada' %}
+                <span class="badge bg-warning bg-opacity-10 text-warning">{{ object.get_status_display }}</span>
+                {% else %}
+                <span class="badge bg-danger bg-opacity-10 text-danger">{{ object.get_status_display }}</span>
+                {% endif %}
+                <span class="text-muted mx-1">·</span>
+                <small class="text-muted">{{ object.plano.operadora.nome }}</small>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Informações da Linha</h5>
-                    <dl class="row">
-                        <dt class="col-sm-4">Número:</dt>
-                        <dd class="col-sm-8">{{ object.numero }}</dd>
+        <div class="d-flex gap-2">
+            <a href="{% url 'controle_de_telefone:linhatelefonica_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            <a href="{% url 'controle_de_telefone:linhatelefonica_update' object.pk %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+        </div>
+    </header>
 
-                        <dt class="col-sm-4">Status:</dt>
-                        <dd class="col-sm-8">{{ object.get_status_display }}</dd>
-
-                        <dt class="col-sm-4">Data de Ativação:</dt>
-                        <dd class="col-sm-8">{{ object.data_ativacao|date:"d/m/Y" }}</dd>
-
-                        <dt class="col-sm-4">Filial:</dt>
-                        <dd class="col-sm-8">{{ object.filial }}</dd>
-                    </dl>
+    <div class="row g-4">
+        <!-- Info da Linha -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-telephone text-primary me-2"></i>Informações da Linha
+                    </h6>
                 </div>
-                <div class="col-md-6">
-                    <h5>Informações do Plano</h5>
-                    <dl class="row">
-                        <dt class="col-sm-4">Operadora:</dt>
-                        <dd class="col-sm-8">{{ object.plano.operadora.nome }}</dd>
-                        
-                        <dt class="col-sm-4">Plano:</dt>
-                        <dd class="col-sm-8">{{ object.plano.nome }}</dd>
-
-                        <dt class="col-sm-4">Valor Mensal:</dt>
-                        <dd class="col-sm-8">R$ {{ object.plano.valor_mensal|floatformat:2 }}</dd>
-
-                        <dt class="col-sm-4">Franquia:</dt>
-                        <dd class="col-sm-8">{{ object.plano.franquia_dados_gb }} GB</dd>
-                    </dl>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Número</label>
+                            <div class="fw-semibold text-dark">{{ object.numero }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Status</label>
+                            <div class="text-dark">{{ object.get_status_display }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Data de Ativação</label>
+                            <div class="text-dark">{{ object.data_ativacao|date:"d/m/Y"|default:"—" }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Filial</label>
+                            <div class="text-dark">{{ object.filial }}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <hr>
-            <h5>Histórico de Vínculos</h5>
-            {% with object.vinculos.all as vinculos %}
-                {% if vinculos %}
-                <ul class="list-group">
-                    {% for vinculo in vinculos %}
-                    <li class="list-group-item">
-                        Vinculado a <strong>{{ vinculo.funcionario }}</strong> de {{ vinculo.data_entrega|date:"d/m/Y" }}
-                        {% if vinculo.data_devolucao %}
-                            até {{ vinculo.data_devolucao|date:"d/m/Y" }} (Finalizado)
-                        {% else %}
-                            (Ativo)
-                        {% endif %}
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="text-muted">Esta linha nunca foi vinculada a um colaborador.</p>
-                {% endif %}
-            {% endwith %}
-
         </div>
-        <div class="card-footer text-end">
-            <a href="{% url 'controle_de_telefone:linhatelefonica_list' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Voltar para a Lista
-            </a>
-            <a href="{% url 'controle_de_telefone:linhatelefonica_update' object.pk %}" class="btn btn-warning">
-                <i class="fas fa-edit me-1"></i> Editar
-            </a>
+
+        <!-- Info do Plano -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-credit-card text-warning me-2"></i>Informações do Plano
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Operadora</label>
+                            <div class="fw-semibold text-dark">{{ object.plano.operadora.nome }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Plano</label>
+                            <div class="text-dark">{{ object.plano.nome }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Valor Mensal</label>
+                            <div class="fw-semibold text-dark">R$ {{ object.plano.valor_mensal|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Franquia</label>
+                            <div class="text-dark">{{ object.plano.franquia_dados_gb }} GB</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div>
-        {% comment %} 
-        Verificamos primeiro se existe algum histórico.
-        Se não houver, exibimos uma mensagem simples em vez de um acordeão vazio.
-        {% endcomment %}
-        {% if object.historico %}
-        <div class="accordion mt-4" id="accordionHistorico">
-            <div class="accordion-item">
-            <h2 class="accordion-header" id="headingHistorico">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHistorico" aria-expanded="false" aria-controls="collapseHistorico">
-                <i class="fas fa-history me-2"></i>
-                <strong>Histórico de Alterações</strong>
-                <span class="badge bg-secondary ms-2">{{ object.historico|length }}</span>
-                </button>
-            </h2>
-            <div id="collapseHistorico" class="accordion-collapse collapse" aria-labelledby="headingHistorico" data-bs-parent="#accordionHistorico">
-                <div class="accordion-body">
-                <ul class="list-group list-group-flush">
-                    {% for log in object.historico %}
-                    <li class="list-group-item">
-                        <small>{{ log }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
+    <!-- Histórico de Vínculos -->
+    <div class="card border-0 shadow-sm rounded-3 mt-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">
+                <i class="bi bi-link-45deg text-info me-2"></i>Histórico de Vínculos
+            </h6>
+            {% with object.vinculos.all as vinculos %}
+            {% if vinculos %}
+            <span class="badge bg-light text-muted rounded-pill">{{ vinculos|length }}</span>
+            {% endif %}
+        </div>
+        <div class="p-0">
+            {% if vinculos %}
+            {% for vinculo in vinculos %}
+            <div class="d-flex justify-content-between align-items-center px-4 py-3 {% if not forloop.last %}border-bottom{% endif %}"
+                 style="border-color: #f5f5f8 !important;">
+                <div>
+                    <div class="fw-semibold text-dark" style="font-size: 0.88rem;">
+                        <i class="bi bi-person me-1 text-muted"></i>{{ vinculo.funcionario }}
+                    </div>
+                    <small class="text-muted">
+                        {{ vinculo.data_entrega|date:"d/m/Y" }}
+                        {% if vinculo.data_devolucao %}
+                        → {{ vinculo.data_devolucao|date:"d/m/Y" }}
+                        {% else %}
+                        → presente
+                        {% endif %}
+                    </small>
                 </div>
+                {% if vinculo.data_devolucao %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary">Finalizado</span>
+                {% else %}
+                <span class="badge bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-check-circle me-1"></i>Ativo
+                </span>
+                {% endif %}
             </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-link text-muted" style="font-size: 2rem; opacity: 0.3;"></i>
+                <p class="text-muted mt-2 mb-0" style="font-size: 0.85rem;">Esta linha nunca foi vinculada a um colaborador</p>
             </div>
+            {% endif %}
+            {% endwith %}
         </div>
-        {% else %}
-        <div class="mt-4">
-            <h5>Histórico de Alterações</h5>
-            <p class="text-muted">Nenhuma alteração registrada.</p>
-        </div>
-        {% endif %}        
-        </div>
-    </div>    
-</div>
+    </div>
 
+    <!-- Histórico de Alterações -->
+    {% if object.historico %}
+    <div class="card border-0 shadow-sm rounded-3 mt-4">
+        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">
+                <i class="bi bi-clock-history text-muted me-2"></i>Histórico de Alterações
+            </h6>
+            <span class="badge bg-light text-muted rounded-pill">{{ object.historico|length }}</span>
+        </div>
+        <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+            {% for log in object.historico %}
+            <div class="px-4 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="font-size: 0.82rem; border-color: #f5f5f8 !important;">
+                <i class="bi bi-dot text-muted"></i>
+                <span class="text-muted">{{ log }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
+
+

@@ -1,33 +1,64 @@
+
+{# templates/usuario/filial_list.html #}
 {% extends 'usuario/base_usuario.html' %}
 
-{% block title %}Lista de Filiais{% endblock %}
+{% block title %}Filiais{% endblock %}
 
 {% block usuario_content %}
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="h4 mb-0">Filiais Cadastradas</h2>
-        <a href="{% url 'usuario:filial_create' %}" class="btn btn-primary">Nova Filial</a>
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-building me-2 text-primary"></i>Filiais Cadastradas
+        </h5>
+        <a href="{% url 'usuario:filial_create' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>Nova Filial
+        </a>
     </div>
-    <div class="card-body">
-        <table class="table table-hover">
-            <thead><tr><th>Nome da Filial</th><th>Ações</th></tr></thead>
-            <tbody>
-                {% for filial in filiais %}
-                <tr>
-                    <td>{{ filial.nome }}</td>
-                    <td>
-                        <a href="{% url 'usuario:filial_update' filial.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                        <a href="{% url 'usuario:filial_delete' filial.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome da Filial</th>
+                        <th class="text-center">Usuários</th>
+                        <th class="text-center" style="width: 150px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for filial in filiais %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-building text-primary me-2"></i>
+                            <span class="fw-semibold">{{ filial.nome }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-info text-dark">{{ filial.usuarios_permitidos.count }}</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'usuario:filial_update' filial.pk %}"
+                                   class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'usuario:filial_delete' filial.pk %}"
+                                   class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center py-5 text-muted">
+                            <i class="bi bi-building fs-1 d-block mb-2"></i>
+                            Nenhuma filial cadastrada.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-    <script src="{% url 'admin:jsi18n' %}"></script>
-    {{ form.media.js }}
-{% endblock %}

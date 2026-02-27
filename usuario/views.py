@@ -1,52 +1,64 @@
 # usuario/views.py
 
-import json
+import datetime
 from django.db.models import Q
-from django.urls import NoReverseMatch, reverse, reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import logout
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import (
-    LoginView, LogoutView, 
+    LoginView, LogoutView,
     PasswordChangeView,
-    PasswordResetView, PasswordResetDoneView, 
+    PasswordResetView, PasswordResetDoneView,
     PasswordResetConfirmView, PasswordResetCompleteView
 )
+from django.contrib.auth.forms import SetPasswordForm
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, FormView
 from django.shortcuts import get_object_or_404, redirect, render
-
-from chat.models import ChatRoom
+from django.db.models import ProtectedError
 
 from usuario.models import Usuario, Group, Filial, GroupCardPermissions
-from usuario.forms import CustomUserCreationForm, CustomUserChangeForm, GrupoForm, CustomPasswordChangeForm, FilialForm
-from django.contrib.auth.forms import SetPasswordForm
-from django.db.models import ProtectedError
-from django.contrib.auth import logout
+from usuario.forms import (
+    CustomUserCreationForm, CustomUserChangeForm,
+    GrupoForm, CustomPasswordChangeForm, FilialForm
+)
 
 
+# =============================================================================
+# MIXINS DE PERMISSÃO
+# =============================================================================
 
 class StaffRequiredMixin(UserPassesTestMixin):
+    """Restringe acesso a usuários staff."""
     def test_func(self):
         return self.request.user.is_staff
 
+
 class SuperuserRequiredMixin(UserPassesTestMixin):
+    """Restringe acesso a superusuários."""
     def test_func(self):
         return self.request.user.is_superuser
-    
+
+
+class AdminOrManagerMixin(UserPassesTestMixin):
+    """Restringe acesso a superusuários, gerentes ou administradores."""
+    def test_func(self):
+        user = self.request.user
+        return user.is_superuser or user.is_gerente or user.is_administrador
+
+
+# =============================================================================
+# AUTENTICAÇÃO (Login / Logout / Seleção de Filial)
+# =============================================================================
+
 class CustomLoginView(LoginView):
-    """
-    View customizada de login que gerencia a filial ativa do usuário na sessão.
-    Otimizada para não realizar escrita no DB (user.save) durante o fluxo de login.
-    """
+    """Login com gerenciamento automático de filial ativa na sessão."""
     template_name = 'usuario/login.html'
     redirect_authenticated_user = True
 
     def form_valid(self, form):
-        # 1. Executa o processo de login padrão PRIMEIRO
         response = super().form_valid(form)
-        
-        # 2. Configura a filial ativa do usuário (apenas leitura e sessão)
         filial_ativa = self._determinar_filial_ativa()
 
         if filial_ativa:
@@ -57,37 +69,20 @@ class CustomLoginView(LoginView):
         return response
 
     def _determinar_filial_ativa(self):
-        """
-        Determina a filial ativa do usuário.
-        Prioriza o campo 'filial_ativa' no perfil. Se não houver, usa a primeira permitida.
-        Retorna a filial ativa (apenas leitura) ou None.
-        """
         user = self.request.user
-        
-        # 1. Prioridade: Usa a filial ativa já definida no perfil
         if user.filial_ativa:
             return user.filial_ativa
-        
-        # 2. Alternativa: Pega a primeira filial da lista de permitidas
-        # Otimizado para carregar apenas os campos necessários.
         if user.filiais_permitidas.exists():
-            # A filial é determinada, mas não é salva no perfil neste momento para evitar DB write.
             return user.filiais_permitidas.only('id', 'nome').first()
-        
         return None
 
     def _registrar_filial_na_sessao(self, filial):
-        """Armazena a filial na sessão e exibe mensagem de sucesso."""
         self.request.session['active_filial_id'] = filial.id
-        messages.info(
-            self.request, 
-            f"Você está conectado na filial: {filial.nome}"
-        )
+        messages.info(self.request, f"Você está conectado na filial: {filial.nome}")
 
     def _handle_usuario_sem_filial(self):
-        """Trata o caso de usuário sem filial associada."""
         messages.error(
-            self.request, 
+            self.request,
             "Você não está associado a nenhuma filial. Contate o administrador."
         )
         logout(self.request)
@@ -95,55 +90,52 @@ class CustomLoginView(LoginView):
 
 
 class CustomLogoutView(LogoutView):
-    """View customizada de logout, garante que a filial da sessão seja limpa."""
+    """Logout com limpeza da sessão de filial."""
     next_page = reverse_lazy('usuario:login')
-    
+
     def dispatch(self, request, *args, **kwargs):
-        # Limpa a filial da sessão ao fazer logout
-        if 'active_filial_id' in request.session:
-            del request.session['active_filial_id']
-        
+        request.session.pop('active_filial_id', None)
         return super().dispatch(request, *args, **kwargs)
-    
+
 
 class SelecionarFilialView(LoginRequiredMixin, View):
+    """Permite ao usuário trocar a filial ativa."""
+
     def post(self, request, *args, **kwargs):
         filial_id_str = request.POST.get('filial_id')
 
-        # Caso especial para Superusuário limpando o filtro ("Todas as Filiais")
+        # Superusuário limpando filtro ("Todas as Filiais")
         if filial_id_str == '0' and request.user.is_superuser:
-            if 'active_filial_id' in request.session:
-                del request.session['active_filial_id'] # Remove a chave da sessão
-            
-            # Limpa também a filial ativa do perfil para consistência
+            request.session.pop('active_filial_id', None)
             request.user.filial_ativa = None
-            request.user.save()
+            request.user.save(update_fields=['filial_ativa'])
             messages.success(request, "Exibindo dados de todas as filiais.")
 
         elif filial_id_str:
             try:
                 filial_id = int(filial_id_str)
                 filial_selecionada = request.user.filiais_permitidas.get(pk=filial_id)
-                
+
                 request.session['active_filial_id'] = filial_selecionada.id
                 request.user.filial_ativa = filial_selecionada
-                request.user.save()
+                request.user.save(update_fields=['filial_ativa'])
                 messages.success(request, f"Filial alterada para: {filial_selecionada.nome}")
 
             except (Filial.DoesNotExist, ValueError):
-                messages.error(request, "Seleção inválida ou você não tem permissão para acessar esta filial.")
+                messages.error(request, "Seleção inválida ou sem permissão para esta filial.")
 
-        # Redireciona para a página anterior ou para o dashboard
         return redirect(request.POST.get('next', reverse('usuario:profile')))
 
 
 # =============================================================================
-# == VIEWS DE PERFIL E SENHA 
+# PERFIL E SENHA DO USUÁRIO LOGADO
 # =============================================================================
 
 class ProfileView(LoginRequiredMixin, DetailView):
+    """Página inicial do usuário com cards de acesso rápido."""
     model = Usuario
     template_name = 'usuario/profile.html'
+
     def get_object(self, queryset=None):
         return self.request.user
 
@@ -151,13 +143,39 @@ class ProfileView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # 1. Defina a estrutura de todos os cards possíveis
-        all_cards = [
+        all_cards = self._get_all_cards()
+        allowed_card_ids = self._get_allowed_card_ids(user)
 
+        context['allowed_cards'] = [
+            card for card in all_cards
+            if user.is_superuser
+            or user.has_perm(card['permission'])
+            or card['id'] in allowed_card_ids
+        ]
+        return context
+
+    def _get_allowed_card_ids(self, user):
+        """Retorna IDs de cards permitidos pelos grupos do usuário."""
+        if user.is_superuser:
+            return [c['id'] for c in self._get_all_cards()]
+
+        ids = []
+        perms = GroupCardPermissions.objects.filter(
+            group__in=user.groups.all()
+        ).values_list('cards_visiveis', flat=True)
+
+        for cards_list in perms:
+            if cards_list:
+                ids.extend(cards_list)
+        return ids
+
+    def _get_all_cards(self):
+        """Definição centralizada de todos os cards do sistema."""
+        return [
             {
                 'id': 'clientes',
                 'title': 'Clientes',
-                'permission': 'cliente.view_cliente', 
+                'permission': 'cliente.view_cliente',
                 'icon': 'images/cliente.gif',
                 'links': [
                     {'url': 'cliente:lista_clientes', 'text': 'Lista de Clientes'},
@@ -167,29 +185,29 @@ class ProfileView(LoginRequiredMixin, DetailView):
             {
                 'id': 'dp',
                 'title': 'Departamento Pessoal',
-                'permission': 'departamento_pessoal.departamento_pessoal', 
+                'permission': 'departamento_pessoal.departamento_pessoal',
                 'icon': 'images/dp.gif',
                 'links': [
                     {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
                     {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
-                    {'url': 'treinamentos:lista_treinamentos', 'text': 'Treinamentos'},
+                    {'url': 'treinamentos:treinamento_list', 'text': 'Treinamentos'},
                 ]
             },
             {
                 'id': 'sst',
                 'title': 'Segurança do Trabalho',
-                'permission': 'seguranca_trabalho.view_fichaepi', 
+                'permission': 'seguranca_trabalho.view_fichaepi',
                 'icon': 'images/tst.gif',
                 'links': [
                     {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel SST'},
                     {'url': 'seguranca_trabalho:ficha_list', 'text': 'Fichas de EPI'},
-                    {'url': 'gestao_riscos:agendar_inspecao', 'text': 'Agendar Inspeção'},
+                    {'url': 'gestao_riscos:lista_riscos', 'text': 'Gestão de Riscos'},
                 ]
             },
             {
                 'id': 'endereco',
                 'title': 'Logradouro',
-                'permission': 'logradouro.view_logradouro', 
+                'permission': 'logradouro.view_logradouro',
                 'icon': 'images/cadastro.gif',
                 'links': [
                     {'url': 'logradouro:listar_logradouros', 'text': 'Lista de Logradouros'},
@@ -206,7 +224,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
                     {'url': 'suprimentos:parceiro_list', 'text': 'Suprimentos'},
                     {'url': 'documentos:lista', 'text': 'Documentos'},
-                    
                 ]
             },
             {
@@ -229,255 +246,200 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'tarefas:listar_tarefas', 'text': 'Tarefas'},
                     {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
-                    
                 ]
             },
             {
                 'id': 'main_dashboard',
                 'title': 'Dashboard Integrado',
-                'permission': 'GARANT_ALL', 
+                'permission': 'GARANT_ALL',
                 'icon': 'images/favicon.ico',
                 'links': [
-                    {
-                        'text': 'Visão Geral',
-                        'url': 'dashboard:dashboard_geral',
-                    },
-                    #{
-                    #    'text': 'Treinamentos',
-                    #    'url': 'dashboard:dashboard_treinamentos',
-                    ##},
-                    #{
-                    #    'text': 'Tarefas', 
-                    #    'url': 'dashboard:dashboard_tarefas',
-                    ##},
-                    #{
-                    #    'text': 'EPI',
-                    #    'url': 'dashboard:dashboard_epi',
-                    ##},
-                    #{
-                    #    'text': 'Documentos',
-                    #    'url': 'dashboard:dashboard_documentos',
-                    ##}
+                    {'url': 'dashboard:dashboard_geral', 'text': 'Visão Geral'},
                 ]
-            }
-        ]      
-        # 1. Obtenha os IDs dos cartões visíveis para o grupo do usuário
-        allowed_card_ids = []
-        if user.is_superuser:
-            # Superusuários veem todos os cartões
-            allowed_card_ids = [card['id'] for card in all_cards]
-        else:
-            # Para usuários normais, verifique a configuração do grupo
-            for group in user.groups.all():
-                try:
-                    # Tenta encontrar a configuração de permissão de cartão para este grupo
-                    card_permissions = GroupCardPermissions.objects.get(group=group)
-                    # Adiciona os IDs dos cartões permitidos para este grupo
-                    allowed_card_ids.extend(card_permissions.cards_visiveis)
-                except GroupCardPermissions.DoesNotExist:
-                    # Se não houver configuração para o grupo, continue
-                    pass
-
-        # 2. Filtre os cards com base nas permissões do Django E nos IDs do grupo
-        allowed_cards = []
-        for card in all_cards:
-            # Verifique a permissão do Django
-            has_django_perm = user.has_perm(card['permission'])
-            
-            # Verifique se o ID do cartão está na lista de permissões do grupo
-            is_allowed_by_group = card['id'] in allowed_card_ids
-            
-            if user.is_superuser or (has_django_perm or is_allowed_by_group):
-                allowed_cards.append(card)
-
-        # 3. Passe a lista de cards permitidos para o template
-        context['allowed_cards'] = allowed_cards
-       
-        return context
+            },
+        ]
 
 
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    """Alteração de senha do próprio usuário logado."""
     form_class = CustomPasswordChangeForm
     template_name = 'usuario/alterar_senha.html'
     success_url = reverse_lazy('usuario:profile')
+
     def form_valid(self, form):
         messages.success(self.request, 'Sua senha foi alterada com sucesso!')
         return super().form_valid(form)
-   
+
 
 # =============================================================================
-# == VIEWS DE CRUD DE USUÁRIOS (Apenas para Staff/Superuser)
+# CRUD DE USUÁRIOS (Staff/Admin)
 # =============================================================================
 
-class UserListView(StaffRequiredMixin, ListView):
+class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+    """Lista de usuários com busca e filtro por filial ativa."""
     model = Usuario
     template_name = 'usuario/lista_usuarios.html'
     context_object_name = 'usuarios'
     paginate_by = 20
 
     def get_queryset(self):
-        # Carrega a filial_ativa junto com a consulta principal
         qs = super().get_queryset().select_related('filial_ativa').order_by('first_name')
         active_filial_id = self.request.session.get('active_filial_id')
 
-        # Superusuários veem todos; outros staffs veem apenas os da sua filial ativa.
         if not self.request.user.is_superuser and active_filial_id:
-            qs = qs.filter(filiais_permitidas__id=active_filial_id)
+            qs = qs.filter(filiais_permitidas__id=active_filial_id).distinct()
 
-        search_query = self.request.GET.get('q', '')
-        if search_query:
+        search = self.request.GET.get('q', '').strip()
+        if search:
             qs = qs.filter(
-                Q(username__icontains=search_query) |
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query) |
-                Q(email__icontains=search_query)
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)
             )
         return qs
 
-class UserCreateView(StaffRequiredMixin, CreateView):
+
+class UserCreateView(LoginRequiredMixin, AdminOrManagerMixin, CreateView):
+    """Criação de novo usuário."""
     model = Usuario
     form_class = CustomUserCreationForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
-    
+
     def form_valid(self, form):
         response = super().form_valid(form)
-        messages.success(self.request, f"Usuário {self.object.username} criado com sucesso.")
-        user = form.save()
+        user = self.object
 
+        # Define a primeira filial permitida como ativa
         primeira_filial = user.filiais_permitidas.first()
         if primeira_filial:
             user.filial_ativa = primeira_filial
-            user.save()
-            
-        messages.success(self.request, f"Usuário '{user.username}' criado com sucesso.")
-        return super().form_valid(form)
-    
+            user.save(update_fields=['filial_ativa'])
 
-class UserUpdateView(StaffRequiredMixin, UpdateView):
+        messages.success(self.request, f"Usuário '{user.username}' criado com sucesso.")
+        return response
+
+
+class UserUpdateView(LoginRequiredMixin, AdminOrManagerMixin, UpdateView):
+    """Edição de usuário existente."""
     model = Usuario
     form_class = CustomUserChangeForm
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
-    
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('filial_ativa')
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # Garante que o campo filial_ativa no formulário tenha apenas
-        # as opções que o usuário-alvo tem permissão de acessar.
-        if self.object and 'filial_ativa' in self.form_class.base_fields:
-            kwargs['initial'] = {
-                'filial_ativa': self.object.filial_ativa,
-            }
+        if self.object:
             kwargs['filiais_permitidas_qs'] = self.object.filiais_permitidas.all()
         return kwargs
 
-class UserToggleActiveView(StaffRequiredMixin, View):
-    
+    def form_valid(self, form):
+        messages.success(self.request, f"Usuário '{form.instance.username}' atualizado com sucesso.")
+        return super().form_valid(form)
+
+
+class UserToggleActiveView(LoginRequiredMixin, AdminOrManagerMixin, View):
+    """Ativar/desativar um usuário."""
+
     def post(self, request, *args, **kwargs):
         user_to_toggle = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
+
         if user_to_toggle == request.user:
             messages.error(request, "Você não pode desativar a si mesmo.")
             return redirect('usuario:lista_usuarios')
-        
+
+        # Staff não pode desativar superusuários
+        if user_to_toggle.is_superuser and not request.user.is_superuser:
+            messages.error(request, "Apenas superusuários podem desativar outros superusuários.")
+            return redirect('usuario:lista_usuarios')
+
         user_to_toggle.is_active = not user_to_toggle.is_active
-        user_to_toggle.save()
-        
-        action_text = "ativado" if user_to_toggle.is_active else "desativado"
-        messages.success(request, f"Usuário {user_to_toggle.username} {action_text} com sucesso.")
+        user_to_toggle.save(update_fields=['is_active'])
+
+        status = "ativado" if user_to_toggle.is_active else "desativado"
+        messages.success(request, f"Usuário '{user_to_toggle.username}' {status} com sucesso.")
         return redirect('usuario:lista_usuarios')
 
 
-# --- Views de CRUD de Grupos (Apenas para Superuser) ---
-
-class SuperuserRequiredMixin(UserPassesTestMixin):
-    def test_func(self):
-        return self.request.user.is_superuser
-
-class GroupListView(SuperuserRequiredMixin, ListView):
-    model = Group
-    template_name = 'usuario/grupo_lista.html'
-    context_object_name = 'grupos'
-
-class GroupCreateView(SuperuserRequiredMixin, CreateView):
-    model = Group
-    form_class = GrupoForm
-    template_name = 'usuario/grupo_form.html'
-    success_url = reverse_lazy('usuario:grupo_lista')
-
-class GroupUpdateView(SuperuserRequiredMixin, UpdateView):
-    model = Group
-    form_class = GrupoForm
-    template_name = 'usuario/grupo_form.html'
-    success_url = reverse_lazy('usuario:grupo_lista')
-
-class GroupDeleteView(SuperuserRequiredMixin, DeleteView):
-    model = Group
-    template_name = 'usuario/grupo_confirmar_exclusao.html'
-    success_url = reverse_lazy('usuario:grupo_lista')
-
-# --- Views de Recuperação de Senha (usando as do Django com templates customizados) ---
-
-class CustomPasswordResetView(PasswordResetView):
-    template_name = 'usuario/password_reset/form.html'
-    email_template_name = 'usuario/password_reset/email.html'
-    subject_template_name = 'usuario/password_reset/subject.txt'
-    success_url = reverse_lazy('usuario:password_reset_done')
-
-class CustomPasswordResetDoneView(PasswordResetDoneView):
-    template_name = 'usuario/password_reset/done.html'
-
-class CustomPasswordResetConfirmView(PasswordResetConfirmView):
-    template_name = 'usuario/password_reset/confirm.html'
-    success_url = reverse_lazy('usuario:password_reset_complete')
-
-class CustomPasswordResetCompleteView(PasswordResetCompleteView):
-    template_name = 'usuario/password_reset/complete.html'
-
-# --- Senha redefinidas pelo administrador ---
-
-class UserSetPasswordView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    """
-    View para um admin definir uma nova senha para outro usuário.
-    """
+class UserSetPasswordView(LoginRequiredMixin, SuperuserRequiredMixin, FormView):
+    """Permite superusuário definir nova senha para outro usuário."""
     form_class = SetPasswordForm
-    template_name = 'usuario/definir_senha_form.html' # <-- CAMINHO CORRIGIDO
+    template_name = 'usuario/definir_senha_form.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
 
-    def test_func(self):
-        # Garante que apenas superusuários podem acessar esta página
-        return self.request.user.is_superuser
-
     def get_form_kwargs(self):
-        # Passa o usuário-alvo para o formulário
         kwargs = super().get_form_kwargs()
         kwargs['user'] = get_object_or_404(Usuario, pk=self.kwargs['pk'])
         return kwargs
 
     def form_valid(self, form):
-        # Salva a nova senha e exibe mensagem de sucesso
         form.save()
-        messages.success(self.request, f"A senha para o usuário {form.user.username} foi definida com sucesso.")
+        messages.success(self.request, f"Senha de '{form.user.username}' redefinida com sucesso.")
         return super().form_valid(form)
-    
+
     def get_context_data(self, **kwargs):
-        # Adiciona o usuário-alvo ao contexto para usar no template
         context = super().get_context_data(**kwargs)
         context['usuario_alvo'] = get_object_or_404(Usuario, pk=self.kwargs['pk'])
         return context
-    
-# ---Remover usuário de um grupo ---
 
-class GerenciarGruposUsuarioView(SuperuserRequiredMixin, View):
+
+# =============================================================================
+# CRUD DE GRUPOS (Superusuário)
+# =============================================================================
+
+class GroupListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
+    model = Group
+    template_name = 'usuario/grupo_lista.html'
+    context_object_name = 'grupos'
+
+
+class GroupCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
+    model = Group
+    form_class = GrupoForm
+    template_name = 'usuario/grupo_form.html'
+    success_url = reverse_lazy('usuario:grupo_lista')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Grupo '{form.instance.name}' criado com sucesso.")
+        return super().form_valid(form)
+
+
+class GroupUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
+    model = Group
+    form_class = GrupoForm
+    template_name = 'usuario/grupo_form.html'
+    success_url = reverse_lazy('usuario:grupo_lista')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Grupo '{form.instance.name}' atualizado com sucesso.")
+        return super().form_valid(form)
+
+
+class GroupDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
+    model = Group
+    template_name = 'usuario/grupo_confirmar_exclusao.html'
+    success_url = reverse_lazy('usuario:grupo_lista')
+
+    def form_valid(self, form):
+        messages.success(self.request, f"Grupo excluído com sucesso.")
+        return super().form_valid(form)
+
+
+class GerenciarGruposUsuarioView(LoginRequiredMixin, SuperuserRequiredMixin, View):
+    """Adicionar/remover grupos de um usuário específico."""
     template_name = 'usuario/gerenciar_grupos_usuario.html'
 
     def get(self, request, *args, **kwargs):
         usuario = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
         grupos_usuario = usuario.groups.all()
-        grupos_disponiveis = Group.objects.exclude(pk__in=grupos_usuario.values_list('pk', flat=True))
         context = {
             'usuario_alvo': usuario,
             'grupos_usuario': grupos_usuario,
-            'grupos_disponiveis': grupos_disponiveis
+            'grupos_disponiveis': Group.objects.exclude(pk__in=grupos_usuario),
         }
         return render(request, self.template_name, context)
 
@@ -485,26 +447,28 @@ class GerenciarGruposUsuarioView(SuperuserRequiredMixin, View):
         usuario = get_object_or_404(Usuario, pk=self.kwargs.get('pk'))
         grupo_id = request.POST.get('grupo')
         acao = request.POST.get('acao')
-        
+
         if grupo_id and acao:
             grupo = get_object_or_404(Group, pk=grupo_id)
             if acao == 'adicionar':
                 usuario.groups.add(grupo)
-                messages.success(request, f"Grupo '{grupo.name}' adicionado ao usuário {usuario.username}.")
+                messages.success(request, f"Grupo '{grupo.name}' adicionado a '{usuario.username}'.")
             elif acao == 'remover':
                 usuario.groups.remove(grupo)
-                messages.success(request, f"Grupo '{grupo.name}' removido do usuário {usuario.username}.")
-        
+                messages.success(request, f"Grupo '{grupo.name}' removido de '{usuario.username}'.")
+
         return redirect('usuario:gerenciar_grupos_usuario', pk=usuario.pk)
-    
+
+
 # =============================================================================
-# == VIEWS DE CRUD DE FILIAIS (Apenas para Superuser)
+# CRUD DE FILIAIS (Superusuário)
 # =============================================================================
 
 class FilialListView(LoginRequiredMixin, SuperuserRequiredMixin, ListView):
     model = Filial
     template_name = 'usuario/filial_list.html'
     context_object_name = 'filiais'
+
 
 class FilialCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
     model = Filial
@@ -521,12 +485,13 @@ class FilialCreateView(LoginRequiredMixin, SuperuserRequiredMixin, CreateView):
         messages.success(self.request, 'Filial cadastrada com sucesso!')
         return super().form_valid(form)
 
+
 class FilialUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
     model = Filial
     form_class = FilialForm
     template_name = 'usuario/filial_form.html'
     success_url = reverse_lazy('usuario:filial_list')
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f'Editar Filial: {self.object.nome}'
@@ -535,6 +500,7 @@ class FilialUpdateView(LoginRequiredMixin, SuperuserRequiredMixin, UpdateView):
     def form_valid(self, form):
         messages.success(self.request, 'Filial atualizada com sucesso!')
         return super().form_valid(form)
+
 
 class FilialDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
     model = Filial
@@ -547,60 +513,79 @@ class FilialDeleteView(LoginRequiredMixin, SuperuserRequiredMixin, DeleteView):
             messages.success(request, 'Filial excluída com sucesso!')
             return response
         except ProtectedError:
-            messages.error(self.request, 'Esta filial não pode ser excluída, pois existem usuários ou ferramentas associados a ela.')
+            messages.error(
+                request,
+                'Esta filial não pode ser excluída pois existem registros associados a ela.'
+            )
             return redirect('usuario:filial_list')
-            
+
+
 # =============================================================================
-# Permissão para acesso aos cards
+# GERENCIAMENTO DE CARDS POR GRUPO
 # =============================================================================
-class ManageCardPermissionsView(LoginRequiredMixin, UserPassesTestMixin, View):
+
+class ManageCardPermissionsView(LoginRequiredMixin, SuperuserRequiredMixin, View):
+    """Configura quais cards cada grupo pode ver."""
     template_name = 'usuario/gerenciar_cards.html'
 
-    def test_func(self):
-        # Apenas superusuários ou usuários com permissão podem acessar esta página
-        return self.request.user.is_superuser or self.request.user.has_perm('usuario.change_groupcardpermissions')
-
-    def get_all_cards_data(self):
-        # Defina a mesma estrutura de cards que você tem na sua ProfileView
-        return [
-            {'id': 'tarefas', 'title': 'Tarefas'},
-            {'id': 'clientes', 'title': 'Clientes'},
-            {'id': 'dp', 'title': 'Departamento Pessoal'},
-            {'id': 'sst', 'title': 'Segurança do Trabalho'},
-            {'id': 'endereco', 'title': 'Logradouro'},
-            {'id': 'ga', 'title': 'Gestão Administrativa'},
-            {'id': 'veiculos', 'title': 'Veículos'},
-            {'id': 'operacao', 'title': 'Operação'},
-        ]
+    ALL_CARDS = [
+        {'id': 'clientes', 'title': 'Clientes'},
+        {'id': 'dp', 'title': 'Departamento Pessoal'},
+        {'id': 'sst', 'title': 'Segurança do Trabalho'},
+        {'id': 'endereco', 'title': 'Logradouro'},
+        {'id': 'ga', 'title': 'Gestão Administrativa'},
+        {'id': 'veiculos', 'title': 'Veículos'},
+        {'id': 'operacao', 'title': 'Operação'},
+        {'id': 'main_dashboard', 'title': 'Dashboard Integrado'},
+    ]
 
     def get(self, request, *args, **kwargs):
-        grupos = Group.objects.all().order_by('name')
-        todos_os_cards = self.get_all_cards_data()
-        
-        permissoes_por_grupo = {
-            p.group.id: p.cards_visiveis for p in GroupCardPermissions.objects.all()
-        }
-
         context = {
-            'grupos': grupos,
-            'todos_os_cards': todos_os_cards,
-            'permissoes_por_grupo': permissoes_por_grupo,
+            'grupos': Group.objects.all().order_by('name'),
+            'todos_os_cards': self.ALL_CARDS,
+            'permissoes_por_grupo': {
+                p.group_id: p.cards_visiveis
+                for p in GroupCardPermissions.objects.all()
+            },
         }
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        todos_os_cards = [card['id'] for card in self.get_all_cards_data()]
-        
+        card_ids = [c['id'] for c in self.ALL_CARDS]
+
         for group in Group.objects.all():
-            cards_selecionados = []
-            for card_id in todos_os_cards:
-                if f'group_{group.id}_{card_id}' in request.POST:
-                    cards_selecionados.append(card_id)
-            
+            cards_selecionados = [
+                cid for cid in card_ids
+                if f'group_{group.id}_{cid}' in request.POST
+            ]
             GroupCardPermissions.objects.update_or_create(
                 group=group,
                 defaults={'cards_visiveis': cards_selecionados}
             )
 
+        messages.success(request, "Permissões de cards atualizadas com sucesso!")
         return redirect('usuario:gerenciar_cards')
-    
+
+
+# =============================================================================
+# RECUPERAÇÃO DE SENHA
+# =============================================================================
+
+class CustomPasswordResetView(PasswordResetView):
+    template_name = 'usuario/password_reset/form.html'
+    email_template_name = 'usuario/password_reset/email.html'
+    subject_template_name = 'usuario/password_reset/subject.txt'
+    success_url = reverse_lazy('usuario:password_reset_done')
+
+
+class CustomPasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'usuario/password_reset/done.html'
+
+
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'usuario/password_reset/confirm.html'
+    success_url = reverse_lazy('usuario:password_reset_complete')
+
+
+class CustomPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'usuario/password_reset/complete.html'

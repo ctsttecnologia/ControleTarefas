@@ -1,0 +1,346 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Plano de Ação{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:plano_acao_list' %}">Planos de Ação</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-tasks"></i>
+        {% if form.instance.pk %}Editar Plano de Ação{% else %}Novo Plano de Ação{% endif %}
+    </h1>
+    <p class="mb-0">Formulário para Controle e Mitigação de Riscos</p>
+</div>
+
+<div class="row">
+    <div class="col-md-9">
+        <form method="post" id="formPlanoAcao">
+            {% csrf_token %}
+            
+            <!-- Erros Gerais -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <!-- SEÇÃO 1: Risco Relacionado -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <i class="fas fa-exclamation-triangle"></i> 1. Risco Relacionado
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label required-field">
+                            Selecione o Risco
+                        </label>
+                        {% render_field form.risco_identificado class="form-select" %}
+                        {% if form.risco_identificado.errors %}
+                        <div class="text-danger">{{ form.risco_identificado.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">{{ form.risco_identificado.help_text }}</small>
+                    </div>
+
+                    <!-- Informações do Risco (exibidas dinamicamente) -->
+                    <div id="info-risco" class="alert alert-info" style="display: none;">
+                        <h6>Informações do Risco Selecionado:</h6>
+                        <p class="mb-1"><strong>Agente:</strong> <span id="risco-agente"></span></p>
+                        <p class="mb-1"><strong>Classificação:</strong> <span id="risco-classificacao"></span></p>
+                        <p class="mb-0"><strong>Fonte Geradora:</strong> <span id="risco-fonte"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 2: Descrição da Ação -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-edit"></i> 2. Descrição da Ação
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.tipo_acao.id_for_label }}" class="form-label required-field">
+                            Tipo de Ação
+                        </label>
+                        {% render_field form.tipo_acao class="form-select" %}
+                        {% if form.tipo_acao.errors %}
+                        <div class="text-danger">{{ form.tipo_acao.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Hierarquia de Controle: Eliminação > Engenharia > Administrativa > EPI</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.descricao_acao.id_for_label }}" class="form-label required-field">
+                            Descrição da Ação
+                        </label>
+                        {% render_field form.descricao_acao class="form-control" rows="4" placeholder="Descreva detalhadamente a ação que será implementada..." %}
+                        {% if form.descricao_acao.errors %}
+                        <div class="text-danger">{{ form.descricao_acao.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.recursos_necessarios.id_for_label }}" class="form-label">
+                            Recursos Necessários
+                        </label>
+                        {% render_field form.recursos_necessarios class="form-control" rows="3" placeholder="Liste os recursos materiais, humanos e financeiros necessários..." %}
+                        {% if form.recursos_necessarios.errors %}
+                        <div class="text-danger">{{ form.recursos_necessarios.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 3: Priorização e Prazos -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-calendar-alt"></i> 3. Priorização e Prazos
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.prioridade.id_for_label }}" class="form-label required-field">
+                                    Prioridade
+                                </label>
+                                {% render_field form.prioridade class="form-select" %}
+                                {% if form.prioridade.errors %}
+                                <div class="text-danger">{{ form.prioridade.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    <strong>Crítica:</strong> 15 dias | <strong>Alta:</strong> 30 dias | 
+                                    <strong>Média:</strong> 60 dias | <strong>Baixa:</strong> 90 dias
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">
+                                    Status
+                                </label>
+                                {% render_field form.status class="form-select" %}
+                                {% if form.status.errors %}
+                                <div class="text-danger">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.data_prevista.id_for_label }}" class="form-label required-field">
+                                    Data Prevista para Conclusão
+                                </label>
+                                {% render_field form.data_prevista class="form-control" type="date" %}
+                                {% if form.data_prevista.errors %}
+                                <div class="text-danger">{{ form.data_prevista.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.data_conclusao.id_for_label }}" class="form-label">
+                                    Data de Conclusão (Real)
+                                </label>
+                                {% render_field form.data_conclusao class="form-control" type="date" %}
+                                {% if form.data_conclusao.errors %}
+                                <div class="text-danger">{{ form.data_conclusao.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Preencher apenas quando concluído</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 4: Responsabilidade e Custo -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-user-tie"></i> 4. Responsabilidade e Custo
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.responsavel.id_for_label }}" class="form-label required-field">
+                                    Responsável pela Execução
+                                </label>
+                                {% render_field form.responsavel class="form-control" placeholder="Nome do responsável" %}
+                                {% if form.responsavel.errors %}
+                                <div class="text-danger">{{ form.responsavel.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.custo_estimado.id_for_label }}" class="form-label">
+                                    Custo Estimado (R$)
+                                </label>
+                                {% render_field form.custo_estimado class="form-control" type="number" step="0.01" placeholder="0.00" %}
+                                {% if form.custo_estimado.errors %}
+                                <div class="text-danger">{{ form.custo_estimado.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                            Observações
+                        </label>
+                        {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais sobre o plano de ação..." %}
+                        {% if form.observacoes.errors %}
+                        <div class="text-danger">{{ form.observacoes.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <div>
+                            <button type="submit" name="action" value="save" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="submit" name="action" value="save_and_new" class="btn btn-success btn-lg">
+                                <i class="fas fa-plus"></i> Salvar e Criar Outro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sidebar com Ajuda -->
+    <div class="col-md-3">
+        <div class="card sticky-top" style="top: 20px;">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-info-circle"></i> Orientações
+            </div>
+            <div class="card-body">
+                <h6>Hierarquia de Controle</h6>
+                <ol class="small">
+                    <li><strong>Eliminação:</strong> Remover o risco</li>
+                    <li><strong>Engenharia:</strong> Isolar o risco</li>
+                    <li><strong>Administrativa:</strong> Procedimentos e treinamentos</li>
+                    <li><strong>EPI:</strong> Última opção</li>
+                </ol>
+
+                <hr>
+
+                <h6>Prazos por Prioridade</h6>
+                <ul class="small">
+                    <li><strong class="text-danger">Crítica:</strong> até 15 dias</li>
+                    <li><strong class="text-warning">Alta:</strong> até 30 dias</li>
+                    <li><strong class="text-info">Média:</strong> até 60 dias</li>
+                    <li><strong>Baixa:</strong> até 90 dias</li>
+                </ul>
+
+                <hr>
+
+                <h6>Dicas</h6>
+                <ul class="small">
+                    <li>Seja específico na descrição</li>
+                    <li>Defina responsáveis claros</li>
+                    <li>Estabeleça prazos realistas</li>
+                    <li>Documente os recursos necessários</li>
+                    <li>Faça acompanhamento periódico</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Carregar informações do risco selecionado
+    $('#id_risco_identificado').on('change', function() {
+        const riscoId = $(this).val();
+        if (riscoId) {
+            $.ajax({
+                url: `/pgr/ajax/risco/${riscoId}/`,
+                success: function(data) {
+                    $('#risco-agente').text(data.agente);
+                    $('#risco-classificacao').html(`<span class="badge badge-risco-${data.classificacao}">${data.classificacao_display}</span>`);
+                    $('#risco-fonte').text(data.fonte_geradora || 'N/A');
+                    $('#info-risco').slideDown();
+
+                    // Definir prioridade baseada na classificação do risco
+                    if (data.classificacao === 'critico' || data.classificacao === 'muito_grave') {
+                        $('#id_prioridade').val('critica');
+                    } else if (data.classificacao === 'moderado') {
+                        $('#id_prioridade').val('alta');
+                    } else if (data.classificacao === 'marginal') {
+                        $('#id_prioridade').val('media');
+                    } else {
+                        $('#id_prioridade').val('baixa');
+                    }
+                }
+            });
+        } else {
+            $('#info-risco').slideUp();
+        }
+    });
+
+    // Calcular data prevista baseada na prioridade
+    $('#id_prioridade').on('change', function() {
+        const prioridade = $(this).val();
+        const hoje = new Date();
+        let diasPrazo = 90; // padrão para baixa
+
+        switch(prioridade) {
+            case 'critica':
+                diasPrazo = 15;
+                break;
+            case 'alta':
+                diasPrazo = 30;
+                break;
+            case 'media':
+                diasPrazo = 60;
+                break;
+            case 'baixa':
+                diasPrazo = 90;
+                break;
+        }
+
+        hoje.setDate(hoje.getDate() + diasPrazo);
+        const dataPrevista = hoje.toISOString().split('T')[0];
+        
+        if (!$('#id_data_prevista').val()) {
+            $('#id_data_prevista').val(dataPrevista);
+        }
+    });
+
+    // Trigger ao carregar (se estiver editando)
+    if ($('#id_risco_identificado').val()) {
+        $('#id_risco_identificado').trigger('change');
+    }
+});
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,51 @@
+
+{% extends "controle_de_telefone/_base_telefone.html" %}
+
+{% block title %}Cancelar Recarga{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-5 text-center">
+                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
+                         style="width: 72px; height: 72px;">
+                        <i class="bi bi-x-circle text-danger" style="font-size: 2rem;"></i>
+                    </div>
+
+                    <h4 class="fw-bold mb-2">Cancelar Recarga</h4>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem;">
+                        Tem certeza que deseja cancelar a recarga de
+                        <strong class="text-dark">R$ {{ recarga.valor|floatformat:2 }}</strong>
+                        para a linha <strong class="text-dark">{{ recarga.linha.numero }}</strong>?
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4 text-start">
+                            <label for="motivo_cancelamento" class="form-label fw-semibold" style="font-size: 0.85rem;">
+                                Motivo do Cancelamento
+                            </label>
+                            <textarea name="motivo_cancelamento" id="motivo_cancelamento" 
+                                      class="form-control" rows="3" 
+                                      placeholder="Informe o motivo do cancelamento..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="{% url 'controle_de_telefone:recarga_detail' recarga.pk %}" class="btn btn-light px-4">
+                                <i class="bi bi-arrow-left me-1"></i>Voltar
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="bi bi-x-circle me-1"></i>Confirmar Cancelamento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

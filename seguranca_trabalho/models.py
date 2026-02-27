@@ -1,6 +1,6 @@
 # seguranca_trabalho/models.py
 
-from datetime import timedelta
+from datetime import date, timedelta
 from django.db import models
 from django.conf import settings
 from django.urls import reverse
@@ -16,7 +16,7 @@ from usuario.models import Filial
 # para a aplicação 'suprimentos' e o modelo 'Parceiro'.
 
 class Funcao(models.Model):
-    nome = models.CharField(max_length=100, unique=True, verbose_name=_("Nome da Função"))
+    nome = models.CharField(max_length=100, verbose_name=_("Nome da Função"))
     descricao = models.TextField(blank=True, verbose_name=_("Descrição das Atividades"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
     filial = models.ForeignKey(
@@ -24,8 +24,8 @@ class Funcao(models.Model):
         on_delete=models.PROTECT,
         related_name='funcoes',
         verbose_name=_("Filial"),
-        null=True,
-        blank=True
+        null=True,   # Permite migração inicial
+        blank=False  # Obrigatório no formulário
     )
     objects = FilialManager()
 
@@ -33,6 +33,10 @@ class Funcao(models.Model):
         verbose_name = _("Função")
         verbose_name_plural = _("Funções")
         ordering = ['nome']
+        # CORREÇÃO: unique_together por filial
+        constraints = [
+            models.UniqueConstraint(fields=['nome', 'filial'], name='unique_funcao_por_filial')
+        ]
 
     def __str__(self):
         return self.nome
@@ -49,10 +53,20 @@ class CargoFuncao(models.Model):
         related_name='funcoes_cargo',
         verbose_name=_("Função")
     )
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='cargo_funcoes',
+        verbose_name=_("Filial"),
+        null=True,
+        blank=False  # Obrigatório no formulário
+    )
+    objects = FilialManager()
+
 
     class Meta:
         
-        unique_together = ('cargo', 'funcao')
+        unique_together = ('cargo', 'funcao', 'filial')
         verbose_name = _("Cargo e Função Associados")
         verbose_name_plural = _("Cargos e Funções Associados")
 
@@ -76,8 +90,6 @@ class Equipamento(models.Model):
         limit_choices_to={'eh_fabricante': True},
         related_name='equipamentos_fabricados'
     )
-    # REMOVIDO: O campo 'fornecedor' foi removido. O fornecedor está ligado à compra (MovimentacaoEstoque),
-    # não ao tipo de equipamento, tornando o modelo mais flexível.
     certificado_aprovacao = models.CharField(max_length=50, verbose_name=_("Certificado de Aprovação (CA)"), help_text=_("Deixe em branco se não aplicável."), blank=True)
     data_cadastro = models.DateField(auto_now_add=True, verbose_name="Data de Cadastro", help_text="Data em que o equipamento foi cadastrado.", null=True)
     data_validade_ca = models.DateField(null=True, blank=True, verbose_name=_("Data de Validade do CA"))
@@ -92,8 +104,8 @@ class Equipamento(models.Model):
         on_delete=models.PROTECT,
         related_name='equipamentos',
         verbose_name=_("Filial"),
-        null=True,
-        blank=True
+        null=True,   # Permite migração inicial
+        blank=False  # Obrigatório no formulário
     )
     objects = FilialManager()
 
@@ -126,8 +138,8 @@ class MatrizEPI(models.Model):
         on_delete=models.PROTECT,
         related_name='matrizepis',
         verbose_name=_("Filial"),
-        null=True,
-        blank=True
+        null=True,   # Permite migração inicial
+        blank=False  # Obrigatório no formulário
     )
     objects = FilialManager()
 
@@ -151,13 +163,25 @@ class FichaEPI(models.Model):
     )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
+    assinatura_funcionario = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='Assinatura do Funcionário',
+        help_text='Assinatura digital (base64) do funcionário no termo'
+    )
+    data_assinatura_termo = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name='Data da Assinatura do Termo'
+    )
+
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
         related_name='fichaepis',
         verbose_name=_("Filial"),
-        null=True,
-        blank=True
+        null=True,   # Permite migração inicial
+        blank=False  # Obrigatório no formulário
     )
     objects = FilialManager()
 
@@ -191,7 +215,7 @@ class EntregaEPI(models.Model):
     lote = models.CharField(max_length=100, blank=True, verbose_name=_("Lote de Fabricação"))
     numero_serie = models.CharField(max_length=100, blank=True, verbose_name=_("Número de Série"))
     # ALTERADO: O campo agora tem um valor padrão e não pode ser nulo para garantir integridade.
-    data_entrega = models.DateField(default=timezone.now, verbose_name=_("Data de Recebimento"))
+    data_entrega = models.DateField(default=date.today, verbose_name=_("Data de Recebimento"))
     assinatura_recebimento = models.TextField(blank=True, null=True, verbose_name=_("Assinatura de Recebimento (Base64)"))
     assinatura_imagem = models.ImageField(
         verbose_name="Assinatura (Arquivo)", upload_to='assinaturas/%Y/%m/', null=True, blank=True
@@ -202,13 +226,14 @@ class EntregaEPI(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='epis_recebidos', verbose_name=_("Recebedor")
     )
     criado_em = models.DateTimeField(default=timezone.now, verbose_name=_("Data do Registro"))
+    
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
         related_name='entregaepis',
         verbose_name=_("Filial"),
-        null=True,
-        blank=True
+        null=True,   # Permite migração inicial
+        blank=False  # Obrigatório no formulário
     )
     objects = FilialManager()
 
@@ -219,6 +244,13 @@ class EntregaEPI(models.Model):
         verbose_name = _("Entrega de EPI")
         verbose_name_plural = _("Entregas de EPI")
         ordering = ['-criado_em']
+
+    def __str__(self):
+        funcionario = self.ficha.funcionario.nome_completo if self.ficha else "Sem ficha"
+        equipamento = self.equipamento.nome if self.equipamento else "Sem equipamento"
+        data = self.data_entrega.strftime('%d/%m/%Y') if self.data_entrega else "S/D"
+        return f"{equipamento} → {funcionario} ({data})"
+
 
     @property
     def data_vencimento_uso(self):
@@ -263,8 +295,8 @@ class MovimentacaoEstoque(models.Model):
         on_delete=models.PROTECT,
         related_name='movimentacaoestoques',
         verbose_name=_("Filial"),
-        null=True,
-        blank=True
+        null=True,   # Permite migração inicial
+        blank=False  # Obrigatório no formulário
     )
     objects = FilialManager()
 

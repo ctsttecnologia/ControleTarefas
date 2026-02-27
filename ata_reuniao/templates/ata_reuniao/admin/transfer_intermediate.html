@@ -1,30 +1,213 @@
 
-{% extends "base_site.html" %}
+{% extends "base.html" %}
+
+{% block title %}Transferir Atas de Reunião{% endblock %}
+
+{% block extrahead %}
+<style>
+    .transfer-card {
+        max-width: 700px;
+        margin: 2rem auto;
+        border: none;
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+    }
+
+    .transfer-header {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: #fff;
+        padding: 1.5rem 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .transfer-header::after {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -10%;
+        width: 180px;
+        height: 180px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .transfer-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+    }
+    .transfer-header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+    }
+
+    .transfer-body { padding: 2rem; }
+
+    .transfer-items {
+        background: #f8f9fc;
+        border: 1px solid #e9ecef;
+        border-radius: 0.75rem;
+        padding: 0;
+        margin: 1rem 0 1.5rem;
+        list-style: none;
+        overflow: hidden;
+    }
+    .transfer-items li {
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+        font-size: 0.9rem;
+        color: #4a5568;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .transfer-items li:last-child { border-bottom: none; }
+    .transfer-items li::before {
+        content: '→';
+        color: #4e73df;
+        font-weight: 700;
+    }
+
+    .transfer-body label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #4a5568;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .transfer-body select {
+        display: block;
+        width: 100%;
+        padding: 0.625rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        transition: border-color 0.2s;
+    }
+    .transfer-body select:focus {
+        outline: none;
+        border-color: #4e73df;
+        box-shadow: 0 0 0 3px rgba(78,115,223,0.15);
+    }
+
+    .transfer-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(78,115,223,0.08);
+        color: #4e73df;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.3rem 0.85rem;
+        border-radius: 50rem;
+        margin-bottom: 1rem;
+    }
+
+    .transfer-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #f0f2f5;
+    }
+
+    .btn-transfer {
+        background: linear-gradient(135deg, #4e73df, #224abe);
+        color: #fff;
+        border: none;
+        padding: 0.65rem 1.75rem;
+        border-radius: 0.625rem;
+        font-weight: 700;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-transfer:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(78,115,223,0.35);
+    }
+
+    .btn-cancel {
+        background: transparent;
+        color: #718096;
+        border: 2px solid #e2e8f0;
+        padding: 0.65rem 1.5rem;
+        border-radius: 0.625rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    .btn-cancel:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
+</style>
+{% endblock %}
 
 {% block content %}
-<form method="post">
-    {% csrf_token %}
-    <h2>Transferir Atas de Reunião</h2>
+<div class="transfer-card">
+    <form method="post">
+        {% csrf_token %}
 
-    <p>Você selecionou os seguintes itens para transferência:</p>
-    <ul>
-        {% for obj in queryset %}
-        <li>{{ obj }}</li>
-        {% endfor %}
-    </ul>
+        <!-- Header -->
+        <div class="transfer-header">
+            <h2>
+                <span class="transfer-header-icon">
+                    <i class="bi bi-arrow-left-right"></i>
+                </span>
+                Transferir Atas de Reunião
+            </h2>
+        </div>
 
-    <p>Por favor, selecione a filial de destino:</p>
-    
-    {{ form.as_p }}
+        <!-- Body -->
+        <div class="transfer-body">
+            <p style="color: #4a5568; font-size: 0.95rem;">
+                Selecione a filial de destino para transferir os itens selecionados:
+            </p>
 
-    <input type="hidden" name="action" value="transferir_filial">
-    {% for obj in queryset %}
-    <input type="hidden" name="_selected_action" value="{{ obj.pk }}">
-    {% endfor %}
+            <span class="transfer-count">
+                <i class="bi bi-journal-text"></i>
+                {{ queryset|length }} item{{ queryset|length|pluralize:"ns" }} selecionado{{ queryset|length|pluralize:"s" }}
+            </span>
 
-    <div>
-        <button type="submit" name="apply" class="button">Confirmar Transferência</button>
-        <a href="#" onclick="window.history.back(); return false;" class="button">Cancelar</a>
-    </div>
-</form>
+            <ul class="transfer-items">
+                {% for obj in queryset %}
+                <li>{{ obj }}</li>
+                {% endfor %}
+            </ul>
+
+            <!-- Form fields -->
+            {{ form.as_p }}
+
+            <!-- Hidden fields -->
+            <input type="hidden" name="action" value="transferir_filial">
+            {% for obj in queryset %}
+            <input type="hidden" name="_selected_action" value="{{ obj.pk }}">
+            {% endfor %}
+
+            <!-- Actions -->
+            <div class="transfer-actions">
+                <a href="#" onclick="window.history.back(); return false;" class="btn-cancel">
+                    Cancelar
+                </a>
+                <button type="submit" name="apply" class="btn-transfer">
+                    <i class="bi bi-check-circle me-1"></i> Confirmar Transferência
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
 {% endblock %}
+

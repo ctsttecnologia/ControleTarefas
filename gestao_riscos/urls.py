@@ -8,6 +8,7 @@ from .views import (
     CartaoTagDetailView,
     CartaoTagUpdateView,
     CartaoTagDeleteView,
+    EntregasPorEquipamentoView,
 )
 
 app_name = 'gestao_riscos'
@@ -26,6 +27,8 @@ urlpatterns = [
     path('inspecao/<int:pk>/detalhe/', views.InspecaoDetailView.as_view(), name='inspecao_detalhe'),
     path('inspecao/<int:pk>/completar/', views.CompletarInspecaoView.as_view(), name='inspecao_completar'),
 
+    path('api/entregas-por-equipamento/', EntregasPorEquipamentoView.as_view(), name='entregas_por_equipamento'),
+
     # --- ROTAS DO CALENDÁRIO (ESTAVAM FALTANDO) ---
     path('calendario/', views.CalendarioView.as_view(), name='calendario'),
     path('api/eventos-inspecao/', views.inspecao_events_api, name='api_inspecao_events'),
@@ -36,4 +39,12 @@ urlpatterns = [
     path('cartoes/<int:pk>/', CartaoTagDetailView.as_view(), name='cartao_tag_detail'),
     path('cartoes/<int:pk>/editar/', CartaoTagUpdateView.as_view(), name='cartao_tag_update'),
     path('cartoes/<int:pk>/deletar/', CartaoTagDeleteView.as_view(), name='cartao_tag_delete'),
+
+    # ========== TIPO DE RISCO ==========
+    path('tipos-risco/', views.TipoRiscoListView.as_view(), name='tipo_risco_list'),
+    path('tipos-risco/novo/', views.TipoRiscoCreateView.as_view(), name='tipo_risco_create'),
+    path('tipos-risco/<int:pk>/editar/', views.TipoRiscoUpdateView.as_view(), name='tipo_risco_update'),
+    path('tipos-risco/<int:pk>/excluir/', views.TipoRiscoDeleteView.as_view(), name='tipo_risco_delete'),
+    path('tipos-risco/<int:pk>/toggle-ativo/', views.TipoRiscoToggleAtivoView.as_view(), name='tipo_risco_toggle_ativo'),
+    path('tipos-risco/popular-padrao/', views.TipoRiscoPopularView.as_view(), name='tipo_risco_popular'),
 ]

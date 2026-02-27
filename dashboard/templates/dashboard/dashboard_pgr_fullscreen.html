@@ -1,0 +1,403 @@
+
+{% extends "dashboard/_base_dashboard_fullscreen.html" %}
+
+{% block title %}PGR — Modo Painel{% endblock %}
+
+{% block tv_content %}
+
+    <!-- Header -->
+    <div class="tv-hero d-flex justify-content-between align-items-center flex-wrap gap-3"
+         style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%); border-radius: 12px; padding: 1.5rem 2rem; margin-bottom: 1.5rem;">
+        <div>
+            <h1 class="text-white mb-1" style="font-size: 1.6rem;">
+                <i class="bi bi-shield-fill-check me-2"></i>{{ title }}
+            </h1>
+            <p class="mb-0" style="color: rgba(255,255,255,0.8); font-size: 0.9rem;">
+                Programa de Gerenciamento de Riscos
+            </p>
+        </div>
+        <span class="badge rounded-pill px-3 py-2"
+              style="background: rgba(255,255,255,0.2); color: #fff; font-size: 0.8rem;">
+            <i class="bi bi-broadcast me-1"></i> AO VIVO
+        </span>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #4e73df !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width: 48px; height: 48px; background: rgba(78, 115, 223, 0.1);">
+                        <i class="bi bi-file-earmark-text text-primary fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-primary" style="font-size: 1.8rem; line-height: 1;">{{ total_documentos }}</div>
+                        <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Documentos</div>
+                        <small class="text-success" style="font-size: 0.75rem;">
+                            <i class="bi bi-check-circle me-1"></i>{{ documentos_vigentes }} vigentes
+                        </small>
+                        {% if documentos_vencidos > 0 %}
+                        <small class="text-danger d-block" style="font-size: 0.75rem;">
+                            <i class="bi bi-x-circle me-1"></i>{{ documentos_vencidos }} vencidos
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #e74a3b !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width: 48px; height: 48px; background: rgba(231, 74, 59, 0.1);">
+                        <i class="bi bi-exclamation-triangle text-danger fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-danger" style="font-size: 1.8rem; line-height: 1;">{{ riscos_criticos|length }}</div>
+                        <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Riscos Críticos</div>
+                        <small class="text-muted" style="font-size: 0.75rem;">
+                            Não controlados{% if total_riscos > 0 %} · {{ total_riscos }} total{% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #f6c23e !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width: 48px; height: 48px; background: rgba(246, 194, 62, 0.1);">
+                        <i class="bi bi-list-task text-warning fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-warning" style="font-size: 1.8rem; line-height: 1;">{{ planos_pendentes }}</div>
+                        <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Planos Pendentes</div>
+                        {% if planos_atrasados > 0 %}
+                        <small class="text-danger" style="font-size: 0.75rem;">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ planos_atrasados }} atrasado{{ planos_atrasados|pluralize:"s" }}
+                        </small>
+                        {% else %}
+                        <small class="text-success" style="font-size: 0.75rem;">
+                            <i class="bi bi-check me-1"></i>Nenhum atrasado
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #1cc88a !important;">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width: 48px; height: 48px; background: rgba(28, 200, 138, 0.1);">
+                        <i class="bi bi-people text-success fs-5"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-success" style="font-size: 1.8rem; line-height: 1;">{{ total_ges }}</div>
+                        <div class="text-muted fw-semibold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">GES Ativos</div>
+                        <small class="text-muted" style="font-size: 0.75rem;">Grupos de Exposição Similar</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta de vencimento -->
+    {% if documentos_proximo_vencimento %}
+    <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-start gap-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
+        <div>
+            <h6 class="alert-heading mb-1 fw-bold">Documentos próximos ao vencimento</h6>
+            {% for doc in documentos_proximo_vencimento %}
+            <div class="mb-1" style="font-size: 0.85rem;">
+                <strong>{{ doc.codigo_documento }}</strong>
+                <span class="text-muted">— {{ doc.empresa }}</span>
+                <span class="text-danger fw-bold ms-1">({{ doc.dias_para_vencimento }}d)</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-pie-chart text-warning me-2"></i>Riscos por Classificação
+                    </h6>
+                    {% if total_riscos %}
+                    <span class="badge bg-light text-muted rounded-pill">{{ total_riscos }} total</span>
+                    {% endif %}
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    {% if total_riscos > 0 %}
+                    <div style="position: relative; width: 100%; max-width: 260px; margin: 0 auto;">
+                        <canvas id="chartRiscosClassificacao"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-pie-chart" style="font-size: 3rem; opacity: 0.2;"></i>
+                        <p class="mt-2 mb-0">Nenhum risco cadastrado</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-bar-chart text-primary me-2"></i>Riscos por Status de Controle
+                    </h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    {% if total_riscos > 0 %}
+                    <div style="position: relative; width: 100%; max-width: 400px; max-height: 240px; margin: 0 auto;">
+                        <canvas id="chartRiscosStatus"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.2;"></i>
+                        <p class="mt-2 mb-0">Nenhum risco cadastrado</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listas -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-clock-history text-info me-2"></i>Últimas Revisões
+                    </h6>
+                </div>
+                <div class="p-0">
+                    {% for doc in ultimas_revisoes %}
+                    <div class="d-flex justify-content-between align-items-center px-3 py-3"
+                         style="border-bottom: 1px solid #f0f0f0;">
+                        <div>
+                            <div class="fw-semibold text-dark" style="font-size: 0.88rem;">{{ doc.codigo_documento }}</div>
+                            <small class="text-muted">
+                                {{ doc.empresa }} — {{ doc.atualizado_em|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        <span class="badge rounded-pill
+                            {% if doc.status == 'vigente' or doc.status == 'ativo' or doc.status == 'aprovado' %}bg-success
+                            {% elif doc.status == 'em_revisao' %}bg-warning text-dark
+                            {% else %}bg-danger{% endif %}">
+                            {{ doc.get_status_display }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">Nenhum documento</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark">
+                        <i class="bi bi-journal-check text-warning me-2"></i>Últimos Planos de Ação
+                    </h6>
+                </div>
+                <div class="p-0">
+                    {% for plano in ultimos_planos %}
+                    <div class="d-flex justify-content-between align-items-center px-3 py-3"
+                         style="border-bottom: 1px solid #f0f0f0;">
+                        <div class="flex-grow-1 me-3">
+                            <div class="fw-semibold text-dark" style="font-size: 0.88rem;">{{ plano.acao|truncatechars:55 }}</div>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>{{ plano.data_prevista|date:"d/m/Y"|default:"Sem prazo" }}
+                            </small>
+                        </div>
+                        <span class="badge rounded-pill
+                            {% if plano.status == 'concluido' %}bg-success
+                            {% elif plano.status == 'em_andamento' %}bg-primary
+                            {% elif plano.status == 'cancelado' %}bg-secondary
+                            {% else %}bg-warning text-dark{% endif %}">
+                            {{ plano.get_status_display }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">Nenhum plano de ação</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block tv_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classificacaoData = {{ riscos_por_classificacao|safe }};
+    const statusData = {{ riscos_por_status|safe }};
+
+    // ═══ Tema CLARO ═══
+    Chart.defaults.color = '#495057';
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
+
+    const CORES_CLASSIFICACAO = {
+        'negligenciavel': { cor: '#1cc88a', label: 'Negligenciável' },
+        'marginal':       { cor: '#36b9cc', label: 'Marginal' },
+        'moderado':       { cor: '#f6c23e', label: 'Moderado' },
+        'muito_grave':    { cor: '#e74a3b', label: 'Muito Grave' },
+        'critico':        { cor: '#a71d2a', label: 'Crítico' },
+    };
+
+    const CORES_STATUS = {
+        'identificado': { cor: '#fd7e14', label: 'Identificado' },
+        'em_controle':  { cor: '#f6c23e', label: 'Em Controle' },
+        'controlado':   { cor: '#1cc88a', label: 'Controlado' },
+        'eliminado':    { cor: '#858796', label: 'Eliminado' },
+    };
+
+    const PALETA_FALLBACK = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
+
+    function getLabel(key, mapa) {
+        return mapa[key] ? mapa[key].label : key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function getCor(key, mapa, index) {
+        return mapa[key] ? mapa[key].cor : PALETA_FALLBACK[index % PALETA_FALLBACK.length];
+    }
+
+    // ── Doughnut ──
+    if (classificacaoData.length > 0) {
+        const ctx1 = document.getElementById('chartRiscosClassificacao');
+        if (ctx1) {
+            new Chart(ctx1.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: classificacaoData.map(i => getLabel(i.classificacao_risco, CORES_CLASSIFICACAO)),
+                    datasets: [{
+                        data: classificacaoData.map(i => i.total),
+                        backgroundColor: classificacaoData.map((i, idx) =>
+                            getCor(i.classificacao_risco, CORES_CLASSIFICACAO, idx)
+                        ),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 3,
+                        hoverBorderColor: '#333',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '55%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 12,
+                                color: '#495057',
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: { size: 11, weight: '500' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#ffffff',
+                            titleColor: '#212529',
+                            bodyColor: '#495057',
+                            borderColor: '#dee2e6',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            boxPadding: 4,
+                            callbacks: {
+                                label: function(ctx) {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // ── Bar ──
+    if (statusData.length > 0) {
+        const ctx2 = document.getElementById('chartRiscosStatus');
+        if (ctx2) {
+            new Chart(ctx2.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: statusData.map(i => getLabel(i.status_controle, CORES_STATUS)),
+                    datasets: [{
+                        label: 'Riscos',
+                        data: statusData.map(i => i.total),
+                        backgroundColor: statusData.map((i, idx) =>
+                            getCor(i.status_controle, CORES_STATUS, idx)
+                        ),
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        maxBarThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0, color: '#6c757d' },
+                            grid: { color: 'rgba(0, 0, 0, 0.06)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#6c757d', font: { size: 11 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#ffffff',
+                            titleColor: '#212529',
+                            bodyColor: '#495057',
+                            borderColor: '#dee2e6',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ` ${ctx.parsed.y} risco${ctx.parsed.y !== 1 ? 's' : ''}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
+
+{% if next_dashboard_url %}
+<script>
+    setTimeout(() => {
+        window.location.href = "{% url next_dashboard_url %}?cycle=true&t=" + Date.now();
+    }, {{ cycle_interval|default:'30000' }});
+</script>
+{% endif %}
+{% endblock %}
+

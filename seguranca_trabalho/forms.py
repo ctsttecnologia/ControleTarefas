@@ -10,8 +10,6 @@ from suprimentos.models import Parceiro
 from django_select2.forms import ModelSelect2Widget
 
 
-# NOTA: FabricanteForm e FornecedorForm foram REMOVIDOS pois seus modelos não existem mais.
-# A gestão de Parceiros deve ser feita através de formulários na aplicação 'suprimentos'.
 class EquipamentoForm(forms.ModelForm):
 
     class Meta:
@@ -23,17 +21,16 @@ class EquipamentoForm(forms.ModelForm):
             'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo',
         ]
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug', }),
             'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 1100'}),
 
             'fabricante': ModelSelect2Widget(
                 model=Parceiro,
-                # Esta linha permite buscar por ambos os campos
-                search_fields=['nome_fantasia__icontains', 'razao_social__icontains'], 
-                # Esta linha garante que APENAS fabricantes sejam listados
-                queryset=Parceiro.objects.filter(eh_fabricante=True),
-                
-                attrs={'data-placeholder': 'Digite para buscar um fabricante...'}
+                search_fields=['nome_fantasia__icontains', 'razao_social__icontains'],
+                attrs={
+                    'class': 'form-control',
+                    'data-placeholder': 'Buscar fabricante...'
+                }
             ),
             
             'certificado_aprovacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5745'}),
@@ -49,6 +46,7 @@ class EquipamentoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.fields['fabricante'].queryset = Parceiro.objects.filter(eh_fabricante=True)
         # Lógica para tornar campos somente leitura na edição (mantida)
         if self.instance.pk:
             self.fields['certificado_aprovacao'].widget.attrs['readonly'] = True
@@ -118,29 +116,44 @@ class AssinaturaForm(forms.Form):
 
 
 class AssinaturaEntregaForm(forms.ModelForm):
-    """ Formulário para o processo de assinatura, atualizando a instância de EntregaEPI. """
+    """Formulário para assinatura: aceita canvas (base64) OU upload de imagem."""
     class Meta:
         model = EntregaEPI
         fields = ['assinatura_recebimento', 'assinatura_imagem', 'data_assinatura']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Oculta os campos, pois seus valores são preenchidos via JavaScript.
+        # Base64 do signature_pad → hidden
         self.fields['assinatura_recebimento'].widget = forms.HiddenInput()
-        self.fields['assinatura_imagem'].widget = forms.HiddenInput()
+        self.fields['assinatura_recebimento'].required = False
+        # Upload de imagem → mantém FileInput (NÃO usar HiddenInput!)
+        self.fields['assinatura_imagem'].required = False
+        # Data preenchida pela view
         self.fields['data_assinatura'].widget = forms.HiddenInput()
+        self.fields['data_assinatura'].required = False
+
+
+class AssinaturaTermoForm(forms.ModelForm):
+    class Meta:
+        model = FichaEPI
+        fields = ['assinatura_funcionario']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['assinatura_funcionario'].widget = forms.HiddenInput()
+        self.fields['assinatura_funcionario'].required = False
+
 
 class FuncaoForm(forms.ModelForm):
     class Meta:
         model = Funcao
         # Vamos incluir apenas os campos que o usuário deve preencher.
         # A 'filial' será adicionada automaticamente na view.
-        fields = ['nome', 'ativo', 'descricao', 'filial']
+        fields = ['nome', 'ativo', 'descricao']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'filial': forms.Select(attrs={'class': 'form-select'}),
 
         }
 

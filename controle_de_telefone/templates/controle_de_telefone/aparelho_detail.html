@@ -1,60 +1,129 @@
 
 {% extends "controle_de_telefone/_base_telefone.html" %}
 {% load static %}
-{% load widget_tweaks %}
-{% block title %}Detalhes do Aparelho{% endblock %}
+
+{% block title %}{{ aparelho.modelo }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>{{ aparelho.modelo }}</h1>
-    <div class="card">
-        <div class="card-body">
-            <p><strong>IMEI:</strong> {{ aparelho.imei }}</p>
-            <p><strong>Número de Série:</strong> {{ aparelho.numero_serie }}</p>
-            <p><strong>Status:</strong> {{ aparelho.get_status_display }}</p>
-            <p><strong>Filial:</strong> {{ aparelho.filial }}</p>
-            <p><strong>Data de Aquisição:</strong> {{ aparelho.data_aquisicao|date:"d/m/Y" }}</p>
-        </div>
-        <div class="card-footer">
-            <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-secondary">Voltar para a Lista</a>
-        </div>
-    </div>
+<div class="container-fluid py-4 px-lg-5">
 
-    <div>
-        {% comment %} 
-        Verificamos primeiro se existe algum histórico.
-        Se não houver, exibimos uma mensagem simples em vez de um acordeão vazio.
-        {% endcomment %}
-        {% if object.historico %}
-        <div class="accordion mt-4" id="accordionHistorico">
-            <div class="accordion-item">
-            <h2 class="accordion-header" id="headingHistorico">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHistorico" aria-expanded="false" aria-controls="collapseHistorico">
-                <i class="fas fa-history me-2"></i>
-                <strong>Histórico de Alterações</strong>
-                <span class="badge bg-secondary ms-2">{{ object.historico|length }}</span>
-                </button>
+    <!-- Cabeçalho -->
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
+        <div class="mb-3 mb-md-0">
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-phone text-primary me-2"></i>{{ aparelho.modelo }}
             </h2>
-            <div id="collapseHistorico" class="accordion-collapse collapse" aria-labelledby="headingHistorico" data-bs-parent="#accordionHistorico">
-                <div class="accordion-body">
-                <ul class="list-group list-group-flush">
-                    {% for log in object.historico %}
-                    <li class="list-group-item">
-                        <small>{{ log }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
+            <div class="d-flex align-items-center gap-2">
+                <span class="font-monospace text-muted" style="font-size: 0.82rem;">IMEI: {{ aparelho.imei }}</span>
+                <span class="mx-1 text-muted">·</span>
+                {% if aparelho.status == 'disponivel' %}
+                <span class="badge bg-success bg-opacity-10 text-success">{{ aparelho.get_status_display }}</span>
+                {% elif aparelho.status == 'em_uso' %}
+                <span class="badge bg-primary bg-opacity-10 text-primary">{{ aparelho.get_status_display }}</span>
+                {% elif aparelho.status == 'manutencao' %}
+                <span class="badge bg-warning bg-opacity-10 text-warning">{{ aparelho.get_status_display }}</span>
+                {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ aparelho.get_status_display }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            <a href="{% url 'controle_de_telefone:aparelho_update' aparelho.pk %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+        </div>
+    </header>
+
+    <div class="row g-4">
+        <!-- Informações -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-info-circle text-primary me-2"></i>Informações do Aparelho
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                IMEI
+                            </label>
+                            <div class="font-monospace text-dark">{{ aparelho.imei }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Número de Série
+                            </label>
+                            <div class="font-monospace text-dark">{{ aparelho.numero_serie|default:"—" }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Status
+                            </label>
+                            <div class="text-dark">{{ aparelho.get_status_display }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Filial
+                            </label>
+                            <div class="text-dark">{{ aparelho.filial }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Data de Aquisição
+                            </label>
+                            <div class="text-dark">{{ aparelho.data_aquisicao|date:"d/m/Y"|default:"—" }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Valor de Aquisição
+                            </label>
+                            <div class="text-dark">
+                                {% if aparelho.valor_aquisicao %}
+                                R$ {{ aparelho.valor_aquisicao|floatformat:2 }}
+                                {% else %}—{% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Sidebar: Histórico -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-clock-history text-info me-2"></i>Histórico
+                    </h6>
+                    {% if object.historico %}
+                    <span class="badge bg-light text-muted rounded-pill">{{ object.historico|length }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if object.historico %}
+                    <div style="max-height: 350px; overflow-y: auto;">
+                        {% for log in object.historico %}
+                        <div class="px-3 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="font-size: 0.82rem; border-color: #f5f5f8 !important;">
+                            <i class="bi bi-dot text-muted"></i>
+                            <span class="text-muted">{{ log }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock text-muted" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="text-muted mt-2 mb-0" style="font-size: 0.85rem;">Nenhuma alteração registrada</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        {% else %}
-        <div class="mt-4">
-            <h5>Histórico de Alterações</h5>
-            <p class="text-muted">Nenhuma alteração registrada.</p>
-        </div>
-        {% endif %}        
-        </div>
     </div>
-</div>       
+</div>
 {% endblock %}
+

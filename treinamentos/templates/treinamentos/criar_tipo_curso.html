@@ -1,116 +1,309 @@
-
 {% extends 'base.html' %}
 {% load static widget_tweaks %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block extra_css %}
-    
+<style>
+    .form-hero {
+        background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 50%, #462585 100%);
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .form-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 250px;
+        height: 250px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .form-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .form-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+
+    .form-card { border: none; border-radius: 0.875rem; }
+    .form-card .card-body { padding: 2rem 2.5rem; }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid #f0f2f5;
+    }
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 0.625rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+    }
+    .section-header h5 { font-weight: 700; font-size: 1rem; margin: 0; color: #2d3748; }
+    .section-header p { font-size: 0.8rem; color: #a0aec0; margin: 0; }
+
+    .step-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #a0aec0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    .step-number {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .form-control, .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #6f42c1;
+        box-shadow: 0 0 0 0.2rem rgba(111,66,193,0.15);
+    }
+    .form-floating > .form-control,
+    .form-floating > .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+    }
+    .form-floating > .form-control:focus,
+    .form-floating > .form-select:focus {
+        border-color: #6f42c1;
+        box-shadow: 0 0 0 0.2rem rgba(111,66,193,0.15);
+    }
+
+    .error-banner {
+        background: linear-gradient(135deg, #fff5f5, #fed7d7);
+        border: none;
+        border-radius: 0.875rem;
+        border-left: 4px solid #e74a3b;
+        padding: 1.25rem 1.5rem;
+    }
+    .error-banner p { font-size: 0.85rem; color: #9b2c2c; margin-bottom: 0; }
+
+    .toggle-card {
+        background: #f8f9fc;
+        border: 2px solid #e9ecef;
+        border-radius: 0.75rem;
+        padding: 1.25rem 1.5rem;
+        transition: all 0.2s;
+    }
+    .toggle-card:hover { border-color: #6f42c1; background: rgba(111,66,193,0.02); }
+    .toggle-card .form-check-input:checked { background-color: #6f42c1; border-color: #6f42c1; }
+    .toggle-card .toggle-label { font-weight: 600; color: #2d3748; }
+    .toggle-card .toggle-desc { font-size: 0.8rem; color: #a0aec0; margin-top: 2px; }
+
+    .form-actions {
+        border-top: 2px solid #f0f2f5;
+        padding-top: 1.5rem;
+        margin-top: 2.5rem;
+    }
+    .btn-save-main {
+        background: linear-gradient(135deg, #6f42c1, #5a32a3);
+        border: none;
+        color: #fff;
+        padding: 0.75rem 2.5rem;
+        border-radius: 0.625rem;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+    .btn-save-main:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(111,66,193,0.35);
+        color: #fff;
+    }
+    .btn-back {
+        border: 2px solid #e2e8f0;
+        color: #718096;
+        padding: 0.75rem 1.75rem;
+        border-radius: 0.625rem;
+        font-weight: 600;
+        background: transparent;
+        transition: all 0.2s;
+    }
+    .btn-back:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
+
+    [data-bs-theme="dark"] .form-hero { background: linear-gradient(135deg, #5a32a3, #3d1f73); }
+    [data-bs-theme="dark"] .section-header { border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .section-header h5 { color: #e2e8f0; }
+    [data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select { border-color: #2d3748; }
+    [data-bs-theme="dark"] .toggle-card { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .toggle-card .toggle-label { color: #e2e8f0; }
+    [data-bs-theme="dark"] .form-actions { border-top-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .btn-back { border-color: #2d3748; color: #a0aec0; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-lg-5">
 
-    {# Cabeçalho da página #}
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <h2 class="h3 mb-0">
-            <i class="bi bi-bookmarks-fill me-2"></i>{{ titulo }}
-        </h2>
-        <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Voltar para a Lista
-        </a>
-    </header>
+    <!-- ═══ HERO ═══ -->
+    <div class="form-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-bookmarks-fill me-2"></i>{{ titulo }}</h1>
+                <p>Configure as informações e preferências do tipo de curso</p>
+            </div>
+            <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
+            </a>
+        </div>
+    </div>
 
-    {# Card que envolve o formulário #}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4 p-md-5">
+    <!-- ═══ FORM ═══ -->
+    <div class="card form-card shadow-sm">
+        <div class="card-body">
             <form method="post" novalidate>
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">{{ form.non_field_errors.as_ul }}</div>
+                <div class="error-banner mb-4">
+                    {% for error in form.non_field_errors %}
+                    <p><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</p>
+                    {% endfor %}
+                </div>
                 {% endif %}
 
-                <div class="row g-4">
-                    <!-- Seção 1: Informações do Curso -->
-                    <div class="col-12">
-                        <h5 class="section-title">Informações do Curso</h5>
+                <!-- ═══ SEÇÃO 1: INFORMAÇÕES ═══ -->
+                <div class="mb-5">
+                    <div class="step-indicator">
+                        <span class="step-number bg-primary bg-opacity-10 text-primary">1</span>
+                        Dados Principais
                     </div>
-
-                    <div class="col-md-6">
-                        <div class="form-floating">
-                            {% render_field form.nome class+="form-control" placeholder=form.nome.label required="required" %}
-                            <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
-                            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.as_text }}</div>{% endif %}
+                    <div class="section-header">
+                        <div class="section-icon bg-primary bg-opacity-10">
+                            <i class="bi bi-mortarboard text-primary"></i>
+                        </div>
+                        <div>
+                            <h5>Informações do Curso</h5>
+                            <p>Nome, área, modalidade e validade</p>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="form-floating">
-                            {% render_field form.area class+="form-select" required="required" %}
-                            <label for="{{ form.area.id_for_label }}">{{ form.area.label }}</label>
-                            {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors.as_text }}</div>{% endif %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {% render_field form.nome class+="form-control" placeholder=" " required="required" %}
+                                <label for="{{ form.nome.id_for_label }}">{{ form.nome.label }}</label>
+                                {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.as_text }}</div>{% endif %}
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-floating">
-                            {% render_field form.modalidade class+="form-select" required="required" %}
-                            <label for="{{ form.modalidade.id_for_label }}">{{ form.modalidade.label }}</label>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {% render_field form.area class+="form-select" required="required" %}
+                                <label for="{{ form.area.id_for_label }}">{{ form.area.label }}</label>
+                                {% if form.area.errors %}<div class="invalid-feedback d-block">{{ form.area.errors.as_text }}</div>{% endif %}
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="{{ form.validade_meses.id_for_label }}" class="form-label">{{ form.validade_meses.label }}</label>
-                        <div class="input-group">
-                            {% render_field form.validade_meses type="number" class+="form-control" placeholder="0" min="0" %}
-                            <span class="input-group-text">meses</span>
+                        <div class="col-md-6">
+                            <div class="form-floating">
+                                {% render_field form.modalidade class+="form-select" required="required" %}
+                                <label for="{{ form.modalidade.id_for_label }}">{{ form.modalidade.label }}</label>
+                                {% if form.modalidade.errors %}<div class="invalid-feedback d-block">{{ form.modalidade.errors.as_text }}</div>{% endif %}
+                            </div>
                         </div>
-                        {% if form.validade_meses.help_text %}<div class="form-text">{{ form.validade_meses.help_text }}</div>{% endif %}
-                    </div>
-                    
-                    <div class="col-12">
-                        <div class="form-floating">
-                            {% render_field form.descricao class+="form-control" placeholder=form.descricao.label style="height: 100px" %}
-                            <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+                        <div class="col-md-6">
+                            <label for="{{ form.validade_meses.id_for_label }}" class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; color: #4a5568;">
+                                {{ form.validade_meses.label }}
+                            </label>
+                            <div class="input-group">
+                                {% render_field form.validade_meses type="number" class+="form-control" placeholder="0" min="0" %}
+                                <span class="input-group-text" style="border: 2px solid #e2e8f0; border-left: none; border-radius: 0 0.625rem 0.625rem 0;">
+                                    <i class="bi bi-calendar3 me-1"></i> meses
+                                </span>
+                            </div>
+                            {% if form.validade_meses.help_text %}<div class="form-text">{{ form.validade_meses.help_text }}</div>{% endif %}
                         </div>
-                    </div>
-
-                    <!-- Seção 2: Configurações -->
-                    <div class="col-12 mt-4">
-                        <h5 class="section-title">Configurações</h5>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-check form-switch fs-5">
-                            {% render_field form.certificado class+="form-check-input" %}
-                            <label class="form-check-label" for="{{ form.certificado.id_for_label }}">{{ form.certificado.label }}</label>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <div class="form-check form-switch fs-5">
-                            {% render_field form.ativo class+="form-check-input" %}
-                            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+                        <div class="col-12">
+                            <div class="form-floating">
+                                {% render_field form.descricao class+="form-control" placeholder=" " style="height: 100px" %}
+                                <label for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>
+                                {% if form.descricao.errors %}<div class="invalid-feedback d-block">{{ form.descricao.errors.as_text }}</div>{% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Botões de Ação -->
-                <div class="d-flex justify-content-between mt-5 border-top pt-4">
-                    <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-secondary">
+                <!-- ═══ SEÇÃO 2: CONFIGURAÇÕES ═══ -->
+                <div class="mb-4">
+                    <div class="step-indicator">
+                        <span class="step-number bg-success bg-opacity-10 text-success">2</span>
+                        Preferências
+                    </div>
+                    <div class="section-header">
+                        <div class="section-icon bg-success bg-opacity-10">
+                            <i class="bi bi-gear text-success"></i>
+                        </div>
+                        <div>
+                            <h5>Configurações</h5>
+                            <p>Certificado e status do tipo de curso</p>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="toggle-card">
+                                <div class="form-check form-switch">
+                                    {% render_field form.certificado class+="form-check-input" role="switch" %}
+                                    <label class="form-check-label ms-2" for="{{ form.certificado.id_for_label }}">
+                                        <span class="toggle-label">
+                                            <i class="bi bi-award me-1"></i> {{ form.certificado.label }}
+                                        </span>
+                                        <div class="toggle-desc">Habilita a emissão de certificados para este tipo</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="toggle-card">
+                                <div class="form-check form-switch">
+                                    {% render_field form.ativo class+="form-check-input" role="switch" %}
+                                    <label class="form-check-label ms-2" for="{{ form.ativo.id_for_label }}">
+                                        <span class="toggle-label">
+                                            <i class="bi bi-toggle-on me-1"></i> {{ form.ativo.label }}
+                                        </span>
+                                        <div class="toggle-desc">Tipos inativos não aparecem para seleção</div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══ ACTIONS ═══ -->
+                <div class="form-actions d-flex justify-content-between align-items-center">
+                    <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-back">
                         <i class="bi bi-x-circle me-1"></i> Cancelar
                     </a>
-                    <button type="submit" class="btn btn-primary px-4">
-                        <i class="bi bi-check-circle-fill me-1"></i> Salvar
+                    <button type="submit" class="btn btn-save-main">
+                        <i class="bi bi-check-circle-fill me-2"></i> Salvar Tipo de Curso
                     </button>
                 </div>
             </form>
         </div>
     </div>
-    {% if is_paginated %}
-        {% include 'partials/pagination.html' %}
-    {% endif %}    
 </div>
 {% endblock %}
 

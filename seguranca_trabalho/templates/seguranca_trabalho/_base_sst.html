@@ -1,60 +1,116 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# Adiciona "SST" ao título da página, mantendo o título original do site #}
 {% block title %}SST - {{ block.super }}{% endblock %}
 
-
-{# Preenche o bloco de conteúdo principal do base.html #}
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
     
-    <div class="subnav-automovel mb-3 p-3 bg-body-tertiary rounded-2 border sticky-top" style="top: 60px; z-index: 1020;">
-        <ul class="nav nav">
-            <li class="nav-item">
-                {% if perms.seguranca_trabalho.view_fichaepi %}
-                    <a href="{% url 'seguranca_trabalho:dashboard' %}" class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                    </a>
-                {% endif %}
-            </li>
-            <li class="nav-item">
-                {% if perms.seguranca_trabalho.add_fichaepi %}
-                    <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="nav-link {% if 'ficha_' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-file-person me-1"></i> Fichas de EPI
-                    </a>
-                 {% endif %}
-            </li>
-            <li class="nav-item">
-                {% if not perms.seguranca_trabalho.add_fichaepi %}
-                    <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}" class="nav-link {% if 'minha_ficha_redirect' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-file-person me-1"></i> Minha Ficha de EPI
-                    </a>
-                {% endif %}
-            </li>
-            <li class="nav-item">
-                <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active{% endif %}">
-                    <i class="bi bi-hdd-stack me-1"></i> Equipamentos
-                </a>
-            </li>
-            <li class="nav-item">
-                {% if perms.seguranca_trabalho.change_matrizepi %}
-                    <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="nav-link {% if 'controle_' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-speedometer2 me-1"></i> Controle de EPIs por Função
-                    </a>
-                {% endif %}
-            </li>               
-            <li class="nav-item">
-                {% if perms.seguranca_trabalho.change_matrizepi %}
-                    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="nav-link {% if 'gestao_' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="bi bi-hdd-stack me-1"></i> Gestão de Riscos
-                    </a>
-                {% endif %}
-            </li>
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         NAVEGAÇÃO SECUNDÁRIA (SUBNAV)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary rounded-3 shadow-sm mb-4 sticky-top" style="top: 60px; z-index: 1020;">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold text-primary">
+                <i class="bi bi-shield-check me-1"></i> SST
+            </span>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sstNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="sstNavbar">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    
+                    {% if perms.seguranca_trabalho.view_fichaepi %}
+                    <li class="nav-item">
+                        <a href="{% url 'seguranca_trabalho:dashboard' %}" 
+                           class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active fw-bold{% endif %}">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if perms.seguranca_trabalho.view_fichaepi %}
+                    <li class="nav-item">
+                        <a href="{% url 'seguranca_trabalho:ficha_list' %}" 
+                           class="nav-link {% if 'ficha_' in request.resolver_match.url_name %}active fw-bold{% endif %}">
+                            <i class="bi bi-file-person me-1"></i> Fichas de EPI
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}" 
+                           class="nav-link {% if 'minha_ficha' in request.resolver_match.url_name %}active fw-bold{% endif %}">
+                            <i class="bi bi-file-person me-1"></i> Minha Ficha
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if perms.seguranca_trabalho.view_equipamento %}
+                    <li class="nav-item">
+                        <a href="{% url 'seguranca_trabalho:equipamento_list' %}" 
+                           class="nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active fw-bold{% endif %}">
+                            <i class="bi bi-hdd-stack me-1"></i> Equipamentos
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if perms.seguranca_trabalho.view_funcao %}
+                    <li class="nav-item">
+                        <a href="{% url 'seguranca_trabalho:funcao_list' %}" 
+                           class="nav-link {% if 'funcao_' in request.resolver_match.url_name %}active fw-bold{% endif %}">
+                            <i class="bi bi-briefcase me-1"></i> Funções
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% if perms.seguranca_trabalho.change_matrizepi %}
+                    <li class="nav-item">
+                        <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" 
+                           class="nav-link {% if 'controle_epi' in request.resolver_match.url_name %}active fw-bold{% endif %}">
+                            <i class="bi bi-grid-3x3 me-1"></i> Matriz EPI
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Dropdown para módulos relacionados -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="bi bi-three-dots me-1"></i> Mais
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% if perms.gestao_riscos.view_inspecao %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'gestao_riscos:lista_riscos' %}">
+                                    <i class="bi bi-exclamation-triangle me-2"></i> Gestão de Riscos
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if perms.pgr_gestao.view_pgrdocumento %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'pgr_gestao:dashboard' %}">
+                                    <i class="bi bi-shield-check me-2"></i> PGR
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if perms.seguranca_trabalho.view_cargofuncao %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'seguranca_trabalho:lista_associacoes' %}">
+                                    <i class="bi bi-diagram-3 me-2"></i> Cargo × Função
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-        </ul>
-    </div>
-
+    <!-- Conteúdo específico de cada página SST -->
     {% block sst_content %}{% endblock sst_content %}
 
 </div>

@@ -16,6 +16,8 @@ import io
 import json
 import traceback
 from datetime import datetime
+
+from requests import request
 from treinamentos import treinamento_generators
 from treinamentos.forms import ParticipanteFormSet, TipoCursoForm, TreinamentoForm
 from django.db import transaction
@@ -119,7 +121,13 @@ class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScop
         """Aplica filtros de status, tipo de curso e busca textual."""
         queryset = super().get_queryset().select_related('tipo_curso')
 
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+
         status = self.request.GET.get('status')
+        
         if status:
             queryset = queryset.filter(status=status)
 

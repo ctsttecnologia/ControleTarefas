@@ -1,74 +1,66 @@
-# core/managers.py 
 
-# core/managers.py 
+# core/managers.py
+
 from django.db import models
+
 
 class FilialQuerySet(models.QuerySet):
     """
-    QuerySet customizado com múltiplos métodos de filtragem por filial.
-    Contém a lógica DE NEGÓCIO de como os dados devem ser escopados.
+    QuerySet que sabe filtrar por filial.
+    Funciona com:
+      - Models com campo `filial` direto (herdam BaseModel)
+      - Models sem campo `filial` que definem `_filial_lookup` (models-filhos)
     """
 
-    def da_filial(self, filial_obj):
-        """
-        Filtra o QuerySet para objetos de um objeto Filial específico.
-        """
-        if filial_obj:
-            return self.filter(filial=filial_obj)
-        return self.none()
-
- 
     def for_request(self, request):
         """
-        Filtra o QuerySet com base no contexto do usuário (request).
-        Esta é a lógica de filtragem horizontal principal, movida do
-        antigo 'BaseFilialScopedQueryset'.
+        Filtra pela filial ativa da sessão.
+        - Superusuário sem filial selecionada → vê tudo
+        - Qualquer outro caso → filtra pelo campo/lookup de filial
         """
         user = request.user
-        
-        # Usuário anônimo não vê nada
-        if not user.is_authenticated:
-            return self.none()
-            
-        active_filial_id = request.session.get('active_filial_id')
+        filial_ativa_id = request.session.get('active_filial_id')
 
-        # Condição 1: Superuser sem filial na sessão (modo "Deus") vê tudo
-        if user.is_superuser and not active_filial_id:
-            return self.all()
+        # Superusuário sem filial específica → vê tudo
+        if user.is_superuser and not filial_ativa_id:
+            return self
 
-        # Condição 2: Qualquer usuário com uma filial ativa na sessão
-        if active_filial_id:
-            return self.filter(filial_id=active_filial_id)
+        # Determina o ID da filial a usar
+        filial_id = filial_ativa_id
+        if not filial_id:
+            filial_ativa = getattr(user, 'filial_ativa', None)
+            if filial_ativa:
+                filial_id = filial_ativa.pk
 
-        # Condição 3: Usuário (não superuser) sem filial na sessão:
-        # Usa as filiais permitidas do perfil como fallback.
-        if not user.is_superuser and hasattr(user, 'filiais_permitidas'):
-            # Usa .all() para pegar o queryset de filiais permitidas
-            filiais_permitidas = user.filiais_permitidas.all()
-            if filiais_permitidas.exists():
-                return self.filter(filial__in=filiais_permitidas)
-        
-        # Condição 4: Se não se encaixar em nada (ex: user sem filiais permitidas)
-        # "Nega por padrão" - Retorna um queryset vazio
+        # Se tem filial, aplica o filtro
+        if filial_id:
+            filial_field = self._get_filial_field()
+            return self.filter(**{filial_field: filial_id})
+
+        # Sem filial → não vê nada (segurança)
         return self.none()
+
+    def _get_filial_field(self):
+        """
+        Descobre qual campo usar para filtrar.
+        1. Se o model define `_filial_lookup` → usa esse caminho (FK do pai)
+        2. Se não → usa 'filial_id' (campo direto)
+        """
+        model = self.model
+        if hasattr(model, '_filial_lookup'):
+            return model._filial_lookup
+        return 'filial_id'
 
 
 class FilialManager(models.Manager):
     """
-    Manager que expõe os métodos do FilialQuerySet.
-    
-    Adicione este manager aos seus modelos:
-    objects = FilialManager()
+    Manager padrão do sistema.
+    Todos os models (com ou sem campo filial direto) podem usá-lo.
     """
+
     def get_queryset(self):
         return FilialQuerySet(self.model, using=self._db)
 
-    def da_filial(self, filial_obj):
-        """ Exemplo de uso: MeuModelo.objects.da_filial(objeto_filial) """
-        return self.get_queryset().da_filial(filial_obj)
-
     def for_request(self, request):
-        """ Exemplo de uso: MeuModelo.objects.for_request(request) """
         return self.get_queryset().for_request(request)
-    
-    
+

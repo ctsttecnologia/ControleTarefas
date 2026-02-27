@@ -1,0 +1,261 @@
+
+{% extends "controle_de_telefone/_base_telefone.html" %}
+
+{% block title %}Recarga — {{ recarga.linha.numero }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Cabeçalho -->
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
+        <div class="mb-3 mb-md-0">
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-cash-coin text-success me-2"></i>Detalhes da Recarga
+            </h2>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="fw-semibold">{{ recarga.linha.numero }}</span>
+                <span class="mx-1 text-muted">·</span>
+                <span class="badge bg-light text-muted border">{{ recarga.get_tipo_recarga_display }}</span>
+                <span class="mx-1 text-muted">·</span>
+                {% if recarga.status == 'pendente' %}
+                <span class="badge bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-hourglass-split me-1"></i>Pendente
+                </span>
+                {% elif recarga.status == 'aprovada' %}
+                <span class="badge bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-check me-1"></i>Aprovada
+                </span>
+                {% elif recarga.status == 'realizada' %}
+                <span class="badge bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-check-circle me-1"></i>Realizada
+                </span>
+                {% elif recarga.status == 'cancelada' %}
+                <span class="badge bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-x-circle me-1"></i>Cancelada
+                </span>
+                {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary">{{ recarga.get_status_display }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
+            </a>
+            {% if recarga.status == 'pendente' %}
+            <a href="{% url 'controle_de_telefone:recarga_update' recarga.pk %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
+            </a>
+            {% if perms.controle_de_telefone.aprovar_recarga %}
+            <a href="{% url 'controle_de_telefone:recarga_aprovar' recarga.pk %}" class="btn btn-info btn-sm">
+                <i class="bi bi-check-lg me-1"></i>Aprovar
+            </a>
+            {% endif %}
+            {% endif %}
+            {% if recarga.status in 'pendente,aprovada' %}
+            <a href="{% url 'controle_de_telefone:recarga_realizar' recarga.pk %}" class="btn btn-success btn-sm">
+                <i class="bi bi-check-circle me-1"></i>Marcar Realizada
+            </a>
+            {% if perms.controle_de_telefone.cancelar_recarga %}
+            <a href="{% url 'controle_de_telefone:recarga_cancelar' recarga.pk %}" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+            </a>
+            {% endif %}
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="row g-4">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+
+            <!-- Valor e Período -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-currency-dollar text-success me-2"></i>Valor e Período
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-sm-4 text-center">
+                            <div class="fw-bold text-success" style="font-size: 2rem;">R$ {{ recarga.valor|floatformat:2 }}</div>
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Valor da Recarga</div>
+                        </div>
+                        <div class="col-sm-4 text-center">
+                            {% if recarga.franquia_dados_formatada %}
+                            <div class="fw-bold text-primary" style="font-size: 1.5rem;">{{ recarga.franquia_dados_formatada }}</div>
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Franquia de Dados</div>
+                            {% else %}
+                            <div class="text-muted">—</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-4 text-center">
+                            {% if recarga.minutos_voz %}
+                            <div class="fw-bold text-info" style="font-size: 1.5rem;">{{ recarga.minutos_voz }} min</div>
+                            <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Minutos de Voz</div>
+                            {% else %}
+                            <div class="text-muted">—</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="row g-4">
+                        <div class="col-sm-4">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Data da Recarga</label>
+                            <div class="fw-semibold text-dark">{{ recarga.data_recarga|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Início da Vigência</label>
+                            <div class="fw-semibold text-dark">{{ recarga.data_inicio|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Término da Vigência</label>
+                            <div class="fw-semibold text-dark">
+                                {{ recarga.data_termino|date:"d/m/Y" }}
+                                <span class="ms-1 text-muted">({{ recarga.dias_vigencia }} dias)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if recarga.is_vigente %}
+                    <div class="alert alert-success bg-success bg-opacity-10 border-0 mt-4 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <span>Créditos dentro do período de vigência</span>
+                    </div>
+                    {% elif recarga.is_expirada %}
+                    <div class="alert alert-danger bg-danger bg-opacity-10 border-0 mt-4 mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-circle-fill text-danger"></i>
+                        <span>Período de vigência expirado</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Motivo e Observações -->
+            {% if recarga.motivo or recarga.observacao %}
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-chat-text text-muted me-2"></i>Informações Adicionais
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    {% if recarga.motivo %}
+                    <div class="mb-3">
+                        <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Motivo/Justificativa</label>
+                        <div class="text-dark">{{ recarga.motivo|linebreaks }}</div>
+                    </div>
+                    {% endif %}
+                    {% if recarga.observacao %}
+                    <div>
+                        <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Observações</label>
+                        <div class="text-dark">{{ recarga.observacao|linebreaks }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Comprovante -->
+            {% if recarga.codigo_transacao or recarga.comprovante %}
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-receipt text-warning me-2"></i>Comprovação
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        {% if recarga.codigo_transacao %}
+                        <div class="col-md-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Código da Transação</label>
+                            <div class="font-monospace text-dark">{{ recarga.codigo_transacao }}</div>
+                        </div>
+                        {% endif %}
+                        {% if recarga.comprovante %}
+                        <div class="col-md-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Comprovante</label>
+                            <div>
+                                <a href="{{ recarga.comprovante.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-file-earmark-arrow-down me-1"></i>Baixar Comprovante
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+
+            <!-- Linha Telefônica -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-telephone text-primary me-2"></i>Linha Telefônica
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom" style="border-color: #f5f5f8 !important;">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Número</label>
+                        <div class="fw-semibold text-dark">{{ recarga.linha.numero }}</div>
+                    </div>
+                    <div class="px-4 py-3">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Operadora / Plano</label>
+                        <div class="text-dark">{{ recarga.linha.plano.operadora.nome }} — {{ recarga.linha.plano.nome }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Responsáveis -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-people text-info me-2"></i>Responsáveis
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom" style="border-color: #f5f5f8 !important;">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Solicitante</label>
+                        <div class="fw-semibold text-dark">{{ recarga.responsavel.nome_completo }}</div>
+                    </div>
+                    <div class="px-4 py-3">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Usuário dos Créditos</label>
+                        <div class="fw-semibold text-dark">{{ recarga.usuario_credito.nome_completo }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auditoria -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-clock-history text-muted me-2"></i>Auditoria
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom" style="border-color: #f5f5f8 !important;">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Solicitado em</label>
+                        <div class="text-dark">{{ recarga.data_solicitacao|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    <div class="px-4 py-3 border-bottom" style="border-color: #f5f5f8 !important;">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Criado por</label>
+                        <div class="text-dark">{{ recarga.criado_por.get_full_name|default:recarga.criado_por.username }}</div>
+                    </div>
+                    <div class="px-4 py-3">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem;">Última Atualização</label>
+                        <div class="text-dark">{{ recarga.atualizado_em|date:"d/m/Y H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

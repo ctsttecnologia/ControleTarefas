@@ -1,11 +1,15 @@
 # ferramentas/views.py
 
+import logging
+from io import BytesIO
+
 import base64
 import json
-from datetime import timedelta, datetime
-from io import BytesIO
 import subprocess
 import sys
+import tempfile
+import zipfile
+from datetime import timedelta, datetime
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -14,166 +18,175 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render, redirect
+from django.shortcuts import get_object_or_404, redirect
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
-from django.views.generic import (CreateView, DetailView, FormView, ListView, TemplateView, UpdateView)
+from django.views.generic import (
+    CreateView, DetailView, FormView,
+    ListView, TemplateView, UpdateView
+)
+
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+
 from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin, AtividadeLogMixin
 from usuario.models import Filial
-from .forms import (DevolucaoForm, FerramentaForm, MovimentacaoForm, UploadFileForm, MalaFerramentasForm, TermoResponsabilidadeForm) 
-from .models import Atividade, Ferramenta, MalaFerramentas, Movimentacao, TermoDeResponsabilidade, ItemTermo
-from django.db.models import Prefetch
-from django.template.loader import render_to_string
-from django.http import HttpResponse
-import tempfile
-import zipfile
-import os
+
+from .forms import (
+    DevolucaoForm, FerramentaForm, MovimentacaoForm,
+    UploadFileForm, MalaFerramentasForm, TermoResponsabilidadeForm
+)
+from .models import (
+    Atividade, Ferramenta, MalaFerramentas,
+    Movimentacao, TermoDeResponsabilidade, ItemTermo
+)
+
+logger = logging.getLogger(__name__)
+
 
 # =============================================================================
-# == VIEWS PRINCIPAIS (ATUALIZADO)
+# MIXINS ESPECÍFICOS DO APP
 # =============================================================================
 
-# Adicionado ViewFilialScopedMixin para garantir que a view seja consistente
+class FilialAtribuicaoMixin:
+    """
+    Mixin para atribuir automaticamente a filial ao criar objetos.
+    Prioriza: sessão (superuser) > filial_ativa do usuário.
+    """
+    def _atribuir_filial(self, instance):
+        user = self.request.user
+        session_filial = self.request.session.get('active_filial_id')
+
+        if user.is_superuser and session_filial:
+            instance.filial_id = session_filial
+        elif user.filial_ativa:
+            instance.filial = user.filial_ativa
+        else:
+            raise ValueError("Usuário sem filial ativa. Impossível criar registro.")
+
+
+class ItemRetrievalMixin:
+    """
+    Mixin para buscar ferramenta ou mala de forma segura (filtrada por filial).
+    """
+    def _get_item_seguro(self, model_class, pk):
+        qs = model_class.objects.for_request(self.request)
+        return get_object_or_404(qs, pk=pk)
+
+
+# =============================================================================
+# DASHBOARD
+# =============================================================================
+
 class DashboardView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
-    """
-    Exibe o dashboard principal com estatísticas sobre ferramentas e malas.
-    O código é otimizado para minimizar as consultas ao banco de dados.
-    """
+    """Dashboard com estatísticas otimizadas (mínimo de queries)."""
     template_name = 'ferramentas/dashboard.html'
-
-    def _get_ferramenta_stats(self, base_qs):
-        """
-        Calcula todas as estatísticas de ferramentas em uma única consulta.
-        """
-        # Define as condições de filtro para cada status
-        em_uso_q = Q(status=Ferramenta.Status.EM_USO) | Q(mala__status=MalaFerramentas.Status.EM_USO)
-        em_manutencao_q = Q(status=Ferramenta.Status.EM_MANUTENCAO)
-        
-        # Ferramentas disponíveis são aquelas que NÃO estão em uso E NÃO estão em manutenção
-        disponivel_q = ~em_uso_q & ~em_manutencao_q
-
-        # Executa uma única consulta de agregação para obter todos os dados
-        stats = base_qs.aggregate(
-            # Contagem de registros por status
-            total_count=Count('id'),
-            em_uso_count=Count('id', filter=em_uso_q),
-            em_manutencao_count=Count('id', filter=em_manutencao_q),
-            disponivel_count=Count('id', filter=disponivel_q),
-
-            # Soma da quantidade de itens por status
-            total_sum=Sum('quantidade'),
-            em_uso_sum=Sum('quantidade', filter=em_uso_q),
-            disponivel_sum=Sum('quantidade', filter=disponivel_q),
-        )
-        return stats
-
-    def _get_mala_stats(self, base_qs):
-        """
-        Calcula todas as estatísticas de malas em uma única consulta.
-        """
-        # Define as condições de filtro
-        disponivel_q = Q(status=MalaFerramentas.Status.DISPONIVEL)
-        em_uso_q = Q(status=MalaFerramentas.Status.EM_USO)
-
-        # Executa a agregação
-        stats = base_qs.aggregate(
-            # Contagem de registros
-            total_count=Count('id'),
-            disponivel_count=Count('id', filter=disponivel_q),
-            em_uso_count=Count('id', filter=em_uso_q),
-
-            # Soma da quantidade de itens
-            total_sum=Sum('quantidade'),
-            disponivel_sum=Sum('quantidade', filter=disponivel_q),
-        )
-        return stats
-
-    def _prepare_context_data(self, context, ferramenta_stats, mala_stats, movimentacoes_qs, atividades_qs):
-        """
-        Popula o dicionário de contexto com os dados já calculados.
-        Nenhuma consulta ao banco de dados é feita aqui.
-        """
-        context['status_malas'] = mala_stats
-        context['status_ferramentas'] = ferramenta_stats 
-        # Combina os totais para os cards principais
-        context['status_total'] = {
-            'total': (ferramenta_stats.get('total_count') or 0) + (mala_stats.get('total_count') or 0),
-            'disponivel': (ferramenta_stats.get('disponivel_count') or 0) + (mala_stats.get('disponivel_count') or 0),
-            'em_uso': (ferramenta_stats.get('em_uso_count') or 0) + (mala_stats.get('em_uso_count') or 0),
-            'em_manutencao': ferramenta_stats.get('em_manutencao_count') or 0,
-            
-            'total_itens_ferramentas': ferramenta_stats.get('total_sum') or 0,
-            'total_itens_malas': mala_stats.get('total_sum') or 0,
-            'total_itens_geral': (ferramenta_stats.get('total_sum') or 0) + (mala_stats.get('total_sum') or 0),
-            
-            'quantidade_ferramentas_disponiveis': (ferramenta_stats.get('disponivel_count') or 0),
-            'quantidade_malas_disponiveis': (mala_stats.get('disponivel_count') or 0),
-
-            'total_malas': mala_stats.get('total_count') or 0,
-            'total_ferramentas': ferramenta_stats.get('total_count') or 0,
-            'total_movimentacoes': movimentacoes_qs.count(), # .count() aqui é ok, pois é a última operação na queryset
-            'total_atividades': atividades_qs.count(),
-        }
-
-        # Prepara dados para os gráficos Pizza
-        context['ferramentas_chart_data'] = {
-            'labels': ['Disponível', 'Em Uso', 'Em Manutenção'],
-            'data': [
-                ferramenta_stats.get('disponivel_count') or 0,
-                ferramenta_stats.get('em_uso_count') or 0,
-                ferramenta_stats.get('em_manutencao_count') or 0
-            ],
-            'title': 'Distribuição de Ferramentas'
-        }
-        
-        context['malas_chart_data'] = {
-            'labels': ['Disponível', 'Em Uso'],
-            'data': [
-                mala_stats.get('disponivel_count') or 0,
-                mala_stats.get('em_uso_count') or 0
-            ],
-            'title': 'Distribuição de Malas/Kits'
-        }
-
-        # Prepara listas de itens em uso e atividades
-        context['ferramentas_em_uso'] = movimentacoes_qs.filter(
-            data_devolucao__isnull=True, ferramenta__isnull=False
-        ).select_related('ferramenta', 'retirado_por')
-        
-        context['malas_em_uso'] = movimentacoes_qs.filter(
-            data_devolucao__isnull=True, mala__isnull=False
-        ).select_related('mala', 'retirado_por')
-        
-        context['ultimas_atividades'] = atividades_qs.order_by('-timestamp')[:10]
-        context['titulo_pagina'] = "Dashboard de Operações"
-        
-        return context
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         request = self.request
 
-        # 1. BUSCA AS QUERYSETS BASE
+        # QuerySets base filtrados por filial
+        ferramentas_qs = Ferramenta.objects.for_request(request).ativas()
         malas_qs = MalaFerramentas.objects.for_request(request)
         movimentacoes_qs = Movimentacao.objects.for_request(request)
         atividades_qs = Atividade.objects.for_request(request)
-        ferramentas_qs = Ferramenta.objects.for_request(request).exclude(status=Ferramenta.Status.DESCARTADA)
 
-        # 2. CALCULA ESTATÍSTICAS (Acessa o banco de dados de forma otimizada)
-        ferramenta_stats = self._get_ferramenta_stats(ferramentas_qs)
-        mala_stats = self._get_mala_stats(malas_qs)
+        # Stats em uma única query cada
+        f_stats = self._ferramenta_stats(ferramentas_qs)
+        m_stats = self._mala_stats(malas_qs)
 
-        # 3. MONTA O CONTEXTO FINAL (Sem novas consultas ao banco)
-        context = self._prepare_context_data(context, ferramenta_stats, mala_stats, movimentacoes_qs, atividades_qs)
+        # Movimentações ativas (em uso)
+        movs_ativas = movimentacoes_qs.filter(
+            data_devolucao__isnull=True
+        ).select_related('ferramenta', 'mala', 'retirado_por')
 
+        # Movimentações atrasadas
+        movs_atrasadas = movs_ativas.filter(
+            data_devolucao_prevista__lt=timezone.now()
+        )
+
+        context.update({
+            'titulo_pagina': "Dashboard de Operações",
+            'status_ferramentas': f_stats,
+            'status_malas': m_stats,
+            'status_total': self._totais(f_stats, m_stats, movimentacoes_qs, atividades_qs),
+
+            # Gráficos
+            'ferramentas_chart_data': {
+                'labels': ['Disponível', 'Em Uso', 'Em Manutenção'],
+                'data': [
+                    f_stats.get('disponivel_count', 0),
+                    f_stats.get('em_uso_count', 0),
+                    f_stats.get('em_manutencao_count', 0),
+                ],
+                'title': 'Distribuição de Ferramentas'
+            },
+            'malas_chart_data': {
+                'labels': ['Disponível', 'Em Uso'],
+                'data': [
+                    m_stats.get('disponivel_count', 0),
+                    m_stats.get('em_uso_count', 0),
+                ],
+                'title': 'Distribuição de Malas/Kits'
+            },
+
+            # Listas
+            'ferramentas_em_uso': movs_ativas.filter(ferramenta__isnull=False),
+            'malas_em_uso': movs_ativas.filter(mala__isnull=False),
+            'movimentacoes_atrasadas': movs_atrasadas,
+            'total_atrasadas': movs_atrasadas.count(),
+            'ultimas_atividades': atividades_qs.order_by('-timestamp')[:10],
+        })
         return context
-    
+
+    def _ferramenta_stats(self, qs):
+        em_uso_q = Q(status=Ferramenta.Status.EM_USO) | Q(mala__status=MalaFerramentas.Status.EM_USO)
+        em_manutencao_q = Q(status=Ferramenta.Status.EM_MANUTENCAO)
+        disponivel_q = ~em_uso_q & ~em_manutencao_q
+
+        return qs.aggregate(
+            total_count=Count('id'),
+            em_uso_count=Count('id', filter=em_uso_q),
+            em_manutencao_count=Count('id', filter=em_manutencao_q),
+            disponivel_count=Count('id', filter=disponivel_q),
+            total_sum=Sum('quantidade'),
+            em_uso_sum=Sum('quantidade', filter=em_uso_q),
+            disponivel_sum=Sum('quantidade', filter=disponivel_q),
+        )
+
+    def _mala_stats(self, qs):
+        return qs.aggregate(
+            total_count=Count('id'),
+            disponivel_count=Count('id', filter=Q(status=MalaFerramentas.Status.DISPONIVEL)),
+            em_uso_count=Count('id', filter=Q(status=MalaFerramentas.Status.EM_USO)),
+            total_sum=Sum('quantidade'),
+            disponivel_sum=Sum('quantidade', filter=Q(status=MalaFerramentas.Status.DISPONIVEL)),
+        )
+
+    def _totais(self, f, m, movs_qs, ativ_qs):
+        return {
+            'total': (f.get('total_count') or 0) + (m.get('total_count') or 0),
+            'disponivel': (f.get('disponivel_count') or 0) + (m.get('disponivel_count') or 0),
+            'em_uso': (f.get('em_uso_count') or 0) + (m.get('em_uso_count') or 0),
+            'em_manutencao': f.get('em_manutencao_count') or 0,
+            'total_itens_ferramentas': f.get('total_sum') or 0,
+            'total_itens_malas': m.get('total_sum') or 0,
+            'total_itens_geral': (f.get('total_sum') or 0) + (m.get('total_sum') or 0),
+            'quantidade_ferramentas_disponiveis': f.get('disponivel_count') or 0,
+            'quantidade_malas_disponiveis': m.get('disponivel_count') or 0,
+            'total_malas': m.get('total_count') or 0,
+            'total_ferramentas': f.get('total_count') or 0,
+            'total_movimentacoes': movs_qs.count(),
+            'total_atividades': ativ_qs.count(),
+        }
+
+
 # =============================================================================
-# == VIEWS DE FERRAMENTAS
+# FERRAMENTAS — CRUD
 # =============================================================================
 
 class FerramentaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
@@ -181,87 +194,101 @@ class FerramentaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     template_name = 'ferramentas/ferramenta_list.html'
     context_object_name = 'ferramentas'
     paginate_by = 30
-    # O queryset base é definido pelo ViewFilialScopedMixin
-    # queryset = Ferramenta.objects.select_related('mala', 'filial').order_by('nome') # Removido para usar o mixin
 
     def get_queryset(self):
-        # Chama o get_queryset do mixin primeiro
-        queryset = super().get_queryset().select_related('mala', 'filial')
-        search_query = self.request.GET.get('q')
-        status_filter = self.request.GET.get('status')
+        qs = super().get_queryset().select_related('mala', 'filial')
+        search = self.request.GET.get('q', '').strip()
+        status_filter = self.request.GET.get('status', '')
 
-        if search_query:
-            queryset = queryset.filter(
-                Q(nome__icontains=search_query) |
-                Q(codigo_identificacao__icontains=search_query) |
-                Q(patrimonio__icontains=search_query)
+        if search:
+            qs = qs.filter(
+                Q(nome__icontains=search) |
+                Q(codigo_identificacao__icontains=search) |
+                Q(patrimonio__icontains=search)
             )
 
         if status_filter:
             if status_filter == Ferramenta.Status.EM_USO:
-                queryset = queryset.filter(Q(status=status_filter) | Q(mala__status=status_filter))
+                qs = qs.filter(Q(status=status_filter) | Q(mala__status=MalaFerramentas.Status.EM_USO))
             elif status_filter == Ferramenta.Status.DISPONIVEL:
-                queryset = queryset.filter(status=status_filter).filter(
-                    Q(mala__isnull=True) | Q(mala__status=status_filter)
+                qs = qs.filter(status=status_filter).filter(
+                    Q(mala__isnull=True) | Q(mala__status=MalaFerramentas.Status.DISPONIVEL)
                 )
             else:
-                queryset = queryset.filter(status=status_filter)
+                qs = qs.filter(status=status_filter)
         else:
-            queryset = queryset.exclude(status=Ferramenta.Status.DESCARTADA)
-            
-        return queryset.distinct().order_by('nome')
+            qs = qs.ativas()
+
+        return qs.distinct().order_by('nome')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = Ferramenta.Status.choices
+        context['status_atual'] = self.request.GET.get('status', '')
+        context['query'] = self.request.GET.get('q', '')
+        return context
+
 
 class FerramentaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = Ferramenta
     template_name = 'ferramentas/ferramenta_detail.html'
     context_object_name = 'ferramenta'
-    
+
     def get_queryset(self):
-        # Adiciona prefetch_related ao queryset já filtrado pelo mixin
-        return super().get_queryset().prefetch_related('movimentacoes__retirado_por', 'atividades__usuario')
+        return super().get_queryset().select_related('mala', 'filial', 'fornecedor').prefetch_related(
+            'movimentacoes__retirado_por',
+            'movimentacoes__recebido_por',
+            'atividades__usuario'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         ferramenta = self.object
-        
+
         context['status_efetivo'] = ferramenta.status_efetivo
-        context['status_efetivo_display'] = dict(Ferramenta.Status.choices).get(ferramenta.status_efetivo)
-        
+        context['status_efetivo_display'] = ferramenta.get_status_efetivo_display
         context['movimentacoes'] = ferramenta.movimentacoes.all()
         context['atividades'] = ferramenta.atividades.all()[:20]
-        context['movimentacao_ativa'] = next((m for m in context['movimentacoes'] if m.esta_ativa), None)
-        
+        context['movimentacao_ativa'] = next(
+            (m for m in context['movimentacoes'] if m.esta_ativa), None
+        )
+
+        # Gráfico de uso (últimos 6 meses)
         six_months_ago = timezone.now() - timedelta(days=180)
         usage_data = (
-            Movimentacao.objects.filter(ferramenta=ferramenta, data_retirada__gte=six_months_ago)
-            .annotate(month=TruncMonth('data_retirada')).values('month')
-            .annotate(count=Count('id')).order_by('month')
+            Movimentacao.objects.filter(
+                ferramenta=ferramenta, data_retirada__gte=six_months_ago
+            )
+            .annotate(month=TruncMonth('data_retirada'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
         )
         context['chart_labels'] = json.dumps([d['month'].strftime('%b/%Y') for d in usage_data])
         context['chart_data'] = json.dumps([d['count'] for d in usage_data])
         context['titulo_pagina'] = f"Painel de Controle: {ferramenta.nome}"
         return context
 
-# Adicionado ViewFilialScopedMixin por consistência, embora a lógica principal esteja no form_valid
-class FerramentaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, CreateView):
+
+class FerramentaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, FilialAtribuicaoMixin, AtividadeLogMixin, CreateView):
     model = Ferramenta
     form_class = FerramentaForm
     template_name = 'ferramentas/ferramenta_form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request  # ← NOVO
+        return kwargs
+
     def form_valid(self, form):
-        # A lógica de atribuição da filial já está correta
-        if self.request.user.is_superuser and self.request.session.get('active_filial_id'):
-            form.instance.filial_id = self.request.session.get('active_filial_id')
-        else:
-            form.instance.filial = self.request.user.filial_ativa
-        
-        messages.success(self.request, "Ferramenta adicionada com sucesso.")
-        response = super().form_valid(form) 
+        self._atribuir_filial(form.instance)
+        response = super().form_valid(form)
         self._log_atividade(
-            ferramenta=self.object, 
-            tipo=Atividade.TipoAtividade.CRIACAO, 
+            ferramenta=self.object,
+            tipo=Atividade.TipoAtividade.CRIACAO,
             descricao=f"Ferramenta '{self.object.nome}' registrada."
         )
+        messages.success(self.request, f"Ferramenta '{self.object.nome}' adicionada com sucesso.")
         return response
 
     def get_success_url(self):
@@ -270,21 +297,28 @@ class FerramentaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeL
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = "Adicionar Nova Ferramenta"
+        context['is_create'] = True
         return context
+
 
 class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
     model = Ferramenta
     form_class = FerramentaForm
     template_name = 'ferramentas/ferramenta_form.html'
-    
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request  # ← NOVO
+        return kwargs
+
     def form_valid(self, form):
-        messages.success(self.request, "Dados da ferramenta atualizados com sucesso.")
         response = super().form_valid(form)
         self._log_atividade(
-            ferramenta=self.object, 
-            tipo=Atividade.TipoAtividade.ALTERACAO, 
+            ferramenta=self.object,
+            tipo=Atividade.TipoAtividade.ALTERACAO,
             descricao="Dados da ferramenta foram atualizados."
         )
+        messages.success(self.request, f"'{self.object.nome}' atualizada com sucesso.")
         return response
 
     def get_success_url(self):
@@ -293,10 +327,36 @@ class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeL
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar: {self.object.nome}"
+        context['is_create'] = False
         return context
-    
+
+class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+    model = Ferramenta
+    form_class = FerramentaForm
+    template_name = 'ferramentas/ferramenta_form.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        self._log_atividade(
+            ferramenta=self.object,
+            tipo=Atividade.TipoAtividade.ALTERACAO,
+            descricao="Dados da ferramenta foram atualizados."
+        )
+        messages.success(self.request, f"'{self.object.nome}' atualizada com sucesso.")
+        return response
+
+    def get_success_url(self):
+        return self.object.get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f"Editar: {self.object.nome}"
+        context['is_create'] = False
+        return context
+
+
 # =============================================================================
-# == NOVAS VIEWS PARA MALAS DE FERRAMENTAS
+# MALAS DE FERRAMENTAS — CRUD
 # =============================================================================
 
 class MalaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
@@ -306,166 +366,192 @@ class MalaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        """
-        Sobrescreve o queryset original para aplicar filtros de busca e anotações.
-        """
-        # Pega o queryset base já filtrado pelo mixin
-        base_queryset = super().get_queryset()
-        
-        query = self.request.GET.get('q', '')
-
+        qs = super().get_queryset()
+        query = self.request.GET.get('q', '').strip()
         if query:
-            base_queryset = base_queryset.filter(
+            qs = qs.filter(
                 Q(nome__icontains=query) |
                 Q(codigo_identificacao__icontains=query)
             )
+        return qs.annotate(item_count=Count('itens')).prefetch_related('itens').order_by('nome')
 
-        return base_queryset.annotate(
-            item_count=Count('itens')
-        ).prefetch_related('itens').order_by('nome')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['query'] = self.request.GET.get('q', '')
+        return context
+
 
 class MalaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = MalaFerramentas
     template_name = 'ferramentas/mala_detail.html'
     context_object_name = 'mala'
-    
+
     def get_queryset(self):
-        return super().get_queryset().prefetch_related('movimentacoes__retirado_por', 'atividades__usuario', 'itens')
+        return super().get_queryset().prefetch_related(
+            'movimentacoes__retirado_por',
+            'atividades__usuario',
+            'itens'
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         mala = self.object
         context['movimentacoes'] = mala.movimentacoes.all()
         context['atividades'] = mala.atividades.all()[:20]
-        context['movimentacao_ativa'] = next((m for m in context['movimentacoes'] if m.esta_ativa), None)
+        context['movimentacao_ativa'] = next(
+            (m for m in context['movimentacoes'] if m.esta_ativa), None
+        )
         context['titulo_pagina'] = f"Painel de Controle: {mala.nome}"
         return context
 
-# Adicionado ViewFilialScopedMixin por consistência
-class MalaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, CreateView):
+
+class MalaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, FilialAtribuicaoMixin, AtividadeLogMixin, CreateView):
     model = MalaFerramentas
     form_class = MalaFerramentasForm
     template_name = 'ferramentas/mala_form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request  # ← NOVO
+        return kwargs
+
     def form_valid(self, form):
-        # A lógica de atribuição da filial já está correta
-        if self.request.user.is_superuser and self.request.session.get('active_filial_id'):
-            form.instance.filial_id = self.request.session.get('active_filial_id')
-        else:
-            form.instance.filial = self.request.user.filial_ativa
-        
+        self._atribuir_filial(form.instance)
         response = super().form_valid(form)
         self._log_atividade(
             mala=self.object,
             tipo=Atividade.TipoAtividade.CRIACAO,
             descricao=f"Mala '{self.object.nome}' registrada."
         )
-        messages.success(self.request, "Mala de ferramentas criada com sucesso.")
+        messages.success(self.request, f"Mala '{self.object.nome}' criada com sucesso.")
         return response
 
     def get_success_url(self):
         return self.object.get_absolute_url()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = "Nova Mala de Ferramentas"
+        return context
 
 class MalaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
     model = MalaFerramentas
     form_class = MalaFerramentasForm
     template_name = 'ferramentas/mala_form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request  # ← NOVO
+        return kwargs
+
     def form_valid(self, form):
         response = super().form_valid(form)
         self._log_atividade(
             mala=self.object,
             tipo=Atividade.TipoAtividade.ALTERACAO,
-            descricao=f"Dados da mala '{self.object.nome}' foram atualizados."
+            descricao=f"Dados da mala '{self.object.nome}' atualizados."
         )
-        messages.success(self.request, "Dados da mala atualizados com sucesso.")
+        messages.success(self.request, f"Mala '{self.object.nome}' atualizada com sucesso.")
         return response
 
     def get_success_url(self):
         return self.object.get_absolute_url()
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo_pagina'] = f"Editar: {self.object.nome}"
+        return context
+
+
 # =============================================================================
-# == VIEWS DE AÇÕES (Retirada, Devolução, Manutenção, etc.)
+# AÇÕES DE FERRAMENTA (Manutenção, Inativação)
 # =============================================================================
 
-class AcaoFerramentaBaseView(LoginRequiredMixin, AtividadeLogMixin, View):
-    """ View base para ações POST. A segurança é garantida no método get_ferramenta. """
+class AcaoFerramentaBaseView(LoginRequiredMixin, ItemRetrievalMixin, AtividadeLogMixin, View):
+    """Base para ações POST sobre ferramentas."""
+
     def get_ferramenta(self):
-        # A filtragem por filial já está corretamente implementada aqui
-        qs = Ferramenta.objects.for_request(self.request)
-        return get_object_or_404(qs, pk=self.kwargs['pk'])
+        return self._get_item_seguro(Ferramenta, self.kwargs['pk'])
+
 
 class IniciarManutencaoView(AcaoFerramentaBaseView):
     def post(self, request, *args, **kwargs):
         ferramenta = self.get_ferramenta()
-        if ferramenta.status == Ferramenta.Status.DISPONIVEL:
-            ferramenta.status = Ferramenta.Status.EM_MANUTENCAO
-            ferramenta.save()
-            self._log_atividade(ferramenta, Atividade.TipoAtividade.MANUTENCAO_INICIO, "Parada para manutenção iniciada.")
-            messages.success(request, f"'{ferramenta.nome}' foi colocada em manutenção.")
-        else:
-            messages.error(request, "Ação não permitida. A ferramenta precisa estar 'Disponível'.")
+        if ferramenta.status != Ferramenta.Status.DISPONIVEL:
+            messages.error(request, "A ferramenta precisa estar 'Disponível' para entrar em manutenção.")
+            return redirect(ferramenta.get_absolute_url())
+
+        ferramenta.status = Ferramenta.Status.EM_MANUTENCAO
+        ferramenta.save(update_fields=['status'])
+        self._log_atividade(ferramenta, Atividade.TipoAtividade.MANUTENCAO_INICIO, "Manutenção iniciada.")
+        messages.success(request, f"'{ferramenta.nome}' colocada em manutenção.")
         return redirect(ferramenta.get_absolute_url())
+
 
 class FinalizarManutencaoView(AcaoFerramentaBaseView):
     def post(self, request, *args, **kwargs):
         ferramenta = self.get_ferramenta()
-        if ferramenta.status == Ferramenta.Status.EM_MANUTENCAO:
-            ferramenta.status = Ferramenta.Status.DISPONIVEL
-            ferramenta.save()
-            self._log_atividade(ferramenta, Atividade.TipoAtividade.MANUTENCAO_FIM, "Manutenção finalizada.")
-            messages.success(request, f"A manutenção de '{ferramenta.nome}' foi finalizada.")
-        else:
-            messages.error(request, "Ação não permitida. A ferramenta precisa estar 'Em Manutenção'.")
+        if ferramenta.status != Ferramenta.Status.EM_MANUTENCAO:
+            messages.error(request, "A ferramenta precisa estar 'Em Manutenção'.")
+            return redirect(ferramenta.get_absolute_url())
+
+        ferramenta.status = Ferramenta.Status.DISPONIVEL
+        ferramenta.save(update_fields=['status'])
+        self._log_atividade(ferramenta, Atividade.TipoAtividade.MANUTENCAO_FIM, "Manutenção finalizada.")
+        messages.success(request, f"Manutenção de '{ferramenta.nome}' finalizada.")
         return redirect(ferramenta.get_absolute_url())
+
 
 class InativarFerramentaView(AcaoFerramentaBaseView):
     def post(self, request, *args, **kwargs):
         ferramenta = self.get_ferramenta()
-        if ferramenta.status == Ferramenta.Status.DISPONIVEL:
-            ferramenta.status = Ferramenta.Status.DESCARTADA
-            ferramenta.save()
-            # Ajuste para tipo de atividade como string, conforme a implementação anterior
-            self._log_atividade(ferramenta=ferramenta, tipo="descarte", descricao=f"Ferramenta marcada como descartada/inativa.")
-            messages.success(request, f"'{ferramenta.nome}' foi inativada com sucesso.")
-            return redirect('ferramentas:ferramenta_list')
-        else:
-            messages.error(request, "Ação não permitida. A ferramenta precisa estar 'Disponível' para ser inativada.")
+        if ferramenta.status != Ferramenta.Status.DISPONIVEL:
+            messages.error(request, "A ferramenta precisa estar 'Disponível' para ser inativada.")
             return redirect(ferramenta.get_absolute_url())
 
+        ferramenta.status = Ferramenta.Status.DESCARTADA
+        ferramenta.data_descarte = timezone.now().date()
+        ferramenta.save(update_fields=['status', 'data_descarte'])
+        self._log_atividade(
+            ferramenta=ferramenta,
+            tipo=Atividade.TipoAtividade.DESCARTE,
+            descricao="Ferramenta marcada como descartada/inativa."
+        )
+        messages.success(request, f"'{ferramenta.nome}' inativada com sucesso.")
+        return redirect('ferramentas:ferramenta_list')
+
+
 # =============================================================================
-# == VIEWS DE MOVIMENTAÇÃO (ATUALIZADO)
+# MOVIMENTAÇÃO (Retirada / Devolução)
 # =============================================================================
 
-class MovimentacaoCreateView(LoginRequiredMixin, AtividadeLogMixin, CreateView):
+class MovimentacaoCreateView(LoginRequiredMixin, ItemRetrievalMixin, AtividadeLogMixin, CreateView):
+    """Retirada de ferramenta ou mala."""
     model = Movimentacao
     form_class = MovimentacaoForm
     template_name = 'ferramentas/retirada_form.html'
 
     def dispatch(self, request, *args, **kwargs):
-        """ Identifica se a retirada é de uma ferramenta ou de uma mala, aplicando o filtro de filial. """
         self.ferramenta = None
         self.mala = None
-        
         if 'ferramenta_pk' in self.kwargs:
-            qs = Ferramenta.objects.for_request(self.request)
-            self.ferramenta = get_object_or_404(qs, pk=self.kwargs['ferramenta_pk'])
+            self.ferramenta = self._get_item_seguro(Ferramenta, self.kwargs['ferramenta_pk'])
         elif 'mala_pk' in self.kwargs:
-            qs = MalaFerramentas.objects.for_request(self.request)
-            self.mala = get_object_or_404(qs, pk=self.kwargs['mala_pk'])
-        
+            self.mala = self._get_item_seguro(MalaFerramentas, self.kwargs['mala_pk'])
         return super().dispatch(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['ferramenta'] = self.ferramenta
         kwargs['mala'] = self.mala
+        kwargs['request'] = self.request  # ← NOVO
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['item'] = self.ferramenta or self.mala
-        context['titulo_pagina'] = f"Checklist de Retirada: {context['item'].nome}"
+        item = self.ferramenta or self.mala
+        context['item'] = item
+        context['titulo_pagina'] = f"Checklist de Retirada: {item.nome}"
         return context
 
     @transaction.atomic
@@ -478,48 +564,51 @@ class MovimentacaoCreateView(LoginRequiredMixin, AtividadeLogMixin, CreateView):
         movimentacao = form.save(commit=False)
         movimentacao.filial = self.request.user.filial_ativa
 
+        # Processa assinatura
         assinatura_data = form.cleaned_data.get('assinatura_base64')
-        if assinatura_data:
-            format, imgstr = assinatura_data.split(';base64,')
-            ext = format.split('/')[-1]
-            file_name = f'sig_ret_{item.pk}_{timezone.now().timestamp()}.{ext}'
-            movimentacao.assinatura_retirada = ContentFile(base64.b64decode(imgstr), name=file_name)
+        if assinatura_data and ';base64,' in assinatura_data:
+            fmt, imgstr = assinatura_data.split(';base64,')
+            ext = fmt.split('/')[-1]
+            fname = f'sig_ret_{item.pk}_{timezone.now().timestamp()}.{ext}'
+            movimentacao.assinatura_retirada = ContentFile(
+                base64.b64decode(imgstr), name=fname
+            )
 
         movimentacao.save()
-        
+
         item.status = 'em_uso'
         item.save(update_fields=['status'])
 
-        log_message = f"Retirada por {movimentacao.retirado_por.get_username()}."
         self._log_atividade(
             tipo=Atividade.TipoAtividade.RETIRADA,
-            descricao=log_message,
+            descricao=f"Retirada por {movimentacao.retirado_por.get_username()}.",
             ferramenta=self.ferramenta,
             mala=self.mala
         )
-        
         messages.success(self.request, f"'{item.nome}' retirada com sucesso.")
         return redirect(item.get_absolute_url())
 
-# Adicionado ViewFilialScopedMixin
+
 class DevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+    """Devolução de ferramenta individual."""
     model = Movimentacao
     form_class = DevolucaoForm
     template_name = 'ferramentas/devolucao_form.html'
     context_object_name = 'movimentacao'
-    
+
     def get_queryset(self):
-        # Garante que só pegamos devoluções de ferramentas individuais E da filial correta (via mixin)
-        return super().get_queryset().filter(ferramenta__isnull=False)
+        return super().get_queryset().filter(
+            ferramenta__isnull=False,
+            data_devolucao__isnull=True
+        )
 
     @transaction.atomic
     def form_valid(self, form):
         movimentacao = form.save(commit=False)
         movimentacao.data_devolucao = timezone.now()
         movimentacao.recebido_por = self.request.user
-        # TODO: Adicionar lógica de salvamento de assinatura de devolução, se houver
         movimentacao.save()
-        
+
         ferramenta = movimentacao.ferramenta
         ferramenta.status = Ferramenta.Status.DISPONIVEL
         ferramenta.save(update_fields=['status'])
@@ -527,112 +616,102 @@ class DevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLo
         self._log_atividade(
             ferramenta=ferramenta,
             tipo=Atividade.TipoAtividade.DEVOLUCAO,
-            descricao=f"Devolvida. Responsável pela retirada: {movimentacao.retirado_por.get_username()}."
+            descricao=f"Devolvida. Responsável: {movimentacao.retirado_por.get_username()}."
         )
         messages.success(self.request, f"'{ferramenta.nome}' devolvida com sucesso.")
-        return redirect(self.get_success_url())
-    
+        return redirect(ferramenta.get_absolute_url())
+
     def get_success_url(self):
         return self.object.ferramenta.get_absolute_url()
 
-# =============================================================================
-# == VIEWS DE AÇÃO PARA MALAS (Refatorado)
-# =============================================================================
-# A view MovimentacaoCreateView agora lida com a retirada de Malas também,
-# tornando MalaRetiradaCreateView redundante. Pode ser removida se a URL
-# apontar para MovimentacaoCreateView com 'mala_pk'.
-# Mantendo aqui por referência, caso a lógica precise ser separada no futuro.
 
-class MalaRetiradaCreateView(LoginRequiredMixin, AtividadeLogMixin, CreateView):
-    # Esta view pode ser substituída por MovimentacaoCreateView
-    ...
-
-# Adicionado ViewFilialScopedMixin
 class MalaDevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+    """Devolução de mala de ferramentas."""
     model = Movimentacao
     form_class = DevolucaoForm
     template_name = 'ferramentas/mala_devolucao_form.html'
     context_object_name = 'movimentacao'
 
     def get_queryset(self):
-        # Filtra por movimentações de malas da filial correta
-        return super().get_queryset().filter(mala__isnull=False)
+        return super().get_queryset().filter(
+            mala__isnull=False,
+            data_devolucao__isnull=True
+        )
 
     @transaction.atomic
     def form_valid(self, form):
         movimentacao = form.save(commit=False)
         movimentacao.data_devolucao = timezone.now()
         movimentacao.recebido_por = self.request.user
-        # TODO: Adicionar lógica de salvamento de assinatura de devolução
         movimentacao.save()
-        
+
         mala = movimentacao.mala
         mala.status = MalaFerramentas.Status.DISPONIVEL
         mala.save(update_fields=['status'])
-        # Apenas ferramentas que não estão em manutenção podem voltar a ficar disponíveis
-        mala.itens.exclude(status=Ferramenta.Status.EM_MANUTENCAO).update(status=Ferramenta.Status.DISPONIVEL)
+
+        # Itens da mala que não estão em manutenção voltam a ficar disponíveis
+        mala.itens.exclude(
+            status=Ferramenta.Status.EM_MANUTENCAO
+        ).update(status=Ferramenta.Status.DISPONIVEL)
 
         self._log_atividade(
             mala=mala,
             tipo=Atividade.TipoAtividade.DEVOLUCAO,
-            descricao=f"Devolvida. Responsável: {movimentacao.retirado_por.get_username()}."
+            descricao=f"Mala devolvida. Responsável: {movimentacao.retirado_por.get_username()}."
         )
         messages.success(self.request, f"Mala '{mala.nome}' devolvida com sucesso.")
-        return redirect(self.get_success_url())
+        return redirect(mala.get_absolute_url())
 
     def get_success_url(self):
         return self.object.mala.get_absolute_url()
 
+
 # =============================================================================
-# == VIEWS DE IMPORTAÇÃO E UTILITÁRIOS
+# IMPORTAÇÃO E UTILITÁRIOS
 # =============================================================================
 
-# Não precisa de mixin de filial, pois não lida com objetos do banco
 class DownloadTemplateView(LoginRequiredMixin, View):
-    """
-    Gera e oferece para download a planilha modelo formatada para o usuário preencher.
-    """
+    """Gera planilha modelo para importação."""
+
+    HEADERS = [
+        "Nome da Ferramenta*", "Código de Identificação*",
+        "Data de Aquisição (dd/mm/aaaa)*", "Localização Padrão*",
+        "Nº de Patrimônio", "Fabricante", "Modelo", "Série",
+        "Tamanho da Polegada", "Numero Laudo Técnico",
+        "Mala", "Filial", "Quantidade", "Observações",
+    ]
+
     def get(self, request, *args, **kwargs):
-        workbook = openpyxl.Workbook()
-        worksheet = workbook.active
-        worksheet.title = "Modelo de Importação"
-        # --- Estilos do Cabeçalho ---
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Modelo de Importação"
+
         header_font = Font(name='Calibri', bold=True, color='FFFFFF', size=12)
-        header_fill = PatternFill(start_color='004C99', end_color='004C99', fill_type='solid') # Tom de azul escuro
-        header_alignment = Alignment(horizontal='center', vertical='center')
-        thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
-        # --- Cabeçalhos das Colunas ---
-        headers = [
-            "Nome da Ferramenta*", "Código de Identificação* (para QR Code)",
-            "Data de Aquisição (dd/mm/aaaa)*", "Localização Padrão*", "Nº de Patrimônio",
-            "Fabricante", "Modelo", "Série", "Tamanho da Polegada", "Numero Laudo técnico",
-            "Mala", "Filial", "quantidade", "Observações", 
-        ]
-        
-        # Aplica os cabeçalhos e estilos
-        for col_num, header_title in enumerate(headers, 1):
-            cell = worksheet.cell(row=1, column=col_num)
-            cell.value = header_title
+        header_fill = PatternFill(start_color='004C99', end_color='004C99', fill_type='solid')
+        header_align = Alignment(horizontal='center', vertical='center')
+        thin_border = Border(
+            left=Side(style='thin'), right=Side(style='thin'),
+            top=Side(style='thin'), bottom=Side(style='thin')
+        )
+
+        for col_num, title in enumerate(self.HEADERS, 1):
+            cell = ws.cell(row=1, column=col_num, value=title)
             cell.font = header_font
             cell.fill = header_fill
-            cell.alignment = header_alignment
+            cell.alignment = header_align
             cell.border = thin_border
-            column_letter = get_column_letter(col_num)
-            worksheet.column_dimensions[column_letter].width = 30
+            ws.column_dimensions[get_column_letter(col_num)].width = 30
 
-        # Prepara a resposta HTTP para o download
         response = HttpResponse(
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = 'attachment; filename="modelo_importacao_ferramentas.xlsx"'
-        workbook.save(response)
+        wb.save(response)
         return response
 
-# Não precisa de mixin, pois a lógica da filial é tratada no form_valid
+
 class ImportarFerramentasView(LoginRequiredMixin, FormView):
-    """
-    View que renderiza a página de upload e processa a planilha enviada.
-    """
+    """Importa ferramentas via planilha Excel."""
     template_name = 'ferramentas/importar_ferramentas.html'
     form_class = UploadFileForm
     success_url = reverse_lazy('ferramentas:ferramenta_list')
@@ -642,186 +721,246 @@ class ImportarFerramentasView(LoginRequiredMixin, FormView):
         active_filial_id = self.request.session.get('active_filial_id')
 
         if not active_filial_id:
-            messages.error(self.request, "Nenhuma filial ativa selecionada. Por favor, selecione uma filial antes de importar.")
+            messages.error(self.request, "Selecione uma filial ativa antes de importar.")
             return self.form_invalid(form)
 
         try:
-            workbook = openpyxl.load_workbook(file)
-            worksheet = workbook.active
-            ferramentas_para_criar, erros = [], []
-            codigos_ja_processados = set()
-            
-            # Adicionamos max_col=13 para forçar a leitura de todas as 13 colunas
-            for i, row in enumerate(worksheet.iter_rows(min_row=2, max_col=13, values_only=True), start=2):
-                if all(cell is None for cell in row):
-                    continue
-
-                (
-                    nome, codigo, data_str, localizacao, patrimonio, fabricante, 
-                    modelo, serie, tamanho, laudo, mala_nome, filial_nome, observacoes
-                ) = row
-
-                if not all([nome, codigo, data_str, localizacao]):
-                    erros.append(f"Linha {i}: Dados obrigatórios faltando (Nome, Código, Data ou Localização).")
-                    continue
-                
-                codigo = str(codigo).strip()
-                if codigo in codigos_ja_processados:
-                    erros.append(f"Linha {i}: O Código de Identificação '{codigo}' está duplicado na planilha.")
-                    continue
-                
-                try:
-                    if isinstance(data_str, datetime):
-                        data_aquisicao = data_str.date()
-                    else:
-                        data_aquisicao = datetime.strptime(str(data_str).split(" ")[0], '%d/%m/%Y').date()
-                except (ValueError, TypeError):
-                    erros.append(f"Linha {i}: Formato de data inválido para '{data_str}'. Use dd/mm/aaaa.")
-                    continue
-
-                if Ferramenta.objects.filter(codigo_identificacao=codigo).exists():
-                    erros.append(f"Linha {i}: Código de Identificação '{codigo}' já existe no sistema.")
-                    continue
-                
-                filial_obj = None
-                if filial_nome:
-                    try:
-                        filial_obj = Filial.objects.get(nome__iexact=str(filial_nome).strip())
-                    except Filial.DoesNotExist:
-                        erros.append(f"Linha {i}: A filial '{filial_nome}' não foi encontrada no sistema.")
-                        continue
-                else:
-                    filial_obj = Filial.objects.get(pk=active_filial_id)
-
-                mala_obj = None
-                if mala_nome:
-                    try:
-                        mala_obj = MalaFerramentas.objects.get(nome__iexact=str(mala_nome).strip(), filial=filial_obj)
-                    except MalaFerramentas.DoesNotExist:
-                        erros.append(f"Linha {i}: A mala '{mala_nome}' não foi encontrada na filial '{filial_obj.nome}'.")
-                        continue
-
-                ferramentas_para_criar.append(Ferramenta(
-                    nome=nome, codigo_identificacao=codigo.upper(), data_aquisicao=data_aquisicao,
-                    localizacao_padrao=localizacao, patrimonio=(patrimonio or None),
-                    fabricante_marca=(fabricante or None), modelo=(modelo or None), serie=(serie or None),
-                    tamanho_polegadas=(tamanho or None), numero_laudo_tecnico=(laudo or None),
-                    mala=mala_obj, filial=filial_obj, observacoes=(observacoes or None)
-                ))
-                codigos_ja_processados.add(codigo)
-
-            if erros:
-                for erro in erros:
-                    messages.error(self.request, erro)
-                return self.form_invalid(form)
-
-            with transaction.atomic():
-                Ferramenta.objects.bulk_create(ferramentas_para_criar)
-
-            messages.success(self.request, f"{len(ferramentas_para_criar)} ferramentas importadas com sucesso!")
+            result = self._processar_planilha(file, active_filial_id)
         except Exception as e:
-            messages.error(self.request, f"Ocorreu um erro inesperado ao processar o arquivo: {e}")
+            messages.error(self.request, f"Erro inesperado ao processar o arquivo: {e}")
             return self.form_invalid(form)
 
+        if result['erros']:
+            for erro in result['erros']:
+                messages.error(self.request, erro)
+            return self.form_invalid(form)
+
+        with transaction.atomic():
+            Ferramenta.objects.bulk_create(result['ferramentas'])
+
+        messages.success(self.request, f"{len(result['ferramentas'])} ferramentas importadas com sucesso!")
         return super().form_valid(form)
-    
+
+    def _processar_planilha(self, file, active_filial_id):
+        """Processa planilha e retorna dict com ferramentas e erros."""
+        wb = openpyxl.load_workbook(file)
+        ws = wb.active
+        ferramentas, erros = [], []
+        codigos_processados = set()
+
+        for i, row in enumerate(ws.iter_rows(min_row=2, max_col=14, values_only=True), start=2):
+            if all(cell is None for cell in row):
+                continue
+
+            (
+                nome, codigo, data_str, localizacao, patrimonio,
+                fabricante, modelo, serie, tamanho, laudo,
+                mala_nome, filial_nome, quantidade, observacoes
+            ) = row
+
+            # Validação de campos obrigatórios
+            if not all([nome, codigo, data_str, localizacao]):
+                erros.append(f"Linha {i}: Dados obrigatórios faltando.")
+                continue
+
+            codigo = str(codigo).strip()
+            if codigo in codigos_processados:
+                erros.append(f"Linha {i}: Código '{codigo}' duplicado na planilha.")
+                continue
+
+            # Parse da data
+            try:
+                if isinstance(data_str, datetime):
+                    data_aquisicao = data_str.date()
+                else:
+                    data_aquisicao = datetime.strptime(str(data_str).split(" ")[0], '%d/%m/%Y').date()
+            except (ValueError, TypeError):
+                erros.append(f"Linha {i}: Data inválida '{data_str}'. Use dd/mm/aaaa.")
+                continue
+
+            # Verifica duplicidade no banco
+            if Ferramenta.objects.filter(codigo_identificacao=codigo).exists():
+                erros.append(f"Linha {i}: Código '{codigo}' já existe no sistema.")
+                continue
+
+            # Resolve filial
+            filial_obj = self._resolver_filial(filial_nome, active_filial_id, i, erros)
+            if filial_obj is None and filial_nome:
+                continue
+
+            # Resolve mala
+            mala_obj = self._resolver_mala(mala_nome, filial_obj, i, erros)
+            if mala_obj is None and mala_nome:
+                continue
+
+            ferramentas.append(Ferramenta(
+                nome=nome,
+                codigo_identificacao=codigo.upper(),
+                data_aquisicao=data_aquisicao,
+                localizacao_padrao=localizacao,
+                patrimonio=patrimonio or None,
+                fabricante_marca=fabricante or None,
+                modelo=modelo or None,
+                serie=serie or None,
+                tamanho_polegadas=tamanho or None,
+                numero_laudo_tecnico=laudo or None,
+                quantidade=quantidade or 0,
+                mala=mala_obj,
+                filial=filial_obj or Filial.objects.get(pk=active_filial_id),
+                observacoes=observacoes or None,
+            ))
+            codigos_processados.add(codigo)
+
+        return {'ferramentas': ferramentas, 'erros': erros}
+
+    def _resolver_filial(self, nome, default_id, linha, erros):
+        if nome:
+            try:
+                return Filial.objects.get(nome__iexact=str(nome).strip())
+            except Filial.DoesNotExist:
+                erros.append(f"Linha {linha}: Filial '{nome}' não encontrada.")
+                return None
+        return Filial.objects.get(pk=default_id)
+
+    def _resolver_mala(self, nome, filial, linha, erros):
+        if nome and filial:
+            try:
+                return MalaFerramentas.objects.get(nome__iexact=str(nome).strip(), filial=filial)
+            except MalaFerramentas.DoesNotExist:
+                erros.append(f"Linha {linha}: Mala '{nome}' não encontrada na filial '{filial.nome}'.")
+                return None
+        return None
+
+
 class ImprimirQRCodesView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Ferramenta
     template_name = 'ferramentas/imprimir_qrcodes.html'
     context_object_name = 'ferramentas'
 
     def get_queryset(self):
-        # O mixin já filtra pela filial, então apenas adicionamos o resto da lógica
-        return super().get_queryset().exclude(
-            status=Ferramenta.Status.DESCARTADA
-        ).filter(
-            qr_code__isnull=False
-        ).exclude(
-            qr_code=''
-        ).order_by('nome')
+        return super().get_queryset().ativas().com_qr_code().order_by('nome')
 
-# Adicionado ViewFilialScopedMixin para segurança
+
 class ResultadoScanView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     model = Ferramenta
     template_name = 'ferramentas/resultado_scan.html'
     context_object_name = 'ferramenta'
     slug_field = 'codigo_identificacao'
     slug_url_kwarg = 'codigo_identificacao'
-    
-    # O get_queryset será tratado pelo mixin
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        ferramenta = self.object
-        context['movimentacao_ativa'] = ferramenta.movimentacoes.filter(data_devolucao__isnull=True).first()
+        context['movimentacao_ativa'] = self.object.movimentacoes.filter(
+            data_devolucao__isnull=True
+        ).select_related('retirado_por').first()
         return context
-    
+
+
 class GerarQRCodesView(LoginRequiredMixin, SSTPermissionMixin, View):
-    """
-    Aciona o comando de gerenciamento `generate_qrcodes` em segundo plano.
-    """
+    """Aciona geração de QR Codes em background."""
     permission_required = 'ferramentas.change_ferramenta'
 
     def post(self, request, *args, **kwargs):
-        command = [
+        subprocess.Popen([
             sys.executable,
             str(settings.BASE_DIR / "manage.py"),
             "generate_qrcodes",
-        ]
-        subprocess.Popen(command)
-        messages.success(
-            request, 
-            "A geração de QR Codes foi iniciada em segundo plano. Os novos QR Codes aparecerão na lista em breve."
-        )
+        ])
+        messages.success(request, "Geração de QR Codes iniciada em segundo plano.")
         return redirect('ferramentas:ferramenta_list')
-    
+
+
 # =============================================================================
-# == VIEWS DE TERMO DE RESPONSABILIDADE
+# TERMOS DE RESPONSABILIDADE
 # =============================================================================
 
-# Refatorado para incluir mixins de segurança e filtrar por filial
+class TermoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+    model = TermoDeResponsabilidade
+    template_name = 'ferramentas/termo_list.html'
+    context_object_name = 'termos'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('responsavel', 'filial', 'movimentado_por')
+
+        # Filtros
+        status = self.request.GET.get('status', '')
+        search = self.request.GET.get('q', '').strip()
+
+        if status:
+            qs = qs.filter(status=status)
+        if search:
+            qs = qs.filter(
+                Q(contrato__icontains=search) |
+                Q(responsavel__nome_completo__icontains=search) |
+                Q(pk__icontains=search)
+            )
+
+        return qs.order_by('-data_emissao')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = TermoDeResponsabilidade.StatusTermo.choices
+        context['status_atual'] = self.request.GET.get('status', '')
+        context['query'] = self.request.GET.get('q', '')
+        return context
+
+
+class TermoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+    model = TermoDeResponsabilidade
+    template_name = 'ferramentas/termo_detail.html'
+    context_object_name = 'termo'
+
+    def get_queryset(self):
+        return super().get_queryset().prefetch_related(
+            'itens__ferramenta', 'itens__mala',
+            'movimentacoes_geradas__retirado_por'
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        termo = self.object
+        context['pode_reverter'] = termo.pode_reverter
+        context['titulo_pagina'] = f"Termo de Responsabilidade #{termo.pk}"
+        return context
+
+
 class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, FormView):
     template_name = 'ferramentas/termo_responsabilidade_form.html'
     form_class = TermoResponsabilidadeForm
-    success_url = reverse_lazy('ferramentas:ferramenta_list') # Ajuste a URL de sucesso conforme necessário
-
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request # Passa o request para o __init__ do form
+        kwargs['request'] = self.request 
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['ferramentas'] = Ferramenta.objects.for_request(self.request).filter(status=Ferramenta.Status.DISPONIVEL)
-        context['malas'] = MalaFerramentas.objects.for_request(self.request).filter(status=MalaFerramentas.Status.DISPONIVEL)
+        context['ferramentas'] = Ferramenta.objects.for_request(self.request).disponiveis()
+        context['malas'] = MalaFerramentas.objects.for_request(self.request).filter(
+            status=MalaFerramentas.Status.DISPONIVEL
+        )
         return context
-    
-    # Ajuste final: redirecionar para a nova página de detalhes após criar
-    def get_success_url(self):
-        # 'self.object' não é definido em FormView, então precisamos pegar o 'termo' do form_valid.
-        # Uma forma mais robusta é salvar o pk na sessão ou refatorar, mas por simplicidade,
-        # vamos redirecionar para a lista por enquanto.
-        # Para o redirecionamento da sua pergunta funcionar, você precisaria salvar o termo no self.
-        return reverse_lazy('ferramentas:ferramenta_list')
 
     @transaction.atomic
     def form_valid(self, form):
+        # Validação da assinatura
         assinatura_base64 = self.request.POST.get('assinatura_base64')
         if not assinatura_base64:
             form.add_error(None, "É obrigatório que o responsável assine o termo.")
             return self.form_invalid(form)
 
+        # Validação dos itens
         try:
-            itens_processados = json.loads(self.request.POST.get('itens_termo_json', '[]'))
-            if not itens_processados:
-                messages.error(self.request, "Nenhum item foi selecionado para o termo.")
+            itens_json = json.loads(self.request.POST.get('itens_termo_json', '[]'))
+            if not itens_json:
+                messages.error(self.request, "Nenhum item selecionado para o termo.")
                 return self.form_invalid(form)
         except json.JSONDecodeError:
-            messages.error(self.request, "Erro ao processar os itens do termo. Tente novamente.")
+            messages.error(self.request, "Erro ao processar itens. Tente novamente.")
             return self.form_invalid(form)
 
-        # 1. Salva o Termo de Responsabilidade principal
+        # Cria o termo
         termo = form.save(commit=False)
         termo.movimentado_por = self.request.user
         termo.assinatura_data = assinatura_base64
@@ -829,32 +968,28 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, 
         termo.filial = self.request.user.filial_ativa
         termo.save()
 
-        # Data de devolução padrão (ex: 7 dias), você pode tornar isso um campo no form depois
         data_devolucao = timezone.now() + timedelta(days=7)
 
-        # 2. Itera sobre cada item selecionado para criar registros e atualizar status
-        for item_data in itens_processados:
+        # Processa cada item
+        for item_data in itens_json:
             item_pk = item_data.get('pk')
-            if not item_pk: continue
+            if not item_pk:
+                continue
 
-            item_obj = None
-            ferramenta_obj, mala_obj = None, None
+            ferramenta_obj, mala_obj, item_obj = None, None, None
 
-            # Identifica o item (Ferramenta ou Mala)
             if termo.tipo_uso == TermoDeResponsabilidade.TipoUso.FERRAMENTAL:
                 ferramenta_obj = get_object_or_404(Ferramenta, pk=item_pk)
                 item_obj = ferramenta_obj
             elif termo.tipo_uso == TermoDeResponsabilidade.TipoUso.MALA:
                 mala_obj = get_object_or_404(MalaFerramentas, pk=item_pk)
                 item_obj = mala_obj
-            
-            # Valida se o item ainda está disponível
-            if item_obj.status != 'disponivel':
-                messages.error(self.request, f"O item '{item_obj}' não está mais disponível para retirada.")
-                # A transação será revertida, cancelando a criação do termo.
-                return self.form_invalid(form)
 
-            # 2a. Cria o ItemTermo (relação entre Termo e o item)
+            if not item_obj or item_obj.status != 'disponivel':
+                messages.error(self.request, f"'{item_obj}' não está mais disponível.")
+                raise ValueError("Item indisponível")
+
+            # Cria ItemTermo
             ItemTermo.objects.create(
                 termo=termo,
                 ferramenta=ferramenta_obj,
@@ -864,180 +999,162 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, 
                 item=item_data['item']
             )
 
-            # 2b. Cria a Movimentacao (o registro de "retirada")
+            # Cria Movimentação
             Movimentacao.objects.create(
-                termo_responsabilidade=termo,  # Link para o termo
+                termo_responsabilidade=termo,
                 ferramenta=ferramenta_obj,
                 mala=mala_obj,
-                # NOTA: 'retirado_por' é um Usuário, 'responsavel' é um Funcionário.
-                # Usamos o usuário que está logado e operando o sistema.
                 retirado_por=termo.movimentado_por,
                 data_devolucao_prevista=data_devolucao,
-                condicoes_retirada="Retirada conforme Termo de Responsabilidade #" + str(termo.pk),
-                filial=termo.filial
+                condicoes_retirada=f"Retirada via Termo #{termo.pk}",
+                filial=termo.filial,
             )
 
-            # 2c. Atualiza o status do item para "Em Uso"
+            # Atualiza status
             item_obj.status = 'em_uso'
             item_obj.save(update_fields=['status'])
 
-            # 2d. (Opcional, mas recomendado) Cria um log de Atividade
+            # Log de atividade
             Atividade.objects.create(
                 ferramenta=ferramenta_obj,
                 mala=mala_obj,
                 tipo_atividade=Atividade.TipoAtividade.RETIRADA,
                 descricao=f"Retirada por {termo.responsavel} via Termo #{termo.pk}.",
                 usuario=self.request.user,
-                filial=termo.filial
+                filial=termo.filial,
             )
 
-        messages.success(self.request, f"Termo de Responsabilidade #{termo.pk} criado e itens retirados com sucesso.")
-        
-        # ARMAZENA O TERMO CRIADO NO SELF PARA USAR NO GET_SUCCESS_URL
+        messages.success(self.request, f"Termo #{termo.pk} criado com sucesso.")
         self.termo_criado = termo
-        
         return super().form_valid(form)
 
-    # Nova implementação do get_success_url que usa o objeto salvo
     def get_success_url(self):
         return reverse('ferramentas:termo_detail', kwargs={'pk': self.termo_criado.pk})
-        
-# Para listar todos os termos
-class TermoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
-    model = TermoDeResponsabilidade
-    template_name = 'ferramentas/termo_list.html' # Crie este template simples
-    context_object_name = 'termos'
-    paginate_by = 20
 
-    def get_queryset(self):
-        return super().get_queryset().select_related('responsavel', 'filial').order_by('-data_emissao')
-
-# VIEW ATUALIZADA: TermoDetailView agora renderiza o template de PDF
-
-class TermoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
-    """
-    Exibe os detalhes de um Termo de Responsabilidade.
-    """
-    model = TermoDeResponsabilidade
-    template_name = 'ferramentas/termo_detail.html'  # Precisaremos criar este template
-    context_object_name = 'termo'
-
-    def get_queryset(self):
-        # Otimiza a consulta buscando itens e ferramentas/malas relacionadas
-        return super().get_queryset().prefetch_related(
-            'itens__ferramenta', 'itens__mala'
-        )
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        termo = self.get_object()
-        
-        # Verifica se ALGUMA movimentação gerada por este termo JÁ foi devolvida.
-        # Se sim, o termo não pode mais ser revertido de forma completa.
-        movimentacoes_devolvidas = termo.movimentacoes_geradas.filter(data_devolucao__isnull=False).exists()
-        
-        # Passa uma flag para o template para saber se pode mostrar o botão de reverter
-        context['pode_reverter'] = not movimentacoes_devolvidas
-        
-        context['titulo_pagina'] = f"Termo de Responsabilidade #{termo.pk}"
-        return context
 
 class ReverterTermoView(LoginRequiredMixin, ViewFilialScopedMixin, View):
-    """
-    Processa a reversão (estorno) de um Termo de Responsabilidade.
-    Esta view só aceita requisições POST.
-    """
-    
+    """Reverte/estorna um Termo de Responsabilidade."""
+
     @transaction.atomic
     def post(self, request, *args, **kwargs):
-        # Pega o termo da filial correta para garantir a segurança
-        termo = get_object_or_404(TermoDeResponsabilidade.objects.for_request(request), pk=self.kwargs['pk'])
-
-        # Busca todas as movimentações ATIVAS geradas por este termo
-        movimentacoes_ativas = termo.movimentacoes_geradas.filter(data_devolucao__isnull=True)
-
-        if not movimentacoes_ativas.exists():
-            messages.warning(request, "Este termo não possui itens ativos para reverter.")
-            return redirect('ferramentas:termo_detail', pk=termo.pk)
-
-        # Itera sobre cada movimentação ativa para reverter
-        for mov in movimentacoes_ativas:
-            item_a_devolver = mov.ferramenta or mov.mala
-
-            if item_a_devolver:
-                # 1. Devolve o item, marcando seu status como 'disponivel'
-                # Apenas se não estiver em manutenção
-                if item_a_devolver.status != 'em_manutencao':
-                    item_a_devolver.status = 'disponivel'
-                    item_a_devolver.save(update_fields=['status'])
-
-                # 2. Finaliza a movimentação
-                mov.data_devolucao = timezone.now()
-                mov.recebido_por = request.user
-                mov.condicoes_devolucao = f"Devolução automática via estorno do Termo #{termo.pk}."
-                mov.save()
-
-        # 3. Cria um log de atividade para o termo
-        Atividade.objects.create(
-            # Embora não tenha um campo direto, podemos usar a descrição
-            descricao=f"Termo #{termo.pk} revertido/estornado por {request.user.get_username()}.",
-            tipo_atividade=Atividade.TipoAtividade.DEVOLUCAO, 
-            usuario=request.user,
-            filial=termo.filial
+        termo = get_object_or_404(
+            TermoDeResponsabilidade.objects.for_request(request),
+            pk=self.kwargs['pk']
         )
 
-        messages.success(request, f"Termo #{termo.pk} revertido com sucesso. Todos os itens foram devolvidos.")
+        if not termo.pode_reverter:
+            messages.warning(request, "Este termo não pode ser revertido.")
+            return redirect('ferramentas:termo_detail', pk=termo.pk)
+
+        movs_ativas = termo.movimentacoes_geradas.filter(data_devolucao__isnull=True)
+
+        for mov in movs_ativas:
+            item = mov.ferramenta or mov.mala
+            if item and item.status != Ferramenta.Status.EM_MANUTENCAO:
+                item.status = 'disponivel'
+                item.save(update_fields=['status'])
+
+            mov.data_devolucao = timezone.now()
+            mov.recebido_por = request.user
+            mov.condicoes_devolucao = f"Estorno automático do Termo #{termo.pk}."
+            mov.save()
+
+        # Atualiza status do termo
+        termo.status = TermoDeResponsabilidade.StatusTermo.ESTORNADO
+        termo.save(update_fields=['status'])
+
+        Atividade.objects.create(
+            descricao=f"Termo #{termo.pk} estornado por {request.user.get_username()}.",
+            tipo_atividade=Atividade.TipoAtividade.DEVOLUCAO,
+            usuario=request.user,
+            filial=termo.filial,
+        )
+
+        messages.success(request, f"Termo #{termo.pk} estornado. Itens devolvidos.")
         return redirect('ferramentas:termo_detail', pk=termo.pk)
 
-# NOVA VIEW: Para download do PDF individual
-class DownloadTermoPDFView(LoginRequiredMixin, ViewFilialScopedMixin, View):
-    def get(self, request, *args, **kwargs):
-        termo = get_object_or_404(TermoDeResponsabilidade.objects.for_request(request), pk=self.kwargs['pk'])
-        html_string = render_to_string('ferramentas/termo_pdf_template.html', {'termo': termo})
-        
-        # Correção para WeasyPrint em ambientes de produção (Windows)
-        with tempfile.NamedTemporaryFile(delete=True, suffix='.html') as temp_html:
-            temp_html.write(html_string.encode('UTF-8'))
-            temp_html.flush()
-            with tempfile.NamedTemporaryFile(delete=True, suffix='.pdf') as temp_pdf:
-                subprocess.run(['weasyprint', temp_html.name, temp_pdf.name])
-                temp_pdf.seek(0)
-                pdf = temp_pdf.read()
 
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="termo_{termo.pk}_{termo.responsavel}.pdf"'
+class DownloadTermoPDFView(LoginRequiredMixin, ViewFilialScopedMixin, View):
+    """
+    Gera o PDF do Termo de Responsabilidade.
+    Usa WeasyPrint como biblioteca Python (sem subprocess).
+    Fallback para xhtml2pdf se WeasyPrint não estiver disponível.
+    """
+
+    def get(self, request, *args, **kwargs):
+        termo = get_object_or_404(
+            TermoDeResponsabilidade.objects.for_request(request),
+            pk=self.kwargs['pk']
+        )
+
+        html_string = render_to_string(
+            'ferramentas/termo_pdf_template.html',
+            {'termo': termo},
+            request=request,
+        )
+
+        pdf_bytes = self._gerar_pdf(html_string, request)
+
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="termo_{termo.pk}.pdf"'
         return response
 
-# NOVA VIEW: Para download de múltiplos PDFs em um arquivo ZIP
+    def _gerar_pdf(self, html_string, request):
+        """Tenta WeasyPrint (lib), depois xhtml2pdf como fallback."""
+
+        # ── Tentativa 1: WeasyPrint como biblioteca ──
+        try:
+            from weasyprint import HTML
+            return HTML(
+                string=html_string,
+                base_url=request.build_absolute_uri('/')
+            ).write_pdf()
+        except (ImportError, OSError) as e:
+            logger.warning("WeasyPrint indisponível (%s). Tentando xhtml2pdf...", e)
+
+        # ── Tentativa 2: xhtml2pdf (sem dependência de GTK) ──
+        try:
+            from xhtml2pdf import pisa
+
+            buffer = BytesIO()
+            pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+
+            if pisa_status.err:
+                raise RuntimeError(
+                    f"xhtml2pdf retornou {pisa_status.err} erro(s) na geração."
+                )
+
+            return buffer.getvalue()
+        except ImportError:
+            raise RuntimeError(
+                "Nenhum gerador de PDF disponível. "
+                "Instale com: pip install xhtml2pdf"
+            )
+        
 class DownloadTermosLoteView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         termos_ids = request.POST.getlist('termo_ids')
         if not termos_ids:
-            messages.warning(request, "Nenhum termo selecionado para download.")
-            return redirect('ferramentas:termo_list')
+            messages.warning(request, "Nenhum termo selecionado.")
+            return redirect('ferramentas:termoderesponsabilidade_list')
 
         qs = TermoDeResponsabilidade.objects.for_request(request).filter(pk__in=termos_ids)
-        
-        # Cria um arquivo ZIP em memória
+
         zip_buffer = BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
             for termo in qs:
-                html_string = render_to_string('ferramentas/termo_pdf_template.html', {'termo': termo})
-                
-                with tempfile.NamedTemporaryFile(delete=True, suffix='.html') as temp_html:
-                    temp_html.write(html_string.encode('UTF-8'))
-                    temp_html.flush()
-                    with tempfile.NamedTemporaryFile(delete=True, suffix='.pdf') as temp_pdf:
-                        subprocess.run(['weasyprint', temp_html.name, temp_pdf.name])
-                        temp_pdf.seek(0)
-                        pdf = temp_pdf.read()
-                
-                pdf_filename = f'termo_{termo.pk}_{termo.responsavel}.pdf'
-                zip_file.writestr(pdf_filename, pdf)
-        
+                html = render_to_string('ferramentas/termo_pdf_template.html', {'termo': termo})
+                with tempfile.NamedTemporaryFile(delete=True, suffix='.html') as tmp_h:
+                    tmp_h.write(html.encode('UTF-8'))
+                    tmp_h.flush()
+                    with tempfile.NamedTemporaryFile(delete=True, suffix='.pdf') as tmp_p:
+                        subprocess.run(['weasyprint', tmp_h.name, tmp_p.name], check=True)
+                        tmp_p.seek(0)
+                        zf.writestr(f'termo_{termo.pk}.pdf', tmp_p.read())
+
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="termos_responsabilidade.zip"'
-
         return response
+
     

@@ -1,3 +1,4 @@
+
 # departamento_pessoal/admin.py
 
 from django.contrib import admin

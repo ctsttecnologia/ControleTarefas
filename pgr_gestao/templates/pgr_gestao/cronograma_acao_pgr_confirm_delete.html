@@ -1,0 +1,48 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
+<li class="breadcrumb-item"><a href="{{ pgr_documento.get_absolute_url }}">{{ pgr_documento.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">Excluir Item do Cronograma</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-trash-alt text-danger"></i>
+        Confirmar Exclusão
+    </h1>
+    <p class="mb-0">Tem certeza que deseja remover este item do cronograma?</p>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        Atenção! Esta ação não pode ser desfeita.
+    </div>
+    <div class="card-body">
+        <p>Você está prestes a excluir permanentemente o seguinte item do cronograma:</p>
+        
+        <div class="alert alert-warning">
+            <p class="mb-1"><strong>Item Nº:</strong> {{ acao.numero_item }}</p>
+            <p class="mb-0"><strong>Ação:</strong> {{ acao.acao_necessaria }}</p>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{{ pgr_documento.get_absolute_url }}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash-alt"></i> Sim, Excluir
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+

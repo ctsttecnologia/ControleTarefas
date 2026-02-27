@@ -1,35 +1,69 @@
+
+
+{# templates/usuario/grupo_lista.html #}
 {% extends 'usuario/base_usuario.html' %}
 
-{% block title %}Lista de Grupos{% endblock %}
+{% block title %}Grupos de Permissões{% endblock %}
 
 {% block usuario_content %}
 <div class="card shadow-sm">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h2 class="h4 mb-0">Grupos de Permissões</h2>
-        <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary">Novo Grupo</a>
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="bi bi-collection me-2 text-primary"></i>Grupos de Permissões
+        </h5>
+        <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-circle me-1"></i>Novo Grupo
+        </a>
     </div>
-    <div class="card-body">
-        <table class="table table-hover">
-            <thead>
-                <tr><th>Nome do Grupo</th><th>Ações</th></tr>
-            </thead>
-            <tbody>
-                {% for grupo in grupos %}
-                <tr>
-                    <td>{{ grupo.name }}</td>
-                    <td>
-                        <a href="{% url 'usuario:grupo_form' grupo.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                        <a href="{% url 'usuario:grupo_excluir' grupo.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome do Grupo</th>
+                        <th class="text-center">Permissões</th>
+                        <th class="text-center">Membros</th>
+                        <th class="text-center" style="width: 150px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grupo in grupos %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-people-fill text-primary me-2"></i>
+                            <span class="fw-semibold">{{ grupo.name }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary">{{ grupo.permissions.count }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-info text-dark">{{ grupo.user_set.count }}</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'usuario:grupo_form' grupo.pk %}"
+                                   class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'usuario:grupo_excluir' grupo.pk %}"
+                                   class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">
+                            <i class="bi bi-collection fs-1 d-block mb-2"></i>
+                            Nenhum grupo cadastrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-    <script src="{% url 'admin:jsi18n' %}"></script>
-    {{ form.media.js }}
-{% endblock %}

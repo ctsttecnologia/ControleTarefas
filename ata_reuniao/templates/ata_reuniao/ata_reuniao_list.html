@@ -1,72 +1,256 @@
 
 {% extends "base.html" %}
-{% load static widget_tweaks %}
-{% load ata_extras %}
+{% load static widget_tweaks ata_extras %}
 
+{% block title %}Atas de Reunião{% endblock %}
 
-{% block title %}Lista de Atas de Reunião{% endblock %}
+{% block extra_css %}
+<style>
+    /* ═══ HERO ═══ */
+    .page-hero {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 280px;
+        height: 280px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
+    .page-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
 
-{# Inclui o template de mensagens de alerta #}
-{% include "partials/_messages.html" %}
+    /* ═══ SEARCH CARD ═══ */
+    .search-card { border: none; border-radius: 0.875rem; }
+    .filter-bar {
+        background: transparent;
+        border-bottom: 2px solid #f0f2f5;
+        padding: 1.25rem 1.5rem;
+    }
+    .filter-bar .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        font-size: 0.85rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .filter-bar .form-select:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
+    }
+
+    /* ═══ TABLE ═══ */
+    .data-table { border-collapse: separate; border-spacing: 0; }
+    .data-table thead th {
+        background: #f8f9fc;
+        border-bottom: 2px solid #e3e6f0;
+        font-size: 0.73rem;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        font-weight: 700;
+        color: #858796;
+        padding: 0.875rem 1rem;
+        white-space: nowrap;
+    }
+    .data-table tbody tr { transition: background 0.15s; }
+    .data-table tbody tr:hover { background: rgba(78,115,223,0.04); }
+    .data-table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f1f4;
+        font-size: 0.85rem;
+    }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    .ata-title { font-weight: 600; color: #2d3748; text-decoration: none; transition: color 0.15s; }
+    .ata-title:hover { color: #4e73df; }
+    .ata-sub { font-size: 0.75rem; color: #a0aec0; }
+    .data-table td { word-break: break-word; }
+
+    /* ═══ STATUS BADGE ═══ */
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0.3rem 0.75rem;
+        border-radius: 50rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .status-pill::before { content: ''; width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .status-pendente { background: rgba(246,194,62,0.12); color: #b7791f; }
+    .status-pendente::before { background: #f6c23e; }
+    .status-em_andamento { background: rgba(54,185,204,0.12); color: #258391; }
+    .status-em_andamento::before { background: #36b9cc; }
+    .status-concluido { background: rgba(28,200,138,0.12); color: #13855c; }
+    .status-concluido::before { background: #1cc88a; }
+    .status-cancelado { background: rgba(133,135,150,0.12); color: #5a5c69; }
+    .status-cancelado::before { background: #858796; }
+
+    /* ═══ ACTION BUTTONS ═══ */
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        border: 1.5px solid #e3e6f0;
+        background: #fff;
+        color: #858796;
+        transition: all 0.2s;
+        font-size: 0.85rem;
+    }
+    .btn-action:hover { border-color: #4e73df; color: #4e73df; background: rgba(78,115,223,0.06); transform: translateY(-1px); }
+    .btn-action-edit:hover { border-color: #f6c23e; color: #f6c23e; background: rgba(246,194,62,0.06); }
+    .btn-action-danger:hover { border-color: #e74a3b; color: #e74a3b; background: rgba(231,74,59,0.06); }
+
+    /* ═══ EMPTY STATE ═══ */
+    .empty-state { padding: 4rem 2rem; text-align: center; }
+    .empty-state-icon {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: linear-gradient(135deg, rgba(78,115,223,0.1), rgba(78,115,223,0.05));
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;
+    }
+    .empty-state-icon i { font-size: 2rem; color: #4e73df; }
+
+    .result-count { font-size: 0.8rem; color: #858796; font-weight: 500; }
+    .result-count strong { color: #2d3748; }
+
+    /* ═══ PAGINATION ═══ */
+    .pagination-pro .page-link {
+        border: none;
+        border-radius: 0.5rem;
+        margin: 0 2px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #858796;
+        transition: all 0.2s;
+    }
+    .pagination-pro .page-link:hover { background: #f0f0f5; color: #4e73df; }
+    .pagination-pro .page-item.active .page-link {
+        background: #4e73df;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(78,115,223,0.3);
+    }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
+    [data-bs-theme="dark"] .filter-bar { border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .filter-bar .form-select { border-color: #2d3748; }
+    [data-bs-theme="dark"] .data-table thead th { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.5); border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .data-table tbody td { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .data-table tbody tr:hover { background: rgba(78,115,223,0.06); }
+    [data-bs-theme="dark"] .ata-title { color: #e2e8f0; }
+    [data-bs-theme="dark"] .btn-action { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+
+    @media print {
+        .no-print { display: none !important; }
+        .page-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-box">
-    <div class="container-fluid">
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-            <h1 class="h2">Atas de Reunião</h1>
+{% include "partials/_messages.html" %}
+
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- ═══ HERO ═══ -->
+    <div class="page-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
-                <a href="{% url 'ata_reuniao:ata_reuniao_create' %}" class="btn btn-primary shadow-sm">
-                    <i class="bi bi-plus-circle me-1"></i> Nova Ata
+                <h1><i class="bi bi-journal-text me-2"></i>Atas de Reunião</h1>
+                <p>Gerencie todas as atas, ações e responsáveis</p>
+            </div>
+            <div class="d-flex gap-2 no-print">
+                <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-bar-chart-line me-1"></i> Dashboard
                 </a>
-                <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-info shadow-sm text-white">
-                    <i class="bi bi-bar-chart-line me-1"></i> Painel
+                <a href="{% url 'ata_reuniao:ata_reuniao_create' %}" class="btn btn-sm btn-light fw-semibold">
+                    <i class="bi bi-plus-circle me-1"></i> Nova Ata
                 </a>
             </div>
         </div>
+    </div>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-3">
-                <form method="get" class="d-flex flex-wrap align-items-center gap-3">
-                    <h5 class="mb-0 me-2"><i class="bi bi-filter"></i> Filtros</h5>
-                    
-                    <div class="flex-grow-1">
-                        <select name="contrato" class="form-select form-select-sm">
-                            <option value="">Todos os Contratos</option>
-                            {% for contrato in contratos %}
-                                <option value="{{ contrato.id }}" {% if current_contrato == contrato.id|stringformat:"s" %}selected{% endif %}>{{ contrato.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+    <!-- ═══ TABLE CARD ═══ -->
+    <div class="card search-card shadow-sm">
+        <!-- Filtros -->
+        <div class="filter-bar no-print">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.7rem; color: #858796;">Contrato</label>
+                    <select name="contrato" class="form-select form-select-sm">
+                        <option value="">Todos os Contratos</option>
+                        {% for contrato in contratos %}
+                        <option value="{{ contrato.id }}" {% if current_contrato == contrato.id|stringformat:"s" %}selected{% endif %}>
+                            {{ contrato.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.7rem; color: #858796;">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">Todos os Status</option>
+                        {% for key, value in view.model.Status.choices %}
+                        <option value="{{ key }}" {% if current_status == key %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-uppercase" style="letter-spacing: 0.4px; font-size: 0.7rem; color: #858796;">Coordenador</label>
+                    <select name="coordenador" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        {% for funcionario in coordenadores %}
+                            <option value="{{ funcionario.usuario.id }}" 
+                                    {% if current_coordenador == funcionario.usuario.id|stringformat:"s" %}selected{% endif %}>
+                                {{ funcionario.nome_completo }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-sm btn-primary flex-grow-1" style="border-radius: 0.625rem;">
+                        <i class="bi bi-filter me-1"></i> Filtrar
+                    </button>
+                    {% if current_status or current_contrato or current_coordenador %}
+                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-secondary" style="border-radius: 0.625rem;">
+                        <i class="bi bi-x-circle"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
 
-                    <div class="flex-grow-1">
-                        <select name="status" class="form-select form-select-sm">
-                            <option value="">Todos os Status</option>
-                            {% for key, value in view.model.Status.choices %}
-                                <option value="{{ key }}" {% if current_status == key %}selected{% endif %}>{{ value }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="flex-grow-1">
-                        <select name="coordenador" class="form-select form-select-sm">
-                            <option value="">Todos os Coordenadores</option>
-                            {% for coord in coordenadores %}
-                                <option value="{{ coord.id }}" {% if current_coordenador == coord.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ coord.get_full_name|default:coord.username }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-dark">Aplicar</button>
-                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
-                </form>
-            </div>
+        <!-- Result count -->
+        {% if atas %}
+        <div class="px-4 pt-3 pb-1">
+            <span class="result-count">
+                Exibindo <strong>{{ atas|length }}</strong> ata{{ atas|length|pluralize:"s" }}
+            </span>
+        </div>
+        {% endif %}
 
+        <!-- Table -->
+        <div class="card-body pt-0 px-0 pb-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle">
-                    <thead class="table-light">
+                <table class="table data-table mb-0">
+                    <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Titulo</th>
+                            <th style="width: 60px;">ID</th>
+                            <th style="min-width: 200px;">Título</th>
                             <th>Contrato</th>
                             <th>Coordenador</th>
                             <th>Natureza</th>
@@ -74,71 +258,174 @@
                             <th>Entrada</th>
                             <th>Prazo</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end">Ações</th>
+                            <th class="text-end pe-4" style="width: 120px;">Ações</th>
                         </tr>
                     </thead>
-                        <tbody>
-                            {% for ata in atas %}
-                            <tr>
-                                <td>{{ ata.id }}</td>
-                                <td>{{ ata.titulo|truncatechars:25 }}</td>
-                                <td>{{ ata.contrato.nome|truncatechars:25 }}</td>
-                                <td>{{ ata.coordenador|truncatechars:20 }}</td>
-                                <td>{{ ata.get_natureza_display }}</td>
-                                <td>{{ ata.responsavel|truncatechars:20 }}</td>
-                                <td>{{ ata.entrada|date:"d/m/Y" }}</td>
-                                <td>{{ ata.prazo|date:"d/m/Y"|default:"-" }}</td>
-                                <td class="text-center">
-                                    <span class="badge rounded-pill {% status_badge ata.status %}">{{ ata.get_status_display }}</span>
-                                </td>
-                                <td class="text-end">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        
-                                        <a href="{% url 'ata_reuniao:ata_reuniao_detail' ata.pk %}" class="btn btn-outline-primary" title="Ver Detalhes">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-
-                                        <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-outline-secondary" title="Editar">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
-                                        
-                                        <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-outline-danger" title="Excluir">
-                                            <i class="bi bi-trash"></i>
-                                        </a>
-
+                    <tbody>
+                        {% for ata in atas %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold text-muted">{{ ata.id }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'ata_reuniao:ata_reuniao_detail' ata.pk %}" class="ata-title">
+                                    {{ ata.titulo|truncatechars:30 }}
+                                </a>
+                                {% if ata.acao %}
+                                <div class="ata-sub">{{ ata.acao|truncatechars:40 }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="d-inline-flex align-items-center gap-1" 
+                                    title="{{ ata.contrato }}" 
+                                    data-bs-toggle="tooltip">
+                                    <i class="bi bi-briefcase text-muted" style="font-size: 0.75rem;"></i>
+                                    {{ ata.contrato|truncatechars:50 }}
+                                </span>
+                            </td>
+                            <td>{{ ata.coordenador|truncatechars:18 }}</td>
+                            <td>
+                                <span class="badge bg-light text-dark border" style="font-size: 0.75rem;">
+                                    {{ ata.get_natureza_display }}
+                                </span>
+                            </td>
+                            <td>{{ ata.responsavel|truncatechars:18 }}</td>
+                            <td>
+                                <small>{{ ata.entrada|date:"d/m/Y" }}</small>
+                            </td>
+                            <td>
+                                {% if ata.prazo %}
+                                <small class="{% if ata.is_overdue %}text-danger fw-bold{% endif %}">
+                                    {{ ata.prazo|date:"d/m/Y" }}
+                                </small>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="status-pill status-{{ ata.status }}">
+                                    {{ ata.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="{% url 'ata_reuniao:ata_reuniao_detail' ata.pk %}"
+                                       class="btn-action" title="Ver Detalhes" data-bs-toggle="tooltip">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}"
+                                       class="btn-action btn-action-edit" title="Editar" data-bs-toggle="tooltip">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}"
+                                       class="btn-action btn-action-danger" title="Excluir" data-bs-toggle="tooltip">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">
+                                        <i class="bi bi-journal-text"></i>
                                     </div>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            {% endfor %}
-                        </tbody>
+                                    <h5 class="fw-bold mb-2">Nenhuma ata encontrada</h5>
+                                    <p class="text-muted mb-3" style="max-width: 400px; margin: 0 auto;">
+                                        {% if current_status or current_contrato or current_coordenador %}
+                                        Nenhum resultado para os filtros aplicados.
+                                        {% else %}
+                                        Comece criando a primeira ata de reunião.
+                                        {% endif %}
+                                    </p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        {% if current_status or current_contrato or current_coordenador %}
+                                        <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Limpar Filtros
+                                        </a>
+                                        {% endif %}
+                                        <a href="{% url 'ata_reuniao:ata_reuniao_create' %}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle me-1"></i> Nova Ata
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
                 </table>
             </div>
-
-             {% if is_paginated %}
-            <div class="card-footer bg-white">
-                <nav aria-label="Paginação">
-                    <ul class="pagination justify-content-center mb-0">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page=1&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">&laquo;</a></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">Anterior</a></li>
-                        {% endif %}
-                        
-                        <li class="page-item active" aria-current="page"><span class="page-link">{{ page_obj.number }}</span></li>
-                        
-                        {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">Próxima</a></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&status={{ current_status }}&natureza={{ current_natureza }}&contrato={{ current_contrato }}">&raquo;</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            {% endif %}
         </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-footer bg-transparent border-0 px-4 py-3">
+            <nav aria-label="Paginação">
+                <ul class="pagination pagination-pro justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&status={{ current_status }}&contrato={{ current_contrato }}&coordenador={{ current_coordenador }}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ current_status }}&contrato={{ current_contrato }}&coordenador={{ current_coordenador }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&status={{ current_status }}&contrato={{ current_contrato }}&coordenador={{ current_coordenador }}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ current_status }}&contrato={{ current_contrato }}&coordenador={{ current_coordenador }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&status={{ current_status }}&contrato={{ current_contrato }}&coordenador={{ current_coordenador }}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+                    {% endif %}
+                </ul>
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+                    </small>
+                </div>
+            </nav>
+        </div>
+        {% endif %}
     </div>
-    {% if is_paginated %}
-        {% include "partials/pagination.html" %}
-    {% endif %}
-</div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el, { trigger: 'hover' });
+    });
+});
+</script>
+{% endblock %}
+

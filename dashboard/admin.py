@@ -7,6 +7,7 @@ from django.db.models import Count, Q, F
 from django.db.models.functions import TruncDate
 import datetime
 
+
 class DashboardAdminSite(admin.AdminSite):
     site_header = "Sistema de Gestão Integrada - Dashboard"
     site_title = "Dashboard"
@@ -289,3 +290,4 @@ class DashboardAdminSite(admin.AdminSite):
 
 # ✅ Instância do dashboard
 dashboard_site = DashboardAdminSite(name='dashboard_admin')
+

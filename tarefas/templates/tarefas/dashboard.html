@@ -1,52 +1,103 @@
-
+<!-- templates/tarefas/dashboard.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/tarefas/dashboard.css' %}">
-{% endblock %}
+{% block title %}Dashboard Analítico{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-    <header class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Dashboard Analítico de Tarefas</h1>
-        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">Ver Lista</a>
-    </header>
 
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h1 class="h2 mb-1">
+                <i class="bi bi-bar-chart-line me-2"></i>Dashboard Analítico
+            </h1>
+            <p class="text-muted mb-0">Visão geral do desempenho das tarefas</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-list-ul me-1"></i> Lista
+            </a>
+            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-outline-primary">
+                <i class="bi bi-kanban me-1"></i> Kanban
+            </a>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
-            <div class="chart-card">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>Tendência: Criadas vs. Concluídas
+                    </h6>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Tendência: Criadas vs. Concluídas (por semana)</h5>
-                    <div class="chart-container"><canvas id="tendenciaChart"></canvas></div>
+                    <div style="position: relative; height: 350px;">
+                        <canvas id="tendenciaChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="chart-card">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-people me-2"></i>Performance da Equipe
+                    </h6>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Performance da Equipe (Ativas)</h5>
-                    <div class="chart-container"><canvas id="equipeChart"></canvas></div>
+                    <div style="position: relative; height: 350px;">
+                        <canvas id="equipeChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="table-card card mb-4">
-        <div class="card-header"><h5 class="card-title mb-0">Resumo por Responsável</h5></div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead><tr><th>Responsável</th><th>Tarefas Ativas</th><th>Concluídas (30d)</th></tr></thead>
-                <tbody>
-                {% for usuario in usuarios_performance %}
-                    <tr>
-                        <td>{{ usuario.username }}</td>
-                        <td><span class="badge bg-primary rounded-pill">{{ usuario.tarefas_ativas|default:0 }}</span></td>
-                        <td><span class="badge bg-success rounded-pill">{{ usuario.tarefas_concluidas_30d|default:0 }}</span></td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">
+                <i class="bi bi-table me-2"></i>Resumo por Responsável
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Responsável</th>
+                            <th class="text-center">Tarefas Ativas</th>
+                            <th class="text-center">Concluídas (30d)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in usuarios_performance %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-person me-1 text-muted"></i>
+                                {{ usuario.username }}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill">{{ usuario.tarefas_ativas }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-success rounded-pill">{{ usuario.tarefas_concluidas_30d }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-muted">
+                                Nenhum dado de performance disponível.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -60,106 +111,67 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         chartsData = JSON.parse('{{ charts_data_json|safe }}');
     } catch (e) {
-        console.error("Erro ao analisar os dados JSON do Django:", e);
-        chartsData = {};
+        console.error("Erro ao parsear JSON:", e);
+        return;
     }
 
-    const chartInstances = {};
-
-    // FUNÇÃO MELHORADA: Agora lê as cores diretamente das variáveis CSS
-    const getThemeOptions = () => {
-        const rootStyles = getComputedStyle(document.documentElement);
-        return {
-            color: rootStyles.getPropertyValue('--bs-body-color').trim(),
-            gridColor: rootStyles.getPropertyValue('--bs-border-color-translucent').trim(),
-            // Cores dos gráficos
-            chartColor1: rootStyles.getPropertyValue('--chart-color-1').trim(),
-            chartColor1Light: rootStyles.getPropertyValue('--chart-color-1-light').trim(),
-            chartColor2: rootStyles.getPropertyValue('--chart-color-2').trim(),
-            chartColor2Light: rootStyles.getPropertyValue('--chart-color-2-light').trim(),
-        };
-    };
-
-    const renderAllCharts = () => {
-        Object.values(chartInstances).forEach(chart => chart.destroy());
-        const themeOpts = getThemeOptions();
-
-        // GRÁFICO 1: TENDÊNCIA CRIADAS vs. CONCLUÍDAS (LINHA)
-        const tendenciaCtx = document.getElementById('tendenciaChart')?.getContext('2d');
-        // CORREÇÃO: Verifica as novas chaves no JSON
-        if (tendenciaCtx && chartsData.tendencia_labels) {
-            // CORREÇÃO: Usa os dados já processados pela view
-            const labels = chartsData.tendencia_labels.map(semana => 
-                new Date(semana).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-            );
-            
-            chartInstances.tendenciaChart = new Chart(tendenciaCtx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Tarefas Criadas',
-                        data: chartsData.tendencia_criadas, // << USA DIRETAMENTE
-                        borderColor: themeOpts.chartColor1,
-                        backgroundColor: themeOpts.chartColor1Light,
-                        fill: true,
-                        tension: 0.4
-                    }, {
-                        label: 'Tarefas Concluídas',
-                        data: chartsData.tendencia_concluidas, // << USA DIRETAMENTE
-                        borderColor: themeOpts.chartColor2,
-                        backgroundColor: themeOpts.chartColor2Light,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor } },
-                        y: { ticks: { color: themeOpts.color, stepSize: 1 }, grid: { color: themeOpts.gridColor }, beginAtZero: true }
+    // Tendência
+    const tendenciaCtx = document.getElementById('tendenciaChart')?.getContext('2d');
+    if (tendenciaCtx && chartsData.tendencia_labels) {
+        const labels = chartsData.tendencia_labels.map(s =>
+            new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+        );
+        new Chart(tendenciaCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Criadas', data: chartsData.tendencia_criadas,
+                        borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.1)',
+                        fill: true, tension: 0.4
                     },
-                    plugins: { legend: { labels: { color: themeOpts.color } } }
-                }
-            });
-        }
+                    {
+                        label: 'Concluídas', data: chartsData.tendencia_concluidas,
+                        borderColor: '#198754', backgroundColor: 'rgba(25,135,84,0.1)',
+                        fill: true, tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    }
 
-        // GRÁFICO 2: PERFORMANCE DA EQUIPE (BARRAS HORIZONTAIS)
-        const equipeCtx = document.getElementById('equipeChart')?.getContext('2d');
-        if (equipeCtx && chartsData.performance_equipe) {
-            chartInstances.equipeChart = new Chart(equipeCtx, {
-                type: 'bar',
-                data: {
-                    // CORREÇÃO: Adapta para a nova estrutura de dados
-                    labels: chartsData.performance_equipe.map(u => u.username),
-                    datasets: [{
-                        label: 'Tarefas Ativas',
-                        data: chartsData.performance_equipe.map(u => u.tarefas_ativas),
-                        backgroundColor: themeOpts.chartColor1
-                    }, {
-                        label: 'Concluídas (30d)',
-                        data: chartsData.performance_equipe.map(u => u.tarefas_concluidas_30d),
-                        backgroundColor: themeOpts.chartColor2
-                    }]
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { stacked: true, ticks: { color: themeOpts.color }, grid: { color: themeOpts.gridColor } },
-                        y: { stacked: true, ticks: { color: themeOpts.color }, grid: { display: false } }
+    // Equipe
+    const equipeCtx = document.getElementById('equipeChart')?.getContext('2d');
+    if (equipeCtx && chartsData.performance_equipe?.length) {
+        new Chart(equipeCtx, {
+            type: 'bar',
+            data: {
+                labels: chartsData.performance_equipe.map(u => u.username),
+                datasets: [
+                    {
+                        label: 'Ativas', backgroundColor: '#0d6efd',
+                        data: chartsData.performance_equipe.map(u => u.tarefas_ativas)
                     },
-                    plugins: { legend: { position: 'top', labels: { color: themeOpts.color } } }
-                }
-            });
-        }
-    };
-
-    renderAllCharts();
-
-    // Observa mudanças no tema (dark/light) e recria os gráficos
-    const themeObserver = new MutationObserver(renderAllCharts);
-    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-bs-theme'] });
+                    {
+                        label: 'Concluídas (30d)', backgroundColor: '#198754',
+                        data: chartsData.performance_equipe.map(u => u.tarefas_concluidas_30d)
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                scales: { x: { stacked: true }, y: { stacked: true } },
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
+

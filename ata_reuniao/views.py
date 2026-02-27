@@ -1,3 +1,4 @@
+# ata_reuniao/views.py
 
 # ata_reuniao/views.py
 
@@ -36,42 +37,108 @@ from django.contrib.auth.decorators import login_required
 from .forms import UploadAtaReuniaoForm
 from django.contrib.messages import get_messages
 from django.core.exceptions import ObjectDoesNotExist
-from usuario.models import Usuario 
-
+from usuario.models import Usuario
+from django import template
 
 
 User = get_user_model()
 
-# --- Mixins Refatorados ---
 
-class AtaReuniaoBaseMixin(LoginRequiredMixin, ViewFilialScopedMixin):
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIXIN CENTRAL DE FILIAL - USADO POR TODAS AS VIEWS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class FilialAtivaMixin:
     """
-    Mixin base para as views de Ata de Reunião, com login e escopo de filial.
+    Mixin central para obter a filial ativa do usuário.
+    Usa a chave 'active_filial_id' da sessão (definida pelo seletor do header).
+    """
+    
+    def get_filial_ativa(self):
+        """
+        Retorna o objeto Filial ativa ou None.
+        Prioridade:
+        1. Filial selecionada na sessão (active_filial_id)
+        2. Filial do funcionário vinculado ao usuário
+        3. None (superusuário sem filial selecionada vê tudo)
+        """
+        # 1. Pegar da sessão (seletor do header)
+        filial_id = self.request.session.get('active_filial_id')
+        
+        if filial_id:
+            try:
+                return Filial.objects.get(pk=filial_id)
+            except Filial.DoesNotExist:
+                pass
+        
+        # 2. Fallback: filial do funcionário
+        user = self.request.user
+        filial_ativa = getattr(user, 'filial_ativa', None)
+        if filial_ativa:
+            return filial_ativa
+            
+        try:
+            funcionario = Funcionario.objects.select_related('filial').get(usuario=user)
+            return funcionario.filial
+        except Funcionario.DoesNotExist:
+            pass
+        
+        # 3. Superusuário sem filial = vê tudo
+        return None
+    
+    def get_filial_ativa_id(self):
+        """Retorna apenas o ID da filial ativa ou None."""
+        filial = self.get_filial_ativa()
+        return filial.id if filial else None
+
+    def filter_queryset_by_filial(self, queryset):
+        """Aplica o filtro de filial ao queryset."""
+        filial = self.get_filial_ativa()
+        if filial:
+            return queryset.filter(filial=filial)
+        elif not self.request.user.is_superuser:
+            return queryset.none()
+        return queryset
+    
+    def filter_related_by_filial(self, queryset, filial_field='filial'):
+        """
+        Filtra querysets de modelos relacionados (Cliente, Funcionario, etc).
+        """
+        filial = self.get_filial_ativa()
+        if filial:
+            return queryset.filter(**{filial_field: filial})
+        return queryset
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIXINS BASE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AtaReuniaoBaseMixin(LoginRequiredMixin, FilialAtivaMixin, ViewFilialScopedMixin):
+    """
+    Mixin base para as views de Ata de Reunião.
     """
     model = AtaReuniao
     form_class = AtaReuniaoForm
     success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
 
 
-class AtaQuerysetMixin:
+class AtaQuerysetMixin(FilialAtivaMixin):
     """
-    Mixin para filtrar o queryset de AtaReuniao com base na filial do usuário
+    Mixin para filtrar o queryset de AtaReuniao com base na filial ativa
     e em parâmetros de busca da requisição.
     """
+    
     def get_ata_queryset(self, request, model_class):
-        user = request.user
-        try:
-            funcionario = Funcionario.objects.get(usuario=user)
-            user_filial = funcionario.filial
-        except Funcionario.DoesNotExist:
-            user_filial = None
-
-        if user.is_superuser:
-            queryset = model_class.objects.all()
-        elif user_filial:
-            queryset = model_class.objects.filter(filial=user_filial)
+        """
+        Retorna queryset filtrado por filial e parâmetros GET.
+        """
+        # Usar o manager for_request se disponível
+        if hasattr(model_class.objects, 'for_request'):
+            queryset = model_class.objects.for_request(request)
         else:
-            queryset = model_class.objects.none()
+            queryset = model_class.objects.all()
+            queryset = self.filter_queryset_by_filial(queryset)
 
         # Aplica filtros com base nos parâmetros da URL (GET)
         contrato_id = request.GET.get('contrato')
@@ -85,12 +152,30 @@ class AtaQuerysetMixin:
         if coordenador_id:
             queryset = queryset.filter(coordenador__usuario__id=coordenador_id)
         
-        # AQUI ESTÁ A CORREÇÃO: Usar apenas campos válidos para ordenação.
-        # Ordenação sugerida: por prazo (as mais urgentes primeiro), depois por criado_em.
         return queryset.order_by('prazo', '-criado_em')
 
 
-# --- Views de CRUD (Refatoradas) ---
+# ═══════════════════════════════════════════════════════════════════════════════
+# TEMPLATE TAGS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+register = template.Library()
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Permite acessar um dicionário com uma chave variável no template.
+    """
+    if dictionary is None:
+        return []
+    return dictionary.get(key, [])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEWS DE CRUD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# No AtaReuniaoListView, ajuste o get_context_data:
 
 class AtaReuniaoListView(LoginRequiredMixin, AtaQuerysetMixin, ListView):
     model = AtaReuniao
@@ -99,74 +184,67 @@ class AtaReuniaoListView(LoginRequiredMixin, AtaQuerysetMixin, ListView):
     paginate_by = 25
 
     def dispatch(self, request, *args, **kwargs):
-        """
-        Executado ANTES de qualquer outro método (como get_queryset ou get_context_data).
-        Verifica se o usuário logado está vinculado a um 'funcionario'.
-        """
-        try:
-            # Tenta acessar o objeto 'funcionario' relacionado ao usuário.
-            # Se não existir, ele pulará para o 'except'.
-            _ = request.user.funcionario
-            
-        except ObjectDoesNotExist:
-            # O usuário está logado, mas não tem um 'funcionario' associado.
-            # Retorna a tela amigável de acesso negado.
-            return render(request, 'ata_reuniao/acesso_negado.html', {
-                'titulo': 'Acesso Restrito',
-                'mensagem': (
-                    'Sua conta de usuário não está vinculada a um registro de funcionário, '
-                    'por isso você não pode acessar o módulo de Atas de Reunião.'
-                )
-            }, status=403) # 403 é o código para "Acesso Proibido"
+        if not request.user.is_superuser:
+            try:
+                _ = request.user.funcionario
+            except ObjectDoesNotExist:
+                return render(request, 'ata_reuniao/acesso_negado.html', {
+                    'titulo': 'Acesso Restrito',
+                    'mensagem': (
+                        'Sua conta de usuário não está vinculada a um registro de funcionário, '
+                        'por isso você não pode acessar o módulo de Atas de Reunião.'
+                    )
+                }, status=403)
         
-        # Se o 'try' funcionou, o usuário é um funcionário.
-        # Permite que a view continue seu fluxo normal.
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        """
-        Este método agora é SEGURO, pois o dispatch() já garantiu
-        que self.request.user.funcionario existe.
-        """
-        queryset = self.get_ata_queryset(self.request, model_class=self.model)
-        return queryset
+        return self.get_ata_queryset(self.request, model_class=self.model)
 
     def get_context_data(self, **kwargs):
-        """
-        Este método também é SEGURO pelo mesmo motivo.
-        """
         context = super().get_context_data(**kwargs)
         
-        # Esta linha agora é segura e não vai mais quebrar
-        user_data = {
+        filial_ativa = self.get_filial_ativa()
+        context['filial_ativa'] = filial_ativa
+        context['user_data'] = {
             'username': self.request.user.username,
-            'filial': str(self.request.user.funcionario.filial)
+            'filial': str(filial_ativa) if filial_ativa else 'Todas as filiais'
         }
-        context['user_data'] = user_data 
         
-        # usamos self.object_list (que é a busca completa antes da paginação).
-        full_queryset = self.object_list
+        # ═══════════════════════════════════════════════════════════════
+        # FILTROS - Baseados na filial ativa
+        # ═══════════════════════════════════════════════════════════════
         
-        coordenador_ids = full_queryset.values_list('coordenador__usuario__id', flat=True).distinct()
-        context['coordenadores'] = Usuario.objects.filter(id__in=coordenador_ids).order_by('first_name')
+        # Coordenadores da filial ativa (não das atas existentes!)
+        coordenadores_qs = Funcionario.objects.filter(status='ATIVO')
+        if filial_ativa:
+            coordenadores_qs = coordenadores_qs.filter(filial=filial_ativa)
+        context['coordenadores'] = coordenadores_qs.select_related('usuario').order_by('nome_completo')
         
-        contrato_ids = full_queryset.values_list('contrato_id', flat=True).distinct()
-        context['contratos'] = Cliente.objects.filter(id__in=contrato_ids).order_by('nome')
+        # Contratos/Clientes da filial ativa
+        clientes_qs = Cliente.objects.filter(estatus=True)
+        if filial_ativa:
+            clientes_qs = clientes_qs.filter(filial=filial_ativa)
+        context['contratos'] = clientes_qs.order_by('nome')
         
         context['current_contrato'] = self.request.GET.get('contrato', '')
         context['current_status'] = self.request.GET.get('status', '')
         context['current_coordenador'] = self.request.GET.get('coordenador', '')
+        
         return context
 
+        
 
 class AtaReuniaoCreateView(AtaReuniaoBaseMixin, SuccessMessageMixin, CreateView):
     template_name = 'ata_reuniao/ata_form.html'
     success_message = "✅ Ata de reunião criada com sucesso!"
    
     def form_valid(self, form):
-        # AQUI ESTÁ A CORREÇÃO
-        # Define a filial da ata com base na filial do usuário logado, se existir
-        if self.request.user.is_authenticated and hasattr(self.request.user, 'funcionario'):
+        # Define a filial da ata com base na filial ativa
+        filial_ativa = self.get_filial_ativa()
+        if filial_ativa:
+            form.instance.filial = filial_ativa
+        elif hasattr(self.request.user, 'funcionario'):
             form.instance.filial = self.request.user.funcionario.filial
         
         return super().form_valid(form)
@@ -175,6 +253,11 @@ class AtaReuniaoCreateView(AtaReuniaoBaseMixin, SuccessMessageMixin, CreateView)
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
         return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filial_ativa'] = self.get_filial_ativa()
+        return context
 
 
 class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, SuccessMessageMixin, UpdateView):
@@ -194,22 +277,30 @@ class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, SuccessMessageMixin, UpdateView)
             HistoricoAta.objects.create(
                 ata=self.object,
                 usuario=self.request.user,
-                comentario=comentario_texto
+                comentario=comentario_texto,
+                filial=self.object.filial
             )
         return response
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filial_ativa'] = self.get_filial_ativa()
+        return context
 
 
 class AtaReuniaoDetailView(AtaReuniaoBaseMixin, DetailView):
-    """
-    Exibe os detalhes de uma Ata de Reunião específica, incluindo seu histórico.
-    """
+    """Exibe os detalhes de uma Ata de Reunião específica."""
     template_name = 'ata_reuniao/ata_reuniao_detail.html'
     context_object_name = 'ata'
 
     def get_queryset(self):
-        # Garante que a query do DetailView use o escopo de filial
         queryset = super().get_queryset()
         return queryset.prefetch_related('historico__usuario')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filial_ativa'] = self.get_filial_ativa()
+        return context
 
 
 class AtaReuniaoAddCommentView(AtaReuniaoBaseMixin, DetailView):
@@ -239,7 +330,16 @@ class AtaReuniaoDeleteView(AtaReuniaoBaseMixin, SuccessMessageMixin, DeleteView)
     def form_valid(self, form):
         messages.success(self.request, self.success_message)
         return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filial_ativa'] = self.get_filial_ativa()
+        return context
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DASHBOARD VIEW
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class AtaReuniaoDashboardView(LoginRequiredMixin, AtaQuerysetMixin, TemplateView):
     template_name = 'ata_reuniao/ata_reuniao_dashboard.html'
@@ -247,16 +347,39 @@ class AtaReuniaoDashboardView(LoginRequiredMixin, AtaQuerysetMixin, TemplateView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Obter o queryset base com os filtros aplicados pela mixin
+        # ═══════════════════════════════════════════════════════════════
+        # FILIAL ATIVA (da sessão: active_filial_id)
+        # ═══════════════════════════════════════════════════════════════
+        filial_ativa = self.get_filial_ativa()
+        is_superuser = self.request.user.is_superuser
+
+        # ═══════════════════════════════════════════════════════════════
+        # QUERYSET BASE (filtrado por filial via manager ou mixin)
+        # ═══════════════════════════════════════════════════════════════
         base_queryset = self.get_ata_queryset(self.request, model_class=AtaReuniao)
 
-        # 1. Dados para os KPIs (cartões)
+        # ═══════════════════════════════════════════════════════════════
+        # 1. KPIs
+        # ═══════════════════════════════════════════════════════════════
         total_concluido = base_queryset.filter(status=AtaReuniao.Status.CONCLUIDO).count()
-        concluido_no_prazo = base_queryset.filter(status=AtaReuniao.Status.CONCLUIDO, prazo__gte=F('atualizado_em')).count()
-        concluido_com_atraso = base_queryset.filter(status=AtaReuniao.Status.CONCLUIDO, prazo__lt=F('atualizado_em')).count()
         total_cancelado = base_queryset.filter(status=AtaReuniao.Status.CANCELADO).count()
-        total_concluido_efetivo = concluido_no_prazo + concluido_com_atraso
+        
+        concluido_no_prazo = 0
+        concluido_com_atraso = 0
+        
+        atas_concluidas = base_queryset.filter(status=AtaReuniao.Status.CONCLUIDO).only(
+            'prazo', 'atualizado_em'
+        )
+        for ata in atas_concluidas:
+            if ata.prazo and ata.atualizado_em:
+                if ata.prazo >= ata.atualizado_em.date():
+                    concluido_no_prazo += 1
+                else:
+                    concluido_com_atraso += 1
+            else:
+                concluido_no_prazo += 1
 
+        total_concluido_efetivo = concluido_no_prazo + concluido_com_atraso
         percentual_no_prazo = (concluido_no_prazo / total_concluido_efetivo * 100) if total_concluido_efetivo > 0 else 0
         percentual_com_atraso = (concluido_com_atraso / total_concluido_efetivo * 100) if total_concluido_efetivo > 0 else 0
 
@@ -267,55 +390,88 @@ class AtaReuniaoDashboardView(LoginRequiredMixin, AtaQuerysetMixin, TemplateView
             'total_cancelado': total_cancelado,
             'percentual_no_prazo': percentual_no_prazo,
             'percentual_com_atraso': percentual_com_atraso,
-    })
+        })
 
-        # 2. Dados para o gráfico de Pendências por Responsável
-        # Filtra apenas tarefas pendentes e agrupa por responsável
+        # ═══════════════════════════════════════════════════════════════
+        # 2. GRÁFICO: Pendências por Responsável
+        # ═══════════════════════════════════════════════════════════════
         pendencias_por_responsavel = base_queryset.filter(
             status__in=[AtaReuniao.Status.PENDENTE, AtaReuniao.Status.ANDAMENTO]
         ).values(
-            'responsavel__usuario__first_name'
+            'responsavel__nome_completo'
         ).annotate(
-            count=Count('responsavel')
-        ).order_by('-count')
+            count=Count('id')
+        ).order_by('-count')[:10]
 
-        # Extrai labels e dados
-        pendencias_labels = [item['responsavel__usuario__first_name'] for item in pendencias_por_responsavel]
-        pendencias_data = [item['count'] for item in pendencias_por_responsavel]
+        context['pendencias_labels'] = [
+            item['responsavel__nome_completo'] or 'Sem responsável' 
+            for item in pendencias_por_responsavel
+        ]
+        context['pendencias_data'] = [item['count'] for item in pendencias_por_responsavel]
 
-        context['pendencias_labels'] = pendencias_labels
-        context['pendencias_data'] = pendencias_data
+        # ═══════════════════════════════════════════════════════════════
+        # 3. GRÁFICO: Qualidade das Conclusões
+        # ═══════════════════════════════════════════════════════════════
+        context['qualidade_labels'] = ['No Prazo', 'Com Atraso']
+        context['qualidade_data'] = [concluido_no_prazo, concluido_com_atraso]
 
-        # 3. Dados para o gráfico de Qualidade das Conclusões
-        qualidade_labels = ['No Prazo', 'Com Atraso']
-        qualidade_data = [concluido_no_prazo, concluido_com_atraso]
-
-        context['qualidade_labels'] = qualidade_labels
-        context['qualidade_data'] = qualidade_data
-
-        # 4. Dados para o Kanban
+        # ═══════════════════════════════════════════════════════════════
+        # 4. KANBAN
+        # ═══════════════════════════════════════════════════════════════
+        context['kanban_status_choices'] = AtaReuniao.Status.choices
+        
         kanban_items = {}
-         # Itera sobre as escolhas de status do modelo para garantir que todas as colunas sejam criadas
         for status_value, status_label in AtaReuniao.Status.choices:
-            kanban_items[status_label] = list(base_queryset.filter(status=status_value).order_by('prazo'))
+            kanban_items[status_label] = list(
+                base_queryset.filter(status=status_value)
+                .select_related(
+                    'responsavel', 
+                    'responsavel__usuario', 
+                    'contrato', 
+                    'coordenador', 
+                    'coordenador__usuario'
+                )
+                .order_by('prazo')
+            )
 
         context['kanban_items'] = kanban_items
-        context['titulo_pagina'] = "Dashboard"
+        context['titulo_pagina'] = "Dashboard de Atas"
+
+        # ═══════════════════════════════════════════════════════════════
+        # 5. FILTROS DO KANBAN - COM ESCOPO DE FILIAL
+        # ═══════════════════════════════════════════════════════════════
+        
+        # Coordenadores da filial ativa
+        coordenadores_qs = Funcionario.objects.filter(status='ATIVO')
+        coordenadores_qs = self.filter_related_by_filial(coordenadores_qs)
+        context['coordenadores'] = coordenadores_qs.select_related('usuario').order_by('nome_completo')
+        
+        # Clientes da filial ativa
+        clientes_qs = Cliente.objects.filter(estatus=True)
+        clientes_qs = self.filter_related_by_filial(clientes_qs)
+        context['clientes'] = clientes_qs.order_by('nome')[:100]
+        
+        # Info da filial para template
+        context['filial_ativa'] = filial_ativa
+        context['is_superuser'] = is_superuser
 
         return context
 
-# ... (restante das classes de views) ...
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# EXPORT VIEWS
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class AtaReuniaoPDFExportView(LoginRequiredMixin, AtaQuerysetMixin, View):
     def get(self, request, *args, **kwargs):
         atas = self.get_ata_queryset(request, model_class=AtaReuniao)
+        filial_ativa = self.get_filial_ativa()
         
         periodo_relatorio = "Período: Todas as datas"
         data_inicio = request.GET.get('data_inicio')
         data_fim = request.GET.get('data_fim')
         
         if data_inicio and data_fim:
-            
             atas = atas.filter(criado_em__range=[data_inicio, data_fim])
             data_inicio_fmt = timezone.datetime.strptime(data_inicio, '%Y-%m-%d').strftime('%d/%m/%Y')
             data_fim_fmt = timezone.datetime.strptime(data_fim, '%Y-%m-%d').strftime('%d/%m/%Y')
@@ -327,6 +483,8 @@ class AtaReuniaoPDFExportView(LoginRequiredMixin, AtaQuerysetMixin, View):
             'data_exportacao': timezone.now(),
             'usuario_exportacao': request.user.get_full_name(),
             'periodo_relatorio': periodo_relatorio,
+            'kanban_status_choices': AtaReuniao.Status.choices,
+            'filial_ativa': filial_ativa,
         }
         
         response = HttpResponse(content_type='application/pdf')
@@ -335,14 +493,13 @@ class AtaReuniaoPDFExportView(LoginRequiredMixin, AtaQuerysetMixin, View):
         pisa_status = pisa.CreatePDF(template.render(context), dest=response)
         if pisa_status.err:
             messages.error(request, "Ocorreu um erro ao gerar o PDF.")
-            return HttpResponse('Erro ao gerar PDF', status=300)
+            return HttpResponse('Erro ao gerar PDF', status=500)
             
         return response
 
 
 class AtaReuniaoExcelExportView(LoginRequiredMixin, AtaQuerysetMixin, View):
     def get(self, request, *args, **kwargs):
-        # Passe o modelo para a mixin
         atas = self.get_ata_queryset(request, model_class=AtaReuniao)
         
         buffer = io.BytesIO()
@@ -394,68 +551,140 @@ class AtaReuniaoExcelExportView(LoginRequiredMixin, AtaQuerysetMixin, View):
         return response 
 
 
-# ===================================================
-# NOVA VIEW: ATUALIZAÇÃO DE STATUS VIA API
-# ===================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# API VIEWS - ATUALIZAÇÃO DE STATUS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AtaUpdateStatusAPIView(LoginRequiredMixin, FilialAtivaMixin, View):
+    """API endpoint para atualizar o status de uma ata via drag & drop."""
+    
+    def post(self, request, pk):
+        try:
+            data = json.loads(request.body)
+            new_status = data.get('new_status')
+            
+            if not new_status:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Status não informado'
+                }, status=400)
+            
+            # Buscar a ata respeitando a filial
+            filial_ativa = self.get_filial_ativa()
+            
+            try:
+                if filial_ativa:
+                    ata = AtaReuniao.objects.get(pk=pk, filial=filial_ativa)
+                elif request.user.is_superuser:
+                    ata = AtaReuniao.objects.get(pk=pk)
+                else:
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'Ata não encontrada ou acesso negado'
+                    }, status=404)
+            except AtaReuniao.DoesNotExist:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Ata não encontrada'
+                }, status=404)
+            
+            # Verificar se o status é válido
+            valid_statuses = [choice[0] for choice in AtaReuniao.Status.choices]
+            if new_status not in valid_statuses:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Status inválido: {new_status}'
+                }, status=400)
+            
+            # Atualizar o status
+            old_status = ata.status
+            ata.status = new_status
+            ata.save(update_fields=['status', 'atualizado_em'])
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Status alterado de "{old_status}" para "{new_status}"',
+                'data': {
+                    'id': ata.pk,
+                    'old_status': old_status,
+                    'new_status': new_status,
+                    'updated_at': ata.atualizado_em.isoformat() if ata.atualizado_em else None
+                }
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'JSON inválido'
+            }, status=400)
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=500)
+
 
 @method_decorator(csrf_exempt, name='dispatch')
-class UpdateTaskStatusView(LoginRequiredMixin, View):
-    """
-    Endpoint da API para atualizar o status de uma ata de reunião.
-    Permite a funcionalidade de arrastar e soltar (drag and drop) no Kanban.
-    """
+class UpdateTaskStatusView(LoginRequiredMixin, FilialAtivaMixin, View):
+    """Endpoint alternativo para atualizar status (drag and drop Kanban)."""
+    
     def post(self, request, pk, *args, **kwargs):
         try:
             data = json.loads(request.body)
             new_status = data.get('new_status')
+            
+            filial_ativa = self.get_filial_ativa()
 
-            # Obtém a filial do usuário logado
-            try:
-                user_filial = request.user.funcionario.filial
-            except Funcionario.DoesNotExist:
-                user_filial = None
-
-            # Busca a ata e verifica permissão de filial
-            if request.user.is_superuser:
+            if filial_ativa:
+                ata = get_object_or_404(AtaReuniao, pk=pk, filial=filial_ativa)
+            elif request.user.is_superuser:
                 ata = get_object_or_404(AtaReuniao, pk=pk)
-            elif user_filial:
-                ata = get_object_or_404(AtaReuniao, pk=pk, filial=user_filial)
             else:
-                # Se não for superusuário e não tiver filial, não pode acessar nenhuma ata
-                return JsonResponse({'status': 'error', 'message': 'Ata não encontrada ou acesso negado'}, status=404)
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Ata não encontrada ou acesso negado'
+                }, status=404)
 
-            # Verifica se o novo status é válido
             valid_statuses = [choice[0] for choice in AtaReuniao.Status.choices]
             if new_status not in valid_statuses:
-                return JsonResponse({'status': 'error', 'message': 'Status inválido'}, status=300)
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Status inválido'
+                }, status=400)
 
-            # Atualiza o status e salva
             ata.status = new_status
             ata.save()
 
-            return JsonResponse({'status': 'success', 'message': 'Status atualizado com sucesso.'})
+            return JsonResponse({
+                'status': 'success', 
+                'message': 'Status atualizado com sucesso.'
+            })
 
         except json.JSONDecodeError:
-            return JsonResponse({'status': 'error', 'message': 'Formato de requisição inválido'}, status=400)
-        except AtaReuniao.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Ata de Reunião não encontrada'}, status=404)
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Formato de requisição inválido'
+            }, status=400)
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=300)
-        
-# Decorador para exigir login em Class-Based Views
+            return JsonResponse({
+                'status': 'error', 
+                'message': str(e)
+            }, status=500)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEWS DE UPLOAD/DOWNLOAD
+# ═══════════════════════════════════════════════════════════════════════════════
+
 login_required_m = method_decorator(login_required, name='dispatch')
 
 
 @login_required
 def download_ata_reuniao_template(request):
-    """
-    Gera e fornece para download uma planilha Excel (.xlsx) modelo para o
-    carregamento em massa de Atas de Reunião.
-    """
+    """Gera planilha Excel modelo para importação em massa."""
     output = BytesIO()
     workbook = Workbook()
     
-    # --- Planilha de Dados ---
     worksheet = workbook.active
     worksheet.title = "Dados das Atas"
 
@@ -465,7 +694,6 @@ def download_ata_reuniao_template(request):
         "Prazo Final (DD/MM/AAAA)", "Status"
     ]
     
-    # Estilo do cabeçalho
     header_font = Font(bold=True, color="FFFFFF")
     header_alignment = Alignment(horizontal="center", vertical="center")
     
@@ -475,11 +703,9 @@ def download_ata_reuniao_template(request):
         cell.alignment = header_alignment
         worksheet.column_dimensions[get_column_letter(col_num)].width = 25
         
-    # Colore o cabeçalho
     for cell in worksheet["1:1"]:
         cell.fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
 
-    # --- Planilha de Instruções ---
     instructions_ws = workbook.create_sheet(title="Instruções e Opções")
     instructions_ws.column_dimensions['A'].width = 30
     instructions_ws.column_dimensions['B'].width = 50
@@ -512,53 +738,52 @@ def download_ata_reuniao_template(request):
 
 
 @login_required_m
-class UploadAtaReuniaoView(View):
+class UploadAtaReuniaoView(FilialAtivaMixin, View):
     template_name = 'ata_reuniao/ata_reuniao_upload.html'
     form_class = UploadAtaReuniaoForm
-    success_url = reverse_lazy('ata_reuniao:ata_reuniao_list') # Altere para sua URL de listagem
+    success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
 
     def get(self, request, *args, **kwargs):
-        """
-        Renderiza o formulário e verifica se há mensagens de erro 
-        para exibir o botão de download do relatório.
-        """
         form = self.form_class()
 
-        # Lógica para verificar a existência de mensagens de 'warning'
         storage = get_messages(request)
         has_upload_errors = False
         for message in storage:
             if 'warning' in message.tags:
                 has_upload_errors = True
-                break  # Encontrou um, não precisa procurar mais
+                break
         
-        # Limpa a sessão de erros antigos se não houver mais mensagens de warning
         if not has_upload_errors and 'upload_error_details' in request.session:
             del request.session['upload_error_details']
 
         context = {
             'form': form,
             'has_upload_errors': has_upload_errors,
+            'filial_ativa': self.get_filial_ativa(),
         }
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         form = self.form_class(request.POST, request.FILES)
         if not form.is_valid():
-            # Limpa a sessão de erros se o formulário for inválido
             if 'upload_error_details' in request.session:
                 del request.session['upload_error_details'] 
             return render(request, self.template_name, {'form': form})
 
         file = request.FILES['file']
+        filial_ativa = self.get_filial_ativa()
+        
+        # Validar se há filial selecionada para importação
+        if not filial_ativa and not request.user.is_superuser:
+            messages.error(request, "Nenhuma filial selecionada. Selecione uma filial no menu superior.")
+            return redirect(request.path)
         
         try:
-            df = pd.read_excel(file, dtype=str).fillna('') # Lê tudo como texto para preservar dados originais
+            df = pd.read_excel(file, dtype=str).fillna('')
         except Exception as e:
             messages.error(request, f"Erro ao ler o arquivo Excel: {e}")
             return redirect(request.path)
 
-        # Verifica se o DataFrame está vazio (nenhuma linha de dados)
         if df.empty:
             messages.warning(request, "A planilha está vazia ou não contém dados para importar.")
             return redirect(request.path)
@@ -578,7 +803,7 @@ class UploadAtaReuniaoView(View):
 
         success_count = 0
         errors = []
-        error_details_for_session = [] # Para armazenar dados para o relatório
+        error_details_for_session = []
 
         valid_natureza = AtaReuniao.Natureza.values
         valid_status = AtaReuniao.Status.values
@@ -588,32 +813,81 @@ class UploadAtaReuniaoView(View):
             original_row_data = row.to_dict()
 
             try:
-                # ... (todas as suas validações, como na implementação anterior) ...
-                # Validação de Contrato
+                # Validação de Contrato (respeitando filial)
                 try:
-                    contrato = Cliente.objects.get(pk=int(row['contrato_id']))
-                except Cliente.DoesNotExist:
-                    raise ValueError(f"Contrato com ID '{row['contrato_id']}' não encontrado.")
-                # ... etc ...
-
-                # Se tudo OK, cria o objeto
-                # ... (código de criação do objeto) ...
+                    contrato_qs = Cliente.objects.filter(pk=int(row['contrato_id']))
+                    if filial_ativa:
+                        contrato_qs = contrato_qs.filter(filial=filial_ativa)
+                    contrato = contrato_qs.get()
+                except (Cliente.DoesNotExist, ValueError):
+                    raise ValueError(f"Contrato com ID '{row['contrato_id']}' não encontrado na filial atual.")
+                
+                # Validação de Coordenador (respeitando filial)
+                try:
+                    coord_qs = Funcionario.objects.filter(pk=int(row['coordenador_id']))
+                    if filial_ativa:
+                        coord_qs = coord_qs.filter(filial=filial_ativa)
+                    coordenador = coord_qs.get()
+                except (Funcionario.DoesNotExist, ValueError):
+                    raise ValueError(f"Coordenador com ID '{row['coordenador_id']}' não encontrado na filial atual.")
+                
+                # Validação de Responsável (respeitando filial)
+                try:
+                    resp_qs = Funcionario.objects.filter(pk=int(row['responsavel_id']))
+                    if filial_ativa:
+                        resp_qs = resp_qs.filter(filial=filial_ativa)
+                    responsavel = resp_qs.get()
+                except (Funcionario.DoesNotExist, ValueError):
+                    raise ValueError(f"Responsável com ID '{row['responsavel_id']}' não encontrado na filial atual.")
+                
+                # Validação de Natureza
+                if row['natureza'] not in valid_natureza:
+                    raise ValueError(f"Natureza '{row['natureza']}' inválida.")
+                
+                # Validação de Status
+                if row['status'] not in valid_status:
+                    raise ValueError(f"Status '{row['status']}' inválido.")
+                
+                # Parse de datas
+                entrada = None
+                if row['entrada']:
+                    try:
+                        entrada = pd.to_datetime(row['entrada'], dayfirst=True).date()
+                    except:
+                        raise ValueError(f"Data de entrada '{row['entrada']}' inválida.")
+                
+                prazo = None
+                if row['prazo']:
+                    try:
+                        prazo = pd.to_datetime(row['prazo'], dayfirst=True).date()
+                    except:
+                        raise ValueError(f"Prazo '{row['prazo']}' inválido.")
+                
+                # Criar a Ata com a filial ativa
+                AtaReuniao.objects.create(
+                    contrato=contrato,
+                    coordenador=coordenador,
+                    responsavel=responsavel,
+                    natureza=row['natureza'],
+                    titulo=row['titulo'],
+                    acao=row['acao'],
+                    entrada=entrada,
+                    prazo=prazo,
+                    status=row['status'],
+                    filial=filial_ativa
+                )
 
                 success_count += 1
 
             except Exception as e:
                 error_message = f"Linha {linha}: {e}"
                 errors.append(error_message)
-                
-                # Adiciona dados da linha e o erro para o relatório
                 original_row_data['motivo_do_erro'] = str(e)
                 error_details_for_session.append(original_row_data)
 
-        # Armazena erros na sessão para download posterior
         if error_details_for_session:
             request.session['upload_error_details'] = error_details_for_session
 
-        # Mensagens de Feedback para o usuário
         if success_count > 0:
             messages.success(request, f"{success_count} ata(s) de reunião importada(s) com sucesso!")
 
@@ -621,33 +895,26 @@ class UploadAtaReuniaoView(View):
             error_summary = f"<strong>{len(errors)} linha(s) não puderam ser importadas.</strong><br>Baixe o relatório de erros para corrigir e tente novamente."
             messages.warning(request, error_summary, extra_tags='safe')
             
-        # Redireciona para a mesma página para mostrar as mensagens e o botão de download
         return redirect(request.path)
 
 
 @login_required
 def download_error_report(request):
-    """
-    Gera um arquivo Excel com as linhas que falharam durante o upload,
-    incluindo uma coluna com o motivo do erro.
-    """
+    """Gera arquivo Excel com linhas que falharam durante upload."""
     error_details = request.session.get('upload_error_details')
 
     if not error_details:
         messages.error(request, "Nenhum relatório de erros encontrado na sessão.")
         return redirect('ata_reuniao:ata_reuniao_upload')
 
-    # Cria um DataFrame do pandas com os detalhes do erro
     df_errors = pd.DataFrame(error_details)
     
-    # Reordena as colunas para o formato original e adiciona a coluna de erro no final
     original_columns_order = [
         "contrato_id", "coordenador_id", "responsavel_id", "natureza", "titulo",
         "acao", "entrada", "prazo", "status"
     ]
     df_errors = df_errors[original_columns_order + ['motivo_do_erro']]
 
-    # Renomeia as colunas de volta para o formato amigável do template
     friendly_headers = {
         "contrato_id": "Contrato (ID)", "coordenador_id": "Coordenador (ID)",
         "responsavel_id": "Responsável (ID)", "natureza": "Natureza", "titulo": "Título",
@@ -661,23 +928,20 @@ def download_error_report(request):
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_errors.to_excel(writer, index=False, sheet_name='Erros_Para_Correcao')
         
-        # Formatação (opcional, mas recomendado)
         workbook = writer.book
         worksheet = writer.sheets['Erros_Para_Correcao']
         header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="C00000", end_color="C00000", fill_type="solid") # Vermelho para erros
+        header_fill = PatternFill(start_color="C00000", end_color="C00000", fill_type="solid")
 
         for col_num, value in enumerate(df_errors.columns.values, 1):
             cell = worksheet.cell(row=1, column=col_num)
             cell.font = header_font
             cell.fill = header_fill
             worksheet.column_dimensions[get_column_letter(col_num)].width = 25
-        worksheet.column_dimensions[get_column_letter(len(df_errors.columns))].width = 50 # Coluna de erro maior
-
+        worksheet.column_dimensions[get_column_letter(len(df_errors.columns))].width = 50
 
     output.seek(0)
 
-    # Limpa a sessão após gerar o relatório
     del request.session['upload_error_details']
 
     response = HttpResponse(
@@ -686,5 +950,5 @@ def download_error_report(request):
     )
     response['Content-Disposition'] = 'attachment; filename="relatorio_erros_importacao.xlsx"'
     return response
-    
+
 

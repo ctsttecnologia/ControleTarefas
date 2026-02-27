@@ -1,75 +1,63 @@
-
-{# Login Page Template #}
-
+{# templates/usuario/login.html #}
 {% extends 'base.html' %}
 {% load static %}
 {% load widget_tweaks %}
 
-{# Define a classe para o 'body', usada para ocultar o header/footer #}
 {% block body_class %}body-login{% endblock %}
-
 {% block title %}Login - Gerenciando Tarefas{% endblock %}
 
-{# O local CORRETO para adicionar links de CSS específicos da página #}
-{% block extra_css %}
-    
-{% endblock %}
-
-
 {% block content %}
+<div class="d-flex align-items-center justify-content-center min-vh-100 p-3 bg-light">
+    <div class="card shadow-lg border-0" style="max-width: 440px; width: 100%;">
+        <div class="card-body p-4 p-md-5">
 
-<div class="d-flex align-items-center justify-content-center min-vh-50 p-3">
-
-    <div class="card login-card shadow-lg">
-        <div class="card-body">
-
-            <div class="login-logo text-center mb-4">
-                <img src="{% static 'images/logocetest.png' %}" alt="Logotipo Gerenciando Tarefas">
+            {# Logo #}
+            <div class="text-center mb-4">
+                <img src="{% static 'images/logocetest.png' %}" alt="Logo" class="img-fluid" style="max-height: 80px;">
             </div>
 
-            {# 3. ADIÇÃO da classe .card-title para consistência com o Bootstrap #}
-            <h2 class="card-title text-center mb-4">Acessar sua Conta</h2>
+            <h2 class="text-center h4 fw-bold mb-4">Acessar sua Conta</h2>
 
+            {# Erros #}
             {% if form.errors %}
-                <div class="alert alert-danger p-3" role="alert">
-                    <h5 class="alert-heading h6"><i class="bi bi-exclamation-triangle-fill"></i> Erro no Login:</h5>
-                    <ul class="mb-0 ps-3 small text-start">
-                        {# 1. Erros gerais (ex: usuário inativo, senha errada) #}
-                        {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
-                        {% endfor %}
-
-                        {# 2. Erros específicos dos campos (ex: campo em branco) #}
-                        {% for field in form %}
-                            {% for error in field.errors %}
-                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                            {% endfor %}
-                        {% endfor %}
-                    </ul>
-                </div>
+            <div class="alert alert-danger py-2" role="alert">
+                <small>
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    {% for field in form %}
+                        {% for error in field.errors %}<strong>{{ field.label }}:</strong> {{ error }} {% endfor %}
+                    {% endfor %}
+                </small>
+            </div>
             {% endif %}
 
             <form method="post" novalidate>
                 {% csrf_token %}
+
                 <div class="mb-3">
-                    <label for="{{ form.username.id_for_label }}" class="form-label fw-bold">Usuário</label>
-                    {% render_field form.username class="form-control form-control-lg" placeholder="Digite seu usuário" %}
+                    <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">E-mail</label>
+                    {% render_field form.username class="form-control form-control-lg" placeholder="seu@email.com" autofocus=True %}
                 </div>
+
                 <div class="mb-3">
-                    <label for="{{ form.password.id_for_label }}" class="form-label fw-bold">Senha</label>
-                    {% render_field form.password class="form-control form-control-lg" placeholder="Digite sua senha" %}
+                    <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold">Senha</label>
+                    {% render_field form.password class="form-control form-control-lg" placeholder="••••••••" %}
                 </div>
+
                 <div class="d-grid mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                    </button>
                 </div>
             </form>
 
-            <div class="login-links text-center mt-4">
-                <p class="mb-1"><a href="{% url 'usuario:password_reset' %}">Esqueceu sua senha?</a></p>
-                <p class="mb-0">Não tem uma conta? <a href="{% url 'usuario:usuario_criar' %}">Registre-se</a></p>
+            <div class="text-center mt-4">
+                <a href="{% url 'usuario:password_reset' %}" class="text-decoration-none">
+                    Esqueceu sua senha?
+                </a>
             </div>
-            
         </div>
     </div>
 </div>
 {% endblock %}
+

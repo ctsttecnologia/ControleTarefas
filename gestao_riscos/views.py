@@ -1,5 +1,5 @@
-# gestao_riscos/views.py
 
+# gestao_riscos/views.py
 
 from time import timezone
 from django.urls import reverse_lazy
@@ -11,7 +11,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
-from django.db.models import Q
 import datetime
 from automovel.views import SuccessMessageMixin
 from django.contrib.auth.decorators import login_required
@@ -23,9 +22,11 @@ from core.mixins import (
     FilialCreateMixin,
     TecnicoScopeMixin
 )
+from seguranca_trabalho.models import EntregaEPI
 from .forms import IncidenteForm, InspecaoForm, CartaoTagForm
-from .models import Incidente, Inspecao, CartaoTag
-
+from .models import CartaoTag, Incidente, Inspecao, TipoRisco, CATEGORIA_RISCO_CHOICES
+from django.db.models import Q, Count
+from .forms import TipoRiscoForm
 
 
 class GestaoRiscosDashboardView(
@@ -358,4 +359,282 @@ class CartaoTagDeleteView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMi
     permission_required = 'gestao_riscos.delete_cartaotag'
     tecnico_scope_lookup = 'responsavel'
 
+# ===========================================
+# TIPO DE RISCO — CRUD
+# ===========================================
+
+class TipoRiscoListView(LoginRequiredMixin, ListView, SSTPermissionMixin, ViewFilialScopedMixin):
+    """Lista de Tipos de Riscos"""
+    model = TipoRisco
+    template_name = 'gestao_riscos/tipo_risco_list.html'
+    context_object_name = 'tipos_risco'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = TipoRisco.objects.all()
+
+        # Filtro por categoria
+        categoria = self.request.GET.get('categoria')
+        if categoria:
+            qs = qs.filter(categoria=categoria)
+
+        # Filtro apenas ativos
+        ativo = self.request.GET.get('ativo')
+        if ativo == 'true':
+            qs = qs.filter(ativo=True)
+        elif ativo == 'false':
+            qs = qs.filter(ativo=False)
+
+        # Busca por nome ou NR
+        search = self.request.GET.get('search', '').strip()
+        if search:
+            qs = qs.filter(
+                Q(nome__icontains=search) |
+                Q(nr_referencia__icontains=search) |
+                Q(descricao__icontains=search)
+            )
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        todos = TipoRisco.objects.all()
+        context['total_tipos'] = todos.count()
+        context['total_ativos'] = todos.filter(ativo=True).count()
+
+        # Contagem por categoria com cor
+        contagem = dict(
+            todos.values('categoria').annotate(total=Count('id')).values_list('categoria', 'total')
+        )
+
+        categorias_info = []
+        for cat_key, cat_label in CATEGORIA_RISCO_CHOICES:
+            categorias_info.append({
+                'key': cat_key,
+                'label': cat_label,
+                'total': contagem.get(cat_key, 0),
+                'cor': TipoRisco.CORES_CATEGORIA.get(cat_key, '#808080'),
+                'texto_escuro': cat_key == 'ergonomico',
+            })
+
+        context['categorias_info'] = categorias_info
+        context['categorias'] = CATEGORIA_RISCO_CHOICES
+
+        return context
+
+
+class TipoRiscoCreateView(LoginRequiredMixin, CreateView, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin):
+    """Cadastrar novo Tipo de Risco"""
+    model = TipoRisco
+    form_class = TipoRiscoForm
+    template_name = 'gestao_riscos/tipo_risco_form.html'
+    success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['filial'] = self.request.user.filial_ativa
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.filial = self.request.user.filial_ativa
+        messages.success(self.request, f'Tipo de Risco "{form.instance.nome}" cadastrado com sucesso!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Novo Tipo de Risco'
+        context['btn_texto'] = 'Cadastrar'
+        context['cores_categorias'] = TipoRisco.CORES_CATEGORIA
+        return context
+
+
+class TipoRiscoUpdateView(LoginRequiredMixin, UpdateView, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin):
+    """Editar Tipo de Risco"""
+    model = TipoRisco
+    form_class = TipoRiscoForm
+    template_name = 'gestao_riscos/tipo_risco_form.html'
+    success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['filial'] = self.request.user.filial_ativa
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Tipo de Risco "{form.instance.nome}" atualizado com sucesso!')
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['titulo'] = 'Editar Tipo de Risco'
+        context['btn_texto'] = 'Salvar Alterações'
+        context['cores_categorias'] = TipoRisco.CORES_CATEGORIA
+        return context
+
+
+class TipoRiscoDeleteView(LoginRequiredMixin, DeleteView, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin):
+    """Excluir Tipo de Risco"""
+    model = TipoRisco
+    template_name = 'gestao_riscos/tipo_risco_confirm_delete.html'
+    success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
+
+    def delete(self, request, *args, **kwargs):
+        obj = self.get_object()
+        messages.success(request, f'Tipo de Risco "{obj.nome}" excluído com sucesso!')
+        return super().delete(request, *args, **kwargs)
+
+
+class TipoRiscoToggleAtivoView(LoginRequiredMixin, View, SSTPermissionMixin, ViewFilialScopedMixin):
+    """Toggle ativo/inativo via AJAX"""
+
+    def post(self, request, pk):
+        try:
+            tipo = TipoRisco.objects.get(pk=pk)
+            tipo.ativo = not tipo.ativo
+            tipo.save(update_fields=['ativo'])
+
+            return JsonResponse({
+                'success': True,
+                'ativo': tipo.ativo,
+                'message': f'"{tipo.nome}" {"ativado" if tipo.ativo else "inativado"} com sucesso!'
+            })
+        except TipoRisco.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Tipo de Risco não encontrado.'
+            }, status=404)
+
+
+class TipoRiscoPopularView(LoginRequiredMixin, View, SSTPermissionMixin, ViewFilialScopedMixin):
+    """Popular tipos de risco padrão para a filial (dados iniciais)"""
+
+    def post(self, request):
+        filial = request.user.filial_ativa
+
+        RISCOS_PADRAO = {
+            'fisico': {
+                'cor': '#00a651',
+                'agentes': [
+                    ('Ruído', 'NR-15'),
+                    ('Vibrações', 'NR-15'),
+                    ('Radiação Ionizante', 'NR-15'),
+                    ('Radiação Não Ionizante', 'NR-15'),
+                    ('Frio', 'NR-15'),
+                    ('Calor', 'NR-15'),
+                    ('Pressões Anormais', 'NR-15'),
+                    ('Umidade', 'NR-15'),
+                    ('Temperaturas Extremas', 'NR-15'),
+                ],
+            },
+            'quimico': {
+                'cor': '#ed1c24',
+                'agentes': [
+                    ('Poeiras', 'NR-15'),
+                    ('Fumos Metálicos', 'NR-15'),
+                    ('Névoas', 'NR-15'),
+                    ('Neblinas', 'NR-15'),
+                    ('Gases', 'NR-15'),
+                    ('Vapores', 'NR-15'),
+                    ('Substâncias, Compostos Químicos em Geral', 'NR-15'),
+                ],
+            },
+            'biologico': {
+                'cor': '#8B4513',
+                'agentes': [
+                    ('Vírus', 'NR-15'),
+                    ('Bactérias', 'NR-15'),
+                    ('Protozoários', 'NR-15'),
+                    ('Fungos', 'NR-15'),
+                    ('Parasitas', 'NR-15'),
+                    ('Bacilos', 'NR-15'),
+                    ('Insetos, Cobras, Aranhas, etc.', 'NR-15'),
+                ],
+            },
+            'ergonomico': {
+                'cor': '#f7ec13',
+                'agentes': [
+                    ('Esforço Físico Intenso', 'NR-17'),
+                    ('Levantamento e Transporte Manual de Peso', 'NR-17'),
+                    ('Exigência de Postura Inadequada', 'NR-17'),
+                    ('Controle Rígido de Produtividade', 'NR-17'),
+                    ('Imposição de Ritmos Excessivos', 'NR-17'),
+                    ('Trabalho em Turno e Noturno', 'NR-17'),
+                    ('Jornada de Trabalho Prolongada', 'NR-17'),
+                    ('Monotonia e Repetitividade', 'NR-17'),
+                    ('Outras Situações Causadoras de Stress Físico e/ou Psíquico', 'NR-17'),
+                ],
+            },
+            'acidente': {
+                'cor': '#0068b7',
+                'agentes': [
+                    ('Arranjo Físico Inadequado', 'NR-12'),
+                    ('Máquinas e Equipamentos sem Proteção', 'NR-12'),
+                    ('Ferramentas Inadequadas ou Defeituosas', 'NR-12'),
+                    ('Eletricidade', 'NR-10'),
+                    ('Probabilidade de Incêndio ou Explosão', 'NR-23'),
+                    ('Armazenamento Inadequado', 'NR-11'),
+                    ('Animais Peçonhentos', ''),
+                    ('Iluminação Inadequada', 'NR-17'),
+                    ('Outras Situações de Risco que Poderão Contribuir para Ocorrência de Acidentes', ''),
+                ],
+            },
+        }
+
+        criados = 0
+        existentes = 0
+
+        for categoria, info in RISCOS_PADRAO.items():
+            for agente_nome, nr_ref in info['agentes']:
+                obj, created = TipoRisco.objects.get_or_create(
+                    categoria=categoria,
+                    nome=agente_nome,
+                    filial=filial,
+                    defaults={
+                        'codigo_cor': info['cor'],
+                        'nr_referencia': nr_ref,
+                        'ativo': True,
+                    }
+                )
+                if created:
+                    criados += 1
+                else:
+                    existentes += 1
+
+        return JsonResponse({
+            'success': True,
+            'criados': criados,
+            'existentes': existentes,
+            'message': f'{criados} tipo(s) de risco criado(s). {existentes} já existiam.'
+        })
+
+class EntregasPorEquipamentoView(LoginRequiredMixin, View):
+    """Retorna entregas ativas (não devolvidas) de um equipamento."""
+
+    def get(self, request):
+        equipamento_id = request.GET.get('equipamento_id')
+        filial = request.user.filial_ativa
+
+        if not equipamento_id:
+            return JsonResponse({'entregas': []})
+
+        entregas = EntregaEPI.objects.filter(
+            filial=filial,
+            equipamento_id=equipamento_id,
+            data_devolucao__isnull=True  # ← "ativo" = não devolvido
+        ).select_related('ficha__funcionario', 'equipamento')
+
+        data = [
+            {
+                'id': e.pk,
+                'texto': (
+                    f"{e.ficha.funcionario.nome_completo} — "
+                    f"Entregue em {e.data_entrega.strftime('%d/%m/%Y')}"
+                    if e.ficha else str(e)
+                )
+            }
+            for e in entregas
+        ]
+
+        return JsonResponse({'entregas': data})
 

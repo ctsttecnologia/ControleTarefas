@@ -1,3 +1,8 @@
+
+"""
+Models do módulo de Gestão de Riscos
+Integrado com PGR (Programa de Gerenciamento de Riscos)
+"""
 # gestao_riscos/models.py
 from django.db import models
 from django.urls import reverse_lazy
@@ -9,23 +14,45 @@ from usuario.models import Filial
 from departamento_pessoal.models import Cargo, Funcionario
 from django.utils.translation import gettext_lazy as _
 from seguranca_trabalho.models import Equipamento, EntregaEPI
+from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
-class Incidente(models.Model):
-    """Registra qualquer ocorrência ou incidente de segurança."""
-    SETORES_CHOICES = [
+# ===========================================
+# CHOICES GLOBAIS
+# ===========================================
+
+CATEGORIA_RISCO_CHOICES = [
+    ('fisico', 'Físico'),
+    ('quimico', 'Químico'),
+    ('biologico', 'Biológico'),
+    ('ergonomico', 'Ergonômico'),
+    ('acidente', 'Acidente/Mecânico'),
+]
+SETORES_CHOICES = [
         ('OPERAÇAO', 'Operação'),
         ('LOGISTICA', 'Logística'),
         ('MANUTENCAO', 'Manutenção'),
         ('ADMINISTRACAO', 'Administração'),
-    ]
-    TIPO_INCIDENTE_CHOICES = [
-        ('QUASE_ACIDENTE', 'Quase Acidente'),
-        ('COM_AFASTAMENTO', 'Com Afastamento'),
-        ('SEM_AFASTAMENTO', 'Sem Afastamento'),
-    ]
+]
+TIPO_INCIDENTE_CHOICES = [
+    ('QUASE_ACIDENTE', 'Quase Acidente'),
+    ('COM_AFASTAMENTO', 'Com Afastamento'),
+    ('SEM_AFASTAMENTO', 'Sem Afastamento'),
+]
+
+STATUS_CHOICES = [
+        ('PENDENTE_APROVACAO', _('Pendente de Aprovação')),
+        ('PENDENTE', _('Pendente')),
+        ('CONCLUIDA', _('Concluída')),
+        ('CANCELADA', _('Cancelada')),
+]
+
+
+
+class Incidente(models.Model):
+    """Registra qualquer ocorrência ou incidente de segurança."""
     
     descricao = models.CharField(max_length=255, verbose_name="Título do Incidente")
     detalhes = models.TextField(verbose_name="Detalhes da Ocorrência")
@@ -48,13 +75,7 @@ class Incidente(models.Model):
 
 class Inspecao(models.Model):
     """Agenda e registra inspeções de segurança."""
-    STATUS_CHOICES = [
-        ('PENDENTE_APROVACAO', _('Pendente de Aprovação')), # NOVO STATUS
-        ('PENDENTE', _('Pendente')),
-        ('CONCLUIDA', _('Concluída')),
-        ('CANCELADA', _('Cancelada')),
-    ]
-    
+        
     # MODIFICADO: Torna-se opcional, pois pode ser preenchido via entrega_epi
     equipamento = models.ForeignKey(
         'seguranca_trabalho.Equipamento', 
@@ -165,3 +186,69 @@ class CartaoTag(models.Model):
 
     def __str__(self):
         return f"Cartão de {self.funcionario.nome_completo}"
+
+  
+# ===========================================
+# RISCOS
+# ===========================================
+
+class TipoRisco(models.Model):
+
+
+    # Mapa de cores padrão por categoria
+    CORES_CATEGORIA = {
+        'fisico': '#00a651',      # Verde
+        'quimico': '#ed1c24',     # Vermelho
+        'biologico': '#8B4513',   # Marrom
+        'ergonomico': '#f7ec13',  # Amarelo
+        'acidente': '#0068b7',    # Azul
+    }
+    
+    categoria = models.CharField(
+        'Categoria',
+        max_length=20,
+        choices=CATEGORIA_RISCO_CHOICES
+    )
+    nome = models.CharField('Nome do Risco', max_length=200)
+    descricao = models.TextField('Descrição', blank=True)
+    codigo_cor = models.CharField(
+        'Código da Cor',
+        max_length=7,
+        default='#808080',
+        help_text='Cor no formato hexadecimal (#RRGGBB)'
+    )
+    nr_referencia = models.CharField(
+        'NR de Referência',
+        max_length=50,
+        blank=True,
+        help_text='Ex: NR-15, NR-17'
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='tipos_risco'
+    )
+
+    objects = FilialManager()
+
+    class Meta:
+        db_table = 'gestao_tipo_risco'
+        verbose_name = 'Tipo de Risco'
+        verbose_name_plural = 'Tipos de Riscos'
+        ordering = ['categoria', 'nome']
+        unique_together = ['categoria', 'nome', 'filial']
+
+    def __str__(self):
+        return f"{self.get_categoria_display()} - {self.nome}"
+
+    def get_cor_categoria(self):
+        """Retorna a cor padrão da categoria"""
+        return self.CORES_CATEGORIA.get(self.categoria, '#808080')
+
+    def save(self, *args, **kwargs):
+        """Auto-preenche a cor se estiver com o valor padrão"""
+        if self.codigo_cor == '#808080':
+            self.codigo_cor = self.get_cor_categoria()
+        super().save(*args, **kwargs)
+

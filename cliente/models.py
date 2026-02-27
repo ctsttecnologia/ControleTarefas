@@ -1,10 +1,13 @@
 
+# cliente/models.py
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from logradouro.models import Logradouro
 from core.managers import FilialManager
 from usuario.models import Filial
 from core.validators import (validate_telefone, validate_cnpj, validate_email)
+
 
 
 class Cliente(models.Model):
@@ -46,11 +49,10 @@ class Cliente(models.Model):
     data_cadastro = models.DateTimeField(auto_now_add=True, verbose_name=_('Data de Cadastro'))
     data_atualizacao = models.DateTimeField(auto_now=True, verbose_name=_('Última Atualização'))
     data_encerramento = models.DateField(null=True, blank=True, verbose_name=_('Data de Encerramento'))
-    # CORREÇÃO: related_name único e campo obrigatório.
-    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='Cliente', null=True, blank=False)
+    # related_name único e campo obrigatório.
+    filial = models.ForeignKey(Filial, on_delete=models.PROTECT, related_name='clientes', verbose_name=_('Filial'))
 
-    # Manager Padrão
-    objects = FilialManager()
+    objects = FilialManager()  # Usa o manager personalizado para filtrar por filial
 
     @property
     def cnpj_formatado(self):
@@ -61,7 +63,7 @@ class Cliente(models.Model):
         return self.cnpj
 
     def __str__(self):
-        return self.nome
+        return f"{self.razao_social}"
 
     class Meta:
         db_table = 'cliente'
@@ -69,4 +71,3 @@ class Cliente(models.Model):
         verbose_name = _('Cliente')
         verbose_name_plural = _('Clientes')
 
-    

@@ -1,108 +1,167 @@
 
-{% extends 'base.html' %}
-{% load static %}
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
 
-{% block title %}{{ titulo_pagina }}{% endblock %}
-{% block extra_css %}
-    {# Carrega a folha de estilos dedicada para os formulários desta aplicação #}
-    <link rel="stylesheet" href="{% static 'css/seguranca_trabalho/forms.css' %}">
-{% endblock %}
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Fabricante{% endblock %}
 
-{% block content %}
-<div class="container py-5 form-container-custom">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h2">Cadastro</h1>
-                <div>
-                    <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i> Voltar para Lista
-                    </a>
-                    <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i> Dashboard
-                    </a>
-                </div>
+{% block sst_content %}
+
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
+                    {% if object %}Editar Fabricante{% else %}Novo Fabricante{% endif %}
+                </h4>
+                <small class="opacity-75">Cadastro de fabricantes de EPIs e equipamentos</small>
             </div>
-            <div class="card shadow-sm">
-                <div class="card-body p-4 p-md-5">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}*</label>
-                                {% render_field form.nome class+="form-control" %}
-                                {% for error in form.nome.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.cnpj.id_for_label }}" class="form-label">{{ form.cnpj.label }}</label>
-                                {% render_field form.cnpj class+="form-control" %}
-                                {% for error in form.cnpj.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.endereco.id_for_label }}" class="form-label">
-                                    {{ form.endereco.label }}
-                                </label>
-                                <div class="input-group">
-                                    {% render_field form.endereco class+="form-select" %}
-                                    <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary" type="button" target="_blank">
-                                        <i class="bi bi-box-arrow-up-right"></i>
-                                    </a>
-                                </div>
-                                {% for error in form.endereco.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.contato.id_for_label }}" class="form-label">{{ form.contato.label }}</label>
-                                {% render_field form.contato class+="form-control" %}
-                                {% for error in form.contato.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}       
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.telefone.id_for_label }}" class="form-label">{{ form.telefone.label }}</label>
-                                {% render_field form.telefone class+="form-control" %}
-                                {% for error in form.telefone.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}      
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.celular.id_for_label }}" class="form-label">{{ form.celular.label }}</label>
-                                {% render_field form.celular class+="form-control" %}
-                                {% for error in form.celular.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
-                                {% render_field form.email class+="form-control" %}
-                                {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div> 
-                            <div class="col-md-6">
-                                <label for="{{ form.site.id_for_label }}" class="form-label">{{ form.site.label }}</label>
-                                {% render_field form.site class+="form-control" %}
-                                {% for error in form.site.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}              
-                            </div>
-                            <div class="col-12">
-                                <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
-                                {% render_field form.observacoes class+="form-control" %}
-                                {% for error in form.observacoes.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-                            </div>
-                            <div class="col-md-6">
-                                <label for="{{ form.ativo.id_for_label }}" class="form-label">{{ form.ativo.label }}</label>
-                                {% render_field form.ativo class+="form-check-input" %}
-                            </div>      
+            <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+</div>
 
-                            <div class="col-md-6 d-flex align-items-end">
-                                <div class="form-check form-switch mb-2">
-                                    {% render_field form.ativo class+="form-check-input" %}
-                                    <label for="{{ form.ativo.id_for_label }}" class="form-check-label">{{ form.ativo.label }}</label>
-                                </div>
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <!-- Informações Principais -->
+                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
+                        <i class="bi bi-building me-2"></i>Informações Principais
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.nome.label }} <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.nome class+="form-control" %}
+                            {% for error in form.nome.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.cnpj.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.cnpj.label }}
+                            </label>
+                            {% render_field form.cnpj class+="form-control" %}
+                            {% for error in form.cnpj.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-8">
+                            <label for="{{ form.endereco.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.endereco.label }}
+                            </label>
+                            <div class="input-group">
+                                {% render_field form.endereco class+="form-select" %}
+                                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar novo endereço">
+                                    <i class="bi bi-plus-lg"></i>
+                                </a>
+                            </div>
+                            {% for error in form.endereco.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check form-switch">
+                                {% render_field form.ativo class+="form-check-input" %}
+                                <label for="{{ form.ativo.id_for_label }}" class="form-check-label">
+                                    {{ form.ativo.label }}
+                                </label>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end gap-2 mt-4 border-top pt-4">
-                            <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-lg me-1"></i> Salvar
-                            </button>
+                    </div>
+
+                    <!-- Contato -->
+                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
+                        <i class="bi bi-telephone me-2"></i>Informações de Contato
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.contato.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.contato.label }}
+                            </label>
+                            {% render_field form.contato class+="form-control" placeholder="Nome do contato" %}
+                            {% for error in form.contato.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
                         </div>
-                    </form>
-                </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.email.label }}
+                            </label>
+                            {% render_field form.email class+="form-control" type="email" %}
+                            {% for error in form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.telefone.label }}
+                            </label>
+                            {% render_field form.telefone class+="form-control" %}
+                            {% for error in form.telefone.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.celular.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.celular.label }}
+                            </label>
+                            {% render_field form.celular class+="form-control" %}
+                            {% for error in form.celular.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.site.label }}
+                            </label>
+                            {% render_field form.site class+="form-control" placeholder="https://" %}
+                            {% for error in form.site.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
+                        <i class="bi bi-chat-left-text me-2"></i>Observações
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            {% render_field form.observacoes class+="form-control" rows="3" %}
+                            {% for error in form.observacoes.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="border-top pt-4 d-flex justify-content-between">
+                        <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-lg me-1"></i> Salvar
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
+

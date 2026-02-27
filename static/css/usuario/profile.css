@@ -29,8 +29,8 @@
     border: 1px solid var(--card-border-color);
     border-radius: 1rem;
     box-shadow: 0 4px 20px var(--card-shadow-color);
-    backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     

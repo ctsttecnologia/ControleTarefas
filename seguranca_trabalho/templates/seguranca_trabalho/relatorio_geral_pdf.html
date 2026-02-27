@@ -1,0 +1,592 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Segurança do Trabalho</title>
+    <style>
+        /* ═══════════════════════════════════════════════════════════════════════
+           CONFIGURAÇÃO DE PÁGINA
+        ═══════════════════════════════════════════════════════════════════════ */
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm 2cm 2cm 2cm;
+            
+            @top-left {
+                content: element(header-left);
+            }
+            @top-right {
+                content: element(header-right);
+            }
+            @bottom-center {
+                content: element(footer);
+            }
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           VARIÁVEIS DE CORES
+        ═══════════════════════════════════════════════════════════════════════ */
+        :root {
+            --cor-primaria: #0d6efd;
+            --cor-primaria-escura: #0a58ca;
+            --cor-sucesso: #198754;
+            --cor-aviso: #ffc107;
+            --cor-perigo: #dc3545;
+            --cor-info: #0dcaf0;
+            --cor-texto: #212529;
+            --cor-texto-secundario: #6c757d;
+            --cor-borda: #dee2e6;
+            --cor-fundo-claro: #f8f9fa;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           ESTILOS BASE
+        ═══════════════════════════════════════════════════════════════════════ */
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 10pt;
+            color: var(--cor-texto);
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           CABEÇALHO E RODAPÉ
+        ═══════════════════════════════════════════════════════════════════════ */
+        .header-left {
+            position: running(header-left);
+            font-size: 8pt;
+            color: var(--cor-texto-secundario);
+        }
+
+        .header-right {
+            position: running(header-right);
+            font-size: 8pt;
+            color: var(--cor-texto-secundario);
+            text-align: right;
+        }
+
+        .footer {
+            position: running(footer);
+            font-size: 8pt;
+            color: var(--cor-texto-secundario);
+            text-align: center;
+            border-top: 1px solid var(--cor-borda);
+            padding-top: 8px;
+        }
+
+        .footer .page-number::after {
+            content: counter(page) " de " counter(pages);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           CAPA / TÍTULO
+        ═══════════════════════════════════════════════════════════════════════ */
+        .capa {
+            text-align: center;
+            padding: 40px 0 30px 0;
+            border-bottom: 3px solid var(--cor-primaria);
+            margin-bottom: 30px;
+        }
+
+        .capa .logo {
+            max-height: 60px;
+            margin-bottom: 20px;
+        }
+
+        .capa h1 {
+            font-size: 22pt;
+            font-weight: 700;
+            color: var(--cor-primaria);
+            margin: 0 0 10px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .capa .subtitulo {
+            font-size: 11pt;
+            color: var(--cor-texto-secundario);
+            margin: 0;
+        }
+
+        .capa .info-emissao {
+            margin-top: 20px;
+            font-size: 9pt;
+            color: var(--cor-texto-secundario);
+        }
+
+        .capa .info-emissao strong {
+            color: var(--cor-texto);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           SEÇÕES
+        ═══════════════════════════════════════════════════════════════════════ */
+        .secao {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .secao-titulo {
+            font-size: 13pt;
+            font-weight: 700;
+            color: var(--cor-primaria);
+            margin: 0 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--cor-primaria);
+        }
+
+        .secao-titulo .icone {
+            margin-right: 8px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           KPIs
+        ═══════════════════════════════════════════════════════════════════════ */
+        .kpi-container {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 10px 0;
+            margin-bottom: 25px;
+        }
+
+        .kpi-card {
+            background-color: var(--cor-fundo-claro);
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            padding: 15px 10px;
+            text-align: center;
+            width: 25%;
+            vertical-align: top;
+        }
+
+        .kpi-card.primario {
+            border-left: 4px solid var(--cor-primaria);
+        }
+
+        .kpi-card.sucesso {
+            border-left: 4px solid var(--cor-sucesso);
+        }
+
+        .kpi-card.aviso {
+            border-left: 4px solid var(--cor-aviso);
+        }
+
+        .kpi-card.perigo {
+            border-left: 4px solid var(--cor-perigo);
+        }
+
+        .kpi-icone {
+            font-size: 18pt;
+            margin-bottom: 5px;
+        }
+
+        .kpi-icone.primario { color: var(--cor-primaria); }
+        .kpi-icone.sucesso { color: var(--cor-sucesso); }
+        .kpi-icone.aviso { color: var(--cor-aviso); }
+        .kpi-icone.perigo { color: var(--cor-perigo); }
+
+        .kpi-valor {
+            font-size: 24pt;
+            font-weight: 700;
+            color: var(--cor-texto);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .kpi-label {
+            font-size: 8pt;
+            color: var(--cor-texto-secundario);
+            margin: 5px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           TABELAS
+        ═══════════════════════════════════════════════════════════════════════ */
+        .tabela {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 9pt;
+        }
+
+        .tabela thead {
+            background-color: var(--cor-primaria);
+            color: white;
+        }
+
+        .tabela th {
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tabela td {
+            padding: 8px;
+            border-bottom: 1px solid var(--cor-borda);
+            vertical-align: middle;
+        }
+
+        .tabela tbody tr:nth-child(even) {
+            background-color: var(--cor-fundo-claro);
+        }
+
+        .tabela tbody tr:hover {
+            background-color: #e9ecef;
+        }
+
+        .tabela .text-center {
+            text-align: center;
+        }
+
+        .tabela .text-right {
+            text-align: right;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           BADGES / ETIQUETAS
+        ═══════════════════════════════════════════════════════════════════════ */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 7pt;
+            font-weight: 600;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .badge-sucesso {
+            background-color: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .badge-aviso {
+            background-color: #fff3cd;
+            color: #664d03;
+        }
+
+        .badge-perigo {
+            background-color: #f8d7da;
+            color: #842029;
+        }
+
+        .badge-info {
+            background-color: #cff4fc;
+            color: #055160;
+        }
+
+        .badge-secundario {
+            background-color: #e2e3e5;
+            color: #41464b;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           GRÁFICOS
+        ═══════════════════════════════════════════════════════════════════════ */
+        .grafico-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: var(--cor-fundo-claro);
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            page-break-inside: avoid;
+        }
+
+        .grafico-titulo {
+            font-size: 11pt;
+            font-weight: 600;
+            color: var(--cor-texto);
+            margin: 0 0 15px 0;
+        }
+
+        .grafico-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .grafico-vazio {
+            padding: 30px;
+            color: var(--cor-texto-secundario);
+            font-style: italic;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           ALERTAS / DESTAQUES
+        ═══════════════════════════════════════════════════════════════════════ */
+        .alerta {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 9pt;
+        }
+
+        .alerta-info {
+            background-color: #cff4fc;
+            border-left: 4px solid var(--cor-info);
+            color: #055160;
+        }
+
+        .alerta-aviso {
+            background-color: #fff3cd;
+            border-left: 4px solid var(--cor-aviso);
+            color: #664d03;
+        }
+
+        .alerta-perigo {
+            background-color: #f8d7da;
+            border-left: 4px solid var(--cor-perigo);
+            color: #842029;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           RESUMO / CARDS DE INFORMAÇÃO
+        ═══════════════════════════════════════════════════════════════════════ */
+        .info-box {
+            background-color: var(--cor-fundo-claro);
+            border: 1px solid var(--cor-borda);
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-box-titulo {
+            font-size: 9pt;
+            font-weight: 600;
+            color: var(--cor-texto);
+            margin: 0 0 5px 0;
+        }
+
+        .info-box-valor {
+            font-size: 11pt;
+            color: var(--cor-primaria);
+            margin: 0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════════
+           UTILITÁRIOS
+        ═══════════════════════════════════════════════════════════════════════ */
+        .text-muted {
+            color: var(--cor-texto-secundario);
+        }
+
+        .text-small {
+            font-size: 8pt;
+        }
+
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 5px; }
+        .mb-2 { margin-bottom: 10px; }
+        .mb-3 { margin-bottom: 15px; }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         ELEMENTOS RUNNING (Cabeçalho/Rodapé)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="header-left">
+        {{ filial.nome|default:"Sistema SST" }}
+    </div>
+    
+    <div class="header-right">
+        Emitido em: {{ data_emissao|date:"d/m/Y H:i" }}
+    </div>
+    
+    <div class="footer">
+        <span class="page-number">Página </span> | 
+        Relatório gerado automaticamente pelo Sistema de Gestão SST
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         CAPA / CABEÇALHO DO RELATÓRIO
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="capa">
+        {% if logo_url %}
+        <img src="{{ logo_url }}" alt="Logo" class="logo">
+        {% endif %}
+        
+        <h1>Relatório de Gestão de SST</h1>
+        <p class="subtitulo">Segurança e Saúde do Trabalho</p>
+        
+        <div class="info-emissao">
+            <strong>Filial:</strong> {{ filial.nome|default:"Todas as Filiais" }}<br>
+            <strong>Período:</strong> {{ periodo|default:"Consolidado" }}<br>
+            <strong>Emissão:</strong> {{ data_emissao|date:"d/m/Y" }} às {{ data_emissao|time:"H:i" }}
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEÇÃO: INDICADORES CHAVE (KPIs)
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="secao">
+        <h2 class="secao-titulo">
+            <span class="icone">📊</span> Indicadores Chave
+        </h2>
+        
+        <table class="kpi-container">
+            <tr>
+                <td class="kpi-card primario">
+                    <div class="kpi-icone primario">🛡️</div>
+                    <p class="kpi-valor">{{ total_equipamentos_ativos|default:"0" }}</p>
+                    <p class="kpi-label">Equipamentos Ativos</p>
+                </td>
+                <td class="kpi-card sucesso">
+                    <div class="kpi-icone sucesso">📋</div>
+                    <p class="kpi-valor">{{ fichas_ativas|default:"0" }}</p>
+                    <p class="kpi-label">Fichas Ativas</p>
+                </td>
+                <td class="kpi-card aviso">
+                    <div class="kpi-icone aviso">✍️</div>
+                    <p class="kpi-valor">{{ entregas_pendentes_assinatura|default:"0" }}</p>
+                    <p class="kpi-label">Pendentes Assinatura</p>
+                </td>
+                <td class="kpi-card perigo">
+                    <div class="kpi-icone perigo">⏰</div>
+                    <p class="kpi-valor">{{ epis_vencendo_em_30_dias|default:"0" }}</p>
+                    <p class="kpi-label">Vencendo em 30 dias</p>
+                </td>
+            </tr>
+        </table>
+
+        {% if epis_vencendo_em_30_dias > 0 %}
+        <div class="alerta alerta-aviso">
+            <strong>Atenção:</strong> Existem {{ epis_vencendo_em_30_dias }} EPIs com vencimento nos próximos 30 dias. 
+            Verifique a necessidade de renovação ou substituição.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEÇÃO: ENTREGAS RECENTES
+    ═══════════════════════════════════════════════════════════════════════ -->
+    {% if entregas %}
+    <div class="secao">
+        <h2 class="secao-titulo">
+            <span class="icone">📦</span> Entregas de EPI
+        </h2>
+        
+        <table class="tabela">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Funcionário</th>
+                    <th style="width: 25%;">Equipamento</th>
+                    <th style="width: 12%;" class="text-center">Quantidade</th>
+                    <th style="width: 15%;">Data Entrega</th>
+                    <th style="width: 13%;">Vencimento</th>
+                    <th style="width: 10%;" class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entrega in entregas %}
+                <tr>
+                    <td>
+                        <strong>{{ entrega.ficha.funcionario.nome_completo }}</strong>
+                        <br><span class="text-muted text-small">{{ entrega.ficha.funcionario.cargo.nome|default:"—" }}</span>
+                    </td>
+                    <td>
+                        {{ entrega.equipamento.nome }}
+                        {% if entrega.numero_serie %}
+                        <br><span class="text-muted text-small">N/S: {{ entrega.numero_serie }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ entrega.quantidade }}</td>
+                    <td>{{ entrega.data_entrega|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if entrega.data_vencimento_uso %}
+                        {{ entrega.data_vencimento_uso|date:"d/m/Y" }}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if entrega.status == "Devolvido" %}
+                        <span class="badge badge-secundario">Devolvido</span>
+                        {% elif entrega.status == "Pendente Assinatura" %}
+                        <span class="badge badge-aviso">Pendente</span>
+                        {% elif entrega.status == "Vencido" %}
+                        <span class="badge badge-perigo">Vencido</span>
+                        {% else %}
+                        <span class="badge badge-sucesso">Ativo</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <p class="text-small text-muted">
+            Total de registros: {{ entregas|length }}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEÇÃO: ANÁLISE GRÁFICA
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="secao">
+        <h2 class="secao-titulo">
+            <span class="icone">📈</span> Análise Gráfica
+        </h2>
+        
+        {% if grafico_status_imagem_path %}
+        <div class="grafico-container">
+            <h3 class="grafico-titulo">Situação Geral dos Equipamentos</h3>
+            <img src="{{ grafico_status_imagem_path }}" alt="Gráfico de Status">
+        </div>
+        {% endif %}
+
+        {% if grafico_vencimentos_imagem_path %}
+        <div class="grafico-container">
+            <h3 class="grafico-titulo">EPIs a Vencer nos Próximos 6 Meses</h3>
+            <img src="{{ grafico_vencimentos_imagem_path }}" alt="Gráfico de Vencimentos">
+        </div>
+        {% endif %}
+
+        {% if not grafico_status_imagem_path and not grafico_vencimentos_imagem_path %}
+        <div class="grafico-container">
+            <p class="grafico-vazio">Nenhum gráfico disponível para este relatório.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         SEÇÃO: OBSERVAÇÕES / NOTAS
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="secao no-break">
+        <h2 class="secao-titulo">
+            <span class="icone">📝</span> Observações
+        </h2>
+        
+        <div class="alerta alerta-info">
+            <strong>Nota:</strong> Este relatório apresenta uma visão consolidada dos indicadores de 
+            Segurança e Saúde do Trabalho. Os dados refletem a situação no momento da emissão e 
+            devem ser utilizados como ferramenta de gestão e tomada de decisão.
+        </div>
+        
+        <div class="info-box">
+            <p class="info-box-titulo">Responsável pela Emissão</p>
+            <p class="info-box-valor">{{ usuario.get_full_name|default:usuario.username|default:"Sistema" }}</p>
+        </div>
+    </div>
+
+</body>
+</html>
+
+

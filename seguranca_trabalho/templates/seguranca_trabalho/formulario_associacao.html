@@ -1,29 +1,79 @@
 
 
-{% extends "base.html" %}
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load widget_tweaks %}
 
-{% load crispy_forms_tags %} 
+{% block title %}Nova Associação Cargo × Função{% endblock %}
 
-{% block content %}
+{% block sst_content %}
+
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-link-45deg me-2"></i>Nova Associação
+                </h4>
+                <small class="opacity-75">Vincule um cargo a uma função</small>
+            </div>
+            <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+</div>
 
 <div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="mb-0">Associar Função a um Cargo</h3>
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-diagram-3 me-2"></i>Dados da Associação
+                </h6>
             </div>
-            <div class="card-body">
-                <form method="post">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
                     {% csrf_token %}
-                    
-                    {{ form|crispy }}
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-secondary me-md-2">
-                            Cancelar
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="mb-4">
+                        <label for="{{ form.cargo.id_for_label }}" class="form-label fw-semibold">
+                            Cargo <span class="text-danger">*</span>
+                        </label>
+                        {% render_field form.cargo class+="form-select" %}
+                        {% for error in form.cargo.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.funcao.id_for_label }}" class="form-label fw-semibold">
+                            Função <span class="text-danger">*</span>
+                        </label>
+                        {% render_field form.funcao class+="form-select" %}
+                        {% for error in form.funcao.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>
+                            Ao associar um cargo a uma função, os EPIs definidos na Matriz 
+                            para essa função serão aplicados aos funcionários com esse cargo.
+                        </small>
+                    </div>
+
+                    <div class="d-flex justify-content-between pt-3 border-top">
+                        <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
                         </a>
-                        <button type="submit" class="btn btn-success">
-                            Salvar Associação
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-lg me-1"></i> Criar Associação
                         </button>
                     </div>
                 </form>
@@ -31,5 +81,5 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
+{% endblock %}

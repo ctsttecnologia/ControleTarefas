@@ -6,12 +6,84 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-    <h1>{{ titulo }}</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn btn-success">Salvar</button>
-        <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Cabeçalho -->
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-phone text-primary me-2"></i>{{ titulo }}
+            </h2>
+        </div>
+        <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </header>
+
+    <!-- Card do Formulário -->
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-4 p-lg-5">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                    <div>{{ form.non_field_errors }}</div>
+                </div>
+                {% endif %}
+
+                <div class="row g-4">
+                    {% for field in form %}
+                    <div class="{% if field.name == 'observacoes' or field.name == 'acessorios' %}col-12{% else %}col-md-6{% endif %}">
+                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold text-dark" style="font-size: 0.85rem;">
+                            {{ field.label }}
+                            {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+
+                        {% if field.field.widget.input_type == 'select' or field.name == 'status' or field.name == 'tipo_de_aparelho' or field.name == 'modelo' or field.name == 'filial' %}
+                            {% if field.errors %}
+                                {% render_field field class+="form-select is-invalid" %}
+                            {% else %}
+                                {% render_field field class+="form-select" %}
+                            {% endif %}
+                        {% elif field.name == 'observacoes' or field.name == 'acessorios' %}
+                            {% if field.errors %}
+                                {% render_field field class+="form-control is-invalid" rows="3" %}
+                            {% else %}
+                                {% render_field field class+="form-control" rows="3" %}
+                            {% endif %}
+                        {% else %}
+                            {% if field.errors %}
+                                {% render_field field class+="form-control is-invalid" placeholder=field.label %}
+                            {% else %}
+                                {% render_field field class+="form-control" placeholder=field.label %}
+                            {% endif %}
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                        <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+
+                        {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex justify-content-end mt-5 pt-4 border-top gap-2">
+                    <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-light px-4">
+                        <i class="bi bi-x-lg me-1"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-lg me-1"></i>Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
+
 

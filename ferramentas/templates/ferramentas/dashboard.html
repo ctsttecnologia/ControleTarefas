@@ -1,163 +1,278 @@
 
+{# ferramentas/dashboard.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load static %}
 
-{% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-tools me-1"></i> Lista de Ferramentas
-    </a>
-    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-primary">
-        <i class="bi bi-box-seam me-1"></i> Mala  de Ferramentas
-    </a>
-    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i> Ferramenta Individuais
-    </a>
-    
-{% endblock ferramentas_actions %}
 
 {% block ferramentas_content %}
-<div class="container-fluid p-4">
+{# ================================================================
+ HEADER 
+   ================================================================ #}
+<div class="rounded-4 text-white p-4 mb-4" style="background: linear-gradient(135deg, #1a56db 0%, #3b82f6 50%, #6366f1 100%);">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2 class="mb-1 fw-bold">
+                <i class="bi bi-speedometer2 me-2"></i>Painel de Ferramentas
+            </h2>
+            <p class="mb-0 opacity-75">Visão geral do estoque, movimentações e indicadores</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-light fw-semibold">
+                <i class="bi bi-tools me-1"></i>Ferramentas
+            </a>
+            <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-light fw-semibold">
+                <i class="bi bi-box-seam me-1"></i>Malas
+            </a>
+            <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-light fw-semibold">
+                <i class="bi bi-file-text me-1"></i>Termos
+            </a>
+            <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-warning fw-semibold">
+                <i class="bi bi-plus-circle me-1"></i>Novo Termo
+            </a>
+        </div>
+    </div>
+</div>
 
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-primary border-4 shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2" title="Total de Itens, ferramentas e malas, ferramentas descartadas">
-                            <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total de Itens</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.total|default:0 }}</div>
-                            
-                        </div>
-                        <div class="col-auto">
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.total_malas }}<il title="Malas de Ferramentas">M</il></div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.total_ferramentas }}<il title="Ferramentas">F</il></div>
-                            
-                        </div>
-                    </div>
+{# ================================================================
+   CARDS DE ESTATÍSTICAS (Estilo do Painel de RH)
+   ================================================================ #}
+<div class="row g-3 mb-4">
+
+    {# Card: Total de Itens #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <div class="rounded-3 p-3 bg-primary-subtle">
+                    <i class="bi bi-archive-fill text-primary" style="font-size: 1.5rem;"></i>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-success border-4 shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-success text-uppercase mb-1">
-                                Ferramentas Disponíveis
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.quantidade_ferramentas_disponiveis|default:0 }}</div>
-                            
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
-                        </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ status_total.total|default:0 }}</div>
+                    <div class="text-uppercase text-muted small fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        Total de Itens
                     </div>
-            
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
-                                Malas Disponíveis
-                            </div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.quantidade_malas_disponiveis|default:0 }}</div>
-                            
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-suitcase fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-warning border-4 shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Ferramentas Em Uso</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">
-                                {{ status_ferramentas.em_uso_count|default:"0" }}
-                            </div>
-                            <div class="text-xs fw-bold text-warning text-uppercase mb-1">Malas Em Uso</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">
-                                {{ status_malas.em_uso_count|default:"0" }}
-                            </div>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-user-clock fa-2x text-gray-300"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-start border-info border-4 shadow-sm h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs fw-bold text-info text-uppercase mb-1">Em Manutenção</div>
-                            <div class="h5 mb-0 fw-bold text-gray-800">{{ status_total.em_manutencao|default:0 }}</div>   
-                        </div>
-                        <div class="col-auto fw-bold text-info">
-                            <i class="fas fa-wrench fa-2x text-gray-300"></i>
-                            <i class="bi bi-tools me-1"></i>
-                        </div>
-                        <div class="col-auto"><i class="fas fa-wrench fa-2x text-gray-300"></i></div>
+                    <div class="small text-muted mt-1">
+                        <i class="bi bi-tools"></i> {{ status_total.total_ferramentas }}
+                        &bull;
+                        <i class="bi bi-box-seam"></i> {{ status_total.total_malas }}
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="row">
-        <div class="col-lg-6 mb-4">
-            <div class="row">
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 fw-bold text-primary">{{ ferramentas_chart_data.title }}</h6>
-                        </div>
-                        <div class="card-body d-flex align-items-center justify-content-center">
-                            <canvas id="ferramentasChart"></canvas>
-                        </div>
-                    </div>
+
+    {# Card: Disponíveis #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <div class="rounded-3 p-3 bg-success-subtle">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size: 1.5rem;"></i>
                 </div>
-                <div class="col-md-6 mb-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 fw-bold text-primary">{{ malas_chart_data.title }}</h6>
-                        </div>
-                        <div class="card-body d-flex align-items-center justify-content-center">
-                            <canvas id="malasChart"></canvas>
-                        </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ status_total.disponivel|default:0 }}</div>
+                    <div class="text-uppercase text-muted small fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        Disponíveis
+                    </div>
+                    <div class="small text-muted mt-1">
+                        <i class="bi bi-tools"></i> {{ status_total.quantidade_ferramentas_disponiveis }}
+                        &bull;
+                        <i class="bi bi-box-seam"></i> {{ status_total.quantidade_malas_disponiveis }}
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-lg-6 mb-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header fw-bold"><i class="bi bi-tools me-1"></i>Ferramentas Atualmente em Uso</div>
-                <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
-                    {% for mov in ferramentas_em_uso %}
-                        <a href="{{ mov.ferramenta.get_absolute_url }}" class="list-group-item list-group-item-action d-flex justify-content-between">
-                            <span>{{ mov.ferramenta.nome }}</span>
-                            <small>Por: {{ mov.retirado_por.get_username }}</small>
-                        </a>
-                    {% empty %}
-                        <div class="list-group-item text-center text-muted py-3">Ótimo! Nenhuma ferramenta em uso.</div>
-                    {% endfor %}
+    {# Card: Em Uso #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-warning">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <div class="rounded-3 p-3 bg-warning-subtle">
+                    <i class="bi bi-person-fill-up text-warning" style="font-size: 1.5rem;"></i>
+                </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ status_total.em_uso|default:0 }}</div>
+                    <div class="text-uppercase text-muted small fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        Em Uso
+                    </div>
+                    <div class="small text-muted mt-1">
+                        <i class="bi bi-tools"></i> {{ status_ferramentas.em_uso_count|default:0 }}
+                        &bull;
+                        <i class="bi bi-box-seam"></i> {{ status_malas.em_uso_count|default:0 }}
+                    </div>
                 </div>
             </div>
-            <div class="card shadow-sm">
-                <div class="card-header fw-bold"><i class="bi bi-box-seam-fill me-2"></i>Malas/Kits Atualmente em Uso</div>
-                <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
-                    {% for mov in malas_em_uso %}
-                        <a href="{{ mov.mala.get_absolute_url }}" class="list-group-item list-group-item-action d-flex justify-content-between">
-                            <span>{{ mov.mala.nome }}</span>
-                            <small>Por: {{ mov.retirado_por.get_username }}</small>
-                        </a>
-                    {% empty %}
-                        <div class="list-group-item text-center text-muted py-3">Nenhuma mala em uso no momento.</div>
-                    {% endfor %}
+        </div>
+    </div>
+
+    {# Card: Manutenção #}
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
+            <div class="card-body d-flex align-items-center gap-3 py-3">
+                <div class="rounded-3 p-3 bg-info-subtle">
+                    <i class="bi bi-wrench-adjustable-circle-fill text-info" style="font-size: 1.5rem;"></i>
                 </div>
+                <div>
+                    <div class="h3 mb-0 fw-bold">{{ status_total.em_manutencao|default:0 }}</div>
+                    <div class="text-uppercase text-muted small fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        Em Manutenção
+                    </div>
+                    {% if total_atrasadas > 0 %}
+                    <div class="mt-1">
+                        <span class="badge bg-danger">
+                            <i class="bi bi-exclamation-triangle me-1"></i>{{ total_atrasadas }} atraso{{ total_atrasadas|pluralize:"s" }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ================================================================
+   GRÁFICOS (Estilo Pizza lado a lado como no RH)
+   ================================================================ #}
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-pie-chart me-2 text-primary"></i>{{ ferramentas_chart_data.title }}
+                </h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 280px;">
+                <canvas id="ferramentasChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-bar-chart me-2 text-primary"></i>{{ malas_chart_data.title }}
+                </h6>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 280px;">
+                <canvas id="malasChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ================================================================
+   LISTAS: ITENS EM USO + ATIVIDADES
+   ================================================================ #}
+<div class="row g-4">
+
+    {# Ferramentas em uso #}
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-tools me-2 text-warning"></i>Ferramentas em Uso
+                </h6>
+                <span class="badge bg-warning text-dark">{{ ferramentas_em_uso|length }}</span>
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                {% for mov in ferramentas_em_uso %}
+                <a href="{{ mov.ferramenta.get_absolute_url }}" class="list-group-item list-group-item-action py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-truncate me-2">
+                            <strong class="small">{{ mov.ferramenta.nome }}</strong>
+                            <small class="d-block text-muted">
+                                <i class="bi bi-person"></i> {{ mov.retirado_por.get_username }}
+                            </small>
+                        </div>
+                        {% if mov.esta_atrasada %}
+                        <span class="badge bg-danger flex-shrink-0" title="{{ mov.dias_atraso }}d atraso">
+                            <i class="bi bi-exclamation-triangle"></i> {{ mov.dias_atraso }}d
+                        </span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% empty %}
+                <div class="list-group-item text-center text-muted py-4 small">
+                    <i class="bi bi-check-circle display-6 d-block mb-2 text-success"></i>
+                    Nenhuma ferramenta em uso.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Malas em uso #}
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-box-seam-fill me-2 text-warning"></i>Malas em Uso
+                </h6>
+                <span class="badge bg-warning text-dark">{{ malas_em_uso|length }}</span>
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                {% for mov in malas_em_uso %}
+                <a href="{{ mov.mala.get_absolute_url }}" class="list-group-item list-group-item-action py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-truncate me-2">
+                            <strong class="small">{{ mov.mala.nome }}</strong>
+                            <small class="d-block text-muted">
+                                <i class="bi bi-person"></i> {{ mov.retirado_por.get_username }}
+                            </small>
+                        </div>
+                        {% if mov.esta_atrasada %}
+                        <span class="badge bg-danger flex-shrink-0">
+                            <i class="bi bi-exclamation-triangle"></i> {{ mov.dias_atraso }}d
+                        </span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% empty %}
+                <div class="list-group-item text-center text-muted py-4 small">
+                    <i class="bi bi-check-circle display-6 d-block mb-2 text-success"></i>
+                    Nenhuma mala em uso.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {# Últimas atividades #}
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Últimas Atividades
+                </h6>
+                <span class="badge bg-secondary">{{ ultimas_atividades|length }}</span>
+            </div>
+            <div class="list-group list-group-flush" style="max-height: 350px; overflow-y: auto;">
+                {% for atividade in ultimas_atividades %}
+                <div class="list-group-item py-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="me-2">
+                            <span class="badge
+                                {% if atividade.tipo_atividade == 'retirada' %}bg-warning-subtle text-warning-emphasis
+                                {% elif atividade.tipo_atividade == 'devolucao' %}bg-success-subtle text-success-emphasis
+                                {% elif atividade.tipo_atividade == 'criacao' %}bg-primary-subtle text-primary-emphasis
+                                {% elif atividade.tipo_atividade == 'manutencao_inicio' or atividade.tipo_atividade == 'manutencao_fim' %}bg-info-subtle text-info-emphasis
+                                {% elif atividade.tipo_atividade == 'descarte' %}bg-danger-subtle text-danger-emphasis
+                                {% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}
+                                me-1" style="font-size: 0.65rem;">
+                                {{ atividade.get_tipo_atividade_display }}
+                            </span>
+                            <small class="d-block mt-1 text-muted">{{ atividade.descricao|truncatechars:60 }}</small>
+                        </div>
+                        <small class="text-muted text-nowrap" style="font-size: 0.7rem;">
+                            {{ atividade.timestamp|date:"d/m H:i" }}
+                        </small>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="list-group-item text-center text-muted py-4 small">
+                    <i class="bi bi-journal display-6 d-block mb-2"></i>
+                    Nenhuma atividade registrada.
+                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -165,75 +280,71 @@
 
 {% endblock %}
 
-{% block extra_js %}
+{% block ferramentas_extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Configurações comuns para os gráficos de rosca (doughnut)
-    const chartOptions = {
+
+    const defaultOptions = {
         maintainAspectRatio: false,
         plugins: {
             legend: {
                 display: true,
-                position: 'bottom',
-                labels: {
-                    padding: 15,
-                    boxWidth: 12
-                }
+                position: 'right',
+                labels: { padding: 16, boxWidth: 14, font: { size: 12, family: "'Inter', sans-serif" } }
             },
             tooltip: {
-                backgroundColor: "rgb(255,255,255)",
-                bodyColor: "#858796",
-                borderColor: '#dddfeb',
+                backgroundColor: "#fff",
+                bodyColor: "#333",
+                titleColor: "#333",
+                borderColor: '#dee2e6',
                 borderWidth: 1,
-                padding: 15,
+                padding: 12,
                 displayColors: true,
-                caretPadding: 10,
+                boxPadding: 4,
             },
         },
-        cutout: '80%',
+        cutout: '72%',
     };
 
-    // Função para criar um gráfico
-    function createDoughnutChart(canvasId, chartData, backgroundColors) {
+    function createChart(canvasId, chartData, colors) {
         const ctx = document.getElementById(canvasId);
-        // Verifica se há dados para renderizar (a soma de todos os valores é maior que zero)
+        if (!ctx) return;
+
         const hasData = chartData.data.some(d => d > 0);
 
-        if (ctx && hasData) {
+        if (hasData) {
             new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: chartData.labels,
                     datasets: [{
                         data: chartData.data,
-                        backgroundColor: backgroundColors,
-                        hoverBorderColor: "rgba(234, 236, 244, 1)",
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        hoverOffset: 8,
                     }],
                 },
-                options: chartOptions
+                options: defaultOptions
             });
-        } else if(ctx) {
-            // Exibe mensagem se não houver dados
-            const canvasContext = ctx.getContext('2d');
-            canvasContext.font = "14px 'Nunito', sans-serif";
-            canvasContext.textAlign = 'center';
-            canvasContext.textBaseline = 'middle';
-            canvasContext.fillStyle = '#858796';
-            canvasContext.fillText('Sem dados para exibir', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        } else {
+            const c = ctx.getContext('2d');
+            c.font = "14px 'Inter', sans-serif";
+            c.textAlign = 'center';
+            c.textBaseline = 'middle';
+            c.fillStyle = '#adb5bd';
+            c.fillText('Sem dados para exibir', ctx.canvas.width / 2, ctx.canvas.height / 2);
         }
     }
 
-    // Criar o gráfico para Ferramentas
-    const ferramentasData = {{ ferramentas_chart_data|safe }};
-    const ferramentasColors = ['#1cc88a', '#f6c23e', '#36b9cc'];
-    createDoughnutChart('ferramentasChart', ferramentasData, ferramentasColors);
+    // Gráfico de Ferramentas — Cores: Disponível (verde), Em Uso (amarelo), Manutenção (azul)
+    createChart('ferramentasChart', {{ ferramentas_chart_data|safe }}, ['#22c55e', '#eab308', '#06b6d4']);
 
-    // Criar o gráfico para Malas
-    const malasData = {{ malas_chart_data|safe }};
-    const malasColors = ['#1cc88a', '#f6c23e']; // Apenas disponível e em uso
-    createDoughnutChart('malasChart', malasData, malasColors);
+    // Gráfico de Malas — Cores: Disponível (verde), Em Uso (amarelo)
+    createChart('malasChart', {{ malas_chart_data|safe }}, ['#22c55e', '#eab308']);
 });
 </script>
-{% endblock extra_js %}
+{% endblock %}
+
 

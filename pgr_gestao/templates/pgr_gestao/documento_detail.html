@@ -1,0 +1,596 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}{{ documento.codigo_documento }} - Detalhes{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
+<li class="breadcrumb-item active">{{ documento.codigo_documento }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="fas fa-file-alt"></i> {{ documento.codigo_documento }}</h1>
+            <p class="mb-0">{{ documento.empresa.razao_social }}</p>
+        </div>
+        <div class="btn-group">
+            {% if perms.pgr_gestao.change_pgrdocumento %}
+            <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            {% endif %}
+            <a href="{% url 'pgr_gestao:relatorio_completo_pdf' documento.pk %}" class="btn btn-danger" target="_blank">
+                <i class="fas fa-file-pdf"></i> Gerar PDF
+            </a>
+            <a href="{% url 'pgr_gestao:exportar_inventario_excel' documento.pk %}" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+            <a href="{% url 'pgr_gestao:verificar_conformidade' documento.pk %}" class="btn btn-info">
+                <i class="fas fa-check-circle"></i> Verificar Conformidade
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Informações Principais -->
+<div class="row mb-4">
+    <!-- ============================================ -->
+    <!-- COLUNA DA ESQUERDA (8 de 12 colunas)         -->
+    <!-- ============================================ -->
+    <div class="col-md-8">
+        <!-- Card: Informações do Documento -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Informações do Documento
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Código:</strong> {{ documento.codigo_documento }}</p>
+                        <p><strong>Empresa:</strong> {{ documento.empresa.razao_social }}</p>
+                        <p><strong>CNPJ:</strong> {{ documento.empresa.cnpj }}</p>
+                        <p><strong>Local de Prestação:</strong> {{ documento.local_prestacao.razao_social|default:"N/A" }}</p>
+                        <p><strong>Endereço:</strong> {{ documento.local_prestacao.endereco }}</p>
+                        <p><strong>Cidade:</strong> {{ documento.local_prestacao.cidade }}</p>
+                        <p><strong>UF:</strong> {{ documento.local_prestacao.uf }}</p>
+                        <p><strong>CEP:</strong> {{ documento.local_prestacao.cep }}</p>
+                        <p><strong>Telefone:</strong> {{ documento.local_prestacao.telefone }}</p>
+                        <p><strong>E-mail:</strong> {{ documento.local_prestacao.email }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            {% if documento.status == 'vigente' %}
+                            <span class="badge badge-status-vigente">Vigente</span>
+                            {% elif documento.status == 'vencido' %}
+                            <span class="badge badge-status-vencido">Vencido</span>
+                            {% elif documento.status == 'em_revisao' %}
+                            <span class="badge badge-status-em-revisao">Em Revisão</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Data de Elaboração:</strong> {{ documento.data_elaboracao|date:"d/m/Y" }}</p>
+                        <p><strong>Última Revisão:</strong> {{ documento.data_ultima_revisao|date:"d/m/Y"|default:"N/A" }}</p>
+                        <p><strong>Data de Vencimento:</strong> {{ documento.data_vencimento|date:"d/m/Y" }}
+                            {% if documento.dias_para_vencimento < 0 %}
+                            <br><small class="text-danger">Vencido há {{ documento.dias_vencido }} dias</small>
+                            {% elif documento.dias_para_vencimento <= 30 %}
+                            <br><small class="text-warning">Vence em {{ documento.dias_para_vencimento }} dias</small>
+                            {% else %}
+                            <br><small class="text-success">Vence em {{ documento.dias_para_vencimento }} dias</small>
+                            {% endif %}
+                        </p>
+                        <p><strong>Versão:</strong> {{ documento.versao_atual }}</p>
+                    </div>
+                </div>
+                {% if documento.observacoes %}
+                <hr>
+                <p><strong>Observações:</strong></p>
+                <p>{{ documento.observacoes|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card: Responsáveis pela Elaboração (Com Formulário) -->
+        <form method="post">
+            {% csrf_token %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-user-tie"></i> Responsáveis pela Elaboração</span>
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="fas fa-save"></i> Salvar Responsáveis
+                    </button>
+                </div>
+                <div class="card-body">
+                    {{ responsaveis_formset.management_form }}
+
+                    <!-- Cabeçalhos das colunas (exibidos apenas em telas médias e grandes) -->
+                    <div class="row mb-2 d-none d-md-flex">
+                        <div class="col-md-5"><strong>Profissional</strong></div>
+                        <div class="col-md-5"><strong>Tipo de Responsabilidade</strong></div>
+                        <div class="col-md-2 text-center"><strong>Ações</strong></div>
+                    </div>
+
+                    <div id="responsaveis-form-list">
+                        {% for form in responsaveis_formset %}
+                            <div class="row align-items-center mb-3 form-row-item">
+                                <div class="d-none">{{ form.id }}</div>
+                                <div class="col-md-5">
+                                    <!-- Label mobile (oculto em desktop) -->
+                                    <label class="form-label d-md-none">Profissional</label>
+                                    {{ form.profissional }}
+                                    {% for error in form.profissional.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-5">
+                                    <!-- Label mobile (oculto em desktop) -->
+                                    <label class="form-label d-md-none">Tipo de Responsabilidade</label>
+                                    {{ form.tipo_responsabilidade }}
+                                    {% for error in form.tipo_responsabilidade.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-2 text-center align-self-center">
+                                    {% if form.instance.pk %}
+                                        <div class="form-check">
+                                            {{ form.DELETE }}
+                                            <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">Excluir</label>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="button" id="add-form" class="btn btn-primary btn-sm mt-3">
+                        <i class="fas fa-plus"></i> Adicionar Responsável
+                    </button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+    <!-- FIM DA COLUNA DA ESQUERDA -->
+
+    <!-- ============================================ -->
+    <!-- COLUNA DA DIREITA (4 de 12 colunas)          -->
+    <!-- ============================================ -->
+    <div class="col-md-4">
+        <!-- Card: Conclusão do PGR -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-chart-pie"></i> Conclusão do PGR
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <canvas id="chartConclusao"></canvas>
+                </div>
+                <h2>{{ documento.percentual_conclusao|floatformat:0 }}%</h2>
+                <small class="text-muted">Percentual de Conclusão</small>
+            </div>
+        </div>
+
+        <!-- Card: Estatísticas de Riscos -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fas fa-exclamation-triangle"></i> Riscos Identificados
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total de Riscos:</span>
+                    <strong>{{ total_riscos }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Riscos Críticos:</span>
+                    <strong class="text-danger">{{ riscos_criticos }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Controlados:</span>
+                    <strong class="text-success">{{ riscos_controlados }}</strong>
+                </div>
+                <hr>
+                {% for stat in riscos_stats %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="badge badge-risco-{{ stat.classificacao_risco }}">
+                        {{ stat.get_classificacao_risco_display }}
+                    </span>
+                    <strong>{{ stat.total }}</strong>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Card: Planos de Ação -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tasks"></i> Planos de Ação
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total:</span>
+                    <strong>{{ planos_acao.count }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Pendentes:</span>
+                    <strong class="text-warning">{{ planos_acao|dictsort:"status"|length }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Em Andamento:</span>
+                    <strong class="text-info">{{ planos_acao|dictsort:"status"|length }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Concluídos:</span>
+                    <strong class="text-success">{{ planos_acao|dictsort:"status"|length }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- FIM DA COLUNA DA DIREITA -->
+</div>
+
+<!-- Template oculto para novos formulários (usado pelo JavaScript) -->
+<div id="empty-form" class="d-none">
+    <div class="row align-items-center mb-3 form-row-item">
+        <div class="d-none">{{ responsaveis_formset.empty_form.id }}</div>
+        <div class="col-md-5">
+            <label class="form-label d-md-none">Profissional</label>
+            {{ responsaveis_formset.empty_form.profissional }}
+        </div>
+        <div class="col-md-5">
+            <label class="form-label d-md-none">Tipo de Responsabilidade</label>
+            {{ responsaveis_formset.empty_form.tipo_responsabilidade }}
+        </div>
+        <div class="col-md-2 text-center align-self-center"></div>
+    </div>
+</div>
+
+<!-- Card: Histórico de Revisões -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-history"></i> Histórico de Revisões</span>
+        {% if perms.pgr_gestao.add_pgrrevisao %}
+        <a href="{% url 'pgr_gestao:revisao_create' documento.pk %}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> Nova Revisão
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if revisoes %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Revisão</th>
+                        <th>Descrição</th>
+                        <th>Data</th>
+                        <th>Realizada Por</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for revisao in revisoes %}
+                    <tr>
+                        <td><strong>{{ revisao.numero_revisao|stringformat:"02d" }}</strong></td>
+                        <td>{{ revisao.descricao_revisao }}</td>
+                        <td>{{ revisao.data_realizacao|date:"d/m/Y" }}</td>
+                        <td>{{ revisao.realizada_por }}</td>
+                        <td>{{ revisao.motivo|default:"N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center">Nenhuma revisão registrada.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabs: GES, Riscos, Planos de Ação, Cronograma -->
+<ul class="nav nav-tabs mb-3" id="pgrTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="ges-tab" data-bs-toggle="tab" data-bs-target="#ges" type="button">
+            <i class="fas fa-users"></i> GES ({{ grupos_exposicao.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="riscos-tab" data-bs-toggle="tab" data-bs-target="#riscos" type="button">
+            <i class="fas fa-exclamation-triangle"></i> Riscos ({{ riscos.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="planos-tab" data-bs-toggle="tab" data-bs-target="#planos" type="button">
+            <i class="fas fa-tasks"></i> Planos de Ação ({{ planos_acao.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="cronograma-tab" data-bs-toggle="tab" data-bs-target="#cronograma" type="button">
+            <i class="fas fa-calendar-alt"></i> Cronograma ({{ cronograma.count }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="pgrTabsContent">
+    <!-- Tab: GES -->
+    <div class="tab-pane fade show active" id="ges" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                {% if grupos_exposicao %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Nome</th>
+                                <th>Cargo</th>
+                                <th>Função</th>
+                                <th>Trabalhadores</th>
+                                <th>Riscos</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ges in grupos_exposicao %}
+                            <tr onclick="window.location='{% url 'pgr_gestao:ges_detail' ges.pk %}'" style="cursor: pointer;">
+                                <td><strong>{{ ges.codigo }}</strong></td>
+                                <td>{{ ges.nome }}</td>
+                                <td>{{ ges.cargo.nome|default:"N/A" }}</td>
+                                <td>{{ ges.funcao.nome|default:"N/A" }}</td>
+                                <td>{{ ges.numero_trabalhadores|default:0 }}</td>
+                                <td><span class="badge bg-primary">{{ ges.riscos.count }}</span></td>
+                                <td class="text-center" onclick="event.stopPropagation();">
+                                    <a href="{% url 'pgr_gestao:ges_detail' ges.pk %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhum GES cadastrado para este documento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Riscos -->
+    <div class="tab-pane fade" id="riscos" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                {% if riscos %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Tipo</th>
+                                <th>Agente</th>
+                                <th>GES</th>
+                                <th>Classificação</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risco in riscos %}
+                            <tr onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'" style="cursor: pointer;">
+                                <td>{{ risco.codigo_risco|default:"N/A" }}</td>
+                                <td>{{ risco.tipo_risco.nome }}</td>
+                                <td>{{ risco.agente }}</td>
+                                <td>{{ risco.ges.nome|default:"N/A" }}</td>
+                                <td>
+                                    <span class="badge badge-risco-{{ risco.classificacao_risco }}">
+                                        {{ risco.get_classificacao_risco_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {{ risco.get_status_controle_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ risco.prioridade_acao }}">
+                                        {{ risco.get_prioridade_acao_display }}
+                                    </span>
+                                </td>
+                                <td class="text-center" onclick="event.stopPropagation();">
+                                    <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhum risco identificado para este documento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Planos de Ação -->
+    <div class="tab-pane fade" id="planos" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                {% if planos_acao %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Risco</th>
+                                <th>Prioridade</th>
+                                <th>Status</th>
+                                <th>Data Prevista</th>
+                                <th>Responsável</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plano in planos_acao %}
+                            <tr onclick="window.location='{% url 'pgr_gestao:plano_acao_detail' plano.pk %}'" style="cursor: pointer;">
+                                <td>{{ plano.descricao_acao|truncatewords:8 }}</td>
+                                <td>{{ plano.risco_identificado.agente|truncatewords:5 }}</td>
+                                <td>
+                                    <span class="badge bg-{{ plano.prioridade }}">
+                                        {{ plano.get_prioridade_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ plano.status }}">
+                                        {{ plano.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ plano.data_prevista|date:"d/m/Y" }}
+                                    {% if plano.esta_atrasado %}
+                                    <br><small class="text-danger">ATRASADO</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ plano.responsavel }}</td>
+                                <td class="text-center" onclick="event.stopPropagation();">
+                                    <a href="{% url 'pgr_gestao:plano_acao_detail' plano.pk %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhum plano de ação cadastrado para este documento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Cronograma -->
+    <div class="tab-pane fade" id="cronograma" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                {% if cronograma %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Ação Necessária</th>
+                                <th>Público Alvo</th>
+                                <th>Periodicidade</th>
+                                <th>Status</th>
+                                <th>Próxima Avaliação</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for acao in cronograma %}
+                            <tr>
+                                <td><strong>{{ acao.numero_item|stringformat:"02d" }}</strong></td>
+                                <td>{{ acao.acao_necessaria }}</td>
+                                <td>{{ acao.publico_alvo|default:"Todos os colaboradores" }}</td>
+                                <td>{{ acao.get_periodicidade_display }}</td>
+                                <td>
+                                    {% if acao.status %}
+                                    <span class="badge bg-{{ acao.status }}">
+                                        {{ acao.get_status_display }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"N/A" }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        {% if perms.pgr_gestao.change_cronogramaacaopgr %}
+                                        <a href="{% url 'pgr_gestao:cronograma_update_pgr' pgr_pk=documento.pk pk=acao.pk %}"
+                                        class="btn btn-warning btn-sm" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if perms.pgr_gestao.delete_cronogramaacaopgr %}
+                                        <a href="{% url 'pgr_gestao:cronograma_delete_pgr' pgr_pk=documento.pk pk=acao.pk %}"
+                                        class="btn btn-danger btn-sm" title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <a href="{% url 'pgr_gestao:cronograma_create' pgr_pk=documento.pk %}"
+                                        class="btn btn-success btn-sm">
+                                            <i class="fas fa-plus"></i> Nova Ação
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">Nenhuma ação no cronograma para este documento.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Gráfico de Conclusão (Donut)
+const ctxConclusao = document.getElementById('chartConclusao').getContext('2d');
+const percentual = {{ documento.percentual_conclusao }};
+new Chart(ctxConclusao, {
+    type: 'doughnut',
+    data: {
+        labels: ['Concluído', 'Pendente'],
+        datasets: [{
+            data: [percentual, 100 - percentual],
+            backgroundColor: [
+                percentual >= 90 ? '#28a745' : percentual >= 70 ? '#17a2b8' : percentual >= 50 ? '#ffc107' : '#dc3545',
+                '#e9ecef'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        cutout: '70%',
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// JavaScript para Adicionar Formulários Dinamicamente
+document.addEventListener('DOMContentLoaded', function() {
+    const addFormButton = document.getElementById('add-form');
+    const formList = document.getElementById('responsaveis-form-list');
+    const emptyFormTemplate = document.getElementById('empty-form').innerHTML;
+    
+    // CORREÇÃO: Usar o prefixo correto do formset
+    const formPrefix = '{{ responsaveis_formset.prefix }}';
+    const totalFormsInput = document.querySelector(`#id_${formPrefix}-TOTAL_FORMS`);
+
+    if (addFormButton && totalFormsInput) {
+        addFormButton.addEventListener('click', function() {
+            let formNum = parseInt(totalFormsInput.value);
+            let newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formNum);
+            
+            formList.insertAdjacentHTML('beforeend', newFormHtml);
+            
+            totalFormsInput.value = formNum + 1;
+        });
+    }
+});
+</script>
+{% endblock %}
+
+

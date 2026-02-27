@@ -1,15 +1,14 @@
 {# templates/logradouro/base_logradouro.html #}
+{# templates/logradouro/base_logradouro.html #}
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_css %}
-
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
     {% block logradouro_content %}
-    {# O conteúdo específico de cada página (lista, formulário, etc.) virá aqui #}
     {% endblock logradouro_content %}
 </div>
 {% endblock content %}
+
+
+

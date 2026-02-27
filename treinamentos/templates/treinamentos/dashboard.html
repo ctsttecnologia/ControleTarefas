@@ -5,198 +5,613 @@
 {% block title %}Dashboard de Treinamentos{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'csstreinamento/dashboard_styles.css' %}">
+<style>
+    /* ═══ VARIÁVEIS ═══ */
+    :root {
+        --dash-gradient-start: #667eea;
+        --dash-gradient-end: #764ba2;
+    }
+
+    /* ═══ HERO HEADER ═══ */
+    .dash-hero {
+        background: linear-gradient(135deg, var(--dash-gradient-start), var(--dash-gradient-end));
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .dash-hero::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .dash-hero::before {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: 5%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .dash-hero h1 { font-weight: 700; font-size: 1.75rem; }
+    .dash-hero p { opacity: 0.85; margin-bottom: 0; }
+
+    /* ═══ KPI CARDS ═══ */
+    .kpi-card {
+        border: none;
+        border-radius: 0.875rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        overflow: hidden;
+    }
+    .kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+    }
+    .kpi-icon-wrapper {
+        width: 56px;
+        height: 56px;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .kpi-icon-wrapper i { font-size: 1.5rem; }
+    .kpi-value { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .kpi-trend {
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 2px 8px;
+        border-radius: 50rem;
+    }
+
+    /* ═══ CHART CARDS ═══ */
+    .chart-card {
+        border: none;
+        border-radius: 0.875rem;
+        overflow: hidden;
+    }
+    .chart-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        padding: 1.25rem 1.5rem;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .chart-wrapper {
+        position: relative;
+        height: 320px;
+        width: 100%;
+        padding: 1rem;
+    }
+    .chart-wrapper-sm {
+        height: 260px;
+    }
+
+    /* ═══ EMPTY STATE ═══ */
+    .empty-chart {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #adb5bd;
+    }
+    .empty-chart i { font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.4; }
+
+    /* ═══ PRINT ═══ */
+    @media print {
+        .dash-hero { background: #333 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .kpi-card, .chart-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+        .no-print { display: none !important; }
+    }
+
+    /* ═══ DARK MODE SUPPORT ═══ */
+    [data-bs-theme="dark"] .kpi-card { background-color: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .chart-card .card-header { border-bottom-color: rgba(255,255,255,0.08); }
+</style>
 {% endblock %}
 
-
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-lg-5">
 
-    {# Cabeçalho da página #}
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <h2 class="h3 mb-0">
-            <i class="bi bi-speedometer2 me-2"></i>Dashboard de Treinamentos
-        </h2>
-        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-list-check me-1"></i> Ver Lista de Treinamentos
-        </a>
-    </header>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- HERO HEADER                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="dash-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="mb-1">
+                    <i class="bi bi-mortarboard-fill me-2"></i>Dashboard de Treinamentos
+                </h1>
+                <p class="mb-0">Visão consolidada de todos os treinamentos, participantes e investimentos</p>
+            </div>
+            <div class="d-flex gap-2 no-print">
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-printer me-1"></i> Imprimir
+                </button>
+                <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-sm btn-light">
+                    <i class="bi bi-list-check me-1"></i> Lista de Treinamentos
+                </a>
+            </div>
+        </div>
+    </div>
 
-    {# Seção de Métricas Rápidas #}
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-xl-4 g-4 mb-4">
-        <div class="col">
-            <div class="stat-card h-100 border-start border-primary border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted text-uppercase small">Total de Treinamentos</div>
-                    <div class="fs-2 fw-bold">{{ total_treinamentos }}</div>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- KPIs                                        -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <!-- Total Treinamentos -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
+                            <i class="bi bi-collection text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="kpi-label text-muted">Total Treinamentos</div>
+                            <div class="kpi-value text-primary">{{ total_treinamentos|default:"0" }}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="stat-card h-100 border-start border-success border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted text-uppercase small">Total de Participantes</div>
-                    <div class="fs-2 fw-bold">{{ total_participantes }}</div>
+
+        <!-- Total Participantes -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrapper bg-success bg-opacity-10">
+                            <i class="bi bi-people-fill text-success"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="kpi-label text-muted">Total Participantes</div>
+                            <div class="kpi-value text-success">{{ total_participantes|default:"0" }}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="stat-card h-100 border-start border-info border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted text-uppercase small">Em Andamento</div>
-                    <div class="fs-2 fw-bold">{{ em_andamento }}</div>
+
+        <!-- Em Andamento -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrapper bg-info bg-opacity-10">
+                            <i class="bi bi-play-circle-fill text-info"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="kpi-label text-muted">Em Andamento</div>
+                            <div class="kpi-value text-info">{{ em_andamento|default:"0" }}</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col">
-            <div class="stat-card h-100 border-start border-warning border-4 shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted text-uppercase small">Investimento Total</div>
-                    <div class="fs-2 fw-bold">R$ {{ total_custo|floatformat:2 }}</div>
+
+        <!-- Investimento -->
+        <div class="col-sm-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrapper bg-warning bg-opacity-10">
+                            <i class="bi bi-cash-stack text-warning"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="kpi-label text-muted">Investimento Total</div>
+                            <div class="kpi-value text-warning">
+                                <small class="fs-6 fw-normal">R$</small>
+                                {{ total_custo|floatformat:2|default:"0,00" }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    {# Seção de Gráficos #}
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- GRÁFICOS — LINHA 1                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="row g-4 mb-4">
+        <!-- Por Área (Pizza) -->
+        <div class="col-lg-6">
+            <div class="card chart-card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-pie-chart-fill text-primary me-2"></i>Treinamentos por Área</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary" id="badgeAreaTotal">—</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chart-wrapper">
+                        <canvas id="chartArea"></canvas>
+                        <div class="empty-chart d-none" id="emptyArea">
+                            <i class="bi bi-pie-chart"></i>
+                            <span>Nenhum dado disponível</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Por Status (Donut) -->
+        <div class="col-lg-6">
+            <div class="card chart-card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-bullseye text-success me-2"></i>Status dos Treinamentos</span>
+                    <span class="badge bg-success bg-opacity-10 text-success" id="badgeStatusTotal">—</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chart-wrapper">
+                        <canvas id="chartStatus"></canvas>
+                        <div class="empty-chart d-none" id="emptyStatus">
+                            <i class="bi bi-bullseye"></i>
+                            <span>Nenhum dado disponível</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- GRÁFICOS — LINHA 2                          -->
+    <!-- ═══════════════════════════════════════════ -->
     <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-body-tertiary">Treinamentos por Área</div>
-                <div class="card-body"><div class="chart-container"><canvas id="chartArea"></canvas></div></div>
+        <!-- Custo por Área (Barras) -->
+        <div class="col-lg-8">
+            <div class="card chart-card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-bar-chart-fill text-warning me-2"></i>Investimento por Área</span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning" id="badgeCustoTotal">—</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chart-wrapper">
+                        <canvas id="chartCusto"></canvas>
+                        <div class="empty-chart d-none" id="emptyCusto">
+                            <i class="bi bi-bar-chart"></i>
+                            <span>Nenhum dado disponível</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-lg-6">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-body-tertiary">Status dos Treinamentos</div>
-                <div class="card-body"><div class="chart-container"><canvas id="chartStatus"></canvas></div></div>
-            </div>
-        </div>
-        <div class="col-12">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-header bg-body-tertiary">Custo por Área</div>
-                <div class="card-body"><div class="chart-container"><canvas id="chartCusto"></canvas></div></div>
+
+        <!-- Evolução Mensal (Linha) -->
+        <div class="col-lg-4">
+            <div class="card chart-card shadow-sm h-100">
+                <div class="card-header">
+                    <i class="bi bi-graph-up text-info me-2"></i>Resumo Rápido
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                    <i class="bi bi-collection text-primary"></i>
+                                </span>
+                                <span class="text-muted small">Treinamentos</span>
+                            </div>
+                            <span class="fw-bold fs-5">{{ total_treinamentos|default:"0" }}</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                    <i class="bi bi-people text-success"></i>
+                                </span>
+                                <span class="text-muted small">Participantes</span>
+                            </div>
+                            <span class="fw-bold fs-5">{{ total_participantes|default:"0" }}</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                    <i class="bi bi-play-circle text-info"></i>
+                                </span>
+                                <span class="text-muted small">Em Andamento</span>
+                            </div>
+                            <span class="fw-bold fs-5">{{ em_andamento|default:"0" }}</span>
+                        </li>
+                        <li class="d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                    <i class="bi bi-cash-stack text-warning"></i>
+                                </span>
+                                <span class="text-muted small">Investimento</span>
+                            </div>
+                            <span class="fw-bold fs-5">R$ {{ total_custo|floatformat:0|default:"0" }}</span>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Rodapé informativo -->
+    <div class="text-muted text-center small mt-4 py-2">
+        <i class="bi bi-clock me-1"></i> Dados atualizados em tempo real ao acessar esta página
+    </div>
+
 </div>
 {% endblock content %}
 
-
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     let chartInstances = [];
     let dashboardData;
 
-    // 1. Carrega e analisa os dados do Django de forma segura
+    // ═══ 1. PARSE JSON DO DJANGO ═══
     try {
-        // CORREÇÃO: Usando escapejs para prevenir problemas de sintaxe JavaScript
         dashboardData = JSON.parse('{{ dashboard_data_json|escapejs }}');
-
-        // Verificação adicional para garantir que os dados foram carregados como um objeto válido
         if (typeof dashboardData !== 'object' || dashboardData === null) {
-            throw new Error("Os dados do dashboard não são um objeto válido.");
+            throw new Error("Dados inválidos");
         }
-
     } catch (e) {
-        console.error("Falha ao carregar ou analisar os dados JSON do Django. Verifique se a variável 'dashboard_data_json' está sendo passada corretamente pela view.", e);
-        
-        // Fallback para dados vazios caso ocorra um erro
-        dashboardData = {
-            area: [],
-            status: [],
-            custo: []
-        };
+        console.error("Erro ao carregar dados do dashboard:", e);
+        dashboardData = { area: [], status: [], custo: [] };
     }
 
-    // 2. Função para obter as cores e fontes dinâmicas com base no tema
-    const getDynamicChartOptions = () => {
-        const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    // ═══ 2. PALETAS PROFISSIONAIS ═══
+    const PALETA_AREA = [
+        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
+        '#858796', '#5a5c69', '#2e59d9', '#17a673', '#2c9faf'
+    ];
+
+    const PALETA_STATUS = {
+        'planejado':    { bg: '#858796', label: 'Planejado' },
+        'em_andamento': { bg: '#4e73df', label: 'Em Andamento' },
+        'cancelado':    { bg: '#e74a3b', label: 'Cancelado' },
+        'concluido':    { bg: '#1cc88a', label: 'Concluído' },
+    };
+
+    // ═══ 3. OPÇÕES DINÂMICAS (DARK/LIGHT) ═══
+    const getThemeOptions = () => {
+        const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         return {
-            fontColor: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : '#6c757d',
-            gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+            fontColor: dark ? 'rgba(255,255,255,0.75)' : '#6c757d',
+            gridColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+            tooltipBg: dark ? '#1e1e2d' : '#ffffff',
+            tooltipFont: dark ? '#ffffff' : '#212529',
         };
     };
-    
-    // 3. Função principal para inicializar todos os gráficos
+
+    // ═══ 4. FORMATADORES ═══
+    const fmtBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    // ═══ 5. TOGGLE EMPTY STATE ═══
+    const toggleEmpty = (id, hasData) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('d-none', hasData);
+    };
+
+    // ═══ 6. INIT CHARTS ═══
     const initCharts = () => {
-        // Garante que gráficos antigos sejam destruídos antes de criar novos
-        chartInstances.forEach(chart => chart.destroy());
+        chartInstances.forEach(c => c.destroy());
         chartInstances = [];
 
-        const dynamicOptions = getDynamicChartOptions();
-        
-        // Mapeamento de dados com verificações de segurança
-        const areaLabels = dashboardData.area ? dashboardData.area.map(item => item.nome_legivel) : [];
-        const areaValues = dashboardData.area ? dashboardData.area.map(item => item.total) : [];
+        const theme = getThemeOptions();
 
-        const statusLabels = dashboardData.status ? dashboardData.status.map(item => item.nome_legivel) : [];
-        const statusValues = dashboardData.status ? dashboardData.status.map(item => item.total) : [];
-
-        const custoLabels = dashboardData.custo ? dashboardData.custo.map(item => item.nome_legivel) : [];
-        const custoValues = dashboardData.custo ? dashboardData.custo.map(item => item.total) : [];
-
-        const createChart = (canvasId, config) => {
-            const ctx = document.getElementById(canvasId);
-            if (ctx) {
-                chartInstances.push(new Chart(ctx, config));
-            }
+        const baseTooltip = {
+            backgroundColor: theme.tooltipBg,
+            titleColor: theme.tooltipFont,
+            bodyColor: theme.tooltipFont,
+            borderColor: theme.gridColor,
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            titleFont: { weight: '600' },
         };
-        
-        // Gráfico 1: Por Área (Pizza)
-        if (areaLabels.length > 0) {
-            createChart('chartArea', {
-                type: 'pie',
-                data: { labels: areaLabels, datasets: [{ data: areaValues, backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
-            });
-        }
 
-        // Gráfico 2: Por Status (Rosquinha)
-        if (statusLabels.length > 0) {
-            createChart('chartStatus', {
-                type: 'doughnut',
-                data: { labels: statusLabels, datasets: [{ data: statusValues, backgroundColor: ['#6c757d', '#0d6efd', '#dc3545', '#198754'] }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: dynamicOptions.fontColor } } } }
-            });
-        }
+        // ── ÁREA (PIE) ──────────────────────────
+        const areaLabels = (dashboardData.area || []).map(i => i.nome_legivel);
+        const areaValues = (dashboardData.area || []).map(i => i.total);
+        const hasArea = areaLabels.length > 0;
 
-        // Gráfico 3: Custo por Área (Linha)
-        if (custoLabels.length > 0) {
-            createChart('chartCusto', {
-                type: 'line',
-                data: {
-                    labels: custoLabels,
-                    datasets: [{ label: 'Custo (R$)', data: custoValues, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', fill: true, tension: 0.1 }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } },
-                        x: { ticks: { color: dynamicOptions.fontColor }, grid: { color: dynamicOptions.gridColor } }
+        toggleEmpty('emptyArea', hasArea);
+        document.getElementById('badgeAreaTotal').textContent = hasArea
+            ? areaValues.reduce((a, b) => a + b, 0) + ' total' : '—';
+
+        if (hasArea) {
+            const ctx = document.getElementById('chartArea');
+            if (ctx) {
+                chartInstances.push(new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: areaLabels,
+                        datasets: [{
+                            data: areaValues,
+                            backgroundColor: PALETA_AREA.slice(0, areaLabels.length),
+                            borderWidth: 3,
+                            borderColor: getComputedStyle(document.body).backgroundColor || '#fff',
+                            hoverOffset: 8,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: theme.fontColor,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 16,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                ...baseTooltip,
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                        return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
                     }
-                }
+                }));
+            }
+        }
+
+        // ── STATUS (DONUT) ──────────────────────
+        const statusLabels = (dashboardData.status || []).map(i => i.nome_legivel);
+        const statusValues = (dashboardData.status || []).map(i => i.total);
+        const statusKeys = (dashboardData.status || []).map(i => i.status || i.nome_legivel);
+        const hasStatus = statusLabels.length > 0;
+
+        toggleEmpty('emptyStatus', hasStatus);
+        document.getElementById('badgeStatusTotal').textContent = hasStatus
+            ? statusValues.reduce((a, b) => a + b, 0) + ' total' : '—';
+
+        if (hasStatus) {
+            const statusColors = statusKeys.map(k => {
+                const key = k.toLowerCase().replace(/ /g, '_');
+                return PALETA_STATUS[key]?.bg || '#adb5bd';
             });
+
+            const ctx = document.getElementById('chartStatus');
+            if (ctx) {
+                chartInstances.push(new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusValues,
+                            backgroundColor: statusColors,
+                            borderWidth: 3,
+                            borderColor: getComputedStyle(document.body).backgroundColor || '#fff',
+                            hoverOffset: 8,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: theme.fontColor,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 16,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                ...baseTooltip,
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                        return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }));
+            }
+        }
+
+        // ── CUSTO (BARRAS) ──────────────────────
+        const custoLabels = (dashboardData.custo || []).map(i => i.nome_legivel);
+        const custoValues = (dashboardData.custo || []).map(i => i.total);
+        const hasCusto = custoLabels.length > 0;
+
+        toggleEmpty('emptyCusto', hasCusto);
+        document.getElementById('badgeCustoTotal').textContent = hasCusto
+            ? fmtBRL(custoValues.reduce((a, b) => a + b, 0)) : '—';
+
+        if (hasCusto) {
+            const ctx = document.getElementById('chartCusto');
+            if (ctx) {
+                chartInstances.push(new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: custoLabels,
+                        datasets: [{
+                            label: 'Investimento (R$)',
+                            data: custoValues,
+                            backgroundColor: PALETA_AREA.slice(0, custoLabels.length).map(c => c + '33'),
+                            borderColor: PALETA_AREA.slice(0, custoLabels.length),
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            maxBarThickness: 60,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                ...baseTooltip,
+                                callbacks: {
+                                    label: (ctx) => ` ${fmtBRL(ctx.parsed.y)}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: theme.fontColor,
+                                    callback: (v) => fmtBRL(v),
+                                    font: { size: 11 }
+                                },
+                                grid: { color: theme.gridColor, drawBorder: false }
+                            },
+                            x: {
+                                ticks: {
+                                    color: theme.fontColor,
+                                    font: { size: 11 },
+                                    maxRotation: 45,
+                                },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                }));
+            }
         }
     };
 
-    // 4. Observador para a mudança de tema
-    // Este observador detecta quando o atributo 'data-bs-theme' muda no <html> e recria os gráficos.
-    const themeObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'attributes' && mutation.attributeName === 'data-bs-theme') {
+    // ═══ 7. OBSERVER PARA TROCA DE TEMA ═══
+    const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            if (m.attributeName === 'data-bs-theme') {
                 initCharts();
+                break;
             }
-        });
+        }
     });
-    
-    themeObserver.observe(document.documentElement, { attributes: true });
+    observer.observe(document.documentElement, { attributes: true });
 
-    // 5. Execução Inicial
+    // ═══ 8. GO! ═══
     initCharts();
 });
 </script>

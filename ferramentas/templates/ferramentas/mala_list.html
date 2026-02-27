@@ -1,86 +1,110 @@
-
+{# ferramentas/mala_list.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
-{% load static %}
+
+{% block ferramentas_page_title %}Malas de Ferramentas{% endblock %}
+
+{% block ferramentas_title %}
+    <i class="bi bi-box-seam me-2"></i>Malas de Ferramentas
+{% endblock %}
 
 {% block ferramentas_actions %}
-        
     <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-bar-chart-line-fill me-1"></i> Dashboard
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
     </a>
-            
     <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i> Adicionar Mala
+        <i class="bi bi-plus-lg me-1"></i>Nova Mala
     </a>
-    
-{% endblock ferramentas_actions %}
+{% endblock %}
 
 {% block ferramentas_content %}
 <div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Malas de Ferramentas Cadastradas</h5>
+    {# Busca #}
+    <div class="card-header bg-white p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-lg-5 col-md-8">
+                <input type="text" name="q" class="form-control"
+                       placeholder="Buscar por nome ou código..."
+                       value="{{ query|default:'' }}">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+                {% if query %}
+                <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
     </div>
-    <form method="get" action="" class="row g-2 align-items-center">
-        <div class="col-lg-5">
-            <input type="text" name="q" class="form-control" 
-                    placeholder="Buscar por nome ou código da mala..." 
-                    value="{{ request.GET.q|default:'' }}">
-        </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search me-1"></i>Buscar
-            </button>
-        </div>
-    </form>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nome da Mala</th>
-                        <th>Código</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center">Nº de Itens</th>
-                        <th>Localização</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for mala in malas %}
-                    <tr>
-                        <td><strong>{{ mala.nome }}</strong></td>
-                        <td><span class="font-monospace">{{ mala.codigo_identificacao }}</span></td>
-                        <td class="text-center">
-                                                                                    
-                            {% if mala.status == 'disponivel' %}
-                                <span class="badge bg-success">Disponível</span>
-                            {% elif mala.status == 'em_uso' %}
-                                <span class="badge bg-warning">Em Uso</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">{{ mala.item_count }}</td>
-                        <td>{{ mala.localizacao_padrao }}</td>
-                        <td>
-                            <a href="{{ mala.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-eye me-1"></i> Detalhes
+
+    {# Tabela #}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Nome da Mala</th>
+                    <th>Código</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Itens</th>
+                    <th>Localização</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mala in malas %}
+                <tr>
+                    <td class="ps-3">
+                        <a href="{{ mala.get_absolute_url }}" class="fw-bold text-decoration-none">{{ mala.nome }}</a>
+                    </td>
+                    <td><code class="small">{{ mala.codigo_identificacao }}</code></td>
+                    <td class="text-center">
+                        {% if mala.status == 'disponivel' %}
+                            <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle">Disponível</span>
+                        {% else %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Em Uso</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-secondary">{{ mala.item_count }}</span>
+                    </td>
+                    <td class="small">{{ mala.localizacao_padrao }}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ mala.get_absolute_url }}" class="btn btn-outline-primary" title="Detalhes">
+                                <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-sm btn-outline-primary" title="Criar Novo Termo de Responsabilidade">
-                                <span class="icon text-white-50">
-                                    <i class="fas fa-file-signature"></i> </span>
-                                <span class="text">Termo</span>
+                            <a href="{% url 'ferramentas:mala_update' pk=mala.pk %}" class="btn btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
                             </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted p-4">
-                            Nenhuma mala de ferramentas cadastrada ainda.
-                            <a href="{% url 'ferramentas:mala_create' %}" class="d-block mt-2">Adicionar a primeira mala</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-outline-info" title="Novo Termo">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted d-block mb-2"></i>
+                        <h6 class="text-muted">Nenhuma mala cadastrada.</h6>
+                        <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-plus-lg me-1"></i>Adicionar mala
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-white">
+        {% include 'partials/pagination.html' %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
+
+

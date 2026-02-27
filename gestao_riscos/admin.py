@@ -1,7 +1,7 @@
 from django.contrib import admin
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
 from .models import Incidente, Inspecao, CartaoTag
-
+from .models import TipoRisco
 
 
 @admin.register(Incidente)
@@ -29,4 +29,12 @@ class CartaoTagAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Model
     list_filter = ('ativo', 'data_validade', 'filial')
     search_fields = ('funcionario__nome_completo',)
     autocomplete_fields = ['funcionario']
-    readonly_fields = ('filial',) # Impede a edição da filial após a criação.
+    readonly_fields = ('filial',) 
+
+@admin.register(TipoRisco)
+class TipoRiscoAdmin(admin.ModelAdmin):
+    list_display = ['categoria', 'nome', 'codigo_cor', 'nr_referencia', 'ativo']
+    list_filter = ['categoria', 'ativo']
+    search_fields = ['nome', 'categoria', 'nr_referencia'] 
+    ordering = ['categoria', 'nome']
+    readonly_fields = ['filial']  # Impede a edição da filial após a criação.

@@ -1,7 +1,5 @@
 # usuario/forms.py (VERSÃO REFATORADA)
 
-# usuario/forms.py (VERSÃO CORRIGIDA E COMPLETA)
-
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, PasswordChangeForm
 from django.contrib.auth.models import Group, Permission

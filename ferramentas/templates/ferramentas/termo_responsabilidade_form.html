@@ -1,190 +1,342 @@
+{# ferramentas/termo_responsabilidade_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
-{% load static %}
-{% load widget_tweaks %}
+{% load static widget_tweaks %}
 
-{% block title %}Novo Termo de Responsabilidade{% endblock %}
+{% block ferramentas_page_title %}Novo Termo{% endblock %}
 
-{% block extra_head %}
+{% block ferramentas_title %}
+    <i class="bi bi-file-earmark-plus me-2"></i>Criar Termo de Responsabilidade
+{% endblock %}
+
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar à Lista
+    </a>
+{% endblock %}
+
+{% block ferramentas_extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" />
+<style>
+    .signature-pad-wrapper {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        background: #fff;
+        cursor: crosshair;
+    }
+    .signature-pad-wrapper canvas {
+        position: absolute;
+        left: 0; top: 0;
+        width: 100%; height: 100%;
+        border-radius: 0.5rem;
+    }
+    .step-badge {
+        width: 28px; height: 28px;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50%;
+        font-weight: 700; font-size: 0.8rem;
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px;
+    }
+</style>
 {% endblock %}
 
+{% block ferramentas_content %}
+<form method="post" id="termoForm" novalidate>
+    {% csrf_token %}
 
-{% block content %}
-<div class="container-fluid py-4 px-lg-5">
-    <header class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 mb-0">Criar Termo de Responsabilidade</h1>
-        <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Voltar à Lista
-        </a>
-    </header>
+    {# Erros gerais #}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger alert-dismissible fade show">
+        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
 
-    <form method="post" id="termoForm" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">1. Informações Gerais</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="{{ form.contrato.id_for_label }}" class="form-label">{{ form.contrato.label }}</label>
-                        {% render_field form.contrato class="form-control" %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="{{ form.data_emissao.id_for_label }}" class="form-label">{{ form.data_emissao.label }}</label>
-                        {% render_field form.data_emissao class="form-control" %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="{{ form.responsavel.id_for_label }}" class="form-label">{{ form.responsavel.label }}</label>
-                        {% render_field form.responsavel class="form-select" %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="{{ form.separado_por.id_for_label }}" class="form-label">{{ form.separado_por.label }}</label>
-                        {% render_field form.separado_por class="form-select" %}
-                    </div>
+    {# ================================================================
+       SEÇÃO 1: INFORMAÇÕES GERAIS
+       ================================================================ #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="mb-0 fw-bold">
+                <span class="step-badge bg-primary text-white me-2">1</span>
+                Informações Gerais
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="{{ form.contrato.id_for_label }}" class="form-label">
+                        Contrato <span class="text-danger">*</span>
+                    </label>
+                    {% render_field form.contrato class="form-control" placeholder="Ex: CETEST-2026/001" %}
+                    {% for e in form.contrato.errors %}
+                        <div class="invalid-feedback d-block">{{ e }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
+                        Data de Emissão <span class="text-danger">*</span>
+                    </label>
+                    {% render_field form.data_emissao class="form-control" %}
+                    {% for e in form.data_emissao.errors %}
+                        <div class="invalid-feedback d-block">{{ e }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.responsavel.id_for_label }}" class="form-label">
+                        Responsável (Funcionário) <span class="text-danger">*</span>
+                    </label>
+                    {% render_field form.responsavel class="form-select" %}
+                    {% for e in form.responsavel.errors %}
+                        <div class="invalid-feedback d-block">{{ e }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-6">
+                    <label for="{{ form.separado_por.id_for_label }}" class="form-label">
+                        Separado por (Coordenador)
+                    </label>
+                    {% render_field form.separado_por class="form-select" %}
+                    {% for e in form.separado_por.errors %}
+                        <div class="invalid-feedback d-block">{{ e }}</div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">2. Seleção de Itens</h5>
+    {# ================================================================
+       SEÇÃO 2: SELEÇÃO DE ITENS
+       ================================================================ #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="mb-0 fw-bold">
+                <span class="step-badge bg-primary text-white me-2">2</span>
+                Seleção de Itens
+            </h6>
+        </div>
+        <div class="card-body">
+            {# Tipo de uso #}
+            <div class="mb-4">
+                <label for="{{ form.tipo_uso.id_for_label }}" class="form-label fw-bold">
+                    Tipo de Uso <span class="text-danger">*</span>
+                </label>
+                {% render_field form.tipo_uso class="form-select" %}
+                {% for e in form.tipo_uso.errors %}
+                    <div class="invalid-feedback d-block">{{ e }}</div>
+                {% endfor %}
+                <small class="form-text text-muted">
+                    Selecione o tipo para exibir os itens disponíveis.
+                </small>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label for="{{ form.tipo_uso.id_for_label }}" class="form-label fw-bold">{{ form.tipo_uso.label }}</label>
-                    {% render_field form.tipo_uso class="form-select" %}
-                </div>
-                <div id="ferramentas_container" class="item-container" style="display:none;">
-                    <label for="{{ form.ferramentas_selecionadas.id_for_label }}" class="form-label">{{ form.ferramentas_selecionadas.label }}</label>
-                    {% render_field form.ferramentas_selecionadas class="form-select" data-placeholder="Digite para buscar uma ferramenta..." %}
-                </div>
-                <div id="malas_container" class="item-container" style="display:none;">
-                    <label for="{{ form.malas_selecionadas.id_for_label }}" class="form-label">{{ form.malas_selecionadas.label }}</label>
-                    {% render_field form.malas_selecionadas class="form-select" data-placeholder="Digite para buscar uma mala ou kit..." %}
+
+            {# Container de Ferramentas (exibido quando tipo = FER) #}
+            <div id="ferramentas_container" class="item-container" style="display:none;">
+                <label for="{{ form.ferramentas_selecionadas.id_for_label }}" class="form-label fw-bold">
+                    <i class="bi bi-tools me-1"></i>{{ form.ferramentas_selecionadas.label }}
+                </label>
+                {% render_field form.ferramentas_selecionadas class="form-select" data-placeholder="Digite para buscar uma ferramenta..." %}
+                <small class="form-text text-muted">
+                    Selecione uma ou mais ferramentas disponíveis.
+                </small>
+            </div>
+
+            {# Container de Malas (exibido quando tipo = MAL) #}
+            <div id="malas_container" class="item-container" style="display:none;">
+                <label for="{{ form.malas_selecionadas.id_for_label }}" class="form-label fw-bold">
+                    <i class="bi bi-box-seam me-1"></i>{{ form.malas_selecionadas.label }}
+                </label>
+                {% render_field form.malas_selecionadas class="form-select" data-placeholder="Digite para buscar uma mala ou kit..." %}
+                <small class="form-text text-muted">
+                    Selecione uma ou mais malas/kits disponíveis.
+                </small>
+            </div>
+        </div>
+    </div>
+
+    {# ================================================================
+       SEÇÃO 3: ASSINATURA
+       ================================================================ #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="mb-0 fw-bold">
+                <span class="step-badge bg-primary text-white me-2">3</span>
+                Assinatura do Responsável
+            </h6>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle me-1"></i>
+                O responsável deve assinar abaixo para confirmar o recebimento dos itens.
+            </p>
+            <div class="signature-pad-wrapper" id="sig-wrapper">
+                <canvas id="signature-pad"></canvas>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <small class="text-muted">Arraste o dedo ou mouse para assinar</small>
+                <button type="button" class="btn btn-sm btn-outline-danger" id="clear-signature">
+                    <i class="bi bi-eraser me-1"></i>Limpar Assinatura
+                </button>
+            </div>
+            <input type="hidden" name="assinatura_base64" id="id_assinatura_base64">
+            <input type="hidden" name="itens_termo_json" id="itens_termo_json">
+        </div>
+    </div>
+
+    {# ================================================================
+       BOTÃO DE SUBMISSÃO
+       ================================================================ #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <span class="text-danger">*</span> Campos obrigatórios
+                </small>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary px-4">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg px-5">
+                        <i class="bi bi-check-circle me-2"></i>Confirmar e Gerar Termo
+                    </button>
                 </div>
             </div>
         </div>
-
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">3. Assinatura do Responsável</h5>
-            </div>
-            <div class="card-body">
-                <div data-signature-pad-container>
-                    <canvas data-signature-canvas class="w-100 border rounded" style="height: 200px;"></canvas>
-                    <div class="text-end mt-2">
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-signature-clear-button>Limpar</button>
-                    </div>
-                    <input type="hidden" name="assinatura_base64" data-signature-hidden-input>
-                </div>
-                <input type="hidden" name="itens_termo_json" id="itens_termo_json">
-            </div>
-        </div>
-
-        <div class="d-grid gap-2 mb-4">
-            <button type="submit" class="btn btn-success btn-lg">
-                <i class="fas fa-check-circle me-2"></i>Confirmar e Gerar Termo
-            </button>
-        </div>
-    </form>
-</div>
+    </div>
+</form>
 {% endblock %}
 
-
-{% block extra_js %}
+{% block ferramentas_extra_js %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script> 
-
-<script src="{% static 'js/signature.js' %}"></script> 
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
 <script>
-// Usamos a forma segura do jQuery para garantir que o DOM está pronto.
-jQuery(function($) { 
-    // OBS: Toda a lógica de inicialização, calibragem e limpeza da assinatura
-    // já está no arquivo signature.js e é executada automaticamente.
-    // Não precisamos de nenhum código de assinatura aqui.
+jQuery(function($) {
 
-    // --- LÓGICA DO SELECT2 ---
-    function initializeSelect2(selector) {
+    // ===================================================================
+    // SIGNATURE PAD
+    // ===================================================================
+    const canvas = document.getElementById('signature-pad');
+    const clearBtn = document.getElementById('clear-signature');
+    const sigInput = document.getElementById('id_assinatura_base64');
+    let signaturePad = null;
+
+    if (canvas) {
+        signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear();
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        clearBtn.addEventListener('click', function() { signaturePad.clear(); });
+    }
+
+    // ===================================================================
+    // SELECT2 — Inicialização
+    // ===================================================================
+    function initSelect2(selector) {
         $(selector).select2({
             theme: "bootstrap-5",
             width: '100%',
             closeOnSelect: false,
+            language: {
+                noResults: function() { return "Nenhum item encontrado."; },
+                searching: function() { return "Buscando..."; }
+            }
         });
     }
 
-    $('#id_responsavel, #id_separado_por').select2({ theme: "bootstrap-5" });
+    // Select2 nos campos de funcionário (busca simples)
+    $('#id_responsavel, #id_separado_por').select2({
+        theme: "bootstrap-5",
+        width: '100%',
+        language: { noResults: function() { return "Nenhum funcionário encontrado."; } }
+    });
 
+    // ===================================================================
+    // TOGGLE: Mostra Ferramentas ou Malas conforme tipo_uso
+    // ===================================================================
     const tipoUsoSelect = $('#id_tipo_uso');
     const ferramentasContainer = $('#ferramentas_container');
     const malasContainer = $('#malas_container');
 
-    function toggleItemSelectors() {
+    function toggleContainers() {
         const tipo = tipoUsoSelect.val();
         $('.item-container').hide();
 
         if (tipo === 'FER') {
             ferramentasContainer.show();
-            if (!ferramentasContainer.data('select2-initialized')) {
-                initializeSelect2('#id_ferramentas_selecionadas');
-                ferramentasContainer.data('select2-initialized', true);
+            if (!ferramentasContainer.data('s2-init')) {
+                initSelect2('#id_ferramentas_selecionadas');
+                ferramentasContainer.data('s2-init', true);
             }
         } else if (tipo === 'MAL') {
             malasContainer.show();
-            if (!malasContainer.data('select2-initialized')) {
-                initializeSelect2('#id_malas_selecionadas');
-                malasContainer.data('select2-initialized', true);
+            if (!malasContainer.data('s2-init')) {
+                initSelect2('#id_malas_selecionadas');
+                malasContainer.data('s2-init', true);
             }
         }
     }
 
-    tipoUsoSelect.on('change', toggleItemSelectors);
-    toggleItemSelectors();
+    tipoUsoSelect.on('change', toggleContainers);
+    toggleContainers(); // Estado inicial
 
-    // --- PREPARAÇÃO DOS DADOS PARA SUBMISSÃO ---
+    // ===================================================================
+    // SUBMIT — Validação e montagem do JSON
+    // ===================================================================
     $('#termoForm').on('submit', function(event) {
-        // A lógica de preencher o campo hidden da assinatura já é feita pelo signature.js
-        // Aqui, só precisamos validar e preparar os outros campos.
-        
-        // Validação da assinatura
-        const signatureInput = document.querySelector('[data-signature-hidden-input]');
-        if (signatureInput && !signatureInput.value) {
+
+        // 1. Validar assinatura
+        if (signaturePad && signaturePad.isEmpty()) {
             alert("A assinatura do responsável é obrigatória.");
             event.preventDefault();
-            return;
+            return false;
         }
-        
-        // Preparação do JSON dos itens
-        const itensSelecionados = [];
+
+        // Preenche o campo hidden com a imagem base64
+        if (signaturePad && sigInput) {
+            sigInput.value = signaturePad.toDataURL('image/png');
+        }
+
+        // 2. Montar JSON dos itens selecionados
         const tipo = tipoUsoSelect.val();
-        let selected_options;
+        let selectedOptions = [];
 
         if (tipo === 'FER') {
-            selected_options = $('#id_ferramentas_selecionadas').select2('data');
+            selectedOptions = $('#id_ferramentas_selecionadas').select2('data');
         } else if (tipo === 'MAL') {
-            selected_options = $('#id_malas_selecionadas').select2('data');
+            selectedOptions = $('#id_malas_selecionadas').select2('data');
         }
 
-        if (!selected_options || selected_options.length === 0) {
-            alert("Por favor, selecione pelo menos um item.");
+        if (!selectedOptions || selectedOptions.length === 0) {
+            alert("Selecione pelo menos um item para o termo.");
             event.preventDefault();
-            return;
+            return false;
         }
 
-        selected_options.forEach(function(option) {
-            itensSelecionados.push({
-                pk: option.id,
-                item: option.text,
+        const itens = selectedOptions.map(function(opt) {
+            return {
+                pk: opt.id,
+                item: opt.text.trim(),
                 quantidade: 1,
-                unidade: 'pç',
-            });
+                unidade: 'pç'
+            };
         });
 
-        $('#itens_termo_json').val(JSON.stringify(itensSelecionados));
+        $('#itens_termo_json').val(JSON.stringify(itens));
     });
 });
 </script>

@@ -1,0 +1,433 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Empresa{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:empresa_list' %}">Empresas</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-building"></i>
+        {% if form.instance.pk %}Editar Empresa{% else %}Cadastrar Nova Empresa{% endif %}
+    </h1>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <!-- Erros Gerais -->
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Dados Básicos -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-id-card"></i> Dados Básicos
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.cliente.id_for_label }}" class="form-label required-field">
+                                    Razão Social
+                                </label>
+                                {% render_field form.cliente class="form-control" placeholder="Nome completo da empresa" %}
+                                {% if form.cliente.errors %}
+                                <div class="text-danger">{{ form.cliente.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.cnpj.id_for_label }}" class="form-label required-field">
+                                    CNPJ
+                                </label>
+                                {% render_field form.cnpj class="form-control" placeholder="00.000.000/0000-00" %}
+                                {% if form.cnpj.errors %}
+                                <div class="text-danger">{{ form.cnpj.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tipo_empresa.id_for_label }}" class="form-label required-field">
+                                    Tipo de Empresa
+                                </label>
+                                {% render_field form.tipo_empresa class="form-select" %}
+                                {% if form.tipo_empresa.errors %}
+                                <div class="text-danger">{{ form.tipo_empresa.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">                    
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="{{ form.grau_risco.id_for_label }}" class="form-label">
+                                    Grau de Risco
+                                </label>
+                                {% render_field form.grau_risco class="form-select" %}
+                                {% if form.grau_risco.errors %}
+                                <div class="text-danger">{{ form.grau_risco.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="{{ form.grau_risco_texto.id_for_label }}" class="form-label">
+                                    Grau de Risco por extençoão
+                                </label>
+                                {% render_field form.grau_risco_texto class="form-control" placeholder="Descrição da atividade"%}
+                                {% if form.grau_risco_texto.errors %}
+                                <div class="text-danger">{{ form.grau_risco_texto.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div> 
+                    </div> 
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="{{ form.numero_empregados.id_for_label }}" class="form-label">
+                                    Nº Empregados
+                                </label>
+                                {% render_field form.numero_empregados class="form-control" type="number" %}
+                                {% if form.numero_empregados.errors %}
+                                <div class="text-danger">{{ form.numero_empregados.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="{{ form.numero_empregados_texto.id_for_label }}" class="form-label">
+                                    Nº Empregados por extensão
+                                </label>
+                                {% render_field form.numero_empregados_texto class="form-control" placeholder="Descrição da atividade"%}
+                                {% if form.numero_empregados_texto.errors %}
+                                <div class="text-danger">{{ form.numero_empregados_texto.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="{{ form.cnae_especifico.id_for_label }}" class="form-label">
+                                    CNAE
+                                </label>
+                                {% render_field form.cnae_especifico class="form-control" placeholder="0000-0/00" %}
+                                {% if form.cnae_especifico.errors %}
+                                <div class="text-danger">{{ form.cnae_especifico.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label for="{{ form.descricao_cnae.id_for_label }}" class="form-label">
+                                    Descrição CNAE
+                                </label>
+                                {% render_field form.descricao_cnae class="form-control" placeholder="Descrição da atividade econômica" %}
+                                {% if form.descricao_cnae.errors %}
+                                <div class="text-danger">{{ form.descricao_cnae.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.atividade_principal.id_for_label }}" class="form-label">
+                            Atividade Principal
+                        </label>
+                        {% render_field form.atividade_principal class="form-control" rows="3" placeholder="Descreva a atividade principal da empresa..." %}
+                        {% if form.atividade_principal.errors %}
+                        <div class="text-danger">{{ form.atividade_principal.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.jornada_trabalho.id_for_label }}" class="form-label">
+                            Jornada de Trabalho
+                        </label>
+                        {% render_field form.jornada_trabalho class="form-control" placeholder="Ex: 44 horas semanais" %}
+                        {% if form.jornada_trabalho.errors %}
+                        <div class="text-danger">{{ form.jornada_trabalho.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Endereço -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-map-marker-alt"></i> Endereço
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.endereco.id_for_label }}" class="form-label">
+                                    Logradouro
+                                </label>
+                                {% render_field form.endereco class="form-control" placeholder="Rua, Avenida..." %}
+                                {% if form.endereco.errors %}
+                                <div class="text-danger">{{ form.endereco.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="{{ form.numero.id_for_label }}" class="form-label">
+                                    Número
+                                </label>
+                                {% render_field form.numero class="form-control" placeholder="Nº" %}
+                                {% if form.numero.errors %}
+                                <div class="text-danger">{{ form.numero.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <label for="{{ form.cep.id_for_label }}" class="form-label">
+                                    CEP
+                                </label>
+                                {% render_field form.cep class="form-control" placeholder="00000-000" %}
+                                {% if form.cep.errors %}
+                                <div class="text-danger">{{ form.cep.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.complemento.id_for_label }}" class="form-label">
+                                    Complemento
+                                </label>
+                                {% render_field form.complemento class="form-control" placeholder="Sala, Andar..." %}
+                                {% if form.complemento.errors %}
+                                <div class="text-danger">{{ form.complemento.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.bairro.id_for_label }}" class="form-label">
+                                    Bairro
+                                </label>
+                                {% render_field form.bairro class="form-control" placeholder="Bairro" %}
+                                {% if form.bairro.errors %}
+                                <div class="text-danger">{{ form.bairro.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="{{ form.cidade.id_for_label }}" class="form-label">
+                                    Cidade
+                                </label>
+                                {% render_field form.cidade class="form-control" placeholder="Cidade" %}
+                                {% if form.cidade.errors %}
+                                <div class="text-danger">{{ form.cidade.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                    UF
+                                </label>
+                                {% render_field form.estado class="form-control" placeholder="SP" maxlength="2" %}
+                                {% if form.estado.errors %}
+                                <div class="text-danger">{{ form.estado.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.telefone.id_for_label }}" class="form-label">
+                            Telefone
+                        </label>
+                        {% render_field form.telefone class="form-control" placeholder="(00) 0000-0000" %}
+                        {% if form.telefone.errors %}
+                        <div class="text-danger">{{ form.telefone.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'pgr_gestao:empresa_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Salvar Empresa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-info-circle"></i> Informações
+                </div>
+                <div class="card-body">
+                    <div class="mb-3 form-check">
+                        {% render_field form.ativo class="form-check-input" %}
+                        <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                            Empresa Ativa
+                        </label>
+                    </div>
+
+                    <hr>
+
+                    <h6>Campos Obrigatórios:</h6>
+                    <ul class="small">
+                        <li>Razão Social</li>
+                        <li>CNPJ</li>
+                        <li>Tipo de Empresa</li>
+                    </ul>
+
+                    <hr>
+
+                    <h6>Grau de Risco (NR-4):</h6>
+                    <ul class="small">
+                        <li><strong>1:</strong> Risco Baixo</li>
+                        <li><strong>2:</strong> Risco Médio</li>
+                        <li><strong>3:</strong> Risco Alto</li>
+                        <li><strong>4:</strong> Risco Muito Alto</li>
+                    </ul>
+
+                    <hr>
+
+                    <p class="small text-muted mb-0">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Dica:</strong> O CNAE e Grau de Risco são utilizados para determinar as exigências do PGR.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Máscara para CNPJ
+    $('#id_cnpj').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length <= 14) {
+            value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+            value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+            value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+            value = value.replace(/(\d{4})(\d)/, '$1-$2');
+            $(this).val(value);
+        }
+    });
+
+    // Máscara para CEP
+    $('#id_cep').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length <= 8) {
+            value = value.replace(/^(\d{5})(\d)/, '$1-$2');
+            $(this).val(value);
+        }
+    });
+
+    // Buscar CEP
+    $('#id_cep').on('blur', function() {
+        const cep = $(this).val().replace(/\D/g, '');
+        if (cep.length === 8) {
+            $.getJSON(`https://viacep.com.br/ws/${cep}/json/`, function(data) {
+                if (!data.erro) {
+                    $('#id_endereco').val(data.logradouro);
+                    $('#id_bairro').val(data.bairro);
+                    $('#id_cidade').val(data.localidade);
+                    $('#id_estado').val(data.uf);
+                }
+            });
+        }
+    });
+
+    // Máscara para Telefone
+    $('#id_telefone').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length <= 11) {
+            if (value.length <= 10) {
+                value = value.replace(/^(\d{2})(\d)/, '($1) $2');
+                value = value.replace(/(\d{4})(\d)/, '$1-$2');
+            } else {
+                value = value.replace(/^(\d{2})(\d)/, '($1) $2');
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+            }
+            $(this).val(value);
+        }
+    });
+
+    // --- CÓDIGO DO AUTOCOMPLETAR PARA O CAMPO CLIENTE ---
+    $('#id_cliente').select2({
+        theme: 'bootstrap-5', // Usa o tema do Bootstrap 5 que você já carregou
+        placeholder: 'Digite para buscar um cliente...',
+        minimumInputLength: 2, // Começa a buscar a partir de 2 caracteres digitados
+        ajax: {
+            url: "{% url 'cliente:cliente-autocomplete' %}", // A URL que vamos criar no Passo 2
+            dataType: 'json',
+            delay: 250, // Aguarda 250ms após o usuário parar de digitar
+            data: function (params) {
+                // Envia o termo de busca para a nossa view
+                return {
+                    term: params.term 
+                };
+            },
+            processResults: function (data) {
+                // Mapeia os resultados recebidos para o formato que o Select2 espera
+                return {
+                    results: $.map(data, function (item) {
+                        return {
+                            text: item.razao_social, // O texto que será exibido
+                            id: item.id            // O valor (ID do cliente)
+                        }
+                    })
+                };
+            },
+            cache: true
+        }
+    });
+});
+
+</script>
+{% endblock %}

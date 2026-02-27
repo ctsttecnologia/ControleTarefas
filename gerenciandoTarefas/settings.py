@@ -1,5 +1,5 @@
 """
-Django settings for gerenciandoTarefas 1.01 por Emerson Goncalves.
+Django settings for gerenciandoTarefas 1.02 por Emerson Goncalves.
 """
 
 import os
@@ -7,6 +7,10 @@ import sys
 from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
+
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -58,7 +62,6 @@ if IS_PRE_PRODUCTION:
     SECURE_HSTS_SECONDS = 31536000  # 1 ano
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    print("Configurações de segurança HTTPS ativadas (Pré-produção)")
 else:
     # Configurações relaxadas para desenvolvimento local
     SECURE_PROXY_SSL_HEADER = None
@@ -116,6 +119,8 @@ INSTALLED_APPS = [
     'template_partials',
     'phonenumber_field',
     'notifications',
+    'dal',
+    'dal_select2',
      # Apps Locais
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig', 
@@ -135,7 +140,8 @@ INSTALLED_APPS = [
     'chat',
     'arquivos',
     'documentos',
-    'api', 
+    'api',
+    'pgr_gestao.apps.PgrGestaoConfig', 
 ]
 
 
@@ -182,7 +188,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.filial_context',
                 'usuario.context_processors.filial_context',
-                'chat.context_processors.chat_global_data', 
+                'chat.context_processors.chat_global_data',
+                'pgr_gestao.context_processors.pgr_stats', 
             ],
         },
     },
@@ -205,13 +212,24 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT', cast=int),
-        'CONN_MAX_AGE': 0 if IS_DEVELOPMENT else 60,  # Connection pooling apenas em produção
+        'CONN_MAX_AGE': 0 if IS_DEVELOPMENT else 300,  # Mantém conexão por 5 min         
+        'CONN_HEALTH_CHECKS': True,   # Django 5.x verifica se conexão está viva
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             'connect_timeout': 10 if IS_DEVELOPMENT else 5,  # Timeout maior em dev
         }
     }
 }
+
+# Configuração para usar banco de dados em memória durante os testes
+# Isso evita problemas de permissão para criar um test_db
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
 
 # =============================================================================
 # AUTENTICAÇÃO
@@ -261,40 +279,11 @@ else:
 # Se a variável não existir, usaremos o armazenamento local (para desenvolvimento)
 STORAGE_PROVIDER = os.getenv('STORAGE_PROVIDER', 'LOCAL')
 
-
-#if STORAGE_PROVIDER == 'AWS':
-#    # --- Configurações para AWS S3 ---
-#    print("Usando AWS S3 para armazenamento de mídia.")
-#    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    
-#    # Essas variáveis devem ser configuradas no seu painel de hospedagem
-#    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-#    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-#    AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-#    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'sa-east-1') # Ex: São Paulo
-#    AWS_S3_FILE_OVERWRITE = False
-#    AWS_DEFAULT_ACL = None # Recomendado para segurança
-#    AWS_S3_SIGNATURE_VERSION = 's3v4'
-    
-#elif STORAGE_PROVIDER == 'GCS':
-#    # --- Configurações para Google Cloud Storage ---
-#    print("Usando Google Cloud Storage para armazenamento de mídia.")
-#    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
-    
-#    # Essas variáveis devem ser configuradas no seu painel de hospedagem
-#    GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')
-    
-#    # O Google usa um arquivo JSON para credenciais. Você tem duas opções:
-#    # 1. Colocar o caminho para o arquivo em uma variável de ambiente (mais comum em servidores)
-#    # GOOGLE_APPLICATION_CREDENTIALS = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
-        
-#else: # STORAGE_PROVIDER == 'LOCAL'
-#    # --- Configurações para Ambiente Local (Desenvolvimento) ---
-#    print("Usando armazenamento local para mídia.")
-#    MEDIA_URL = '/media/'
-#    MEDIA_ROOT = BASE_DIR / 'media'
-#    # Aqui você pode usar a solução com WhiteNoise se quiser simular o ambiente de produção
-#    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+ 
+MEDIA_URL = '/midia/'
+MEDIA_ROOT = BASE_DIR / 'midia'
+# Aqui você pode usar a solução com WhiteNoise se quiser simular o ambiente de produção
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 SENDFILE_BACKEND = 'sendfile2.backends.simple'
@@ -315,6 +304,10 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
+
+# Configurações de E-mail para notificações PGR
+EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR')
+EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO')
 
 # =============================================================================
 # REST FRAMEWORK
@@ -444,6 +437,7 @@ LOGGING = {
     },
 }
 
+
 # Adicionar handler de arquivo apenas em pré-produção e se o diretório existir
 if IS_PRE_PRODUCTION and LOGS_DIR.exists():
     try:
@@ -462,3 +456,5 @@ else:
     print("Logging apenas no console (Desenvolvimento)")
 
 
+# Flag para identificar ambiente de teste
+TESTING = 'test' in sys.argv or 'pytest' in sys.modules

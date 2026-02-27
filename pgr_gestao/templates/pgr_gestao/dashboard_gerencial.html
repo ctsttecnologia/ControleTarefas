@@ -1,0 +1,223 @@
+<!-- Dashboard Gerencial - Template HTML-->
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard Gerencial{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Dashboard Gerencial</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-chart-line"></i> Dashboard Gerencial</h1>
+    <p class="mb-0">Visão geral e consolidada de todos os Programas de Gerenciamento de Riscos</p>
+</div>
+
+<!-- Estatísticas Gerais -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total de Documentos</h6>
+                <h2 class="mb-0">{{ total_documentos }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total de Riscos</h6>
+                <h2 class="mb-0">{{ total_riscos }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Total de Planos de Ação</h6>
+                <h2 class="mb-0">{{ total_planos }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card danger">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Planos Atrasados</h6>
+                <h2 class="mb-0 text-danger">{{ status_planos_data.atrasado|default:0 }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-file-alt"></i> Documentos por Status</div>
+            <div class="card-body"><canvas id="chartDocsStatus"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-exclamation-triangle"></i> Riscos por Classificação</div>
+            <div class="card-body"><canvas id="chartRiscosClassificacao"></canvas></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><i class="fas fa-tasks"></i> Planos por Status</div>
+            <div class="card-body"><canvas id="chartPlanosStatus"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas e Listas -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark"><i class="fas fa-clock"></i> Documentos a Vencer (próximos 60 dias)</div>
+            <div class="card-body">
+                {% if documentos_a_vencer %}
+                <ul class="list-group list-group-flush">
+                    {% for doc in documentos_a_vencer %}
+                    <a href="{% url 'pgr_gestao:documento_detail' doc.pk %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ doc.codigo_documento }}</h6>
+                            <small>Vence em {{ doc.dias_para_vencimento }} dias</small>
+                        </div>
+                        <p class="mb-1">{{ doc.empresa.razao_social }}</p>
+                    </a>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center">Nenhum documento com vencimento próximo.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white"><i class="fas fa-radiation"></i> Riscos Críticos e Muito Graves Pendentes</div>
+            <div class="card-body">
+                {% if riscos_criticos_pendentes %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead><tr><th>Agente</th><th>Class.</th><th>PGR</th><th>Ações</th></tr></thead>
+                        <tbody>
+                        {% for risco in riscos_criticos_pendentes|slice:":5" %}
+                            <tr>
+                                <td>{{ risco.agente }}</td>
+                                <td><span class="badge badge-risco-{{ risco.classificacao_risco }}">{{ risco.get_classificacao_risco_display }}</span></td>
+                                <td>{{ risco.pgr_documento.codigo_documento }}</td>
+                                <td>
+                                    <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">Nenhum risco crítico pendente de controle.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Chart 1: Documentos por Status
+const ctxDocs = document.getElementById('chartDocsStatus').getContext('2d');
+new Chart(ctxDocs, {
+    type: 'pie',
+    data: {
+        labels: ['Vigente', 'Vencido', 'Em Revisão'],
+        datasets: [{
+            data: [
+                {{ status_docs_data.vigente|default:0 }},
+                {{ status_docs_data.vencido|default:0 }},
+                {{ status_docs_data.em_revisao|default:0 }}
+            ],
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' }
+        }
+    }
+});
+
+// Chart 2: Riscos por Classificação
+const ctxRiscos = document.getElementById('chartRiscosClassificacao').getContext('2d');
+new Chart(ctxRiscos, {
+    type: 'doughnut',
+    data: {
+        labels: [
+            {% for item in riscos_por_classificacao %}
+                '{{ item.label }}'{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for item in riscos_por_classificacao %}
+                    {{ item.total }}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                {% for item in riscos_por_classificacao %}
+                    {% if item.classificacao_risco == 'critico'%}'#6f0000'
+                    {% elif item.classificacao_risco == 'muito_grave'%}'#dc3545'
+                    {% elif item.classificacao_risco == 'moderado'%}'#fd7e14'
+                    {% elif item.classificacao_risco == 'marginal'%}'#ffc107'
+                    {% elif item.classificacao_risco == 'negligenciavel'%}'#28a745'
+                    {% else %}'#808080'
+                    {% endif %}{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+// Chart 3: Planos por Status
+const ctxPlanos = document.getElementById('chartPlanosStatus').getContext('2d');
+new Chart(ctxPlanos, {
+    type: 'bar',
+    data: {
+        labels: ['Pendentes', 'Em Andamento', 'Concluídos', 'Atrasados'],
+        datasets: [{
+            label: 'Quantidade',
+            data: [
+                {{ status_planos_data.pendente|default:0 }},
+                {{ status_planos_data.em_andamento|default:0 }},
+                {{ status_planos_data.concluido|default:0 }},
+                {{ status_planos_data.atrasado|default:0 }}
+            ],
+            backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+

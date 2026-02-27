@@ -2,179 +2,231 @@
 {% extends "departamento_pessoal/_base_dp.html" %}
 {% load static %}
 
-{% block title %}Detalhes de {{ funcionario.nome_completo }}{% endblock %}
+{% block title %}{{ funcionario.nome_completo }} - Detalhes{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-
-    {# Mensagens de Alerta (Toast Notifications) #}
-    {% if messages %}
-        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100">
-            {% for message in messages %}
-                <div class="toast align-items-center text-bg-{{ message.tags }} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            {{ message }}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    {# Cabeçalho da página com avatar e botões de ação principais #}
-    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <div class="d-flex align-items-center">
-            <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=0D6EFD&color=fff&size=64&bold=true"
-                 alt="Avatar de {{ funcionario.nome_completo }}" class="rounded-circle me-3">
-            <div>
-                <h2 class="h3 mb-0">{{ funcionario.nome_completo }}</h2>
-                <p class="text-muted mb-0">{{ funcionario.cargo.nome|default:"Cargo não definido" }}</p>
+{% block dp_content %}
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="profile-info">
+        {% if funcionario.foto_3x4 %}
+            <img src="{{ funcionario.foto_3x4.url }}" alt="Foto" class="profile-avatar">
+        {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=64&bold=true" 
+                 alt="Avatar" class="profile-avatar">
+        {% endif %}
+        <div>
+            <div class="profile-name">{{ funcionario.nome_completo|upper }}</div>
+            <div class="profile-role">
+                {{ funcionario.cargo.nome|default:"Cargo não definido" }}
+                {% if funcionario.departamento %} • {{ funcionario.departamento.nome }}{% endif %}
             </div>
         </div>
-        
-        <div class="d-flex gap-2">
-            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
-            <a href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}" class="btn btn-primary">
-                <i class="bi bi-pencil-square me-1"></i> Editar Cadastro
-            </a>
-            <a href="{% url 'departamento_pessoal:funcionario_delete' funcionario.pk %}" class="btn btn-danger">
-                <i class="bi bi-trash3-fill me-1"></i> Excluir / Inativar
-            </a>
-        </div>
-    </header>
+    </div>
+    <div class="profile-actions d-flex gap-2">
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+        <a href="{% url 'departamento_pessoal:editar_funcionario' funcionario.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil me-1"></i> Editar
+        </a>
+        <a href="{% url 'departamento_pessoal:funcionario_delete' funcionario.pk %}" class="btn btn-outline-danger">
+            <i class="bi bi-trash3 me-1"></i> Excluir
+        </a>
+    </div>
+</div>
 
-    {# Card principal com abas (tabs) #}
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-light border-0">
-            <ul class="nav nav-tabs card-header-tabs" id="funcionarioTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="pessoal-tab" data-bs-toggle="tab" data-bs-target="#pessoal-tab-pane" type="button" role="tab" aria-controls="pessoal-tab-pane" aria-selected="true">
-                        <i class="bi bi-person-fill me-1"></i> Dados Pessoais
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="admissao-tab" data-bs-toggle="tab" data-bs-target="#admissao-tab-pane" type="button" role="tab" aria-controls="admissao-tab-pane" aria-selected="false">
-                        <i class="bi bi-briefcase-fill me-1"></i> Admissão
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos-tab-pane" type="button" role="tab" aria-controls="documentos-tab-pane" aria-selected="false">
-                        <i class="bi bi-file-earmark-text-fill me-1"></i> Documentos
-                    </button>
-                </li>
-            </ul>
-        </div>
-        <div class="card-body p-4">
-            <div class="tab-content" id="funcionarioTabContent">
-                
-                {# Aba de Dados Pessoais #}
-                <div class="tab-pane fade show active" id="pessoal-tab-pane" role="tabpanel" aria-labelledby="pessoal-tab" tabindex="0">
-                    <dl class="row">
-                        <dt class="col-sm-3">Nome Completo</dt><dd class="col-sm-9">{{ funcionario.nome_completo }}</dd>
-                        <dt class="col-sm-3">Data de Nascimento</dt>
-                        <dd class="col-sm-9">
-                            {% if funcionario.data_nascimento %}
-                                {{ funcionario.data_nascimento|date:"d/m/Y" }} ({{ funcionario.idade }} anos)
-                            {% else %}
-                                Não informada
-                            {% endif %}
-                        </dd>
-                        <dt class="col-sm-3">Sexo</dt><dd class="col-sm-9">{{ funcionario.get_sexo_display }}</dd>
-                        <dt class="col-sm-3">Email</dt><dd class="col-sm-9">{{ funcionario.email_pessoal|default:"-" }}</dd>
-                        <dt class="col-sm-3">Telefone</dt><dd class="col-sm-9">{{ funcionario.telefone|default:"-" }}</dd>
-                        <dt class="col-sm-3">Status</dt>
-                        <dd class="col-sm-9">
-                            <span class="badge {% if funcionario.status == 'ATIVO' %}text-bg-success{% else %}text-bg-secondary{% endif %}">
-                                {{ funcionario.get_status_display }}
-                            </span>
-                        </dd>
-                    </dl>
-                </div>
-
-                {# Aba de Admissão #}
-                <div class="tab-pane fade" id="admissao-tab-pane" role="tabpanel" aria-labelledby="admissao-tab" tabindex="0">
-                    <dl class="row">
-                        <dt class="col-sm-3">Contrato</dt><dd class="col-sm-9">{{ funcionario.cliente.contrato|default:"-" }} - {{ funcionario.cliente.nome|default:"-" }}</dd>
-                        <dt class="col-sm-3">Matrícula</dt><dd class="col-sm-9">{{ funcionario.matricula }}</dd>
-                        <dt class="col-sm-3">Cargo</dt><dd class="col-sm-9">{{ funcionario.cargo.nome }}</dd>
-                        <dt class="col-sm-3">Departamento</dt><dd class="col-sm-9">{{ funcionario.departamento.nome }}</dd>
-                        <dt class="col-sm-3">Data de Admissão</dt><dd class="col-sm-9">{{ funcionario.data_admissao|date:"d/m/Y" }}</dd>
-                        <dt class="col-sm-3">Data de Demissão</dt><dd class="col-sm-9">{{ funcionario.data_demissao|date:"d/m/Y"|default:"-" }}</dd>
-                        <dt class="col-sm-3">Salário</dt><dd class="col-sm-9">R$ {{ funcionario.salario|floatformat:2 }}</dd>
-                    </dl>
-                </div>
-
-                {# Aba de Documentos - COMPLETAMENTE REFATORADA #}
-                <div class="tab-pane fade" id="documentos-tab-pane" role="tabpanel" aria-labelledby="documentos-tab" tabindex="0">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="mb-0">Documentos Registrados</h5>
-                        <a href="{% url 'departamento_pessoal:adicionar_documento' funcionario.pk %}" class="btn btn-sm btn-primary">
-                            <i class="bi bi-plus-circle me-1"></i> Adicionar Documento
-                        </a>
+<!-- Card com Tabs -->
+<div class="content-card">
+    <!-- Tabs -->
+    <ul class="nav detail-tabs" id="funcionarioTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pessoal-tab" data-bs-toggle="tab" 
+                    data-bs-target="#pessoal-pane" type="button" role="tab">
+                <i class="bi bi-person me-1"></i> Dados Pessoais
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="admissao-tab" data-bs-toggle="tab" 
+                    data-bs-target="#admissao-pane" type="button" role="tab">
+                <i class="bi bi-briefcase me-1"></i> Admissão
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" 
+                    data-bs-target="#documentos-pane" type="button" role="tab">
+                <i class="bi bi-file-earmark-text me-1"></i> Documentos
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="tab-content">
+        <!-- Aba: Dados Pessoais -->
+        <div class="tab-pane fade show active" id="pessoal-pane" role="tabpanel">
+            <div class="content-card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row data-list mb-0">
+                            <dt class="col-sm-5">Nome Completo</dt>
+                            <dd class="col-sm-7">{{ funcionario.nome_completo }}</dd>
+                            
+                            <dt class="col-sm-5">Data de Nascimento</dt>
+                            <dd class="col-sm-7">
+                                {% if funcionario.data_nascimento %}
+                                    {{ funcionario.data_nascimento|date:"d/m/Y" }}
+                                    <span class="badge-status bg-info-soft text-info-soft ms-1">{{ funcionario.idade }} anos</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-5">Sexo</dt>
+                            <dd class="col-sm-7">{{ funcionario.get_sexo_display|default:"-" }}</dd>
+                        </dl>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Tipo de Documento</th>
-                                    <th scope="col">Número</th>
-                                    <th scope="col" class="text-center">Anexo</th>
-                                    <th scope="col" class="text-end">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for doc in funcionario.documentos.all %}
-                                <tr>
-                                    <td>{{ doc.tipo_documento }}    </td>
-                                    <td>{{ doc.numero|default:"-" }}</td>
-                                    <td class="text-center">
-                                        {% if doc.anexo %}
-                                            <a href="{{ doc.anexo.url }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Ver anexo">
-                                                <i class="bi bi-paperclip"></i> Ver
-                                            </a>
-                                        {% else %}
-                                            <span class="text-muted">Nenhum</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end">
-                                        <a href="{% url 'departamento_pessoal:editar_documentos' pk=doc.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center py-5">
-                                        <i class="bi bi-file-earmark-x fs-1 text-secondary"></i>
-                                        <h5 class="mt-3">Nenhum documento encontrado.</h5>
-                                        <p class="text-muted">Não há documentos cadastrados para este funcionário.</p>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="col-md-6">
+                        <dl class="row data-list mb-0">
+                            <dt class="col-sm-5">Email</dt>
+                            <dd class="col-sm-7">
+                                {% if funcionario.email_pessoal %}
+                                    <a href="mailto:{{ funcionario.email_pessoal }}">{{ funcionario.email_pessoal }}</a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-5">Telefone</dt>
+                            <dd class="col-sm-7">{{ funcionario.telefone|default:"-" }}</dd>
+                            
+                            <dt class="col-sm-5">Status</dt>
+                            <dd class="col-sm-7">
+                                {% if funcionario.status == 'ATIVO' %}
+                                    <span class="badge-status bg-success-soft text-success-soft">Ativo</span>
+                                {% elif funcionario.status == 'INATIVO' %}
+                                    <span class="badge-status bg-danger-soft text-danger-soft">Inativo</span>
+                                {% else %}
+                                    <span class="badge-status bg-warning-soft text-warning-soft">{{ funcionario.get_status_display }}</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
                     </div>
                 </div>
+            </div>
+        </div>
 
+        <!-- Aba: Admissão -->
+        <div class="tab-pane fade" id="admissao-pane" role="tabpanel">
+            <div class="content-card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row data-list mb-0">
+                            <dt class="col-sm-5">Matrícula</dt>
+                            <dd class="col-sm-7"><code>{{ funcionario.matricula }}</code></dd>
+                            
+                            <dt class="col-sm-5">Cargo</dt>
+                            <dd class="col-sm-7">{{ funcionario.cargo.nome|default:"-" }}</dd>
+                            
+                            <dt class="col-sm-5">Departamento</dt>
+                            <dd class="col-sm-7">{{ funcionario.departamento.nome|default:"-" }}</dd>
+                            
+                            <dt class="col-sm-5">Cliente/Contrato</dt>
+                            <dd class="col-sm-7">
+                                {% if funcionario.cliente %}
+                                    {{ funcionario.cliente.contrato|default:"000" }} - {{ funcionario.cliente.nome }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row data-list mb-0">
+                            <dt class="col-sm-5">Data de Admissão</dt>
+                            <dd class="col-sm-7">{{ funcionario.data_admissao|date:"d/m/Y"|default:"-" }}</dd>
+                            
+                            <dt class="col-sm-5">Data de Demissão</dt>
+                            <dd class="col-sm-7">{{ funcionario.data_demissao|date:"d/m/Y"|default:"-" }}</dd>
+                            
+                            <dt class="col-sm-5">Salário</dt>
+                            <dd class="col-sm-7">
+                                <span class="{% if funcionario.salario > 0 %}text-success{% else %}text-danger{% endif %}">
+                                    R$ {{ funcionario.salario|floatformat:2|default:"0,00" }}
+                                </span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aba: Documentos -->
+        <div class="tab-pane fade" id="documentos-pane" role="tabpanel">
+            <div class="content-card-header border-top-0">
+                <h5 class="mb-0">Documentos Cadastrados</h5>
+                <a href="{% url 'departamento_pessoal:adicionar_documento' funcionario.pk %}" 
+                   class="btn btn-sm btn-primary" style="border-radius: 50px;">
+                    <i class="bi bi-plus-circle me-1"></i> Adicionar
+                </a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-modern">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Número</th>
+                            <th class="text-center">Anexo</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in funcionario.documentos_dp.all %}
+                        <tr>
+                            <td>
+                                <i class="bi bi-file-earmark me-1" style="color: var(--dp-primary-light);"></i>
+                                {{ doc.get_tipo_documento_display }}
+                            </td>
+                            <td><code>{{ doc.numero|default:"-" }}</code></td>
+                            <td class="text-center">
+                                {% if doc.anexo %}
+                                    <a href="{{ doc.anexo.url }}" target="_blank" 
+                                       class="btn btn-sm btn-outline-secondary" style="border-radius: 50px;">
+                                        <i class="bi bi-paperclip me-1"></i> Ver
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'departamento_pessoal:editar_documentos' pk=doc.pk %}" 
+                                   class="btn btn-sm btn-outline-primary" style="border-radius: 50px;">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'departamento_pessoal:excluir_documento' pk=doc.pk %}" 
+                                   class="btn btn-sm btn-outline-danger" style="border-radius: 50px;">
+                                    <i class="bi bi-trash3"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">
+                                <div class="empty-state py-4">
+                                    <div class="empty-state-icon" style="width: 60px; height: 60px;">
+                                        <i class="bi bi-file-earmark-x" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <h6>Nenhum documento cadastrado</h6>
+                                    <p class="small">Adicione documentos como CPF, RG, CTPS, etc.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script>
-// Ativa os toasts de mensagens (notificações)
-document.addEventListener('DOMContentLoaded', function () {
-    var toastElList = [].slice.call(document.querySelectorAll('.toast'));
-    var toastList = toastElList.map(function (toastEl) {
-        return new bootstrap.Toast(toastEl, { delay: 5000 }); // 5 segundos
-    });
-    toastList.forEach(toast => toast.show());
-});
-</script>
-{% endblock %}
+

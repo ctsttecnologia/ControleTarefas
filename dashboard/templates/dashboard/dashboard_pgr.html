@@ -1,0 +1,398 @@
+
+<!-- Dashboard Principal do PGR - Visão Geral, Riscos e Planos de Ação -->
+{% extends "dashboard/_base_dashboard.html" %}
+
+{% block dashboard_content %}
+
+    <!-- Hero -->
+    <div class="dash-hero hero-blue">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-shield-fill-check me-2"></i>{{ title }}</h1>
+                <p>Visão geral do Programa de Gerenciamento de Riscos</p>
+            </div>
+            <div class="d-flex gap-2 no-print">
+                <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+                <a href="?cycle=true" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-play-fill me-1"></i> Modo TV
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-primary"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
+                        <i class="bi bi-file-earmark-text text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-primary">{{ total_documentos }}</div>
+                        <div class="kpi-label">Documentos</div>
+                        <div class="kpi-sub text-success">
+                            <i class="bi bi-check-circle me-1"></i>{{ documentos_vigentes }} vigentes
+                        </div>
+                        {% if documentos_vencidos > 0 %}
+                        <div class="kpi-sub text-danger">
+                            <i class="bi bi-x-circle me-1"></i>{{ documentos_vencidos }} vencidos
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-danger"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-danger bg-opacity-10">
+                        <i class="bi bi-exclamation-triangle text-danger"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-danger">{{ riscos_criticos|length }}</div>
+                        <div class="kpi-label">Riscos Críticos</div>
+                        <div class="kpi-sub text-muted">
+                            Não controlados
+                            {% if total_riscos > 0 %} · {{ total_riscos }} total{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-warning"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-warning bg-opacity-10">
+                        <i class="bi bi-list-task text-warning"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-warning">{{ planos_pendentes }}</div>
+                        <div class="kpi-label">Planos Pendentes</div>
+                        {% if planos_atrasados > 0 %}
+                        <div class="kpi-sub text-danger">
+                            <i class="bi bi-exclamation-circle me-1"></i>{{ planos_atrasados }} atrasado{{ planos_atrasados|pluralize:"s" }}
+                        </div>
+                        {% else %}
+                        <div class="kpi-sub text-success">
+                            <i class="bi bi-check me-1"></i>Nenhum atrasado
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-success"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-success bg-opacity-10">
+                        <i class="bi bi-people text-success"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-success">{{ total_ges }}</div>
+                        <div class="kpi-label">GES Ativos</div>
+                        <div class="kpi-sub text-muted">Grupos de Exposição Similar</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerta: Documentos próximos ao vencimento -->
+    {% if documentos_proximo_vencimento %}
+    <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-start gap-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
+        <div>
+            <h6 class="alert-heading mb-1">Documentos próximos ao vencimento</h6>
+            <ul class="mb-0 ps-3">
+                {% for doc in documentos_proximo_vencimento %}
+                <li>
+                    <strong>{{ doc.codigo_documento }}</strong> — {{ doc.empresa }}
+                    <span class="text-danger fw-bold ms-1">
+                        ({{ doc.dias_para_vencimento }} dia{{ doc.dias_para_vencimento|pluralize:"s" }})
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Charts -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card dash-card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart text-warning me-2"></i>Riscos por Classificação</h5>
+                    {% if total_riscos %}
+                    <span class="badge bg-secondary rounded-pill">{{ total_riscos }} total</span>
+                    {% endif %}
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    {% if total_riscos > 0 %}
+                    <div style="position: relative; width: 100%; max-width: 280px; margin: 0 auto;">
+                        <canvas id="chartRiscosClassificacao"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-pie-chart" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">Nenhum risco cadastrado</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card dash-card shadow-sm h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart text-primary me-2"></i>Riscos por Status</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    {% if total_riscos > 0 %}
+                    <div style="position: relative; width: 100%; max-width: 400px; max-height: 250px; margin: 0 auto;">
+                        <canvas id="chartRiscosStatus"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-bar-chart" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0">Nenhum risco cadastrado</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Listas -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card dash-card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history text-info me-2"></i>Últimas Revisões</h5>
+                </div>
+                <div class="p-0">
+                    {% for doc in ultimas_revisoes %}
+                    <div class="dash-list-item">
+                        <div>
+                            <div class="fw-bold" style="font-size: 0.9rem;">{{ doc.codigo_documento }}</div>
+                            <small class="text-muted">
+                                {{ doc.empresa }} — {{ doc.atualizado_em|date:"d/m/Y H:i" }}
+                            </small>
+                        </div>
+                        <span class="badge rounded-pill
+                            {% if doc.status == 'vigente' or doc.status == 'ativo' or doc.status == 'aprovado' %}bg-success
+                            {% elif doc.status == 'em_revisao' %}bg-warning text-dark
+                            {% else %}bg-danger{% endif %}">
+                            {{ doc.get_status_display }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="dash-empty">
+                        <i class="bi bi-inbox"></i>
+                        <h6>Nenhum documento registrado</h6>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card dash-card shadow-sm h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-journal-check text-warning me-2"></i>Últimos Planos de Ação</h5>
+                </div>
+                <div class="p-0">
+                    {% for plano in ultimos_planos %}
+                    <div class="dash-list-item">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold" style="font-size: 0.9rem;">{{ plano.acao|truncatechars:60 }}</div>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>Prazo: {{ plano.data_prevista|date:"d/m/Y"|default:"Sem prazo" }}
+                                {% if plano.data_prevista and plano.data_prevista < hoje and plano.status != 'concluido' %}
+                                    <span class="text-danger ms-1">
+                                        <i class="bi bi-exclamation-circle"></i> Atrasado
+                                    </span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        <span class="badge rounded-pill
+                            {% if plano.status == 'concluido' %}bg-success
+                            {% elif plano.status == 'em_andamento' %}bg-primary
+                            {% elif plano.status == 'cancelado' %}bg-secondary
+                            {% else %}bg-warning text-dark{% endif %}">
+                            {{ plano.get_status_display }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="dash-empty">
+                        <i class="bi bi-inbox"></i>
+                        <h6>Nenhum plano de ação registrado</h6>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block dashboard_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classificacaoData = {{ riscos_por_classificacao|safe }};
+    const statusData = {{ riscos_por_status|safe }};
+
+    // ═══ Tema claro ═══
+    Chart.defaults.color = '#495057';
+    Chart.defaults.borderColor = 'rgba(0, 0, 0, 0.08)';
+
+    const CORES_CLASSIFICACAO = {
+        'negligenciavel': { cor: '#1cc88a', label: 'Negligenciável' },
+        'marginal':       { cor: '#36b9cc', label: 'Marginal' },
+        'moderado':       { cor: '#f6c23e', label: 'Moderado' },
+        'muito_grave':    { cor: '#e74a3b', label: 'Muito Grave' },
+        'critico':        { cor: '#a71d2a', label: 'Crítico' },
+    };
+
+    const CORES_STATUS = {
+        'identificado': { cor: '#fd7e14', label: 'Identificado' },
+        'em_controle':  { cor: '#f6c23e', label: 'Em Controle' },
+        'controlado':   { cor: '#1cc88a', label: 'Controlado' },
+        'eliminado':    { cor: '#858796', label: 'Eliminado' },
+    };
+
+    const PALETA_FALLBACK = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'];
+
+    function getLabel(key, mapa) {
+        return mapa[key] ? mapa[key].label : key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function getCor(key, mapa, index) {
+        return mapa[key] ? mapa[key].cor : PALETA_FALLBACK[index % PALETA_FALLBACK.length];
+    }
+
+    // ── Doughnut: Classificação ──
+    if (classificacaoData.length > 0) {
+        const ctx1 = document.getElementById('chartRiscosClassificacao');
+        if (ctx1) {
+            new Chart(ctx1.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: classificacaoData.map(i => getLabel(i.classificacao_risco, CORES_CLASSIFICACAO)),
+                    datasets: [{
+                        data: classificacaoData.map(i => i.total),
+                        backgroundColor: classificacaoData.map((i, idx) =>
+                            getCor(i.classificacao_risco, CORES_CLASSIFICACAO, idx)
+                        ),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 3,
+                        hoverBorderColor: '#333333',
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '55%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 12,
+                                color: '#495057',
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                font: { size: 11, weight: '500' }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#ffffff',
+                            titleColor: '#212529',
+                            bodyColor: '#495057',
+                            borderColor: '#dee2e6',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            boxPadding: 4,
+                            callbacks: {
+                                label: function(ctx) {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // ── Bar: Status ──
+    if (statusData.length > 0) {
+        const ctx2 = document.getElementById('chartRiscosStatus');
+        if (ctx2) {
+            new Chart(ctx2.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: statusData.map(i => getLabel(i.status_controle, CORES_STATUS)),
+                    datasets: [{
+                        label: 'Riscos',
+                        data: statusData.map(i => i.total),
+                        backgroundColor: statusData.map((i, idx) =>
+                            getCor(i.status_controle, CORES_STATUS, idx)
+                        ),
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        maxBarThickness: 50
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, precision: 0, color: '#6c757d' },
+                            grid: { color: 'rgba(0, 0, 0, 0.06)' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#6c757d', font: { size: 11 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#ffffff',
+                            titleColor: '#212529',
+                            bodyColor: '#495057',
+                            borderColor: '#dee2e6',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ` ${ctx.parsed.y} risco${ctx.parsed.y !== 1 ? 's' : ''}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}
+

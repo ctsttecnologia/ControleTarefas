@@ -1,35 +1,177 @@
 
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}{{ titulo|default:"Acesso Negado" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .denied-container {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+    }
+
+    .denied-card {
+        max-width: 560px;
+        width: 100%;
+        border: none;
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .denied-header {
+        background: linear-gradient(135deg, #e74a3b 0%, #9b1b0e 100%);
+        padding: 2.5rem 2rem 2rem;
+        text-align: center;
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .denied-header::after {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -15%;
+        width: 220px;
+        height: 220px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .denied-header::before {
+        content: '';
+        position: absolute;
+        bottom: -25%;
+        left: -10%;
+        width: 160px;
+        height: 160px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .denied-icon {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.25rem;
+        font-size: 2.5rem;
+        position: relative;
+    }
+    .denied-header h2 {
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+        position: relative;
+    }
+    .denied-header p {
+        opacity: 0.85;
+        font-size: 0.85rem;
+        margin: 0;
+        position: relative;
+    }
+
+    .denied-body { padding: 2.5rem; text-align: center; }
+
+    .denied-message {
+        font-size: 1.05rem;
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+
+    .denied-info {
+        background: #fff5f5;
+        border: 1px solid #fed7d7;
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 2rem;
+        text-align: left;
+    }
+    .denied-info p {
+        font-size: 0.85rem;
+        color: #9b2c2c;
+        margin-bottom: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .denied-info i { color: #e74a3b; font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+
+    .btn-denied-back {
+        background: linear-gradient(135deg, #4e73df, #224abe);
+        border: none;
+        color: #fff;
+        padding: 0.75rem 2rem;
+        border-radius: 0.625rem;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+    .btn-denied-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(78,115,223,0.35);
+        color: #fff;
+    }
+
+    .denied-code {
+        font-size: 5rem;
+        font-weight: 800;
+        color: rgba(231,74,59,0.15);
+        line-height: 1;
+        margin-bottom: -1rem;
+        position: relative;
+    }
+
+    [data-bs-theme="dark"] .denied-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    [data-bs-theme="dark"] .denied-body { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .denied-message { color: #a0aec0; }
+    [data-bs-theme="dark"] .denied-info { background: rgba(231,74,59,0.06); border-color: rgba(231,74,59,0.15); }
+    [data-bs-theme="dark"] .denied-info p { color: #fca5a5; }
+    [data-bs-theme="dark"] .denied-code { color: rgba(231,74,59,0.1); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 col-md-10">
-            
-            <div class="card shadow-sm border-danger">
-                <div class="card-header bg-danger text-white d-flex align-items-center">
-                    <i class="bi bi-shield-lock-fill fs-4 me-3"></i>
-                    <h4 class="mb-0">{{ titulo|default:"Acesso Negado" }}</h4>
-                </div>
-                <div class="card-body p-4 p-md-5 text-center">
-                    
-                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem; margin-bottom: 1.5rem;"></i>
+<div class="denied-container">
+    <div class="card denied-card">
 
-                    <h5 class="card-title">Ops! Parece que você não tem permissão.</h5>
-                    
-                    <p class="fs-5 text-muted mt-3">
-                        {{ mensagem|default:"Você não tem as permissões necessárias para visualizar esta página." }}
-                    </p>
-                    
-                    <a href="{% url 'usuario:profile' %}" class="btn btn-primary mt-4">
-                        <i class="bi bi-house-door-fill me-2"></i>
-                        Voltar para o Painel
-                    </a>
-                </div>
+        <div class="denied-header">
+            <div class="denied-icon">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h2>{{ titulo|default:"Acesso Negado" }}</h2>
+            <p>Erro 403 — Permissão insuficiente</p>
+        </div>
+
+        <div class="denied-body">
+            <div class="denied-code">403</div>
+
+            <p class="denied-message">
+                {{ mensagem|default:"Você não tem as permissões necessárias para visualizar esta página." }}
+            </p>
+
+            <div class="denied-info">
+                <p>
+                    <i class="bi bi-info-circle-fill"></i>
+                    <span>
+                        Se você acredita que deveria ter acesso, entre em contato com o administrador do sistema
+                        para solicitar as permissões necessárias.
+                    </span>
+                </p>
             </div>
 
+            <a href="{% url 'usuario:profile' %}" class="btn btn-denied-back">
+                <i class="bi bi-house-door-fill me-2"></i> Voltar para o Painel
+            </a>
         </div>
     </div>
 </div>

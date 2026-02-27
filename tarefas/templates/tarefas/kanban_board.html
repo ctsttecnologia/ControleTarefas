@@ -1,119 +1,120 @@
+
+<!-- templates/tarefas/kanban_board.html -->
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Quadro Kanban{% endblock %}
+
 {% block extra_css %}
-    {# Link para seu CSS customizado, se necessário #}
-    <link rel="stylesheet" href="{% static 'css/tarefas/kanban.css' %}">
+<link rel="stylesheet" href="{% static 'css/tarefas/kanban.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid p-3 p-md-4">
-    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
-        <h1 class="h3 mb-0">Quadro Kanban</h1>
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-kanban me-2"></i>Quadro Kanban
+            </h1>
+            <p class="text-muted mb-0 small">Arraste e solte para alterar o status</p>
+        </div>
         <div class="d-flex gap-2">
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-list-ul me-1"></i>
-                Ver em Lista
+                <i class="bi bi-list-ul me-1"></i> Lista
             </a>
             <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-calendar3 me-1"></i>
-                Calendário
+                <i class="bi bi-calendar3 me-1"></i> Calendário
             </a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-lg me-1"></i>
-                Nova Tarefa
+                <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
             </a>
         </div>
-    </header>
+    </div>
 
+    <!-- Board -->
     <div class="kanban-board d-flex gap-3 overflow-auto pb-3">
         {% for coluna in colunas %}
-            <div class="kanban-column">
-                <div class="kanban-column-header">
-                    <h2 class="h6 mb-0 text-uppercase fw-bold">{{ coluna.nome }}</h2>
-                    <span class="badge bg-dark-subtle text-emphasis-dark rounded-pill">{{ coluna.tarefas|length }}</span>
-                </div>
-                
-                <div class="kanban-cards-container custom-scrollbar" id="{{ coluna.id }}">
-                    {% for tarefa in coluna.tarefas %}
-                        {# Aqui, incluímos o componente de card para cada tarefa #}
-                        {% include "tarefas/_task_card.html" with tarefa=tarefa now=now %}
-                    {% empty %}
-                        <div class="text-center text-muted p-5 small fst-italic">
-                            Nenhuma tarefa aqui.
-                        </div>
-                    {% endfor %}
-                </div>
+        <div class="kanban-column">
+            <div class="kanban-column-header">
+                <h2 class="h6 mb-0 text-uppercase fw-bold">{{ coluna.nome }}</h2>
+                <span class="badge bg-dark-subtle text-emphasis-dark rounded-pill">
+                    {{ coluna.tarefas|length }}
+                </span>
             </div>
+
+            <div class="kanban-cards-container custom-scrollbar" id="{{ coluna.id }}">
+                {% for tarefa in coluna.tarefas %}
+                {% include "tarefas/_task_card.html" with tarefa=tarefa now=now %}
+                {% empty %}
+                <div class="text-center text-muted p-5 small fst-italic">
+                    Nenhuma tarefa aqui.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
         {% endfor %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Inicializa os tooltips do Bootstrap (para o avatar do responsável)
-            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
 
-            // Lógica do Drag-and-Drop com SortableJS
-            const kanbanContainers = document.querySelectorAll('.kanban-cards-container');
-            kanbanContainers.forEach(container => {
-                new Sortable(container, {
-                    group: 'kanban', // Permite arrastar entre colunas
-                    animation: 150,
-                    ghostClass: 'kanban-ghost', // Classe para o item fantasma
-                    onEnd: function (evt) {
-                        const taskId = evt.item.dataset.taskId;
-                        const newStatus = evt.to.id;
-                        updateTaskStatus(taskId, newStatus);
-                    }
-                });
-            });
-
-            // Função para obter o CSRF token para requisições POST
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
+    // CSRF Token
+    function getCookie(name) {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
+            if (cookie.startsWith(name + '=')) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
             }
+        }
+        return null;
+    }
 
-            // Função para enviar a atualização de status para o backend via AJAX/Fetch
-            function updateTaskStatus(taskId, newStatus) {
-                const csrftoken = getCookie('csrftoken');
-                const url = "{% url 'tarefas:update_task_status' %}";
+    // Sortable (Drag & Drop)
+    document.querySelectorAll('.kanban-cards-container').forEach(container => {
+        new Sortable(container, {
+            group: 'kanban',
+            animation: 150,
+            ghostClass: 'kanban-ghost',
+            onEnd: function(evt) {
+                const taskId = evt.item.dataset.taskId;
+                const newStatus = evt.to.id;
 
-                fetch(url, {
+                fetch("{% url 'tarefas:update_task_status' %}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': csrftoken
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: `task_id=${taskId}&new_status=${newStatus}`
                 })
-                .then(response => response.json())
+                .then(r => r.json())
                 .then(data => {
                     if (!data.success) {
-                        console.error('Falha ao atualizar o status:', data.message);
-                        // Opcional: reverter a ação no frontend ou mostrar um erro
+                        console.error('Erro:', data.message);
+                        location.reload();
                     }
                 })
-                .catch(error => console.error('Erro na requisição AJAX:', error));
+                .catch(err => {
+                    console.error('Erro AJAX:', err);
+                    location.reload();
+                });
             }
         });
-    </script>
+    });
+});
+</script>
 {% endblock %}
+
 

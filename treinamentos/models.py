@@ -1,3 +1,4 @@
+#Treinamentos/models.py#
 
 import uuid
 from django.core.signing import Signer
