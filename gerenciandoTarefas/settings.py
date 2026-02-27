@@ -306,8 +306,9 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 # Configurações de E-mail para notificações PGR
-EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR')
-EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO')
+EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='seu-email@empresa.com')
+EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='seu-email@empresa.com')
+
 
 # =============================================================================
 # REST FRAMEWORK
