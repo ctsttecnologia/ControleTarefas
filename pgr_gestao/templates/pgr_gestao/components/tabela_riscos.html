@@ -1,0 +1,541 @@
+
+{% load static %}
+
+<!-- 
+    Component: Tabela de Riscos Reutilizável
+    
+    Parâmetros esperados:
+    - riscos: QuerySet de riscos
+    - show_ges: Boolean (mostrar coluna GES)
+    - show_documento: Boolean (mostrar coluna Documento PGR)
+    - show_actions: Boolean (mostrar coluna de ações)
+    - compact: Boolean (versão compacta)
+    - filterable: Boolean (adicionar filtros)
+    
+    Uso:
+    {% include 'pgr_gestao/components/tabela_riscos.html' with riscos=riscos show_ges=True show_actions=True %}
+-->
+
+{% if filterable %}
+<!-- Filtros Rápidos -->
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2" id="filtros-riscos">
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filtro-classificacao">
+                    <option value="">Todas Classificações</option>
+                    <option value="critico">Crítico</option>
+                    <option value="muito_grave">Muito Grave</option>
+                    <option value="moderado">Moderado</option>
+                    <option value="marginal">Marginal</option>
+                    <option value="negligenciavel">Negligenciável</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filtro-status">
+                    <option value="">Todos Status</option>
+                    <option value="identificado">Identificado</option>
+                    <option value="em_controle">Em Controle</option>
+                    <option value="controlado">Controlado</option>
+                    <option value="eliminado">Eliminado</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select form-select-sm" id="filtro-categoria">
+                    <option value="">Todas Categorias</option>
+                    <option value="fisico">Físico</option>
+                    <option value="quimico">Químico</option>
+                    <option value="biologico">Biológico</option>
+                    <option value="ergonomico">Ergonômico</option>
+                    <option value="acidente">Acidente</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <input type="text" class="form-control form-control-sm" id="busca-rapida" 
+                       placeholder="🔍 Buscar agente, fonte geradora...">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-sm btn-secondary w-100" id="limpar-filtros">
+                    <i class="fas fa-eraser"></i> Limpar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Tabela de Riscos -->
+<div class="table-responsive">
+    <table class="table table-hover table-bordered {% if compact %}table-sm{% endif %}" id="tabela-riscos">
+        <thead class="table-light">
+            <tr>
+                {% if not compact %}
+                <th style="width: 80px;" class="text-center">
+                    <i class="fas fa-hashtag"></i> Código
+                </th>
+                {% endif %}
+                
+                <th style="width: 100px;">
+                    <i class="fas fa-layer-group"></i> Tipo
+                </th>
+                
+                <th style="width: 200px;">
+                    <i class="fas fa-exclamation-triangle"></i> Agente
+                </th>
+                
+                {% if not compact %}
+                <th style="width: 180px;">
+                    <i class="fas fa-industry"></i> Fonte Geradora
+                </th>
+                {% endif %}
+                
+                {% if show_ges %}
+                <th style="width: 150px;">
+                    <i class="fas fa-users"></i> GES
+                </th>
+                {% endif %}
+                
+                {% if show_documento %}
+                <th style="width: 120px;">
+                    <i class="fas fa-file-alt"></i> Documento
+                </th>
+                {% endif %}
+                
+                <th style="width: 120px;" class="text-center">
+                    <i class="fas fa-tachometer-alt"></i> Classificação
+                </th>
+                
+                <th style="width: 100px;" class="text-center">
+                    <i class="fas fa-shield-alt"></i> Status
+                </th>
+                
+                {% if not compact %}
+                <th style="width: 90px;" class="text-center" title="Gravidade">G</th>
+                <th style="width: 90px;" class="text-center" title="Exposição">E</th>
+                <th style="width: 90px;" class="text-center" title="Severidade">S</th>
+                <th style="width: 90px;" class="text-center" title="Probabilidade">P</th>
+                {% endif %}
+                
+                <th style="width: 100px;" class="text-center">
+                    <i class="fas fa-flag"></i> Prioridade
+                </th>
+                
+                {% if show_actions %}
+                <th style="width: 150px;" class="text-center">
+                    <i class="fas fa-cog"></i> Ações
+                </th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for risco in riscos %}
+            <tr class="risco-row" 
+                data-classificacao="{{ risco.classificacao_risco }}"
+                data-status="{{ risco.status_controle }}"
+                data-categoria="{{ risco.tipo_risco.categoria }}"
+                data-agente="{{ risco.agente|lower }}"
+                data-fonte="{{ risco.fonte_geradora|lower|default:'' }}"
+                {% if not show_actions %}
+                onclick="window.location='{% url 'pgr_gestao:risco_detail' risco.pk %}'"
+                style="cursor: pointer;"
+                {% endif %}>
+                
+                {% if not compact %}
+                <td class="text-center">
+                    <strong>{{ risco.codigo_risco|default:"N/A" }}</strong>
+                </td>
+                {% endif %}
+                
+                <td>
+                    <span class="badge bg-secondary" title="{{ risco.tipo_risco.get_categoria_display }}">
+                        {% if risco.tipo_risco.categoria == 'fisico' %}
+                        <i class="fas fa-temperature-high"></i>
+                        {% elif risco.tipo_risco.categoria == 'quimico' %}
+                        <i class="fas fa-flask"></i>
+                        {% elif risco.tipo_risco.categoria == 'biologico' %}
+                        <i class="fas fa-virus"></i>
+                        {% elif risco.tipo_risco.categoria == 'ergonomico' %}
+                        <i class="fas fa-user-injured"></i>
+                        {% elif risco.tipo_risco.categoria == 'acidente' %}
+                        <i class="fas fa-hard-hat"></i>
+                        {% endif %}
+                        {{ risco.tipo_risco.get_categoria_display|truncatewords:1 }}
+                    </span>
+                    {% if not compact %}
+                    <br><small class="text-muted">{{ risco.tipo_risco.nome|truncatewords:3 }}</small>
+                    {% endif %}
+                </td>
+                
+                <td>
+                    <strong>{{ risco.agente|truncatewords:5 }}</strong>
+                    {% if not compact and risco.meio_propagacao %}
+                    <br><small class="text-muted">
+                        <i class="fas fa-arrow-right"></i> {{ risco.meio_propagacao|truncatewords:5 }}
+                    </small>
+                    {% endif %}
+                </td>
+                
+                {% if not compact %}
+                <td>
+                    {% if risco.fonte_geradora %}
+                    {{ risco.fonte_geradora|truncatewords:5 }}
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                
+                {% if show_ges %}
+                <td>
+                    {% if risco.ges %}
+                    <a href="{% url 'pgr_gestao:ges_detail' risco.ges.pk %}" 
+                       class="text-decoration-none" 
+                       onclick="event.stopPropagation();">
+                        <span class="badge bg-info">{{ risco.ges.codigo }}</span>
+                        <br><small>{{ risco.ges.nome|truncatewords:3 }}</small>
+                    </a>
+                    {% else %}
+                    <span class="text-muted">N/A</span>
+                    {% endif %}
+                </td>
+                {% endif %}
+                
+                {% if show_documento %}
+                <td>
+                    <a href="{% url 'pgr_gestao:documento_detail' risco.pgr_documento.pk %}" 
+                       class="text-decoration-none"
+                       onclick="event.stopPropagation();">
+                        <small>{{ risco.pgr_documento.codigo_documento }}</small>
+                    </a>
+                </td>
+                {% endif %}
+                
+                <td class="text-center">
+                    <span class="badge badge-risco-{{ risco.classificacao_risco }}" 
+                          style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
+                        {{ risco.get_classificacao_risco_display|upper }}
+                    </span>
+                    {% if not compact %}
+                    <br><small class="text-muted">
+                        {% if risco.metodo_avaliacao == 'quantitativo' %}
+                        <i class="fas fa-chart-line" title="Avaliação Quantitativa"></i>
+                        {% else %}
+                        <i class="fas fa-clipboard-list" title="Avaliação Qualitativa"></i>
+                        {% endif %}
+                    </small>
+                    {% endif %}
+                </td>
+                
+                <td class="text-center">
+                    {% if risco.status_controle == 'controlado' %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-check-circle"></i> Controlado
+                    </span>
+                    {% elif risco.status_controle == 'em_controle' %}
+                    <span class="badge bg-info">
+                        <i class="fas fa-sync"></i> Em Controle
+                    </span>
+                    {% elif risco.status_controle == 'eliminado' %}
+                    <span class="badge bg-dark">
+                        <i class="fas fa-ban"></i> Eliminado
+                    </span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">
+                        <i class="fas fa-exclamation"></i> Identificado
+                    </span>
+                    {% endif %}
+                </td>
+                
+                {% if not compact %}
+                <td class="text-center">
+                    <span class="badge bg-primary" style="font-size: 1rem;">{{ risco.gravidade_g }}</span>
+                    <br><small class="text-muted">{{ risco.get_gravidade_g_display|default:"N/A"|truncatewords:2 }}</small>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-primary" style="font-size: 1rem;">{{ risco.exposicao_e }}</span>
+                    <br><small class="text-muted">{{ risco.get_exposicao_e_display|default:"N/A"|truncatewords:2 }}</small>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-primary" style="font-size: 1rem;">{{ risco.severidade_s }}</span>
+                    <br><small class="text-muted">Sev.</small>
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-primary" style="font-size: 1rem;">{{ risco.probabilidade_p }}</span>
+                    <br><small class="text-muted">{{ risco.get_probabilidade_p_display|default:"N/A"|truncatewords:2 }}</small>
+                </td>
+                {% endif %}
+                
+                <td class="text-center">
+                    {% if risco.prioridade_acao == 'critica' %}
+                    <span class="badge bg-danger" style="font-size: 0.85rem;">
+                        <i class="fas fa-fire"></i> CRÍTICA
+                    </span>
+                    {% elif risco.prioridade_acao == 'alta' %}
+                    <span class="badge bg-warning text-dark" style="font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-triangle"></i> ALTA
+                    </span>
+                    {% elif risco.prioridade_acao == 'media' %}
+                    <span class="badge bg-info" style="font-size: 0.85rem;">
+                        <i class="fas fa-info-circle"></i> MÉDIA
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary" style="font-size: 0.85rem;">
+                        <i class="fas fa-arrow-down"></i> BAIXA
+                    </span>
+                    {% endif %}
+                </td>
+                
+                {% if show_actions %}
+                <td class="text-center" onclick="event.stopPropagation();">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{% url 'pgr_gestao:risco_detail' risco.pk %}" 
+                           class="btn btn-info" 
+                           title="Visualizar Detalhes"
+                           data-bs-toggle="tooltip">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        
+                        {% if perms.pgr_gestao.change_riscoidentificado %}
+                        <a href="{% url 'pgr_gestao:risco_update' risco.pk %}" 
+                           class="btn btn-warning" 
+                           title="Editar Risco"
+                           data-bs-toggle="tooltip">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'pgr_gestao:plano_acao_create' %}?risco={{ risco.pk }}" 
+                           class="btn btn-success" 
+                           title="Criar Plano de Ação"
+                           data-bs-toggle="tooltip">
+                            <i class="fas fa-tasks"></i>
+                        </a>
+                        
+                        {% if not compact %}
+                        <a href="{% url 'pgr_gestao:avaliacao_create_risco' risco.pk %}" 
+                           class="btn btn-primary" 
+                           title="Nova Avaliação"
+                           data-bs-toggle="tooltip">
+                            <i class="fas fa-chart-line"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+                {% endif %}
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="{% if compact %}6{% elif show_actions %}14{% else %}13{% endif %}" 
+                    class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                    <p class="mb-0">Nenhum risco identificado.</p>
+                    {% if perms.pgr_gestao.add_riscoidentificado %}
+                    <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus"></i> Identificar Primeiro Risco
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        
+        {% if riscos %}
+        <tfoot class="table-light">
+            <tr>
+                <td colspan="{% if compact %}6{% elif show_actions %}14{% else %}13{% endif %}" class="text-center">
+                    <strong>Total de Riscos:</strong> {{ riscos|length }}
+                    {% if filterable %}
+                    <span id="riscos-filtrados" class="ms-2 text-muted" style="display: none;">
+                        (<span id="count-filtrados">0</span> filtrados)
+                    </span>
+                    {% endif %}
+                </td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+</div>
+
+<!-- Legenda de Classificação -->
+{% if not compact %}
+<div class="card mt-3">
+    <div class="card-body">
+        <h6 class="card-title">
+            <i class="fas fa-info-circle"></i> Legenda de Classificação de Riscos
+        </h6>
+        <div class="row text-center">
+            <div class="col">
+                <span class="badge badge-risco-critico">Crítico</span>
+                <br><small class="text-muted">Ação Imediata</small>
+            </div>
+            <div class="col">
+                <span class="badge badge-risco-muito_grave">Muito Grave</span>
+                <br><small class="text-muted">Correção Urgente</small>
+            </div>
+            <div class="col">
+                <span class="badge badge-risco-moderado">Moderado</span>
+                <br><small class="text-muted">Atenção Necessária</small>
+            </div>
+            <div class="col">
+                <span class="badge badge-risco-marginal">Marginal</span>
+                <br><small class="text-muted">Manter Atenção</small>
+            </div>
+            <div class="col">
+                <span class="badge badge-risco-negligenciavel">Negligenciável</span>
+                <br><small class="text-muted">Risco Mínimo</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Scripts de Filtros -->
+{% if filterable %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroClassificacao = document.getElementById('filtro-classificacao');
+    const filtroStatus = document.getElementById('filtro-status');
+    const filtroCategoria = document.getElementById('filtro-categoria');
+    const buscaRapida = document.getElementById('busca-rapida');
+    const limparFiltros = document.getElementById('limpar-filtros');
+    const riscosFiltrados = document.getElementById('riscos-filtrados');
+    const countFiltrados = document.getElementById('count-filtrados');
+    
+    function filtrarRiscos() {
+        const classificacao = filtroClassificacao.value.toLowerCase();
+        const status = filtroStatus.value.toLowerCase();
+        const categoria = filtroCategoria.value.toLowerCase();
+        const busca = buscaRapida.value.toLowerCase();
+        
+        const rows = document.querySelectorAll('.risco-row');
+        let count = 0;
+        
+        rows.forEach(row => {
+            const rowClass = row.dataset.classificacao;
+            const rowStatus = row.dataset.status;
+            const rowCategoria = row.dataset.categoria;
+            const rowAgente = row.dataset.agente;
+            const rowFonte = row.dataset.fonte;
+            
+            let mostrar = true;
+            
+            // Filtro de classificação
+            if (classificacao && rowClass !== classificacao) {
+                mostrar = false;
+            }
+            
+            // Filtro de status
+            if (status && rowStatus !== status) {
+                mostrar = false;
+            }
+            
+            // Filtro de categoria
+            if (categoria && rowCategoria !== categoria) {
+                mostrar = false;
+            }
+            
+            // Busca textual
+            if (busca && !rowAgente.includes(busca) && !rowFonte.includes(busca)) {
+                mostrar = false;
+            }
+            
+            // Mostrar/ocultar linha
+            if (mostrar) {
+                row.style.display = '';
+                count++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Atualizar contador
+        if (classificacao || status || categoria || busca) {
+            riscosFiltrados.style.display = '';
+            countFiltrados.textContent = count;
+        } else {
+            riscosFiltrados.style.display = 'none';
+        }
+    }
+    
+    // Event listeners
+    filtroClassificacao.addEventListener('change', filtrarRiscos);
+    filtroStatus.addEventListener('change', filtrarRiscos);
+    filtroCategoria.addEventListener('change', filtrarRiscos);
+    buscaRapida.addEventListener('input', filtrarRiscos);
+    
+    limparFiltros.addEventListener('click', function() {
+        filtroClassificacao.value = '';
+        filtroStatus.value = '';
+        filtroCategoria.value = '';
+        buscaRapida.value = '';
+        filtrarRiscos();
+    });
+    
+    // Ativar tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endif %}
+
+<style>
+    /* Estilos específicos da tabela de riscos */
+    #tabela-riscos tbody tr:hover {
+        background-color: #f1f3f5;
+        transform: scale(1.01);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+    
+    .badge-risco-critico {
+        background-color: #6f0000 !important;
+        color: white !important;
+    }
+    
+    .badge-risco-muito_grave {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
+    
+    .badge-risco-moderado {
+        background-color: #fd7e14 !important;
+        color: white !important;
+    }
+    
+    .badge-risco-marginal {
+        background-color: #ffc107 !important;
+        color: #000 !important;
+    }
+    
+    .badge-risco-negligenciavel {
+        background-color: #28a745 !important;
+        color: white !important;
+    }
+    
+    /* Animação para linhas filtradas */
+    .risco-row {
+        transition: all 0.3s ease;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 768px) {
+        #tabela-riscos {
+            font-size: 0.85rem;
+        }
+        
+        #tabela-riscos .btn-group-sm .btn {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.75rem;
+        }
+    }
+    
+    /* Print styles */
+    @media print {
+        .btn-group, #filtros-riscos {
+            display: none !important;
+        }
+    }
+</style>
+

@@ -1,108 +1,81 @@
+
+{# ferramentas/devolucao_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
-{% load static %}
 {% load widget_tweaks %}
 
-{% block title %}
-    Gerenciamento de Ferramentas
+{% block ferramentas_page_title %}Devolução: {{ movimentacao.ferramenta.nome }}{% endblock %}
+
+{% block ferramentas_title %}
+    <i class="bi bi-box-arrow-in-left me-2"></i>Devolução de Ferramenta
 {% endblock %}
 
-{% block extra_css %}
+{% block ferramentas_actions %}
+    <a href="{{ movimentacao.ferramenta.get_absolute_url }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Cancelar
+    </a>
+{% endblock %}
+
+{% block ferramentas_extra_css %}
 <style>
     .signature-pad-container {
-        position: relative;
-        width: 100%;
-        /* Aumente ou diminua este valor para ajustar a altura da área de assinatura */
-        height: 250px; 
-        border: 1px dashed #ced4da; /* Borda para visualizar a área */
-        border-radius: 0.25rem;
-        background-color: #fff;
+        position: relative; width: 100%; height: 200px;
+        border: 2px dashed #dee2e6; border-radius: 0.5rem;
+        background: #fff;
     }
-
-    .signature-pad {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
+    .signature-pad-container canvas {
+        position: absolute; left: 0; top: 0; width: 100%; height: 100%;
     }
 </style>
 {% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0">Checklist de Devolução: {{ movimentacao.ferramenta.nome }}</h4>
-                    <p class="mb-0 text-muted">Retirado por: {{ movimentacao.retirado_por.get_full_name|default:movimentacao.retirado_por.username }}</p>
-                </div>
-                <div class="card-body p-4">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        {{ form.as_p }}
+{% block ferramentas_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-1">{{ movimentacao.ferramenta.nome }}</h5>
+                <small class="text-muted">
+                    Retirada por <strong>{{ movimentacao.retirado_por.get_full_name|default:movimentacao.retirado_por.username }}</strong>
+                    em {{ movimentacao.data_retirada|date:"d/m/Y H:i" }}
+                </small>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Assinatura (quem recebe de volta):</label>
-                            <div class="signature-pad-container">
-                                <canvas id="signature-pad" class="signature-pad"></canvas>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">Limpar</button>
+                    <div class="mb-3">
+                        <label for="{{ form.condicoes_devolucao.id_for_label }}" class="form-label fw-bold">
+                            Condições na Devolução
+                        </label>
+                        {% render_field form.condicoes_devolucao class="form-control" rows="3" %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Assinatura (quem recebe de volta):</label>
+                        <div class="signature-pad-container">
+                            <canvas id="signature-pad"></canvas>
                         </div>
-                        
-                        <div class="d-flex justify-content-end mt-4">
-                            <a href="{{ movimentacao.ferramenta.get_absolute_url }}" class="btn btn-secondary me-2">Cancelar</a>
-                            <button type="submit" class="btn btn-warning">Confirmar Devolução</button>
-                        </div>
-                    </form>
-                </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="clear-signature">
+                            <i class="bi bi-eraser me-1"></i>Limpar
+                        </button>
+                    </div>
+                    {% render_field form.assinatura_base64 id="id_assinatura_base64" %}
+
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ movimentacao.ferramenta.get_absolute_url }}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-warning px-4">
+                            <i class="bi bi-check-lg me-1"></i>Confirmar Devolução
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const canvas = document.getElementById('signature-pad');
-    
-    // Ajusta o canvas para responsividade
-    function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio, ratio);
-    }
-    
-    // Redimensiona o canvas quando a janela muda de tamanho e na carga inicial
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-    
-    const signaturePad = new SignaturePad(canvas, {
-        backgroundColor: 'rgb(255, 255, 255)' // Fundo branco
-    });
-
-    const form = canvas.closest('form');
-    // Usa o input hidden gerado pelo Django, se houver
-    const signatureDataInput = document.getElementById('id_assinatura_base64');
-
-    form.addEventListener('submit', function (event) {
-        if (signaturePad.isEmpty()) {
-            alert("Por favor, forneça uma assinatura para confirmar a devolução.");
-            event.preventDefault();
-        } else {
-            if (signatureDataInput) {
-                signatureDataInput.value = signaturePad.toDataURL('image/png');
-            }
-        }
-    });
-
-    document.getElementById('clear-signature').addEventListener('click', function () {
-        signaturePad.clear();
-    });
-});
-</script>
+{% block ferramentas_extra_js %}
+    {% include 'ferramentas/partials/signature_pad_js.html' %}
 {% endblock %}
+

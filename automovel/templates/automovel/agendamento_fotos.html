@@ -1,166 +1,226 @@
+<!-- Página de Visualização de Fotos do Agendamento -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
+{% block title %}Fotos — Agendamento #{{ agendamento.id }}{% endblock %}
 
-<div class="container foto-container">
-    <h2>Foto do Veículo - Agendamento #{{ agendamento.pk }}</h2>
-    
-    {% if agendamento.fotos %}
-        <div class="foto-wrapper">
-            <img src="{{ agendamento.fotos.url }}" alt="Foto do veículo" class="img-fluid foto-veiculo">
-            
-            <div class="foto-info">
-                <p><strong>Veículo:</strong> {{ agendamento.carro }}</p>
-                <p><strong>Data/Hora:</strong> {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
-                <p><strong>Status:</strong> {{ agendamento.get_status_display }}</p>
+{% block extra_css %}
+<style>
+    .photos-hero {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .photos-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 250px;
+        height: 250px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .photos-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .photos-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+
+    .info-card { border: none; border-radius: 0.875rem; }
+    .info-card .card-header {
+        background: transparent;
+        border-bottom: 2px solid #f0f2f5;
+        padding: 1.25rem 1.5rem;
+    }
+    .info-card .card-header h5 { font-weight: 700; font-size: 1rem; margin: 0; }
+
+    /* ═══ PHOTO GRID ═══ */
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+    .photo-item {
+        border: 2px solid #e9ecef;
+        border-radius: 0.875rem;
+        overflow: hidden;
+        transition: all 0.2s;
+        cursor: pointer;
+        background: #fff;
+    }
+    .photo-item:hover {
+        border-color: #4e73df;
+        box-shadow: 0 8px 25px rgba(78,115,223,0.15);
+        transform: translateY(-4px);
+    }
+    .photo-item img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        display: block;
+    }
+    .photo-item-info {
+        padding: 0.875rem 1rem;
+    }
+    .photo-item-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 0.25rem;
+    }
+    .photo-item-sub {
+        font-size: 0.75rem;
+        color: #a0aec0;
+    }
+
+    .photo-empty {
+        text-align: center;
+        padding: 3rem 2rem;
+    }
+    .photo-empty-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #f0f2f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .photo-empty-icon i { font-size: 2rem; color: #adb5bd; }
+
+    /* ═══ MODAL ═══ */
+    .photo-modal .modal-content { border: none; border-radius: 1rem; overflow: hidden; }
+    .photo-modal .modal-header { background: #1a1d23; border: none; }
+    .photo-modal .modal-body { background: #1a1d23; padding: 0; }
+    .photo-modal .modal-body img { max-width: 100%; max-height: 80vh; display: block; margin: 0 auto; }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .photos-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
+    [data-bs-theme="dark"] .photo-item { border-color: rgba(255,255,255,0.06); background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .photo-item:hover { border-color: #4e73df; }
+    [data-bs-theme="dark"] .photo-item-label { color: #e2e8f0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- ═══ HERO ═══ -->
+    <div class="photos-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-camera me-2"></i>Fotos do Agendamento #{{ agendamento.id }}</h1>
+                <p>{{ agendamento.carro }} — {{ agendamento.data_hora_agenda|date:"d/m/Y H:i" }}</p>
             </div>
+            <a href="{% url 'automovel:agendamento_detail' agendamento.pk %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
         </div>
-    {% else %}
-        <div class="alert alert-warning">Nenhuma foto disponível para este agendamento.</div>
-    {% endif %}
-    
-    <a href="javascript:window.history.back();" class="btn btn-primary mt-3">
-        <i class="fas fa-arrow-left"></i> Voltar
-    </a>
+    </div>
+
+    <!-- ═══ PHOTO GRID ═══ -->
+    <div class="card info-card shadow-sm">
+        <div class="card-header">
+            <h5><i class="bi bi-images text-primary me-2"></i>Galeria de Fotos</h5>
+        </div>
+        <div class="card-body">
+            {% with has_photos=False %}
+            <div class="photo-grid">
+                {% if agendamento.fotos %}
+                <div class="photo-item" onclick="showPhotoModal('{{ agendamento.fotos.url }}', 'Foto Principal')">
+                    <img src="{{ agendamento.fotos.url }}" alt="Foto Principal" loading="lazy">
+                    <div class="photo-item-info">
+                        <div class="photo-item-label">Foto Principal</div>
+                        <div class="photo-item-sub">Agendamento #{{ agendamento.id }}</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% for checklist in agendamento.checklists.all %}
+                    {% if checklist.foto_frontal %}
+                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_frontal.url }}', 'Frontal')">
+                        <img src="{{ checklist.foto_frontal.url }}" alt="Frontal" loading="lazy">
+                        <div class="photo-item-info">
+                            <div class="photo-item-label">Frontal</div>
+                            <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if checklist.foto_trazeira %}
+                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_trazeira.url }}', 'Traseira')">
+                        <img src="{{ checklist.foto_trazeira.url }}" alt="Traseira" loading="lazy">
+                        <div class="photo-item-info">
+                            <div class="photo-item-label">Traseira</div>
+                            <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if checklist.foto_lado_motorista %}
+                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_lado_motorista.url }}', 'Lado Motorista')">
+                        <img src="{{ checklist.foto_lado_motorista.url }}" alt="Lado Motorista" loading="lazy">
+                        <div class="photo-item-info">
+                            <div class="photo-item-label">Lado Motorista</div>
+                            <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if checklist.foto_lado_passageiro %}
+                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_lado_passageiro.url }}', 'Lado Passageiro')">
+                        <img src="{{ checklist.foto_lado_passageiro.url }}" alt="Lado Passageiro" loading="lazy">
+                        <div class="photo-item-info">
+                            <div class="photo-item-label">Lado Passageiro</div>
+                            <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            {% if not agendamento.fotos and not agendamento.checklists.all %}
+            <div class="photo-empty">
+                <div class="photo-empty-icon">
+                    <i class="bi bi-camera-video-off"></i>
+                </div>
+                <h5 class="fw-bold mb-2">Nenhuma foto disponível</h5>
+                <p class="text-muted small mb-0">As fotos aparecerão aqui após a realização dos checklists.</p>
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
 </div>
 
-<style>
-    .foto-container {
-        max-width: 800px;
-        margin: 30px auto;
-        padding: 20px;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    
-    .foto-wrapper {
-        margin: 20px 0;
-        text-align: center;
-    }
-    
-    .foto-veiculo {
-        max-width: 100%;
-        height: auto;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 5px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.1);
-    }
-    
-    .foto-info {
-        margin-top: 15px;
-        padding: 15px;
-        background: #f8f9fa;
-        border-radius: 4px;
-    }
-</style>
-
-<style>
-.photo-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-.photo-item {
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 5px;
-}
-.photo-item img {
-    width: 100%;
-    height: auto;
-    cursor: pointer;
-    transition: transform 0.3s;
-}
-.photo-item img:hover {
-    transform: scale(1.05);
-}
-</style>
+<!-- ═══ MODAL ═══ -->
+<div class="modal fade photo-modal" id="photoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title text-white mb-0" id="photoModalTitle">Foto</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <img id="modalPhoto" src="" alt="Foto ampliada">
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
-{% block content %}{% endblock %}
-<div class="container">
-    <h2>Fotos do Agendamento #{{ agendamento.id }}</h2>
-    
-    <div class="d-flex justify-content-between mb-4">
-        <a href="{% url 'automovel:lista_agendamentos' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar
-        </a>
-    </div>
-
-    <div class="photo-gallery">
-        {% if agendamento.foto_principal %}
-        <div class="photo-item">
-            <h5>Foto Principal</h5>
-            <img src="{{ agendamento.foto_principal.url }}" 
-                 data-bs-toggle="modal" data-bs-target="#photoModal"
-                 onclick="showPhotoModal('{{ agendamento.foto_principal.url }}')">
-        </div>
-        {% endif %}
-        
-        {% for checklist in agendamento.checklists.all %}
-            {% if checklist.foto_frontal %}
-            <div class="photo-item">
-                <h5>Frontal (Checklist {{ checklist.id }})</h5>
-                <img src="{{ checklist.foto_frontal.url }}"
-                     onclick="showPhotoModal('{{ checklist.foto_frontal.url }}')">
-            </div>
-            {% endif %}
-        {% endfor %}
-        {% for checklist in agendamento.checklists.all %}
-            {% if checklist.foto_trazeira %}
-            <div class="photo-item">
-                <h5>Frontal (Checklist {{ checklist.id }})</h5>
-                <img src="{{ checklist.foto_trazeira.url }}"
-                     onclick="showPhotoModal('{{ checklist.foto_trazeira.url }}')">
-            </div>
-            {% endif %}
-        {% endfor %}
-        {% for checklist in agendamento.checklists.all %}
-            {% if checklist.foto_lado_motorista %}
-            <div class="photo-item">
-                <h5>Frontal (Checklist {{ checklist.id }})</h5>
-                <img src="{{ checklist.foto_lado_motorista.url }}"
-                     onclick="showPhotoModal('{{ checklist.foto_lado_motorista.url }}')">
-            </div>
-            {% endif %}
-        {% endfor %}
-        {% for checklist in agendamento.checklists.all %}
-            {% if checklist.foto_lado_passageiro %}
-            <div class="photo-item">
-                <h5>Frontal (Checklist {{ checklist.id }})</h5>
-                <img src="{{ checklist.foto_lado_passageiro.url }}"
-                     onclick="showPhotoModal('{{ checklist.foto_lado_passageiro.url }}')">
-            </div>
-            {% endif %}    
-        {% endfor %}
-        </div>
-    </div>
-    
-    <!-- Modal para visualização ampliada -->
-    <div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Visualização da Foto</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <img id="modalPhoto" src="" style="max-width: 100%; max-height: 80vh;">
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    
-    {% block extra_js %}
-    <script>
-    function showPhotoModal(photoUrl) {
-        document.getElementById('modalPhoto').src = photoUrl;
-        new bootstrap.Modal(document.getElementById('photoModal')).show();
-    }
-    </script>
+{% block extra_js %}
+<script>
+function showPhotoModal(url, title) {
+    document.getElementById('modalPhoto').src = url;
+    document.getElementById('photoModalTitle').textContent = title || 'Foto';
+    new bootstrap.Modal(document.getElementById('photoModal')).show();
+}
+</script>
 {% endblock %}
+
+

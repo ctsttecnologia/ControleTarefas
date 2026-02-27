@@ -1,69 +1,149 @@
 
+{# ferramentas/ferramenta_form.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
-{% load static %}
 {% load widget_tweaks %}
 
-{% block title %}
-    Gerenciamento de Ferramentas
+{% block ferramentas_page_title %}
+    {% if is_create %}Nova Ferramenta{% else %}Editar Ferramenta{% endif %}
 {% endblock %}
 
 {% block ferramentas_title %}
-    {# Coloque o título do formulário aqui, ex: "Cadastrar Nova Ferramenta" #}
-    {% if form.instance.pk %}Editar Ferramenta{% else %}Adicionar Ferramenta{% endif %}
+    {% if is_create %}
+        <i class="bi bi-plus-circle me-2"></i>Adicionar Ferramenta
+    {% else %}
+        <i class="bi bi-pencil-square me-2"></i>Editar: {{ form.instance.nome }}
+    {% endif %}
 {% endblock %}
 
 {% block ferramentas_actions %}
-    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left me-1"></i> Voltar à Lista
+    <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
     </a>
 {% endblock %}
 
 {% block ferramentas_content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-body p-4 p-md-5">
-                    <form method="post" novalidate>
-                        {% csrf_token %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
 
-                        {# Renderiza os campos não visíveis (ex: IDs) e erros gerais do formulário #}
-                        {{ form.non_field_errors }}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                    </div>
+                    {% endif %}
 
-                        {# Itera sobre cada campo para ter controle total do HTML #}
-                        {% for field in form.visible_fields %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            
-                            {# O widget do campo (ex: <input>, <select>) #}
-                            {{ field }}
+                    {# Seção: Identificação #}
+                    <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-tag me-1"></i>Identificação
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.nome.id_for_label }}" class="form-label">Nome <span class="text-danger">*</span></label>
+                            {% render_field form.nome class="form-control" %}
+                            {% for e in form.nome.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.codigo_identificacao.id_for_label }}" class="form-label">Código <span class="text-danger">*</span></label>
+                            {% render_field form.codigo_identificacao class="form-control" %}
+                            {% for e in form.codigo_identificacao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.patrimonio.id_for_label }}" class="form-label">Patrimônio</label>
+                            {% render_field form.patrimonio class="form-control" %}
+                        </div>
+                    </div>
 
-                            {# Mostra erros de validação específicos do campo #}
-                            {% if field.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ field.errors|striptags }}
-                                </div>
-                            {% endif %}
+                    {# Seção: Especificações #}
+                    <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-gear me-1"></i>Especificações
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label for="{{ form.fabricante_marca.id_for_label }}" class="form-label">Fabricante</label>
+                            {% render_field form.fabricante_marca class="form-control" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.modelo.id_for_label }}" class="form-label">Modelo</label>
+                            {% render_field form.modelo class="form-control" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.serie.id_for_label }}" class="form-label">Série</label>
+                            {% render_field form.serie class="form-control" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.tamanho_polegadas.id_for_label }}" class="form-label">Polegada</label>
+                            {% render_field form.tamanho_polegadas class="form-control" %}
+                        </div>
+                    </div>
 
-                            {# Mostra o texto de ajuda, se houver #}
-                            {% if field.help_text %}
-                                <div id="{{ field.id_for_label }}_help" class="form-text text-muted">
-                                    {{ field.help_text|safe }}
-                                </div>
+                    {# Seção: Controle #}
+                    <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-clipboard-data me-1"></i>Controle
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label for="{{ form.data_aquisicao.id_for_label }}" class="form-label">Aquisição <span class="text-danger">*</span></label>
+                            {% render_field form.data_aquisicao class="form-control" %}
+                            {% for e in form.data_aquisicao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
+                            {% render_field form.quantidade class="form-control" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.numero_laudo_tecnico.id_for_label }}" class="form-label">Nº Laudo</label>
+                            {% render_field form.numero_laudo_tecnico class="form-control" %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.localizacao_padrao.id_for_label }}" class="form-label">Localização <span class="text-danger">*</span></label>
+                            {% render_field form.localizacao_padrao class="form-control" %}
+                            {% for e in form.localizacao_padrao.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+                        </div>
+                    </div>
+
+                    {# Seção: Relacionamentos #}
+                    <h6 class="text-uppercase text-muted small fw-bold border-bottom pb-2 mb-3">
+                        <i class="bi bi-link-45deg me-1"></i>Relacionamentos
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ form.fornecedor.id_for_label }}" class="form-label">Fornecedor</label>
+                            {% render_field form.fornecedor class="form-select" %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.mala.id_for_label }}" class="form-label">Mala</label>
+                            {% render_field form.mala class="form-select" %}
+                            {% if form.mala.help_text %}
+                            <small class="form-text text-muted">{{ form.mala.help_text }}</small>
                             {% endif %}
                         </div>
-                        {% endfor %}
-                        
-                        <div class="d-grid d-md-flex justify-content-md-end mt-4 pt-3 border-top">
-                            <button type="submit" class="btn btn-primary btn-lg px-4">
-                                <i class="fas fa-save me-2"></i> Salvar
+                    </div>
+
+                    {# Observações #}
+                    <div class="mb-4">
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">Observações</label>
+                        {% render_field form.observacoes class="form-control" %}
+                    </div>
+
+                    {# Rodapé #}
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><span class="text-danger">*</span> Campos obrigatórios</small>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i>Salvar
                             </button>
                         </div>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 

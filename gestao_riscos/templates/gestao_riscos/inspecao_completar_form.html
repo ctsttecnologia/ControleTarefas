@@ -1,97 +1,123 @@
 
-{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
-{% load crispy_forms_tags %} {% comment %} Opcional: se você usa crispy-forms {% endcomment %}
+<!-- Template para completar uma inspeção agendada, marcando-a como realizada -->
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-success text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-clipboard2-check me-2"></i>{{ titulo_pagina }}
+                    </h4>
+                    <small class="opacity-75">
+                        Registre os detalhes da inspeção realizada
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0">{{ titulo_pagina }}</h4>
-                </div>
-                
-                <div class="card-body">
-                    
-                    <div class="alert alert-info" role="alert">
-                        Você está marcando a inspeção de 
-                        <strong>{{ inspecao.equipamento.nome }}</strong> (agendada para 
-                        {{ inspecao.data_agendada|date:"d/m/Y" }}) como concluída.
-                    </div>
 
+            <!-- Info Card -->
+            <div class="alert alert-info d-flex align-items-start mb-4">
+                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                <div>
+                    <strong>Você está concluindo a inspeção de:</strong>
+                    <br>
+                    <span class="fw-semibold">{{ inspecao.equipamento.nome }}</span>
+                    <br>
+                    <small class="text-muted">
+                        Agendada para {{ inspecao.data_agendada|date:"d/m/Y" }}
+                    </small>
+                </div>
+            </div>
+
+            <!-- Formulário -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados da Conclusão
+                    </h6>
+                </div>
+                <div class="card-body p-4">
                     <form method="post">
                         {% csrf_token %}
                         
-                        <p>
-                            Por favor, informe a data de realização (se diferente de hoje) 
-                            e adicione as observações da inspeção.
-                        </p>
-                        
-                        {% comment %} 
-                        Método 1: Com django-crispy-forms (Recomendado)
-                        Se você tiver crispy_forms configurado:
-                        {{ form|crispy }} 
-                        
-                        Método 2: Renderização manual dos campos relevantes
-                        Isso assume que seu InspecaoForm tem os campos 
-                        'data_realizacao' e 'observacoes'.
-                        {% endcomment %}
-                        
+                        <!-- Data de Realização -->
                         {% if form.data_realizacao %}
-                        <div class="mb-3">
-                            <label for="{{ form.data_realizacao.id_for_label }}" class="form-label">
+                        <div class="mb-4">
+                            <label for="{{ form.data_realizacao.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-calendar-check me-1"></i>
                                 {{ form.data_realizacao.label }}
                             </label>
                             <input type="date" 
                                    name="{{ form.data_realizacao.name }}" 
                                    id="{{ form.data_realizacao.id_for_label }}"
                                    value="{{ form.data_realizacao.value|default_if_none:''|date:'Y-m-d' }}"
-                                   class="form-control">
+                                   class="form-control {% if form.data_realizacao.errors %}is-invalid{% endif %}">
+                            <div class="form-text">
+                                Data em que a inspeção foi efetivamente realizada. 
+                                Se não informada, será usada a data de hoje.
+                            </div>
                             {% if form.data_realizacao.errors %}
-                                <div class="invalid-feedback d-block">{{ form.data_realizacao.errors }}</div>
+                            <div class="invalid-feedback">{{ form.data_realizacao.errors.0 }}</div>
                             {% endif %}
-                            <div class="form-text">Data em que a inspeção foi efetivamente realizada.</div>
                         </div>
                         {% endif %}
 
+                        <!-- Observações -->
                         {% if form.observacoes %}
-                        <div class="mb-3">
-                            <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                        <div class="mb-4">
+                            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-chat-left-text me-1"></i>
                                 {{ form.observacoes.label }}
                             </label>
                             <textarea name="{{ form.observacoes.name }}" 
                                       id="{{ form.observacoes.id_for_label }}"
-                                      class="form-control" 
-                                      rows="4">{{ form.observacoes.value|default_if_none:'' }}</textarea>
+                                      class="form-control {% if form.observacoes.errors %}is-invalid{% endif %}" 
+                                      rows="5"
+                                      placeholder="Descreva os resultados da inspeção, não-conformidades encontradas, ações tomadas...">{{ form.observacoes.value|default_if_none:'' }}</textarea>
+                            <div class="form-text">
+                                Adicione notas, resultados ou não-conformidades encontradas.
+                            </div>
                             {% if form.observacoes.errors %}
-                                <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                            <div class="invalid-feedback">{{ form.observacoes.errors.0 }}</div>
                             {% endif %}
-                            <div class="form-text">Adicione notas, resultados ou não-conformidades encontradas.</div>
                         </div>
                         {% endif %}
 
-                        {% comment %} 
-                        Renderiza todos os outros campos do formulário como ocultos 
-                        para garantir que o POST de atualização funcione corretamente.
-                        {% endcomment %}
+                        <!-- Campos ocultos -->
                         {% for field in form %}
                             {% if field.name != 'data_realizacao' and field.name != 'observacoes' %}
                                 {{ field.as_hidden }}
                             {% endif %}
                         {% endfor %}
 
-                        <div class="text-end mt-4">
-                            <a href="{{ inspecao.get_absolute_url }}" class="btn btn-secondary">
-                                Cancelar
+                        <!-- Botões -->
+                        <div class="border-top pt-4 mt-4 d-flex justify-content-between">
+                            <a href="{{ inspecao.get_absolute_url }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle"></i> Marcar como Concluída
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle me-2"></i> Marcar como Concluída
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
+
 </div>
 {% endblock %}
+

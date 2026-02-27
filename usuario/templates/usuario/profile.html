@@ -5,7 +5,7 @@
 {% block title %}Perfil do Usuário{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/usuario/profile.css' %}"> 
+    <link rel="stylesheet" type="text/css" href="{% static 'css/usuario/profile.css' %}">
 {% endblock %}
 
 {% block body_class %}profile-page-background{% endblock %}
@@ -29,7 +29,6 @@
         z-index: 0;
     }
 
-    /* Garante que o container principal fique na frente da animação */
     .container {
         position: relative;
         z-index: 1;
@@ -38,57 +37,51 @@
 {% endblock %}
 
 {% block content %}
+<div id="particles-js"></div>
 
-    <div id="particles-js"></div>
+<div class="container py-5">
+    <div class="row g-4" id="card-container">
 
-    <div class="container py-5">
-        <div class="row g-4" id="card-container">
+        {% for card in allowed_cards %}
+        <div class="col-lg-4 col-md-6" data-card-id="{{ card.id }}">
+            <div class="profile-card">
+                <div class="card-header-section">
+                    <h5 class="card-title">{{ card.title }}</h5>
+                </div>
 
-            {# O loop do Django vai renderizar apenas os cards permitidos #}
-            {% for card in allowed_cards %}
-            <div class="col-lg-4 col-md-6" data-card-id="{{ card.id }}">
-                <div class="profile-card">
-                    <div class="card-header-section">
-                        <h5 class="card-title">{{ card.title }}</h5>
-                    </div>
-                    
-                    <div class="card-body-section">
-                        <div class="card-links">
-                            {% for link in card.links %}
-                                {% if link.url %}
-                                    {# --- CORREÇÃO DE LÓGICA DE URL --- #}
-                                    {# Se a URL contém uma barra '/', assume que é um link direto (ex: /admin/) #}
-                                    {# Caso contrário, tenta resolver o nome da URL do Django (ex: app:view) #}
-                                    
-                                    {% if '/' in link.url %}
-                                        <a href="{{ link.url }}" class="card-link">{{ link.text }}</a>
-                                    {% else %}
-                                        <a href="{% url link.url %}" class="card-link">{{ link.text }}</a>
-                                    {% endif %}
-                                    
+                <div class="card-body-section">
+                    <div class="card-links">
+                        {% for link in card.links %}
+                            {% if link.url %}
+                                {% if '/' in link.url %}
+                                    <a href="{{ link.url }}" class="card-link">{{ link.text }}</a>
                                 {% else %}
-                                    <span class="card-link disabled">{{ link.text }} (em breve)</span>
+                                    <a href="{% url link.url %}" class="card-link">{{ link.text }}</a>
                                 {% endif %}
-                            {% endfor %}
-                        </div>
-                        
-                        <div class="card-icon-wrapper">
-                            <img src="{% static card.icon %}" class="card-icon" alt="Ícone de {{ card.title }}">
-                        </div>
+                            {% else %}
+                                <span class="card-link disabled">{{ link.text }} (em breve)</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="card-icon-wrapper">
+                        <img src="{% static card.icon %}" class="card-icon" alt="Ícone de {{ card.title }}">
                     </div>
                 </div>
             </div>
-            {% endfor %}
+        </div>
+        {% endfor %}
 
-        </div> </div> {% endblock %} {# --- CORREÇÃO: FECHAMENTO DO BLOCO CONTENT QUE FALTAVA --- #}
-
+    </div>
+</div>
+{% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 
 <script>
-    // Configuração do particles.js
+    // Particles.js
     particlesJS('particles-js', {
         "particles": {
             "number": { "value": 150, "density": { "enable": true, "value_area": 800 } },
@@ -96,8 +89,21 @@
             "shape": { "type": "circle" },
             "opacity": { "value": 0.9, "random": true },
             "size": { "value": 5, "random": true },
-            "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
-            "move": { "enable": true, "speed": 2, "direction": "none", "random": true, "straight": false, "out_mode": "out" }
+            "line_linked": {
+                "enable": true,
+                "distance": 150,
+                "color": "#ffffff",
+                "opacity": 0.4,
+                "width": 1
+            },
+            "move": {
+                "enable": true,
+                "speed": 2,
+                "direction": "none",
+                "random": true,
+                "straight": false,
+                "out_mode": "out"
+            }
         },
         "interactivity": {
             "detect_on": "canvas",
@@ -108,27 +114,34 @@
             },
             "modes": {
                 "repulse": { "distance": 100, "duration": 0.4 },
-                "push": { "particles_nb": 4 },
+                "push": { "particles_nb": 4 }
             }
         },
         "retina_detect": true
     });
 
-    // Configuração do SortableJS
+    // SortableJS — Drag & Drop com persistência no localStorage
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('card-container');
+        if (!container) return;
+
         const storageKey = 'profileCardOrder';
 
         function restoreOrder() {
             const savedOrderJSON = localStorage.getItem(storageKey);
             if (savedOrderJSON) {
-                const savedOrder = JSON.parse(savedOrderJSON);
-                savedOrder.forEach(cardId => {
-                    const cardElement = container.querySelector(`[data-card-id="${cardId}"]`);
-                    if (cardElement) {
-                        container.appendChild(cardElement);
-                    }
-                });
+                try {
+                    const savedOrder = JSON.parse(savedOrderJSON);
+                    savedOrder.forEach(cardId => {
+                        const cardElement = container.querySelector(`[data-card-id="${cardId}"]`);
+                        if (cardElement) {
+                            container.appendChild(cardElement);
+                        }
+                    });
+                } catch (e) {
+                    console.warn('[Profile] Erro ao restaurar ordem dos cards:', e);
+                    localStorage.removeItem(storageKey);
+                }
             }
         }
 
@@ -137,18 +150,18 @@
             localStorage.setItem(storageKey, JSON.stringify(currentOrder));
         }
 
-        if (container) {
-            restoreOrder();
-            const sortable = new Sortable(container, {
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                dataIdAttr: 'data-card-id',
-                onEnd: function() {
-                    saveOrder(this);
-                },
-            });
-        }
+        restoreOrder();
+
+        new Sortable(container, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dataIdAttr: 'data-card-id',
+            onEnd: function() {
+                saveOrder(this);
+            }
+        });
     });
 </script>
 {% endblock %}
+
 

@@ -1,45 +1,51 @@
+
+<!-- templates/tarefas/calendario.html -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tarefas/calendario.css' %}">
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css' rel='stylesheet' />
-{% endblock %}
-<style>
-    /* Exemplo no seu arquivo CSS */
-    .fc-event-status-atrasada {
-        background-color: #d9534f; /* Vermelho forte */
-        border-color: #d43f3a;
-    }
-    .fc-event-status-recente {
-        background-color: #5cb85c; /* Verde */
-        border-color: #4cae4c;
-    }
-    .fc-event-status-proximo-prazo {
-        background-color: #f0ad4e; /* Laranja */
-        border-color: #eea236;
-    }
-    .fc-event-status-em-andamento {
-        background-color: #337ab7; /* Azul Padrão */
-        border-color: #2e6da4;
-    }
-</style>
 {% block title %}Calendário de Tarefas{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tarefas/calendario.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
+<style>
+    .fc-event-status-atrasada { background-color: #dc3545; border-color: #b02a37; }
+    .fc-event-status-recente { background-color: #198754; border-color: #146c43; }
+    .fc-event-status-proximo-prazo { background-color: #fd7e14; border-color: #e8590c; }
+    .fc-event-status-em-andamento { background-color: #0d6efd; border-color: #0a58ca; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Calendário de Tarefas</h1>
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
+            <h1 class="h2 mb-1">
+                <i class="bi bi-calendar3 me-2"></i>Calendário de Tarefas
+            </h1>
+            <p class="text-muted mb-0">Visualize suas tarefas organizadas por data</p>
+        </div>
+        <div class="d-flex gap-2">
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Voltar
+                <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
             </a>
-        </div>    
+        </div>
     </div>
 
+    <!-- Legenda -->
+    <div class="d-flex flex-wrap gap-3 mb-3">
+        <span><i class="bi bi-circle-fill text-primary me-1"></i> Em andamento</span>
+        <span><i class="bi bi-circle-fill text-success me-1"></i> Recente</span>
+        <span><i class="bi bi-circle-fill" style="color:#fd7e14;"></i> Próximo do prazo</span>
+        <span><i class="bi bi-circle-fill text-danger me-1"></i> Atrasada</span>
+    </div>
+
+    <!-- Calendário -->
     <div class="card shadow-sm">
         <div class="card-body">
             <div id="calendar"></div>
@@ -48,26 +54,17 @@
 </div>
 {% endblock %}
 
-
 {% block extra_js %}
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.14/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.14/locales/pt-br.js'></script>
-
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.14/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.14/locales/pt-br.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // Certifique-se de que a biblioteca Bootstrap JS, incluindo Tooltip, está carregada.
-    
     const calendarEl = document.getElementById('calendar');
-    // Adicionado tratamento de erro básico para o JSON
-    const calendarEvents = JSON.parse('{{ eventos_json|safe }}' || '[]');    
-    
+    const calendarEvents = JSON.parse('{{ eventos_json|safe }}' || '[]');
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        // --- INTEGRAÇÃO COM BOOTSTRAP 5 E TEMA ---
         themeSystem: 'bootstrap5',
-        
-        // --- CONFIGURAÇÕES GERAIS ---
         locale: 'pt-br',
         initialView: 'dayGridMonth',
         headerToolbar: {
@@ -75,62 +72,25 @@ document.addEventListener('DOMContentLoaded', function() {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,listWeek'
         },
-        buttonText: {
-            today: 'Hoje',
-            month: 'Mês',
-            week: 'Semana',
-            list: 'Lista'
-        },
-        navLinks: true, 
+        buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', list: 'Lista' },
+        navLinks: true,
         editable: false,
         dayMaxEvents: true,
-        
-        // --- DADOS DOS EVENTOS ---
         events: calendarEvents,
-        
-        // --- ADIÇÃO DA FUNCIONALIDADE ---
         eventDidMount: function(info) {
-            // Pega o prazo formatado do extendedProps
-            const prazo = info.event.extendedProps.prazo || 'N/A'; 
-            
-            // Obtém os demais dados de extendedProps
+            const prazo = info.event.extendedProps.prazo || 'N/A';
             const status = info.event.extendedProps.status || 'N/A';
-            const dataCriacao = info.event.extendedProps.data_criacao || 'N/A';
-
-            // Cria o conteúdo do tooltip (usando o título que já contém o prazo)
-            const tooltipContent = `
-                <strong>${info.event.title}</strong><br>
-                ---<br>
-                **Criado em:** ${dataCriacao.substring(0, 10)}<br>
-                **Status:** ${status}
-            `;
-
-            // Aplica o Tooltip do Bootstrap
             if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-                 new bootstrap.Tooltip(info.el, {
-                    title: tooltipContent,
-                    placement: 'top', 
-                    trigger: 'hover', 
-                    html: true 
+                new bootstrap.Tooltip(info.el, {
+                    title: `<strong>${info.event.title}</strong><br>Status: ${status}`,
+                    placement: 'top',
+                    trigger: 'hover',
+                    html: true
                 });
-            } else {
-                // Fallback simples
-                info.el.setAttribute('title', `Prazo: ${prazo} | Status: ${status} | Criado em: ${dataCriacao}`);
             }
         },
     });
-
     calendar.render();
-
-    // --- SINCRONIZAÇÃO COM O TEMA GLOBAL ---
-    const themeObserver = new MutationObserver(() => {
-        calendar.render();
-    });
-
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-bs-theme']
-    });
 });
 </script>
 {% endblock %}

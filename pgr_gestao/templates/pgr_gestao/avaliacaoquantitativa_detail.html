@@ -1,0 +1,104 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Detalhes da Avaliação{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Avaliações</a></li>
+<li class="breadcrumb-item active">Detalhes</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="fas fa-chart-line"></i> Detalhes da Avaliação</h1>
+            <p class="mb-0">Avaliação do risco: 
+                <strong>{{ avaliacaoquantitativa.risco_identificado.agente }}</strong>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar para a lista
+            </a>
+            {% if perms.pgr_gestao.change_avaliacaoquantitativa %}
+            <a href="{% url 'pgr_gestao:avaliacao_update' avaliacaoquantitativa.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Informações da Avaliação
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Risco Avaliado:</strong> 
+                            <a href="{% url 'pgr_gestao:risco_detail' avaliacaoquantitativa.risco_identificado.pk %}">
+                                {{ avaliacaoquantitativa.risco_identificado.agente }}
+                            </a>
+                        </p>
+                        <p><strong>Documento PGR:</strong> 
+                            {{ avaliacaoquantitativa.risco_identificado.pgr_documento.codigo_documento }}
+                        </p>
+                        <p><strong>Tipo de Avaliação:</strong> {{ avaliacaoquantitativa.get_tipo_avaliacao_display }}</p>
+                        <p><strong>Data da Avaliação:</strong> {{ avaliacaoquantitativa.data_avaliacao|date:"d/m/Y" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Equipamento Utilizado:</strong> 
+                            {{ avaliacaoquantitativa.equipamento_utilizado|default:"Não informado" }}
+                        </p>
+                        <p><strong>Certificado de Calibração:</strong>
+                            {% if avaliacaoquantitativa.certificado_calibracao %}
+                                <a href="{{ avaliacaoquantitativa.certificado_calibracao.url }}" target="_blank">
+                                    <i class="fas fa-file-download"></i> Baixar Arquivo
+                                </a>
+                            {% else %}
+                                Não informado
+                            {% endif %}
+                        </p>
+                        <p><strong>Criado por:</strong> {{ avaliacaoquantitativa.criado_por.get_full_name|default:avaliacaoquantitativa.criado_por.username }}</p>
+                        <p><strong>Data de Criação:</strong> {{ avaliacaoquantitativa.criado_em|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+                {% if avaliacaoquantitativa.observacoes %}
+                <hr>
+                <p><strong>Observações:</strong></p>
+                <p>{{ avaliacaoquantitativa.observacoes|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card {% if not avaliacaoquantitativa.conforme %}border-danger{% else %}border-success{% endif %}">
+            <div class="card-header {% if not avaliacaoquantitativa.conforme %}bg-danger text-white{% else %}bg-success text-white{% endif %}">
+                <i class="fas fa-poll-h"></i> Resultado
+            </div>
+            <div class="card-body text-center">
+                <h6 class="text-muted">Resultado Medido</h6>
+                <h2>{{ avaliacaoquantitativa.resultado_medido }}</h2>
+                <p>{{ avaliacaoquantitativa.unidade_medida }}</p>
+                <hr>
+                <h6 class="text-muted">Limite de Tolerância (NR)</h6>
+                <h2>{{ avaliacaoquantitativa.limite_tolerancia_nr|default:"N/A" }}</h2>
+                <hr>
+                <h6 class="text-muted">Conformidade</h6>
+                {% if avaliacaoquantitativa.conforme %}
+                    <h3 class="text-success"><i class="fas fa-check-circle"></i> CONFORME</h3>
+                {% else %}
+                    <h3 class="text-danger"><i class="fas fa-exclamation-triangle"></i> NÃO CONFORME</h3>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

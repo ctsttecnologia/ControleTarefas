@@ -1,187 +1,192 @@
 
+{# ferramentas/ferramenta_list.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
-{% load static %}
-{% load widget_tweaks %}
 
-{% block title %}
-    Gerenciamento de Ferramentas
+{% block ferramentas_page_title %}Ferramentas{% endblock %}
+
+{% block ferramentas_title %}
+    <i class="bi bi-tools me-2"></i>Gerenciamento de Ferramentas
 {% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4 px-lg-5">
+{% block ferramentas_actions %}
+    <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+    </a>
+    <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-file-earmark-arrow-up me-1"></i>Importar
+    </a>
+    <a href="{% url 'ferramentas:imprimir_qrcodes' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-printer me-1"></i>Etiquetas
+    </a>
+    <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-outline-info">
+        <i class="bi bi-file-earmark-text me-1"></i>Novo Termo
+    </a>
+    <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Nova Ferramenta
+    </a>
+    {% if user.is_staff %}
+    <form action="{% url 'ferramentas:gerar_qrcodes_view' %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning"
+                onclick="return confirm('A geração pode levar alguns minutos. Continuar?');">
+            <i class="bi bi-qr-code-scan me-1"></i>Gerar QR Codes
+        </button>
+    </form>
+    {% endif %}
+{% endblock %}
 
-    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <h1 class="h2 mb-0">
-            <i class="bi bi-tools me-2"></i> Gerenciamento de Ferramentas
-        </h1>
-        <div class="btn-toolbar">
-            <div class="btn-group me-2">
-                <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-bar-chart-line-fill me-1"></i> Dashboard
-                </a>
-                <a href="{% url 'ferramentas:importar_ferramentas' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Importar
-                </a>
-                 <a href="{% url 'ferramentas:imprimir_qrcodes' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-printer-fill me-1"></i> Imprimir Etiquetas
-                </a>
+{% block ferramentas_content %}
+<div class="card shadow-sm rounded-3">
+
+    {# Filtros #}
+    <div class="card-header bg-white p-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-lg-4 col-md-6">
+                <input type="text" name="q" class="form-control"
+                       placeholder="Buscar nome, código ou patrimônio..."
+                       value="{{ query|default:'' }}">
             </div>
-            
-            <div class="btn-group">
-                <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-info">
-                    <i class="fas fa-file-signature me-1"></i> Novo Termo
+            <div class="col-lg-3 col-md-4">
+                <select name="status" class="form-select">
+                    <option value="">Todos os Status</option>
+                    {% for value, text in status_choices %}
+                    <option value="{{ value }}" {% if status_atual == value %}selected{% endif %}>{{ text }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-funnel me-1"></i>Filtrar
+                </button>
+                {% if query or status_atual %}
+                <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i>Limpar
                 </a>
-                <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-lg me-1"></i> Nova Ferramenta
-                </a>
-                 {% if user.is_staff %}
-                <form action="{% url 'ferramentas:gerar_qrcodes_view' %}" method="post" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-warning" onclick="return confirm('Isso pode levar alguns minutos. Deseja continuar?');">
-                        <i class="bi bi-qr-code-scan me-1"></i> Gerar QR Codes
-                    </button>
-                </form>
                 {% endif %}
             </div>
-        </div>
-    </header>
-
-    <div class="card shadow-sm rounded-3">
-        <div class="card-header bg-light p-3">
-            <form method="get" class="row g-2 align-items-center">
-                <div class="col-lg-3 col-md-6">
-                    <input type="text" name="q" class="form-control" placeholder="Buscar por nome, código ou patrimônio..." value="{{ request.GET.q|default:'' }}">
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <select name="status" class="form-select">
-                        <option value="">Todos os Status</option>
-                        {% for value, text in view.model.Status.choices %}
-                            <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ text }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-funnel-fill me-1"></i>Filtrar</button>
-                </div>
-            </form>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th scope="col" class="ps-3">Nome / Patrimônio</th>
-                            <th scope="col">Código (QR Code)</th>
-                            <th scope="col">Status</th>
-                            <th scope="col">Localização</th>
-                            <th scope="col">Data de Aquisição</th>
-                            <th scope="col" class="text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ferramenta in ferramentas %}
-                        <tr>
-                            <td class="ps-3">
-                                <div>
-                                    <a href="{{ ferramenta.get_absolute_url }}" class="fw-bold d-inline-block text-decoration-none">{{ ferramenta.nome }}</a>
-                                    
-                                    {% if ferramenta.mala %}
-                                    <span class="ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Item da mala: {{ ferramenta.mala.nome }}">
-                                        <i class="bi bi-box-seam-fill text-secondary"></i>
-                                    </span>
-                                    {% endif %}
-
-                                    {% if ferramenta.esta_emprestada %}
-                                    <span class="ms-2" data-bs-toggle="tooltip" data-bs-placement="top" title="Item atualmente em uso (emprestado)">
-                                        <i class="bi bi-person-up-arrow text-warning"></i>
-                                    </span>
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted">Patrimônio: {{ ferramenta.patrimonio|default:"N/A" }}</small>
-                            </td>
-                            <td>
-                                <span class="font-monospace">{{ ferramenta.codigo_identificacao|default:"N/A" }}</span>
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill fs-6
-                                    {% if ferramenta.status_efetivo == 'disponivel' %} bg-success-subtle text-success-emphasis border border-success-subtle
-                                    {% elif ferramenta.status_efetivo == 'em_uso' %} bg-warning-subtle text-warning-emphasis border border-warning-subtle
-                                    {% elif ferramenta.status_efetivo == 'em_manutencao' %} bg-info-subtle text-info-emphasis border border-info-subtle
-                                    {% elif ferramenta.status_efetivo == 'descartada' %} bg-danger-subtle text-danger-emphasis border border-danger-subtle
-                                    {% else %} bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle {% endif %}">
-                                    {{ ferramenta.get_status_efetivo_display }}
-                                </span>
-                            </td>
-                            <td>{{ ferramenta.localizacao_padrao|default:"-" }}</td>
-                            <td>{{ ferramenta.data_aquisicao|date:"d/m/Y" }}</td>
-                            
-                            <td class="text-center">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{{ ferramenta.get_absolute_url }}" class="btn btn-outline-primary" title="Ver Painel">
-                                        <i class="bi bi-display"></i>
-                                    </a>
-                                    
-                                    <a href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}" class="btn btn-outline-secondary" title="Editar">
-                                        <i class="bi bi-pencil-fill"></i>
-                                    </a>
-
-                                    {% if ferramenta.termo_ativo %}
-                                    <a href="{% url 'ferramentas:termo_detail' pk=ferramenta.termo_ativo.pk %}" class="btn btn-outline-info" title="Ver Termo de Responsabilidade #{{ ferramenta.termo_ativo.pk }}">
-                                        <i class="fas fa-file-signature"></i>
-                                    </a>
-                                    {% endif %}
-
-                                    {% if ferramenta.status == 'disponivel' %}
-                                    <button type="button" class="btn btn-outline-danger btn-inativar" title="Inativar"
-                                            data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
-                                            data-url="{% url 'ferramentas:ferramenta_inativar' pk=ferramenta.pk %}"
-                                            data-nome="{{ ferramenta.nome }}">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    {% else %}
-                                    <button type="button" class="btn btn-outline-danger" title="Não pode ser inativada neste status" disabled>
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <h5 class="text-muted">Nenhuma ferramenta encontrada.</h5>
-                                <p>Tente ajustar os filtros ou <a href="{% url 'ferramentas:ferramenta_create' %}">adicione uma nova ferramenta</a>.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        {% if is_paginated %}
-        <div class="card-footer bg-light">
-            {% include 'partials/pagination.html' %}
-        </div>
-        {% endif %}
+        </form>
     </div>
+
+    {# Tabela #}
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Nome / Patrimônio</th>
+                    <th>Código</th>
+                    <th>Status</th>
+                    <th>Localização</th>
+                    <th>Aquisição</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ferramenta in ferramentas %}
+                <tr>
+                    <td class="ps-3">
+                        <div>
+                            <a href="{{ ferramenta.get_absolute_url }}" class="fw-bold text-decoration-none">
+                                {{ ferramenta.nome }}
+                            </a>
+                            {% if ferramenta.mala %}
+                            <span class="ms-1" data-bs-toggle="tooltip" title="Mala: {{ ferramenta.mala.nome }}">
+                                <i class="bi bi-box-seam-fill text-secondary small"></i>
+                            </span>
+                            {% endif %}
+                            {% if ferramenta.esta_emprestada %}
+                            <span class="ms-1" data-bs-toggle="tooltip" title="Em uso">
+                                <i class="bi bi-person-fill-up text-warning small"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">{{ ferramenta.patrimonio|default:"Sem patrimônio" }}</small>
+                    </td>
+                    <td><code class="small">{{ ferramenta.codigo_identificacao }}</code></td>
+                    <td>
+                        <span class="badge rounded-pill
+                            {% if ferramenta.status_efetivo == 'disponivel' %}bg-success-subtle text-success-emphasis border border-success-subtle
+                            {% elif ferramenta.status_efetivo == 'em_uso' %}bg-warning-subtle text-warning-emphasis border border-warning-subtle
+                            {% elif ferramenta.status_efetivo == 'em_manutencao' %}bg-info-subtle text-info-emphasis border border-info-subtle
+                            {% elif ferramenta.status_efetivo == 'descartada' %}bg-danger-subtle text-danger-emphasis border border-danger-subtle
+                            {% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">
+                            {{ ferramenta.get_status_efetivo_display }}
+                        </span>
+                    </td>
+                    <td class="small">{{ ferramenta.localizacao_padrao|default:"-" }}</td>
+                    <td class="small">{{ ferramenta.data_aquisicao|date:"d/m/Y" }}</td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ ferramenta.get_absolute_url }}" class="btn btn-outline-primary" title="Painel">
+                                <i class="bi bi-display"></i>
+                            </a>
+                            <a href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}" class="btn btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if ferramenta.termo_ativo %}
+                            <a href="{% url 'ferramentas:termo_detail' pk=ferramenta.termo_ativo.pk %}" class="btn btn-outline-info" title="Termo #{{ ferramenta.termo_ativo.pk }}">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </a>
+                            {% endif %}
+                            {% if ferramenta.status == 'disponivel' %}
+                            <button type="button" class="btn btn-outline-danger btn-inativar" title="Inativar"
+                                    data-bs-toggle="modal" data-bs-target="#confirmInativarModal"
+                                    data-url="{% url 'ferramentas:ferramenta_inativar' pk=ferramenta.pk %}"
+                                    data-nome="{{ ferramenta.nome }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-outline-danger" disabled title="Indisponível neste status">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted d-block mb-2"></i>
+                        <h6 class="text-muted">Nenhuma ferramenta encontrada.</h6>
+                        <a href="{% url 'ferramentas:ferramenta_create' %}" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-plus-lg me-1"></i>Adicionar ferramenta
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="card-footer bg-white">
+        {% include 'partials/pagination.html' %}
+    </div>
+    {% endif %}
 </div>
 
-<div class="modal fade" id="confirmInativarModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+{# Modal de Confirmação #}
+<div class="modal fade" id="confirmInativarModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalLabel">Confirmar Inativação</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Inativação
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                Tem certeza que deseja marcar a ferramenta <strong id="ferramentaNomeModal" class="text-danger"></strong> como "Descartada"?
+                Tem certeza que deseja marcar <strong id="ferramentaNomeModal" class="text-danger"></strong> como descartada?
+                <div class="alert alert-warning mt-3 mb-0 small">
+                    <i class="bi bi-info-circle me-1"></i>Esta ação pode ser revertida apenas por um administrador.
+                </div>
             </div>
             <div class="modal-footer">
-                <form id="inativarForm" method="post">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="inativarForm" method="post" class="d-inline">
                     {% csrf_token %}
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Sim, Inativar</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>Sim, Inativar
+                    </button>
                 </form>
             </div>
         </div>
@@ -189,24 +194,24 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block ferramentas_extra_js %}
 <script>
-    // Seu script JS para o modal continua aqui (código inalterado)
-    document.addEventListener('DOMContentLoaded', function () {
-        const confirmModal = document.getElementById('confirmInativarModal');
-        if (confirmModal) {
-            confirmModal.addEventListener('show.bs.modal', function (event) {
-                const button = event.relatedTarget;
-                const ferramentaNome = button.getAttribute('data-nome');
-                const formActionUrl = button.getAttribute('data-url');
-                
-                const modalBody = confirmModal.querySelector('#ferramentaNomeModal');
-                const inativarForm = confirmModal.querySelector('#inativarForm');
-                
-                modalBody.textContent = ferramentaNome;
-                inativarForm.action = formActionUrl;
-            });
-        }
+document.addEventListener('DOMContentLoaded', function () {
+    // Tooltips
+    [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]')).forEach(function (el) {
+        new bootstrap.Tooltip(el);
     });
+    // Modal de inativação
+    const modal = document.getElementById('confirmInativarModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+            document.getElementById('ferramentaNomeModal').textContent = btn.dataset.nome;
+            document.getElementById('inativarForm').action = btn.dataset.url;
+        });
+    }
+});
 </script>
 {% endblock %}
+
+

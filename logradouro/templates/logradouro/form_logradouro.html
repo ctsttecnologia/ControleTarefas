@@ -1,102 +1,251 @@
-{% extends 'logradouro/base_logradouro.html' %}
+{# templates/logradouro/form_logradouro.html #}
+{% extends 'base.html' %}
 {% load i18n %}
 {% load widget_tweaks %}
 
-{% block logradouro_content %}
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h2 class="h4 mb-0">
-                        {% if form.instance.pk %}Editar Endereço{% else %}Cadastrar Novo Endereço{% endif %}
-                    </h2>
+{% block title %}
+    {% if form.instance.pk %}{% trans "Editar Endereço" %}{% else %}{% trans "Novo Endereço" %}{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-primary text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">
+                        {% if form.instance.pk %}
+                        <i class="bi bi-pencil-square me-2"></i>{% trans "Editar Endereço" %}
+                        {% else %}
+                        <i class="bi bi-plus-circle me-2"></i>{% trans "Novo Endereço" %}
+                        {% endif %}
+                    </h4>
+                    <small class="opacity-75">{% trans "Preencha os dados do endereço" %}</small>
                 </div>
-                <div class="card-body">
-                    <form method="post">
+                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Voltar" %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-geo-alt text-primary me-2"></i>{% trans "Dados do Endereço" %}
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
                         {% csrf_token %}
                         
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
                         {% endif %}
 
-                        <div class="row g-3">
-                            <div class="col-12 form-group">
-                                <label for="{{ form.filial.id_for_label }}" class="form-label">{{ form.filial.label }}</label>
-                                {% render_field form.filial class="form-select" %} {# Use form-select para dropdowns #}
+                        <!-- Filial -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="{{ form.filial.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.filial.label }} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.filial class="form-select" %}
                                 {% for error in form.filial.errors %}
-                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
-
-                            {% for field in form %}
-                                {% if field.name != 'filial' %}
-                                    <div class="col-md-6 form-group">
-                                        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                        {% render_field field class="form-control" %}
-                                        {% if field.help_text %}
-                                            <small class="form-text text-muted">{{ field.help_text }}</small>
-                                        {% endif %}
-                                        {% for error in field.errors %}
-                                            <div class="invalid-feedback d-block">{{ error }}</div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
                         </div>
 
-                        <div class="d-flex justify-content-end mt-4 pt-3 border-top">
-                            <a href="{% url 'logradouro:upload_logradouros' %}" class="btn btn-primary me-2">Planilha de cadastro em massa</a>
-                            <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-secondary me-2">Cancelar</a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-check-circle me-1"></i> Salvar
-                            </button>
+                        <!-- CEP + Busca Automática -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label for="id_cep" class="form-label fw-semibold">
+                                    {% trans "CEP" %} <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    {% render_field form.cep class="form-control" placeholder="00000000" %}
+                                    <span class="input-group-text" id="cep-status">
+                                        <i class="bi bi-search"></i>
+                                    </span>
+                                </div>
+                                <div class="form-text">{% trans "Digite o CEP para busca automática" %}</div>
+                                {% for error in form.cep.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Endereço + Número -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <label for="id_endereco" class="form-label fw-semibold">
+                                    {% trans "Endereço" %} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.endereco class="form-control" %}
+                                {% for error in form.endereco.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_numero" class="form-label fw-semibold">
+                                    {% trans "Número" %} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.numero class="form-control" %}
+                                {% for error in form.numero.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Complemento + Bairro -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="id_complemento" class="form-label fw-semibold">
+                                    {% trans "Complemento" %}
+                                </label>
+                                {% render_field form.complemento class="form-control" placeholder="Apto, Sala, Bloco..." %}
+                                {% for error in form.complemento.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_bairro" class="form-label fw-semibold">
+                                    {% trans "Bairro" %} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.bairro class="form-control" %}
+                                {% for error in form.bairro.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Cidade + Estado + País -->
+                        <div class="row mb-4">
+                            <div class="col-md-5">
+                                <label for="id_cidade" class="form-label fw-semibold">
+                                    {% trans "Cidade" %} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.cidade class="form-control" %}
+                                {% for error in form.cidade.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="id_estado" class="form-label fw-semibold">
+                                    {% trans "Estado" %} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.estado class="form-select" %}
+                                {% for error in form.estado.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_pais" class="form-label fw-semibold">
+                                    {% trans "País" %}
+                                </label>
+                                {% render_field form.pais class="form-control" %}
+                                {% for error in form.pais.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Ponto de Referência -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label for="id_ponto_referencia" class="form-label fw-semibold">
+                                    {% trans "Ponto de Referência" %}
+                                </label>
+                                {% render_field form.ponto_referencia class="form-control" placeholder="Próximo a..." %}
+                                {% for error in form.ponto_referencia.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Coordenadas (Opcional) -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="id_latitude" class="form-label fw-semibold">
+                                    {% trans "Latitude" %}
+                                </label>
+                                {% render_field form.latitude class="form-control" placeholder="-23.550520" %}
+                                {% for error in form.latitude.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_longitude" class="form-label fw-semibold">
+                                    {% trans "Longitude" %}
+                                </label>
+                                {% render_field form.longitude class="form-control" placeholder="-46.633309" %}
+                                {% for error in form.longitude.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="border-top pt-4 mt-4 d-flex justify-content-between flex-wrap gap-2">
+                            <a href="{% url 'logradouro:upload_logradouros' %}" class="btn btn-outline-info">
+                                <i class="bi bi-upload me-1"></i> {% trans "Importar Planilha" %}
+                            </a>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-lg me-1"></i> {% trans "Cancelar" %}
+                                </a>
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-check-lg me-1"></i> {% trans "Salvar" %}
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-{% endblock logradouro_content %}
+
+</div>
+{% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Seleciona os campos do formulário pelos IDs gerados pelo Django
     const cepInput = document.getElementById('id_cep');
     const enderecoInput = document.getElementById('id_endereco');
     const bairroInput = document.getElementById('id_bairro');
     const cidadeInput = document.getElementById('id_cidade');
     const estadoSelect = document.getElementById('id_estado');
+    const cepStatus = document.getElementById('cep-status');
 
-    // Adiciona um ouvinte de evento para quando o campo CEP perde o foco
     if (cepInput) {
         cepInput.addEventListener('blur', function () {
-            // Limpa e formata o CEP para conter apenas dígitos
             let cep = this.value.replace(/\D/g, '');
 
-            // Verifica se o CEP tem 8 dígitos
             if (cep.length === 8) {
-                // Monta a URL para a nossa view de consulta
+                // Feedback visual
+                cepStatus.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+                
                 const url = `{% url 'logradouro:consulta_cep' %}?cep=${cep}`;
 
-                // Faz a requisição para a nossa API
                 fetch(url)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Erro na resposta da rede.');
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
                         if (data.erro) {
-                            alert(data.erro); // Exibe um alerta se o CEP não for encontrado ou for inválido
-                            // Limpar os campos se o CEP for inválido
+                            cepStatus.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
+                            alert(data.erro);
                             enderecoInput.value = '';
                             bairroInput.value = '';
                             cidadeInput.value = '';
                             estadoSelect.value = '';
                         } else {
-                            // Preenche os campos do formulário com os dados recebidos
+                            cepStatus.innerHTML = '<i class="bi bi-check-circle text-success"></i>';
                             enderecoInput.value = data.endereco;
                             bairroInput.value = data.bairro;
                             cidadeInput.value = data.cidade;
@@ -104,8 +253,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         }
                     })
                     .catch(error => {
+                        cepStatus.innerHTML = '<i class="bi bi-exclamation-circle text-warning"></i>';
                         console.error('Falha ao buscar CEP:', error);
-                        alert('Não foi possível consultar o CEP. Verifique sua conexão ou tente novamente mais tarde.');
                     });
             }
         });

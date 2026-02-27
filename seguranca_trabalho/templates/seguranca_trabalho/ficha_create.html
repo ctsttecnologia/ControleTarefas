@@ -1,63 +1,70 @@
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
-{% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Nova Ficha de EPI - {{ block.super }}{% endblock %}
-{% block extra_css %}
-    {# Carrega a folha de estilos dedicada para os formulários desta aplicação #}
-    <link rel="stylesheet" href="{% static 'css/seguranca_trabalho/forms.css' %}">
-{% endblock %}
+{% block title %}Nova Ficha de EPI{% endblock %}
 
 {% block sst_content %}
-<div class="page-header mb-4">
-    <div>
-        <h1 class="h2">Criar Nova Ficha de EPI</h1>
-        <p class="text-muted">Selecione o funcionário para criar uma nova ficha de controle de EPI.</p>
+
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-plus-circle me-2"></i>Nova Ficha de EPI
+                </h4>
+                <small class="opacity-75">Criar ficha de controle para um funcionário</small>
+            </div>
+            <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
     </div>
-    <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-secondary">
-        <i class="bi bi-x-lg me-1"></i> Cancelar
-    </a>
 </div>
 
-<div class="row">
-    <div class="col-md-8">
+<div class="row justify-content-center">
+    <div class="col-lg-6">
         <div class="card shadow-sm">
-            <div class="card-body">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-person-plus me-2"></i>Selecione o Funcionário
+                </h6>
+            </div>
+            <div class="card-body p-4">
                 <form method="post" novalidate>
                     {% csrf_token %}
 
-                    {# Exibe erros gerais do formulário, se houver #}
                     {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {% for error in form.non_field_errors %}
-                                {{ error }}
-                            {% endfor %}
-                        </div>
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
                     {% endif %}
 
-                    <div class="mb-3">
-                        <label for="{{ form.funcionario.id_for_label }}" class="form-label">{{ form.funcionario.label }}</label>
-                        
-                        {# Renderiza o campo do formulário. Usando widget_tweaks para adicionar classe #}
-                        {% render_field form.funcionario class="form-select" %}
-                        
-                        {# Exibe erros específicos do campo #}
-                        {% if form.funcionario.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form.funcionario.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                        <div class="form-text">
-                            Apenas funcionários ativos e sem ficha aparecerão na lista. A função e data de admissão serão preenchidas automaticamente.
-                        </div>
+                    <div class="mb-4">
+                        <label for="{{ form.funcionario.id_for_label }}" class="form-label fw-semibold">
+                            Funcionário <span class="text-danger">*</span>
+                        </label>
+                        {% render_field form.funcionario class+="form-select" %}
+                        {% for error in form.funcionario.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                        <small class="form-text text-muted">
+                            Selecione o funcionário para criar a ficha de EPI
+                        </small>
                     </div>
 
-                    <hr>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>
+                            Apenas funcionários ativos e sem ficha de EPI são exibidos.
+                            Após criar a ficha, você poderá registrar entregas de EPIs.
+                        </small>
+                    </div>
 
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary">
+                    <div class="d-flex justify-content-between pt-3 border-top">
+                        <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
                             <i class="bi bi-check-lg me-1"></i> Criar Ficha
                         </button>
                     </div>
@@ -65,21 +72,6 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card bg-light-subtle border">
-            <div class="card-body">
-                <h5 class="card-title"><i class="bi bi-info-circle-fill me-2"></i>Próximos Passos</h5>
-                <p class="card-text">
-                    Após criar a ficha, você será redirecionado para a página de detalhes, onde poderá:
-                </p>
-                <ul>
-                    <li>Registrar a entrega de novos EPIs.</li>
-                    <li>Visualizar o histórico de entregas.</li>
-                    <li>Coletar assinaturas digitais.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
 </div>
 
-{% endblock sst_content %}
+{% endblock %}

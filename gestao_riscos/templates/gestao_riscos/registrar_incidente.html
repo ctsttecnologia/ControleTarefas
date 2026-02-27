@@ -1,76 +1,83 @@
 
+<!-- Template para exibir o formulário de criação/edição de um Tipo de Risco -->
 {% extends "base.html" %}
 
-
-{% block title %}{{ titulo_pagina|default:"Formulário" }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Registrar Incidente" }}{% endblock %}
 
 {% block content %}
-<main class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8 col-xl-7">
+<div class="container-fluid py-4">
 
-            <div class="card shadow-lg border-0">
-                <!-- Cabeçalho do Formulário -->
-                <div class="card-header bg-primary text-white py-3">
-                    <h2 class="h4 mb-0 fw-semibold text-center">
-                        <i class="bi bi-pencil-square me-2"></i>
-                        {{ titulo_pagina|default:"Preencher Formulário" }}
-                    </h2>
+    <!-- Header -->
+    <div class="card bg-danger text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>{{ titulo_pagina }}
+                    </h4>
+                    <small class="opacity-75">Registre ocorrências e incidentes de segurança</small>
                 </div>
+                <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
 
-                <div class="card-body p-4 p-md-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-pencil-square text-danger me-2"></i>Dados do Incidente
+                    </h6>
+                </div>
+                <div class="card-body p-4">
                     <form method="post" novalidate>
                         {% csrf_token %}
 
-                        <!-- Exibe erros que não são de um campo específico (non-field errors) -->
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger" role="alert">
-                                {% for error in form.non_field_errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        </div>
                         {% endif %}
 
-                        <!-- Itera sobre cada campo do formulário -->
                         {% for field in form %}
-                            <div class="mb-4">
-                                <!-- Rótulo do campo -->
-                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                                
-                                <!-- Renderiza o campo do formulário -->
-                                {{ field }}
-                                
-                                <!-- Exibe o texto de ajuda, se houver -->
-                                {% if field.help_text %}
-                                    <div class="form-text text-muted small mt-1">{{ field.help_text|safe }}</div>
-                                {% endif %}
-                                
-                                <!-- Exibe os erros de validação para o campo específico -->
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block mt-1">
-                                        {% for error in field.errors %}
-                                            <span>{{ error }}</span>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            
+                            {{ field }}
+                            
+                            {% if field.help_text %}
+                            <div class="form-text text-muted small">{{ field.help_text|safe }}</div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}{{ error }}{% endfor %}
                             </div>
+                            {% endif %}
+                        </div>
                         {% endfor %}
 
-                        <!-- Seção de Ações (Botões) -->
-                        <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">
-                            <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-secondary btn-lg">
-                                Cancelar
+                        <!-- Botões -->
+                        <div class="border-top pt-4 mt-4 d-flex justify-content-between">
+                            <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-1"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary btn-lg btn-glow">
-                                <i class="bi bi-check-lg me-1"></i>
-                                {{ botao_submit_texto|default:"Salvar" }}
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-check-lg me-1"></i> Registrar Incidente
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
-</main>
+
+</div>
 {% endblock %}
+

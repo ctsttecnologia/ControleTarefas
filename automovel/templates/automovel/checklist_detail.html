@@ -1,101 +1,229 @@
+<!-- Detalhes do Checklist de Vistoria -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Checklist — {{ checklist.get_tipo_display }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checklist-hero {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+        border-radius: 1rem; color: #fff; padding: 2rem 2.5rem;
+        margin-bottom: 2rem; position: relative; overflow: hidden;
+    }
+    .checklist-hero::after {
+        content: ''; position: absolute; top: -40%; right: -8%;
+        width: 250px; height: 250px; background: rgba(255,255,255,0.06);
+        border-radius: 50%; pointer-events: none;
+    }
+    .checklist-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .checklist-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+
+    .info-card { border: none; border-radius: 0.875rem; }
+    .info-card .card-header {
+        background: transparent; border-bottom: 2px solid #f0f2f5; padding: 1.25rem 1.5rem;
+    }
+    .info-card .card-header h5 { font-weight: 700; font-size: 1rem; margin: 0; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+    .summary-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f5f5f8; }
+    .summary-item-label {
+        font-size: 0.73rem; font-weight: 700; color: #858796;
+        text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.2rem;
+    }
+    .summary-item-value { font-weight: 600; color: #2d3748; font-size: 0.9rem; }
+
+    .inspection-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.875rem 1.5rem; border-bottom: 1px solid #f5f5f8;
+    }
+    .inspection-item:last-child { border-bottom: none; }
+    .inspection-item-label { font-weight: 600; color: #4a5568; font-size: 0.9rem; }
+
+    .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .photo-card { border: 2px solid #e9ecef; border-radius: 0.75rem; overflow: hidden; text-align: center; }
+    .photo-card img { width: 100%; height: 160px; object-fit: cover; cursor: pointer; transition: transform 0.2s; }
+    .photo-card img:hover { transform: scale(1.03); }
+    .photo-card h6 { font-size: 0.78rem; font-weight: 700; color: #858796; padding: 0.5rem; margin: 0; }
+
+    .signature-box {
+        border: 2px solid #e9ecef; border-radius: 0.75rem; padding: 1rem;
+        display: inline-block; background: #f8f9fc;
+    }
+    .signature-box img { max-width: 300px; }
+
+    @media (max-width: 768px) {
+        .summary-grid { grid-template-columns: 1fr; }
+        .photo-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    [data-bs-theme="dark"] .checklist-hero { background: linear-gradient(135deg, #13855c, #0d5d3f); }
+    [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .summary-item { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .summary-item-value { color: #e2e8f0; }
+    [data-bs-theme="dark"] .inspection-item { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .photo-card { border-color: rgba(255,255,255,0.06); }
+
+    @media print {
+        .no-print { display: none !important; }
+        .checklist-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-
 {% include "partials/_messages.html" %}
-<div class="container">
-    {% include "partials/_page_header.html" with title=title %}
-    <div class="card shadow-sm">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Resumo da Vistoria</h5>
-            <div class="btn-group">
-                <a href="{% url 'automovel:gerar_relatorio_excel' tipo='carros' %}" class="btn btn-success">
-                    <i class="bi bi-file-earmark-excel me-1"></i> Exportar para Excel
+
+<div class="container-fluid py-4 px-lg-5">
+
+    <div class="checklist-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-clipboard-check me-2"></i>Checklist de {{ checklist.get_tipo_display }}</h1>
+                <p>{{ checklist.agendamento.carro }} — {{ checklist.data_hora|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap no-print">
+                <a href="{% url 'automovel:agendamento_detail' checklist.agendamento.pk %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
                 </a>
-                <a href="{% url 'automovel:gerar_relatorio_word' tipo='checklist' pk=checklist.pk %}" class="btn btn-primary">
-                    <i class="bi bi-file-earmark-word me-1"></i> Exportar para Word
+                <a href="{% url 'automovel:gerar_relatorio_excel' tipo='carros' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                </a>
+                <a href="{% url 'automovel:gerar_relatorio_word' tipo='checklist' pk=checklist.pk %}" class="btn btn-sm btn-light fw-semibold">
+                    <i class="bi bi-file-earmark-word me-1"></i> Word
                 </a>
             </div>
-        </div>
-        <div class="card-body">
-            <div class="row border-bottom pb-3 mb-3">
-                <div class="col-md-4">
-                    <p class="mb-1"><strong>Veículo:</strong> {{ checklist.agendamento.carro }}</p>
-                    <p class="mb-0"><strong>Funcionário:</strong> {{ checklist.agendamento.funcionario }}</p>
-                </div>
-                <div class="col-md-4">
-                    <p class="mb-1"><strong>Data/Hora:</strong> {{ checklist.data_hora|date:"d/m/Y H:i" }}</p>
-                    <p class="mb-0"><strong>Tipo:</strong> <span class="badge text-bg-info">{{ checklist.get_tipo_display }}</span></p>
-                </div>
-                <div class="col-md-4">
-                    <p class="mb-1"><span>KM Inicial: {{ checklist.agendamento.km_inicial|default_if_none:"N/A" }} km</span></p>
-                    <p class="mb-0"><span>KM Final: {{ checklist.agendamento.km_final|default_if_none:"N/A" }} km</span></p>
-                </div>
-            </div>
-
-            <h5 class="mt-4">Itens Vistoriados</h5>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    Parte Frontal
-                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_frontal_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_frontal_status_display }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    Parte Traseira
-                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_trazeira_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_trazeira_status_display }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    Lado do Motorista
-                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_lado_motorista_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_lado_motorista_status_display }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    Lado do Passageiro
-                    <span class="badge rounded-pill text-bg-{% if checklist.revisao_lado_passageiro_status == 'ok' %}success{% else %}danger{% endif %}">{{ checklist.get_revisao_lado_passageiro_status_display }}</span>
-                </li>
-            </ul>
-
-            {% if checklist.observacoes_gerais %}
-            <h5 class="mt-4">Observações Gerais</h5>
-            <p class="text-muted">{{ checklist.observacoes_gerais|linebreaksbr }}</p>
-            {% endif %}
-
-            <h5 class="mt-4">Evidências Fotográficas</h5>
-            <div class="row">
-                <div class="col-md-3 text-center">
-                    <h6>Frontal</h6>
-                    <a href="{{ checklist.foto_frontal.url }}" target="_blank"><img src="{{ checklist.foto_frontal.url }}" class="img-fluid rounded border" alt="Foto Frontal"></a>
-                </div>
-                <div class="col-md-3 text-center">
-                    <h6>Traseira</h6>
-                    <a href="{{ checklist.foto_trazeira.url }}" target="_blank"><img src="{{ checklist.foto_trazeira.url }}" class="img-fluid rounded border" alt="Foto Traseira"></a>
-                </div>
-                <div class="col-md-3 text-center">
-                    <h6>Lado do Motorista</h6>
-                    <a href="{{ checklist.foto_lado_motorista.url }}" target="_blank"><img src="{{ checklist.foto_lado_motorista.url }}" class="img-fluid rounded border" alt="Foto Lado do Motorista"></a>
-                </div>
-                <div class="col-md-3 text-center">
-                    <h6>Lado do Passageiro</h6>
-                    <a href="{{ checklist.foto_lado_passageiro.url }}" target="_blank"><img src="{{ checklist.foto_lado_passageiro.url }}" class="img-fluid rounded border" alt="Foto Lado do Passageiro"></a>
-                </div>
-            </div>
-            
-            {% if checklist.assinatura %}
-            <h5 class="mt-4">Assinatura do Responsável</h5>
-            <div class="border p-2 d-inline-block bg-light">
-                <img src="{{ checklist.assinatura }}" alt="Assinatura" style="max-width: 300px;">
-                <p>{{ usuario.get_full_name }} - {{ usuario.cargo }}</p>
-            </div>
-            {% endif %}
-
-        </div>
-        <div class="card-footer text-end">
-            <a href="{% url 'automovel:dashboard' %}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar para Agendamento
-            </a>
         </div>
     </div>
-</div>    
+
+    <!-- Resumo -->
+    <div class="card info-card shadow-sm mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-info-circle text-primary me-2"></i>Resumo da Vistoria</h5>
+        </div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-item-label">Veículo</div>
+                <div class="summary-item-value">{{ checklist.agendamento.carro }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-item-label">Funcionário</div>
+                <div class="summary-item-value">{{ checklist.agendamento.funcionario }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-item-label">Data / Hora</div>
+                <div class="summary-item-value">{{ checklist.data_hora|date:"d/m/Y H:i" }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-item-label">Tipo</div>
+                <div class="summary-item-value">
+                    <span class="badge bg-info" style="border-radius: 50rem;">{{ checklist.get_tipo_display }}</span>
+                </div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-item-label">KM Inicial</div>
+                <div class="summary-item-value">{{ checklist.agendamento.km_inicial|default_if_none:"N/A" }} km</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-item-label">KM Final</div>
+                <div class="summary-item-value">{{ checklist.agendamento.km_final|default_if_none:"N/A" }} km</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itens Vistoriados -->
+    <div class="card info-card shadow-sm mb-4">
+        <div class="card-header">
+            <h5><i class="bi bi-check2-square text-success me-2"></i>Itens Vistoriados</h5>
+        </div>
+        <div>
+            <div class="inspection-item">
+                <span class="inspection-item-label"><i class="bi bi-arrow-up-circle me-2"></i>Parte Frontal</span>
+                <span class="badge rounded-pill bg-{% if checklist.revisao_frontal_status == 'ok' %}success{% else %}danger{% endif %}">
+                    {{ checklist.get_revisao_frontal_status_display }}
+                </span>
+            </div>
+            <div class="inspection-item">
+                <span class="inspection-item-label"><i class="bi bi-arrow-down-circle me-2"></i>Parte Traseira</span>
+                <span class="badge rounded-pill bg-{% if checklist.revisao_trazeira_status == 'ok' %}success{% else %}danger{% endif %}">
+                    {{ checklist.get_revisao_trazeira_status_display }}
+                </span>
+            </div>
+            <div class="inspection-item">
+                <span class="inspection-item-label"><i class="bi bi-arrow-left-circle me-2"></i>Lado do Motorista</span>
+                <span class="badge rounded-pill bg-{% if checklist.revisao_lado_motorista_status == 'ok' %}success{% else %}danger{% endif %}">
+                    {{ checklist.get_revisao_lado_motorista_status_display }}
+                </span>
+            </div>
+            <div class="inspection-item">
+                <span class="inspection-item-label"><i class="bi bi-arrow-right-circle me-2"></i>Lado do Passageiro</span>
+                <span class="badge rounded-pill bg-{% if checklist.revisao_lado_passageiro_status == 'ok' %}success{% else %}danger{% endif %}">
+                    {{ checklist.get_revisao_lado_passageiro_status_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% if checklist.observacoes_gerais %}
+    <div class="card info-card shadow-sm mb-4">
+        <div class="card-header"><h5><i class="bi bi-chat-text text-warning me-2"></i>Observações</h5></div>
+        <div class="card-body"><p class="mb-0" style="color: #4a5568;">{{ checklist.observacoes_gerais|linebreaksbr }}</p></div>
+    </div>
+    {% endif %}
+
+    <!-- Fotos -->
+    <div class="card info-card shadow-sm mb-4">
+        <div class="card-header"><h5><i class="bi bi-images text-primary me-2"></i>Evidências Fotográficas</h5></div>
+        <div class="card-body">
+            <div class="photo-grid">
+                {% if checklist.foto_frontal %}
+                <div class="photo-card">
+                    <a href="{{ checklist.foto_frontal.url }}" target="_blank">
+                        <img src="{{ checklist.foto_frontal.url }}" alt="Frontal" loading="lazy">
+                    </a>
+                    <h6>Frontal</h6>
+                </div>
+                {% endif %}
+                {% if checklist.foto_trazeira %}
+                <div class="photo-card">
+                    <a href="{{ checklist.foto_trazeira.url }}" target="_blank">
+                        <img src="{{ checklist.foto_trazeira.url }}" alt="Traseira" loading="lazy">
+                    </a>
+                    <h6>Traseira</h6>
+                </div>
+                {% endif %}
+                {% if checklist.foto_lado_motorista %}
+                <div class="photo-card">
+                    <a href="{{ checklist.foto_lado_motorista.url }}" target="_blank">
+                        <img src="{{ checklist.foto_lado_motorista.url }}" alt="Lado Motorista" loading="lazy">
+                    </a>
+                    <h6>Motorista</h6>
+                </div>
+                {% endif %}
+                {% if checklist.foto_lado_passageiro %}
+                <div class="photo-card">
+                    <a href="{{ checklist.foto_lado_passageiro.url }}" target="_blank">
+                        <img src="{{ checklist.foto_lado_passageiro.url }}" alt="Lado Passageiro" loading="lazy">
+                    </a>
+                    <h6>Passageiro</h6>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if checklist.assinatura %}
+    <div class="card info-card shadow-sm mb-4">
+        <div class="card-header"><h5><i class="bi bi-pen text-info me-2"></i>Assinatura</h5></div>
+        <div class="card-body">
+            <div class="signature-box">
+                <img src="{{ checklist.assinatura }}" alt="Assinatura">
+                <p class="mt-2 mb-0 small text-muted">{{ usuario.get_full_name }} — {{ usuario.cargo }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
+
 

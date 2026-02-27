@@ -1,381 +1,1049 @@
+
+<!-- Dashboard de Atas de Reunião -->
 {% extends "base.html" %}
 {% load static %}
-
+{% load ata_extras %}
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Estilos para os cards de indicadores (KPIs) */
+    /* ═══ HERO ═══ */
+    .page-hero {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 280px;
+        height: 280px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
+    .page-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+
+    /* ═══ EXPORT BAR ═══ */
+    .export-bar {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.875rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .export-bar .form-control,
+    .export-bar .form-select {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        font-size: 0.85rem;
+    }
+    .export-bar .form-control:focus,
+    .export-bar .form-select:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
+    }
+    .export-bar label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #858796;
+    }
+
+    .btn-export {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.5rem 1rem;
+        border-radius: 0.625rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        border: 2px solid;
+        transition: all 0.2s;
+    }
+    .btn-export:hover { transform: translateY(-1px); }
+    .btn-export-pdf { border-color: #e74a3b; color: #e74a3b; background: rgba(231,74,59,0.04); }
+    .btn-export-pdf:hover { background: #e74a3b; color: #fff; }
+    .btn-export-excel { border-color: #1cc88a; color: #1cc88a; background: rgba(28,200,138,0.04); }
+    .btn-export-excel:hover { background: #1cc88a; color: #fff; }
+
+    /* ═══ KPI CARDS ═══ */
     .kpi-card {
-        border-left: 5px solid;
-        transition: transform 0.2s ease-in-out;
+        border: none;
+        border-radius: 0.875rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+        overflow: hidden;
+        text-decoration: none !important;
+        color: inherit !important;
     }
-    .kpi-card:hover {
-        transform: translateY(-5px);
+    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .kpi-card .card-body { padding: 1.5rem; }
+    .kpi-indicator {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        border-radius: 0.875rem 0 0 0.875rem;
     }
-    .kpi-card-icon {
-        font-size: 2.5rem;
-        opacity: 0.3;
-    }
-    .border-primary-subtle { border-left-color: var(--bs-primary) !important; }
-    .border-success-subtle { border-left-color: var(--bs-success) !important; }
-    .border-danger-subtle { border-left-color: var(--bs-danger) !important; }
-    .border-secondary-subtle { border-left-color: var(--bs-secondary) !important; }
-    
-    /* Estilos para o Quadro Kanban */
-    .kanban-board-container {
-        background-color: var(--bs-light-bg-subtle, #f8f9fa);
-        border-radius: 0.5rem;
-        padding: 1rem;
-    }
-    .kanban-board {
+    .kpi-icon-wrapper {
+        width: 50px;
+        height: 50px;
+        border-radius: 0.75rem;
         display: flex;
-        overflow-x: auto;
-        padding-bottom: 1rem;
-        gap: 1rem;
-        scrollbar-width: thin;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
     }
-    .kanban-column {
-        flex: 0 0 320px;
-        min-width: 320px;
-        background-color: var(--bs-tertiary-bg, #f1f1f1);
+    .kpi-value { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
+    .kpi-label { font-size: 0.78rem; color: #858796; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+    .kpi-percent { font-size: 0.72rem; font-weight: 600; margin-top: 0.25rem; }
+    .kpi-dot {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.3); }
+    }
+
+    /* ═══ CHARTS ═══ */
+    .chart-wrapper { position: relative; height: 320px; width: 100%; }
+    .chart-wrapper-donut { position: relative; height: 280px; width: 100%; max-width: 280px; margin: 0 auto; }
+    .chart-card { border: none; border-radius: 0.875rem; }
+    .chart-card .card-header {
+        background: transparent;
+        border-bottom: 2px solid #f0f2f5;
+        padding: 1.25rem 1.5rem;
+    }
+    .chart-card .card-header h5 { font-weight: 700; font-size: 1rem; margin: 0; }
+
+    /* ═══ KANBAN FILTERS ═══ */
+    .kanban-filters {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    .kanban-filters .form-select {
+        border: 2px solid #e2e8f0;
         border-radius: 0.5rem;
-        border-top: 4px solid;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
     }
-    .kanban-column-header {
-        padding: 0.75rem;
+    .kanban-filters .form-select:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
+    }
+    .kanban-filters label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #858796;
+        margin-bottom: 0.25rem;
+    }
+    .filter-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: rgba(78,115,223,0.1);
+        color: #4e73df;
+        padding: 0.3rem 0.65rem;
+        border-radius: 50rem;
+        font-size: 0.72rem;
         font-weight: 600;
     }
+
+    /* ═══ KANBAN ═══ */
+    .kanban-section-title {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #2d3748;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .kanban-board-container {
+        background: #f8f9fc;
+        border-radius: 0.875rem;
+        padding: 1.25rem;
+        border: 1px solid #e9ecef;
+    }
+    .kanban-board { display: flex; overflow-x: auto; padding-bottom: 0.5rem; gap: 1rem; scrollbar-width: thin; }
+    .kanban-column {
+        flex: 0 0 300px;
+        min-width: 300px;
+        background: #fff;
+        border-radius: 0.75rem;
+        border-top: 4px solid;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .kanban-column-header {
+        padding: 0.875rem 1rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #4a5568;
+        border-bottom: 1px solid #f0f2f5;
+    }
+    .kanban-column-count {
+        background: rgba(0,0,0,0.06);
+        color: #4a5568;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.2rem 0.55rem;
+        border-radius: 50rem;
+        transition: all 0.2s;
+    }
     .kanban-cards {
-        padding: 0 0.5rem 0.5rem;
-        min-height: 200px;
-        max-height: 60vh;
+        padding: 0.75rem;
+        min-height: 150px;
+        max-height: 55vh;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
+        gap: 0.625rem;
     }
     .kanban-card {
-        cursor: pointer;
-        transition: box-shadow 0.2s ease-in-out;
+        border: 1.5px solid #e9ecef;
+        border-radius: 0.625rem;
+        background: #fff;
+        cursor: grab;
+        transition: all 0.2s;
+        text-decoration: none !important;
+        color: inherit !important;
+        position: relative;
     }
-    .kanban-card:hover {
-        box-shadow: 0 .25rem .75rem rgba(0,0,0,.1);
+    .kanban-card:hover { 
+        border-color: #4e73df; 
+        box-shadow: 0 4px 12px rgba(78,115,223,0.1); 
+        transform: translateY(-2px); 
     }
-
-    /* Cores das colunas do Kanban */
-    .kanban-column[data-status="Pendente"] { border-top-color: #ffc107; }
-    .kanban-column[data-status="Em Andamento"] { border-top-color: #0dcaf0; }
-    .kanban-column[data-status="Concluído"] { border-top-color: #198754; }
-    .kanban-column[data-status="Cancelado"] { border-top-color: #6c757d; }
-
-    .kanban-column[data-status="Cancelado"] .kanban-card {
-        opacity: 0.7;
-        text-decoration: line-through;
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.is-dragging { 
+        opacity: 0.5; 
+        transform: rotate(2deg); 
+        cursor: grabbing;
     }
-
-    /* Estilos para a nova área de filtros de relatório */
-    .report-filters {
+    .kanban-card.hidden-by-filter {
+        display: none !important;
+    }
+    .kanban-card .card-body { padding: 0.875rem; }
+    .kanban-card-title { 
+        font-size: 0.85rem; 
+        font-weight: 600; 
+        color: #2d3748; 
+        line-height: 1.4; 
+        margin-bottom: 0.25rem;
+    }
+    .kanban-card-meta { font-size: 0.75rem; color: #a0aec0; }
+    
+    /* Link de edição no card */
+    .kanban-card-link {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        width: 28px;
+        height: 28px;
         display: flex;
-        gap: 0.75rem;
         align-items: center;
-        flex-wrap: wrap;
+        justify-content: center;
+        background: rgba(78,115,223,0.1);
+        color: #4e73df;
+        border-radius: 0.375rem;
+        font-size: 0.8rem;
+        opacity: 0;
+        transition: all 0.2s;
+        z-index: 10;
+    }
+    .kanban-card:hover .kanban-card-link {
+        opacity: 1;
+    }
+    .kanban-card-link:hover {
+        background: #4e73df;
+        color: #fff;
+        transform: scale(1.1);
+    }
+    
+    /* Info do cliente no card */
+    .kanban-card-client {
+        font-size: 0.7rem;
+        color: #718096;
+        background: rgba(0,0,0,0.04);
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.25rem;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kanban-column[data-status="Pendente"]      { border-top-color: #f6c23e; }
+    .kanban-column[data-status="Em Andamento"]  { border-top-color: #36b9cc; }
+    .kanban-column[data-status="Concluído"]     { border-top-color: #1cc88a; }
+    .kanban-column[data-status="Cancelado"]     { border-top-color: #858796; }
+    .kanban-column[data-status="Cancelado"] .kanban-card { opacity: 0.6; }
+    .kanban-column[data-status="Cancelado"] .kanban-card-title { text-decoration: line-through; }
+
+    .kanban-empty { text-align: center; padding: 2rem 1rem; color: #cbd5e0; font-size: 0.82rem; }
+    .kanban-empty i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+
+    .badge-overdue { background: rgba(231,74,59,0.12); color: #c0392b; font-weight: 600; border-radius: 50rem; font-size: 0.7rem; padding: 0.25rem 0.6rem; }
+    .badge-on-time { background: rgba(108,117,125,0.1); color: #858796; font-weight: 600; border-radius: 50rem; font-size: 0.7rem; padding: 0.25rem 0.6rem; }
+
+    /* Toast */
+    .kanban-toast {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: #1cc88a;
+        color: #fff;
+        padding: 0.875rem 1.25rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        transform: translateY(100px);
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 9999;
+    }
+    .kanban-toast.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    .kanban-toast.error {
+        background: #e74a3b;
+    }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
+    [data-bs-theme="dark"] .export-bar { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .export-bar .form-control,
+    [data-bs-theme="dark"] .export-bar .form-select { border-color: #2d3748; }
+    [data-bs-theme="dark"] .kanban-filters { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .kanban-filters .form-select { border-color: #2d3748; background: var(--bs-body-bg); color: #e2e8f0; }
+    [data-bs-theme="dark"] .kpi-card { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .kpi-value { color: #e2e8f0; }
+    [data-bs-theme="dark"] .chart-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .kanban-board-container { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .kanban-column { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .kanban-card { border-color: rgba(255,255,255,0.06); background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .kanban-card-title { color: #e2e8f0; }
+    [data-bs-theme="dark"] .kanban-section-title { color: #e2e8f0; }
+    [data-bs-theme="dark"] .kanban-card-client { background: rgba(255,255,255,0.06); color: #a0aec0; }
+
+    @media print {
+        .no-print { display: none !important; }
+        .page-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .kanban-board-container { display: none; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-box">
-    <div class="container-fluid">
-        <div class=" shadow-sm">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-                <div>
-                    <br>
-                    <h1 class="h2">📊 Dashboard</h1>
-                    <p class="text-muted mb-0">Performance e fluxo de trabalho em ata.</p>
-                </div>
-                <div class="d-flex justify-content-between align-items-center flex-wrap">    
-                    <div class="report-filters">
-                        <div class="form-floating">
-                            <input type="date" class="form-control" id="data_inicio_filtro" placeholder="Data Início">
-                            <label for="data_inicio_filtro">Data Início</label>
-                        </div>
-                        <div class="form-floating">
-                            <input type="date" class="form-control" id="data_fim_filtro" placeholder="Data Fim">
-                            <label for="data_fim_filtro">Data Fim</label>
-                        </div>
-                        
-                        <button id="btn-export-pdf" class="btn btn-outline-danger h-100 py-2">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
-                        </button>
-                        <button id="btn-export-excel" class="btn btn-outline-success h-100 py-2">
-                            <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
-                        </button>
-                    </div>
-                </div>
-                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-list-ul me-1"></i> Lista
-                </a>   
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- ═══ HERO ═══ -->
+    <div class="page-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-clipboard-data me-2"></i>Dashboard de Atas</h1>
+                <p>Performance e fluxo de trabalho das atividades de reunião</p>
+            </div>
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light no-print">
+                <i class="bi bi-list-ul me-1"></i> Ver Lista
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══ EXPORT BAR ═══ -->
+    <div class="export-bar shadow-sm no-print">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label for="data_inicio_filtro">Data Início</label>
+                <input type="date" class="form-control form-control-sm" id="data_inicio_filtro">
+            </div>
+            <div class="col-md-3">
+                <label for="data_fim_filtro">Data Fim</label>
+                <input type="date" class="form-control form-control-sm" id="data_fim_filtro">
+            </div>
+            <div class="col-md-6 d-flex gap-2 justify-content-end">
+                <button id="btn-export-pdf" class="btn-export btn-export-pdf">
+                    <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+                </button>
+                <button id="btn-export-excel" class="btn-export btn-export-excel">
+                    <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                </button>
             </div>
         </div>
-            <div class="row g-4 mb-4">
-                <div class="col-md-6 col-xl-3">
-                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CONCLUIDO" class="card shadow-sm kpi-card border-success-subtle h-100 text-decoration-none">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="card-title fw-bold text-success mb-1">{{ total_concluido }}</h3>
-                                <p class="card-text text-muted mb-0">Total Concluído</p>
-                            </div>
-                            <i class="bi bi-check2-circle kpi-card-icon text-success"></i>
-                        </div>
-                    </a>
-                </div>
+    </div>
 
-                <div class="col-md-6 col-xl-3">
-                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CONCLUIDO" class="card shadow-sm kpi-card border-primary-subtle h-100 text-decoration-none">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="card-title fw-bold text-primary mb-1">{{ concluido_no_prazo }}</h3>
-                                <p class="card-text text-muted mb-0">Concluído no Prazo</p>
-                                <span class="badge bg-light-subtle text-primary-emphasis mt-2">{{ percentual_no_prazo|floatformat:1 }}% do total</span>
-                            </div>
-                            <i class="bi bi-calendar2-check kpi-card-icon text-primary"></i>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-6 col-xl-3">
-                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CONCLUIDO" class="card shadow-sm kpi-card border-danger-subtle h-100 text-decoration-none">
-                        <div class="card-body d-flex justify-content-between align-items-center position-relative">
-                            <div>
-                                <h3 class="card-title fw-bold text-danger mb-1">{{ concluido_com_atraso }}</h3>
-                                <p class="card-text text-muted mb-0">Concluído com Atraso</p>
-                                <span class="badge bg-light-subtle text-danger-emphasis mt-2">{{ percentual_com_atraso|floatformat:1 }}% do total</span>
-                            </div>
-                            
-                            {% if concluido_com_atraso > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle" title="{{ concluido_com_atraso }} concluído(s) com atraso">
-                                <span class="visually-hidden">Notificação de atrasos</span>
-                            </span>
-                            <i class="bi bi-bell-fill kpi-card-icon text-danger"></i>
-                            {% else %}
-                            <i class="bi bi-calendar2-x kpi-card-icon text-danger"></i>
-                            {% endif %}
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-md-6 col-xl-3">
-                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=CANCELADO" class="card shadow-sm kpi-card border-secondary-subtle h-100 text-decoration-none">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h3 class="card-title fw-bold text-secondary mb-1">{{ total_cancelado }}</h3>
-                                <p class="card-text text-muted mb-0">Total Cancelado</p>
-                            </div>
-                            <i class="bi bi-x-circle kpi-card-icon text-secondary"></i>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="row g-4 mb-5">
-                <div class="col-lg-7">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Pendências por Responsável</h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="pendenciasChart"></canvas>
-                        </div>
+    <!-- ═══ KPIs ═══ -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-success"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-success bg-opacity-10">
+                        <i class="bi bi-check2-circle text-success"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-success">{{ total_concluido }}</div>
+                        <div class="kpi-label">Total Concluído</div>
                     </div>
                 </div>
-                <div class="col-lg-5">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Qualidade das Conclusões</h5>
-                        </div>
-                        <div class="card-body d-flex align-items-center justify-content-center">
-                            <canvas id="qualidadeChart" style="max-height: 300px;"></canvas>
-                        </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-primary"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
+                        <i class="bi bi-calendar2-check text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value text-primary">{{ concluido_no_prazo }}</div>
+                        <div class="kpi-label">No Prazo</div>
+                        <div class="kpi-percent text-primary">{{ percentual_no_prazo|floatformat:1 }}% do total</div>
                     </div>
                 </div>
-            </div>
-
-            <div class="mb-4 pb-2 border-bottom">
-                <h2 class="h3">📋 Quadro Kanban de Atividades</h2>
-            </div>
-            <div class="d-flex justify-content-center kanban-board-container shadow-sm">
-                <div class="kanban-board">
-                    {% for status_label, tasks in kanban_items.items %}
-                    <div class="kanban-column" data-status="{{ status_label }}">
-                        <div class="kanban-column-header d-flex justify-content-between align-items-center">
-                            <span>{{ status_label }}</span>
-                            <span class="badge bg-dark-subtle text-dark-emphasis rounded-pill">{{ tasks|length }}</span>
-                        </div>
-                        <div class="kanban-cards">
-                            {% for task in tasks %}
-                            <a href="{% url 'ata_reuniao:ata_reuniao_update' task.pk %}" class="card kanban-card text-decoration-none text-dark shadow-sm">
-                                <div class="card-body p-3">
-                                    <p class="card-text fw-bold mb-2">{{ task.acao|truncatewords:20 }}</p>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <small class="text-muted" title="{{ task.responsavel.nome_completo }}">
-                                            <i class="bi bi-person-circle me-1"></i>{{ task.responsavel.nome_completo|truncatechars:20 }}
-                                        </small>
-                                        {% if task.prazo %}
-                                        <span class="badge {% if task.is_overdue %}bg-danger-subtle text-danger-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}" title="Prazo">
-                                            <i class="bi bi-calendar-event me-1"></i>{{ task.prazo|date:"d/m/y" }}
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </a>
-                            {% empty %}
-                            <div class="text-center text-muted p-4" style="font-size: 0.9rem;">Nenhuma ata neste status.</div>
-                            {% endfor %}
-                        </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Concluído" class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator bg-danger"></div>
+                {% if concluido_com_atraso > 0 %}<div class="kpi-dot bg-danger"></div>{% endif %}
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper bg-danger bg-opacity-10">
+                        <i class="bi bi-{% if concluido_com_atraso > 0 %}bell-fill{% else %}calendar2-x{% endif %} text-danger"></i>
                     </div>
-                    {% endfor %}
+                    <div>
+                        <div class="kpi-value text-danger">{{ concluido_com_atraso }}</div>
+                        <div class="kpi-label">Com Atraso</div>
+                        <div class="kpi-percent text-danger">{{ percentual_com_atraso|floatformat:1 }}% do total</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}?status=Cancelado" class="card kpi-card shadow-sm h-100">
+                <div class="kpi-indicator" style="background: #858796;"></div>
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrapper" style="background: rgba(133,135,150,0.1);">
+                        <i class="bi bi-x-circle" style="color: #858796;"></i>
+                    </div>
+                    <div>
+                        <div class="kpi-value" style="color: #858796;">{{ total_cancelado }}</div>
+                        <div class="kpi-label">Cancelado</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══ GRÁFICOS ═══ -->
+    <div class="row g-4 mb-5">
+        <div class="col-lg-7">
+            <div class="card chart-card shadow-sm h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-bar-chart-line text-warning me-2"></i>Pendências por Responsável</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-wrapper"><canvas id="pendenciasChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card chart-card shadow-sm h-100">
+                <div class="card-header">
+                    <h5><i class="bi bi-pie-chart text-success me-2"></i>Qualidade das Conclusões</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <div class="chart-wrapper-donut"><canvas id="qualidadeChart"></canvas></div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- ═══ KANBAN ═══ -->
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+        <h2 class="kanban-section-title">
+            <i class="bi bi-kanban"></i> Quadro Kanban
+            {% if filial_ativa %}
+            <small class="text-muted fs-6 ms-2">
+                <i class="bi bi-building"></i> {{ filial_ativa.nome }}
+            </small>
+            {% elif is_superuser %}
+            <small class="text-muted fs-6 ms-2">
+                <i class="bi bi-globe"></i> Todas as filiais
+            </small>
+            {% endif %}
+        </h2>
+        <small class="text-muted">
+            <i class="bi bi-info-circle me-1"></i> Arraste os cards para alterar o status | Clique para editar
+        </small>
+    </div>
+  
+    <!-- ═══ FILTROS DO KANBAN ═══ -->
+    <div class="kanban-filters shadow-sm no-print">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4 col-lg-3">
+                <label for="filtro-coordenador">Coordenador</label>
+                <select class="form-select form-select-sm" id="filtro-coordenador">
+                    <option value="">Todos os coordenadores</option>
+                    {% for funcionario in coordenadores %}
+                    <option value="{{ funcionario.usuario.id }}" 
+                            {% if current_coordenador == funcionario.usuario.id|stringformat:"s" %}selected{% endif %}>
+                        {{ funcionario.nome_completo }}
+                    </option>
+                {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <label for="filtro-cliente">Cliente</label>
+                <select class="form-select form-select-sm" id="filtro-cliente">
+                    <option value="">Todos os clientes</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.pk }}">{{ cliente.nome|truncatechars:45 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-limpar-filtros">
+                    <i class="bi bi-x-lg me-1"></i> Limpar Filtros
+                </button>
+            </div>
+            <div class="col-lg-3 text-end">
+                <div id="filtros-ativos"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="kanban-board-container no-print">
+        <div class="kanban-board" id="kanbanBoard">
+            {% for status_id, status_label in kanban_status_choices %}
+            <div class="kanban-column" data-status="{{ status_label }}" data-status-id="{{ status_id }}">
+                <div class="kanban-column-header d-flex justify-content-between align-items-center">
+                    <span>{{ status_label }}</span>
+                    <span class="kanban-column-count" id="count-{{ status_id }}">
+                        {{ kanban_items|get_item:status_label|length }}
+                    </span>
+                </div>
+                <div class="kanban-cards" data-status-id="{{ status_id }}" data-status-label="{{ status_label }}">
+                    {% for task in kanban_items|get_item:status_label %}
+                    <div class="card kanban-card"
+                         draggable="true"
+                         data-id="{{ task.pk }}"
+                         data-status-id="{{ status_id }}"
+                         data-status-label="{{ status_label }}"
+                         data-coordenador="{{ task.coordenador_id|default:'' }}"
+                         data-cliente="{{ task.contrato_id|default:'' }}"
+                         data-url="{% url 'ata_reuniao:ata_reuniao_update' task.pk %}">
+                        
+                        <!-- Botão de edição (aparece no hover) -->
+                        <a href="{% url 'ata_reuniao:ata_reuniao_update' task.pk %}" 
+                           class="kanban-card-link" 
+                           title="Editar atividade"
+                           onclick="event.stopPropagation();">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        
+                        <div class="card-body">
+                            {% if task.contrato %}
+                            <span class="kanban-card-client" title="{{ task.contrato.nome }}">
+                                <i class="bi bi-building me-1"></i>{{ task.contrato.nome|truncatechars:30 }}
+                            </span>
+                            {% endif %}
+                            
+                            <p class="kanban-card-title">{{ task.titulo|default:task.acao|truncatewords:12 }}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="kanban-card-meta" title="{{ task.responsavel.nome_completo|default:'Sem responsável' }}">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    {{ task.responsavel.nome_completo|default:"Sem responsável"|truncatechars:15 }}
+                                </span>
+                                {% if task.prazo %}
+                                <span class="{% if task.is_overdue %}badge-overdue{% else %}badge-on-time{% endif %}">
+                                    <i class="bi bi-calendar-event me-1"></i>{{ task.prazo|date:"d/m/y" }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="kanban-empty" data-empty="true">
+                        <i class="bi bi-inbox"></i>
+                        Nenhuma ata neste status
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Toast de notificação -->
+    <div class="kanban-toast" id="kanbanToast">
+        <i class="bi bi-check-circle me-2"></i>
+        <span id="toastMessage">Status atualizado com sucesso!</span>
+    </div>
+
 </div>
-{% endblock %}    
-
-{{ pendencias_labels|json_script:"pendencias_labels_json" }}
-{{ pendencias_data|json_script:"pendencias_data_json" }}
-{{ qualidade_labels|json_script:"qualidade_labels_json" }}
-{{ qualidade_data|json_script:"qualidade_data_json" }}
-
-
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Obtenha o modo do tema para ajustar as cores dos gráficos
-        const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-        const chartTextColor = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
-
-        // Correção: Obtenha os dados das tags json_script e faça o parse
-        try {
-            let pendenciasLabels = JSON.parse(document.getElementById('pendencias_labels_json').textContent);
-            let pendenciasData = JSON.parse(document.getElementById('pendencias_data_json').textContent);
-            let qualidadeLabels = JSON.parse(document.getElementById('qualidade_labels_json').textContent);
-            let qualidadeData = JSON.parse(document.getElementById('qualidade_data_json').textContent);
-
-            // Gráfico de Barras: Pendências por Responsável
-            const pendenciasCtx = document.getElementById('pendenciasChart');
-            if (pendenciasCtx && pendenciasData.length > 0) {
-                new Chart(pendenciasCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: pendenciasLabels,
-                        datasets: [{
-                            label: 'Nº de Pendências',
-                            data: pendenciasData,
-                            backgroundColor: 'rgba(255, 193, 7, 0.6)',
-                            borderColor: 'rgba(255, 193, 7, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        indexAxis: 'y',
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                ticks: { precision: 0, color: chartTextColor }
-                            },
-                            y: {
-                                ticks: { color: chartTextColor }
-                            }
-                        },
-                        plugins: {
-                            legend: { display: false }
-                        }
-                    }
-                });
-            } else {
-                pendenciasCtx.parentNode.innerHTML = '<p class="text-center text-muted p-4">Nenhuma pendência encontrada.</p>';
-            }
-
-            // Gráfico de Rosca: Qualidade das Atividades Concluídas
-            const qualidadeCtx = document.getElementById('qualidadeChart');
-            if (qualidadeCtx && qualidadeData.length > 0) {
-                new Chart(qualidadeCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: qualidadeLabels,
-                        datasets: [{
-                            data: qualidadeData,
-                            backgroundColor: ['rgba(25, 135, 84, 0.7)', 'rgba(220, 53, 69, 0.7)'],
-                            borderColor: ['#FFFFFF', '#FFFFFF'],
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: { color: chartTextColor }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Performance de Conclusão',
-                                color: chartTextColor
-                            }
-                        }
-                    }
-                });
-            } else {
-                qualidadeCtx.parentNode.innerHTML = '<p class="text-center text-muted p-4">Nenhum dado de conclusão encontrado.</p>';
-            }
-
-        } catch (error) {
-            console.error('Erro ao renderizar gráficos:', error);
-            // Opcional: Adicione uma mensagem de erro no HTML para o usuário
-            document.getElementById('pendenciasChart').parentNode.innerHTML = '<p class="text-danger text-center p-4">Erro ao carregar o gráfico de pendências.</p>';
-            document.getElementById('qualidadeChart').parentNode.innerHTML = '<p class="text-danger text-center p-4">Erro ao carregar o gráfico de qualidade.</p>';
-        }
-
-        // Script para Exportação de Relatórios com Filtro de Data
-        const dataInicioInput = document.getElementById('data_inicio_filtro');
-        const dataFimInput = document.getElementById('data_fim_filtro');
-        const btnPdf = document.getElementById('btn-export-pdf');
-        const btnExcel = document.getElementById('btn-export-excel');
-
-        const baseUrlPdf = "{% url 'ata_reuniao:ata_reuniao_export_pdf' %}";
-        const baseUrlExcel = "{% url 'ata_reuniao:ata_reuniao_export_excel' %}";
-
-        function handleExport(baseUrl) {
-            const dataInicio = dataInicioInput.value;
-            const dataFim = dataFimInput.value;
-            
-            if ((dataInicio && dataFim) || (!dataInicio && !dataFim)) {
-                const params = new URLSearchParams();
-                if (dataInicio && dataFim) {
-                    params.set('data_inicio', dataInicio);
-                    params.set('data_fim', dataFim);
-                }
-                
-                const url = `${baseUrl}?${params.toString()}`;
-                window.location.href = url;
-            } else {
-                alert('Por favor, preencha ambas as datas (Início e Fim) ou deixe-as vazias para exportar todos os dados.');
-            }
-        }
-
-        if (btnPdf) {
-            btnPdf.addEventListener('click', () => handleExport(baseUrlPdf));
-        }
-
-        if (btnExcel) {
-            btnExcel.addEventListener('click', () => handleExport(baseUrlExcel));
-        }
-    });
-</script>
 {% endblock %}
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 
+{{ pendencias_labels|default:"[]"|json_script:"pendencias_labels_data" }}
+{{ pendencias_data|default:"[]"|json_script:"pendencias_data_data" }}
+{{ qualidade_labels|default:"[]"|json_script:"qualidade_labels_data" }}
+{{ qualidade_data|default:"[]"|json_script:"qualidade_data_data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // ═══════════════════════════════════════════════════════════════
+    // CONFIGURAÇÕES GLOBAIS
+    // ═══════════════════════════════════════════════════════════════
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const fontColor = isDark ? 'rgba(255,255,255,0.7)' : '#858796';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const csrfToken = '{{ csrf_token }}';
+    const apiUrlBase = '{% url "ata_reuniao:api_update_status" 0 %}';
+    const baseOpts = { responsive: true, maintainAspectRatio: false };
+
+    // ═══════════════════════════════════════════════════════════════
+    // GRÁFICOS
+    // ═══════════════════════════════════════════════════════════════
+    const pendenciasLabels = JSON.parse(document.getElementById('pendencias_labels_data').textContent);
+    const pendenciasData = JSON.parse(document.getElementById('pendencias_data_data').textContent);
+    const qualidadeLabels = JSON.parse(document.getElementById('qualidade_labels_data').textContent);
+    const qualidadeData = JSON.parse(document.getElementById('qualidade_data_data').textContent);
+
+    // Gráfico de Barras - Pendências
+    const pendenciasCtx = document.getElementById('pendenciasChart');
+    if (pendenciasCtx && pendenciasLabels.length > 0) {
+        new Chart(pendenciasCtx, {
+            type: 'bar',
+            data: {
+                labels: pendenciasLabels,
+                datasets: [{
+                    label: 'Pendências',
+                    data: pendenciasData,
+                    backgroundColor: 'rgba(246,194,62,0.2)',
+                    borderColor: '#f6c23e',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                ...baseOpts,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0, color: fontColor }, grid: { color: gridColor, drawBorder: false } },
+                    y: { ticks: { color: fontColor }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    } else if (pendenciasCtx) {
+        pendenciasCtx.closest('.chart-wrapper').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><i class="bi bi-info-circle me-2"></i>Nenhuma pendência</div>';
+    }
+
+    // Gráfico Donut - Qualidade
+    const qualidadeCtx = document.getElementById('qualidadeChart');
+    if (qualidadeCtx && qualidadeData.some(v => v > 0)) {
+        new Chart(qualidadeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: qualidadeLabels,
+                datasets: [{
+                    data: qualidadeData,
+                    backgroundColor: ['rgba(28,200,138,0.8)', 'rgba(231,74,59,0.8)'],
+                    borderColor: isDark ? '#1a1d23' : '#fff',
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                ...baseOpts,
+                cutout: '60%',
+                plugins: {
+                    legend: { 
+                        position: 'bottom', 
+                        labels: { color: fontColor, usePointStyle: true, pointStyle: 'circle', padding: 16 } 
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else if (qualidadeCtx) {
+        qualidadeCtx.closest('.chart-wrapper-donut').innerHTML = '<div class="d-flex align-items-center justify-content-center h-100 text-muted"><i class="bi bi-info-circle me-2"></i>Sem dados</div>';
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // FILTROS DO KANBAN
+    // ═══════════════════════════════════════════════════════════════
+    const filtroCoordenador = document.getElementById('filtro-coordenador');
+    const filtroCliente = document.getElementById('filtro-cliente');
+    const btnLimparFiltros = document.getElementById('btn-limpar-filtros');
+    const filtrosAtivosContainer = document.getElementById('filtros-ativos');
+
+    function aplicarFiltros() {
+        const coordenadorId = filtroCoordenador?.value || '';
+        const clienteId = filtroCliente?.value || '';
+        
+        const cards = document.querySelectorAll('.kanban-card');
+        let visibleCounts = {};
+        
+        cards.forEach(card => {
+            const cardCoordenador = card.dataset.coordenador || '';
+            const cardCliente = card.dataset.cliente || '';
+            
+            let visible = true;
+            
+            if (coordenadorId && cardCoordenador !== coordenadorId) {
+                visible = false;
+            }
+            
+            if (clienteId && cardCliente !== clienteId) {
+                visible = false;
+            }
+            
+            card.classList.toggle('hidden-by-filter', !visible);
+            
+            // Contar visíveis por coluna
+            if (visible) {
+                const statusId = card.dataset.statusId;
+                visibleCounts[statusId] = (visibleCounts[statusId] || 0) + 1;
+            }
+        });
+        
+        // Atualizar contadores e mensagens de vazio
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            const statusId = column.dataset.statusId;
+            const count = visibleCounts[statusId] || 0;
+            const countEl = document.getElementById(`count-${statusId}`);
+            const emptyEl = column.querySelector('[data-empty="true"]');
+            
+            if (countEl) countEl.textContent = count;
+            if (emptyEl) emptyEl.style.display = count === 0 ? 'block' : 'none';
+        });
+        
+        atualizarFiltrosAtivos();
+    }
+
+    function atualizarFiltrosAtivos() {
+        if (!filtrosAtivosContainer) return;
+        
+        const badges = [];
+        
+        if (filtroCoordenador?.value) {
+            const texto = filtroCoordenador.options[filtroCoordenador.selectedIndex].text;
+            badges.push(`<span class="filter-badge"><i class="bi bi-person me-1"></i>${texto.substring(0, 20)}</span>`);
+        }
+        
+        if (filtroCliente?.value) {
+            const texto = filtroCliente.options[filtroCliente.selectedIndex].text;
+            badges.push(`<span class="filter-badge"><i class="bi bi-building me-1"></i>${texto.substring(0, 20)}</span>`);
+        }
+        
+        filtrosAtivosContainer.innerHTML = badges.join(' ');
+    }
+
+    function limparFiltros() {
+        if (filtroCoordenador) filtroCoordenador.value = '';
+        if (filtroCliente) filtroCliente.value = '';
+        aplicarFiltros();
+    }
+
+    filtroCoordenador?.addEventListener('change', aplicarFiltros);
+    filtroCliente?.addEventListener('change', aplicarFiltros);
+    btnLimparFiltros?.addEventListener('click', limparFiltros);
+
+    // ═══════════════════════════════════════════════════════════════
+    // KANBAN DRAG & DROP
+    // ═══════════════════════════════════════════════════════════════
+    const board = document.getElementById('kanbanBoard');
+    const toast = document.getElementById('kanbanToast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    if (!board) {
+        console.warn('Kanban board não encontrado');
+        return;
+    }
+    
+    let draggedCard = null;
+    let sourceColumn = null;
+    let placeholder = null;
+    let isDragging = false;
+
+    function showToast(message, isError = false) {
+        if (!toast || !toastMessage) return;
+        toastMessage.textContent = message;
+        toast.classList.toggle('error', isError);
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function updateColumnCounts() {
+        const coordenadorId = filtroCoordenador?.value || '';
+        const clienteId = filtroCliente?.value || '';
+        
+        document.querySelectorAll('.kanban-column').forEach(column => {
+            const statusId = column.dataset.statusId;
+            const cards = column.querySelectorAll('.kanban-card:not(.hidden-by-filter)');
+            const count = cards.length;
+            
+            const countEl = document.getElementById(`count-${statusId}`);
+            const emptyEl = column.querySelector('[data-empty="true"]');
+            
+            if (countEl) countEl.textContent = count;
+            if (emptyEl) emptyEl.style.display = count === 0 ? 'block' : 'none';
+        });
+    }
+
+    function createPlaceholder() {
+        const ph = document.createElement('div');
+        ph.className = 'kanban-placeholder';
+        ph.style.cssText = 'height:60px;border:2px dashed #4e73df;border-radius:0.625rem;background:rgba(78,115,223,0.08);margin-bottom:0.625rem;';
+        return ph;
+    }
+
+    function getDragAfterElement(container, y) {
+        const elements = [...container.querySelectorAll('.kanban-card:not(.is-dragging):not(.hidden-by-filter)')];
+        return elements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset, element: child };
+            }
+            return closest;
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    function updateTaskStatus(taskId, newStatus, oldStatus, targetColumn) {
+        const url = apiUrlBase.replace('0', taskId);
+        const card = document.querySelector(`.kanban-card[data-id="${taskId}"]`);
+        
+        const column = targetColumn.closest('.kanban-column');
+        if (column) column.classList.add('is-loading');
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ new_status: newStatus })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (column) column.classList.remove('is-loading');
+            
+            if (data.status === 'success') {
+                showToast('Status atualizado com sucesso!');
+                
+                if (card) {
+                    const statusLabel = targetColumn.dataset.statusLabel;
+                    const title = card.querySelector('.kanban-card-title');
+                    
+                    if (statusLabel === 'Cancelado') {
+                        card.style.opacity = '0.6';
+                        if (title) title.style.textDecoration = 'line-through';
+                    } else {
+                        card.style.opacity = '';
+                        if (title) title.style.textDecoration = '';
+                    }
+                }
+            } else {
+                throw new Error(data.message || 'Erro desconhecido');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            if (column) column.classList.remove('is-loading');
+            showToast(error.message || 'Erro ao atualizar. Revertendo...', true);
+            
+            const originalColumn = document.querySelector(`.kanban-cards[data-status-id="${oldStatus}"]`);
+            if (originalColumn && card) {
+                originalColumn.appendChild(card);
+                card.dataset.statusId = oldStatus;
+                updateColumnCounts();
+            }
+        });
+    }
+
+    // DRAG START
+    board.addEventListener('dragstart', function(e) {
+        const card = e.target.closest('.kanban-card');
+        if (!card) return;
+        
+        isDragging = true;
+        draggedCard = card;
+        sourceColumn = card.closest('.kanban-cards');
+        
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.dataset.id);
+        
+        setTimeout(() => card.classList.add('is-dragging'), 0);
+        placeholder = createPlaceholder();
+    });
+
+    // DRAG END
+    board.addEventListener('dragend', function(e) {
+        isDragging = false;
+        
+        if (draggedCard) draggedCard.classList.remove('is-dragging');
+        if (placeholder?.parentNode) placeholder.parentNode.removeChild(placeholder);
+        
+        document.querySelectorAll('.kanban-cards').forEach(col => col.classList.remove('drag-over'));
+        document.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('drop-target', 'is-loading'));
+        
+        draggedCard = null;
+        sourceColumn = null;
+        placeholder = null;
+    });
+
+    // DRAG OVER
+    board.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        const column = e.target.closest('.kanban-cards');
+        if (!column || !draggedCard) return;
+        
+        column.classList.add('drag-over');
+        column.closest('.kanban-column')?.classList.add('drop-target');
+        
+        const afterElement = getDragAfterElement(column, e.clientY);
+        if (!afterElement) {
+            if (!column.contains(placeholder)) column.appendChild(placeholder);
+        } else if (afterElement !== placeholder) {
+            column.insertBefore(placeholder, afterElement);
+        }
+    });
+
+    // DRAG LEAVE
+    board.addEventListener('dragleave', function(e) {
+        const column = e.target.closest('.kanban-cards');
+        if (column && !column.contains(e.relatedTarget)) {
+            column.classList.remove('drag-over');
+            column.closest('.kanban-column')?.classList.remove('drop-target');
+        }
+    });
+
+    // DROP
+    board.addEventListener('drop', function(e) {
+        e.preventDefault();
+        
+        const targetColumn = e.target.closest('.kanban-cards');
+        if (!targetColumn || !draggedCard) return;
+        
+        const taskId = draggedCard.dataset.id;
+        const oldStatusId = draggedCard.dataset.statusId;
+        const newStatusId = targetColumn.dataset.statusId;
+        const newStatusLabel = targetColumn.dataset.statusLabel;
+        
+        targetColumn.classList.remove('drag-over');
+        targetColumn.closest('.kanban-column')?.classList.remove('drop-target');
+        
+        if (oldStatusId !== newStatusId) {
+            if (placeholder?.parentNode) {
+                placeholder.parentNode.replaceChild(draggedCard, placeholder);
+            } else {
+                targetColumn.appendChild(draggedCard);
+            }
+            
+            draggedCard.dataset.statusId = newStatusId;
+            draggedCard.dataset.statusLabel = newStatusLabel;
+            
+            updateColumnCounts();
+            updateTaskStatus(taskId, newStatusId, oldStatusId, targetColumn);
+        } else {
+            if (placeholder?.parentNode) {
+                placeholder.parentNode.replaceChild(draggedCard, placeholder);
+            }
+        }
+    });
+
+    // CLICK NO CARD PARA EDITAR
+    board.addEventListener('click', function(e) {
+        if (isDragging) return;
+        if (e.target.closest('.kanban-card-link')) return;
+        
+        const card = e.target.closest('.kanban-card');
+        if (card) {
+            const url = card.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // EXPORTAÇÃO PDF/EXCEL
+    // ═══════════════════════════════════════════════════════════════
+    const btnPdf = document.getElementById('btn-export-pdf');
+    const btnExcel = document.getElementById('btn-export-excel');
+    
+    if (btnPdf || btnExcel) {
+        const baseUrlPdf = "{% url 'ata_reuniao:ata_reuniao_export_pdf' %}";
+        const baseUrlExcel = "{% url 'ata_reuniao:ata_reuniao_export_excel' %}";
+        
+        function handleExport(baseUrl) {
+            const di = document.getElementById('data_inicio_filtro')?.value;
+            const df = document.getElementById('data_fim_filtro')?.value;
+            
+            if ((di && df) || (!di && !df)) {
+                const params = new URLSearchParams();
+                if (di && df) {
+                    params.set('data_inicio', di);
+                    params.set('data_fim', df);
+                }
+                window.location.href = `${baseUrl}?${params.toString()}`;
+            } else {
+                alert('Preencha ambas as datas ou deixe vazias para exportar tudo.');
+            }
+        }
+        
+        btnPdf?.addEventListener('click', () => handleExport(baseUrlPdf));
+        btnExcel?.addEventListener('click', () => handleExport(baseUrlExcel));
+    }
+});
+</script>
+{% endblock %}

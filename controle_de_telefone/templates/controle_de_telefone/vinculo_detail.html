@@ -1,167 +1,215 @@
 
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}Detalhes do Vínculo{% endblock %}
+{% block title %}Vínculo — {{ vinculo.funcionario.nome_completo }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-4">
+<div class="container-fluid py-4 px-lg-5">
 
-    {# CABEÇALHO DA PÁGINA COM TÍTULO E BOTÕES DE AÇÃO PRINCIPAIS #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-0">Detalhes do Vínculo</h2>
-            <p class="text-muted mb-0">Visão completa das informações do vínculo.</p>
+    <!-- Cabeçalho -->
+    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
+        <div class="mb-3 mb-md-0">
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-link-45deg text-info me-2"></i>Detalhes do Vínculo
+            </h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted">{{ vinculo.funcionario.nome_completo }}</span>
+                <span class="mx-1 text-muted">·</span>
+                {% if vinculo.status == 'ativo' %}
+                <span class="badge bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-check-circle me-1"></i>Ativo
+                </span>
+                {% else %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bi bi-x-circle me-1"></i>Finalizado
+                </span>
+                {% endif %}
+            </div>
         </div>
-        <div>
-            <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Voltar
+        <div class="d-flex gap-2">
+            <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
             {% if perms.controle_de_telefone.change_vinculo %}
-            <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-primary">
-                <i class="fas fa-edit me-1"></i> Editar Vínculo
+            <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-pencil me-1"></i>Editar
             </a>
             {% endif %}
         </div>
-    </div>
+    </header>
 
-    <div class="row gy-4">
-        {# COLUNA DA ESQUERDA: INFORMAÇÕES DO VÍNCULO E HISTÓRICO #}
+    <div class="row g-4">
+        <!-- Coluna Principal -->
         <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-link me-2"></i>
-                        Vínculo de {{ vinculo.funcionario.nome_completo }}
-                    </h5>
-                    {% if vinculo.status == 'ativo' %}
-                        <span class="badge bg-success fs-6"><i class="fas fa-check-circle me-1"></i> Ativo</span>
-                    {% else %}
-                        <span class="badge bg-secondary fs-6"><i class="fas fa-times-circle me-1"></i> Finalizado</span>
-                    {% endif %}
+
+            <!-- Informações do Vínculo -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-calendar-event text-primary me-2"></i>Informações do Vínculo
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4 col-md-3">Data de Entrega:</dt>
-                        <dd class="col-sm-8 col-md-9">{{ vinculo.data_entrega|date:"d/m/Y" }}</dd>
-                        
-                        <hr class="my-2">
-
-                        <dt class="col-sm-4 col-md-3">Data de Devolução:</dt>
-                        <dd class="col-sm-8 col-md-9">
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Data de Entrega
+                            </label>
+                            <div class="fw-semibold text-dark">{{ vinculo.data_entrega|date:"d/m/Y" }}</div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Data de Devolução
+                            </label>
                             {% if vinculo.data_devolucao %}
-                                {{ vinculo.data_devolucao|date:"d/m/Y" }}
+                            <div class="fw-semibold text-dark">{{ vinculo.data_devolucao|date:"d/m/Y" }}</div>
                             {% else %}
-                                <span class="text-muted">Ainda não devolvido.</span>
+                            <div class="text-muted fst-italic">Em uso — ainda não devolvido</div>
                             {% endif %}
-                        </dd>
-                    </dl>
+                        </div>
+                    </div>
 
-                    {# Mostra o botão de devolução apenas se o vínculo estiver ativo #}
                     {% if not vinculo.data_devolucao and vinculo.status == 'ativo' %}
-                    <div class="mt-3 text-end">
+                    <div class="mt-4 pt-3 border-top text-end">
                         <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-sm btn-outline-info">
-                            <i class="fas fa-undo me-1"></i> Iniciar Devolução
+                            <i class="bi bi-box-arrow-in-left me-1"></i>Registrar Devolução
                         </a>
                     </div>
                     {% endif %}
                 </div>
             </div>
 
-            <div class="card shadow-sm mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i> Histórico de Alterações
-                    </h5>
+            <!-- Histórico -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-clock-history text-muted me-2"></i>Histórico de Alterações
+                    </h6>
+                    {% if vinculo.historico.all %}
+                    <span class="badge bg-light text-muted rounded-pill">{{ vinculo.historico.all|length }}</span>
+                    {% endif %}
                 </div>
-                {% if vinculo.historico.all %}
-                <ul class="list-group list-group-flush">
-                    {% for log in vinculo.historico.all %}
-                    <li class="list-group-item">
-                        <small>{{ log }}</small>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <div class="card-body">
-                    <p class="text-muted mb-0">Nenhuma alteração registrada para este vínculo.</p>
+                <div class="card-body p-0">
+                    {% if vinculo.historico.all %}
+                    <div style="max-height: 350px; overflow-y: auto;">
+                        {% for log in vinculo.historico.all %}
+                        <div class="px-4 py-2 {% if not forloop.last %}border-bottom{% endif %}"
+                             style="font-size: 0.82rem; border-color: #f5f5f8 !important;">
+                            <i class="bi bi-dot text-muted"></i>
+                            <span class="text-muted">{{ log }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock text-muted" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="text-muted mt-2 mb-0" style="font-size: 0.85rem;">Nenhuma alteração registrada</p>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
 
-        {# COLUNA DA DIREITA: INFORMAÇÕES DO COLABORADOR E RECURSOS #}
+        <!-- Sidebar -->
         <div class="col-lg-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-user me-2"></i> Colaborador</h5>
+
+            <!-- Colaborador -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-person text-primary me-2"></i>Colaborador
+                    </h6>
                 </div>
-                <div class="list-group list-group-flush">
-                    <div class="list-group-item">
-                        <strong>Nome:</strong><br>
-                        {{ vinculo.funcionario.nome_completo }}
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom" style="border-color: #f5f5f8 !important;">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem; letter-spacing: 0.5px;">Nome</label>
+                        <div class="fw-semibold text-dark">{{ vinculo.funcionario.nome_completo }}</div>
                     </div>
-                    <div class="list-group-item">
-                        <strong>Matrícula:</strong><br>
-                        {{ vinculo.funcionario.matricula }}
+                    <div class="px-4 py-3">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem; letter-spacing: 0.5px;">Matrícula</label>
+                        <div class="font-monospace text-dark">{{ vinculo.funcionario.matricula }}</div>
                     </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-mobile-alt me-2"></i> Recursos Vinculados</h5>
+            <!-- Recursos Vinculados -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-phone text-success me-2"></i>Recursos Vinculados
+                    </h6>
                 </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">
-                        <strong>Aparelho:</strong>
-                        {{ vinculo.aparelho|default:'<span class="text-muted">Nenhum</span>'|safe }}
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Linha:</strong>
-                        {{ vinculo.linha|default:'<span class="text-muted">Nenhuma</span>'|safe }}
-                    </li>
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <strong>Termo de Responsabilidade:</strong>
-                            <div class="d-flex align-items-center gap-2">
+                <div class="card-body p-0">
+                    <div class="px-4 py-3 border-bottom" style="border-color: #f5f5f8 !important;">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem; letter-spacing: 0.5px;">Aparelho</label>
+                        <div class="text-dark">{{ vinculo.aparelho|default:"Nenhum" }}</div>
+                    </div>
+                    <div class="px-4 py-3">
+                        <label class="text-muted text-uppercase fw-semibold d-block" style="font-size: 0.7rem; letter-spacing: 0.5px;">Linha</label>
+                        <div class="text-dark">{{ vinculo.linha|default:"Nenhuma" }}</div>
+                    </div>
+                </div>
+            </div>
 
-                                {# --- LÓGICA DE BOTÕES DO TERMO --- #}
-
-                                {% if vinculo.foi_assinado %}
-                                    {% if vinculo.termo_assinado_upload %}
-                                        <a href="{{ vinculo.termo_assinado_upload.url }}" target="_blank" class="btn btn-success btn-sm">
-                                            <i class="fas fa-download me-1"></i> Baixar Assinado
-                                        </a>
-                                    {% else %}
-                                        <span class="badge bg-danger">Falha ao gerar PDF</span>
-                                    {% endif %}
-                                {% else %}
-                                    {% if vinculo.termo_gerados %}
-                                        <a href="{{ vinculo.termo_gerados.url }}" target="_blank" class="btn btn-secondary btn-sm">
-                                            <i class="fas fa-file-pdf me-1"></i> Ver Termo
-                                        </a>
-                                        <a href="{% url 'controle_de_telefone:assinar_termo' object.pk %}" class="btn btn-primary btn-sm">
-                                            <i class="fas fa-pen-alt me-1"></i> Assinar
-                                        </a>
-                                    {% else %}
-                                        <span class="text-muted fst-italic">Não gerado</span>
-                                        {% if perms.controle_de_telefone.change_vinculo %}
-                                        <form action="{% url 'controle_de_telefone:regenerar_termo' object.pk %}" method="post" class="d-inline ms-1">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Gerar PDF do Termo">
-                                                <i class="fas fa-sync-alt"></i> Gerar
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                    {% endif %}
-                                {% endif %}
-                            </div>
+            <!-- Termo de Responsabilidade -->
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-file-earmark-text text-warning me-2"></i>Termo de Responsabilidade
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if vinculo.foi_assinado %}
+                        <!-- Assinado -->
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="badge bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-check-circle me-1"></i>Assinado
+                            </span>
                         </div>
-                    </li>
-                </ul>
+                        {% if vinculo.termo_assinado_upload %}
+                        <a href="{{ vinculo.termo_assinado_upload.url }}" target="_blank" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-download me-1"></i>Baixar Termo Assinado
+                        </a>
+                        {% else %}
+                        <span class="badge bg-danger">Falha ao gerar PDF</span>
+                        {% endif %}
+
+                    {% else %}
+                        <!-- Não assinado -->
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="badge bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-clock me-1"></i>Pendente de assinatura
+                            </span>
+                        </div>
+
+                        {% if vinculo.termo_gerados %}
+                        <div class="d-flex flex-column gap-2">
+                            <a href="{{ vinculo.termo_gerados.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>Ver Termo
+                            </a>
+                            <a href="{% url 'controle_de_telefone:assinar_termo' object.pk %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-vector-pen me-1"></i>Assinar
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-muted fst-italic" style="font-size: 0.85rem;">Não gerado</span>
+                            {% if perms.controle_de_telefone.change_vinculo %}
+                            <form action="{% url 'controle_de_telefone:regenerar_termo' object.pk %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Gerar
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 

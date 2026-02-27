@@ -1,53 +1,81 @@
-
 {% extends "departamento_pessoal/_base_dp.html" %}
-{% block title %}Cargos{% endblock %}
+
+{% block title %}Cargos - Departamento Pessoal{% endblock %}
 
 {% block dp_content %}
-    
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h2"> <i class="bi bi-person-badge kpi-card-icon"></i>Cargos</h1>
-            <a href="{% url 'departamento_pessoal:cargo_form' %}" class="btn btn-primary"> {# {% url 'departamento_pessoal:cargo_create' %} #}
-                <i class="bi bi-plus-lg me-1"></i> Novo Cargo
-            </a>
-        </div>
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr><th>Nome do Cargo</th>
-                                <th>CBO</th>
-                                <th>Observações</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for cargo in cargos %}
-                            <tr>
-                                <td>{{ cargo.nome }}</td>
-                                <td>{{ cargo.cbo|default:"-" }}</td>
-                                <td>{{ cargo.descricao|default:"-" }}</td>
-                                <td>
-                                    {% if cargo.ativo %}<span class="badge text-bg-success">Ativo</span>
-                                    {% else %}<span class="badge text-bg-danger">Inativo</span>{% endif %}
-                                </td>
-                                <td class="text-end">
-                                    <a href="{% url 'departamento_pessoal:edita_cargo' pk=cargo.pk %}" class="btn btn-sm btn-warning">
-                                    Editar
-                                    </a>
-                                </td>                            
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="text-center py-4">Nenhum cargo cadastrado.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+<!-- Header do Módulo -->
+<div class="module-header d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+        <h1><i class="bi bi-briefcase-fill me-2"></i>Cargos</h1>
+        <p>Gerencie os cargos da empresa</p>
     </div>
+    <div class="d-flex gap-2 mt-3 mt-md-0">
+        <a href="{% url 'departamento_pessoal:cargo_form' %}" class="btn btn-header-primary">
+            <i class="bi bi-plus-circle me-1"></i> Novo Cargo
+        </a>
+    </div>
+</div>
+
+<!-- Conteúdo -->
+<div class="content-card">
+    {% if cargos %}
+    <div class="table-responsive">
+        <table class="table table-modern">
+            <thead>
+                <tr>
+                    <th>Cargo</th>
+                    <th>CBO</th>
+                    <th class="d-none d-md-table-cell">Descrição</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cargo in cargos %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="kpi-icon bg-warning-soft" style="width: 40px; height: 40px; font-size: 1rem;">
+                                <i class="bi bi-briefcase"></i>
+                            </div>
+                            <strong>{{ cargo.nome }}</strong>
+                        </div>
+                    </td>
+                    <td><code>{{ cargo.cbo|default:"-" }}</code></td>
+                    <td class="d-none d-md-table-cell">
+                        <small class="text-muted">{{ cargo.descricao|truncatewords:8|default:"-" }}</small>
+                    </td>
+                    <td>
+                        {% if cargo.ativo %}
+                            <span class="badge-status bg-success-soft text-success">Ativo</span>
+                        {% else %}
+                            <span class="badge-status bg-danger-soft text-danger">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'departamento_pessoal:edita_cargo' pk=cargo.pk %}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-pencil me-1"></i> Editar
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="bi bi-briefcase"></i>
+        </div>
+        <h5>Nenhum cargo cadastrado</h5>
+        <p>Defina os cargos da empresa.</p>
+        <a href="{% url 'departamento_pessoal:cargo_form' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Novo Cargo
+        </a>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
 
 

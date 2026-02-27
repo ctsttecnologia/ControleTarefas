@@ -1,183 +1,585 @@
+{# Detalhes do Treinamento #}
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Detalhes do Treinamento: {{ treinamento.nome }}{% endblock %}
+{% block title %}{{ treinamento.nome }}{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/treinamentos/detalhe_treinamento_styles.css' %}">
+<style>
+    /* ═══ HERO ═══ */
+    .detail-hero {
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .detail-hero.status-agendado   { background: linear-gradient(135deg, #36b9cc, #258391); }
+    .detail-hero.status-em_andamento { background: linear-gradient(135deg, #4e73df, #224abe); }
+    .detail-hero.status-concluido  { background: linear-gradient(135deg, #1cc88a, #13855c); }
+    .detail-hero.status-cancelado  { background: linear-gradient(135deg, #e74a3b, #be2617); }
+    .detail-hero.status-default    { background: linear-gradient(135deg, #858796, #5a5c69); }
+
+    .detail-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 280px;
+        height: 280px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .detail-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.75rem;
+    }
+    .hero-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        opacity: 0.9;
+    }
+    .hero-meta-item i { opacity: 0.7; }
+    .hero-badge {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(4px);
+        border-radius: 50rem;
+        padding: 0.3rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* ═══ INFO CARD ═══ */
+    .info-card {
+        border: none;
+        border-radius: 0.875rem;
+    }
+    .info-card .card-header {
+        background: transparent;
+        border-bottom: 2px solid #f0f2f5;
+        padding: 1.25rem 1.5rem;
+    }
+    .info-card .card-header h5 {
+        font-weight: 700;
+        font-size: 1rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* ═══ INFO GRID ═══ */
+    .info-grid { padding: 0; }
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.875rem 1.5rem;
+        border-bottom: 1px solid #f5f5f8;
+        transition: background 0.15s;
+    }
+    .info-item:last-child { border-bottom: none; }
+    .info-item:hover { background: #fafbfc; }
+    .info-item-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #858796;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .info-item-label i { width: 16px; text-align: center; }
+    .info-item-value {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 0.9rem;
+    }
+
+    /* ═══ PARTICIPANT TABLE ═══ */
+    .participant-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .participant-table thead th {
+        background: #f8f9fc;
+        border-bottom: 2px solid #e3e6f0;
+        font-size: 0.73rem;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        font-weight: 700;
+        color: #858796;
+        padding: 0.875rem 1rem;
+    }
+    .participant-table tbody td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f1f4;
+    }
+    .participant-table tbody tr:last-child td { border-bottom: none; }
+    .participant-table tbody tr:hover { background: rgba(28,200,138,0.03); }
+
+    /* ═══ AVATAR ═══ */
+    .avatar-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #e9ecef;
+    }
+    .participant-name { font-weight: 600; font-size: 0.9rem; color: #2d3748; }
+    .participant-role { font-size: 0.78rem; color: #a0aec0; }
+
+    /* ═══ PRESENCE INDICATOR ═══ */
+    .presence-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+    }
+    .presence-yes { background: rgba(28,200,138,0.12); color: #1cc88a; }
+    .presence-no  { background: rgba(231,74,59,0.12); color: #e74a3b; }
+
+    /* ═══ SCORE BAR ═══ */
+    .score-wrapper { width: 80px; }
+    .score-bar {
+        height: 6px;
+        border-radius: 3px;
+        background: #e9ecef;
+        overflow: hidden;
+    }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+    .score-text { font-size: 0.75rem; font-weight: 700; text-align: right; margin-top: 2px; }
+
+    /* ═══ SUMMARY PANEL ═══ */
+    .summary-card {
+        border: none;
+        border-radius: 0.875rem;
+        overflow: hidden;
+    }
+    .summary-card .card-header {
+        padding: 1.5rem;
+        text-align: center;
+    }
+    .summary-card .card-header i { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
+    .summary-card .card-header h5 { font-weight: 700; font-size: 1rem; margin: 0; }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.875rem 1.25rem;
+        border-bottom: 1px solid #f5f5f8;
+    }
+    .summary-item:last-child { border-bottom: none; }
+    .summary-label { font-size: 0.85rem; color: #858796; }
+    .summary-value { font-weight: 700; font-size: 0.95rem; color: #2d3748; }
+
+    .summary-description {
+        padding: 1.25rem;
+        border-top: 2px solid #f0f2f5;
+    }
+    .summary-description h6 {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-weight: 700;
+        color: #858796;
+        margin-bottom: 0.5rem;
+    }
+    .summary-description p {
+        font-size: 0.875rem;
+        color: #4a5568;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* ═══ QUICK STATS ═══ */
+    .quick-stat {
+        text-align: center;
+        padding: 1rem 0.5rem;
+    }
+    .quick-stat-value { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+    .quick-stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #858796; font-weight: 600; }
+
+    /* ═══ EMPTY STATE ═══ */
+    .participants-empty {
+        padding: 3rem 2rem;
+        text-align: center;
+    }
+    .participants-empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #f0f2f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+    .participants-empty-icon i { font-size: 1.5rem; color: #adb5bd; }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.02); }
+    [data-bs-theme="dark"] .info-item-value { color: #e2e8f0; }
+    [data-bs-theme="dark"] .participant-table thead th { background: rgba(255,255,255,0.03); border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .participant-table tbody td { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .participant-name { color: #e2e8f0; }
+    [data-bs-theme="dark"] .summary-item { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .summary-value { color: #e2e8f0; }
+    [data-bs-theme="dark"] .summary-description { border-top-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .summary-description p { color: #a0aec0; }
+
+    /* ═══ PRINT ═══ */
+    @media print {
+        .no-print { display: none !important; }
+        .detail-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .info-card, .summary-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+</style>
 {% endblock %}
 
-
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-lg-5">
 
-    {# Cabeçalho da página #}
-    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
-        <div>
-            <h2 class="h3 mb-1">{{ treinamento.nome }}</h2>
-            <p class="text-muted mb-2 mb-md-0">Detalhes do treinamento e lista de participantes.</p>
-        </div>
-        <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group me-2" role="group">
-                <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar
+    <!-- ═══ HERO HEADER ═══ -->
+    <div class="detail-hero status-{% if treinamento.status == 'P' %}agendado{% elif treinamento.status == 'A' %}em_andamento{% elif treinamento.status == 'F' %}concluido{% elif treinamento.status == 'C' %}cancelado{% else %}default{% endif %}">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="hero-badge">{{ treinamento.get_status_display }}</span>
+                    {% if treinamento.tipo_curso %}
+                    <span class="hero-badge"><i class="bi bi-bookmark me-1"></i>{{ treinamento.tipo_curso }}</span>
+                    {% endif %}
+                </div>
+                <h1>{{ treinamento.nome }}</h1>
+                <div class="hero-meta">
+                    <span class="hero-meta-item">
+                        <i class="bi bi-calendar-event"></i>
+                        {{ treinamento.data_inicio|date:"d/m/Y" }}
+                    </span>
+                    {% if treinamento.duracao %}
+                    <span class="hero-meta-item">
+                        <i class="bi bi-clock"></i>
+                        {{ treinamento.duracao }}h
+                    </span>
+                    {% endif %}
+                    {% if treinamento.local %}
+                    <span class="hero-meta-item">
+                        <i class="bi bi-geo-alt"></i>
+                        {{ treinamento.local }}
+                    </span>
+                    {% endif %}
+                    <span class="hero-meta-item">
+                        <i class="bi bi-people"></i>
+                        {{ participantes.count }} participante{{ participantes.count|pluralize:"s" }}
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap no-print">
+                <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
                 </a>
-            </div>
-            <div class="btn-group" role="group">
                 {% if perms.treinamentos.change_treinamento %}
-                    <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-primary">
-                        <i class="bi bi-pencil-square me-1"></i> Editar Treinamento
-                    </a>
+                <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-sm btn-light fw-semibold">
+                    <i class="bi bi-pencil-square me-1"></i> Editar
+                </a>
                 {% endif %}
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-printer"></i>
+                </button>
             </div>
         </div>
-    </header>
+    </div>
 
     <div class="row g-4">
+        <!-- ═══ COLUNA PRINCIPAL ═══ -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-body-tertiary">
-                    <h5 class="mb-0"><i class="bi bi-info-circle-fill me-2"></i>Informações Gerais</h5>
+
+            <!-- Informações Gerais -->
+            <div class="card info-card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle-fill text-primary"></i> Informações Gerais</h5>
                 </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">Tipo de Curso</dt>
-                        <dd class="col-sm-8">{{ treinamento.tipo_curso }}</dd>
-
-                        <dt class="col-sm-4">Data de Início</dt>
-                        <dd class="col-sm-8">{{ treinamento.data_inicio|date:"d/m/Y H:i" }}</dd>
-
-                        <dt class="col-sm-4">Data de Vencimento</dt>
-                        <dd class="col-sm-8">{{ treinamento.data_vencimento|date:"d/m/Y"|default:"N/A" }}</dd>
-
-                        <dt class="col-sm-4">Duração</dt>
-                        <dd class="col-sm-8">{{ treinamento.duracao }} horas</dd>
-
-                        <dt class="col-sm-4">Local</dt>
-                        <dd class="col-sm-8">{{ treinamento.local }}</dd>
-
-                        <dt class="col-sm-4">Responsável</dt>
-                        <dd class="col-sm-8">{{ treinamento.responsavel|default:"Não definido" }}</dd>
-
-                        <dt class="col-sm-4">Palestrante</dt>
-                        <dd class="col-sm-8">{{ treinamento.palestrante|default:"Não definido" }}</dd>
-                    </dl>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-bookmark"></i> Tipo de Curso</span>
+                        <span class="info-item-value">{{ treinamento.tipo_curso }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-calendar-plus"></i> Data Início</span>
+                        <span class="info-item-value">{{ treinamento.data_inicio|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-calendar-x"></i> Vencimento</span>
+                        <span class="info-item-value">{{ treinamento.data_vencimento|date:"d/m/Y"|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-clock-history"></i> Duração</span>
+                        <span class="info-item-value">{{ treinamento.duracao }} horas</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-geo-alt"></i> Local</span>
+                        <span class="info-item-value">{{ treinamento.local|default:"—" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-person-badge"></i> Responsável</span>
+                        <span class="info-item-value">{{ treinamento.responsavel|default:"Não definido" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-mic"></i> Palestrante</span>
+                        <span class="info-item-value">{{ treinamento.palestrante|default:"Não definido" }}</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-body-tertiary">
-                    <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Lista de Participantes</h5>
-                </div>
-                <div class="card-body">
+            <!-- Participantes -->
+            <div class="card info-card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-people-fill text-success"></i> Participantes</h5>
                     {% if participantes %}
-                        <div class="table-responsive">
-                            <table class="table table-hover table-striped align-middle">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 50%;">Funcionário</th> <th class="text-center">Presença</th>
-                                        <th class="text-center">Aproveitamento</th>
-                                        <th class="text-center">Certificado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for participante in participantes %}
-                                    <tr>
-                                        <td>
-                                            {% with nome_display=participante.funcionario.get_full_name|default:participante.funcionario.username %}
-                                            <div class="d-flex align-items-center">
-                                                <img src="https://ui-avatars.com/api/?name={{ nome_display|urlencode }}&background=random&color=fff" 
-                                                    alt="Avatar de {{ nome_display }}" 
-                                                    class="user-avatar">
-                                                <div class="user-info">
-                                                <div class="user-name">{{ nome_display }}</div>
-                                                <div class="user-role">{{ participante.funcionario.cargo.nome|default:participante.funcionario.username }}</div>
-                                                </div>
+                    <span class="badge bg-success bg-opacity-10 text-success fw-bold">
+                        {{ participantes.count }} registrado{{ participantes.count|pluralize:"s" }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if participantes %}
+                    <div class="table-responsive">
+                        <table class="table participant-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Funcionário</th>
+                                    <th class="text-center" style="width: 100px;">Presença</th>
+                                    <th class="text-center" style="width: 120px;">Aproveitamento</th>
+                                    <th class="text-center" style="width: 120px;">Certificado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for participante in participantes %}
+                                <tr>
+                                    <td>
+                                        {% with nome_display=participante.funcionario.get_full_name|default:participante.funcionario.username %}
+                                        <div class="d-flex align-items-center gap-3">
+                                            <img src="https://ui-avatars.com/api/?name={{ nome_display|urlencode }}&background=random&color=fff&size=38&rounded=true&bold=true&font-size=0.4"
+                                                 alt="{{ nome_display }}"
+                                                 class="avatar-circle"
+                                                 loading="lazy">
+                                            <div>
+                                                <div class="participant-name">{{ nome_display }}</div>
+                                                <div class="participant-role">{{ participante.funcionario.cargo.nome|default:participante.funcionario.username }}</div>
                                             </div>
-                                            {% endwith %}
-                                        </td>
-                                        <td class="text-center">
-                                            {% if participante.presente %}
-                                                <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                                            {% else %}
-                                                <i class="bi bi-x-circle-fill text-danger fs-5"></i>
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-center">{{ participante.nota_avaliacao|default:"-" }}%</td>
-                                        
-                                        <td class="text-center align-middle">
-                                            {% if participante.certificado_emitido %}
-                                                <i class="bi bi-patch-check-fill text-primary fs-5" 
-                                                data-bs-toggle="tooltip" title="Certificado já emitido"></i>
-                                            {% else %}
-                                                {% if treinamento.status == 'F' and participante.presente %}
-                                                    <a href="{% url 'treinamentos:gerar_certificado_participante' pk=participante.pk %}" 
-                                                    class="btn btn-sm btn-primary" 
-                                                    target="_blank"
-                                                    data-bs-toggle="tooltip" title="Gerar Certificado PDF">
-                                                        <i class="bi bi-file-earmark-pdf-fill"></i> Gerar
-                                                    </a>
-                                                {% else %}
-                                                    <i class="bi bi-circle text-secondary fs-5"
-                                                    data-bs-toggle="tooltip" title="Certificado não disponível"></i>
-                                                {% endif %}
-                                            {% endif %}
-                                        </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                                        </div>
+                                        {% endwith %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if participante.presente %}
+                                        <span class="presence-dot presence-yes">
+                                            <i class="bi bi-check-lg"></i>
+                                        </span>
+                                        {% else %}
+                                        <span class="presence-dot presence-no">
+                                            <i class="bi bi-x-lg"></i>
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if participante.nota_avaliacao is not None %}
+                                        <div class="score-wrapper mx-auto">
+                                            <div class="score-bar">
+                                                <div class="score-bar-fill 
+                                                    {% if participante.nota_avaliacao >= 70 %}bg-success
+                                                    {% elif participante.nota_avaliacao >= 50 %}bg-warning
+                                                    {% else %}bg-danger{% endif %}"
+                                                    style="width: {{ participante.nota_avaliacao }}%;"></div>
+                                            </div>
+                                            <div class="score-text 
+                                                {% if participante.nota_avaliacao >= 70 %}text-success
+                                                {% elif participante.nota_avaliacao >= 50 %}text-warning
+                                                {% else %}text-danger{% endif %}">
+                                                {{ participante.nota_avaliacao }}%
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if participante.certificado_emitido %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary" 
+                                              data-bs-toggle="tooltip" 
+                                              title="Certificado emitido">
+                                            <i class="bi bi-patch-check-fill me-1"></i> Emitido
+                                        </span>
+                                        {% elif treinamento.status == 'F' and participante.presente %}
+                                        <a href="{% url 'treinamentos:gerar_certificado_participante' pk=participante.pk %}"
+                                           class="btn btn-sm btn-primary"
+                                           target="_blank"
+                                           data-bs-toggle="tooltip"
+                                           title="Gerar Certificado PDF"
+                                           style="border-radius: 50rem; font-size: 0.78rem;">
+                                            <i class="bi bi-file-earmark-pdf me-1"></i> Gerar
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted" data-bs-toggle="tooltip" title="Não disponível">
+                                            <i class="bi bi-dash-circle" style="font-size: 1.1rem;"></i>
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% else %}
-                        <div class="text-center py-4 text-muted">
-                            <p><i class="bi bi-person-x fs-2"></i></p>
-                            <p class="mb-0">Nenhum participante registrado neste treinamento.</p>
+                    <div class="participants-empty">
+                        <div class="participants-empty-icon">
+                            <i class="bi bi-person-x"></i>
                         </div>
+                        <h6 class="fw-bold mb-1">Nenhum participante</h6>
+                        <p class="text-muted small mb-3">Este treinamento ainda não possui participantes registrados.</p>
+                        {% if perms.treinamentos.change_treinamento %}
+                        <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Adicionar Participantes
+                        </a>
+                        {% endif %}
+                    </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
+        <!-- ═══ SIDEBAR ═══ -->
         <div class="col-lg-4">
-            <div class="summary-panel">
-                <div class="summary-header">
-                    <i class="bi bi-clipboard-data-fill"></i>
-                    <h3>Resumo do Treinamento</h3>
-                </div>
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">
-                        <div class="d-flex justify-content-between">
-                            <span>Status</span>
-                            {# ----- CORREÇÃO APLICADA AQUI ----- #}
-                            <span class="badge 
-                                {% if treinamento.status == 'P' %}text-bg-info
-                                {% elif treinamento.status == 'A' %}text-bg-primary
-                                {% elif treinamento.status == 'F' %}text-bg-success
-                                {% elif treinamento.status == 'C' %}text-bg-danger
-                                {% else %}text-bg-secondary{% endif %}">
-                                {{ treinamento.get_status_display }}
-                            </span>
+
+            <!-- Quick Stats -->
+            <div class="card summary-card shadow-sm mb-4">
+                <div class="card-body p-0">
+                    <div class="row g-0 text-center border-bottom">
+                        <div class="col-4 quick-stat border-end">
+                            <div class="quick-stat-value text-primary">{{ treinamento.participantes_previstos|default:"0" }}</div>
+                            <div class="quick-stat-label">Previstos</div>
                         </div>
-                    </li>
-                    <li class="list-group-item">
-                        <span>Participantes Previstos</span>
-                        <span class="fw-bold">{{ treinamento.participantes_previstos }}</span>
-                    </li>
-                    <li class="list-group-item">
-                        <span>Participantes Registrados</span>
-                        <span class="fw-bold">{{ participantes.count }}</span>
-                    </li>
-                    <li class="list-group-item">
-                        <span>Custo Total</span>
-                        <span class="fw-bold">R$ {{ treinamento.custo|floatformat:2 }}</span>
-                    </li>
-                </ul>
-                <div class="summary-footer">
-                    <p><strong>Descrição:</strong></p>
-                    <p class="mb-0">{{ treinamento.descricao|linebreaksbr|default:"Nenhuma descrição fornecida." }}</p>
+                        <div class="col-4 quick-stat border-end">
+                            <div class="quick-stat-value text-success">{{ participantes.count }}</div>
+                            <div class="quick-stat-label">Registrados</div>
+                        </div>
+                        <div class="col-4 quick-stat">
+                            <div class="quick-stat-value text-warning">{{ treinamento.duracao|default:"0" }}h</div>
+                            <div class="quick-stat-label">Duração</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="card summary-card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <i class="bi bi-clipboard-data-fill"></i>
+                    <h5>Resumo</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="summary-item">
+                        <span class="summary-label">Status</span>
+                        <span class="badge 
+                            {% if treinamento.status == 'P' %}text-bg-info
+                            {% elif treinamento.status == 'A' %}text-bg-primary
+                            {% elif treinamento.status == 'F' %}text-bg-success
+                            {% elif treinamento.status == 'C' %}text-bg-danger
+                            {% else %}text-bg-secondary{% endif %}"
+                            style="border-radius: 50rem;">
+                            {{ treinamento.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Previstos</span>
+                        <span class="summary-value">{{ treinamento.participantes_previstos|default:"—" }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Registrados</span>
+                        <span class="summary-value">{{ participantes.count }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Custo Total</span>
+                        <span class="summary-value">R$ {{ treinamento.custo|floatformat:2|default:"0,00" }}</span>
+                    </div>
+                    {% if treinamento.horas_homem %}
+                    <div class="summary-item">
+                        <span class="summary-label">Horas/Homem</span>
+                        <span class="summary-value">{{ treinamento.horas_homem }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="summary-description">
+                    <h6>Descrição</h6>
+                    <p>{{ treinamento.descricao|linebreaksbr|default:"Nenhuma descrição fornecida." }}</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card summary-card shadow-sm no-print">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="text-dark mb-0" style="font-size: 0.9rem;">
+                        <i class="bi bi-lightning-fill text-warning me-1"></i> Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    {% if perms.treinamentos.change_treinamento %}
+                    <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil-square me-2"></i> Editar Treinamento
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-list-check me-2"></i> Lista de Treinamentos
+                    </a>
+                    <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                    </a>
+                    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+                        <i class="bi bi-printer me-2"></i> Imprimir
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el, { trigger: 'hover' });
+    });
+
+    // Animate score bars on scroll
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.width = entry.target.dataset.width || entry.target.style.width;
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.score-bar-fill').forEach(bar => {
+        const width = bar.style.width;
+        bar.dataset.width = width;
+        bar.style.width = '0%';
+        observer.observe(bar);
+    });
+});
+</script>
+{% endblock %}
+

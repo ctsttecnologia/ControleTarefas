@@ -1,193 +1,247 @@
+
+<!-- Template para exibir a lista de riscos, incidentes recentes e inspeções pendentes -->
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block content %}
-<div class="container py-2">
-        
-    <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+<div class="container-fluid py-4">
 
-        <h1 class="h2 mb-0">{{ titulo_pagina }}</h1>
-        
-        <div class="btn-group">
-            
-            <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-danger btn-glow" title="Painel SST">
-                <i class="bi bi-speedometer2 me-1"></i>Painel SST
-            </a>
-            
-            <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-danger btn-glow" title="Registrar Incidente">
-                <i class="bi bi-exclamation-octagon-fill me-1"></i> Registrar Incidente
-            </a>
-        
-            <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-danger btn-glow" title="Agendar Inspeção">
-               <i class="bi bi-calendar-plus me-1"></i> Agendar Inspeção
-            </a>
-
-            <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-secondary">
-                <i class="bi bi-calendar me-1"></i> Voltar ao Calendário
-            </a>
-            
-            <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                    <a class="dropdown-item" href="{% url 'gestao_riscos:calendario' %}" title="Ver Calendário">
-                        <i class="bi bi-calendar3 me-2"></i> Calendário de Inspeções
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         HEADER - Padrão do Painel de RH
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="card bg-primary text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-shield-exclamation me-2"></i>{{ titulo_pagina }}
+                    </h4>
+                    <small class="opacity-75">Monitoramento de incidentes e inspeções de segurança</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-outline-light">
+                        <i class="bi bi-speedometer2 me-1"></i> Painel SST
                     </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="{% url 'gestao_riscos:agendar_inspecao' %}" title="Agendar inspeção manual">
-                        <i class="bi bi-calendar-plus me-2"></i> Agendar Inspeção Manual
+                    <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-light">
+                        <i class="bi bi-list-task me-1"></i> Tipos de Riscos
                     </a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <a class="dropdown-item" href="{% url 'gestao_riscos:lista_inspecoes_propostas' %}" title="Inspeções Propostas">
-                        <i class="bi bi-bell-fill me-2"></i> Inspeções Propostas
-                        
-                        {% comment %} Adiciona um badge se houver propostas pendentes {% endcomment %}
-                        {% if inspecoes_propostas.count > 0 %}
-                            <span class="badge rounded-pill bg-warning text-dark ms-2">
-                                {{ inspecoes_propostas.count }}
-                            </span>
-                        {% endif %}
+                    <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-warning">
+                        <i class="bi bi-exclamation-octagon-fill me-1"></i> Novo Incidente
                     </a>
-                </li>
-            </ul>
-        </div>
-    </header>
-
-    <div class="row g-4">
-    
-        <div class="col-lg-7">
-            <div class="card shadow mb-4">
-                <div class="card-header text-bg-danger bg-opacity-75">
-                    <h5 class="mb-0 fw-semibold"><i class="bi bi-exclamation-octagon-fill me-2"></i>Últimos Incidentes Registrados</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover mb-0 align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">Descrição</th>
-                                <th scope="col">Setor</th>
-                                <th scope="col" class="text-center">Tipo</th>
-                                <th scope="col">Data</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% comment %} Este loop 'incidentes' está correto {% endcomment %}
-                            {% for incidente in incidentes %}
-                                <tr>
-                                    <td class="fw-semibold">{{ incidente.descricao }}</td>
-                                    <td>{{ incidente.get_setor_display }}</td>
-                                    <td class="text-center"><span class="badge rounded-pill text-bg-secondary">{{ incidente.get_tipo_incidente_display }}</span></td>
-                                    <td>{{ incidente.data_ocorrencia|date:"d/m/Y H:i" }}</td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center p-5">
-                                        <div class="text-muted">
-                                            <i class="bi bi-shield-check fs-1"></i>
-                                            <h5 class="mt-3">Nenhum incidente recente!</h5>
-                                            <p class="small">Continue mantendo o ambiente de trabalho seguro.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-5">
-        
-            <div class="card shadow mb-4">
-                <div class="card-header text-bg-primary bg-opacity-75 text-white">
-                    <h5 class="mb-0 fw-semibold"><i class="bi bi-clipboard2-pulse-fill me-2"></i>Inspeções Pendentes (Confirmadas)</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0 align-middle">
-                        <tbody>
-                            {% comment %} 
-                               1: Loop alterado de 'inspecoes' para 'inspecoes_pendentes'
-                            {% endcomment %}
-                            {% for inspecao in inspecoes_pendentes %}
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold">{{ inspecao.equipamento.nome }}</div>
-                                        <div class="small text-muted">
-                                            {% comment %} 
-                                               2: Campo 'inspetor' alterado para 'responsavel'
-                                            {% endcomment %}
-                                            Responsável: {{ inspecao.responsavel.get_full_name|default:"Não atribuído" }}
-                                        </div>
-                                    </td>
-                                    <td class="text-end">
-                                        {% comment %} 
-                                          3: Removida lógica de 'data_atual' que causava erro
-                                        {% endcomment %}
-                                        {{ inspecao.data_agendada|date:"d/m/Y" }}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="2" class="text-center p-5">
-                                        <div class="text-muted">
-                                            <i class="bi bi-calendar2-check-fill fs-1"></i>
-                                            <h5 class="mt-3">Nenhuma inspeção pendente!</h5>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div class="card shadow mb-4">
-                <div class="card-header text-bg-warning bg-opacity-75 text-dark">
-                    <h5 class="mb-0 fw-semibold"><i class="bi bi-bell-fill me-2"></i>Inspeções Propostas (Aguardando Ação)</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0 align-middle">
-                        <tbody>
-                            {% comment %} 
-                              Loop para a variável 'inspecoes_propostas'
-                            {% endcomment %}
-                            {% for inspecao in inspecoes_propostas %}
-                                <tr>
-                                    <td>
-                                        <div class="fw-semibold">{{ inspecao.entrega_epi.equipamento.nome }}</div>
-                                        <div class="small text-muted">
-                                            Item: {{ inspecao.entrega_epi.numero_serie|default:"N/A" }}
-                                        </div>
-                                    </td>
-                                    <td class="text-end">
-                                        {{ inspecao.data_agendada|date:"d/m/Y" }}
-                                    </td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="2" class="text-center p-5">
-                                        <div class="text-muted">
-                                            <i class="bi bi-patch-check-fill fs-1"></i>
-                                            <h5 class="mt-3">Nenhuma proposta automática.</h5>
-                                        </div>
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                 <div class="card-footer text-center">
-                    <a href="{% url 'gestao_riscos:lista_inspecoes_propostas' %}" class="btn btn-sm btn-outline-dark">
-                        Ver todas e confirmar
+                    <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
+                        <i class="bi bi-calendar-plus me-1"></i> Nova Inspeção
                     </a>
                 </div>
             </div>
-            
         </div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         CARDS KPI - Estilo do Painel de RH
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="row g-3 mb-4">
+        <!-- Card: Incidentes Recentes -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-start border-danger border-4 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0 fw-bold">{{ incidentes|length }}</h3>
+                        <small class="text-muted text-uppercase">Incidentes Recentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Inspeções Pendentes -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-clipboard2-pulse-fill text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0 fw-bold">{{ inspecoes_pendentes|length }}</h3>
+                        <small class="text-muted text-uppercase">Inspeções Pendentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Propostas Aguardando -->
+        <div class="col-6 col-lg-3">
+            <div class="card border-start border-warning border-4 shadow-sm h-100">
+                <div class="card-body d-flex align-items-center">
+                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                        <i class="bi bi-bell-fill text-warning fs-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0 fw-bold">{{ inspecoes_propostas|length }}</h3>
+                        <small class="text-muted text-uppercase">Propostas Pendentes</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Calendário -->
+        <div class="col-6 col-lg-3">
+            <a href="{% url 'gestao_riscos:calendario' %}" class="text-decoration-none">
+                <div class="card border-start border-info border-4 shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                            <i class="bi bi-calendar3 text-info fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark">Ver Calendário</h6>
+                            <small class="text-muted text-uppercase">Agenda de Inspeções</small>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════
+         CONTEÚDO PRINCIPAL - Grid de 2 colunas
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="row g-4">
+        
+        <!-- COLUNA ESQUERDA: Incidentes -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>Últimos Incidentes
+                    </h5>
+                    <span class="badge bg-light text-danger">{{ incidentes|length }} registros</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Setor</th>
+                                    <th class="text-center">Tipo</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for incidente in incidentes %}
+                                <tr>
+                                    <td>
+                                        <span class="fw-semibold">{{ incidente.descricao|truncatewords:5 }}</span>
+                                    </td>
+                                    <td>{{ incidente.get_setor_display }}</td>
+                                    <td class="text-center">
+                                        {% if incidente.tipo_incidente == 'COM_AFASTAMENTO' %}
+                                            <span class="badge bg-danger">{{ incidente.get_tipo_incidente_display }}</span>
+                                        {% elif incidente.tipo_incidente == 'QUASE_ACIDENTE' %}
+                                            <span class="badge bg-warning text-dark">{{ incidente.get_tipo_incidente_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ incidente.get_tipo_incidente_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ incidente.data_ocorrencia|date:"d/m/Y H:i" }}</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-5">
+                                        <i class="bi bi-shield-check text-success fs-1"></i>
+                                        <h6 class="mt-3 text-muted">Nenhum incidente recente</h6>
+                                        <p class="small text-muted mb-0">Continue mantendo o ambiente seguro!</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUNA DIREITA: Inspeções -->
+        <div class="col-lg-5">
+            
+            <!-- Inspeções Pendentes (Confirmadas) -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clipboard2-check me-2"></i>Inspeções Pendentes
+                    </h6>
+                    <span class="badge bg-light text-primary">{{ inspecoes_pendentes|length }}</span>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 250px; overflow-y: auto;">
+                    {% for inspecao in inspecoes_pendentes %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ inspecao.equipamento.nome }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>
+                                {{ inspecao.responsavel.get_short_name|default:"Não atribuído" }}
+                            </small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">
+                            {{ inspecao.data_agendada|date:"d/m" }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center py-4">
+                        <i class="bi bi-calendar2-check text-success fs-3"></i>
+                        <p class="small text-muted mb-0 mt-2">Nenhuma inspeção pendente</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Inspeções Propostas (Aguardando Aprovação) -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bell-fill me-2"></i>Propostas Automáticas
+                    </h6>
+                    <span class="badge bg-dark">{{ inspecoes_propostas|length }}</span>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 200px; overflow-y: auto;">
+                    {% for inspecao in inspecoes_propostas %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ inspecao.entrega_epi.equipamento.nome }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                N/S: {{ inspecao.entrega_epi.numero_serie|default:"N/A" }}
+                            </small>
+                        </div>
+                        <span class="badge bg-warning text-dark rounded-pill">
+                            {{ inspecao.data_agendada|date:"d/m" }}
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="list-group-item text-center py-4">
+                        <i class="bi bi-patch-check text-info fs-3"></i>
+                        <p class="small text-muted mb-0 mt-2">Nenhuma proposta automática</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if inspecoes_propostas %}
+                <div class="card-footer text-center bg-light">
+                    <a href="{% url 'gestao_riscos:lista_inspecoes_propostas' %}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-arrow-right me-1"></i> Ver todas e confirmar
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
 </div>
 {% endblock %}
-
 

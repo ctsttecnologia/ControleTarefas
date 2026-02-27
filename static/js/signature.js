@@ -1,73 +1,144 @@
 // static/js/signature.js
+// Responsabilidade: Componente reutilizável de assinatura digital
+// Dependência: SignaturePad (CDN ou vendor/signature_pad.umd.min.js)
 
 class SignaturePadComponent {
     /**
-     * @param {HTMLElement} containerElement - O elemento que contém o canvas e os botões.
+     * Inicializa o componente de assinatura dentro de um container.
+     * @param {HTMLElement} containerElement - Elemento com data-signature-pad-container
      */
     constructor(containerElement) {
         this.container = containerElement;
 
-        // Procura o canvas dentro do container, aceitando o novo data-attribute ou o ID antigo
-        this.canvas = this.container.querySelector('[data-signature-canvas], #signature-canvas');
+        // Busca o canvas (novo padrão via data-attribute ou fallback por ID)
+        this.canvas = this.container.querySelector(
+            '[data-signature-canvas], #signature-canvas'
+        );
 
         if (!this.canvas) {
-            console.error("Elemento canvas não foi encontrado no container fornecido.", this.container);
-            return; // Aborta se o canvas não for encontrado
-        }
-
-        // Isso permite que outros scripts acessem métodos como o resizeCanvas()
-        this.canvas.signaturePadInstance = this;
-        // Procura outros elementos de forma flexível
-        this.clearButton = this.container.querySelector('[data-signature-clear-button], #clear-signature');
-        this.hiddenInput = this.container.querySelector('[data-signature-hidden-input], #assinatura_base64');
-        this.form = this.container.closest('form');
-
-        if (!this.form || !this.hiddenInput) {
-            console.error("Componente de assinatura não encontrou o formulário pai ou o input hidden.");
+            console.warn('[SignaturePad] Canvas não encontrado no container:', this.container);
             return;
         }
 
+        // Referência reversa para acesso externo
+        this.canvas.signaturePadInstance = this;
+
+        // Busca elementos auxiliares
+        this.clearButton = this.container.querySelector(
+            '[data-signature-clear-button], #clear-signature'
+        );
+        this.hiddenInput = this.container.querySelector(
+            '[data-signature-hidden-input], #assinatura_base64'
+        );
+        this.form = this.container.closest('form');
+
+        if (!this.form) {
+            console.warn('[SignaturePad] Formulário pai não encontrado.');
+            return;
+        }
+
+        if (!this.hiddenInput) {
+            console.warn('[SignaturePad] Input hidden para base64 não encontrado.');
+            return;
+        }
+
+        // Inicializa a lib SignaturePad
         this.signaturePad = new SignaturePad(this.canvas, {
-            backgroundColor: 'rgb(255, 255, 255)'
+            backgroundColor: 'rgb(255, 255, 255)',
+            penColor: 'rgb(0, 0, 0)',
         });
 
         this._setupEventListeners();
-        
-        // Usa um pequeno timeout para garantir que o layout da página está 100% estável antes de calibrar
+
+        // Delay para garantir que o layout está estável
         setTimeout(() => this.resizeCanvas(), 150);
     }
 
+    /**
+     * Configura todos os event listeners.
+     */
     _setupEventListeners() {
-        window.addEventListener("resize", () => this.resizeCanvas());
+        // Redimensionar canvas ao mudar tamanho da janela
+        window.addEventListener('resize', () => this.resizeCanvas());
+
+        // Botão limpar
         if (this.clearButton) {
-            this.clearButton.addEventListener('click', () => this.signaturePad.clear());
+            this.clearButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.signaturePad.clear();
+            });
         }
-        this.form.addEventListener('submit', () => this._handleFormSubmit());
+
+        // Ao submeter o form, preenche o input hidden
+        this.form.addEventListener('submit', (e) => this._handleFormSubmit(e));
+
+        // Se estiver dentro de um modal, redimensiona ao abrir
+        const modal = this.container.closest('.modal');
+        if (modal) {
+            modal.addEventListener('shown.bs.modal', () => this.resizeCanvas());
+        }
     }
 
+    /**
+     * Redimensiona o canvas para alta resolução (Retina).
+     */
     resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         this.canvas.width = this.canvas.offsetWidth * ratio;
         this.canvas.height = this.canvas.offsetHeight * ratio;
-        this.canvas.getContext("2d").scale(ratio, ratio);
+        this.canvas.getContext('2d').scale(ratio, ratio);
         this.signaturePad.clear();
     }
 
-    _handleFormSubmit() {
+    /**
+     * Ao submeter, converte a assinatura para base64 e coloca no input hidden.
+     */
+    _handleFormSubmit(event) {
         if (!this.signaturePad.isEmpty()) {
             this.hiddenInput.value = this.signaturePad.toDataURL('image/png');
         }
+        // Se a assinatura for obrigatória, validar aqui:
+        // else {
+        //     event.preventDefault();
+        //     alert('Por favor, desenhe uma assinatura.');
+        // }
+    }
+
+    /**
+     * Verifica se o pad está vazio.
+     * @returns {boolean}
+     */
+    isEmpty() {
+        return this.signaturePad.isEmpty();
+    }
+
+    /**
+     * Limpa a assinatura.
+     */
+    clear() {
+        this.signaturePad.clear();
+    }
+
+    /**
+     * Retorna a assinatura como data URL (base64).
+     * @returns {string}
+     */
+    toDataURL() {
+        return this.signaturePad.toDataURL('image/png');
     }
 }
 
-// INICIALIZADOR UNIVERSAL ATUALIZADO
+// ═══════════════════════════════════════════════════════
+// INICIALIZADOR UNIVERSAL
+// ═══════════════════════════════════════════════════════
 window.addEventListener('load', () => {
-    // 1. Prioriza a busca pela nova estrutura (data-attributes)
-    const signatureContainers = document.querySelectorAll('[data-signature-pad-container]');
-    if (signatureContainers.length > 0) {
-        signatureContainers.forEach(container => new SignaturePadComponent(container));
+    // Busca containers com data-attribute
+    const containers = document.querySelectorAll('[data-signature-pad-container]');
+
+    if (containers.length > 0) {
+        containers.forEach(container => new SignaturePadComponent(container));
     } else {
-        // 2. Se não encontrar, procura pela estrutura antiga (baseada no ID do formulário) como plano B
+        // Fallback: busca pelo formulário legado
         const legacyForm = document.getElementById('formAssinatura');
         if (legacyForm) {
             new SignaturePadComponent(legacyForm);

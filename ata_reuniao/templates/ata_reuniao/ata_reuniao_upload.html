@@ -3,72 +3,288 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Upload em Massa de Atas de Reunião{% endblock %}
+{% block title %}Upload em Massa de Atas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .upload-card {
+        max-width: 700px;
+        width: 100%;
+        border: none;
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .upload-header {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: #fff;
+        padding: 2rem 2.5rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .upload-header::after {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -15%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .upload-header-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        font-size: 1.5rem;
+    }
+    .upload-header h3 { font-weight: 700; font-size: 1.25rem; margin-bottom: 0; position: relative; }
+
+    .upload-body { padding: 2rem 2.5rem; }
+
+    /* ═══ INSTRUCTIONS ═══ */
+    .instructions-card {
+        background: #f0f4ff;
+        border: 1px solid #d0dafb;
+        border-radius: 0.875rem;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .instructions-card h6 {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #4e73df;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 0.75rem;
+    }
+    .instructions-card ol {
+        margin-bottom: 0;
+        padding-left: 1.25rem;
+    }
+    .instructions-card li {
+        font-size: 0.875rem;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+    .instructions-card li:last-child { margin-bottom: 0; }
+
+    /* ═══ DROP ZONE ═══ */
+    .drop-zone {
+        border: 2px dashed #d1d5db;
+        border-radius: 0.875rem;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: #fafbfc;
+    }
+    .drop-zone:hover,
+    .drop-zone.active {
+        border-color: #4e73df;
+        background: rgba(78,115,223,0.03);
+    }
+    .drop-zone-icon { font-size: 2.5rem; color: #cbd5e0; margin-bottom: 0.75rem; }
+    .drop-zone-text { font-size: 0.9rem; color: #718096; }
+    .drop-zone-text strong { color: #4e73df; }
+    .drop-zone-hint { font-size: 0.78rem; color: #a0aec0; margin-top: 0.5rem; }
+    .file-selected {
+        background: rgba(28,200,138,0.05);
+        border-color: #1cc88a;
+    }
+    .file-selected .drop-zone-icon { color: #1cc88a; }
+
+    /* ═══ BUTTONS ═══ */
+    .btn-upload {
+        background: linear-gradient(135deg, #1cc88a, #17a673);
+        border: none;
+        color: #fff;
+        padding: 0.75rem 2rem;
+        border-radius: 0.625rem;
+        font-weight: 700;
+        transition: all 0.2s;
+    }
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(28,200,138,0.35);
+        color: #fff;
+    }
+    .btn-cancel {
+        border: 2px solid #e2e8f0;
+        color: #718096;
+        padding: 0.75rem 1.75rem;
+        border-radius: 0.625rem;
+        font-weight: 600;
+        background: transparent;
+        transition: all 0.2s;
+    }
+    .btn-cancel:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .upload-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    [data-bs-theme="dark"] .upload-body { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .instructions-card { background: rgba(78,115,223,0.08); border-color: rgba(78,115,223,0.2); }
+    [data-bs-theme="dark"] .instructions-card li { color: #a0aec0; }
+    [data-bs-theme="dark"] .drop-zone { border-color: #2d3748; background: rgba(255,255,255,0.02); }
+    [data-bs-theme="dark"] .drop-zone:hover { border-color: #4e73df; }
+    [data-bs-theme="dark"] .btn-cancel { border-color: #2d3748; color: #a0aec0; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card">
-        <div class="card-header">
-            <h4 class="card-title">Importar Atas de Reunião em Massa</h4>
-        </div>
-        <div class="card-body">
+<div class="upload-container">
+    <div class="card upload-card">
 
+        <!-- Header -->
+        <div class="upload-header">
+            <div class="upload-header-icon">
+                <i class="bi bi-cloud-arrow-up-fill"></i>
+            </div>
+            <h3>Importar Atas de Reunião</h3>
+        </div>
+
+        <!-- Body -->
+        <div class="upload-body">
+
+            <!-- Messages -->
             {% if messages %}
                 {% if has_upload_errors %}
-                    <div class="mb-3 text-center">
-                        <a href="{% url 'ata_reuniao:download_error_report' %}" class="btn btn-danger fw-bold">
-                            <i class="fas fa-file-excel"></i> Baixar Relatório de Erros para Correção
-                        </a>
-                    </div>
+                <div class="mb-3 text-center">
+                    <a href="{% url 'ata_reuniao:download_error_report' %}" class="btn btn-danger fw-bold" style="border-radius: 0.625rem;">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Baixar Relatório de Erros
+                    </a>
+                </div>
                 {% endif %}
-
                 {% for message in messages %}
-                    <div class="alert {% if message.tags == 'warning' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}" role="alert">
-                        {% if 'safe' in message.tags %}{{ message|safe }}{% else %}{{ message }}{% endif %}
-                    </div>
+                <div class="alert {% if message.tags == 'warning' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} py-2" style="border-radius: 0.625rem;" role="alert">
+                    {% if 'safe' in message.tags %}{{ message|safe }}{% else %}{{ message }}{% endif %}
+                </div>
                 {% endfor %}
             {% endif %}
-            
-            <div class="alert alert-info" role="alert">
-                <strong>Instruções:</strong>
+
+            <!-- Instructions -->
+            <div class="instructions-card">
+                <h6><i class="bi bi-info-circle me-1"></i> Instruções</h6>
                 <ol>
                     <li>
-                        <strong>Baixe o modelo:</strong> 
-                        <a href="{% url 'ata_reuniao:download_template' %}" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-download"></i> Baixar Planilha Modelo
+                        <strong>Baixe o modelo:</strong>
+                        <a href="{% url 'ata_reuniao:download_template' %}" class="btn btn-sm btn-outline-primary ms-1" style="border-radius: 50rem;">
+                            <i class="bi bi-download me-1"></i> Planilha Modelo
                         </a>
                     </li>
-                    <li>Preencha a planilha com os dados. Consulte a aba "Instruções e Opções" dentro do arquivo para ver as opções válidas.</li>
-                    <li>Salve a planilha preenchida em seu computador.</li>
-                    <li>Selecione o arquivo abaixo e clique em "Enviar".</li>
+                    <li>Preencha a planilha com os dados. Consulte a aba <em>"Instruções e Opções"</em> para ver as opções válidas.</li>
+                    <li>Salve a planilha preenchida no seu computador.</li>
+                    <li>Selecione o arquivo abaixo e clique em <strong>"Enviar"</strong>.</li>
                 </ol>
             </div>
 
-            <form method="post" enctype="multipart/form-data" novalidate>
+            <!-- Form -->
+            <form method="post" enctype="multipart/form-data" novalidate id="uploadForm">
                 {% csrf_token %}
-                
-                <div class="form-group mb-3">
-                    {{ form.file.label_tag }}
-                    {{ form.file }}
-                    {% if form.file.help_text %}
-                        <small class="form-text text-muted">{{ form.file.help_text }}</small>
-                    {% endif %}
-                    {% for error in form.file.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
-                    {% endfor %}
-                </div>
-                
-                <hr>
 
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-upload"></i> Enviar Arquivo
-                </button>
-                <a href="#" onclick="window.history.back();" class="btn btn-secondary">
-                    Cancelar
-                </a>
+                <div class="drop-zone mb-3" id="dropZone">
+                    <input type="file" name="file" id="fileInput" class="d-none"
+                           accept=".xlsx,.xls,.csv">
+                    <div class="drop-zone-icon">
+                        <i class="bi bi-file-earmark-spreadsheet" id="dropIcon"></i>
+                    </div>
+                    <p class="drop-zone-text mb-0" id="dropText">
+                        Arraste o arquivo aqui ou <strong>clique para selecionar</strong>
+                    </p>
+                    <p class="drop-zone-hint" id="dropHint">.xlsx, .xls ou .csv</p>
+                </div>
+
+                {% for error in form.file.errors %}
+                <div class="invalid-feedback d-block" style="margin-top: -0.75rem; margin-bottom: 0.75rem;">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-cancel">
+                        <i class="bi bi-arrow-left me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-upload" id="btnSubmit" disabled>
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Enviar Arquivo
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const dropIcon = document.getElementById('dropIcon');
+    const dropText = document.getElementById('dropText');
+    const dropHint = document.getElementById('dropHint');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    if (!dropZone || !fileInput) return;
+
+    // Click to select
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Drag events
+    ['dragenter', 'dragover'].forEach(ev => {
+        dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('active'); });
+    });
+    ['dragleave', 'drop'].forEach(ev => {
+        dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('active'); });
+    });
+
+    // Drop
+    dropZone.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            showSelected(files[0].name);
+        }
+    });
+
+    // File input change
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            showSelected(fileInput.files[0].name);
+        }
+    });
+
+    function showSelected(name) {
+        dropZone.classList.add('file-selected');
+        dropIcon.className = 'bi bi-file-earmark-check-fill';
+        dropText.innerHTML = `<strong>${name}</strong>`;
+        dropHint.textContent = 'Arquivo selecionado. Clique para trocar.';
+        btnSubmit.disabled = false;
+    }
+
+    // Prevent double submit
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Enviando...';
+    });
+});
+</script>
+{% endblock %}
+
 

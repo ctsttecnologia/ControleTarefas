@@ -1,0 +1,197 @@
+
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Avaliações Quantitativas{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Avaliações Quantitativas</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-chart-line"></i> Avaliações Quantitativas</h1>
+            <p class="mb-0">Histórico de medições e avaliações de riscos</p>
+        </div>
+        {% if perms.pgr_gestao.add_avaliacaoquantitativa %}
+        <a href="{% url 'pgr_gestao:avaliacao_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> Nova Avaliação
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-filter"></i> Filtros de Pesquisa
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Risco</label>
+                <select name="risco" class="form-select">
+                    <option value="">Todos</option>
+                    {% for risco in riscos_para_filtro %}
+                    <option value="{{ risco.id }}" {% if request.GET.risco == risco.id|stringformat:"s" %}selected{% endif %}>
+                        {{ risco.agente }} ({{ risco.pgr_documento.codigo_documento }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Tipo de Avaliação</label>
+                <select name="tipo_avaliacao" class="form-select">
+                    <option value="">Todos</option>
+                    {% for value, label in tipo_avaliacao_choices %}
+                    <option value="{{ value }}" {% if request.GET.tipo_avaliacao == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Conformidade</label>
+                <select name="conforme" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="true" {% if request.GET.conforme == 'true' %}selected{% endif %}>Conforme</option>
+                    <option value="false" {% if request.GET.conforme == 'false' %}selected{% endif %}>Não Conforme</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Período</label>
+                <div class="input-group">
+                    <input type="date" name="data_inicio" class="form-control" value="{{ request.GET.data_inicio }}">
+                    <span class="input-group-text">até</span>
+                    <input type="date" name="data_fim" class="form-control" value="{{ request.GET.data_fim }}">
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela de Avaliações -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list"></i> Lista de Avaliações
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Risco Avaliado</th>
+                        <th>Tipo</th>
+                        <th>Data</th>
+                        <th>Resultado</th>
+                        <th>Limite de Tolerância</th>
+                        <th>Conformidade</th>
+                        <th>Equipamento</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for avaliacao in avaliacaoquantitativa_list %}
+                    <tr onclick="window.location='{% url 'pgr_gestao:avaliacao_detail' avaliacao.pk %}'" style="cursor: pointer;">
+                        <td>
+                            <a href="{% url 'pgr_gestao:risco_detail' avaliacao.risco_identificado.pk %}">
+                                {{ avaliacao.risco_identificado.agente }}
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ avaliacao.risco_identificado.pgr_documento.codigo_documento }}</small>
+                        </td>
+                        <td>{{ avaliacao.get_tipo_avaliacao_display }}</td>
+                        <td>{{ avaliacao.data_avaliacao|date:"d/m/Y" }}</td>
+                        <td><strong>{{ avaliacao.resultado_medido }} {{ avaliacao.unidade_medida }}</strong></td>
+                        <td>{{ avaliacao.limite_tolerancia_nr|default:"N/A" }}</td>
+                        <td>
+                            {% if avaliacao.conforme %}
+                            <span class="badge bg-success"><i class="fas fa-check-circle"></i> Conforme</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Não Conforme</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ avaliacao.equipamento_utilizado|truncatewords:5|default:"N/A" }}</td>
+                        <td class="text-center" onclick="event.stopPropagation();">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'pgr_gestao:avaliacao_detail' avaliacao.pk %}" 
+                                   class="btn btn-info" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if perms.pgr_gestao.change_avaliacaoquantitativa %}
+                                <a href="{% url 'pgr_gestao:avaliacao_update' avaliacao.pk %}" 
+                                   class="btn btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.pgr_gestao.delete_avaliacaoquantitativa %}
+                                <a href="{% url 'pgr_gestao:avaliacao_delete' avaliacao.pk %}" 
+                                   class="btn btn-danger confirm-delete" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>Nenhuma avaliação quantitativa encontrada.</p>
+                            {% if perms.pgr_gestao.add_avaliacaoquantitativa %}
+                            <a href="{% url 'pgr_gestao:avaliacao_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Criar Primeira Avaliação
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if is_paginated %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,15 +1,19 @@
 
-{% comment %} templates/includes/footer.html {% endcomment %}
-{% load static %}
+<!-- templates/partials/global_footer.html -->
 
-<footer class="text-center p-3" style="font-size: 0.8rem; color: #6c757d;">
-    <div class="container text-center">
-        
-        {# O atributo 'class' foi movido para fora do 'style' #}
-        <p class="mb-0" style="font-size: 0.85rem;">
-            &copy; {% now "Y" %} Cetest Minas. Gerenciando Tarefas. Todos os direitos reservados.<br>
+<footer id="global-footer">
+    <div class="container-fluid text-center">
+        <p class="mb-0">
+            &copy; {% now "Y" %} <strong>Cetest Minas</strong> — Gerenciando Tarefas.
+            Todos os direitos reservados.
+        </p>
+        <p class="mb-0 footer-dev">
             Desenvolvido por Emerson Gonçalves
         </p>
-        
     </div>
 </footer>
+
+
+
+
+

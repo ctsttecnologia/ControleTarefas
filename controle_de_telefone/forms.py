@@ -13,6 +13,7 @@ import uuid
 from django.core.files.base import ContentFile
 import base64
 import uuid
+from .models import RecargaCredito
 
 
 
@@ -237,4 +238,117 @@ class VinculoAssinaturaForm(forms.ModelForm):
             
         return vinculo
 
+
+class RecargaCreditoForm(forms.ModelForm):
+    """Formulário para cadastro e edição de recargas de crédito."""
+    
+    class Meta:
+        model = RecargaCredito
+        fields = [
+            'linha',
+            'responsavel',
+            'usuario_credito',
+            'tipo_recarga',
+            'valor',
+            'franquia_dados_mb',
+            'minutos_voz',
+            'data_recarga',
+            'data_inicio',
+            'data_termino',
+            'motivo',
+            'observacao',
+        ]
+        widgets = {
+            'data_recarga': forms.DateInput(attrs={'type': 'date'}),
+            'data_inicio': forms.DateInput(attrs={'type': 'date'}),
+            'data_termino': forms.DateInput(attrs={'type': 'date'}),
+            'motivo': forms.Textarea(attrs={'rows': 2}),
+            'observacao': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        filial_id = kwargs.pop('filial_id', None)
+        super().__init__(*args, **kwargs)
+        
+        # Aplica classes Bootstrap
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs['class'] = 'form-control'
+            else:
+                field.widget.attrs['class'] = 'form-control'
+        
+        # Filtra por filial
+        if filial_id:
+            from departamento_pessoal.models import Funcionario
+            
+            # Linhas da filial
+            self.fields['linha'].queryset = LinhaTelefonica.objects.filter(
+                filial_id=filial_id
+            ).select_related('plano', 'plano__operadora')
+            
+            # Funcionários ativos da filial
+            funcionarios_ativos = Funcionario.objects.filter(
+                filial_id=filial_id,
+                data_demissao__isnull=True
+            ).order_by('nome_completo')
+            
+            self.fields['responsavel'].queryset = funcionarios_ativos
+            self.fields['usuario_credito'].queryset = funcionarios_ativos
+        
+        # Campos opcionais
+        self.fields['franquia_dados_mb'].required = False
+        self.fields['minutos_voz'].required = False
+        self.fields['motivo'].required = False
+        self.fields['observacao'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        data_inicio = cleaned_data.get('data_inicio')
+        data_termino = cleaned_data.get('data_termino')
+        data_recarga = cleaned_data.get('data_recarga')
+        tipo_recarga = cleaned_data.get('tipo_recarga')
+        
+        # Validação de datas
+        if data_inicio and data_termino:
+            if data_termino < data_inicio:
+                raise forms.ValidationError(
+                    'A data de término não pode ser anterior à data de início.'
+                )
+        
+        if data_recarga and data_inicio:
+            if data_recarga > data_inicio:
+                raise forms.ValidationError(
+                    'A data da recarga não pode ser posterior à data de início da vigência.'
+                )
+        
+        # Validação de franquia/minutos conforme tipo
+        franquia = cleaned_data.get('franquia_dados_mb')
+        minutos = cleaned_data.get('minutos_voz')
+        
+        if tipo_recarga in ['pacote_dados', 'combo'] and not franquia:
+            self.add_error('franquia_dados_mb', 'Informe a franquia de dados para este tipo de recarga.')
+        
+        if tipo_recarga in ['pacote_voz', 'combo'] and not minutos:
+            self.add_error('minutos_voz', 'Informe os minutos de voz para este tipo de recarga.')
+        
+        return cleaned_data
+
+
+class RecargaCreditoRealizarForm(forms.ModelForm):
+    """Formulário para marcar recarga como realizada."""
+    
+    class Meta:
+        model = RecargaCredito
+        fields = ['codigo_transacao', 'comprovante', 'observacao']
+        widgets = {
+            'observacao': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['codigo_transacao'].widget.attrs['class'] = 'form-control'
+        self.fields['comprovante'].widget.attrs['class'] = 'form-control'
+        self.fields['codigo_transacao'].required = True
            

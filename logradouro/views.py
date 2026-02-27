@@ -13,7 +13,6 @@ from openpyxl.utils import get_column_letter
 from .models import Logradouro, Filial 
 from .forms import LogradouroForm, UploadFileForm
 from .constant import ESTADOS_BRASIL
-from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin
 
 import pandas as pd
 import io
@@ -22,7 +21,7 @@ from django.core.exceptions import ValidationError
 from openpyxl import load_workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 import base64 
-
+from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin, FilialCreateMixin
 
 # --- Views de Logradouro (CRUD) ---
 
@@ -86,26 +85,19 @@ class LogradouroCreateView(LoginRequiredMixin, CreateView):
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
+    permission_required = 'logradouro.add_logradouro'
 
     def get_initial(self):
         """Pré-seleciona a filial atual do usuário no formulário."""
         initial = super().get_initial()
-        if hasattr(self.request.user, 'filial_atual'):
-            initial['filial'] = self.request.user.filial_atual
+        # usar filial_ativa (padrão do seu sistema)
+        if hasattr(self.request.user, 'filial_ativa'):
+            initial['filial'] = self.request.user.filial_ativa
         return initial
 
-    def get_queryset(self):
-        """Garante que o usuário só edite endereços da sua filial."""
-        return super().get_queryset()
-
     def form_valid(self, form):
-        # CORREÇÃO: Associa a filial do usuário ao novo objeto antes de salvar.
-        logradouro = form.save(commit=False)
-        if hasattr(self.request.user, 'filial'):
-            logradouro.filial = self.request.user.filial
-        logradouro.save()
         messages.success(self.request, _('Endereço cadastrado com sucesso!'))
-        return super().form_valid(form)
+        return super().form_valid(form)  # FilialCreateMixin já associa a filial
 
     def form_invalid(self, form):
         messages.error(self.request, _('Por favor, corrija os erros abaixo.'))
@@ -117,6 +109,7 @@ class LogradouroUpdateView(ViewFilialScopedMixin, LoginRequiredMixin, UpdateView
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
+    permission_required = 'logradouro.change_logradouro' 
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
@@ -131,6 +124,8 @@ class LogradouroDeleteView(ViewFilialScopedMixin, LoginRequiredMixin, DeleteView
     model = Logradouro
     template_name = 'logradouro/confirmar_exclusao.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
+    context_object_name = 'logradouro'  
+    permission_required = 'logradouro.delete_logradouro'  
 
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
@@ -146,6 +141,8 @@ class LogradouroExportExcelView(LoginRequiredMixin, View):
     """
     Exporta a lista de logradouros para Excel, respeitando o escopo da filial.
     """
+    permission_required = 'logradouro.view_logradouro'
+    
     def get_queryset(self):
         """Garante que o usuário só edite endereços da sua filial."""
         return super().get_queryset()

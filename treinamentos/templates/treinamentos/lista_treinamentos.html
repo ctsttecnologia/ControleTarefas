@@ -2,126 +2,526 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Lista de Treinamentos{% endblock %}
+{% block title %}Treinamentos{% endblock %}
 
 {% block extra_css %}
+<style>
+    /* ═══ HERO HEADER ═══ */
+    .page-hero {
+        background: linear-gradient(135deg, #1cc88a 0%, #17a673 50%, #13855c 100%);
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .page-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 280px;
+        height: 280px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .page-hero::before {
+        content: '';
+        position: absolute;
+        bottom: -35%;
+        left: 3%;
+        width: 180px;
+        height: 180px;
+        background: rgba(255,255,255,0.04);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
+    .page-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+
+    /* ═══ STAT PILLS ═══ */
+    .stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.15);
+        backdrop-filter: blur(4px);
+        border-radius: 50rem;
+        padding: 0.35rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #fff;
+    }
+    .stat-pill i { font-size: 0.9rem; }
+
+    /* ═══ SEARCH CARD ═══ */
+    .search-card {
+        border: none;
+        border-radius: 0.875rem;
+        overflow: hidden;
+    }
+    .search-input {
+        border: 2px solid #e9ecef;
+        border-radius: 0.625rem;
+        padding: 0.625rem 1rem 0.625rem 2.75rem;
+        font-size: 0.9rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus {
+        border-color: #1cc88a;
+        box-shadow: 0 0 0 0.2rem rgba(28,200,138,0.15);
+    }
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #adb5bd;
+        pointer-events: none;
+        z-index: 5;
+    }
+
+    /* ═══ FILTER CHIPS ═══ */
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 0.3rem 0.85rem;
+        border-radius: 50rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border: 1.5px solid;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .filter-chip:hover { transform: translateY(-1px); }
+    .filter-chip.active { color: #fff !important; }
+    .chip-all       { border-color: #6c757d; color: #6c757d; }
+    .chip-all.active       { background: #6c757d; }
+    .chip-agendado  { border-color: #0dcaf0; color: #0dcaf0; }
+    .chip-agendado.active  { background: #0dcaf0; }
+    .chip-em_andamento { border-color: #4e73df; color: #4e73df; }
+    .chip-em_andamento.active { background: #4e73df; }
+    .chip-concluido { border-color: #1cc88a; color: #1cc88a; }
+    .chip-concluido.active { background: #1cc88a; }
+    .chip-cancelado { border-color: #e74a3b; color: #e74a3b; }
+    .chip-cancelado.active { background: #e74a3b; }
+
+    /* ═══ TABLE ═══ */
+    .data-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .data-table thead th {
+        background: #f8f9fc;
+        border-bottom: 2px solid #e3e6f0;
+        font-size: 0.73rem;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        font-weight: 700;
+        color: #858796;
+        padding: 0.875rem 1rem;
+        white-space: nowrap;
+    }
+    .data-table tbody tr {
+        transition: background 0.15s ease;
+    }
+    .data-table tbody tr:hover {
+        background: rgba(28,200,138,0.04);
+    }
+    .data-table tbody td {
+        padding: 0.875rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f1f1f4;
+        font-size: 0.875rem;
+    }
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* ═══ TRAINING NAME ═══ */
+    .training-name {
+        font-weight: 600;
+        color: #2d3748;
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .training-name:hover { color: #1cc88a; }
+    .training-sub { font-size: 0.78rem; color: #a0aec0; }
+
+    /* ═══ STATUS BADGE ═══ */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0.3rem 0.75rem;
+        border-radius: 50rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .status-badge::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .status-agendado { background: rgba(13,202,240,0.12); color: #0aa2c0; }
+    .status-agendado::before { background: #0dcaf0; }
+    .status-em_andamento { background: rgba(78,115,223,0.12); color: #4e73df; }
+    .status-em_andamento::before { background: #4e73df; }
+    .status-concluido { background: rgba(28,200,138,0.12); color: #13855c; }
+    .status-concluido::before { background: #1cc88a; }
+    .status-cancelado { background: rgba(231,74,59,0.12); color: #c0392b; }
+    .status-cancelado::before { background: #e74a3b; }
+
+    /* ═══ ACTION BUTTONS ═══ */
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        border: 1.5px solid #e3e6f0;
+        background: #fff;
+        color: #858796;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+    }
+    .btn-action:hover {
+        border-color: #4e73df;
+        color: #4e73df;
+        background: rgba(78,115,223,0.06);
+        transform: translateY(-1px);
+    }
+    .btn-action-success:hover {
+        border-color: #1cc88a;
+        color: #1cc88a;
+        background: rgba(28,200,138,0.06);
+    }
+
+    /* ═══ EMPTY STATE ═══ */
+    .empty-state {
+        padding: 4rem 2rem;
+    }
+    .empty-state-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(28,200,138,0.1), rgba(28,200,138,0.05));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.25rem;
+    }
+    .empty-state-icon i { font-size: 2rem; color: #1cc88a; }
+
+    /* ═══ PAGINATION CUSTOM ═══ */
+    .pagination-pro .page-link {
+        border: none;
+        border-radius: 0.5rem;
+        margin: 0 2px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #858796;
+        transition: all 0.2s;
+    }
+    .pagination-pro .page-link:hover { background: #f0f0f5; color: #4e73df; }
+    .pagination-pro .page-item.active .page-link {
+        background: #1cc88a;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(28,200,138,0.3);
+    }
+    .pagination-pro .page-item.disabled .page-link { color: #d1d3e2; }
+
+    /* ═══ RESULT COUNT ═══ */
+    .result-count {
+        font-size: 0.8rem;
+        color: #858796;
+        font-weight: 500;
+    }
+    .result-count strong { color: #2d3748; }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .page-hero { background: linear-gradient(135deg, #13855c 0%, #0f6848 100%); }
+    [data-bs-theme="dark"] .search-input { border-color: #2d3748; background: var(--bs-body-bg); color: #fff; }
+    [data-bs-theme="dark"] .search-input:focus { border-color: #1cc88a; }
+    [data-bs-theme="dark"] .data-table thead th { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.5); border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .data-table tbody td { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .data-table tbody tr:hover { background: rgba(28,200,138,0.06); }
+    [data-bs-theme="dark"] .training-name { color: #e2e8f0; }
+    [data-bs-theme="dark"] .btn-action { background: var(--bs-body-bg); border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); }
+    [data-bs-theme="dark"] .filter-chip { border-width: 1.5px; }
+
+    /* ═══ PRINT ═══ */
+    @media print {
+        .no-print { display: none !important; }
+        .page-hero { background: #1cc88a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .search-card, .card { box-shadow: none !important; border: 1px solid #ddd !important; }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-lg-5">
 
-    <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-2 border-bottom">
-        <h2 class="h3 mb-3 mb-md-0">
-            <i class="bi bi-book-half me-2"></i>Treinamentos
-        </h2>
-        <div class="btn-toolbar" role="toolbar">
-            <div class="btn-group me-2" role="group">
-                {% if perms.treinamentos.view_lista_tipos_curso %}
-                    <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-list"></i> Lista de Cursos
-                    </a>
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- HERO HEADER                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="page-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1>
+                    <i class="bi bi-mortarboard-fill me-2"></i>Treinamentos
+                </h1>
+                <p>Gerencie todos os treinamentos, participantes e certificações</p>
+
+                <!-- Stat Pills -->
+                {% if total_treinamentos is not None %}
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <span class="stat-pill">
+                        <i class="bi bi-collection"></i> {{ total_treinamentos|default:"0" }} treinamentos
+                    </span>
+                    {% if em_andamento %}
+                    <span class="stat-pill">
+                        <i class="bi bi-play-circle"></i> {{ em_andamento }} em andamento
+                    </span>
+                    {% endif %}
+                </div>
                 {% endif %}
             </div>
-            <div class="btn-group me-2" role="group">
-                {% if perms.treinamentos.view_dashboard %}
-                    <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
+
+            <div class="d-flex gap-2 flex-wrap no-print">
+                {% if perms.treinamentos.view_tipocurso %}
+                <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-bookmark-star me-1"></i> Tipos de Curso
+                </a>
                 {% endif %}
-                {% if perms.treinamentos.view_relatorio %}
-                    <a href="{% url 'treinamentos:relatorio_treinamentos' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-bar-chart-line-fill"></i> Relatórios
-                    </a>
+
+                {% if perms.treinamentos.ver_relatorios %}
+                <a href="{% url 'treinamentos:relatorio_treinamentos' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-bar-chart-line me-1"></i> Relatórios
+                </a>
                 {% endif %}
-            </div>
-            <div class="btn-group" role="group">
+
+                {% if perms.treinamentos.view_treinamento %}
+                <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                </a>
+                {% endif %}
+
                 {% if perms.treinamentos.add_treinamento %}
-                    <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-1"></i> Novo Treinamento
-                    </a>
+                <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-light fw-semibold">
+                    <i class="bi bi-plus-circle me-1"></i> Novo Treinamento
+                </a>
                 {% endif %}
             </div>
         </div>
-    </header>
+    </div>
 
-    {# Card principal que envolve a busca e a tabela #}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            <!-- Barra de Filtros (Exemplo) -->
-            <div class="filter-bar mb-4">
-                <form method="get" class="row g-2 align-items-center">
-                    <div class="col">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" name="q" class="form-control" placeholder="Pesquisar por nome ou tipo de curso..." value="{{ request.GET.q|default:'' }}">
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- SEARCH + FILTERS + TABLE                    -->
+    <!-- ═══════════════════════════════════════════ -->
+    <div class="card search-card shadow-sm">
+        <!-- Search Bar -->
+        <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
+            <form method="get" id="filterForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-6 col-md-8">
+                        <div class="position-relative">
+                            <i class="bi bi-search search-icon"></i>
+                            <input type="text"
+                                   name="q"
+                                   class="form-control search-input"
+                                   placeholder="Pesquisar por nome, tipo de curso ou local..."
+                                   value="{{ request.GET.q|default:'' }}"
+                                   autocomplete="off">
                         </div>
                     </div>
                     <div class="col-auto">
-                        <button type="submit" class="btn btn-outline-primary w-100">Buscar</button>
+                        <button type="submit" class="btn btn-primary px-4" style="border-radius: 0.625rem;">
+                            <i class="bi bi-search me-1"></i> Buscar
+                        </button>
                     </div>
+                    {% if request.GET.q or request.GET.status %}
                     <div class="col-auto">
-                        <a href="{% url 'treinamentos:lista_treinamentos' %}" class="btn btn-outline-secondary w-100" title="Limpar pesquisa">
-                            <i class="bi bi-arrow-counterclockwise"></i>
+                        <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-outline-secondary" style="border-radius: 0.625rem;">
+                            <i class="bi bi-x-circle me-1"></i> Limpar
                         </a>
                     </div>
-                </form>
-            </div>
+                    {% endif %}
+                </div>
 
-            <!-- Tabela de Treinamentos -->
+                <!-- Filter Chips -->
+                <div class="d-flex flex-wrap gap-2 mt-3 pb-3">
+                    <input type="hidden" name="status" id="statusFilter" value="{{ request.GET.status|default:'' }}">
+
+                    <a href="#" class="filter-chip chip-all {% if not request.GET.status %}active{% endif %}"
+                       data-status="">
+                        <i class="bi bi-grid-3x3-gap-fill"></i> Todos
+                    </a>
+                    <a href="#" class="filter-chip chip-agendado {% if request.GET.status == 'agendado' %}active{% endif %}"
+                       data-status="agendado">
+                        <i class="bi bi-calendar-event"></i> Agendado
+                    </a>
+                    <a href="#" class="filter-chip chip-em_andamento {% if request.GET.status == 'em_andamento' %}active{% endif %}"
+                       data-status="em_andamento">
+                        <i class="bi bi-play-circle"></i> Em Andamento
+                    </a>
+                    <a href="#" class="filter-chip chip-concluido {% if request.GET.status == 'concluido' %}active{% endif %}"
+                       data-status="concluido">
+                        <i class="bi bi-check-circle"></i> Concluído
+                    </a>
+                    <a href="#" class="filter-chip chip-cancelado {% if request.GET.status == 'cancelado' %}active{% endif %}"
+                       data-status="cancelado">
+                        <i class="bi bi-x-circle"></i> Cancelado
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Count -->
+        <div class="px-4 pb-2">
+            <span class="result-count">
+                {% if treinamentos %}
+                    Exibindo <strong>{{ treinamentos|length }}</strong> treinamento{{ treinamentos|length|pluralize:"s" }}
+                    {% if request.GET.q %} para "<strong>{{ request.GET.q }}</strong>"{% endif %}
+                    {% if request.GET.status %} — filtro: <strong>{{ request.GET.status }}</strong>{% endif %}
+                {% endif %}
+            </span>
+        </div>
+
+        <!-- Table -->
+        <div class="card-body pt-0 px-0 pb-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table data-table mb-0">
                     <thead>
                         <tr>
-                            <th scope="col">Nome do Treinamento</th>
-                            <th scope="col">Tipo</th>
-                            <th scope="col">Data Início</th>
-                            <th scope="col">Data Fim</th>
+                            <th scope="col" style="min-width: 250px;">Treinamento</th>
+                            <th scope="col">Tipo de Curso</th>
+                            <th scope="col">Período</th>
                             <th scope="col">Local</th>
-                            <th scope="col">Status</th>
-                            <th scope="col" class="text-end">Ações</th>
+                            <th scope="col" class="text-center">Status</th>
+                            <th scope="col" class="text-end pe-4" style="width: 100px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for treinamento in treinamentos %}
                         <tr>
-                            <td class="fw-medium">{{ treinamento.nome }}</td>
-                            <td>{{ treinamento.tipo_curso }}</td>
-                            <td>{{ treinamento.data_inicio|date:"d/m/Y H:i" }}</td>
-                            <td>{{ treinamento.data_fim|date:"d/m/Y H:i" }}</td>
-                            <td>{{ treinamento.local }}</td>
+                            <!-- Nome -->
                             <td>
-                                <span class="badge 
-                                    {% if treinamento.status == 'agendado' %}text-bg-info
-                                    {% elif treinamento.status == 'em_andamento' %}text-bg-primary
-                                    {% elif treinamento.status == 'concluido' %}text-bg-success
-                                    {% elif treinamento.status == 'cancelado' %}text-bg-danger
-                                    {% else %}text-bg-secondary{% endif %}">
+                                <a href="{% url 'treinamentos:detalhe_treinamento' treinamento.pk %}"
+                                   class="training-name">
+                                    {{ treinamento.nome }}
+                                </a>
+                                <div class="training-sub">
+                                    ID #{{ treinamento.pk }}
+                                    {% if treinamento.instrutor %}
+                                        · <i class="bi bi-person-badge"></i> {{ treinamento.instrutor }}
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Tipo de Curso -->
+                            <td>
+                                {% if treinamento.tipo_curso %}
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-bookmark text-muted" style="font-size: 0.8rem;"></i>
+                                    {{ treinamento.tipo_curso }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Período -->
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <small class="d-flex align-items-center gap-1">
+                                        <i class="bi bi-calendar-plus text-success" style="font-size: 0.75rem;"></i>
+                                        {{ treinamento.data_inicio|date:"d/m/Y" }}
+                                        <span class="text-muted">{{ treinamento.data_inicio|date:"H:i" }}</span>
+                                    </small>
+                                    <small class="d-flex align-items-center gap-1 mt-1">
+                                        <i class="bi bi-calendar-check text-danger" style="font-size: 0.75rem;"></i>
+                                        {{ treinamento.data_fim|date:"d/m/Y" }}
+                                        <span class="text-muted">{{ treinamento.data_fim|date:"H:i" }}</span>
+                                    </small>
+                                </div>
+                            </td>
+
+                            <!-- Local -->
+                            <td>
+                                {% if treinamento.local %}
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-geo-alt text-muted" style="font-size: 0.8rem;"></i>
+                                    {{ treinamento.local|truncatewords:5 }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Status -->
+                            <td class="text-center">
+                                <span class="status-badge status-{{ treinamento.status }}">
                                     {{ treinamento.get_status_display }}
                                 </span>
                             </td>
-                            <td class="text-end">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'treinamentos:detalhe_treinamento' treinamento.pk %}" class="btn btn-outline-secondary" title="Ver Detalhes">
-                                        <i class="bi bi-eye-fill"></i>
+
+                            <!-- Ações -->
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <a href="{% url 'treinamentos:detalhe_treinamento' treinamento.pk %}"
+                                       class="btn-action btn-action-success"
+                                       title="Ver detalhes"
+                                       data-bs-toggle="tooltip">
+                                        <i class="bi bi-eye"></i>
                                     </a>
-                                    {% if perms.treinamentos.view_editar_treinamento %}
-                                        <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}" class="btn btn-outline-primary" title="Editar Treinamento">
-                                            <i class="bi bi-pencil-fill"></i>
-                                        </a>
+                                    {% if perms.treinamentos.change_treinamento %}
+                                    <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}"
+                                       class="btn-action"
+                                       title="Editar treinamento"
+                                       data-bs-toggle="tooltip">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                     {% endif %}
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <div class="py-3">
-                                    <i class="bi bi-journal-x fs-1 text-secondary"></i>
-                                    <h5 class="mt-3">Nenhum treinamento encontrado.</h5>
-                                    <p class="text-muted">Comece cadastrando um novo treinamento.</p>
-                                    <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary mt-2">
-                                        <i class="bi bi-plus-circle me-1"></i> Cadastrar Treinamento
-                                    </a>
+                            <td colspan="6">
+                                <div class="empty-state text-center">
+                                    <div class="empty-state-icon">
+                                        <i class="bi bi-mortarboard"></i>
+                                    </div>
+                                    <h5 class="fw-bold mb-2">Nenhum treinamento encontrado</h5>
+                                    <p class="text-muted mb-3" style="max-width: 400px; margin: 0 auto;">
+                                        {% if request.GET.q %}
+                                            Não encontramos resultados para "<strong>{{ request.GET.q }}</strong>".
+                                            Tente outros termos de busca.
+                                        {% else %}
+                                            Comece cadastrando o primeiro treinamento para sua equipe.
+                                        {% endif %}
+                                    </p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        {% if request.GET.q or request.GET.status %}
+                                        <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-outline-secondary">
+                                            <i class="bi bi-arrow-counterclockwise me-1"></i> Limpar Filtros
+                                        </a>
+                                        {% endif %}
+                                        {% if perms.treinamentos.add_treinamento %}
+                                        <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle me-1"></i> Cadastrar Treinamento
+                                        </a>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -130,9 +530,108 @@
                 </table>
             </div>
         </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-footer bg-transparent border-0 px-4 py-3">
+            <nav aria-label="Paginação">
+                <ul class="pagination pagination-pro justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-double-left"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                            <i class="bi bi-chevron-double-right"></i>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+                    <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+                    {% endif %}
+                </ul>
+
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+                    </small>
+                </div>
+            </nav>
+        </div>
+        {% endif %}
     </div>
-    {% if is_paginated %}
-        {% include 'partials/pagination.html' %}
-    {% endif %}
+
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ═══ FILTER CHIPS ═══
+    const filterForm = document.getElementById('filterForm');
+    const statusInput = document.getElementById('statusFilter');
+    const chips = document.querySelectorAll('.filter-chip');
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            const status = chip.dataset.status;
+
+            // Toggle active
+            chips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+
+            // Update hidden input e submit
+            statusInput.value = status;
+            filterForm.submit();
+        });
+    });
+
+    // ═══ TOOLTIPS ═══
+    const tooltipTriggers = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggers.forEach(el => {
+        new bootstrap.Tooltip(el, { trigger: 'hover', placement: 'top' });
+    });
+
+    // ═══ KEYBOARD SHORTCUT: Ctrl+K para focar busca ═══
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) searchInput.focus();
+        }
+    });
+});
+</script>
+{% endblock extra_js %}

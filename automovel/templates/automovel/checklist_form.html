@@ -1,76 +1,123 @@
-
+<!-- Formulário para Criar ou Editar Checklist de Vistoria -->
 {% extends "base.html" %}
 {% load static crispy_forms_tags %}
 
-{% block title %}Checklist de Veículo{% endblock %}
-
+{% block title %}Checklist — {{ agendamento.carro.placa }}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/automovel/automovel_styles.css' %}">
 <style>
-    /* Seus estilos aqui... (mantidos da resposta anterior) */
-    .photo-uploader {
-        border: 1px dashed #ccc; border-radius: .75rem; padding: 1rem; text-align: center; cursor: pointer;
-        background-color: #b2d7fbff; min-height: 150px; display: flex; align-items: center;
-        justify-content: center; position: relative; overflow: hidden;
+    .form-hero {
+        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+        border-radius: 1rem; color: #fff; padding: 2rem 2.5rem;
+        margin-bottom: 2rem; position: relative; overflow: hidden;
     }
-    .photo-uploader:hover { background-color: #e9ecef; border-color: #adb5bd; }
-    .photo-uploader .upload-text { color: #6c757d; }
-    .photo-uploader .upload-icon { font-size: 2.5rem; color: #6c757d; }
-    .photo-uploader img.preview { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-    #signatureCanvas { border: 2px solid #c5d5e6ff; width: 60%; height: 200px; touch-action: none; }
+    .form-hero::after {
+        content: ''; position: absolute; top: -40%; right: -8%;
+        width: 250px; height: 250px; background: rgba(255,255,255,0.06);
+        border-radius: 50%; pointer-events: none;
+    }
+    .form-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .form-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+
+    .form-card { border: none; border-radius: 0.875rem; }
+    .form-card .card-body { padding: 2rem 2.5rem; }
+    .form-card .form-control, .form-card .form-select {
+        border: 2px solid #e2e8f0; border-radius: 0.625rem;
+    }
+    .form-card .form-control:focus, .form-card .form-select:focus {
+        border-color: #4e73df; box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
+    }
+
+    .photo-uploader {
+        border: 2px dashed #cbd5e0; border-radius: 0.875rem; padding: 1.5rem;
+        text-align: center; cursor: pointer; background: #fafbfc;
+        min-height: 150px; display: flex; align-items: center; justify-content: center;
+        position: relative; overflow: hidden; transition: all 0.2s;
+    }
+    .photo-uploader:hover { border-color: #4e73df; background: rgba(78,115,223,0.03); }
+    .photo-uploader .upload-icon { font-size: 2rem; color: #adb5bd; margin-bottom: 0.25rem; }
+    .photo-uploader .upload-text { font-size: 0.82rem; color: #858796; }
+    .photo-uploader img.preview {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;
+    }
+    .photo-uploader.has-photo { border-color: #1cc88a; }
+
+    .accordion-button { font-weight: 700; font-size: 0.95rem; }
+    .accordion-button:not(.collapsed) { background: rgba(78,115,223,0.06); color: #224abe; }
+
+    #signatureCanvas {
+        border: 2px solid #e2e8f0; border-radius: 0.75rem;
+        width: 100%; max-width: 500px; height: 200px; touch-action: none;
+    }
+
+    .form-actions { border-top: 2px solid #f0f2f5; padding-top: 1.5rem; margin-top: 2rem; }
+
+    [data-bs-theme="dark"] .form-hero { background: linear-gradient(135deg, #13855c, #0d5d3f); }
+    [data-bs-theme="dark"] .photo-uploader { border-color: #2d3748; background: rgba(255,255,255,0.02); }
+    [data-bs-theme="dark"] #signatureCanvas { border-color: #2d3748; }
+    [data-bs-theme="dark"] .form-actions { border-top-color: rgba(255,255,255,0.06); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    {% include "partials/_page_header.html" with title="Checklist de Veículo: "|add:agendamento.carro.placa %}
-    {% include "partials/_messages.html" %}
-    <form method="post" enctype="multipart/form-data" id="checklistForm" novalidate>
-        {% csrf_token %}
+{% include "partials/_messages.html" %}
 
-        <div class="card shadow-sm">
-            <div class="card-body">
-                
+<div class="container-fluid py-4 px-lg-5">
+
+    <div class="form-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1><i class="bi bi-clipboard-check me-2"></i>Checklist de Veículo</h1>
+                <p>{{ agendamento.carro.marca }} {{ agendamento.carro.modelo }} — {{ agendamento.carro.placa }}</p>
+            </div>
+            <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <div class="card form-card shadow-sm">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" id="checklistForm" novalidate>
+                {% csrf_token %}
+
+                <div class="row g-3 mb-4">
                     <div class="col-md-6">{{ form.tipo|as_crispy_field }}</div>
                     <div class="col-md-6">{{ form.data_hora|as_crispy_field }}</div>
-
                     {% if 'km_inicial' in form.fields %}
-                        <div class="col-md-6 mt-3">{{ form.km_inicial|as_crispy_field }}</div>
+                    <div class="col-md-6">{{ form.km_inicial|as_crispy_field }}</div>
                     {% endif %}
-
                     {% if 'km_final' in form.fields %}
-                        <div class="col-md-6 mt-3">{{ form.km_final|as_crispy_field }}</div>
+                    <div class="col-md-6">{{ form.km_final|as_crispy_field }}</div>
                     {% endif %}
-                
+                </div>
 
-                <div class="accordion" id="vistoriaAccordion">
-                    
+                <div class="accordion mb-4" id="vistoriaAccordion">
                     {% for section in form_sections %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading-{{ section.id }}">
-                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ section.id }}" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}" aria-controls="collapse-{{ section.id }}">
-                                {{ section.title }}
+                    <div class="accordion-item" style="border-radius: 0.75rem; overflow: hidden; margin-bottom: 0.5rem; border: 1px solid #e9ecef;">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#collapse-{{ section.id }}">
+                                <i class="bi bi-camera me-2"></i>{{ section.title }}
                             </button>
                         </h2>
-                        <div id="collapse-{{ section.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" aria-labelledby="heading-{{ section.id }}" data-bs-parent="#vistoriaAccordion">
+                        <div id="collapse-{{ section.id }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                             data-bs-parent="#vistoriaAccordion">
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        {{ section.status_field|as_crispy_field }}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Foto</label>
+                                <div class="row g-3">
+                                    <div class="col-md-6">{{ section.status_field|as_crispy_field }}</div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold" style="font-size: 0.85rem;">Foto</label>
                                         <div class="photo-uploader" data-input-id="{{ section.photo_field.id_for_label }}">
                                             <div class="upload-text">
-                                                <i class="bi bi-camera-fill upload-icon"></i>
-                                                <p>Toque para adicionar foto</p>
+                                                <i class="bi bi-camera-fill upload-icon d-block"></i>
+                                                <span>Toque para adicionar</span>
                                             </div>
-                                            <img class="preview d-none" />
+                                            <img class="preview d-none" alt="Preview">
                                         </div>
                                         <div class="d-none">{{ section.photo_field }}</div>
                                         {% for error in section.photo_field.errors %}
-                                            <div class="invalid-feedback d-block">{{ error }}</div>
+                                        <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
                                         {% endfor %}
                                     </div>
                                 </div>
@@ -78,74 +125,83 @@
                         </div>
                     </div>
                     {% endfor %}
-
                 </div>
 
-                <div class="row mt-4">
-                    <div class="col-md-12">{{ form.observacoes_gerais|as_crispy_field }}</div>
-                </div>
+                <div class="mb-4">{{ form.observacoes_gerais|as_crispy_field }}</div>
 
-                <div class="mt-4">
-                    <h5>Assinatura do Responsável</h5>
+                <div class="mb-4">
+                    <h5 class="fw-bold" style="font-size: 1rem;">
+                        <i class="bi bi-pen me-2 text-info"></i>Assinatura do Responsável
+                    </h5>
                     <canvas id="signatureCanvas"></canvas>
-                    {{ form.assinatura }} <button type="button" id="clearSignature" class="btn btn-sm btn-outline-danger mt-2"><i class="bi bi-eraser"></i> Limpar</button>
+                    {{ form.assinatura }}
+                    <div class="mt-2">
+                        <button type="button" id="clearSignature" class="btn btn-sm btn-outline-danger" style="border-radius: 50rem;">
+                            <i class="bi bi-eraser me-1"></i> Limpar
+                        </button>
+                    </div>
                     {% for error in form.assinatura.errors %}
-                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    <div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</div>
                     {% endfor %}
-                    {{ usuario.get_full_name }} - {{ usuario.cargo }}
+                    <p class="text-muted small mt-1 mb-0">{{ usuario.get_full_name }} — {{ usuario.cargo }}</p>
                 </div>
-            </div>
 
-            <div class="card-footer text-end">
-                <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" class="btn btn-secondary">Cancelar</a>
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar Checklist</button>
-            </div>
+                <div class="form-actions d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <a href="{% url 'automovel:agendamento_detail' agendamento.id %}" class="btn btn-outline-secondary" style="border-radius: 0.625rem;">
+                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success fw-bold" style="border-radius: 0.625rem; padding: 0.75rem 2rem;">
+                        <i class="bi bi-check-circle-fill me-2"></i> Salvar Checklist
+                    </button>
+                </div>
+            </form>
         </div>
-    </form>
-</div>    
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Photo uploaders
     document.querySelectorAll('.photo-uploader').forEach(uploader => {
-        const inputId = uploader.dataset.inputId;
-        const input = document.getElementById(inputId);
+        const input = document.getElementById(uploader.dataset.inputId);
         if (!input) return;
-        
-        const previewImg = uploader.querySelector('img.preview');
-        const uploadText = uploader.querySelector('.upload-text');
-        
-        uploader.addEventListener('click', () => input.click());
+        const preview = uploader.querySelector('img.preview');
+        const text = uploader.querySelector('.upload-text');
 
-        input.addEventListener('change', event => {
-            const file = event.target.files[0];
+        uploader.addEventListener('click', () => input.click());
+        input.addEventListener('change', e => {
+            const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = e => {
-                    previewImg.src = e.target.result;
-                    previewImg.classList.remove('d-none');
-                    uploadText.classList.add('d-none');
-                }
+                reader.onload = ev => {
+                    preview.src = ev.target.result;
+                    preview.classList.remove('d-none');
+                    text.classList.add('d-none');
+                    uploader.classList.add('has-photo');
+                };
                 reader.readAsDataURL(file);
             }
         });
     });
 
+    // Signature pad
     const canvas = document.getElementById('signatureCanvas');
-    const signaturePad = new SignaturePad(canvas, { penColor: "rgb(0, 0, 0)" });
+    const signaturePad = new SignaturePad(canvas, { penColor: 'rgb(0,0,0)' });
     function resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
         canvas.height = canvas.offsetHeight * ratio;
-        canvas.getContext("2d").scale(ratio, ratio);
+        canvas.getContext('2d').scale(ratio, ratio);
         signaturePad.clear();
     }
-    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
+
     document.getElementById('clearSignature').addEventListener('click', () => signaturePad.clear());
-    document.getElementById('checklistForm').addEventListener('submit', function(e) {
+    document.getElementById('checklistForm').addEventListener('submit', function() {
         if (!signaturePad.isEmpty()) {
             document.getElementById('id_assinatura').value = signaturePad.toDataURL('image/png');
         }

@@ -1,0 +1,271 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}{{ empresa.razao_social }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:empresa_list' %}">Empresas</a></li>
+<li class="breadcrumb-item active">{{ empresa.razao_social|truncatewords:3 }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="fas fa-building"></i> {{ empresa.razao_social }}</h1>
+            <p class="mb-0">
+                <span class="badge bg-info">{{ empresa.get_tipo_empresa_display }}</span>
+                {% if empresa.ativo %}
+                <span class="badge bg-success">Ativa</span>
+                {% else %}
+                <span class="badge bg-secondary">Inativa</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="btn-group">
+            {% if perms.pgr_gestao.change_empresa %}
+            <a href="{% url 'pgr_gestao:empresa_update' empresa.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            {% endif %}
+            {% if perms.pgr_gestao.add_pgrdocumento %}
+            <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.pk }}" class="btn btn-success">
+                <i class="fas fa-file-medical"></i> Novo PGR
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Informações da Empresa -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Dados da Empresa
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Razão Social:</strong> {{ empresa.razao_social }}</p>
+                        <p><strong>CNPJ:</strong> {{ empresa.cnpj }}</p>
+                        <p><strong>Tipo:</strong> {{ empresa.get_tipo_empresa_display }}</p>
+                        <p><strong>CNAE:</strong> {{ empresa.cnae|default:"N/A" }}</p>
+                        {% if empresa.descricao_cnae %}
+                        <p><strong>Descrição CNAE:</strong> {{ empresa.descricao_cnae }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Grau de Risco:</strong> 
+                            {% if empresa.grau_risco %}
+                            <span class="badge 
+                                {% if empresa.grau_risco == 1 %}bg-success
+                                {% elif empresa.grau_risco == 2 %}bg-info
+                                {% elif empresa.grau_risco == 3 %}bg-warning text-dark
+                                {% else %}bg-danger{% endif %}">
+                                Grau {{ empresa.grau_risco }}
+                            </span>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </p>
+                        <p><strong>Número de Empregados:</strong> {{ empresa.numero_empregados|default:"N/A" }}</p>
+                        <p><strong>Jornada de Trabalho:</strong> {{ empresa.jornada_trabalho }}</p>
+                        <p><strong>Telefone:</strong> {{ empresa.telefone|default:"N/A" }}</p>
+                    </div>
+                </div>
+
+                {% if empresa.atividade_principal %}
+                <hr>
+                <p><strong>Atividade Principal:</strong></p>
+                <p>{{ empresa.atividade_principal|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-map-marker-alt"></i> Endereço
+            </div>
+            <div class="card-body">
+                {% if empresa.endereco_completo %}
+                <p class="mb-0">{{ empresa.endereco_completo }}</p>
+                {% else %}
+                <p class="text-muted mb-0">Endereço não cadastrado</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Locais de Prestação -->
+        {% if locais_prestacao %}
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-map-marked-alt"></i> Locais de Prestação de Serviço
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for local in locais_prestacao %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ local.razao_social }}</h6>
+                                {% if local.cnpj %}
+                                <p class="mb-1"><small>CNPJ: {{ local.cnpj }}</small></p>
+                                {% endif %}
+                                <p class="mb-0 text-muted">
+                                    <small>{{ local.endereco }}, {{ local.numero }} - {{ local.cidade }}/{{ local.estado }}</small>
+                                </p>
+                            </div>
+                            <span class="badge bg-primary">{{ local.documentos_pgr.count }} PGR(s)</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Estatísticas -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-chart-pie"></i> Estatísticas
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total de PGRs:</span>
+                    <strong>{{ documentos_pgr.count }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>PGRs Vigentes:</span>
+                    <strong class="text-success">{{ pgrs_vigentes }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>PGRs Vencidos:</span>
+                    <strong class="text-danger">{{ pgrs_vencidos }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Locais de Prestação:</span>
+                    <strong>{{ locais_prestacao.count }}</strong>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total de Riscos:</span>
+                    <strong>{{ total_riscos }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Riscos Críticos:</span>
+                    <strong class="text-danger">{{ riscos_criticos }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Informações Adicionais -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-clipboard-list"></i> Informações Adicionais
+            </div>
+            <div class="card-body">
+                <p><strong>Cadastrado em:</strong><br>
+                   {{ empresa.criado_em|date:"d/m/Y H:i" }}</p>
+                <p><strong>Última atualização:</strong><br>
+                   {{ empresa.atualizado_em|date:"d/m/Y H:i" }}</p>
+                <p><strong>Filial:</strong><br>
+                   {{ empresa.filial.nome }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Documentos PGR -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-file-alt"></i> Documentos PGR</span>
+        {% if perms.pgr_gestao.add_pgrdocumento %}
+        <a href="{% url 'pgr_gestao:documento_create' %}?empresa={{ empresa.pk }}" class="btn btn-sm btn-success">
+            <i class="fas fa-plus"></i> Novo PGR
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if documentos_pgr %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Local</th>
+                        <th>Status</th>
+                        <th>Elaboração</th>
+                        <th>Vencimento</th>
+                        <th>Versão</th>
+                        <th>Conclusão</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documentos_pgr %}
+                    <tr onclick="window.location='{% url 'pgr_gestao:documento_detail' doc.pk %}'" style="cursor: pointer;">
+                        <td><strong>{{ doc.codigo_documento }}</strong></td>
+                        <td>{{ doc.local_prestacao.razao_social|default:"N/A"|truncatewords:5 }}</td>
+                        <td>
+                            {% if doc.status == 'vigente' %}
+                            <span class="badge badge-status-vigente">Vigente</span>
+                            {% elif doc.status == 'vencido' %}
+                            <span class="badge badge-status-vencido">Vencido</span>
+                            {% elif doc.status == 'em_revisao' %}
+                            <span class="badge badge-status-em-revisao">Em Revisão</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ doc.data_elaboracao|date:"d/m/Y" }}</td>
+                        <td>
+                            {{ doc.data_vencimento|date:"d/m/Y" }}
+                            {% if doc.dias_para_vencimento < 0 %}
+                            <br><small class="text-danger">Vencido</small>
+                            {% elif doc.dias_para_vencimento <= 30 %}
+                            <br><small class="text-warning">{{ doc.dias_para_vencimento }} dias</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ doc.versao_atual }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar 
+                                    {% if doc.percentual_conclusao >= 90 %}bg-success
+                                    {% elif doc.percentual_conclusao >= 70 %}bg-info
+                                    {% elif doc.percentual_conclusao >= 50 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ doc.percentual_conclusao }}%">
+                                    {{ doc.percentual_conclusao|floatformat:0 }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center" onclick="event.stopPropagation();">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'pgr_gestao:documento_detail' doc.pk %}" 
+                                   class="btn btn-info" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'pgr_gestao:relatorio_completo_pdf' doc.pk %}" 
+                                   class="btn btn-danger" title="PDF" target="_blank">
+                                    <i class="fas fa-file-pdf"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">Nenhum documento PGR cadastrado para esta empresa.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,68 @@
+
+{% extends "base.html" %}
+
+{% block title %}Excluir Tipo de Risco{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:tipo_risco_list' %}">Tipos de Riscos</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white text-center py-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                    <span class="fw-semibold">Confirmar Exclusão</span>
+                </div>
+                <div class="card-body text-center p-4">
+                    
+                    <!-- Ícone -->
+                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
+                         style="width: 80px; height: 80px;">
+                        <i class="bi bi-trash text-danger fs-1"></i>
+                    </div>
+                    
+                    <h5 class="mb-3">Deseja realmente excluir?</h5>
+
+                    <!-- Info do item -->
+                    <div class="alert alert-warning py-3">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <span class="d-inline-block rounded-circle"
+                                  style="width: 20px; height: 20px; background-color: {{ object.codigo_cor }};"></span>
+                            <strong>{{ object.get_categoria_display }}</strong>
+                            <span>—</span>
+                            <span>{{ object.nome }}</span>
+                        </div>
+                    </div>
+
+                    <p class="text-muted small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Esta ação não poderá ser desfeita. Se este tipo de risco estiver 
+                        vinculado a algum registro, a exclusão será impedida.
+                    </p>
+
+                </div>
+                <div class="card-footer bg-light py-3">
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <form method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> Confirmar Exclusão
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,56 +1,130 @@
 
-{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
+<!-- Template para listar as inspeções propostas automaticamente com base na meia-vida dos EPIs rastreáveis -->
+{% extends "base.html" %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mt-4">{{ titulo_pagina }}</h1>
-    <p class="lead">
-        As inspeções abaixo foram sugeridas automaticamente pelo sistema com base na 
-        meia-vida de EPIs rastreáveis. Por favor, revise e confirme.
-    </p>
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-warning shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1 text-dark">
+                        <i class="bi bi-bell-fill me-2"></i>{{ titulo_pagina }}
+                    </h4>
+                    <small class="text-dark opacity-75">
+                        Inspeções sugeridas automaticamente com base na meia-vida dos EPIs
+                    </small>
+                </div>
+                <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-dark">
+                    <i class="bi bi-calendar3 me-1"></i> Ver Calendário
+                </a>
+            </div>
+        </div>
+    </div>
 
     {% if not inspecoes_propostas %}
-        <div class="alert alert-success" role="alert">
-            Não há inspeções propostas pendentes de aprovação no momento.
+    <!-- Estado Vazio -->
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3"
+                 style="width: 80px; height: 80px;">
+                <i class="bi bi-check-circle text-success fs-1"></i>
+            </div>
+            <h5 class="text-muted">Tudo em dia!</h5>
+            <p class="text-muted mb-0">
+                Não há inspeções propostas pendentes de aprovação no momento.
+            </p>
+            <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-primary mt-3">
+                <i class="bi bi-calendar3 me-1"></i> Ir para o Calendário
+            </a>
         </div>
+    </div>
     {% else %}
-        <div class="list-group">
-            {% for inspecao in inspecoes_propostas %}
-                <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1">
-                            Inspeção de: 
-                            <strong>
-                                {{ inspecao.entrega_epi.equipamento.nome }}
-                                (N/S: {{ inspecao.entrega_epi.numero_serie|default:"N/A" }})
-                            </strong>
-                        </h5>
-                        <p class="mb-1">
-                            Funcionário: {{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}
-                        </p>
-                        <small>
-                            Data Proposta (Meia-vida): {{ inspecao.data_agendada|date:"d/m/Y" }}
-                        </small>
-                    </div>
-                    <div>
-                        <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST" class="d-inline">
-                            {% csrf_token %}
-                            <input type="hidden" name="next" value="{{ request.path }}">
-                            <button type="submit" class="btn btn-success btn-sm">
-                                Confirmar e Assumir
-                            </button>
-                        </form>
-                        <a href="#" class="btn btn-danger btn-sm">Recusar</a>
+
+    <!-- Info -->
+    <div class="alert alert-info d-flex align-items-start mb-4">
+        <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+        <div>
+            <strong>{{ inspecoes_propostas|length }} inspeção(ões) proposta(s)</strong>
+            <br>
+            <small>
+                Ao confirmar, você assume a responsabilidade pela inspeção e ela será adicionada ao seu calendário.
+            </small>
+        </div>
+    </div>
+
+    <!-- Lista de Propostas -->
+    <div class="row g-3">
+        {% for inspecao in inspecoes_propostas %}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <!-- Info do Equipamento -->
+                        <div class="col-lg-6">
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                                    <i class="bi bi-shield-exclamation text-warning fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-bold">
+                                        {{ inspecao.entrega_epi.equipamento.nome }}
+                                    </h6>
+                                    <p class="mb-0 text-muted small">
+                                        <i class="bi bi-upc me-1"></i>
+                                        N/S: <code>{{ inspecao.entrega_epi.numero_serie|default:"N/A" }}</code>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Info do Funcionário -->
+                        <div class="col-lg-3">
+                            <small class="text-muted d-block">Funcionário</small>
+                            <span class="fw-semibold">
+                                <i class="bi bi-person me-1"></i>
+                                {{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}
+                            </span>
+                        </div>
+                        
+                        <!-- Data e Ações -->
+                        <div class="col-lg-3">
+                            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-lg-end gap-2 mt-3 mt-lg-0">
+                                <div class="text-lg-end me-lg-3">
+                                    <small class="text-muted d-block">Data Proposta</small>
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-calendar me-1"></i>
+                                        {{ inspecao.data_agendada|date:"d/m/Y" }}
+                                    </span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.path }}">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-check-lg me-1"></i> Confirmar
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                                            onclick="alert('Funcionalidade de recusa em desenvolvimento')">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            {% endfor %}
+            </div>
         </div>
+        {% endfor %}
+    </div>
+
     {% endif %}
 
-    <div class="mt-4">
-        <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-secondary">
-            Voltar ao Calendário
-        </a>
-    </div>
 </div>
 {% endblock %}
+

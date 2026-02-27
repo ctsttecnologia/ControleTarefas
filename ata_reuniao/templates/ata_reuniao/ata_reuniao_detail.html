@@ -1,109 +1,407 @@
-
+<!-- Detalhes da Ata de Reunião -->
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Detalhes da Ata #{{ ata.id }}{% endblock %}
+{% block title %}Ata #{{ ata.id }} — {{ ata.titulo|truncatechars:40 }}{% endblock %}
 
-{# Inclui o template de mensagens de alerta #}
+{% block extra_css %}
+<style>
+    /* ═══ HERO ═══ */
+    .detail-hero {
+        border-radius: 1rem;
+        color: #fff;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
+    }
+    .detail-hero::after {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -8%;
+        width: 280px;
+        height: 280px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .detail-hero h1 { font-weight: 700; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .hero-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 0.75rem;
+    }
+    .hero-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85rem;
+        opacity: 0.9;
+    }
+    .hero-badge {
+        background: rgba(255,255,255,0.2);
+        backdrop-filter: blur(4px);
+        border-radius: 50rem;
+        padding: 0.3rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* ═══ INFO CARD ═══ */
+    .info-card { border: none; border-radius: 0.875rem; }
+    .info-card .card-header {
+        background: transparent;
+        border-bottom: 2px solid #f0f2f5;
+        padding: 1.25rem 1.5rem;
+    }
+    .info-card .card-header h5 {
+        font-weight: 700;
+        font-size: 1rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* ═══ INFO GRID ═══ */
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.875rem 1.5rem;
+        border-bottom: 1px solid #f5f5f8;
+        transition: background 0.15s;
+    }
+    .info-item:last-child { border-bottom: none; }
+    .info-item:hover { background: #fafbfc; }
+    .info-item-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #858796;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .info-item-label i { width: 16px; text-align: center; }
+    .info-item-value { font-weight: 600; color: #2d3748; font-size: 0.9rem; }
+
+    /* ═══ ACTION CONTENT ═══ */
+    .action-content {
+        font-size: 0.95rem;
+        line-height: 1.8;
+        color: #4a5568;
+        white-space: pre-wrap;
+    }
+
+    /* ═══ COMMENT FORM ═══ */
+    .comment-form textarea {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .comment-form textarea:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
+    }
+
+    /* ═══ TIMELINE ═══ */
+    .timeline { list-style: none; padding: 0; margin: 0; }
+    .timeline-item {
+        position: relative;
+        padding-left: 2rem;
+        padding-bottom: 1.5rem;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e9ecef;
+    }
+    .timeline-item:last-child::before { bottom: auto; height: 20px; }
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -5px;
+        top: 4px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4e73df;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #e9ecef;
+    }
+    .timeline-author { font-weight: 700; font-size: 0.9rem; color: #2d3748; }
+    .timeline-date { font-size: 0.78rem; color: #a0aec0; }
+    .timeline-text { font-size: 0.875rem; color: #4a5568; line-height: 1.6; margin-top: 0.25rem; }
+
+    .timeline-empty {
+        text-align: center;
+        padding: 2rem;
+    }
+    .timeline-empty-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #f0f2f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+    }
+    .timeline-empty-icon i { font-size: 1.25rem; color: #adb5bd; }
+
+    /* ═══ STATUS PILL ═══ */
+    .status-pill-lg {
+        padding: 0.35rem 1rem;
+        border-radius: 50rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    /* ═══ OVERDUE BADGE ═══ */
+    .overdue-alert {
+        background: rgba(231,74,59,0.1);
+        color: #c0392b;
+        border-radius: 50rem;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .detail-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
+    [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
+    [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.02); }
+    [data-bs-theme="dark"] .info-item-value { color: #e2e8f0; }
+    [data-bs-theme="dark"] .action-content { color: #a0aec0; }
+    [data-bs-theme="dark"] .timeline-item::before { background: rgba(255,255,255,0.06); }
+    [data-bs-theme="dark"] .timeline-author { color: #e2e8f0; }
+    [data-bs-theme="dark"] .timeline-text { color: #a0aec0; }
+
+    @media print {
+        .no-print { display: none !important; }
+        .detail-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 {% include "partials/_messages.html" %}
 
-{% block content %}<br>
-<div class="container">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <div>
-            <h1 class="h2 mb-0">Ata de Reunião item: {{ ata.id }}</h1>
-            <p class="text-muted mb-0">Contrato: {{ ata.contrato.nome }}</p>
-        </div>
-        <div class="btn-group">
-            <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-list-ul me-1"></i> Voltar para a Lista
-            </a>
-            <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-primary">
-                <i class="bi bi-pencil me-1"></i> Editar
-            </a>
-            <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-danger">
-                <i class="bi bi-trash me-1"></i> Excluir
-            </a>
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- ═══ HERO ═══ -->
+    <div class="detail-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="hero-badge">{{ ata.get_status_display }}</span>
+                    <span class="hero-badge">{{ ata.get_natureza_display }}</span>
+                    {% if ata.is_overdue %}
+                    <span class="hero-badge" style="background: rgba(231,74,59,0.4);">
+                        <i class="bi bi-exclamation-triangle me-1"></i> Prazo Vencido
+                    </span>
+                    {% endif %}
+                </div>
+                <h1>{{ ata.titulo|default:"Ata de Reunião" }}</h1>
+                <div class="hero-meta">
+                    <span class="hero-meta-item">
+                        <i class="bi bi-flag"></i> Item: {{ ata.id }}
+                    </span>
+                    <span class="hero-meta-item">
+                        <i class="bi bi-briefcase"></i> {{ ata.contrato.nome }}
+                    </span>
+                    <span class="hero-meta-item">
+                        <i class="bi bi-calendar-event"></i> {{ ata.entrada|date:"d/m/Y" }}
+                    </span>
+                    {% if ata.prazo %}
+                    <span class="hero-meta-item">
+                        <i class="bi bi-alarm"></i> Prazo: {{ ata.prazo|date:"d/m/Y" }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap no-print">
+                <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+                <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-sm btn-light fw-semibold">
+                    <i class="bi bi-pencil-square me-1"></i> Editar
+                </a>
+                <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-trash3 me-1"></i> Excluir
+                </a>
+                <button onclick="window.print()" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-printer"></i>
+                </button>
+            </div>
         </div>
     </div>
 
     <div class="row g-4">
+        <!-- ═══ COLUNA PRINCIPAL ═══ -->
         <div class="col-lg-8">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-clipboard-check me-2"></i>Ação / Proposta</h5>
-                    <p class="card-text" style="white-space: pre-wrap;">{{ ata.acao|linebreaks }}</p>
+
+            <!-- Ação / Proposta -->
+            <div class="card info-card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-clipboard-check text-primary"></i> Ação / Proposta</h5>
                 </div>
-                <div class="card-footer">
-                    <h5 class="card-title text-primary"><i class="bi bi-chat-dots me-2"></i>Comentários</h5>
-                    <form method="post" action="{% url 'ata_reuniao:ata_add_comment' ata.pk %}">
+                <div class="card-body p-4">
+                    <div class="action-content">{{ ata.acao|linebreaks }}</div>
+                </div>
+            </div>
+
+            <!-- Comentário -->
+            <div class="card info-card shadow-sm mb-4 no-print">
+                <div class="card-header">
+                    <h5><i class="bi bi-chat-dots text-success"></i> Adicionar Comentário</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{% url 'ata_reuniao:ata_add_comment' ata.pk %}" class="comment-form">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <textarea class="form-control" name="comentario" rows="3" placeholder="Adicione um comentário..."></textarea>
+                        <textarea class="form-control mb-3" name="comentario" rows="3"
+                                  placeholder="Escreva um comentário ou atualização..."></textarea>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary" style="border-radius: 0.625rem;">
+                                <i class="bi bi-send me-1"></i> Enviar Comentário
+                            </button>
                         </div>
-                        <button type="submit" class="btn btn-primary">Adicionar Comentário</button>
                     </form>
                 </div>
             </div>
-        </div>
 
-        <div class="col-lg-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title text-primary"><i class="bi bi-info-circle me-2"></i>Informações</h5>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <strong>Status</strong>
-                            {% with status=ata.status %}
-                                <span class="badge 
-                                    {% if status == 'Concluído' %}bg-success
-                                    {% elif status == 'Andamento' %}bg-primary
-                                    {% elif status == 'Pendente' %}bg-warning text-dark
-                                    {% elif status == 'Cancelado' %}bg-secondary
-                                    {% else %}bg-light text-dark{% endif %}">
-                                    {{ ata.get_status_display }}
+            <!-- Histórico -->
+            <div class="card info-card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="bi bi-clock-history text-warning"></i> Histórico</h5>
+                    {% if ata.historico.all %}
+                    <span class="badge bg-warning bg-opacity-10 text-warning fw-bold" style="border-radius: 50rem;">
+                        {{ ata.historico.all|length }} registro{{ ata.historico.all|length|pluralize:"s" }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-4">
+                    {% if ata.historico.all %}
+                    <ul class="timeline">
+                        {% for item in ata.historico.all %}
+                        <li class="timeline-item">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="timeline-author">
+                                    {{ item.usuario.get_full_name|default:"Usuário do Sistema" }}
                                 </span>
-                            {% endwith %}
+                                <span class="timeline-date">
+                                    <i class="bi bi-clock me-1"></i>{{ item.timestamp|date:"d/m/Y \à\s H:i" }}
+                                </span>
+                            </div>
+                            <div class="timeline-text">{{ item.comentario|linebreaksbr }}</div>
                         </li>
-                        <li class="list-group-item"><strong>Responsável:</strong> {{ ata.responsavel.nome_completo|default:"N/A" }}</li>
-                        <li class="list-group-item"><strong>Coordenador:</strong> {{ ata.coordenador.nome_completo|default:"N/A" }}</li>
-                        <li class="list-group-item"><strong>Natureza:</strong> {{ ata.get_natureza_display }}</li>
-                        <li class="list-group-item"><strong>Data de Entrada:</strong> {{ ata.entrada|date:"d/m/Y" }}</li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><strong>Prazo Final:</strong> {{ ata.prazo|date:"d/m/Y"|default:"Não definido" }}</span>
-                            {% if ata.is_overdue %}
-                                <span class="badge bg-danger">PRAZO VENCIDO</span>
-                            {% endif %}
-                        </li>
-                        <li class="list-group-item"><strong>Filial:</strong> {{ ata.filial.nome }}</li>
+                        {% endfor %}
                     </ul>
+                    {% else %}
+                    <div class="timeline-empty">
+                        <div class="timeline-empty-icon">
+                            <i class="bi bi-chat-square-dots"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">Nenhum registro</h6>
+                        <p class="text-muted small mb-0">O histórico aparecerá aqui quando houver comentários.</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="card shadow-sm mt-4">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Histórico de Comentários</h5>
-        </div>
-        <div class="card-body">
-            {% for item in ata.historico.all %}
-                <div class="d-flex mb-3">
-                    <div class="flex-shrink-0 me-3">
-                        <i class="bi bi-person-circle fs-3 text-muted"></i>
+        <!-- ═══ SIDEBAR ═══ -->
+        <div class="col-lg-4">
+            <div class="card info-card shadow-sm">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle text-primary"></i> Informações</h5>
+                </div>
+                <div class="p-0">
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-flag"></i> Status</span>
+                        <span>
+                            {% with s=ata.status %}
+                            <span class="badge status-pill-lg
+                                {% if s == 'Concluído' %}bg-success
+                                {% elif s == 'Andamento' or s == 'Em Andamento' %}bg-primary
+                                {% elif s == 'Pendente' %}bg-warning text-dark
+                                {% elif s == 'Cancelado' %}bg-secondary
+                                {% else %}bg-light text-dark{% endif %}">
+                                {{ ata.get_status_display }}
+                            </span>
+                            {% endwith %}
+                        </span>
                     </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-bold">{{ item.usuario.get_full_name|default:"Usuário do Sistema" }}</div>
-                        <div class="text-muted small">{{ item.timestamp|date:"d/m/Y às H:i" }}</div>
-                        <p class="mt-1 mb-0">{{ item.comentario|linebreaks }}</p>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-person-fill"></i> Responsável</span>
+                        <span class="info-item-value">{{ ata.responsavel.nome_completo|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-person-badge"></i> Coordenador</span>
+                        <span class="info-item-value">{{ ata.coordenador.nome_completo|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-tag"></i> Natureza</span>
+                        <span class="info-item-value">
+                            <span class="badge bg-light text-dark border" style="font-size: 0.78rem;">
+                                {{ ata.get_natureza_display }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-calendar-plus"></i> Entrada</span>
+                        <span class="info-item-value">{{ ata.entrada|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-alarm"></i> Prazo</span>
+                        <span class="info-item-value d-flex align-items-center gap-2">
+                            {{ ata.prazo|date:"d/m/Y"|default:"Não definido" }}
+                            {% if ata.is_overdue %}
+                            <span class="overdue-alert">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Vencido
+                            </span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-item-label"><i class="bi bi-building"></i> Filial</span>
+                        <span class="info-item-value">{{ ata.filial.nome }}</span>
                     </div>
                 </div>
-                {% if not forloop.last %}<hr>{% endif %}
-            {% empty %}
-                <div class="alert alert-info mb-0">Nenhum comentário ou atualização registrada no histórico.</div>
-            {% endfor %}
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card info-card shadow-sm mt-4 no-print">
+                <div class="card-header">
+                    <h5 class="mb-0" style="font-size: 0.9rem;">
+                        <i class="bi bi-lightning-fill text-warning"></i> Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil-square me-2"></i> Editar Ata
+                    </a>
+                    <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-list-check me-2"></i> Todas as Atas
+                    </a>
+                    <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                    </a>
+                    <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+                        <i class="bi bi-printer me-2"></i> Imprimir
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+

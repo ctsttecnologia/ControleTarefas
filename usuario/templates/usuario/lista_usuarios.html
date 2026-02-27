@@ -1,61 +1,133 @@
 
+{# templates/usuario/lista_usuarios.html #}
 {% extends 'usuario/base_usuario.html' %}
 
-{% block title %}Lista de Usuários{% endblock %}
+{% block title %}Usuários do Sistema{% endblock %}
 
 {% block usuario_content %}
-    
 <div class="card shadow-sm">
-    <div class="card-header">
-        <h2 class="h4 mb-0">Usuários do Sistema</h2>
+    <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0">
+            <i class="bi bi-people-fill me-2 text-primary"></i>Usuários do Sistema
+        </h5>
+        {% if user.is_superuser or user.is_gerente or user.is_administrador %}
+        <a href="{% url 'usuario:usuario_criar' %}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i>Novo Usuário
+        </a>
+        {% endif %}
     </div>
+
     <div class="card-body">
-        <form method="GET" action="{% url 'usuario:lista_usuarios' %}" class="mb-4">
+        {# Busca #}
+        <form method="GET" class="mb-4">
             <div class="input-group">
-                <input type="text" name="q" class="form-control" placeholder="Buscar usuários..." aria-label="Buscar usuários..." value="{{ request.GET.q }}">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" class="form-control"
+                       placeholder="Buscar por nome, e-mail ou usuário..."
+                       value="{{ request.GET.q|default:'' }}">
                 <button class="btn btn-primary" type="submit">Buscar</button>
+                {% if request.GET.q %}
+                <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-outline-secondary" title="Limpar">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
             </div>
         </form>
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Nome Completo</th>
-                    <th>Email</th>
-                    <th>Usuário</th>
-                    <th>Filial Ativa</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for usuario in usuarios %}
-                <tr>
-                    <td>{{ usuario.get_full_name }}</td>
-                    <td>{{ usuario.email }}</td>
-                    <td>{{ usuario.username }}</td>
-                    <td>{{ usuario.filial_ativa|default:"N/A" }}</td>
-                    <td>
-                        {% if usuario.is_active %}
-                            <span class="badge bg-success">Ativo</span>
-                        {% else %}
-                            <span class="badge bg-danger">Inativo</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'usuario:usuario_editar' usuario.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                        <a href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}" class="btn btn-sm btn-outline-secondary">Grupos</a>
-                        <a href="{% url 'usuario:alterar_senha' usuario.pk %}" class="btn btn-sm btn-outline-warning">Definir Senha</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5" class="text-center">Nenhum usuário encontrado.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        
-            {% include 'partials/pagination.html' %}
+
+        {# Tabela #}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nome Completo</th>
+                        <th>E-mail</th>
+                        <th>Filial Ativa</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Perfil</th>
+                        <th class="text-center" style="width: 200px;">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ usuario.get_full_name|default:"—" }}</div>
+                            <small class="text-muted">@{{ usuario.username }}</small>
+                        </td>
+                        <td>
+                            <small>{{ usuario.email }}</small>
+                        </td>
+                        <td>
+                            {% if usuario.filial_ativa %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                    <i class="bi bi-building me-1"></i>{{ usuario.filial_ativa.nome }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if usuario.is_active %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if usuario.is_superuser %}
+                                <span class="badge bg-dark"><i class="bi bi-shield-fill-check me-1"></i>Super</span>
+                            {% elif usuario.is_staff %}
+                                <span class="badge bg-info text-dark"><i class="bi bi-person-badge me-1"></i>Staff</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Usuário</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'usuario:usuario_editar' usuario.pk %}"
+                                   class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}"
+                                   class="btn btn-outline-secondary" title="Grupos">
+                                    <i class="bi bi-people"></i>
+                                </a>
+                                {% if user.is_superuser %}
+                                <a href="{% url 'usuario:alterar_senha' usuario.pk %}"
+                                   class="btn btn-outline-warning" title="Redefinir Senha">
+                                    <i class="bi bi-key"></i>
+                                </a>
+                                {% endif %}
+                                {% if usuario.pk != user.pk %}
+                                <form method="post"
+                                      action="{% url 'usuario:toggle_active_usuario' usuario.pk %}"
+                                      class="d-inline"
+                                      onsubmit="return confirm('{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %} o usuário {{ usuario.username }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="btn btn-outline-{{ usuario.is_active|yesno:'danger,success' }}"
+                                            title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}">
+                                        <i class="bi bi-{{ usuario.is_active|yesno:'person-dash,person-check' }}"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-people fs-1 d-block mb-2"></i>
+                            Nenhum usuário encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'partials/pagination.html' %}
     </div>
 </div>
 {% endblock %}
+

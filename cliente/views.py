@@ -1,11 +1,14 @@
 
 # Módulos Django e de Terceiros
+from pyexpat.errors import messages
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.http import HttpResponse
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+
+from dashboard.views import get_filial_ativa
 # Módulos Locais
 from .models import Cliente
 from .forms import ClienteForm
@@ -14,7 +17,10 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from core.mixins import ViewFilialScopedMixin
-
+from usuario.models import Filial
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+ 
 
 # --- VIEWS DE CLIENTE (CRUD) ---
 
@@ -68,6 +74,20 @@ class ClienteCreateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessag
         corretamente pela filial do usuário logado.
         """
         return super().get_queryset()
+    
+    def form_valid(self, form):
+        form.instance.criado_por = self.request.user
+        messages.success(self.request, 'Cliente cadastrado com sucesso!')
+        """
+        Atribui a filial ativa do usuário à nova empresa antes de salvar.
+        """
+        # Pega a filial ativa do usuário logado
+        filial_do_usuario = self.request.user.filial_ativa
+        # Atribui essa filial à instância do objeto que está sendo criado
+        form.instance.filial = filial_do_usuario
+        # Chama o comportamento padrão (salvar o objeto
+        return super().form_valid(form)
+
 
 class ClienteUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
     model = Cliente
@@ -156,3 +176,18 @@ class ClienteDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
         # O 'prefetch_related' otimiza a consulta para evitar lentidão no banco
         context['arquivos_cliente'] = self.object.arquivos.all().select_related('filial')
         return context
+
+# --- NOVA VIEW PARA O AUTOCOMPLETAR ---
+@login_required
+def cliente_autocomplete_view(request):
+    """
+    View que retorna clientes para o Select2.
+    """
+    term = request.GET.get('term', '')
+
+    qs_filtrado_por_filial = Cliente.objects.for_request(request)
+    clientes = qs_filtrado_por_filial.filter(
+        razao_social__icontains=term
+    ).values('id', 'razao_social')[:10]
+
+    return JsonResponse(list(clientes), safe=False)

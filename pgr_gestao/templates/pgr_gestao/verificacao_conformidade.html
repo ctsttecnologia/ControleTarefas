@@ -1,0 +1,977 @@
+<!-- Página de Verificação de Conformidade do PGR -->
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Verificação de Conformidade - {{ documento.codigo_documento }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_detail' documento.pk %}">{{ documento.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">Verificação de Conformidade</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ═══ CHECKLIST ═══ */
+    .checklist-item {
+        padding: 1.25rem;
+        border-left: 4px solid #6c757d;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 0 0.5rem 0.5rem 0;
+        transition: all 0.3s;
+    }
+    .checklist-item:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .checklist-item.conforme      { border-left-color: #28a745; background-color: #d4edda; }
+    .checklist-item.nao-conforme  { border-left-color: #dc3545; background-color: #f8d7da; }
+    .checklist-item.parcial       { border-left-color: #ffc107; background-color: #fff3cd; }
+
+    .checklist-item h5 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+    .status-badge { font-size: 0.85rem; padding: 0.3rem 0.85rem; border-radius: 50rem; }
+
+    /* ═══ SECTION HEADER ═══ */
+    .section-header {
+        background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 0.625rem 0.625rem 0 0;
+        margin-top: 2rem;
+    }
+    .section-header h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 0; }
+    .section-header small { opacity: 0.8; }
+
+    /* ═══ SUMMARY ═══ */
+    .conformidade-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .conformidade-summary::after {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -8%;
+        width: 250px;
+        height: 250px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .conformidade-summary h1 { position: relative; }
+    .conformidade-summary h2 { position: relative; }
+
+    /* ═══ NR REFERENCE ═══ */
+    .nr-reference {
+        background-color: #e7f3ff;
+        padding: 0.75rem 1rem;
+        border-left: 3px solid #0066cc;
+        margin: 0.75rem 0;
+        font-size: 0.85rem;
+        border-radius: 0 0.375rem 0.375rem 0;
+        line-height: 1.6;
+    }
+
+    /* ═══ ACTION NEEDED ═══ */
+    .action-needed {
+        background-color: #fff3cd;
+        padding: 0.75rem 1rem;
+        border-left: 3px solid #ffc107;
+        margin-top: 0.75rem;
+        border-radius: 0 0.375rem 0.375rem 0;
+    }
+    .action-needed .btn { margin-top: 0.5rem; }
+
+    /* ═══ CHART ═══ */
+    .chart-wrapper {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    /* ═══ LINK ACTION ═══ */
+    .action-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .checklist-item { background-color: rgba(255,255,255,0.03); }
+    [data-bs-theme="dark"] .checklist-item.conforme { background-color: rgba(40,167,69,0.1); }
+    [data-bs-theme="dark"] .checklist-item.nao-conforme { background-color: rgba(220,53,69,0.1); }
+    [data-bs-theme="dark"] .checklist-item.parcial { background-color: rgba(255,193,7,0.1); }
+    [data-bs-theme="dark"] .nr-reference { background-color: rgba(0,102,204,0.1); }
+    [data-bs-theme="dark"] .action-needed { background-color: rgba(255,193,7,0.1); }
+
+    /* ═══ PRINT ═══ */
+    @media print {
+        .no-print { display: none !important; }
+        .card { break-inside: avoid; border: 1px solid #ddd !important; box-shadow: none !important; }
+        .conformidade-summary, .section-header {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .checklist-item.conforme,
+        .checklist-item.nao-conforme,
+        .checklist-item.parcial {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="fas fa-check-circle"></i> Verificação de Conformidade NR-01</h1>
+            <p class="mb-0">{{ documento.codigo_documento }} - {{ documento.empresa.razao_social }}</p>
+        </div>
+        <div class="btn-group">
+            <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <button onclick="window.print()" class="btn btn-info">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+        </div><!-- ✅ FIX: era </div sem > -->
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RESUMO DA CONFORMIDADE                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="conformidade-summary">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2><i class="fas fa-clipboard-check"></i> Resumo da Conformidade</h2>
+            <p class="mb-0">Avaliação baseada nos requisitos da NR-01 (Portaria SEPRT nº 6.730/2020)</p>
+        </div>
+        <div class="col-md-4 text-center">
+            <h1 style="font-size: 4rem; margin: 0;">{{ percentual_conformidade|floatformat:0 }}%</h1>
+            <p class="mb-0">de Conformidade Geral</p>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-3 text-center">
+            <div class="bg-white bg-opacity-25 rounded p-3">
+                <h3 class="mb-0">{{ total_itens }}</h3>
+                <small>Total de Itens</small>
+            </div>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="bg-white bg-opacity-25 rounded p-3">
+                <h3 class="mb-0">{{ itens_conformes }}</h3>
+                <small><i class="fas fa-check-circle me-1"></i>Conformes</small>
+            </div>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="bg-white bg-opacity-25 rounded p-3">
+                <h3 class="mb-0">{{ itens_parciais }}</h3>
+                <small><i class="fas fa-exclamation-circle me-1"></i>Parcialmente</small>
+            </div>
+        </div>
+        <div class="col-md-3 text-center">
+            <div class="bg-white bg-opacity-25 rounded p-3">
+                <h3 class="mb-0">{{ itens_nao_conformes }}</h3>
+                <small><i class="fas fa-times-circle me-1"></i>Não Conformes</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- GRÁFICO                                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4 no-print">
+    <div class="card-header">
+        <i class="fas fa-chart-bar"></i> Conformidade por Seção
+    </div>
+    <div class="card-body">
+        <!-- ✅ FIX: wrapper com position relative + height fixa -->
+        <div class="chart-wrapper">
+            <canvas id="chartConformidade"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 1. GERENCIAMENTO DE RISCOS OCUPACIONAIS     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4">
+    <div class="section-header">
+        <h3><i class="fas fa-cogs"></i> 1. GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)</h3>
+        <small>NR-01, item 1.5</small>
+    </div>
+    <div class="card-body">
+
+        <!-- 1.1 PGR Implementado -->
+        <div class="checklist-item {% if checklist.pgr_implementado %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.pgr_implementado %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    1.1 Programa de Gerenciamento de Riscos (PGR) Implementado
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.3.1:</strong> "A organização deve implementar, por estabelecimento,
+                    o gerenciamento de riscos ocupacionais em suas atividades."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.pgr_implementado %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">PGR implementado e vigente desde {{ documento.data_elaboracao|date:"d/m/Y" }}</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
+                        <i class="fas fa-eye"></i> Ver documento PGR
+                    </a>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Implementar o Programa de Gerenciamento de Riscos conforme requisitos da NR-01.
+                        <br>
+                        <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Criar Documento PGR
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 1.2 Identificação de Perigos e Riscos -->
+        <div class="checklist-item {% if checklist.riscos_identificados %}conforme{% elif checklist.riscos_parcial %}parcial{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.riscos_identificados %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% elif checklist.riscos_parcial %}
+                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    1.2 Identificação de Perigos e Avaliação de Riscos
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.4.3:</strong> "O inventário de riscos ocupacionais deve contemplar
+                    a identificação de perigos e avaliação dos riscos."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.riscos_identificados %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">{{ total_riscos }} riscos identificados e avaliados</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
+                        <i class="fas fa-list"></i> Ver inventário de riscos ({{ total_riscos }})
+                    </a>
+                    {% elif checklist.riscos_parcial %}
+                    <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
+                    <br><small class="text-muted">{{ total_riscos }} riscos identificados, mas algumas avaliações pendentes</small>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Completar avaliações quantitativas dos riscos críticos e muito graves.
+                        <br>
+                        <a href="{% url 'pgr_gestao:risco_list' %}" class="btn btn-sm btn-warning mt-2">
+                            <i class="fas fa-edit me-1"></i> Revisar Riscos Pendentes
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Realizar levantamento e identificação de riscos ocupacionais.
+                        <br>
+                        <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Cadastrar Riscos
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 1.3 GES Definidos -->
+        <div class="checklist-item {% if checklist.ges_definidos %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.ges_definidos %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    1.3 Grupos de Exposição Similar (GES) Definidos
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.5.1:</strong> "A organização pode criar um grupo com trabalhadores
+                    que vivenciam exposição similar, de forma que os resultados da avaliação sejam representativos
+                    da exposição de todos os trabalhadores que o compõem."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.ges_definidos %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">{{ total_ges }} GES definidos e caracterizados</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:ges_list' %}" class="action-link text-success">
+                        <i class="fas fa-users"></i> Ver GES cadastrados ({{ total_ges }})
+                    </a>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Definir Grupos de Exposição Similar para os trabalhadores.
+                        <br>
+                        <a href="{% url 'pgr_gestao:ges_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Cadastrar GES
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 1.4 Plano de Ação -->
+        <div class="checklist-item {% if checklist.plano_acao_existe %}conforme{% elif checklist.plano_acao_parcial %}parcial{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.plano_acao_existe %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% elif checklist.plano_acao_parcial %}
+                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    1.4 Plano de Ação para Riscos Identificados
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.4.1.1:</strong> "Quando identificado risco ocupacional deve ser
+                    implementado plano de ação com data para implementação das medidas de prevenção."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.plano_acao_existe %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">{{ total_planos_acao }} planos de ação criados</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="action-link text-success">
+                        <i class="fas fa-tasks"></i> Ver planos de ação ({{ total_planos_acao }})
+                    </a>
+                    {% elif checklist.plano_acao_parcial %}
+                    <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
+                    <br><small class="text-muted">Planos de ação existentes, mas {{ riscos_sem_plano }} riscos sem plano</small>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Criar planos de ação para todos os riscos críticos e muito graves identificados.
+                        <br>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="btn btn-sm btn-outline-warning mt-2">
+                                <i class="fas fa-list me-1"></i> Ver Planos Existentes
+                            </a>
+                            <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-warning mt-2">
+                                <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Elaborar planos de ação para controle dos riscos identificados.
+                        <br>
+                        <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 2. MEDIDAS DE PREVENÇÃO                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4">
+    <div class="section-header">
+        <h3><i class="fas fa-shield-alt"></i> 2. MEDIDAS DE PREVENÇÃO</h3>
+        <small>NR-01, item 1.4</small>
+    </div>
+    <div class="card-body">
+
+        <!-- 2.1 Hierarquia de Controles -->
+        <div class="checklist-item {% if checklist.hierarquia_controles %}conforme{% elif checklist.hierarquia_parcial %}parcial{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.hierarquia_controles %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% elif checklist.hierarquia_parcial %}
+                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    2.1 Hierarquia de Medidas de Prevenção
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.4.1:</strong> "A organização deve adotar medidas de prevenção,
+                    seguindo a seguinte ordem de prioridade:<br>
+                    a) eliminação dos fatores de risco;<br>
+                    b) minimização e controle dos fatores de risco;<br>
+                    c) adoção de medidas de proteção coletiva;<br>
+                    d) adoção de medidas administrativas ou de organização do trabalho;<br>
+                    e) adoção de equipamentos de proteção individual - EPI."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.hierarquia_controles %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">Medidas de controle seguem a hierarquia estabelecida</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
+                        <i class="fas fa-shield-alt"></i> Ver medidas de controle nos riscos
+                    </a>
+                    {% elif checklist.hierarquia_parcial %}
+                    <span class="badge bg-warning status-badge">PARCIALMENTE CONFORME</span>
+                    <br><small class="text-muted">Alguns controles implementados, mas priorização pode melhorar</small>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Revisar medidas de controle seguindo a hierarquia de prevenção.
+                        <br>
+                        <a href="{% url 'pgr_gestao:risco_list' %}" class="btn btn-sm btn-warning mt-2">
+                            <i class="fas fa-edit me-1"></i> Revisar Controles
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Implementar medidas de controle seguindo a hierarquia de prevenção.
+                        <br>
+                        <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 2.2 EPI -->
+        <div class="checklist-item {% if checklist.epi_definidos %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.epi_definidos %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    2.2 Equipamentos de Proteção Individual (EPI)
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.4.1, alínea 'e':</strong> "Quando esgotadas as possibilidades de
+                    adoção das medidas anteriores, deve ser adotado o uso de EPI."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.epi_definidos %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">EPIs especificados quando necessário</small>
+                    <br>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="action-link text-success">
+                            <i class="fas fa-hard-hat"></i> Catálogo de EPIs
+                        </a>
+                        <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="action-link text-success ms-3">
+                            <i class="fas fa-th"></i> Matriz de EPIs
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Especificar EPIs adequados para os riscos que não podem ser eliminados ou controlados.
+                        <br>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-sm btn-outline-danger mt-2">
+                                <i class="fas fa-hard-hat me-1"></i> Catálogo de EPIs
+                            </a>
+                            <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="btn btn-sm btn-danger mt-2">
+                                <i class="fas fa-th me-1"></i> Configurar Matriz de EPIs
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 3. CAPACITAÇÃO E TREINAMENTO                -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4">
+    <div class="section-header">
+        <h3><i class="fas fa-graduation-cap"></i> 3. CAPACITAÇÃO E TREINAMENTO</h3>
+        <small>NR-01, item 1.7</small>
+    </div>
+    <div class="card-body">
+
+        <!-- 3.1 Cronograma de Treinamentos -->
+        <div class="checklist-item {% if checklist.cronograma_treinamentos %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.cronograma_treinamentos %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    3.1 Cronograma de Capacitações
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.7.1:</strong> "A organização deve promover capacitação dos trabalhadores,
+                    em conformidade com as disposições previstas nas Normas Regulamentadoras."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.cronograma_treinamentos %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">Cronograma de treinamentos estabelecido no PGR</small>
+                    <br>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{% url 'treinamentos:treinamento_list' %}" class="action-link text-success">
+                            <i class="fas fa-list"></i> Lista de Treinamentos
+                        </a>
+                        <a href="{% url 'treinamentos:dashboard' %}" class="action-link text-success ms-3">
+                            <i class="fas fa-chart-pie"></i> Dashboard de Treinamentos
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Estabelecer cronograma de capacitações previstas na NR-01 e demais NRs aplicáveis.
+                        <br>
+                        <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Criar Treinamento
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 4. DOCUMENTAÇÃO E REGISTROS                 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4">
+    <div class="section-header">
+        <h3><i class="fas fa-folder-open"></i> 4. DOCUMENTAÇÃO E REGISTROS</h3>
+        <small>NR-01, item 1.6</small>
+    </div>
+    <div class="card-body">
+
+        <!-- 4.1 Inventário de Riscos -->
+        <div class="checklist-item {% if checklist.inventario_riscos %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.inventario_riscos %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    4.1 Inventário de Riscos Ocupacionais
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.4.3:</strong> "O inventário de riscos ocupacionais deve contemplar
+                    a identificação de perigos e avaliação dos riscos, incluindo a descrição dos perigos e possíveis
+                    lesões ou agravos à saúde dos trabalhadores."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.inventario_riscos %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">Inventário completo e atualizado</small>
+                    <br>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{% url 'pgr_gestao:risco_list' %}" class="action-link text-success">
+                            <i class="fas fa-list-alt"></i> Ver Inventário de Riscos
+                        </a>
+                        {% if pode_exportar_excel %}
+                        <a href="{% url 'pgr_gestao:inventario_excel' documento.pk %}" class="action-link text-success ms-3">
+                            <i class="fas fa-file-excel"></i> Exportar Excel
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Elaborar inventário completo de riscos ocupacionais.
+                        <br>
+                        <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Iniciar Inventário
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 4.2 Responsável Técnico -->
+        <div class="checklist-item {% if checklist.responsavel_tecnico %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.responsavel_tecnico %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    4.2 Responsável Técnico pela Elaboração
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.7.1.7:</strong> "O PGR deve conter informações sobre: nome e assinatura
+                    dos responsáveis pela elaboração do PGR."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.responsavel_tecnico %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">Responsável(is) técnico(s) identificado(s) e qualificado(s)</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
+                        <i class="fas fa-user-tie"></i> Ver dados do responsável técnico
+                    </a>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Designar responsável técnico habilitado para elaboração do PGR.
+                        <br>
+                        <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-edit me-1"></i> Editar Documento PGR
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 4.3 Data de Revisão -->
+        <div class="checklist-item {% if checklist.data_revisao %}conforme{% elif checklist.revisao_proxima %}parcial{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.data_revisao %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% elif checklist.revisao_proxima %}
+                    <i class="fas fa-exclamation-circle text-warning"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    4.3 Data e Periodicidade de Revisão
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.4.6:</strong> "O PGR deve ser revisto a cada 02 anos ou quando
+                    ocorrer alguma das seguintes situações: após implementação de medidas de prevenção,
+                    para avaliação de sua eficácia; após inovações ou modificações nas atividades."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.data_revisao %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">Próxima revisão prevista para {{ documento.data_vencimento|date:"d/m/Y" }}</small>
+                    <br>
+                    <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="action-link text-success">
+                        <i class="fas fa-calendar-check"></i> Ver cronograma do documento
+                    </a>
+                    {% elif checklist.revisao_proxima %}
+                    <span class="badge bg-warning status-badge">ATENÇÃO</span>
+                    <br><small class="text-warning">Revisão próxima ao vencimento ({{ documento.dias_para_vencimento }} dias)</small>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Planejar e executar revisão do PGR antes do vencimento.
+                        <br>
+                        <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-warning mt-2">
+                            <i class="fas fa-sync-alt me-1"></i> Iniciar Revisão do PGR
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        PGR vencido. Realizar revisão imediatamente.
+                        <br>
+                        <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-sync-alt me-1"></i> Revisar PGR Agora
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- 5. CRONOGRAMA DE AÇÕES                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4">
+    <div class="section-header">
+        <h3><i class="fas fa-calendar-alt"></i> 5. CRONOGRAMA DE AÇÕES</h3>
+        <small>NR-01, item 1.5.7.1.6</small>
+    </div>
+    <div class="card-body">
+        <div class="checklist-item {% if checklist.cronograma_acoes %}conforme{% else %}nao-conforme{% endif %}">
+            <div class="flex-grow-1">
+                <h5>
+                    {% if checklist.cronograma_acoes %}
+                    <i class="fas fa-check-circle text-success"></i>
+                    {% else %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    {% endif %}
+                    5.1 Cronograma das Ações Preventivas
+                </h5>
+                <div class="nr-reference">
+                    <strong>NR-01, item 1.5.7.1.6:</strong> "O PGR deve conter cronograma indicando o planejamento
+                    anual das ações preventivas."
+                </div>
+                <p class="mt-2 mb-0">
+                    <strong>Status:</strong>
+                    {% if checklist.cronograma_acoes %}
+                    <span class="badge bg-success status-badge">CONFORME</span>
+                    <br><small class="text-muted">{{ total_cronograma_acoes }} ações programadas no cronograma</small>
+                    <br>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="action-link text-success">
+                            <i class="fas fa-tasks"></i> Ver Planos de Ação ({{ total_cronograma_acoes }})
+                        </a>
+                        <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="action-link text-success ms-3">
+                            <i class="fas fa-chart-bar"></i> Relatório de Planos
+                        </a>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-danger status-badge">NÃO CONFORME</span>
+                    <div class="action-needed">
+                        <strong><i class="fas fa-exclamation-triangle"></i> Ação Necessária:</strong>
+                        Elaborar cronograma anual de ações preventivas.
+                        <br>
+                        <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-danger mt-2">
+                            <i class="fas fa-plus-circle me-1"></i> Criar Plano de Ação
+                        </a>
+                    </div>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- RECOMENDAÇÕES FINAIS                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h3 class="mb-0"><i class="fas fa-lightbulb"></i> Recomendações e Próximos Passos</h3>
+    </div>
+    <div class="card-body">
+        {% if itens_nao_conformes > 0 or itens_parciais > 0 %}
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-triangle"></i> Atenção!</h5>
+            <p>Foram identificadas <strong>{{ itens_nao_conformes }} não conformidades</strong>
+            {% if itens_parciais > 0 %}e <strong>{{ itens_parciais }} conformidades parciais</strong>{% endif %}
+            que requerem ação imediata.</p>
+        </div>
+
+        <h5 class="fw-bold mb-3">Prioridades de Ação:</h5>
+        <div class="list-group">
+            {% if not checklist.pgr_implementado %}
+            <div class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-danger me-2">CRÍTICO</span>
+                    Implementar o Programa de Gerenciamento de Riscos
+                </div>
+                <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-sm btn-danger">
+                    <i class="fas fa-plus-circle me-1"></i> Criar PGR
+                </a>
+            </div>
+            {% endif %}
+
+            {% if not checklist.riscos_identificados %}
+            <div class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-danger me-2">ALTA</span>
+                    Realizar levantamento e avaliação de riscos ocupacionais
+                </div>
+                <a href="{% url 'pgr_gestao:risco_create' %}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-plus-circle me-1"></i> Cadastrar Riscos
+                </a>
+            </div>
+            {% endif %}
+
+            {% if not checklist.plano_acao_existe %}
+            <div class="list-group-item list-group-item-warning d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-warning text-dark me-2">ALTA</span>
+                    Elaborar planos de ação para riscos identificados
+                </div>
+                <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-outline-warning">
+                    <i class="fas fa-plus-circle me-1"></i> Criar Plano
+                </a>
+            </div>
+            {% endif %}
+
+            {% if not checklist.responsavel_tecnico %}
+            <div class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-info me-2">MÉDIA</span>
+                    Designar responsável técnico habilitado
+                </div>
+                <a href="{% url 'pgr_gestao:documento_update' documento.pk %}" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-edit me-1"></i> Editar PGR
+                </a>
+            </div>
+            {% endif %}
+
+            {% if not checklist.cronograma_acoes %}
+            <div class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-info me-2">MÉDIA</span>
+                    Elaborar cronograma anual de ações preventivas
+                </div>
+                <a href="{% url 'pgr_gestao:plano_acao_create' %}" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-plus-circle me-1"></i> Criar Plano
+                </a>
+            </div>
+            {% endif %}
+
+            {% if not checklist.cronograma_treinamentos %}
+            <div class="list-group-item list-group-item-info d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-info me-2">MÉDIA</span>
+                    Estabelecer cronograma de capacitações
+                </div>
+                <a href="{% url 'treinamentos:criar_treinamento' %}" class="btn btn-sm btn-outline-info">
+                    <i class="fas fa-plus-circle me-1"></i> Criar Treinamento
+                </a>
+            </div>
+            {% endif %}
+
+            {% if not checklist.epi_definidos %}
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-secondary me-2">NORMAL</span>
+                    Especificar EPIs adequados para riscos residuais
+                </div>
+                <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-th me-1"></i> Matriz EPIs
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        {% else %}
+        <div class="alert alert-success">
+            <h5><i class="fas fa-check-circle"></i> Parabéns!</h5>
+            <p>O PGR está <strong>100% conforme</strong> aos requisitos da NR-01.</p>
+            <p class="mb-0">Continue mantendo a documentação atualizada e revisando periodicamente conforme estabelecido.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap mt-3">
+            <a href="{% url 'pgr_gestao:dashboard' %}" class="btn btn-outline-success">
+                <i class="fas fa-tachometer-alt me-1"></i> Dashboard PGR
+            </a>
+            <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-bar me-1"></i> Relatórios
+            </a>
+            <a href="{% url 'pgr_gestao:documento_detail' documento.pk %}" class="btn btn-outline-info">
+                <i class="fas fa-file-alt me-1"></i> Ver Documento
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Rodapé -->
+<div class="card no-print">
+    <div class="card-body text-center">
+        <p class="text-muted mb-0">
+            <small>Sistema PGR - Gestão de Riscos Ocupacionais CETEST</small>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('chartConformidade');
+    if (!ctx) return;
+
+    const dados = [
+        {{ checklist.percentual_gro|default:"0" }},
+        {{ checklist.percentual_prevencao|default:"0" }},
+        {{ checklist.percentual_capacitacao|default:"0" }},
+        {{ checklist.percentual_documentacao|default:"0" }},
+        {{ checklist.percentual_cronograma|default:"0" }}
+    ];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['GRO', 'Medidas Prevenção', 'Capacitação', 'Documentação', 'Cronograma'],
+            datasets: [{
+                label: 'Conformidade (%)',
+                data: dados,
+                backgroundColor: dados.map(v => {
+                    if (v >= 90) return '#28a745';
+                    if (v >= 70) return '#ffc107';
+                    return '#dc3545';
+                }),
+                borderRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,  // ✅ FIX
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) { return value + '%'; }
+                    }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) { return ' ' + ctx.parsed.y + '%'; }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+

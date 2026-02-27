@@ -1,0 +1,56 @@
+<!-- Página de Erro de Configuração do Dashboard -->
+{% extends "base.html" %}
+
+{% block title %}Erro de Configuração{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-container { min-height: 70vh; display: flex; align-items: center; justify-content: center; padding: 3rem 1rem; }
+    .error-card { max-width: 520px; width: 100%; border: none; border-radius: 1.25rem; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
+    .error-header { background: linear-gradient(135deg, #e74a3b, #be2617); padding: 2.5rem 2rem 2rem; text-align: center; color: #fff; position: relative; overflow: hidden; }
+    .error-header::after { content: ''; position: absolute; top: -40%; right: -15%; width: 220px; height: 220px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+    .error-icon { width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; font-size: 2.25rem; position: relative; }
+    .error-header h2 { font-weight: 700; font-size: 1.35rem; position: relative; }
+    .error-body { padding: 2rem 2.5rem; text-align: center; }
+
+    [data-bs-theme="dark"] .error-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    [data-bs-theme="dark"] .error-body { background: var(--bs-body-bg); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="card error-card">
+        <div class="error-header">
+            <div class="error-icon"><i class="bi bi-gear-fill"></i></div>
+            <h2>Erro de Configuração</h2>
+        </div>
+        <div class="error-body">
+            <p style="color: #4a5568; font-size: 0.95rem;">Ocorreu um problema ao carregar o painel.</p>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-danger py-2 mb-2" style="border-radius: 0.625rem; font-size: 0.85rem;">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ message }}
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="alert alert-danger py-2 mb-2" style="border-radius: 0.625rem; font-size: 0.85rem;">
+                Motivo não especificado.
+            </div>
+            {% endif %}
+
+            <p class="text-muted small mt-3 mb-4">
+                Verifique se seu usuário possui uma <strong>filial ativa</strong> cadastrada
+                ou entre em contato com o administrador.
+            </p>
+
+            <a href="{% url 'dashboard:dashboard_geral' %}" class="btn btn-primary fw-bold" style="border-radius: 0.625rem; padding: 0.75rem 2rem;">
+                <i class="bi bi-house-door me-2"></i> Voltar ao Início
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

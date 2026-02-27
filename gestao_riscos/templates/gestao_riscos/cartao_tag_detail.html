@@ -1,10 +1,8 @@
-
+<!-- Template para exibir os detalhes de um Cartão de Bloqueio -->  
 {% extends "base.html" %}
-{% load i18n %}
 {% load static %}
-{% load crispy_forms_tags %}
 
-{% block title %}Detalhes do Cartão de {{ cartao.funcionario.nome_completo }}{% endblock %}
+{% block title %}Cartão de {{ cartao.funcionario.nome_completo }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -21,18 +19,17 @@
         border: 4px solid black;
         border-radius: 15px;
         padding: 5px;
-        background-image:
-            repeating-linear-gradient(
-                45deg,
-                #FFD700,
-                #FFD700 10px,
-                #000000 10px,
-                #000000 20px
-            );
+        background-image: repeating-linear-gradient(
+            45deg,
+            #FFD700,
+            #FFD700 10px,
+            #000000 10px,
+            #000000 20px
+        );
         display: flex;
-        -webkit-print-color-adjust: exact; /* Garante que os backgrounds sejam impressos */
-        print-color-adjust: exact;        
-        page-break-inside: avoid; /* Evita que o card seja cortado entre páginas */
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        page-break-inside: avoid;
     }
     .tag-content {
         background-color: white;
@@ -56,7 +53,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        background-color: #000000ff;
+        background-color: #000;
         width: 260px;
         padding: 2px 0;
         margin: 3px 0;
@@ -78,7 +75,7 @@
         color: black;
         font-weight: bold;
         margin-top: 8px;
-        font-size: 0.8rem;
+        font-size: 0.6rem;
     }
     .tag-main-text {
         font-size: 1.0rem;
@@ -89,9 +86,6 @@
         object-fit: cover;
         border: 2px solid #ccc;
         margin-top: 5px;
-    }
-    .tag-back .tag-content {
-        justify-content: space-around;
     }
     .steps-box {
         border: 2px solid #FFD700;
@@ -117,104 +111,160 @@
         line-height: 1.2;
     }
 
-    /* --- ESTILOS DE IMPRESSÃO --- */
     @media print {
-        body * {
-            visibility: hidden;
-        }
-        .tag-container, .tag-container * {
-            visibility: visible;
-        }
+        body * { visibility: hidden; }
+        .tag-container, .tag-container * { visibility: visible; }
         .tag-container {
             position: absolute;
             left: 0;
             top: 0;
             width: 100%;
         }
-        .no-print {
-            display: none !important;
-        }
-        @page {
-            size: auto;
-            margin: 10mm;
-        }
+        .no-print { display: none !important; }
+        @page { size: auto; margin: 10mm; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<br>
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="h2">Cartão de Bloqueio: {{ cartao.funcionario.nome_completo }}</h1>
-        <div>
-            <button id="print-btn" class="btn btn-info">Imprimir</button>
-            <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">Editar</a>
-            <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-secondary">Voltar à Lista</a>
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-primary text-white shadow-sm mb-4 no-print">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-tag-fill me-2"></i>Cartão de Bloqueio
+                    </h4>
+                    <small class="opacity-75">{{ cartao.funcionario.nome_completo }}</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="print-btn" class="btn btn-info">
+                        <i class="bi bi-printer me-1"></i> Imprimir
+                    </button>
+                    <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">
+                        <i class="bi bi-pencil me-1"></i> Editar
+                    </a>
+                    <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-light">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="tag-container" id="tag-area">
-    <div class="tag-card tag-front">
-        <div class="tag-content">
-            <div class="tag-header">
-                <img src="{% static 'images/logocetest.png' %}" alt="Logo CETEST" class="tag-logo">
+    <!-- Info Card (não imprime) -->
+    <div class="row mb-4 no-print">
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-start border-primary border-4 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Funcionário</small>
+                    <p class="fw-bold mb-0">{{ cartao.funcionario.nome_completo }}</p>
+                </div>
             </div>
-            <div class="retangulo-box">
-                <div class="danger-box">PERIGO</div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-start border-info border-4 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Cargo</small>
+                    <p class="fw-bold mb-0">{{ cartao.funcionario.cargo }}</p>
+                </div>
             </div>
-            <p class="tag-text">NÃO LIGUE, NÃO OPERE<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO</p>
-            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
-
-            {% if cartao.funcionario.foto_3x4 %}
-                <img src="{{ cartao.funcionario.foto_3x4.url }}" alt=" foto de{{ cartao.funcionario.nome_completo }}" class="tag-photo">
-            {% endif %}
-
-            <h4 class="tag-text mt-2 mb-1">{{ cartao.funcionario.nome_completo }}</h4>
-            <p class="tag-text">{{ cartao.funcionario.cargo }}</p>
-            <p class="tag-text">FONE: {{ cartao.fone }}</p>
-            
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-start border-warning border-4 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Validade</small>
+                    <p class="fw-bold mb-0">{{ cartao.data_validade|date:"d/m/Y"|default:"Sem validade" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-start border-success border-4 shadow-sm">
+                <div class="card-body">
+                    <small class="text-muted">Status</small>
+                    <p class="fw-bold mb-0">
+                        {% if cartao.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <div class="tag-card tag-back">
-        <div class="tag-content">
-            <div class="retangulo-box">
-                <div class="danger-box">PERIGO</div>
-            </div> 
-            <p class="tag-text">NÃO LIGUE, NÃO OPERE<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO</p>
-            <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
 
-            <div class="steps-box">
-                <h4>Os 6 passos para o trabalho seguro:</h4>
-                <ol>
-                    <li>Identificar as energias</li>
-                    <li>Desligar</li>
-                    <li>Desenergizar</li>
-                    <li>Bloquear e etiquetar</li>
-                    <li>Verificar energias residuais</li>
-                    <li>Testar e verificar</li>
-                </ol>
+    <!-- Tags para impressão -->
+    <div class="tag-container" id="tag-area">
+        
+        <!-- FRENTE -->
+        <div class="tag-card">
+            <div class="tag-content">
+                <div class="tag-header">
+                    <img src="{% static 'images/logocetest.png' %}" alt="Logo" class="tag-logo">
+                </div>
+                <div class="retangulo-box">
+                    <div class="danger-box">PERIGO</div>
+                </div>
+                <p class="tag-text">NÃO LIGUE, NÃO OPERE<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO</p>
+                <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
+
+                {% if cartao.funcionario.foto_3x4 %}
+                <img src="{{ cartao.funcionario.foto_3x4.url }}" 
+                     alt="{{ cartao.funcionario.nome_completo }}" 
+                     class="tag-photo">
+                {% else %}
+                <div class="tag-photo d-flex align-items-center justify-content-center bg-light">
+                    <i class="bi bi-person fs-1 text-muted"></i>
+                </div>
+                {% endif %}
+
+                <h4 class="tag-text mt-2 mb-1">{{ cartao.funcionario.nome_completo }}</h4>
+                <p class="tag-text">{{ cartao.funcionario.cargo }}</p>
+                <p class="tag-text">FONE: {{ cartao.fone }}</p>
             </div>
-            <p class="disclaimer mt-3">
-                ESSA ETIQUETA É UM DISPOSITIVO DE SEGURANÇA INDIVIDUAL<br>
-                SÓ PODE SER RETIRADA PELO SEU PROPRIETÁRIO
-            </p>
         </div>
+
+        <!-- VERSO -->
+        <div class="tag-card">
+            <div class="tag-content">
+                <div class="retangulo-box">
+                    <div class="danger-box">PERIGO</div>
+                </div>
+                <p class="tag-text">NÃO LIGUE, NÃO OPERE<br>NÃO RESTABELEÇA ESSE EQUIPAMENTO</p>
+                <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
+
+                <div class="steps-box">
+                    <h4>Os 6 passos para o trabalho seguro:</h4>
+                    <ol>
+                        <li>Identificar as energias</li>
+                        <li>Desligar</li>
+                        <li>Desenergizar</li>
+                        <li>Bloquear e etiquetar</li>
+                        <li>Verificar energias residuais</li>
+                        <li>Testar e verificar</li>
+                    </ol>
+                </div>
+                <p class="disclaimer mt-3">
+                    ESSA ETIQUETA É UM DISPOSITIVO DE SEGURANÇA INDIVIDUAL<br>
+                    SÓ PODE SER RETIRADA PELO SEU PROPRIETÁRIO
+                </p>
+            </div>
+        </div>
+
     </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const printButton = document.getElementById('print-btn');
-    if (printButton) {
-        printButton.addEventListener('click', function() {
-            window.print(); // Abre a caixa de diálogo de impressão do navegador
-        });
-    }
+    document.getElementById('print-btn')?.addEventListener('click', function() {
+        window.print();
+    });
 });
 </script>
 {% endblock %}

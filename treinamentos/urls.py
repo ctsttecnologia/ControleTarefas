@@ -5,7 +5,7 @@ app_name = 'treinamentos'
 
 urlpatterns = [
     # --- Suas URLs de CRUD existentes ---
-    path('', views.TreinamentoListView.as_view(), name='lista_treinamentos'),
+    path('', views.TreinamentoListView.as_view(), name='treinamento_list'),
     path('criar/', views.CriarTreinamentoView.as_view(), name='criar_treinamento'),
     path('<int:pk>/', views.DetalheTreinamentoView.as_view(), name='detalhe_treinamento'),
     path('<int:pk>/editar/', views.EditarTreinamentoView.as_view(), name='editar_treinamento'),
@@ -25,25 +25,12 @@ urlpatterns = [
     # Dashboard
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 
-    
     # 1. URL pública para verificação do QR Code
-    path(
-        'verificar/<uuid:protocolo>/', 
-        views.VerificarCertificadoView.as_view(), 
-        name='verificar_certificado'
-    ),
+    path('verificar/<uuid:protocolo>/', views.VerificarCertificadoView.as_view(), name='verificar_certificado'),
     
     # 2. URL privada para a página de coleta de assinatura
-    path(
-        'assinatura/<str:token>/', 
-        views.PaginaAssinaturaView.as_view(), 
-        name='pagina_assinatura'
-    ),
+    path('assinatura/<str:token>/', views.PaginaAssinaturaView.as_view(), name='pagina_assinatura'),
     
     # 3. URL para o admin/gestor gerar o PDF de um participante
-    path(
-        'participante/<int:pk>/gerar-certificado/', 
-        views.GerarCertificadoPDFView.as_view(), 
-        name='gerar_certificado_participante'
-    ),
+    path('participante/<int:pk>/gerar-certificado/', views.GerarCertificadoPDFView.as_view(), name='gerar_certificado_participante' ),
 ]

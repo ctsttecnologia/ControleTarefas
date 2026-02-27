@@ -1,0 +1,154 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Ação - {{ acao.numero_item|stringformat:"02d" }} - Cronograma{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1>
+            <i class="fas fa-calendar-check"></i> 
+            Ação - {{ acao.numero_item|stringformat:"02d" }}
+        </h1>
+        <p class="text-muted mb-0">
+            Documento: <strong>{{ acao.pgr_documento.codigo_documento }} - {{ acao.pgr_documento.empresa.razao_social }}</strong>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        {% if perms.pgr_gestao.change_cronogramaacaopgr %}
+        <a href="{% url 'pgr_gestao:cronograma_update' acao.pk %}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Editar
+        </a>
+        {% endif %}
+        <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informações Principais -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informações da Ação</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold text-muted">Ação Necessária</label>
+                        <p class="fs-5">{{ acao.acao_necessaria }}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted">Público Alvo</label>
+                        <p>{{ acao.publico_alvo }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted">Periodicidade</label>
+                        <p>{{ acao.get_periodicidade_display }}</p>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted">Responsável</label>
+                        <p>{{ acao.responsavel|default:"Não informado" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-muted">Documento PGR</label>
+                        <p>{{ acao.pgr_documento }}</p>
+                    </div>
+                </div>
+                {% if acao.observacoes %}
+                <div class="row">
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-muted">Observações</label>
+                        <p>{{ acao.observacoes|linebreaksbr }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Status e Datas -->
+    <div class="col-lg-4">
+        <!-- Card Status -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-tasks"></i> Status</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if acao.status == 'pendente' %}
+                    <span class="badge bg-warning text-dark fs-6 px-4 py-2">Pendente</span>
+                {% elif acao.status == 'em_andamento' %}
+                    <span class="badge bg-info fs-6 px-4 py-2">Em Andamento</span>
+                {% elif acao.status == 'concluido' %}
+                    <span class="badge bg-success fs-6 px-4 py-2">Concluído</span>
+                {% elif acao.status == 'cancelado' %}
+                    <span class="badge bg-secondary fs-6 px-4 py-2">Cancelado</span>
+                {% else %}
+                    <span class="badge bg-dark fs-6 px-4 py-2">{{ acao.get_status_display }}</span>
+                {% endif %}
+
+                <!-- Atualizar Status -->
+                {% if perms.pgr_gestao.change_cronogramaacaopgr and acao.status != 'concluido' %}
+                <hr>
+                <form method="post" action="{% url 'pgr_gestao:atualizar_status_acao' acao.pk %}">
+                    {% csrf_token %}
+                    <label class="form-label fw-bold">Alterar Status</label>
+                    <div class="input-group">
+                        <select name="status" class="form-select">
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if acao.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-primary" title="Atualizar Status">
+                            <i class="fas fa-check"></i> OK
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card Datas -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar"></i> Datas</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Próxima Avaliação</small>
+                    <p class="fw-bold fs-5 mb-0">
+                        {{ acao.data_proxima_avaliacao|date:"d/m/Y"|default:"Não definida" }}
+                    </p>
+                    {% if acao.status != 'concluido' and acao.data_proxima_avaliacao %}
+                        {% now "Y-m-d" as hoje %}
+                        {% if acao.data_proxima_avaliacao|date:"Y-m-d" < hoje %}
+                        <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> ATRASADO</small>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% if acao.data_realizacao %}
+                <div class="mb-3">
+                    <small class="text-muted">Data de Realização</small>
+                    <p class="fw-bold fs-5 mb-0 text-success">{{ acao.data_realizacao|date:"d/m/Y" }}</p>
+                </div>
+                {% endif %}
+                <hr>
+                <div class="mb-2">
+                    <small class="text-muted">Criado em</small>
+                    <p class="mb-0">{{ acao.criado_em|date:"d/m/Y H:i" }}</p>
+                </div>
+                <div>
+                    <small class="text-muted">Atualizado em</small>
+                    <p class="mb-0">{{ acao.atualizado_em|date:"d/m/Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

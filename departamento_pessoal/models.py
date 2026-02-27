@@ -148,7 +148,8 @@ class Funcionario(models.Model):
         blank=True,                 # Permite que o campo seja opcional nos formulários
         verbose_name=_("Função (SST)"),
         help_text=_("Função desempenhada pelo funcionário para fins de SST e Matriz de EPI."),
-        related_name="funcionarios"
+        related_name='funcionarios_dp', 
+        related_query_name='funcionario_dp'
     )
     departamento = models.ForeignKey(
         Departamento,
@@ -238,8 +239,9 @@ class Documento(models.Model):
     funcionario = models.ForeignKey(
         'departamento_pessoal.Funcionario',
         on_delete=models.PROTECT,  
-        related_name='documentos',
-        verbose_name=_("Funcionário")
+        verbose_name=_("Funcionário"),
+        related_name='documentos_dp',
+        related_query_name='documento_dp'
     )
     tipo_documento = models.CharField(_("Tipo de Documento"), max_length=10, choices=TIPO_CHOICES)
     numero = models.CharField(_("Número/Código do Documento"), max_length=50)

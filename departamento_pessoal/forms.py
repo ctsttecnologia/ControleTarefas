@@ -1,6 +1,4 @@
-# departamento_pessoal/forms.py
-
-# departamento_pessoal/forms.py (VERSÃO FINAL E COMPLETA)
+# departamento_pessoal/forms.py 
 
 from django import forms
 from django.contrib.auth import get_user_model

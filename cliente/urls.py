@@ -7,6 +7,7 @@ from .views import (
     ClienteUpdateView,
     ClienteDeleteView,
     ExportarClientesExcelView,
+    cliente_autocomplete_view,
 )
 
 app_name = 'cliente'
@@ -18,4 +19,7 @@ urlpatterns = [
     path('excluir/<int:pk>/', ClienteDeleteView.as_view(), name='excluir_cliente'),
     path('exportar/', ExportarClientesExcelView.as_view(), name='exportar_excel'),
     path('detalhe/<int:pk>/', ClienteDetailView.as_view(), name='cliente_detail'),
+
+    # --- NOVA URL PARA O AUTOCOMPLETAR ---
+    path('api/autocomplete/', cliente_autocomplete_view, name='cliente-autocomplete')
 ]

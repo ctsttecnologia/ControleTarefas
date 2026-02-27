@@ -18,3 +18,4 @@ def gerar_relatorio_tarefas(queryset):
     if pisa_status.err:
         return HttpResponse('Erro ao gerar PDF')
     return response
+

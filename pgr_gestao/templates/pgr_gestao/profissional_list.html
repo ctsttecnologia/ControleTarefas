@@ -1,0 +1,148 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Profissionais Responsáveis{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Profissionais Responsáveis</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-user-tie"></i> Profissionais Responsáveis</h1>
+            <p class="mb-0">Cadastro de profissionais para elaboração de PGRs e avaliações</p>
+        </div>
+        {% if perms.pgr_gestao.add_profissionalresponsavel %}
+        <a href="{% url 'pgr_gestao:profissional_create' %}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus"></i> Novo Profissional
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Ativo?</label>
+                <select name="ativo" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="true" {% if request.GET.ativo == 'true' %}selected{% endif %}>Sim</option>
+                    <option value="false" {% if request.GET.ativo == 'false' %}selected{% endif %}>Não</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Função</label>
+                <input type="text" name="funcao" class="form-control" placeholder="Engenheiro, Técnico..."
+                       value="{{ request.GET.funcao }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Buscar</label>
+                <input type="text" name="search" class="form-control" placeholder="Nome, registro, e-mail..."
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela de Profissionais -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-list"></i> Lista de Profissionais
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nome Completo</th>
+                        <th>Função</th>
+                        <th>Registro de Classe</th>
+                        <th>Contato</th>
+                        <th>Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for profissional in profissionais %}
+                    <tr>
+                        <td><strong>{{ profissional.nome_completo }}</strong></td>
+                        <td>{{ profissional.funcao }}</td>
+                        <td>{{ profissional.orgao_classe|default_if_none:'' }} {{ profissional.registro_classe }}</td>
+                        <td>
+                            {% if profissional.email %}<i class="fas fa-envelope"></i> {{ profissional.email }}<br>{% endif %}
+                            {% if profissional.telefone %}<i class="fas fa-phone"></i> {{ profissional.telefone }}{% endif %}
+                        </td>
+                        <td>
+                            {% if profissional.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                {% if perms.pgr_gestao.change_profissionalresponsavel %}
+                                <a href="{% url 'pgr_gestao:profissional_update' profissional.pk %}"
+                                class="btn btn-warning" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                {% if perms.pgr_gestao.delete_profissionalresponsavel %}
+                                <form action="{% url 'pgr_gestao:profissional_delete' profissional.pk %}" method="post" class="d-inline">
+                                    {% csrf_token %}
+                                    {% if perms.pgr_gestao.delete_profissional %}
+                                    <a href="{% url 'pgr_gestao:profissional_delete' profissional.pk %}"
+                                    class="btn btn-danger confirm-delete" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                {% endif %}
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="fas fa-user-slash fa-3x mb-3"></i>
+                            <p>Nenhum profissional cadastrado.</p>
+                            {% if perms.pgr_gestao.add_profissionalresponsavel %}
+                            <a href="{% url 'pgr_gestao:profissional_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Cadastrar Primeiro Profissional
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginação -->
+        {% if profissionais.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if profissionais.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ profissionais.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Página {{ profissionais.number }} de {{ profissionais.paginator.num_pages }}</span></li>
+                {% if profissionais.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ profissionais.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

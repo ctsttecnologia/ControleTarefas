@@ -178,3 +178,4 @@ def gerar_docx_relatorio(context):
     filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+

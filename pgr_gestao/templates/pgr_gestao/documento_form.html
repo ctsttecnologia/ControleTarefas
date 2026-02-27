@@ -1,0 +1,768 @@
+
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Documento PGR{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:documento_list' %}">Documentos PGR</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %}</li>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+    .section-divider {
+        border-top: 3px solid #003366;
+        margin: 30px 0;
+        padding-top: 20px;
+    }
+    .help-box {
+        background-color: #e7f3ff;
+        border-left: 4px solid #0066cc;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .card-step {
+        border-left: 4px solid #003366;
+    }
+    .step-number {
+        background-color: #003366;
+        color: white;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-file-alt"></i>
+        {% if form.instance.pk %}Editar Documento PGR{% else %}Criar Novo Documento PGR{% endif %}
+    </h1>
+    <p class="mb-0">Programa de Gerenciamento de Riscos - Formulário de Cadastro</p>
+</div>
+
+<!-- Wizard de Progresso -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="step-number mx-auto mb-2">1</div>
+                <small>Identificação</small>
+            </div>
+            <div class="col-md-3">
+                <div class="step-number mx-auto mb-2" style="background-color: #6c757d;">2</div>
+                <small>Empresa</small>
+            </div>
+            <div class="col-md-3">
+                <div class="step-number mx-auto mb-2" style="background-color: #6c757d;">3</div>
+                <small>Datas</small>
+            </div>
+            <div class="col-md-3">
+                <div class="step-number mx-auto mb-2" style="background-color: #6c757d;">4</div>
+                <small>Finalização</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" id="formPGR">
+    {% csrf_token %}
+    
+    <!-- Erros Gerais -->
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle"></i>
+        {{ form.non_field_errors }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-9">
+            <!-- SEÇÃO 1: Identificação do Documento -->
+            <div class="card card-step mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-id-card"></i> 1. Identificação do Documento
+                </div>
+                <div class="card-body">
+                    <div class="help-box">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Atenção:</strong> O código do documento é gerado automaticamente no formato: 
+                        <code>PGR-EMPRESA-MÊS-ANO</code>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.codigo_documento.id_for_label }}" class="form-label">
+                                    Código do Documento
+                                </label>
+                                {% render_field form.codigo_documento class="form-control" placeholder="Ex: 10-CM 652 - JAGUARE-PGR-OUT25" %}
+                                {% if form.codigo_documento.errors %}
+                                <div class="text-danger mt-1">{{ form.codigo_documento.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Deixe em branco para gerar automaticamente</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.versao_atual.id_for_label }}" class="form-label">
+                                    Versão
+                                </label>
+                                {% render_field form.versao_atual class="form-control" type="number" min="1" %}
+                                {% if form.versao_atual.errors %}
+                                <div class="text-danger mt-1">{{ form.versao_atual.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Versão inicial: 1</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label required-field">
+                                    Status
+                                </label>
+                                {% render_field form.status class="form-select" %}
+                                {% if form.status.errors %}
+                                <div class="text-danger mt-1">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 2: Empresa e Local -->
+            <div class="card card-step mb-4">
+                <div class="card-header bg-success text-white">
+                    <i class="fas fa-building"></i> 2. Empresa e Local de Prestação
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.empresa.id_for_label }}" class="form-label required-field">
+                                    Empresa (Contratante)
+                                </label>
+                                {% render_field form.empresa class="form-select" %}
+                                {% if form.empresa.errors %}
+                                <div class="text-danger">{{ form.empresa.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Empresa que está contratando a elaboração do PGR
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.local_prestacao.id_for_label }}" class="form-label">
+                                    Local de Prestação de Serviços
+                                </label>
+                                {% render_field form.local_prestacao class="form-select" id="select-local" %}
+                                {% if form.local_prestacao.errors %}
+                                <div class="text-danger mt-1">{{ form.local_prestacao.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">
+                                    Local onde os serviços serão prestados (se aplicável)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Ação Rápida -->
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNovaEmpresa">
+                            <i class="fas fa-plus"></i> Nova Empresa
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalNovoLocal">
+                            <i class="fas fa-plus"></i> Novo Local
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 3: Datas -->
+            <div class="card card-step mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-calendar-alt"></i> 3. Datas e Prazos
+                </div>
+                <div class="card-body">
+                    <div class="help-box">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Importante:</strong> Conforme NR-01, o PGR deve ser revisado a cada 2 anos ou quando 
+                        houver mudanças significativas nos processos.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.data_elaboracao.id_for_label }}" class="form-label required-field">
+                                    Data de Elaboração
+                                </label>
+                                {% render_field form.data_elaboracao class="form-control" type="date" %}
+                                {% if form.data_elaboracao.errors %}
+                                <div class="text-danger mt-1">{{ form.data_elaboracao.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.data_ultima_revisao.id_for_label }}" class="form-label">
+                                    Data da Última Revisão
+                                </label>
+                                {% render_field form.data_ultima_revisao class="form-control" type="date" %}
+                                {% if form.data_ultima_revisao.errors %}
+                                <div class="text-danger mt-1">{{ form.data_ultima_revisao.errors }}</div>
+                                {% endif %}
+                                <small class="form-text text-muted">Deixe em branco se for a primeira versão</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="{{ form.data_vencimento.id_for_label }}" class="form-label required-field">
+                                    Data de Vencimento
+                                </label>
+                                {% render_field form.data_vencimento class="form-control" type="date" id="id_data_vencimento" %}
+                                {% if form.data_vencimento.errors %}
+                                <div class="text-danger mt-1">{{ form.data_vencimento.errors }}</div>
+                                {% endif %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btn-calcular-vencimento">
+                                    <i class="fas fa-calculator"></i> Calcular (2 anos)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="{{ form.periodicidade_revisao.id_for_label }}" class="form-label">
+                                    Periodicidade de Revisão
+                                </label>
+                                {% render_field form.periodicidade_revisao class="form-select" %}
+                                {% if form.periodicidade_revisao.errors %}
+                                <div class="text-danger mt-1">{{ form.periodicidade_revisao.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 4: Informações Adicionais -->
+            <div class="card card-step mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-edit"></i> 4. Informações Adicionais
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="{{ form.objetivo.id_for_label }}" class="form-label">
+                            Objetivo do PGR
+                        </label>
+                        {% render_field form.objetivo class="form-control" rows="4" placeholder="Descreva o objetivo principal deste PGR..." %}
+                        {% if form.objetivo.errors %}
+                        <div class="text-danger mt-1">{{ form.objetivo.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Objetivo geral: Antecipar, reconhecer, avaliar e controlar os riscos ocupacionais
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.escopo.id_for_label }}" class="form-label">
+                            Escopo
+                        </label>
+                        {% render_field form.escopo class="form-control" rows="3" placeholder="Defina o escopo de aplicação deste PGR..." %}
+                        {% if form.escopo.errors %}
+                        <div class="text-danger mt-1">{{ form.escopo.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.metodologia_avaliacao.id_for_label }}" class="form-label">
+                            Metodologia de Avaliação
+                        </label>
+                        {% render_field form.metodologia_avaliacao class="form-control" rows="3" placeholder="Descreva a metodologia utilizada para avaliação de riscos..." %}
+                        {% if form.metodologia_avaliacao.errors %}
+                        <div class="text-danger mt-1">{{ form.metodologia_avaliacao.errors }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Ex: Matriz de Severidade (Tabelas 2, 3, 4, 5, 6 e 8) conforme documento base
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label">
+                            Observações Gerais
+                        </label>
+                        {% render_field form.observacoes class="form-control" rows="4" placeholder="Observações, notas importantes ou informações complementares..." %}
+                        {% if form.observacoes.errors %}
+                        <div class="text-danger mt-1">{{ form.observacoes.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEÇÃO 5: Upload de Anexos -->
+            {% if form.instance.pk %}
+            <div class="card card-step mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <i class="fas fa-paperclip"></i> 5. Anexos e Documentos de Referência
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Você pode anexar documentos complementares, laudo técnicos, avaliações, etc.
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Upload de Arquivos</label>
+                        <input type="file" class="form-control" name="anexos" multiple>
+                        <small class="form-text text-muted">Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG</small>
+                    </div>
+
+                    {% if anexos_existentes %}
+                    <div class="mt-3">
+                        <h6>Anexos Existentes:</h6>
+                        <ul class="list-group">
+                            {% for anexo in anexos_existentes %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-file"></i> {{ anexo.nome_arquivo }}
+                                    <br><small class="text-muted">{{ anexo.data_upload|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <div>
+                                    <a href="{{ anexo.arquivo.url }}" class="btn btn-sm btn-info" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmarExclusaoAnexo({{ anexo.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Botões de Ação -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'pgr_gestao:documento_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <div>
+                            <button type="submit" name="action" value="save_draft" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-save"></i> Salvar Rascunho
+                            </button>
+                            <button type="submit" name="action" value="save" class="btn btn-primary btn-lg">
+                                <i class="fas fa-check"></i> Salvar e Continuar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Sidebar com Informações -->
+        <div class="col-md-3">
+            <div class="card sticky-top" style="top: 20px;">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-info-circle"></i> Informações
+                </div>
+                <div class="card-body">
+                    <h6>Campos Obrigatórios</h6>
+                    <ul class="small">
+                        <li>Empresa</li>
+                        <li>Data de Elaboração</li>
+                        <li>Data de Vencimento</li>
+                        <li>Status</li>
+                    </ul>
+
+                    <hr>
+
+                    <h6>Próximos Passos</h6>
+                    <ol class="small">
+                        <li>Cadastrar GES (Grupos de Exposição)</li>
+                        <li>Identificar Riscos</li>
+                        <li>Avaliar Riscos</li>
+                        <li>Criar Planos de Ação</li>
+                        <li>Definir Cronograma</li>
+                    </ol>
+
+                    <hr>
+
+                    <h6>Base Legal</h6>
+                    <ul class="small">
+                        <li><strong>NR-01:</strong> Portaria SEPRT nº 6.730/2020</li>
+                        <li><strong>Periodicidade:</strong> Revisão bienal</li>
+                        <li><strong>Metodologia:</strong> Matriz de Severidade</li>
+                    </ul>
+
+                    {% if form.instance.pk %}
+                    <hr>
+                    <h6>Status do Documento</h6>
+                    <p class="mb-1">
+                        <strong>Conclusão:</strong>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ form.instance.percentual_conclusao }}%">
+                                {{ form.instance.percentual_conclusao|floatformat:0 }}%
+                            </div>
+                        </div>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Ajuda Rápida -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-question-circle"></i> Precisa de Ajuda?
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2">
+                        <i class="fas fa-book"></i> 
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalAjuda">Manual do PGR</a>
+                    </p>
+                    <p class="small mb-2">
+                        <i class="fas fa-file-pdf"></i> 
+                        <a href="#" target="_blank">Baixar Modelo</a>
+                    </p>
+                    <p class="small mb-0">
+                        <i class="fas fa-envelope"></i> 
+                        <a href="mailto:suporte@empresa.com">Suporte Técnico</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Modal: Nova Empresa -->
+<div class="modal fade" id="modalNovaEmpresa" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-building"></i> Cadastrar Nova Empresa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovaEmpresa">
+                    <div class="mb-3">
+                        <label class="form-label">Razão Social <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="razao_social" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">CNPJ <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="cnpj" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">CNAE</label>
+                                <input type="text" class="form-control" name="cnae">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Grau de Risco</label>
+                                <select class="form-select" name="grau_risco">
+                                    <option value="">Selecione...</option>
+                                    <option value="1">1 - Baixo</option>
+                                    <option value="2">2 - Médio</option>
+                                    <option value="3">3 - Alto</option>
+                                    <option value="4">4 - Muito Alto</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarNovaEmpresa()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Novo Local -->
+<div class="modal fade" id="modalNovoLocal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-map-marker-alt"></i> Cadastrar Novo Local</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovoLocal">
+                    <div class="mb-3">
+                        <label class="form-label">Razão Social <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="razao_social" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">CNPJ</label>
+                        <input type="text" class="form-control" name="cnpj">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Endereço</label>
+                        <input type="text" class="form-control" name="endereco">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nº</label>
+                        <input type="number" class="form-control" name="numero" min="1" max="99999" >
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Bairro</label>
+                                <input type="text" class="form-control" name="bairro">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Complemento</label>
+                                <input type="text" class="form-control" name="complemento">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">Cidade</label>
+                                <input type="text" class="form-control" name="cidade">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">UF</label>
+                                <input type="text" class="form-control" name="estado" maxlength="2">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">CEP</label>
+                                <input type="text" class="form-control" name="cep">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="salvarNovoLocal()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{# PASSO 1: A LINHA MAIS IMPORTANTE. Adicione-a no início do bloco. #}
+{# Ela vai carregar o jQuery, o CSS e o JS do Select2 automaticamente. #}
+{{ form.media }}
+<script>
+$(document).ready(function() {
+
+    // --- LÓGICA PARA IGNORAR O CAMPO DESABILITADO NA EDIÇÃO ---
+    // Esta parte executa logo que a página carrega.
+    const dataElaboracaoInput = $('#id_data_elaboracao');
+    if (dataElaboracaoInput.is(':disabled')) {
+        // Remove o atributo 'required' do HTML para o navegador não validar.
+        dataElaboracaoInput.removeAttr('required');
+    }
+    
+    // Calcular data de vencimento (2 anos)
+    $('#btn-calcular-vencimento').on('click', function() {
+        const dataElaboracao = $('#id_data_elaboracao').val();
+        if (dataElaboracao) {
+            const data = new Date(dataElaboracao);
+            data.setFullYear(data.getFullYear() + 2);
+            const dataVencimento = data.toISOString().split('T')[0];
+            $('#id_data_vencimento').val(dataVencimento);
+        } else {
+            alert('Por favor, preencha a Data de Elaboração primeiro.');
+        }
+    });
+
+    // Carregar locais baseado na empresa selecionada - SEU CÓDIGO ORIGINAL
+    // ATENÇÃO: O ID do seu campo de empresa é #id_empresa, não #select-empresa
+    $('#id_empresa').on('change', function() {
+        const empresaId = $(this).val();
+        if (empresaId) {
+            $.ajax({
+                url: `/pgr/ajax/locais/${empresaId}/`, 
+                success: function(data) {
+                    const localSelect = $('#select-local');
+                    localSelect.empty();
+                    localSelect.append('<option value="">---------</option>');
+                    data.forEach(function(local) {
+                        localSelect.append(`<option value="${local.id}">${local.razao_social}</option>`);
+                    });
+                }
+            });
+        }
+    });
+
+    // Validação do formulário - SEU CÓDIGO ORIGINAL
+    $('#formPGR').on('submit', function(e) {
+        let valid = true;
+        if (!$('#id_empresa').val()) {
+            alert('Por favor, selecione uma Empresa.');
+            valid = false;
+        }
+        const dataElaboracao = $('#id_data_elaboracao');
+        if (!dataElaboracao.is(':disabled') && !dataElaboracao.val()) {
+            alert('Por favor, preencha a Data de Elaboração.');
+            valid = false;
+        }
+
+        const dataVencimento = $('#id_data_vencimento');
+        if (!dataVencimento.is(':disabled') && !dataVencimento.val()) {
+            alert('Por favor, preencha a Data de Vencimento.');
+            valid = false;
+        }
+
+        if (!valid) {
+            e.preventDefault();
+        }
+    });
+});
+
+// Salvar nova empresa via AJAX
+function salvarNovaEmpresa() {
+    const formData = $('#formNovaEmpresa').serialize();
+    
+    $.ajax({
+        url: '{% url "pgr_gestao:documento_create" %}',
+        method: 'POST',
+        data: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Adicionar nova opção ao select
+                $('#select-empresa').append(
+                    $('<option>', {
+                        value: response.id,
+                        text: response.razao_social,
+                        selected: true
+                    })
+                );
+                
+                // Fechar modal
+                $('#modalNovaEmpresa').modal('hide');
+                $('#formNovaEmpresa')[0].reset();
+                
+                // Mensagem de sucesso
+                alert('Empresa cadastrada com sucesso!');
+            } else {
+                alert('Erro ao cadastrar empresa: ' + response.message);
+            }
+        },
+        error: function() {
+            alert('Erro ao salvar empresa. Tente novamente.');
+        }
+    });
+}
+
+// Salvar novo local via AJAX
+function salvarNovoLocal() {
+    const empresaId = $('#id_empresa').val();
+    
+    if (!empresaId) {
+        alert('Por favor, selecione uma empresa primeiro.');
+        return;
+    }
+    
+    // O campo 'empresa' já será adicionado ao formData
+    const formData = $('#formNovoLocal').serialize() + '&empresa=' + empresaId;
+    
+    $.ajax({
+        // --- CORREÇÃO DA URL AQUI ---
+        url: '{% url "pgr_gestao:local_prestacao_create" %}',
+        method: 'POST',
+        data: formData,
+        headers: {
+            // O header X-Requested-With é adicionado automaticamente pelo jQuery,
+            // mas é bom ter o CSRFToken.
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Adicionar nova opção ao select de locais
+                $('#select-local').append(
+                    $('<option>', {
+                        value: response.id,
+                        text: response.razao_social,
+                        selected: true // Já deixa selecionado
+                    })
+                );
+                
+                $('#modalNovoLocal').modal('hide');
+                $('#formNovoLocal')[0].reset();
+                alert('Local cadastrado com sucesso!');
+            } else {
+                // Monta uma mensagem de erro mais detalhada
+                let errorMsg = 'Erro ao cadastrar local:\n';
+                for (const field in response.errors) {
+                    errorMsg += `${field}: ${response.errors[field][0]}\n`;
+                }
+                alert(errorMsg);
+            }
+        },
+        error: function() {
+            alert('Erro de comunicação ao salvar local. Tente novamente.');
+        }
+    });
+}
+
+// Confirmar exclusão de anexo
+function confirmarExclusaoAnexo(anexoId) {
+    if (confirm('Deseja realmente excluir este anexo?')) {
+        $.ajax({
+            url: `/pgr/anexo/${anexoId}/delete/`,
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function() {
+                location.reload();
+            }
+        });
+    }
+}
+
+</script>
+{% endblock %}
+
+

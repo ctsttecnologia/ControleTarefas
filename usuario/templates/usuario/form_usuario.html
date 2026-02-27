@@ -1,230 +1,404 @@
-
-{% extends 'base.html' %}
-{% load static %}
+{# templates/usuario/form_usuario.html #}
+{% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
 
 {% block title %}
-    {% if form.instance.pk %}Editar Usuário{% else %}Cadastrar Novo Usuário{% endif %}
+    {% if form.instance.pk %}Editar Usuário{% else %}Novo Usuário{% endif %}
 {% endblock %}
 
 {% block extra_head %}
     {{ form.media.css }}
     <style>
-        /* ==========================================================================
-           ESTILOS PARA O WIDGET FilteredSelectMultiple (LADO A LADO RESPONSIVO)
-           ========================================================================== */
-
-        /* --- 1. O Contêiner Principal (Flexbox) --- */
-        .selector {
-            display: flex;
-            flex-wrap: wrap;         /* ESSENCIAL: Permite que os itens quebrem a linha em telas pequenas */
-            align-items: stretch;    /* Faz com que os cards e as setas tenham a mesma altura */
-            gap: 1rem;               /* Espaçamento entre os cards e as setas */
+        /* =============================================
+           SEÇÕES
+           ============================================= */
+        .section-divider {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6c757d;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #dee2e6;
         }
 
-        /* --- 2. Os Cards de Seleção ("Disponíveis" e "Escolhidos") --- */
+        /* =============================================
+           SWITCHES
+           ============================================= */
+        .switch-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 1rem 1.25rem;
+        }
+
+        /* =============================================
+           WIDGET FilteredSelectMultiple — OVERRIDE
+           ============================================= */
+        .selector {
+            display: flex !important;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 0.75rem;
+            width: 100% !important;
+        }
         .selector .selector-available,
         .selector .selector-chosen {
-            flex: 1;                 /* FAZ OS CARDS CRESCEREM PARA OCUPAR O ESPAÇO IGUALMENTE */
-            min-width: 280px;        /* LARGURA MÍNIMA: Se a tela for menor que ~580px, os cards vão se empilhar */
+            flex: 1 !important;
+            min-width: 220px;
             display: flex;
             flex-direction: column;
             border: 1px solid #dee2e6;
-            border-radius: 0.375rem; /* Borda arredondada do Bootstrap */
-            background-color: #fff;
-            overflow: hidden;        /* Garante que o conteúdo não vaze das bordas arredondadas */
+            border-radius: 0.5rem;
+            background: #fff;
+            overflow: hidden;
+            float: none !important;
+            width: auto !important;
         }
-
-        /* --- 3. A Coluna de Controles (Setas) --- */
-        .selector .selector-control {
-            display: flex;
-            flex-direction: column;
-            justify-content: center; /* Centraliza as setas verticalmente */
-            align-items: center;
-            gap: 0.5rem;
-            flex-basis: 40px;        /* Define uma largura base para a coluna de setas */
-        }
-
-        /* --- 4. Estilização Interna dos Cards (Títulos, Filtro, Lista) --- */
-
-        /* Títulos (h2) */
         .selector h2 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            padding: 0.75rem 1.25rem;
-            margin: 0;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+            font-size: 0.8rem !important;
+            font-weight: 600 !important;
+            padding: 0.6rem 0.75rem !important;
+            margin: 0 !important;
+            background: #f8f9fa !important;
+            border-bottom: 1px solid #dee2e6 !important;
+            color: #495057 !important;
         }
-        
-        /* Campo de Filtro */
         .selector .selector-filter {
-            padding: 0.5rem;
-            border-bottom: 1px solid #dee2e6;
+            padding: 0.4rem 0.5rem !important;
+            border-bottom: 1px solid #e9ecef !important;
+        }
+        .selector .selector-filter label {
+            display: none !important;
         }
         .selector .selector-filter input {
             width: 100% !important;
-            padding: 0.375rem 0.75rem;
-            border: 1px solid #ced4da;
-            border-radius: 0.25rem;
+            padding: 0.35rem 0.6rem !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.375rem !important;
+            font-size: 0.82rem !important;
+            outline: none !important;
         }
-
-        /* A lista de opções */
+        .selector .selector-filter input:focus {
+            border-color: #86b7fe !important;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15) !important;
+        }
         .selector select {
-            flex-grow: 1; /* Faz a lista crescer para preencher o espaço vertical */
-            border: none;
-            padding: 0.5rem;
-            min-height: 250px; /* Altura mínima para os cards */
+            flex-grow: 1;
+            border: none !important;
+            padding: 0.35rem !important;
+            min-height: 160px;
+            font-size: 0.82rem !important;
+            outline: none !important;
         }
         .selector select option {
             padding: 0.3rem 0.6rem;
-            border-radius: 0.2rem;
-            cursor: pointer;
+            border-radius: 0.25rem;
         }
-        .selector select option:hover {
-            background-color: #e9ecef;
+        .selector select option:hover,
+        .selector select option:checked {
+            background: #e7f1ff;
         }
-
-        /* --- 5. Estilização das Setas (para parecerem botões) --- */
+        .selector .selector-control {
+            display: flex !important;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0 0.25rem;
+            float: none !important;
+            width: auto !important;
+        }
         .selector .selector-control a {
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
-            width: 38px;
-            height: 38px;
-            border: 1px solid #adb5bd;
-            color: #495057;
-            background-color: #fff;
-            border-radius: 0.375rem;
-            text-decoration: none;
+            width: 32px !important;
+            height: 32px !important;
+            border: 1px solid #ced4da !important;
+            border-radius: 0.375rem !important;
+            background: #fff !important;
+            text-decoration: none !important;
             transition: all 0.15s ease-in-out;
+            opacity: 1 !important;
         }
         .selector .selector-control a:hover {
-            background-color: #0d6efd; /* Azul primário do Bootstrap */
+            background: #0d6efd !important;
+            border-color: #0d6efd !important;
+        }
+        .selector .selector-control a:hover img {
+            filter: brightness(0) invert(1);
+        }
+        .selector .selector-chooseall,
+        .selector .selector-clearall {
+            font-size: 0.72rem !important;
+            padding: 0.3rem 0.6rem !important;
+            display: inline-block !important;
+            color: #0d6efd !important;
+            text-decoration: none !important;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            background: #f8f9fa;
+            margin: 0.3rem 0.5rem !important;
+            transition: all 0.15s;
+        }
+        .selector .selector-chooseall:hover,
+        .selector .selector-clearall:hover {
+            background: #0d6efd;
+            color: #fff !important;
             border-color: #0d6efd;
-            color: #fff;
+        }
+        .selector-available p.help,
+        .selector-chosen p.help {
+            display: none !important;
         }
 
-        /* --- BÔNUS: Substitui o texto das setas por ícones (Unicode) para um visual mais limpo --- */
-        .selector .selector-add::before { content: "›"; }
-        .selector .selector-remove::before { content: "‹"; }
-        .selector .selector-addall::before { content: "»"; }
-        .selector .selector-clearall::before { content: "«"; }
-        
-        .selector .selector-control a {
-            font-size: 1.8rem;
-            font-weight: bold;
-            line-height: 1;
-            color: transparent; /* Esconde o texto original (ex: "Choose") */
-            position: relative;
-        }
-        .selector .selector-control a::before {
-            color: #495057; /* Cor do ícone */
-            position: absolute;
-            transition: color 0.15s ease-in-out;
-        }
-        .selector .selector-control a:hover::before {
-            color: #fff;
+        @media (max-width: 576px) {
+            .selector { flex-direction: column; }
+            .selector .selector-control {
+                flex-direction: row;
+                padding: 0.25rem 0;
+            }
         }
     </style>
 {% endblock %}
 
-{% block content %}
-    {% include 'usuario/includes/submenu.html' %}
-
-    <div class="container form-container">
-        <div class="card shadow-sm rounded-lg">
+{% block usuario_content %}
+<div class="row justify-content-center">
+    <div class="col-xxl-10">
+        <div class="card shadow-sm">
             <div class="card-header bg-primary text-white py-3">
-                <h2 class="h4 mb-0">
-                    {% if form.instance.pk %}Editar Usuário: {{ form.instance.username }}{% else %}Cadastrar Novo Usuário{% endif %}
-                </h2>
+                <h5 class="mb-0">
+                    {% if form.instance.pk %}
+                        <i class="bi bi-pencil-square me-2"></i>Editar: {{ form.instance.get_full_name|default:form.instance.username }}
+                    {% else %}
+                        <i class="bi bi-person-plus me-2"></i>Cadastrar Novo Usuário
+                    {% endif %}
+                </h5>
             </div>
-            <div class="card-body p-4 p-md-5">
+            <div class="card-body p-4">
                 <form method="post" novalidate>
                     {% csrf_token %}
 
                     {% if form.non_field_errors %}
-                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
                     {% endif %}
-                    
-                    <h5 class="mb-3">Informações de Login</h5>
-                    <div class="row g-3">
-                        {% include 'usuario/includes/form_field.html' with field=form.username %}
-                        {% include 'usuario/includes/form_field.html' with field=form.email %}
-                        {% include 'usuario/includes/form_field.html' with field=form.first_name %}
-                        {% include 'usuario/includes/form_field.html' with field=form.last_name %}
 
-                        {# Campos de senha e vínculo - Apenas na criação #}
-                        {% if not form.instance.pk %}
-                            {% include 'usuario/includes/form_field.html' with field=form.password1 %}
-                            {% include 'usuario/includes/form_field.html' with field=form.password2 %}
-                            {% include 'usuario/includes/form_field.html' with field=form.funcionario col_size=12 %}
-                        {% endif %}
+                    {# ===========================================================
+                       SEÇÃO 1: INFORMAÇÕES DE LOGIN
+                       =========================================================== #}
+                    <div class="section-divider">
+                        <i class="bi bi-person me-1"></i>Informações de Login
                     </div>
 
-                    {% if form.instance.pk %}
-                        <hr class="my-4">
-                        <hr class="my-4">
-                        <h5 class="mb-3">Permissões e Filiais</h5>
-                        <div class="row g-4">
-                            <div class="col-12 mb-3">
-                                <label for="{{ form.filiais_permitidas.id_for_label }}" class="form-label">Filiais Permitidas</label>
-                                {{ form.filiais_permitidas }}
-                                {% if form.filiais_permitidas.help_text %}<div class="form-text">{{ form.filiais_permitidas.help_text }}</div>{% endif %}
-                            </div>
-
-                            <div class="col-12 mb-3">
-                                <label for="{{ form.filial_ativa.id_for_label }}" class="form-label fw-bold">
-                                    {{ form.filial_ativa.label }}
-                                </label>
-                                {% render_field form.filial_ativa class="form-select" %}
-                                
-                                {% if form.filial_ativa.help_text %}
-                                    <small class="form-text text-muted">{{ form.filial_ativa.help_text }}</small>
-                                {% endif %}
-
-                                {% for error in form.filial_ativa.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {{ error }}
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label for="{{ form.groups.id_for_label }}" class="form-label">Grupos</label>
-                                {{ form.groups }}
-                            </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label fw-semibold">
+                                Primeiro Nome <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.first_name class="form-control" placeholder="Ex: Bruno" %}
+                            {% for error in form.first_name.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
                         </div>
-                        
-                        <hr class="my-4">
-                        <h5 class="mb-3">Status e Acesso</h5>
-                        <div class="d-flex flex-column gap-2">
-                            <div class="form-check">
-                                {% render_field form.is_active class="form-check-input" %}
-                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">Usuário ativo?</label>
-                            </div>
-                            <div class="form-check">
-                                {% render_field form.is_staff class="form-check-input" %}
-                                <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">Acesso ao painel administrativo?</label>
-                            </div>
-                            <div class="form-check">
-                                {% render_field form.is_superuser class="form-check-input" %}
-                                <label class="form-check-label" for="{{ form.is_superuser.id_for_label }}">Status de Superusuário?</label>
-                            </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label fw-semibold">
+                                Último Nome <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.last_name class="form-control" placeholder="Ex: Filipe" %}
+                            {% for error in form.last_name.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
                         </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label fw-semibold">
+                                Usuário <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.username class="form-control" placeholder="nome.sobrenome" %}
+                            {% if form.username.help_text %}
+                            <div class="form-text"><small>{{ form.username.help_text|safe }}</small></div>
+                            {% endif %}
+                            {% for error in form.username.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                                E-mail <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.email class="form-control" placeholder="email@empresa.com" %}
+                            {% for error in form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# --- Senha (apenas criação) --- #}
+                    {% if not form.instance.pk %}
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
+                                Senha <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.password1 class="form-control" placeholder="••••••••" %}
+                            {% if form.password1.help_text %}
+                            <div class="form-text"><small>{{ form.password1.help_text|safe }}</small></div>
+                            {% endif %}
+                            {% for error in form.password1.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-3">
+                            <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
+                                Confirmar Senha <span class="text-danger">*</span>
+                            </label>
+                            {% render_field form.password2 class="form-control" placeholder="••••••••" %}
+                            {% for error in form.password2.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% if form.funcionario %}
+                        <div class="col-md-6">
+                            <label for="{{ form.funcionario.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.funcionario.label }}
+                            </label>
+                            {% render_field form.funcionario class="form-select" %}
+                            {% if form.funcionario.help_text %}
+                            <div class="form-text"><small>{{ form.funcionario.help_text }}</small></div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
                     {% endif %}
-                    
-                    <hr class="mt-4">
-                    <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-secondary px-4">Cancelar</a>
-                        <button type="submit" class="btn btn-primary px-4">Salvar</button>
+
+                    {# ===========================================================
+                       SEÇÃO 2: FILIAIS (apenas edição)
+                       =========================================================== #}
+                    {% if form.instance.pk %}
+                    <div class="section-divider">
+                        <i class="bi bi-building me-1"></i>Filiais
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.filiais_permitidas.id_for_label }}" class="form-label fw-semibold">
+                            Filiais Permitidas
+                        </label>
+                        {{ form.filiais_permitidas }}
+                        {% if form.filiais_permitidas.help_text %}
+                        <div class="form-text mt-1"><small>{{ form.filiais_permitidas.help_text }}</small></div>
+                        {% endif %}
+                        {% for error in form.filiais_permitidas.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label for="{{ form.filial_ativa.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ form.filial_ativa.label }}
+                            </label>
+                            {% render_field form.filial_ativa class="form-select" %}
+                            {% if form.filial_ativa.help_text %}
+                            <div class="form-text"><small>{{ form.filial_ativa.help_text }}</small></div>
+                            {% endif %}
+                            {% for error in form.filial_ativa.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# ===========================================================
+                       SEÇÃO 3: GRUPOS
+                       =========================================================== #}
+                    <div class="section-divider">
+                        <i class="bi bi-people me-1"></i>Grupos
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.groups.id_for_label }}" class="form-label fw-semibold">
+                            Grupos do Usuário
+                        </label>
+                        {{ form.groups }}
+                        {% for error in form.groups.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    {# ===========================================================
+                       SEÇÃO 4: STATUS E ACESSO
+                       =========================================================== #}
+                    <div class="section-divider">
+                        <i class="bi bi-shield-lock me-1"></i>Status e Acesso
+                    </div>
+
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <div class="switch-card">
+                                <div class="form-check form-switch mb-2">
+                                    {% render_field form.is_active class="form-check-input" %}
+                                    <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                        <i class="bi bi-check-circle-fill text-success me-1"></i>Usuário ativo
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    {% render_field form.is_staff class="form-check-input" %}
+                                    <label class="form-check-label" for="{{ form.is_staff.id_for_label }}">
+                                        <i class="bi bi-person-badge-fill text-info me-1"></i>Acesso ao painel (Staff)
+                                    </label>
+                                </div>
+                                {% if user.is_superuser %}
+                                <div class="form-check form-switch">
+                                    {% render_field form.is_superuser class="form-check-input" %}
+                                    <label class="form-check-label text-danger" for="{{ form.is_superuser.id_for_label }}">
+                                        <i class="bi bi-shield-fill-exclamation me-1"></i>Superusuário
+                                    </label>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# ===========================================================
+                       RODAPÉ COM AÇÕES
+                       =========================================================== #}
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            {% if form.instance.pk %}
+                            <small class="text-muted">
+                                <i class="bi bi-clock-history me-1"></i>
+                                Último login: {{ form.instance.last_login|date:"d/m/Y H:i"|default:"Nunca" }}
+                            </small>
+                            {% else %}
+                            <small class="text-muted">
+                                <span class="text-danger">*</span> Campos obrigatórios
+                            </small>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-check-lg me-1"></i>Salvar
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
     <script src="{% url 'admin:jsi18n' %}"></script>
     {{ form.media.js }}
 {% endblock %}
+

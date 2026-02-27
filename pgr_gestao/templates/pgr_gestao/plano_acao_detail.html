@@ -1,0 +1,491 @@
+<!--Detail-->
+<!--Detail-->
+{% extends 'pgr_gestao/base.html' %}
+{% load static %}
+
+{% block title %}Plano de Ação - Detalhes{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:plano_acao_list' %}">Planos de Ação</a></li>
+<li class="breadcrumb-item active">Plano #{{ plano.pk }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1><i class="fas fa-tasks"></i> Detalhes do Plano de Ação</h1>
+            <p class="mb-0">
+                <span class="badge bg-{{ plano.status }}">{{ plano.get_status_display }}</span>
+                <span class="badge bg-{{ plano.prioridade }} ms-2">{{ plano.get_prioridade_display }}</span>
+                {% if plano.esta_atrasado %}
+                <span class="badge bg-danger ms-2"><i class="fas fa-clock"></i> ATRASADO</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="btn-group">
+            <!-- ═══ BOTÃO RELATÓRIO ═══ -->
+            <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="btn btn-outline-primary">
+                <i class="fas fa-chart-bar"></i> Relatório
+            </a>
+            {% if perms.pgr_gestao.change_planoacaopgr and plano.status != 'concluido' %}
+            <a href="{% url 'pgr_gestao:plano_acao_update' plano.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            {% endif %}
+            {% if perms.pgr_gestao.change_planoacaopgr and plano.status == 'pendente' %}
+            <a href="{% url 'pgr_gestao:iniciar_plano' plano.pk %}" class="btn btn-info">
+                <i class="fas fa-play"></i> Iniciar
+            </a>
+            {% endif %}
+            {% if perms.pgr_gestao.change_planoacaopgr and plano.status == 'em_andamento' %}
+            <a href="{% url 'pgr_gestao:concluir_plano' plano.pk %}" class="btn btn-success">
+                <i class="fas fa-check"></i> Concluir
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Informações Principais -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-info-circle"></i> Informações do Plano de Ação
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ID do Plano:</strong> #{{ plano.pk }}</p>
+                        <p><strong>Tipo de Ação:</strong> 
+                            <span class="badge bg-secondary">{{ plano.get_tipo_acao_display }}</span>
+                        </p>
+                        <p><strong>Prioridade:</strong> 
+                            {% if plano.prioridade == 'critica' %}
+                            <span class="badge bg-danger">{{ plano.get_prioridade_display }}</span>
+                            {% elif plano.prioridade == 'alta' %}
+                            <span class="badge bg-warning text-dark">{{ plano.get_prioridade_display }}</span>
+                            {% elif plano.prioridade == 'media' %}
+                            <span class="badge bg-info">{{ plano.get_prioridade_display }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ plano.get_prioridade_display }}</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Status:</strong> 
+                            {% if plano.status == 'concluido' %}
+                            <span class="badge bg-success">{{ plano.get_status_display }}</span>
+                            {% elif plano.status == 'em_andamento' %}
+                            <span class="badge bg-info">{{ plano.get_status_display }}</span>
+                            {% elif plano.status == 'cancelado' %}
+                            <span class="badge bg-secondary">{{ plano.get_status_display }}</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ plano.get_status_display }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Responsável:</strong> {{ plano.responsavel }}</p>
+                        <p><strong>Data Prevista:</strong> {{ plano.data_prevista|date:"d/m/Y" }}</p>
+                        {% if plano.data_conclusao %}
+                        <p><strong>Data de Conclusão:</strong> {{ plano.data_conclusao|date:"d/m/Y" }}</p>
+                        {% endif %}
+                        <p><strong>Custo Estimado:</strong> 
+                            {% if plano.custo_estimado %}
+                            R$ {{ plano.custo_estimado|floatformat:2 }}
+                            {% else %}
+                            Não informado
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5>Descrição da Ação</h5>
+                <p>{{ plano.descricao_acao|linebreaks }}</p>
+
+                {% if plano.recursos_necessarios %}
+                <hr>
+                <h5>Recursos Necessários</h5>
+                <p>{{ plano.recursos_necessarios|linebreaks }}</p>
+                {% endif %}
+
+                {% if plano.observacoes %}
+                <hr>
+                <h5>Observações</h5>
+                <p>{{ plano.observacoes|linebreaks }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Risco Relacionado -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-exclamation-triangle"></i> Risco Relacionado
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5>{{ plano.risco_identificado.agente }}</h5>
+                        <p class="mb-1"><strong>Tipo:</strong> {{ plano.risco_identificado.tipo_risco.nome }}</p>
+                        <p class="mb-1"><strong>Fonte Geradora:</strong> {{ plano.risco_identificado.fonte_geradora|default:"N/A" }}</p>
+                        <p class="mb-1"><strong>GES:</strong> 
+                            {% if plano.risco_identificado.ges %}
+                            <a href="{% url 'pgr_gestao:ges_detail' plano.risco_identificado.ges.pk %}">
+                                {{ plano.risco_identificado.ges.nome }}
+                            </a>
+                            {% else %}N/A{% endif %}
+                        </p>
+                    </div>
+                    <div>
+                        <span class="badge badge-risco-{{ plano.risco_identificado.classificacao_risco }}" style="font-size: 1rem;">
+                            {{ plano.risco_identificado.get_classificacao_risco_display }}
+                        </span>
+                    </div>
+                </div>
+                <hr>
+                <a href="{% url 'pgr_gestao:risco_detail' plano.risco_identificado.pk %}" class="btn btn-sm btn-info">
+                    <i class="fas fa-eye"></i> Ver Detalhes do Risco
+                </a>
+            </div>
+        </div>
+
+        <!-- Acompanhamento -->
+        {% if acompanhamentos %}
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history"></i> Histórico de Acompanhamento
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for acomp in acompanhamentos %}
+                    <div class="timeline-item mb-3">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px;">
+                                    <i class="fas fa-comment"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <h6 class="mb-1">{{ acomp.realizado_por }}</h6>
+                                            <small class="text-muted">{{ acomp.data_acompanhamento|date:"d/m/Y H:i" }}</small>
+                                        </div>
+                                        <p class="mb-1">{{ acomp.descricao }}</p>
+                                        {% if acomp.percentual_conclusao %}
+                                        <div class="progress mt-2" style="height: 20px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ acomp.percentual_conclusao }}%">
+                                                {{ acomp.percentual_conclusao }}%
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Adicionar Acompanhamento -->
+        {% if perms.pgr_gestao.add_acompanhamentoplano and plano.status != 'concluido' %}
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-plus"></i> Adicionar Acompanhamento
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'pgr_gestao:adicionar_acompanhamento' plano.pk %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Descrição do Acompanhamento</label>
+                        <textarea name="descricao" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Percentual de Conclusão (%)</label>
+                                <input type="number" name="percentual_conclusao" class="form-control" 
+                                       min="0" max="100" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salvar Acompanhamento
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Progresso -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-chart-pie"></i> Progresso
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div style="position: relative; height: 200px; width: 200px; margin: 0 auto;">
+                        <canvas id="chartProgresso"></canvas>
+                    </div>
+                </div>
+                <h2>{{ plano.percentual_conclusao|default:0 }}%</h2>
+                <small class="text-muted">Conclusão do Plano</small>
+                
+                {% if plano.esta_atrasado %}
+                <hr>
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Plano Atrasado!</strong><br>
+                    Prazo: {{ plano.data_prevista|date:"d/m/Y" }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt"></i> Timeline
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-calendar-plus text-info"></i>
+                        <strong>Criado:</strong><br>
+                        <small>{{ plano.criado_em|date:"d/m/Y H:i" }}</small>
+                    </li>
+                    {% if plano.status == 'em_andamento' %}
+                    <li class="mb-2">
+                        <i class="fas fa-play text-primary"></i>
+                        <strong>Iniciado:</strong><br>
+                        <small>{{ plano.data_inicio|date:"d/m/Y H:i"|default:"N/A" }}</small>
+                    </li>
+                    {% endif %}
+                    <li class="mb-2">
+                        <i class="fas fa-flag-checkered text-warning"></i>
+                        <strong>Prazo:</strong><br>
+                        <small>{{ plano.data_prevista|date:"d/m/Y" }}</small>
+                    </li>
+                    {% if plano.data_conclusao %}
+                    <li class="mb-2">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <strong>Concluído:</strong><br>
+                        <small>{{ plano.data_conclusao|date:"d/m/Y" }}</small>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        !-- ═══════════════════════════════════════════ -->
+        <!-- ═══ DOCUMENTO PGR VINCULADO ══════════════ -->
+        <!-- ═══════════════════════════════════════════ -->
+        {% if plano.risco_identificado.pgr_documento %}
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-file-alt"></i> Documento PGR Vinculado
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-start mb-3">
+                    <i class="fas fa-file-contract text-primary me-2 fa-lg mt-1"></i>
+                    <div>
+                        <a href="{% url 'pgr_gestao:documento_detail' plano.risco_identificado.pgr_documento.pk %}" 
+                           class="text-decoration-none fw-semibold">
+                            {{ plano.risco_identificado.pgr_documento }}
+                        </a>
+                        <br>
+                        <small class="text-muted">Clique para ver detalhes e enviar arquivos</small>
+                    </div>
+                </div>
+                <a href="{% url 'pgr_gestao:documento_detail' plano.risco_identificado.pgr_documento.pk %}" 
+                   class="btn btn-info btn-sm w-100">
+                    <i class="fas fa-external-link-alt me-1"></i> Abrir Documento PGR
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- ═══ ANEXOS DO PLANO ══════════════════════ -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-paperclip"></i> Anexos do Plano ({{ anexos.count|default:0 }})</span>
+                {% if perms.pgr_gestao.add_anexoplano %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalAnexo">
+                    <i class="fas fa-plus"></i>
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if anexos %}
+                <ul class="list-unstyled mb-0">
+                    {% for anexo in anexos %}
+                    <li class="{% if not forloop.last %}mb-2 pb-2 border-bottom{% endif %} d-flex align-items-start">
+                        {% if '.pdf' in anexo.nome_arquivo %}
+                            <i class="fas fa-file-pdf text-danger me-2 mt-1"></i>
+                        {% elif '.doc' in anexo.nome_arquivo or '.docx' in anexo.nome_arquivo %}
+                            <i class="fas fa-file-word text-primary me-2 mt-1"></i>
+                        {% elif '.xls' in anexo.nome_arquivo or '.xlsx' in anexo.nome_arquivo %}
+                            <i class="fas fa-file-excel text-success me-2 mt-1"></i>
+                        {% elif '.jpg' in anexo.nome_arquivo or '.jpeg' in anexo.nome_arquivo or '.png' in anexo.nome_arquivo %}
+                            <i class="fas fa-file-image text-warning me-2 mt-1"></i>
+                        {% else %}
+                            <i class="fas fa-file text-secondary me-2 mt-1"></i>
+                        {% endif %}
+                        <div>
+                            <a href="{{ anexo.arquivo.url }}" target="_blank" class="text-decoration-none">
+                                {{ anexo.nome_arquivo }}
+                            </a>
+                            {% if anexo.descricao %}
+                            <br><small class="text-muted">{{ anexo.descricao }}</small>
+                            {% endif %}
+                            <br><small class="text-muted">
+                                <i class="fas fa-calendar me-1"></i>{{ anexo.criado_em|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center mb-0">
+                    <i class="fas fa-inbox d-block mb-2" style="font-size: 2rem; opacity: 0.3;"></i>
+                    Nenhum anexo adicionado
+                </p>
+                {% if perms.pgr_gestao.add_anexoplano %}
+                <hr>
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalAnexo">
+                    <i class="fas fa-upload me-1"></i> Adicionar Primeiro Anexo
+                </button>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- ═══ AÇÕES RÁPIDAS (NOVO) ═════════════════ -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <i class="fas fa-bolt"></i> Ações Rápidas
+            </div>
+            <div class="card-body d-grid gap-2">
+                <a href="{% url 'pgr_gestao:relatorio_planos_acao' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-chart-bar me-2"></i> Relatório de Planos de Ação
+                </a>
+                <a href="{% url 'pgr_gestao:relatorio_riscos_classificacao' %}" class="btn btn-outline-warning">
+                    <i class="fas fa-chart-pie me-2"></i> Relatório de Riscos
+                </a>
+                <a href="{% url 'pgr_gestao:plano_acao_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list me-2"></i> Lista de Planos
+                </a>
+                <a href="{% url 'pgr_gestao:cronograma_list' %}" class="btn btn-outline-info">
+                    <i class="fas fa-calendar-alt me-2"></i> Cronograma
+                </a>
+                <a href="{% url 'pgr_gestao:dashboard' %}" class="btn btn-outline-dark">
+                    <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                </a>
+                <a href="{% url 'pgr_gestao:relatorios' %}" class="btn btn-outline-dark">
+                    <i class="fas fa-tachometer-alt me-2"></i> Relatórios
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Adicionar Anexo -->
+<div class="modal fade" id="modalAnexo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-upload me-2"></i>Adicionar Anexo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'pgr_gestao:adicionar_anexo_plano' plano.pk %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nome do Arquivo *</label>
+                        <input type="text" name="nome_arquivo" class="form-control" required 
+                               placeholder="Ex: Relatório de Medição">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Arquivo *</label>
+                        <input type="file" name="arquivo" class="form-control" required
+                               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt">
+                        <small class="text-muted">PDF, DOC, XLS, JPG, PNG (máx. 10MB)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descrição</label>
+                        <textarea name="descricao" class="form-control" rows="2" 
+                                  placeholder="Descrição opcional do anexo"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Salvar Anexo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctxProgresso = document.getElementById('chartProgresso');
+    if (!ctxProgresso) return;
+
+    const percentual = {{ plano.percentual_conclusao|default:0 }};
+
+    new Chart(ctxProgresso, {
+        type: 'doughnut',
+        data: {
+            labels: ['Concluído', 'Pendente'],
+            datasets: [{
+                data: [percentual, 100 - percentual],
+                backgroundColor: [
+                    percentual >= 90 ? '#198754' : percentual >= 70 ? '#0dcaf0' : percentual >= 50 ? '#ffc107' : '#dc3545',
+                    '#e9ecef'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            cutout: '70%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            return ` ${ctx.label}: ${ctx.parsed}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
+

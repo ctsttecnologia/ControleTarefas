@@ -1,51 +1,76 @@
+
+<!-- Template para exibir o formulário de criação/edição de uma Inspeção de Risco -->
 {% extends "base.html" %}
 
-{% block title %}{{ titulo_pagina|default:"Formulário" }}{% endblock %}
+{% block title %}{{ titulo_pagina|default:"Agendar Inspeção" }}{% endblock %}
 
 {% block content %}
-<main class="container py-5">
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-primary text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-calendar-plus me-2"></i>{{ titulo_pagina|default:"Agendar Inspeção" }}
+                    </h4>
+                    <small class="opacity-75">Preencha os dados para agendar uma nova inspeção</small>
+                </div>
+                <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-outline-light">
+                    <i class="bi bi-calendar3 me-1"></i> Ver Calendário
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-header bg-white py-3 border-bottom">
-                    <h2 class="h4 mb-0 fw-semibold">
-                        <i class="bi bi-pencil-square text-primary me-2"></i>
-                        {{ titulo_pagina|default:"Formulário" }}
-                    </h2>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-pencil-square text-primary me-2"></i>Dados da Inspeção
+                    </h6>
                 </div>
-                <div class="card-body p-4 p-md-5">
+                <div class="card-body p-4">
                     <form method="post" novalidate>
                         {% csrf_token %}
 
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
-                            </div>
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                        </div>
                         {% endif %}
 
                         {% for field in form %}
-                            <div class="mb-3">
-                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                                
-                                {{ field }}
-                                
-                                {% if field.help_text %}
-                                    <div class="form-text text-muted small mt-1">{{ field.help_text|safe }}</div>
-                                {% endif %}
-                                
-                                {% if field.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in field.errors %}{{ error }}{% endfor %}
-                                    </div>
-                                {% endif %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                {{ field.label }}
+                                {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            
+                            {{ field }}
+                            
+                            {% if field.help_text %}
+                            <div class="form-text text-muted small">{{ field.help_text|safe }}</div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in field.errors %}{{ error }}{% endfor %}
                             </div>
+                            {% endif %}
+                        </div>
                         {% endfor %}
 
-                        <div class="border-top pt-4 mt-4 d-flex justify-content-end gap-2">
-                            <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-light btn-lg">Cancelar</a>
-                            <button type="submit" class="btn btn-primary btn-lg btn-glow">
+                        <!-- Botões -->
+                        <div class="border-top pt-4 mt-4 d-flex justify-content-between">
+                            <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-check-lg me-1"></i>
-                                {{ botao_submit_texto|default:"Salvar" }}
+                                {{ botao_submit_texto|default:"Agendar Inspeção" }}
                             </button>
                         </div>
                     </form>
@@ -53,5 +78,58 @@
             </div>
         </div>
     </div>
-</main>
+
+</div>
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const equipSelect = document.getElementById('id_equipamento');
+    const entregaSelect = document.getElementById('id_entrega_epi');
+    if (!equipSelect || !entregaSelect) return;
+
+    // Busca o container pai (.mb-3 ou .form-group) para poder esconder/mostrar
+    const entregaWrapper = entregaSelect.closest('.mb-3') 
+                        || entregaSelect.closest('.form-group') 
+                        || entregaSelect.parentElement;
+
+    function toggleEntrega() {
+        // Mostra o campo só se tiver opções além do "--------"
+        if (entregaWrapper) {
+            entregaWrapper.style.display = (entregaSelect.options.length > 1) ? '' : 'none';
+        }
+    }
+
+    // Estado inicial: esconde se vazio
+    toggleEntrega();
+
+    equipSelect.addEventListener('change', function () {
+        const equipId = this.value;
+
+        // Reseta o select
+        entregaSelect.innerHTML = '<option value="">---------</option>';
+
+        if (!equipId) {
+            toggleEntrega();
+            return;
+        }
+
+        // AJAX para buscar entregas do equipamento selecionado
+        fetch(`{% url 'gestao_riscos:entregas_por_equipamento' %}?equipamento_id=${equipId}`)
+            .then(res => res.json())
+            .then(data => {
+                data.entregas.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.texto;
+                    entregaSelect.appendChild(opt);
+                });
+                toggleEntrega();
+            })
+            .catch(err => {
+                console.error('Erro ao buscar entregas:', err);
+                toggleEntrega();
+            });
+    });
+});
+</script>

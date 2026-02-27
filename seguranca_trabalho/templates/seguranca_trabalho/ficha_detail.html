@@ -1,126 +1,239 @@
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
-{% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Ficha de EPI de {{ ficha.funcionario.nome_completo }}{% endblock %}
+{% block title %}Ficha de {{ ficha.funcionario.nome_completo }}{% endblock %}
 
 {% block sst_content %}
-<div id="ficha-imprimivel">
-    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
-        <div>
-            <h1 class="h2">Ficha de Controle de EPIs</h1>
-            <p class="text-muted mb-0">
-                Funcionário: <strong>{{ ficha.funcionario.nome_completo }}</strong><br>
-                Cargo: <strong>{{ ficha.funcionario.cargo.nome }}</strong>
-            </p>
-        </div>
-        <div>
-            {% if user.is_superuser or user.is_gerente or user.is_administrador or user.is_coordenador or user.is_assistente %}
-                <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="btn btn-outline-secondary btn-sm" target="_blank">Gerar PDF</a>
-            {% endif %}
-           {% if user.is_superuser or user.is_gerente or user.is_administrador %}    
-                <a href="{% url 'seguranca_trabalho:ficha_delete' ficha.pk %}" class="btn btn-outline-danger btn-sm">Excluir Ficha</a>
-            {% endif %}
-        </div>
-    </div>
-    {% if user.is_superuser or user.is_gerente or user.is_administrador or user.is_coordenador or user.is_assistente %}
-        <div class="card shadow-sm mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Registrar Nova Entrega</h5>
-            </div>
-            <div class="card-body">
-                <form method="post" action="">
-                    {% csrf_token %}
-                    <div class="row align-items-end">
-                        <div class="col-md-6">
-                            <label for="{{ form.equipamento.id_for_label }}" class="form-label">Equipamento (EPI)</label>
-                            {{ form.equipamento }}
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
-                            {{ form.quantidade }}
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary w-100">Adicionar à Ficha</button>
-                        </div>
-                    </div>
-                    {% if form.errors %}
-                    <div class="alert alert-danger mt-3 small p-2">
-                        <strong>Erro ao adicionar:</strong>
-                        {{ entrega_form.non_field_errors }}
-                        {{ entrega_form.equipamento.errors }}
-                        {{ entrega_form.quantidade.errors }}
-                    </div>
-                {% endif %}
-            </form>
-        </div>
-    {% endif %}    
 
-    <h4 class="mt-4">Histórico de Entregas</h4>
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">Equipamento (EPI)</th>
-                        <th scope="col">Data Entrega</th>
-                        <th scope="col">Data Devolução</th>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for entrega in ficha.entregas.all %}
-                    <tr>
-                        <td>
-                            <strong>{{ entrega.equipamento.nome }}</strong><br>
-                            <small class="text-muted">CA: {{ entrega.equipamento.certificado_aprovacao }}</small>
-                        </td>
-                        <td>{{ entrega.data_entrega|date:"d/m/Y"|default:"—" }}</td>
-                        <td>{{ entrega.data_devolucao|date:"d/m/Y"|default:"—" }}</td>
-                        
-                        {% if not entrega.assinatura_recebimento and not entrega.assinatura_imagem %}
-                            <td><span class="badge bg-warning text-dark">Pendente Assinatura</span></td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-warning btn-sm" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#assinaturaModal"
-                                        data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"  {# Ajuste o nome da URL se for diferente #}
-                                        data-funcionario-nome="{{ ficha.funcionario.nome_completo }}">
-                                    <i class="fas fa-signature me-1"></i> Assinar
-                                </button>
-                            </td>
-                        {% elif not entrega.data_devolucao %}
-                            <td><span class="badge bg-success">Entregue</span></td>
-                            <td class="text-end">
-                                <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline" onsubmit="return confirm('Deseja realmente registrar a devolução deste item?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-info btn-sm">
-                                        <i class="bi bi-arrow-return-left"></i> Devolver
-                                    </button>
-                                </form>
-                            </td>
-                        {% else %}
-                            <td><span class="badge bg-secondary">Devolvido</span></td>
-                            <td class="text-end">
-                                <span class="text-muted fst-italic">Concluído</span>
-                            </td>
-                        {% endif %}
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-4">Nenhuma entrega registrada para esta ficha ainda.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+                {% if ficha.funcionario.foto_3x4 %}
+                <img src="{{ ficha.funcionario.foto_3x4.url }}" alt="" 
+                     class="rounded-circle me-3 border border-2 border-white" 
+                     style="width: 60px; height: 60px; object-fit: cover;">
+                {% else %}
+                <div class="rounded-circle bg-white bg-opacity-20 me-3 d-flex align-items-center justify-content-center" 
+                     style="width: 60px; height: 60px;">
+                    <i class="bi bi-person fs-3"></i>
+                </div>
+                {% endif %}
+                <div>
+                    <h4 class="mb-0">{{ ficha.funcionario.nome_completo }}</h4>
+                    <small class="opacity-75">
+                        {{ ficha.funcionario.cargo.nome|default:"Sem cargo" }} • 
+                        Matrícula: {{ ficha.funcionario.matricula|default:"N/A" }}
+                    </small>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+                <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="btn btn-light">
+                    <i class="bi bi-file-pdf me-1"></i> PDF
+                </a>
+                <!-- Assinatura do Termo -->
+                {% if not ficha.assinatura_funcionario %}
+                    <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}"
+                    class="btn btn-warning btn-sm text-white">
+                        <i class="bi bi-pen"></i> Assinar Termo
+                    </a>
+                {% else %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                        <i class="bi bi-check-circle"></i> Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
+                    </span>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
 
-{% include 'seguranca_trabalho/partials/_modal_assinatura.html' %}
-{% endblock sst_content %}
+<div class="row g-4">
+    <!-- Coluna Principal: Entregas -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-box-seam me-2"></i>Entregas de EPI
+                </h6>
+                <span class="badge bg-primary">{{ entregas.count }} registros</span>
+            </div>
+            <div class="card-body p-0">
+                {% if entregas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Equipamento</th>
+                                <th>CA</th>
+                                <th class="text-center">Qtd</th>
+                                <th>Data Entrega</th>
+                                <th>Vencimento</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entrega in entregas %}
+                            <tr>
+                                <td>
+                                    <strong>{{ entrega.equipamento.nome }}</strong>
+                                    {% if entrega.numero_serie %}
+                                    <br><small class="text-muted">N/S: {{ entrega.numero_serie }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entrega.equipamento.certificado_aprovacao %}
+                                    <span class="badge bg-light text-dark border">{{ entrega.equipamento.certificado_aprovacao }}</span>
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ entrega.quantidade }}</td>
+                                <td>{{ entrega.data_entrega|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if entrega.data_vencimento_uso %}
+                                    {{ entrega.data_vencimento_uso|date:"d/m/Y" }}
+                                    {% else %}
+                                    <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if entrega.status == "Devolvido" %}
+                                    <span class="badge bg-secondary">Devolvido</span>
+                                    {% elif entrega.status == "Pendente Assinatura" %}
+                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                    {% elif entrega.status == "Vencido" %}
+                                    <span class="badge bg-danger">Vencido</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Ativo</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        {% if not entrega.data_assinatura and not entrega.data_devolucao %}
+                                        <button type="button" class="btn btn-outline-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#assinaturaModal"
+                                                data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"
+                                                data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
+                                                title="Assinar">
+                                            <i class="bi bi-pen"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if not entrega.data_devolucao %}
+                                        <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Registrar Devolução"
+                                                    onclick="return confirm('Confirma a devolução deste EPI?')">
+                                                <i class="bi bi-box-arrow-in-left"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-inbox text-muted fs-1"></i>
+                    <p class="text-muted mt-2">Nenhuma entrega registrada.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-{% block extra_js %}
-    <script src="{% static 'js/script_assinatura.js' %}"></script>
-{% endblock extra_js %}
+    <!-- Coluna Lateral: Nova Entrega -->
+    <div class="col-lg-4">
+        <!-- Dados do Funcionário -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-person me-2"></i>Dados do Funcionário
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">Admissão</small>
+                    <p class="mb-0 fw-semibold">{{ ficha.funcionario.data_admissao|date:"d/m/Y"|default:"—" }}</p>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Departamento</small>
+                    <p class="mb-0 fw-semibold">{{ ficha.funcionario.departamento.nome|default:"—" }}</p>
+                </div>
+                <div>
+                    <small class="text-muted">Filial</small>
+                    <p class="mb-0 fw-semibold">{{ ficha.filial.nome|default:"—" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nova Entrega -->
+        {% if perms.seguranca_trabalho.add_entregaepi %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-plus-circle me-2"></i>Nova Entrega
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.equipamento.id_for_label }}" class="form-label fw-semibold">
+                            Equipamento <span class="text-danger">*</span>
+                        </label>
+                        {% render_field form.equipamento class+="form-select" %}
+                        {% for error in form.equipamento.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="{{ form.quantidade.id_for_label }}" class="form-label fw-semibold">
+                                Quantidade
+                            </label>
+                            {% render_field form.quantidade class+="form-control" %}
+                        </div>
+                        <div class="col-6">
+                            <label for="{{ form.lote.id_for_label }}" class="form-label fw-semibold">
+                                Lote
+                            </label>
+                            {% render_field form.lote class+="form-control" %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.numero_serie.id_for_label }}" class="form-label fw-semibold">
+                            Número de Série
+                        </label>
+                        {% render_field form.numero_serie class+="form-control" %}
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg me-1"></i> Registrar Entrega
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de Assinatura -->
+{% include "seguranca_trabalho/partials/_modal_assinatura.html" %}
+
+{% endblock %}

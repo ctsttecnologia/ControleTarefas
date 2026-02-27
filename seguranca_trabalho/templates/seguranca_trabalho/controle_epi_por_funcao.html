@@ -1,4 +1,5 @@
 
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load i18n %}
 {% load sst_extras %}
@@ -7,139 +8,141 @@
 
 {% block extra_css %}
 <style>
-    /* --- Paleta de Cores Azul --- */
     :root {
-        --cor-primaria-azul: #0d6efd;      /* Azul principal (Bootstrap) */
-        --cor-cabecalho-azul: #4678b4;   /* Azul mais escuro para cabeçalhos */
-        --cor-coluna-fixa-azul: #f0f5fa;  /* Azul bem claro para coluna de função */
-        --cor-borda-azul: #b0c4de;       /* Azul claro acinzentado para bordas */
-        --cor-hover-azul: #e2eefd;       /* Azul para efeito hover na linha */
-        --cor-texto-claro: #ffffff;
-        --cor-fundo-geral: #ffffff;
+        --cor-primaria: #0d6efd;
+        --cor-cabecalho: #4678b4;
+        --cor-coluna-fixa: #f0f5fa;
+        --cor-borda: #dee2e6;
+        --cor-hover: #e2eefd;
     }
 
-    .matriz-table-wrapper {
-        overflow-x: auto; /* Permite rolagem horizontal */
-        max-height: 70vh; /* Altura máxima para a tabela */
-        overflow-y: auto;
+    .matriz-wrapper {
+        overflow: auto;
+        max-height: 70vh;
+        border: 1px solid var(--cor-borda);
+        border-radius: 0.375rem;
     }
+
     .matriz-table {
         border-collapse: separate;
         border-spacing: 0;
+        margin: 0;
     }
-    .matriz-table th, .matriz-table td {
-        border: 1px solid var(--cor-borda-azul);
+
+    .matriz-table th,
+    .matriz-table td {
+        border: 1px solid var(--cor-borda);
         padding: 0.5rem;
         text-align: center;
         vertical-align: middle;
         white-space: nowrap;
-        background-color: var(--cor-fundo-geral);
+        background-color: #fff;
+        font-size: 0.875rem;
     }
 
-    /* Cabeçalho superior (Equipamentos) */
     .matriz-table thead th {
         position: sticky;
         top: 0;
-        background-color: var(--cor-cabecalho-azul);
-        color: var(--cor-texto-claro);
+        background-color: var(--cor-cabecalho);
+        color: #fff;
         z-index: 2;
+        font-weight: 600;
     }
 
-    /* Cabeçalho da primeira coluna (Funções) */
     .matriz-table tbody th {
         position: sticky;
         left: 0;
-        background-color: var(--cor-coluna-fixa-azul);
+        background-color: var(--cor-coluna-fixa);
         z-index: 1;
         text-align: left;
         min-width: 200px;
         font-weight: 600;
     }
-    
-    /* Efeito de hover para destacar a linha inteira */
-    .matriz-table tbody tr:hover th,
-    .matriz-table tbody tr:hover td {
-        background-color: var(--cor-hover-azul);
-    }
-    
-    /* Canto superior esquerdo ("Função") */
+
     .matriz-table thead th:first-child {
         left: 0;
         z-index: 3;
     }
 
-    matriz-table tbody th {
-        position: sticky;
-        left: 0;
-        background-color: var(--cor-coluna-fixa-azul);
-        z-index: 1;
-        text-align: left;
-        min-width: 250px; /* Aumentei um pouco para melhor visualização de nomes longos */
-        font-weight: 600;
+    .matriz-table tbody tr:hover th,
+    .matriz-table tbody tr:hover td {
+        background-color: var(--cor-hover);
+    }
+
+    .matriz-table input[type="number"] {
+        width: 70px;
+        text-align: center;
     }
 
     .matriz-table input[type="number"]:focus {
-        border-color: #86b7fe;
-        outline: 0;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-    }
-    /* Adicione estas regras ao final do seu bloco <style> */
-    .matriz-table thead th {
-        position: relative; /* Necessário para posicionar o manipulador dentro do th */
-    }
-
-    .resize-handle {
-        position: absolute;
-        top: 0;
-        right: -5px; /* Posiciona um pouco fora para facilitar a captura */
-        width: 10px; /* Área de clique maior */
-        height: 100%;
-        cursor: col-resize; /* Muda o cursor para indicar que é redimensionável */
-        z-index: 10; /* Garante que fique sobre outros elementos */
+        border-color: var(--cor-primaria);
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
 </style>
 {% endblock %}
 
 {% block sst_content %}
-<div class="d-flex justify-content-between align-items-center mb-0 pb-2 border-bottom">
-    <div>
-        <h1 class="h2 small">{{ titulo_pagina }}</h1>
-        
-    </div>
-</div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    
-    <div>
-        <h2>Controle de EPI por Função</h2>
-        <p class="text-muted mb-0">{% trans "Defina a frequência de troca (em meses) para cada EPI por função. Deixe em branco ou 0 para 'Quando Necessário'." %}</p>
-    </div>   
-        <button type="button" class="btn btn-primary"
-            hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
-            hx-target="#modal-content"
-            data-bs-toggle="modal"
-            data-bs-target="#genericModal"> <i class="fas fa-plus me-1"></i> Nova Função
-        </button>
-    
-    <div class="modal fade" id="genericModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content" id="modal-content">
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-grid-3x3 me-2"></i>{{ titulo_pagina }}
+                </h4>
+                <small class="opacity-75">
+                    {% trans "Defina a frequência de troca (em meses) para cada EPI por função" %}
+                </small>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-light"
+                        hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
+                        hx-target="#modal-content"
+                        data-bs-toggle="modal"
+                        data-bs-target="#genericModal">
+                    <i class="bi bi-plus-circle me-1"></i> Nova Função
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Legenda -->
+<div class="alert alert-info d-flex align-items-center mb-4">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <small>
+        <strong>QN</strong> = Quando Necessário (deixe em branco ou 0). 
+        Valores numéricos indicam a frequência de troca em <strong>meses</strong>.
+    </small>
+</div>
+
+<!-- Card Principal -->
 <div class="card shadow-sm">
-    <div class="card-body">
-        <form method="post">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="bi bi-table me-2"></i>Matriz de EPIs por Função
+        </h6>
+        <span class="badge bg-secondary">
+            {{ funcoes|length }} funções × {{ equipamentos|length }} equipamentos
+        </span>
+    </div>
+    <div class="card-body p-0">
+        <form method="post" id="matrizForm">
             {% csrf_token %}
-            <div class="matriz-table-wrapper">
-                <table class="table table-bordered matriz-table">
+            
+            {% if funcoes and equipamentos %}
+            <div class="matriz-wrapper">
+                <table class="table matriz-table">
                     <thead>
                         <tr>
-                            <th style="min-width: 200px;">{% trans "Função" %}</th>
+                            <th style="min-width: 200px;">
+                                <i class="bi bi-briefcase me-1"></i> {% trans "Função" %}
+                            </th>
                             {% for equipamento in equipamentos %}
-                                <th>{{ equipamento.nome }}</th>
+                            <th title="{{ equipamento.nome }}">
+                                {{ equipamento.nome|truncatechars:20 }}
+                            </th>
                             {% endfor %}
                         </tr>
                     </thead>
@@ -148,78 +151,51 @@
                         <tr>
                             <th>{{ funcao.nome }}</th>
                             {% for equipamento in equipamentos %}
-                                {% with frequencia=matriz_data|get_item:funcao.id|get_item:equipamento.id %}
-                                <td>
-                                    <input type="number" 
-                                           name="freq_{{ funcao.id }}_{{ equipamento.id }}" 
-                                           class="form-control form-control-sm"
-                                           value="{{ matriz_data|get_item:funcao.id|get_item:equipamento.id|default:'' }}"
-                                           min="0"
-                                           placeholder="QN">
-                                </td>
-                                {% endwith %}
+                            <td>
+                                <input type="number" 
+                                       name="freq_{{ funcao.id }}_{{ equipamento.id }}" 
+                                       class="form-control form-control-sm"
+                                       value="{{ matriz_data|get_item:funcao.id|get_item:equipamento.id|default:'' }}"
+                                       min="0"
+                                       max="120"
+                                       placeholder="QN">
+                            </td>
                             {% endfor %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex justify-content-end mt-4 pt-3 border-top">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-circle me-1"></i> {% trans "Salvar Alterações na Matriz" %}
-                </button>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-grid text-muted fs-1"></i>
+                <h6 class="mt-3 text-muted">Nenhum dado para exibir</h6>
+                <p class="text-muted small">
+                    {% if not funcoes %}Cadastre funções primeiro.{% endif %}
+                    {% if not equipamentos %}Cadastre equipamentos primeiro.{% endif %}
+                </p>
             </div>
+            {% endif %}
         </form>
     </div>
-</div>
-{% comment %} O ideal é colocar este script em um arquivo JS separado 
-ou em um bloco {% block extra_js %} no seu _base.html {% endcomment %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const table = document.querySelector('.matriz-table');
-    if (!table) return;
-
-    const headers = table.querySelectorAll('thead th');
     
-    headers.forEach((header, index) => {
-        // Não adiciona manipulador à primeira coluna ("Função")
-        if (index === 0) {
-            return;
-        }
+    {% if funcoes and equipamentos %}
+    <div class="card-footer bg-light">
+        <div class="d-flex justify-content-end">
+            <button type="submit" form="matrizForm" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-lg me-1"></i> {% trans "Salvar Matriz" %}
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
 
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'resize-handle';
-        header.appendChild(resizeHandle);
+<!-- Modal Genérico -->
+<div class="modal fade" id="genericModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+</div>
 
-        resizeHandle.addEventListener('mousedown', function(e) {
-            e.preventDefault(); // Impede a seleção de texto durante o arraste
-            
-            const startX = e.pageX;
-            const startWidth = header.offsetWidth;
-
-            function onMouseMove(e) {
-                const newWidth = startWidth + (e.pageX - startX);
-                // Define uma largura mínima para as colunas
-                if (newWidth > 50) { 
-                    header.style.width = newWidth + 'px';
-                }
-            }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-                // Opcional: Altera o cursor do body para evitar que o cursor 'col-resize' persista
-                document.body.style.cursor = ''; 
-            }
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-            // Opcional: Garante que o cursor mude em toda a página durante o arraste
-            document.body.style.cursor = 'col-resize';
-        });
-    });
-});
-</script>
 {% endblock %}
-
 

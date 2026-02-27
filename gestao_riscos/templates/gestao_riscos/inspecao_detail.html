@@ -1,88 +1,249 @@
 
-{% extends "base.html" %} {% comment %} Ajuste para seu template base {% endcomment %}
+
+<!-- Template para exibir detalhes de uma Inspeção de Risco -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalhes da Inspeção{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">Detalhes da Inspeção</h4>
-                    
-                    {% comment %} Badge de Status (com cores) {% endcomment %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-primary text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-clipboard2-pulse me-2"></i>Detalhes da Inspeção
+                    </h4>
+                    <small class="opacity-75">
+                        {% if inspecao.entrega_epi %}
+                            Item: {{ inspecao.entrega_epi.equipamento.nome }}
+                        {% else %}
+                            Equipamento: {{ inspecao.equipamento.nome }}
+                        {% endif %}
+                    </small>
+                </div>
+                <div class="d-flex gap-2">
+                    <!-- Badge de Status -->
                     {% if inspecao.status == 'CONCLUIDA' %}
-                        <span class="badge bg-success fs-6">{{ inspecao.get_status_display }}</span>
+                        <span class="badge bg-success fs-6 d-flex align-items-center">
+                            <i class="bi bi-check-circle me-1"></i> {{ inspecao.get_status_display }}
+                        </span>
                     {% elif inspecao.status == 'PENDENTE_APROVACAO' %}
-                        <span class="badge bg-warning text-dark fs-6">{{ inspecao.get_status_display }}</span>
+                        <span class="badge bg-warning text-dark fs-6 d-flex align-items-center">
+                            <i class="bi bi-clock me-1"></i> {{ inspecao.get_status_display }}
+                        </span>
                     {% else %}
-                        <span class="badge bg-primary fs-6">{{ inspecao.get_status_display }}</span>
-                    {% endif %}
-                </div>
-                
-                <div class="card-body">
-                    {% comment %} Verifica se a inspeção é de um item rastreável (EntregaEPI) {% endcomment %}
-                    {% if inspecao.entrega_epi %}
-                        <h5 class="card-title">
-                            Inspeção de Item Específico ({{ inspecao.entrega_epi.equipamento.nome }})
-                        </h5>
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item"><strong>Equipamento:</strong> {{ inspecao.entrega_epi.equipamento.nome }}</li>
-                            <li class="list-group-item"><strong>Nº de Série:</strong> {{ inspecao.entrega_epi.numero_serie|default:"N/A" }}</li>
-                            <li class="list-group-item"><strong>Funcionário:</strong> {{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}</li>
-                        </ul>
-                    {% else %}
-                        <h5 class="card-title">
-                            Inspeção de Equipamento ({{ inspecao.equipamento.nome }})
-                        </h5>
-                    {% endif %}
-
-                    <hr>
-
-                    {% comment %} Detalhes Comuns da Inspeção {% endcomment %}
-                    <h5 class="mt-3">Detalhes do Agendamento</h5>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item">
-                            <strong>Data Agendada:</strong> {{ inspecao.data_agendada|date:"d/m/Y" }}
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Responsável:</strong> 
-                            {{ inspecao.responsavel.get_full_name|default:"Aguardando atribuição" }}
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Data de Realização:</strong> 
-                            {{ inspecao.data_realizacao|date:"d/m/Y"|default:"--" }}
-                        </li>
-                        <li class="list-group-item">
-                            <strong>Observações:</strong>
-                            <p class="text-muted mb-0">{{ inspecao.observacoes|default:"Nenhuma observação registrada."|linebreaksbr }}</p>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="card-footer text-end">
-                    <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-secondary">
-                        <i class="bi bi-calendar-event"></i> Voltar ao Calendário
-                    </a>
-                    
-                    {% comment %} Botão para marcar como 'Pendente' (Confirmar) {% endcomment %}
-                    {% if inspecao.status == 'PENDENTE_APROVACAO' and perms.gestao_riscos.change_inspecao %}
-                    <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST" class="d-inline ms-2">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-circle"></i> Confirmar e Assumir
-                        </button>
-                    </form>
-                    {% endif %}
-
-                    {% comment %} Botão para 'Completar' (ir para o formulário de conclusão) {% endcomment %}
-                    {% if inspecao.status == 'PENDENTE' and perms.gestao_riscos.change_inspecao %}
-                    <a href="{% url 'gestao_riscos:inspecao_completar' inspecao.pk %}" class="btn btn-primary ms-2">
-                        <i class="bi bi-clipboard2-check"></i> Completar Inspeção
-                    </a>
+                        <span class="badge bg-info fs-6 d-flex align-items-center">
+                            <i class="bi bi-hourglass-split me-1"></i> {{ inspecao.get_status_display }}
+                        </span>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row g-4">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            
+            <!-- Card: Informações do Item -->
+            {% if inspecao.entrega_epi %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-box-seam text-primary me-2"></i>Informações do Item Rastreável
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Equipamento</label>
+                            <p class="fw-semibold mb-0">{{ inspecao.entrega_epi.equipamento.nome }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Nº de Série</label>
+                            <p class="fw-semibold mb-0">
+                                <code>{{ inspecao.entrega_epi.numero_serie|default:"N/A" }}</code>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Funcionário</label>
+                            <p class="fw-semibold mb-0">{{ inspecao.entrega_epi.ficha.funcionario.nome_completo }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Data de Entrega</label>
+                            <p class="fw-semibold mb-0">{{ inspecao.entrega_epi.data_entrega|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Card: Detalhes do Agendamento -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-calendar-event text-primary me-2"></i>Detalhes do Agendamento
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Equipamento</label>
+                            <p class="fw-semibold mb-0">{{ inspecao.equipamento.nome|default:"—" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Data Agendada</label>
+                            <p class="fw-semibold mb-0">
+                                <i class="bi bi-calendar3 text-primary me-1"></i>
+                                {{ inspecao.data_agendada|date:"d/m/Y" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Responsável</label>
+                            <p class="fw-semibold mb-0">
+                                <i class="bi bi-person text-secondary me-1"></i>
+                                {{ inspecao.responsavel.get_full_name|default:"Aguardando atribuição" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Data de Realização</label>
+                            <p class="fw-semibold mb-0">
+                                {% if inspecao.data_realizacao %}
+                                    <i class="bi bi-check-circle text-success me-1"></i>
+                                    {{ inspecao.data_realizacao|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Observações</label>
+                            <div class="bg-light rounded p-3">
+                                {{ inspecao.observacoes|default:"Nenhuma observação registrada."|linebreaksbr }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Coluna Lateral: Ações -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning text-warning me-2"></i>Ações
+                    </h6>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    
+                    <!-- Voltar ao Calendário -->
+                    <a href="{% url 'gestao_riscos:calendario' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-calendar3 me-2"></i> Voltar ao Calendário
+                    </a>
+
+                    <!-- Confirmar (se Pendente de Aprovação) -->
+                    {% if inspecao.status == 'PENDENTE_APROVACAO' and perms.gestao_riscos.change_inspecao %}
+                    <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-circle me-2"></i> Confirmar e Assumir
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <!-- Completar (se Pendente) -->
+                    {% if inspecao.status == 'PENDENTE' and perms.gestao_riscos.change_inspecao %}
+                    <a href="{% url 'gestao_riscos:inspecao_completar' inspecao.pk %}" class="btn btn-primary">
+                        <i class="bi bi-clipboard2-check me-2"></i> Completar Inspeção
+                    </a>
+                    {% endif %}
+
+                    <!-- Info se já concluída -->
+                    {% if inspecao.status == 'CONCLUIDA' %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <strong>Inspeção concluída</strong>
+                        <br>
+                        <small>Realizada em {{ inspecao.data_realizacao|date:"d/m/Y" }}</small>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <!-- Timeline de Status -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock-history text-info me-2"></i>Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 32px; height: 32px;">
+                                <i class="bi bi-check"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted">Criada</small>
+                                <p class="mb-0 small">Inspeção agendada</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle {% if inspecao.status != 'PENDENTE_APROVACAO' %}bg-success text-white{% else %}bg-warning text-dark{% endif %} d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 32px; height: 32px;">
+                                {% if inspecao.status != 'PENDENTE_APROVACAO' %}
+                                <i class="bi bi-check"></i>
+                                {% else %}
+                                <i class="bi bi-hourglass-split"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <small class="text-muted">Confirmação</small>
+                                <p class="mb-0 small">
+                                    {% if inspecao.status == 'PENDENTE_APROVACAO' %}
+                                        Aguardando
+                                    {% else %}
+                                        Confirmada
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle {% if inspecao.status == 'CONCLUIDA' %}bg-success text-white{% else %}bg-light text-muted{% endif %} d-flex align-items-center justify-content-center me-3" 
+                                 style="width: 32px; height: 32px;">
+                                {% if inspecao.status == 'CONCLUIDA' %}
+                                <i class="bi bi-check"></i>
+                                {% else %}
+                                <i class="bi bi-circle"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <small class="text-muted">Conclusão</small>
+                                <p class="mb-0 small">
+                                    {% if inspecao.status == 'CONCLUIDA' %}
+                                        Finalizada
+                                    {% else %}
+                                        Pendente
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
+

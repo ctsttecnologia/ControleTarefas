@@ -1,0 +1,182 @@
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
+
+{% block title %}Assinar Entrega de EPI{% endblock %}
+
+{% block sst_content %}
+
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-pen me-2"></i>Assinatura de Recebimento
+                </h4>
+                <small class="opacity-75">{{ entrega.ficha.funcionario.nome_completo }}</small>
+            </div>
+            <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        
+        <!-- Info do EPI -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-box-seam me-2"></i>Detalhes da Entrega
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Equipamento</label>
+                        <p class="fw-semibold mb-0">{{ entrega.equipamento.nome }}</p>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Quantidade</label>
+                        <p class="fw-semibold mb-0">{{ entrega.quantidade }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted small">Data de Entrega</label>
+                        <p class="fw-semibold mb-0">{{ entrega.data_entrega|date:"d/m/Y" }}</p>
+                    </div>
+                    {% if entrega.numero_serie %}
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Número de Série</label>
+                        <p class="fw-semibold mb-0"><code>{{ entrega.numero_serie }}</code></p>
+                    </div>
+                    {% endif %}
+                    {% if entrega.lote %}
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Lote</label>
+                        <p class="fw-semibold mb-0">{{ entrega.lote }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Assinatura -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-pen me-2"></i>Campo de Assinatura
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" id="formAssinatura" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form }}
+                    <!-- ... signature_pad canvas, botões, etc. ... -->
+                    <input type="hidden" name="assinatura_base64" id="assinatura_base64">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-person-check me-2"></i>
+                        Eu, <strong>{{ entrega.ficha.funcionario.nome_completo }}</strong>, confirmo o recebimento do EPI acima descrito.
+                    </div>
+
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#draw-pane" type="button">
+                                <i class="bi bi-pencil me-1"></i> Desenhar
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button">
+                                <i class="bi bi-upload me-1"></i> Upload
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content border border-top-0 rounded-bottom p-3">
+                        <!-- Tab: Desenhar -->
+                        <div class="tab-pane fade show active" id="draw-pane">
+                            <label class="form-label fw-semibold">Assine no campo abaixo:</label>
+                            <div class="border rounded bg-white" style="height: 200px;">
+                                <canvas id="signature-canvas" style="width: 100%; height: 100%; cursor: crosshair;"></canvas>
+                            </div>
+                            <input type="hidden" name="assinatura_base64" id="assinatura_base64">
+                            <small class="text-muted">Use o mouse ou toque para assinar</small>
+                        </div>
+                        
+                        <!-- Tab: Upload -->
+                        <div class="tab-pane fade" id="upload-pane">
+                            <label for="assinatura_imagem" class="form-label fw-semibold">Upload de imagem:</label>
+                            <input type="file" class="form-control" name="assinatura_imagem" accept="image/png, image/jpeg">
+                            <small class="text-muted">Formatos aceitos: PNG, JPEG</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary" id="clear-signature">
+                                <i class="bi bi-eraser me-1"></i> Limpar
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="btn btn-outline-secondary">
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-lg me-1"></i> Confirmar Assinatura
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('signature-canvas');
+    const clearBtn = document.getElementById('clear-signature');
+    const hiddenInput = document.getElementById('assinatura_base64');
+    const form = document.getElementById('formAssinatura');
+    
+    let signaturePad;
+
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        if (signaturePad) signaturePad.clear();
+    }
+
+    signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255, 255, 255)',
+        penColor: 'rgb(0, 0, 0)'
+    });
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    clearBtn.addEventListener('click', function() {
+        signaturePad.clear();
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (signaturePad && !signaturePad.isEmpty()) {
+            hiddenInput.value = signaturePad.toDataURL('image/png');
+        }
+    });
+});
+</script>
+{% endblock %}
+

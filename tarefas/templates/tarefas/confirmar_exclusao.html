@@ -1,190 +1,53 @@
 
-{% load static %}
+   <!-- templates/tarefas/confirmar_exclusao.html -->
+{% extends 'base.html' %}
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Excluir Tarefa{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/global.css' %}">
-    <style>
-        /* Reset e estilos base */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-        
-        /* Container principal */
-        .container {
-            max-width: 600px;
-            width: 90%;
-            margin: 2rem auto;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        
-        /* Cabeçalho */
-        .header {
-            width: 100%;
-            text-align: center;
-            margin-top: 2rem;
-        }
-        
-        .header h1 {
-            font-size: 2rem;
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-        
-        .header p {
-            font-size: 1.1rem;
-            color: #7f8c8d;
-            margin-bottom: 2rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        /* Formulário */
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        
-        /* Botões */
-        .btn-danger, .btn-secondary, .btn_tarefas {
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            border: none;
-            font-size: 1rem;
-            margin: 0.25rem;
-        }
-        
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background-color: #c0392b;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-secondary {
-            background-color: #3498db;
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn_tarefas {
-            background-color: #2ecc71;
-            color: white;
-        }
-        
-        .btn_tarefas:hover {
-            background-color: #27ae60;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Grupo de botões */
-        .btn-group {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-top: 1.5rem;
-        }
-        
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1.5rem;
-                width: 95%;
-            }
-            
-            .header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .header p {
-                font-size: 1rem;
-            }
-            
-            .btn-group {
-                flex-direction: column;
-                gap: 0.75rem;
-            }
-            
-            .btn-danger, .btn-secondary, .btn_tarefas {
-                width: 100%;
-                margin: 0.125rem 0;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .header h1 {
-                font-size: 1.3rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <header>
-            <nav>
-                {% block content %}
-                <h1>Excluir Tarefa</h1>
-                <p>Tem certeza que deseja excluir a tarefa "{{ tarefa.titulo }}"?</p>
-                {% endblock %}
-            </nav>  
-        </header>
-    </div>
-    
-    <div class="container">
-        <form method="post">
-            {% csrf_token %}
-            <div class="btn-group">
-                <button type="submit" class="btn-danger">Confirmar Exclusão</button>
-                <a href="{% url 'tarefas:listar_tarefas' %}" class="btn-secondary">Cancelar</a>
-                <a href="{% url 'tarefas:listar_tarefas' %}" class="btn_tarefas">Voltar para Tarefas</a>
+{% block title %}Excluir Tarefa{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white text-center py-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
+                    <span class="fw-semibold">Confirmar Exclusão</span>
+                </div>
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
+                         style="width: 80px; height: 80px;">
+                        <i class="bi bi-trash text-danger fs-1"></i>
+                    </div>
+
+                    <h5 class="mb-3">Deseja realmente excluir?</h5>
+
+                    <div class="alert alert-warning py-3">
+                        <i class="bi bi-clipboard-check me-2"></i>
+                        <strong>"{{ object.titulo }}"</strong>
+                    </div>
+
+                    <p class="text-muted small">
+                        <i class="bi bi-exclamation-circle me-1"></i>
+                        Esta ação não poderá ser desfeita. Todos os comentários e históricos serão removidos.
+                    </p>
+                </div>
+                <div class="card-footer bg-light py-3">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> Sim, Excluir
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </form>
+
+        </div>
     </div>
-</body>
-</html>
-
-
+</div>
+{% endblock %}

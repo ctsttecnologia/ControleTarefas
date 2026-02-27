@@ -1,31 +1,50 @@
 
 
+{# templates/seguranca_trabalho/partials/funcao_form_fields.html #}
 {% load crispy_forms_tags %}
 
 <div class="row g-3">
+    <!-- Nome -->
     <div class="col-md-8">
-        {{ form.nome|as_crispy_field }}
+        <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
+            Nome da Função <span class="text-danger">*</span>
+        </label>
+        {{ form.nome }}
+        {% if form.nome.errors %}
+        <div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>
+        {% endif %}
     </div>
 
-    <div class="col-md-4 d-flex align-items-center pt-3">
-        <div class="form-check form-switch fs-5">
+    <!-- Ativo -->
+    <div class="col-md-4 d-flex align-items-center pt-md-4">
+        <div class="form-check form-switch">
             {{ form.ativo }}
-            <label class="form-check-label pt-1" for="{{ form.ativo.id_for_label }}">
+            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
                 Cadastro Ativo
             </label>
         </div>
     </div>
 
+    <!-- Descrição -->
     <div class="col-12">
-        {% csrf_token %}
-        {{ form.descricao|as_crispy_field }}
+        <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
+            Descrição das Atividades
+        </label>
+        {{ form.descricao }}
+        {% if form.descricao.errors %}
+        <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
+        {% endif %}
+        <small class="form-text text-muted">Descreva as principais atividades desta função</small>
     </div>
     
+    <!-- Erros não relacionados a campos -->
     {% if form.non_field_errors %}
     <div class="col-12">
-        <div class="alert alert-danger">
+        <div class="alert alert-danger mb-0">
             {{ form.non_field_errors }}
         </div>
     </div>
     {% endif %}
 </div>
+
+
