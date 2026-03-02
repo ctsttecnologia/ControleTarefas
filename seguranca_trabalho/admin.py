@@ -168,4 +168,5 @@ class MovimentacaoEstoqueAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, a
     autocomplete_fields = ['equipamento', 'responsavel', 'fornecedor', 'entrega_associada']
     readonly_fields = ('filial', 'data',)
 
+
    

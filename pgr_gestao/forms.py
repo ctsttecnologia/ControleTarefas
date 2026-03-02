@@ -26,6 +26,7 @@ from .models import (
     AvaliacaoQuantitativa,
     #MedidaControleRisco
 )
+from pgr_gestao.models import AnexoPGR
 
 
 # ========================================
@@ -620,3 +621,98 @@ class PlanoAcaoPGRForm(forms.ModelForm):
             self.fields['risco_identificado'].initial = risco_inicial
             # Limita as opções de risco se um já foi pré-selecionado
             self.fields['risco_identificado'].queryset = RiscoIdentificado.objects.filter(pk=risco_inicial)
+
+class AnexoPGRForm(forms.ModelForm):
+    """Formulário para upload de anexos do PGR"""
+
+    class Meta:
+        model = AnexoPGR
+        fields = [
+            'tipo_anexo', 'numero_romano', 'titulo',
+            'descricao', 'arquivo', 'incluir_no_pdf', 'ordem'
+        ]
+        widgets = {
+            'tipo_anexo': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'id_tipo_anexo'
+            }),
+            'numero_romano': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Auto (I, II, III...)',
+            }),
+            'titulo': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: ANÁLISE QUANTITATIVA DE RUÍDO',
+                'id': 'id_titulo_anexo'
+            }),
+            'descricao': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Observações sobre este anexo (opcional)'
+            }),
+            'arquivo': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png'
+            }),
+            'incluir_no_pdf': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'ordem': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'placeholder': 'Auto'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['numero_romano'].required = False
+        self.fields['titulo'].required = False
+        self.fields['descricao'].required = False
+        self.fields['ordem'].required = False
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo:
+            # Validar tamanho (50MB)
+            if arquivo.size > 50 * 1024 * 1024:
+                raise forms.ValidationError('Arquivo muito grande. Máximo permitido: 50MB.')
+            # Validar extensão
+            ext = arquivo.name.rsplit('.', 1)[-1].lower() if '.' in arquivo.name else ''
+            extensoes_validas = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png']
+            if ext not in extensoes_validas:
+                raise forms.ValidationError(
+                    f'Extensão .{ext} não permitida. Extensões válidas: {", ".join(extensoes_validas)}'
+                )
+        return arquivo
+
+
+class AnexoPGRMultipleForm(forms.Form):
+    """Formulário para upload múltiplo de anexos"""
+
+    tipo_anexo = forms.ChoiceField(
+        choices=AnexoPGR.TIPO_ANEXO_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Tipo de Anexo'
+    )
+    titulo = forms.CharField(
+        max_length=300,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Preenchido automaticamente pelo tipo'
+        }),
+        label='Título'
+    )
+    incluir_no_pdf = forms.BooleanField(
+        initial=True,
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Incluir como Anexo no PDF'
+    )
+
+    # Campo de arquivo SEM widget Django — o HTML do input
+    # com multiple é feito diretamente no template.
+    # Aqui apenas validamos no backend via request.FILES.getlist()
+
+      
