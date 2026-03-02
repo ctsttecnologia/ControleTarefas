@@ -140,6 +140,13 @@ urlpatterns = [
     path('ajax/ges/<int:pgr_id>/', views.get_ges_ajax, name='ajax_ges'),
     path('ajax/dashboard-stats/', views.dashboard_stats_ajax, name='ajax_dashboard_stats'),
 
+    # ── Anexos do PGR ──
+    path('documentos/<int:pgr_id>/anexos/', views.AnexoPGRListView.as_view(), name='anexo_list'),
+    path('documentos/<int:pgr_id>/anexos/upload/', views.anexo_pgr_upload, name='anexo_upload'),
+    path('documentos/<int:pgr_id>/anexos/reordenar/', views.anexo_pgr_reordenar, name='anexo_reordenar'),
+    path('anexos/<int:pk>/editar/', views.anexo_pgr_editar, name='anexo_editar'),
+    path('anexos/<int:pk>/excluir/', views.anexo_pgr_delete, name='anexo_delete'),
+
 ]
 
 

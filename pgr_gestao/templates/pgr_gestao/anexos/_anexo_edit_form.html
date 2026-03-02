@@ -1,0 +1,48 @@
+
+<form method="post" action="{% url 'pgr_gestao:anexo_editar' pk=anexo.pk %}"
+      enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label fw-bold">Tipo de Anexo</label>
+            {{ form.tipo_anexo }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Nº Anexo</label>
+            {{ form.numero_romano }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Ordem</label>
+            {{ form.ordem }}
+        </div>
+        <div class="col-12">
+            <label class="form-label fw-bold">Título</label>
+            {{ form.titulo }}
+        </div>
+        <div class="col-12">
+            <label class="form-label">Descrição</label>
+            {{ form.descricao }}
+        </div>
+        <div class="col-md-8">
+            <label class="form-label fw-bold">Substituir Arquivo (opcional)</label>
+            {{ form.arquivo }}
+            <small class="text-muted">
+                Atual: <a href="{{ anexo.arquivo.url }}" target="_blank">{{ anexo.nome_arquivo_original }}</a>
+                ({{ anexo.tamanho_formatado }})
+            </small>
+        </div>
+        <div class="col-md-4 d-flex align-items-center">
+            <div class="form-check mt-3">
+                {{ form.incluir_no_pdf }}
+                <label class="form-check-label">Incluir no PDF</label>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-warning">
+            <i class="fas fa-save"></i> Salvar Alterações
+        </button>
+    </div>
+</form>
+

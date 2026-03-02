@@ -47,6 +47,7 @@ STATUS_CHOICES = [
         ('PENDENTE', _('Pendente')),
         ('CONCLUIDA', _('Concluída')),
         ('CANCELADA', _('Cancelada')),
+
 ]
 
 

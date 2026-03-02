@@ -60,6 +60,8 @@ from .forms import (
 )
 from .utils.cont_seguranca import validar_acesso_documento
 from cliente.models import Cliente
+from pgr_gestao.models import AnexoPGR, PGRDocumento
+from pgr_gestao.forms import AnexoPGRForm, AnexoPGRMultipleForm
 
 
 
@@ -476,6 +478,8 @@ class PGRDocumentoDetailView(SSTPermissionMixin, TecnicoScopeMixin, ViewFilialSc
         context['riscos_stats'] = riscos_qs.values('classificacao_risco').annotate(
             total=Count('id')
         ).order_by('classificacao_risco')
+        # Anexos do PGR
+        context['anexos_pgr'] = documento.anexos_pgr.all().order_by('ordem', 'numero_romano')
 
         return context
 
@@ -1423,7 +1427,7 @@ class ProfissionalResponsavelDeleteView(SSTPermissionMixin, ViewFilialScopedMixi
 
 
 # =============================================================================
-# RELATÓRIOS E ESTATÍSTICAS (UMA ÚNICA VIEW — SEM DUPLICATAS)
+# RELATÓRIOS E ESTATÍSTICAS 
 # =============================================================================
 
 @login_required
@@ -2108,4 +2112,183 @@ class LocalPrestacaoUpdateView(SSTPermissionMixin, ViewFilialScopedMixin, Update
         context['title'] = 'Editar Local de Prestação'
         return context
 
+# =====================================================================
+# ANEXOS DO PGR
+# =====================================================================
 
+class AnexoPGRListView(SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    """Lista todos os anexos de um documento PGR"""
+    model = AnexoPGR
+    template_name = 'pgr_gestao/anexos/anexo_list.html'
+    context_object_name = 'anexos'
+    permission_required = 'pgr_gestao.view_anexopgr'
+
+    def get_queryset(self):
+        self.pgr_documento = get_object_or_404(PGRDocumento, pk=self.kwargs['pgr_id'])
+        return AnexoPGR.objects.filter(
+            pgr_documento=self.pgr_documento
+        ).order_by('ordem', 'numero_romano')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['documento'] = self.pgr_documento
+        context['form_upload'] = AnexoPGRForm()
+        context['form_multiple'] = AnexoPGRMultipleForm()
+        return context
+
+@login_required
+def anexo_pgr_upload(request, pgr_id):
+    """Upload de um ou múltiplos anexos para o PGR"""
+    pgr_documento = get_object_or_404(PGRDocumento, pk=pgr_id)
+
+    if request.method == 'POST':
+        arquivos = request.FILES.getlist('arquivo')
+
+        # Se veio apenas 1 arquivo, usar form individual
+        if len(arquivos) <= 1:
+            form = AnexoPGRForm(request.POST, request.FILES)
+            if form.is_valid():
+                anexo = form.save(commit=False)
+                anexo.pgr_documento = pgr_documento
+                anexo.criado_por = request.user
+                anexo.save()
+                messages.success(request, f'Anexo "{anexo.titulo_completo}" enviado com sucesso!')
+                
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'anexo': {
+                            'id': anexo.pk,
+                            'titulo': anexo.titulo_completo,
+                            'extensao': anexo.extensao,
+                            'tamanho': anexo.tamanho_formatado,
+                            'icone': anexo.icone_tipo,
+                        }
+                    })
+                return redirect('pgr_gestao:anexo_list', pgr_id=pgr_id)
+            else:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+                messages.error(request, 'Erro ao enviar anexo. Verifique os campos.')
+        else:
+            # Upload múltiplo
+            tipo_anexo = request.POST.get('tipo_anexo', 'outro')
+            titulo_base = request.POST.get('titulo', '')
+            incluir_pdf = request.POST.get('incluir_no_pdf') == 'on'
+            criados = 0
+
+            for arq in arquivos:
+                # Validar tamanho
+                if arq.size > 50 * 1024 * 1024:
+                    messages.warning(request, f'Arquivo "{arq.name}" ignorado (maior que 50MB).')
+                    continue
+
+                titulo = titulo_base if titulo_base else dict(AnexoPGR.TIPO_ANEXO_CHOICES).get(tipo_anexo, arq.name)
+
+                anexo = AnexoPGR(
+                    pgr_documento=pgr_documento,
+                    tipo_anexo=tipo_anexo,
+                    titulo=titulo,
+                    arquivo=arq,
+                    nome_arquivo_original=arq.name,
+                    incluir_no_pdf=incluir_pdf,
+                    criado_por=request.user,
+                )
+                anexo.save()
+                criados += 1
+
+            if criados > 0:
+                messages.success(request, f'{criados} anexo(s) enviado(s) com sucesso!')
+            
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'criados': criados})
+            return redirect('pgr_gestao:anexo_list', pgr_id=pgr_id)
+
+    return redirect('pgr_gestao:anexo_list', pgr_id=pgr_id)
+
+
+@login_required
+def anexo_pgr_delete(request, pk):
+    """Excluir um anexo"""
+    anexo = get_object_or_404(AnexoPGR, pk=pk)
+    pgr_id = anexo.pgr_documento_id
+    titulo = anexo.titulo_completo
+
+    if request.method == 'POST':
+        # Deletar arquivo físico
+        if anexo.arquivo:
+            try:
+                anexo.arquivo.delete(save=False)
+            except Exception:
+                pass
+        anexo.delete()
+        messages.success(request, f'Anexo "{titulo}" excluído com sucesso!')
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+
+    return redirect('pgr_gestao:anexo_list', pgr_id=pgr_id)
+
+
+@login_required
+def anexo_pgr_reordenar(request, pgr_id):
+    """Reordenar anexos via AJAX (drag-and-drop)"""
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            ordem_ids = data.get('ordem', [])
+
+            for idx, anexo_id in enumerate(ordem_ids, start=1):
+                AnexoPGR.objects.filter(
+                    pk=anexo_id,
+                    pgr_documento_id=pgr_id
+                ).update(ordem=idx)
+
+            # Renumerar romanos
+            numeros_romanos = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+                               'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX']
+            anexos = AnexoPGR.objects.filter(pgr_documento_id=pgr_id).order_by('ordem')
+            for idx, anexo in enumerate(anexos):
+                novo_numero = numeros_romanos[idx] if idx < len(numeros_romanos) else str(idx + 1)
+                if anexo.numero_romano != novo_numero:
+                    anexo.numero_romano = novo_numero
+                    anexo.save(update_fields=['numero_romano'])
+
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'success': False}, status=405)
+
+
+@login_required
+def anexo_pgr_editar(request, pk):
+    """Editar título/tipo de um anexo via AJAX"""
+    anexo = get_object_or_404(AnexoPGR, pk=pk)
+
+    if request.method == 'POST':
+        form = AnexoPGRForm(request.POST, request.FILES, instance=anexo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Anexo "{anexo.titulo_completo}" atualizado!')
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'titulo': anexo.titulo_completo})
+            return redirect('pgr_gestao:anexo_list', pgr_id=anexo.pgr_documento_id)
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+    # GET - retorna form preenchido (para modal)
+    form = AnexoPGRForm(instance=anexo)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        from django.template.loader import render_to_string
+        html = render_to_string('pgr_gestao/anexos/_anexo_edit_form.html', {
+            'form': form, 'anexo': anexo
+        }, request=request)
+        return JsonResponse({'success': True, 'html': html})
+
+    return redirect('pgr_gestao:anexo_list', pgr_id=anexo.pgr_documento_id)
+
+    

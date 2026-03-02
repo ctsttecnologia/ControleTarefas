@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PGR - Sistema de Gestão de Riscos{% endblock %}</title>
 
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
     <!-- ======================= -->
     <!-- 1. CSS TERCEIROS        -->
     <!-- ======================= -->
@@ -547,6 +549,8 @@
     <!-- JAVASCRIPT - POR PÁGINA -->
     <!-- ======================= -->
     {% block extra_js %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 </body>
 </html>

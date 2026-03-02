@@ -310,6 +310,12 @@
             <i class="fas fa-calendar-alt"></i> Cronograma ({{ cronograma.count }})
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="anexos-tab" data-bs-toggle="tab" data-bs-target="#anexos" type="button">
+            <i class="fas fa-paperclip"></i> Anexos
+            {% if anexos_pgr %}<span class="badge bg-secondary ms-1">{{ anexos_pgr|length }}</span>{% endif %}
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="pgrTabsContent">
@@ -536,6 +542,251 @@
             </div>
         </div>
     </div>
+
+        <!-- Tab: Anexos do PGR -->
+    <div class="tab-pane fade" id="anexos" role="tabpanel">
+        <div class="card-body">
+
+            <!-- Botão Upload -->
+            {% if perms.pgr_gestao.add_anexopgr %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0"><i class="fas fa-paperclip"></i> Anexos do PGR</h6>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
+                    <i class="fas fa-upload"></i> Novo Anexo
+                </button>
+            </div>
+            {% endif %}
+
+            {% if anexos_pgr %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tabelaAnexos">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:40px"></th>
+                            <th>Anexo</th>
+                            <th>Tipo</th>
+                            <th>Arquivo</th>
+                            <th>Tamanho</th>
+                            <th>PDF</th>
+                            <th>Enviado</th>
+                            <th style="width:120px">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sortableAnexos">
+                        {% for anexo in anexos_pgr %}
+                        <tr data-id="{{ anexo.pk }}">
+                            <td class="text-center text-muted" style="cursor: grab;" title="Arrastar para reordenar">
+                                <i class="fas fa-grip-vertical"></i>
+                            </td>
+                            <td>
+                                <strong>ANEXO {{ anexo.numero_romano }}</strong><br>
+                                <small class="text-muted">{{ anexo.titulo }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ anexo.get_tipo_anexo_display }}</span>
+                            </td>
+                            <td>
+                                <a href="{{ anexo.arquivo.url }}" target="_blank" class="text-decoration-none">
+                                    <i class="fas {{ anexo.icone_tipo }}"></i>
+                                    {{ anexo.nome_arquivo_original|default:anexo.arquivo.name|truncatechars:30 }}
+                                </a>
+                            </td>
+                            <td>{{ anexo.tamanho_formatado }}</td>
+                            <td class="text-center">
+                                {% if anexo.incluir_no_pdf %}
+                                    <i class="fas fa-check-circle text-success" title="Incluído no PDF"></i>
+                                {% else %}
+                                    <i class="fas fa-times-circle text-muted" title="Não incluído no PDF"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ anexo.criado_em|date:"d/m/Y H:i" }}</small><br>
+                                <small class="text-muted">{{ anexo.criado_por }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ anexo.arquivo.url }}" target="_blank"
+                                       class="btn btn-outline-primary" title="Visualizar/Download">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    {% if perms.pgr_gestao.change_anexopgr %}
+                                    <button type="button" class="btn btn-outline-warning btn-editar-anexo"
+                                            data-url="{% url 'pgr_gestao:anexo_editar' pk=anexo.pk %}"
+                                            title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% if perms.pgr_gestao.delete_anexopgr %}
+                                    <form method="post" action="{% url 'pgr_gestao:anexo_delete' pk=anexo.pk %}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Excluir ANEXO {{ anexo.numero_romano }} – {{ anexo.titulo }}?')">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger" title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Nenhum anexo cadastrado para este documento PGR.</p>
+                {% if perms.pgr_gestao.add_anexopgr %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadAnexo">
+                    <i class="fas fa-upload"></i> Enviar Primeiro Anexo
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ========== MODAL: Upload de Anexo ========== -->
+    <div class="modal fade" id="modalUploadAnexo" tabindex="-1" aria-labelledby="modalUploadAnexoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post" action="{% url 'pgr_gestao:anexo_upload' pgr_id=documento.pk %}"
+                      enctype="multipart/form-data" id="formUploadAnexo">
+                    {% csrf_token %}
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalUploadAnexoLabel">
+                            <i class="fas fa-upload"></i> Novo Anexo do PGR
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <!-- Tipo -->
+                            <div class="col-md-6">
+                                <label for="id_tipo_anexo" class="form-label fw-bold">Tipo de Anexo *</label>
+                                <select name="tipo_anexo" id="id_tipo_anexo" class="form-select" required>
+                                    <option value="">-- Selecione --</option>
+                                    <option value="analise_ruido">Análise Quantitativa de Ruído</option>
+                                    <option value="analise_calor">Análise Quantitativa de Calor</option>
+                                    <option value="analise_quimica">Análise Quantitativa de Agentes Químicos</option>
+                                    <option value="analise_vibração">Análise Quantitativa de Vibração</option>
+                                    <option value="analise_iluminacao">Análise de Iluminância</option>
+                                    <option value="analise_biologica">Análise de Agentes Biológicos</option>
+                                    <option value="laudo_insalubridade">Laudo de Insalubridade</option>
+                                    <option value="laudo_periculosidade">Laudo de Periculosidade</option>
+                                    <option value="laudo_ergonomico">Laudo Ergonômico</option>
+                                    <option value="aet">Análise Ergonômica do Trabalho (AET)</option>
+                                    <option value="ppra">PPRA</option>
+                                    <option value="pcmso">PCMSO</option>
+                                    <option value="ltcat">LTCAT</option>
+                                    <option value="certificado_calibracao">Certificado de Calibração</option>
+                                    <option value="art">ART – Anotação de Responsabilidade Técnica</option>
+                                    <option value="mapa_risco">Mapa de Risco</option>
+                                    <option value="planta_baixa">Planta Baixa / Layout</option>
+                                    <option value="fotografias">Registro Fotográfico</option>
+                                    <option value="treinamento">Certificado / Registro de Treinamento</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+
+                            <!-- Número Romano -->
+                            <div class="col-md-2">
+                                <label for="id_numero_romano" class="form-label fw-bold">Nº Anexo</label>
+                                <input type="text" name="numero_romano" id="id_numero_romano"
+                                       class="form-control" placeholder="Auto">
+                                <small class="text-muted">Ex: I, II, III</small>
+                            </div>
+
+                            <!-- Ordem -->
+                            <div class="col-md-2">
+                                <label for="id_ordem" class="form-label fw-bold">Ordem</label>
+                                <input type="number" name="ordem" id="id_ordem"
+                                       class="form-control" min="0" placeholder="Auto">
+                            </div>
+
+                            <!-- Incluir no PDF -->
+                            <div class="col-md-2 d-flex align-items-end">
+                                <div class="form-check">
+                                    <input type="checkbox" name="incluir_no_pdf" id="id_incluir_pdf"
+                                           class="form-check-input" checked>
+                                    <label for="id_incluir_pdf" class="form-check-label">
+                                        No PDF
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Título -->
+                            <div class="col-12">
+                                <label for="id_titulo_anexo" class="form-label fw-bold">Título do Anexo</label>
+                                <input type="text" name="titulo" id="id_titulo_anexo"
+                                       class="form-control"
+                                       placeholder="Preenchido automaticamente pelo tipo selecionado">
+                            </div>
+
+                            <!-- Descrição -->
+                            <div class="col-12">
+                                <label for="id_descricao" class="form-label">Descrição / Observações</label>
+                                <textarea name="descricao" id="id_descricao" class="form-control"
+                                          rows="2" placeholder="Opcional"></textarea>
+                            </div>
+
+                            <!-- Upload de Arquivo -->
+                            <div class="col-12">
+                                <label for="id_arquivo" class="form-label fw-bold">Arquivo *</label>
+                                <input type="file" name="arquivo" id="id_arquivo"
+                                       class="form-control" required
+                                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                                <small class="text-muted">
+                                    PDF, DOC, DOCX, XLS, XLSX, JPG, PNG — Máx. 50MB
+                                </small>
+                            </div>
+
+                            <!-- Zona de Drop -->
+                            <div class="col-12">
+                                <div id="dropZone" class="border border-2 border-dashed rounded p-4 text-center bg-light"
+                                     style="border-color: #dee2e6 !important; cursor: pointer; transition: all 0.3s;">
+                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-1">Arraste e solte arquivos aqui</p>
+                                    <small class="text-muted">ou clique no campo acima para selecionar</small>
+                                </div>
+                            </div>
+
+                            <!-- Preview dos arquivos selecionados -->
+                            <div class="col-12" id="filePreviewContainer" style="display:none;">
+                                <label class="form-label fw-bold">Arquivo(s) selecionado(s):</label>
+                                <div id="filePreviewList"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnEnviarAnexo">
+                            <i class="fas fa-upload"></i> Enviar Anexo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL: Editar Anexo ========== -->
+    <div class="modal fade" id="modalEditarAnexo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Anexo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="editarAnexoBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border" role="status"></div>
+                        <p class="mt-2">Carregando...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -589,6 +840,176 @@ document.addEventListener('DOMContentLoaded', function() {
             totalFormsInput.value = formNum + 1;
         });
     }
+    // ═══════════════════════════════════════════════════════
+    // ANEXOS PGR - Upload, Drag & Drop, Reordenação
+    // ═══════════════════════════════════════════════════════
+
+    // Auto-preencher título baseado no tipo de anexo
+    const tipoAnexoSelect = document.getElementById('id_tipo_anexo');
+    const tituloAnexoInput = document.getElementById('id_titulo_anexo');
+
+    if (tipoAnexoSelect && tituloAnexoInput) {
+        const titulosMap = {
+            'analise_ruido': 'ANÁLISE QUANTITATIVA DE RUÍDO',
+            'analise_calor': 'ANÁLISE QUANTITATIVA DE CALOR',
+            'analise_quimica': 'ANÁLISE QUANTITATIVA DE AGENTES QUÍMICOS',
+            'analise_vibração': 'ANÁLISE QUANTITATIVA DE VIBRAÇÃO',
+            'analise_iluminacao': 'ANÁLISE DE ILUMINÂNCIA',
+            'analise_biologica': 'ANÁLISE DE AGENTES BIOLÓGICOS',
+            'laudo_insalubridade': 'LAUDO DE INSALUBRIDADE',
+            'laudo_periculosidade': 'LAUDO DE PERICULOSIDADE',
+            'laudo_ergonomico': 'LAUDO ERGONÔMICO',
+            'aet': 'ANÁLISE ERGONÔMICA DO TRABALHO – AET',
+            'ppra': 'PPRA – PROGRAMA DE PREVENÇÃO DE RISCOS AMBIENTAIS',
+            'pcmso': 'PCMSO – PROGRAMA DE CONTROLE MÉDICO',
+            'ltcat': 'LTCAT – LAUDO TÉCNICO DAS CONDIÇÕES DO AMBIENTE',
+            'certificado_calibracao': 'CERTIFICADO DE CALIBRAÇÃO DE EQUIPAMENTOS',
+            'art': 'ART – ANOTAÇÃO DE RESPONSABILIDADE TÉCNICA',
+            'mapa_risco': 'MAPA DE RISCO',
+            'planta_baixa': 'PLANTA BAIXA / LAYOUT',
+            'fotografias': 'REGISTRO FOTOGRÁFICO',
+            'treinamento': 'CERTIFICADO / REGISTRO DE TREINAMENTO',
+        };
+
+        tipoAnexoSelect.addEventListener('change', function() {
+            const tipo = this.value;
+            if (tipo && titulosMap[tipo]) {
+                tituloAnexoInput.value = titulosMap[tipo];
+            }
+        });
+    }
+
+    // Drag & Drop na zona de upload
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('id_arquivo');
+    const previewContainer = document.getElementById('filePreviewContainer');
+    const previewList = document.getElementById('filePreviewList');
+
+    if (dropZone && fileInput) {
+        ['dragenter', 'dragover'].forEach(evt => {
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#0d6efd';
+                dropZone.style.backgroundColor = '#e8f0fe';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            dropZone.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#dee2e6';
+                dropZone.style.backgroundColor = '';
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFilePreview(files);
+            }
+        });
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', function() {
+            updateFilePreview(this.files);
+        });
+    }
+
+    function updateFilePreview(files) {
+        if (!previewContainer || !previewList) return;
+        previewList.innerHTML = '';
+
+        if (files.length > 0) {
+            previewContainer.style.display = 'block';
+
+            Array.from(files).forEach(file => {
+                const size = file.size < 1048576
+                    ? (file.size / 1024).toFixed(1) + ' KB'
+                    : (file.size / 1048576).toFixed(1) + ' MB';
+
+                const ext = file.name.split('.').pop().toLowerCase();
+                const iconMap = {
+                    'pdf': 'fa-file-pdf text-danger',
+                    'doc': 'fa-file-word text-primary',
+                    'docx': 'fa-file-word text-primary',
+                    'xls': 'fa-file-excel text-success',
+                    'xlsx': 'fa-file-excel text-success',
+                    'jpg': 'fa-file-image text-warning',
+                    'jpeg': 'fa-file-image text-warning',
+                    'png': 'fa-file-image text-warning',
+                };
+                const icon = iconMap[ext] || 'fa-file text-secondary';
+
+                previewList.innerHTML += `
+                    <div class="d-flex align-items-center gap-2 p-2 border rounded mb-1">
+                        <i class="fas ${icon} fa-lg"></i>
+                        <span>${file.name}</span>
+                        <span class="badge bg-secondary">${size}</span>
+                    </div>
+                `;
+            });
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    }
+
+    // Editar Anexo (modal)
+    document.querySelectorAll('.btn-editar-anexo').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const url = this.dataset.url;
+            const modalBody = document.getElementById('editarAnexoBody');
+            const modal = new bootstrap.Modal(document.getElementById('modalEditarAnexo'));
+
+            modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>';
+            modal.show();
+
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    modalBody.innerHTML = data.html;
+                }
+            })
+            .catch(() => {
+                modalBody.innerHTML = '<p class="text-danger">Erro ao carregar formulário.</p>';
+            });
+        });
+    });
+
+    // Reordenação com SortableJS (se disponível)
+    const sortableContainer = document.getElementById('sortableAnexos');
+    if (sortableContainer && typeof Sortable !== 'undefined') {
+        new Sortable(sortableContainer, {
+            handle: '.fa-grip-vertical',
+            animation: 150,
+            onEnd: function() {
+                const ordem = Array.from(sortableContainer.querySelectorAll('tr[data-id]'))
+                    .map(tr => tr.dataset.id);
+
+                fetch("{% url 'pgr_gestao:anexo_reordenar' pgr_id=documento.pk %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ ordem: ordem })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        // Recarregar para atualizar numeração romana
+                        location.reload();
+                    }
+                });
+            }
+        });
+    }
+
 });
 </script>
 {% endblock %}

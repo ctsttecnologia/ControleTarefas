@@ -3,7 +3,6 @@
 import base64
 import logging
 from pathlib import Path
-
 from django.conf import settings
 import io
 import json
@@ -17,7 +16,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Q, Count, Func
-from django.http import Http404, HttpResponse, HttpResponseNotAllowed
+from django.http import Http404, HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -46,7 +45,6 @@ from .models import (
     EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI, CargoFuncao, MovimentacaoEstoque
 )
 from django.utils.safestring import mark_safe
-
 
 
 logger = logging.getLogger(__name__)
@@ -885,4 +883,3 @@ def minha_ficha_redirect_view(request):
 
     return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
 
-    

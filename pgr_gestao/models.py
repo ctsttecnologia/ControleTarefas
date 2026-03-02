@@ -201,6 +201,105 @@ UNIDADE_MEDIDA_CHOICES = [
     ('UR', 'UR (Umidade Relativa %)'),
     ('m/s', 'm/s (Metros por Segundo - Velocidade do Ar)'),
     ('outro', 'Outro'),
+
+]
+SECAO_CHOICES = [
+    # Capa e cabeçalho
+    ('caracterizacao_empresa', '1. Caracterização da Empresa'),
+    ('controle_revisao', '1. Controle de Revisão'),
+
+    # Seção 2
+    ('documento_base', '2. Documento Base'),
+    ('documento_base_metas', '2. Documento Base - Metas'),
+    ('documento_base_objetivo', '2. Documento Base - Objetivo Geral'),
+
+    # Seção 3
+    ('definicoes', '3. Definições'),
+
+    # Seção 4
+    ('estrutura_pgr', '4. Estrutura do PGR'),
+    ('estrutura_requisitos', '4. Estrutura - Requisitos Legais'),
+    ('estrutura_estrategia', '4. Estrutura - Estratégia e Metodologia'),
+    ('estrutura_registro', '4. Estrutura - Forma de Registro'),
+    ('estrutura_periodicidade', '4. Estrutura - Periodicidade'),
+    ('estrutura_implantacao', '4. Estrutura - Implantação Cronograma'),
+    ('estrutura_eficacia', '4. Estrutura - Análise da Eficácia'),
+
+    # Seção 5
+    ('responsabilidades', '5. Definição das Responsabilidades'),
+    ('resp_organizacao', '5. Responsabilidades - Da Organização'),
+    ('resp_informacao', '5. Responsabilidades - Da Informação'),
+    ('resp_procedimentos', '5. Responsabilidades - Procedimentos'),
+    ('resp_seguranca', '5. Responsabilidades - Da Segurança do Trabalho'),
+    ('resp_cipa', '5. Responsabilidades - CIPA/Designado'),
+    ('resp_medicina', '5. Responsabilidades - Da Medicina do Trabalho'),
+    ('resp_supervisao', '5. Responsabilidades - Da Supervisão'),
+    ('resp_empregados', '5. Responsabilidades - Dos Empregados'),
+
+    # Seção 6
+    ('diretrizes', '6. Diretrizes'),
+    ('diretrizes_estrategia', '6. Diretrizes - Estratégia'),
+
+    # Seção 7
+    ('desenvolvimento', '7. Desenvolvimento do PGR'),
+
+    # Seção 8
+    ('metodologia_avaliacao', '8. Metodologia de Avaliação'),
+    ('metodo_ruido', '8. Metodologia - Agente Físico Ruído'),
+    ('metodo_calor', '8. Metodologia - Agente Físico Calor'),
+    ('metodo_quimico', '8. Metodologia - Agentes Químicos'),
+    ('metodo_biologico', '8. Metodologia - Agentes Biológicos'),
+    ('metodo_ergonomico', '8. Metodologia - Agentes Ergonômicos'),
+    ('metodo_mecanico', '8. Metodologia - Agentes Mecânicos'),
+
+    # Seção 9
+    ('inventario_riscos_intro', '9. Inventário de Riscos - Introdução'),
+    ('tabela_probabilidade', '9. Tabela 1 - Probabilidade (P)'),
+    ('tabela_gravidade', '9. Tabela 2 - Gravidade (G)'),
+    ('tabela_exposicao', '9. Tabela 3 - Exposição (E)'),
+    ('tabela_matriz_severidade', '9. Tabela 4 - Matriz de Severidade'),
+    ('tabela_severidade', '9. Tabela 5 - Severidade (S)'),
+    ('tabela_acoes_mitigacao', '9. Tabela 6 - Ações de Mitigação'),
+    ('tabela_priorizacao', '9. Tabela 7 - Priorização das Ações'),
+    ('tabela_matriz_risco', '9. Tabela 8 - Matriz Classificação do Risco'),
+    ('excecoes_monitoramento', '9. Exceções na Periodicidade'),
+
+    # Seção 10
+    ('plano_acao', '10. Plano de Ação'),
+    ('plano_acao_documentacao', '10. Plano de Ação - Documentação'),
+
+    # Seção 11
+    ('medidas_protecao', '11. Medidas de Proteção'),
+    ('medidas_epc', '11. Medidas - Proteção Coletiva'),
+    ('medidas_administrativas', '11. Medidas - Administrativas'),
+    ('medidas_epi', '11. Medidas - EPI'),
+    ('medidas_uso_epi', '11. Medidas - Uso, Guarda e Conservação EPI'),
+    ('medidas_substituicao_epi', '11. Medidas - Substituição e Reposição EPI'),
+    ('medidas_protecao_geral', '11. Medidas - EPC, EPI e Outras'),
+    ('medidas_monitoramento', '11. Medidas - Monitoramento do Risco'),
+    ('medidas_registro', '11. Medidas - Registro e Divulgação'),
+    ('medidas_recomendacao_epi', '11. Medidas - Recomendação Especial EPI'),
+    ('medidas_epi_empregador', '11. Medidas - Cabe ao Empregador (EPI)'),
+    ('medidas_epi_colaborador', '11. Medidas - Cabe ao Colaborador (EPI)'),
+
+    # Seção 12
+    ('cronograma_acoes', '12. Cronograma de Ações'),
+
+    # Seção 13
+    ('divulgacao', '13. Divulgação do Programa'),
+
+    # Seção 14
+    ('recomendacoes', '14. Recomendações Gerais'),
+
+    # Seção 15
+    ('legislacao', '15. Legislação Complementar'),
+
+    # Seção 16
+    ('levantamento_riscos', '16. Levantamento dos Riscos'),
+
+    # Customizado
+    ('custom', 'Seção Personalizada'),
+
 ]
 
 
@@ -1204,4 +1303,188 @@ class RiscoTreinamentoNecessario(models.Model):
 
     def __str__(self):
         return f"{self.tipo_curso.nome} - {self.risco_identificado.agente}"
+
+# =====================================================================
+# ANEXOS DO PGR (Laudos, Relatórios, Análises Quantitativas, etc.)
+# =====================================================================
+
+class AnexoPGR(models.Model):
+    """
+    Anexos vinculados ao PGR Document (Laudos, Relatórios, Análises).
+    Ex: ANEXO I – ANÁLISE QUANTITATIVA DE RUÍDO
+    Cada anexo aparece no final do PDF gerado como parte do relatório.
+    """
+
+    TIPO_ANEXO_CHOICES = [
+        ('analise_ruido', 'Análise Quantitativa de Ruído'),
+        ('analise_calor', 'Análise Quantitativa de Calor'),
+        ('analise_quimica', 'Análise Quantitativa de Agentes Químicos'),
+        ('analise_vibração', 'Análise Quantitativa de Vibração'),
+        ('analise_iluminacao', 'Análise de Iluminância'),
+        ('analise_biologica', 'Análise de Agentes Biológicos'),
+        ('laudo_insalubridade', 'Laudo de Insalubridade'),
+        ('laudo_periculosidade', 'Laudo de Periculosidade'),
+        ('laudo_ergonomico', 'Laudo Ergonômico'),
+        ('aet', 'Análise Ergonômica do Trabalho (AET)'),
+        ('ppra', 'PPRA – Programa de Prevenção de Riscos Ambientais'),
+        ('pcmso', 'PCMSO – Programa de Controle Médico'),
+        ('ltcat', 'LTCAT – Laudo Técnico das Condições do Ambiente'),
+        ('certificado_calibracao', 'Certificado de Calibração de Equipamentos'),
+        ('art', 'ART – Anotação de Responsabilidade Técnica'),
+        ('mapa_risco', 'Mapa de Risco'),
+        ('planta_baixa', 'Planta Baixa / Layout'),
+        ('fotografias', 'Registro Fotográfico'),
+        ('treinamento', 'Certificado / Registro de Treinamento'),
+        ('outro', 'Outro'),
+    ]
+
+    pgr_documento = models.ForeignKey(
+        'PGRDocumento',
+        on_delete=models.CASCADE,
+        related_name='anexos_pgr',
+        verbose_name='Documento PGR'
+    )
+    tipo_anexo = models.CharField(
+        'Tipo de Anexo',
+        max_length=30,
+        choices=TIPO_ANEXO_CHOICES,
+        default='outro'
+    )
+    numero_romano = models.CharField(
+        'Número do Anexo',
+        max_length=10,
+        help_text='Ex: I, II, III, IV, V...',
+        blank=True
+    )
+    titulo = models.CharField(
+        'Título do Anexo',
+        max_length=300,
+        help_text='Ex: ANÁLISE QUANTITATIVA DE RUÍDO'
+    )
+    descricao = models.TextField(
+        'Descrição',
+        blank=True,
+        help_text='Descrição ou observações sobre este anexo'
+    )
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to='pgr/anexos/%Y/%m/',
+        help_text='PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (máx. 50MB)'
+    )
+    nome_arquivo_original = models.CharField(
+        'Nome Original do Arquivo',
+        max_length=500,
+        blank=True
+    )
+    tamanho_arquivo = models.PositiveIntegerField(
+        'Tamanho (bytes)',
+        default=0
+    )
+    incluir_no_pdf = models.BooleanField(
+        'Incluir como Anexo no PDF do PGR',
+        default=True,
+        help_text='Se marcado, aparecerá listado nos anexos do relatório PDF'
+    )
+    ordem = models.PositiveIntegerField(
+        'Ordem de Exibição',
+        default=0,
+        help_text='Define a ordem dos anexos no relatório'
+    )
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name='Enviado por'
+    )
+    criado_em = models.DateTimeField('Enviado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    # ── Filtro por filial via FK do pai ──
+    _filial_lookup = 'pgr_documento__filial_id'
+    objects = FilialManager()
+
+    class Meta:
+        db_table = 'pgr_anexo_pgr'
+        verbose_name = 'Anexo do PGR'
+        verbose_name_plural = 'Anexos do PGR'
+        ordering = ['ordem', 'numero_romano', 'criado_em']
+        unique_together = ['pgr_documento', 'numero_romano']
+
+    def __str__(self):
+        if self.numero_romano:
+            return f"ANEXO {self.numero_romano} – {self.titulo}"
+        return self.titulo
+
+    @property
+    def titulo_completo(self):
+        """Retorna título formatado com número romano"""
+        if self.numero_romano:
+            return f"ANEXO {self.numero_romano} – {self.titulo}"
+        return self.titulo
+
+    @property
+    def extensao(self):
+        """Retorna a extensão do arquivo"""
+        if self.arquivo and self.arquivo.name:
+            return self.arquivo.name.rsplit('.', 1)[-1].upper()
+        return ''
+
+    @property
+    def tamanho_formatado(self):
+        """Retorna o tamanho formatado (KB, MB)"""
+        if self.tamanho_arquivo < 1024:
+            return f"{self.tamanho_arquivo} B"
+        elif self.tamanho_arquivo < 1048576:
+            return f"{self.tamanho_arquivo / 1024:.1f} KB"
+        else:
+            return f"{self.tamanho_arquivo / 1048576:.1f} MB"
+
+    @property
+    def icone_tipo(self):
+        """Retorna ícone FontAwesome baseado na extensão"""
+        ext = self.extensao.lower()
+        icones = {
+            'pdf': 'fa-file-pdf text-danger',
+            'doc': 'fa-file-word text-primary',
+            'docx': 'fa-file-word text-primary',
+            'xls': 'fa-file-excel text-success',
+            'xlsx': 'fa-file-excel text-success',
+            'jpg': 'fa-file-image text-warning',
+            'jpeg': 'fa-file-image text-warning',
+            'png': 'fa-file-image text-warning',
+        }
+        return icones.get(ext, 'fa-file text-secondary')
+
+    def save(self, *args, **kwargs):
+        # Salvar nome original e tamanho
+        if self.arquivo and not self.nome_arquivo_original:
+            self.nome_arquivo_original = self.arquivo.name
+        if self.arquivo:
+            try:
+                self.tamanho_arquivo = self.arquivo.size
+            except Exception:
+                pass
+
+        # Auto-numerar se não informado
+        if not self.numero_romano:
+            existentes = AnexoPGR.objects.filter(
+                pgr_documento=self.pgr_documento
+            ).exclude(pk=self.pk).count()
+            numeros = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+                        'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX']
+            idx = existentes
+            self.numero_romano = numeros[idx] if idx < len(numeros) else str(idx + 1)
+
+        # Auto-definir ordem
+        if self.ordem == 0 and not self.pk:
+            max_ordem = AnexoPGR.objects.filter(
+                pgr_documento=self.pgr_documento
+            ).aggregate(models.Max('ordem'))['ordem__max'] or 0
+            self.ordem = max_ordem + 1
+
+        # Auto-preencher título baseado no tipo
+        if not self.titulo and self.tipo_anexo != 'outro':
+            self.titulo = dict(self.TIPO_ANEXO_CHOICES).get(self.tipo_anexo, '')
+
+        super().save(*args, **kwargs)
 

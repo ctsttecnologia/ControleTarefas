@@ -10,6 +10,7 @@ from suprimentos.models import Parceiro
 from django_select2.forms import ModelSelect2Widget
 
 
+
 class EquipamentoForm(forms.ModelForm):
 
     class Meta:
@@ -166,4 +167,3 @@ class CargoFuncaoForm(forms.ModelForm):
             'funcao': forms.Select(attrs={'class': 'form-select'}),
         }
 
-       

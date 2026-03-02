@@ -6,7 +6,7 @@ from django.utils.html import format_html
 
 from usuario.models import Filial
 from .models import (
-    Empresa, LocalPrestacaoServico, ProfissionalResponsavel, AmbienteTrabalho,
+    Empresa, LocalPrestacaoServico, PGRSecaoTexto, PGRSecaoTextoPadrao, ProfissionalResponsavel, AmbienteTrabalho,
     PGRDocumento, PGRDocumentoResponsavel, PGRRevisao,
     GESGrupoExposicao,
     TipoRisco, RiscoIdentificado, AvaliacaoQuantitativa, MedidaControle, RiscoMedidaControle,
@@ -14,6 +14,7 @@ from .models import (
     CronogramaAcaoPGR,
     RiscoEPIRecomendado, RiscoTreinamentoNecessario
 )
+from pgr_gestao.models import AnexoPGR
 
 # Ação customizada para o Admin
 @admin.action(description='Marcar planos de ação selecionados como Concluídos')
@@ -50,6 +51,27 @@ class BasePGRAdmin(admin.ModelAdmin):
                 kwargs['disabled'] = True
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
     
+    def resetar_secoes_pgr(pgr_documento, secoes=None):
+        """
+        Força atualização das seções do documento com o texto padrão.
+        Se secoes=None, atualiza todas.
+        """
+        filtro = {'ativo': True}
+        if secoes:
+            filtro['secao__in'] = secoes
+        
+        textos_padrao = PGRSecaoTextoPadrao.objects.filter(**filtro)
+        atualizadas = 0
+        
+        for tp in textos_padrao:
+            atualizado = PGRSecaoTexto.objects.filter(
+                pgr_documento=pgr_documento,
+                secao=tp.secao
+            ).update(conteudo=tp.conteudo_padrao)
+            atualizadas += atualizado
+        
+        return atualizadas
+
 
 # ===========================================
 # Inlines
@@ -108,6 +130,12 @@ class AcompanhamentoPlanoAcaoInline(admin.TabularInline):
             kwargs['initial'] = request.user.id
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+class AnexoPGRInline(admin.TabularInline):
+    model = AnexoPGR
+    extra = 0
+    fields = ['numero_romano', 'tipo_anexo', 'titulo', 'arquivo', 'incluir_no_pdf', 'ordem']
+    readonly_fields = []
+
 # ===========================================
 # ModelAdmins
 # ===========================================
@@ -128,7 +156,7 @@ class PGRDocumentoAdmin(admin.ModelAdmin):
     # Adicione outras configurações que você já tenha (list_filter, etc.)
     
     # Esta é a linha mais importante: ela adiciona o formulário de responsáveis
-    inlines = [PGRDocumentoResponsavelInline]
+    inlines = [PGRDocumentoResponsavelInline, AnexoPGRInline, PGRRevisaoInline, CronogramaAcaoPGRInline]
 
 
 @admin.register(Empresa)
@@ -247,3 +275,18 @@ admin.site.register(PGRRevisao)
 admin.site.register(CronogramaAcaoPGR)
 admin.site.register(AvaliacaoQuantitativa)
 admin.site.register(AcompanhamentoPlanoAcao)
+
+class AnexoPGRInline(admin.TabularInline):
+    model = AnexoPGR
+    extra = 0
+    fields = ['numero_romano', 'tipo_anexo', 'titulo', 'arquivo', 'incluir_no_pdf', 'ordem']
+    readonly_fields = []
+
+# Registrar o model no admin
+@admin.register(AnexoPGR)
+class AnexoPGRAdmin(admin.ModelAdmin):
+    list_display = ['titulo_completo', 'pgr_documento', 'tipo_anexo', 'extensao',
+                    'tamanho_formatado', 'incluir_no_pdf', 'criado_em']
+    list_filter = ['tipo_anexo', 'incluir_no_pdf', 'criado_em']
+    search_fields = ['titulo', 'descricao', 'pgr_documento__codigo_documento']
+    ordering = ['pgr_documento', 'ordem']

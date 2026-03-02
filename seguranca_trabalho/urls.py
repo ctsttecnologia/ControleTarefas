@@ -1,5 +1,6 @@
 # seguranca_trabalho/urls.py# seguranca_trabalho/urls.py
 
+from django import views
 from django.urls import path
 
 # Importando todas as views necessárias para um CRUD completo e ações.
@@ -23,7 +24,6 @@ from .views import (
     FichaEPIDeleteView,
     FichaEPIUpdateView,
     # A view FabricanteDeleteView precisa ser criada se a funcionalidade for desejada.
-   
     # Fichas de EPI e Ações relacionadas
     FichaEPIListView,
     FichaEPICreateView,
