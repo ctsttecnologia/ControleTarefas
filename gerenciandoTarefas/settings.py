@@ -118,7 +118,7 @@ INSTALLED_APPS = [
     'localflavor',
     'template_partials',
     'phonenumber_field',
-    'notifications',
+    'notifications.apps.NotificationsConfig',
     'dal',
     'dal_select2',
      # Apps Locais
@@ -189,7 +189,8 @@ TEMPLATES = [
                 'core.context_processors.filial_context',
                 'usuario.context_processors.filial_context',
                 'chat.context_processors.chat_global_data',
-                'pgr_gestao.context_processors.pgr_stats', 
+                'pgr_gestao.context_processors.pgr_stats',
+                'notifications.context_processors.notification_processor', 
             ],
         },
     },
@@ -308,6 +309,9 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 # Configurações de E-mail para notificações PGR
 EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR')
 EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO')
+
+SENDGRID_API_KEY = config('SENDGRID_API_KEY')
+SENDGRID_TEMPLATE_ID = config('SENDGRID_TEMPLATE_ID')
 
 # =============================================================================
 # REST FRAMEWORK

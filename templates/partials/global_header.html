@@ -84,61 +84,100 @@
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
 
-                    <!-- Notificações -->
-                    <div class="dropdown">
-                        <a href="#" id="header-notification-bell"
-                           class="nav-link text-white position-relative" 
-                           data-bs-toggle="dropdown" aria-expanded="false" 
-                           title="Notificações">
-                            <i class="bi bi-bell-fill fs-5"></i>
-                            <span class="notification-indicator" style="display: none;"></span>
-                            {% if notification_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                  style="font-size: 0.6em;">
-                                {{ notification_count }}
-                                <span class="visually-hidden">notificações</span>
-                            </span>
-                            {% endif %}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 320px;">
-                            <li class="dropdown-header d-flex justify-content-between align-items-center">
-                                <strong><i class="bi bi-bell me-1"></i>Notificações</strong>
-                                {% if notification_count > 0 %}
-                                <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
-                                {% endif %}
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            {% if notification_tasks %}
-                                {% for task in notification_tasks %}
+                    <!-- Notificações — Sistema Unificado -->
+<div class="dropdown">
+    <a href="#" id="header-notification-bell"
+       class="nav-link text-white position-relative"
+       data-bs-toggle="dropdown" aria-expanded="false"
+       title="Notificações">
+        <i class="bi bi-bell-fill fs-5"></i>
+        {% if notification_count > 0 %}
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              style="font-size: 0.6em;" id="notification-badge">
+            {{ notification_count }}
+            <span class="visually-hidden">notificações não lidas</span>
+        </span>
+        {% endif %}
+    </a>
+
+    <ul class="dropdown-menu dropdown-menu-end shadow-lg" 
+        style="min-width: 360px; max-height: 480px; overflow-y: auto;">
+
+        <!-- Header -->
+        <li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
+            <strong><i class="bi bi-bell me-1"></i> Notificações</strong>
+            {% if notification_count > 0 %}
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
+                <form method="post" action="{% url 'notifications:marcar_todas_como_lidas' %}" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-link btn-sm text-muted p-0"
+                            title="Marcar todas como lidas" style="font-size: 0.75rem;">
+                        <i class="bi bi-check2-all"></i> Limpar
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </li>
+        <li><hr class="dropdown-divider my-0"></li>
+
+                            <!-- Lista de notificações -->
+                            {% if notification_list %}
+                                {% for notif in notification_list %}
                                 <li>
-                                    <a class="dropdown-item py-2" href="{% url 'tarefas:tarefa_detail' task.pk %}">
-                                        <div class="d-flex justify-content-between align-items-start">
-                                            <div class="me-2">
-                                                <div class="small fw-semibold">{{ task.titulo|truncatechars:30 }}</div>
-                                                {% if task.prazo %}
-                                                <small class="text-muted">Prazo: {{ task.prazo|date:"d/m/Y" }}</small>
-                                                {% endif %}
+                                    <form method="post" action="{% url 'notifications:marcar_como_lida' notif.pk %}" class="d-inline w-100">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="dropdown-item py-2 border-0 bg-transparent w-100 text-start
+                                                    {% if not notif.lida %}bg-light{% endif %}">
+                                            <div class="d-flex align-items-start gap-2">
+                                                <!-- Ícone -->
+                                                <div class="mt-1">
+                                                    <i class="bi {{ notif.icone }} 
+                                                        {% if notif.prioridade == 'critica' %}text-danger
+                                                        {% elif notif.prioridade == 'alta' %}text-warning
+                                                        {% elif notif.prioridade == 'media' %}text-info
+                                                        {% else %}text-secondary{% endif %}">
+                                                    </i>
+                                                </div>
+                                                <!-- Conteúdo -->
+                                                <div class="flex-grow-1 me-1" style="min-width: 0;">
+                                                    <div class="small fw-semibold text-truncate">
+                                                        {{ notif.titulo }}
+                                                    </div>
+                                                    {% if notif.mensagem %}
+                                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                                        {{ notif.mensagem|truncatechars:50 }}
+                                                    </div>
+                                                    {% endif %}
+                                                    <div class="text-muted" style="font-size: 0.7rem;">
+                                                        {{ notif.tempo_relativo }}
+                                                    </div>
+                                                </div>
+                                                <!-- Badge de categoria -->
+                                                <span class="badge {{ notif.badge_class }}" style="font-size: 0.65rem; white-space: nowrap;">
+                                                    {{ notif.get_categoria_display }}
+                                                </span>
                                             </div>
-                                            {% if task.atrasada %}
-                                            <span class="badge bg-danger-subtle text-danger-emphasis">Atrasada</span>
-                                            {% elif task.data_lembrete and task.data_lembrete.date == now.date %}
-                                            <span class="badge bg-info-subtle text-info-emphasis">Lembrete</span>
-                                            {% endif %}
-                                        </div>
-                                    </a>
+                                        </button>
+                                    </form>
                                 </li>
                                 {% endfor %}
-                                <li><hr class="dropdown-divider"></li>
+
+                                {% if notification_count > 8 %}
+                                <li><hr class="dropdown-divider my-0"></li>
                                 <li>
-                                    <a class="dropdown-item text-center small text-primary" 
-                                       href="{% url 'tarefas:listar_tarefas' %}">
-                                        Ver todas as tarefas →
+                                    <a class="dropdown-item text-center small text-primary py-2"
+                                    href="{% url 'tarefas:listar_tarefas' %}">
+                                        Ver todas ({{ notification_count }}) →
                                     </a>
                                 </li>
+                                {% endif %}
+
                             {% else %}
                             <li>
-                                <div class="text-center py-3 text-muted">
-                                    <i class="bi bi-bell-slash fs-4 d-block mb-1"></i>
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-bell-slash fs-3 d-block mb-2 opacity-50"></i>
                                     <small>Nenhuma notificação</small>
                                 </div>
                             </li>
@@ -210,5 +249,45 @@
         </div>
     </nav>
 </header>
+
+ <!-- Script: Polling automático do contador (a cada 60s) -->
+<script>
+(function() {
+    const INTERVALO_MS = 60000; // 60 segundos
+    const badge = document.getElementById('notification-badge');
+    const bell = document.getElementById('header-notification-bell');
+
+    async function atualizarContador() {
+        try {
+            const resp = await fetch("{% url 'notifications:api_contagem' %}", {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            
+            if (data.count > 0) {
+                if (badge) {
+                    badge.textContent = data.count;
+                    badge.style.display = '';
+                } else {
+                    // Cria badge se não existia
+                    const newBadge = document.createElement('span');
+                    newBadge.id = 'notification-badge';
+                    newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                    newBadge.style.fontSize = '0.6em';
+                    newBadge.textContent = data.count;
+                    bell.appendChild(newBadge);
+                }
+            } else if (badge) {
+                badge.style.display = 'none';
+            }
+        } catch (e) {
+            // Silencioso - não interrompe a UX
+        }
+    }
+
+    setInterval(atualizarContador, INTERVALO_MS);
+})();
+</script>
 
 
