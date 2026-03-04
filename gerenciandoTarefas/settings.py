@@ -298,12 +298,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # =============================================================================
 # E-MAIL
 # =============================================================================
-EMAIL_BACKEND = config('EMAIL_BACKEND')
-EMAIL_HOST = config('EMAIL_HOST')
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.sendgrid.net')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
-EMAIL_HOST_USER = config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
 # Configurações de E-mail para notificações PGR
@@ -311,8 +311,8 @@ EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='seu-email@empre
 EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='seu-email@empresa.com')
 
 
-SENDGRID_API_KEY = config('SENDGRID_API_KEY')
-SENDGRID_TEMPLATE_ID = config('SENDGRID_TEMPLATE_ID')
+SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+SENDGRID_TEMPLATE_ID = config('SENDGRID_TEMPLATE_ID', default='')
 
 # =============================================================================
 # REST FRAMEWORK
@@ -342,7 +342,7 @@ if IS_DEVELOPMENT:
     print(f"Redis URL (Desenvolvimento): {REDIS_URL}")
 else:
     # Em produção (hospedagem), EXIGE que a variável de ambiente exista.
-    REDIS_URL = config('REDIS_URL')
+    REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
     print(f"Redis URL (Pré-produção): configurado via variável de ambiente")
 
 CELERY_BROKER_URL = REDIS_URL
