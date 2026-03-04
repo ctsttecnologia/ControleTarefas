@@ -31,7 +31,10 @@ from .services import (
     gerar_csv_relatorio,
     gerar_docx_relatorio,
 )
-from .utils import enviar_email_tarefa
+from notifications.services import enviar_email as enviar_email_tarefa
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -223,7 +226,7 @@ class ConcluirTarefaView(LoginRequiredMixin, View):
 # =============================================================================
 # KANBAN E CALENDÁRIO
 # =============================================================================
-
+@method_decorator(ensure_csrf_cookie, name='dispatch')
 class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/kanban_board.html'

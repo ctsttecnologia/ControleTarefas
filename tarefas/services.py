@@ -1,181 +1,198 @@
+
 # tarefas/services.py
 
-import io
+"""
+Serviço de relatórios do módulo de tarefas.
+Funções para preparar contexto e exportar em PDF, CSV e DOCX.
+"""
+
 import csv
-from datetime import datetime
-from collections import Counter
+import io
+import logging
 
+from django.db.models import Count
 from django.http import HttpResponse
-from django.template.loader import get_template
-from django.conf import settings
-from django.contrib.staticfiles import finders
-from django.db.models import Avg
+from django.template.loader import render_to_string
+from django.utils import timezone
 
-# Importe o WeasyPrint e o Document do python-docx
-from weasyprint import HTML
-from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+logger = logging.getLogger(__name__)
 
 
+# =============================================================================
+# CONTEXTO DO RELATÓRIO
+# =============================================================================
 
 def preparar_contexto_relatorio(queryset):
-    """Prepara o dicionário de contexto com dados agregados (versão de depuração final)."""
-    status_map = {choice[0]: choice[1] for choice in queryset.model.STATUS_CHOICES}
-    prioridade_map = {choice[0]: choice[1] for choice in queryset.model.PRIORIDADE_CHOICES}
-    total_tarefas = queryset.count()
- 
-    # ... (A lógica de status continua a mesma) ...
-    status_data = []
-    if total_tarefas > 0:
-        for status_key, status_label in status_map.items():
-            # ...
-            status_data.append({
-                'label': str(status_label), 'count': Counter(queryset.values_list('status', flat=True)).get(status_key, 0),
-                'percent': round((Counter(queryset.values_list('status', flat=True)).get(status_key, 0) / total_tarefas * 100), 2),
-                'key': status_key, 'avg_duration': None
-            })
+    """
+    Prepara dados estatísticos a partir do queryset de tarefas
+    para uso no template de relatório e no dashboard.
+    """
+    total = queryset.count()
 
-    # --- INÍCIO DA DEPURAÇÃO DE PRIORIDADE ---
-    #print("\n--- INÍCIO DA DEPURAÇÃO DE PRIORIDADE ---")
-    
-    # DEBUG 1: Verificando a fonte de dados
-    choices_list = queryset.model.PRIORIDADE_CHOICES
-    #print("DEBUG 1 (Fonte): A lista de CHOICES é:", choices_list)
+    # Contagem por status
+    status_counts = queryset.values('status').annotate(total=Count('id')).order_by('status')
+    status_data = [
+        {'status': item['status'], 'total': item['total']}
+        for item in status_counts
+    ]
 
-    prioridade_counts = Counter(queryset.values_list('prioridade', flat=True))
-    prioridade_data = []
-    
-    if choices_list:
-        for prioridade_key, prioridade_label in choices_list:
-            count = prioridade_counts.get(prioridade_key, 0)
-            percent = (count / total_tarefas * 100) if total_tarefas > 0 else 0
-            prioridade_data.append({
-                'label': str(prioridade_label), 'count': count,
-                'percent': round(percent, 2), 'key': prioridade_key
-            })
+    # Contagem por prioridade
+    prioridade_counts = queryset.values('prioridade').annotate(total=Count('id')).order_by('prioridade')
+    prioridade_data = [
+        {'prioridade': item['prioridade'], 'total': item['total']}
+        for item in prioridade_counts
+    ]
 
-    # DEBUG 2: Verificando o resultado do loop
-    #print("DEBUG 2 (Resultado do Loop): A lista prioridade_data é:", prioridade_data)
+    # Tarefas atrasadas
+    agora = timezone.now()
+    atrasadas = queryset.filter(prazo__lt=agora).exclude(status='concluida').count()
 
-    # Montagem do contexto
-    context = {
+    # Concluídas
+    concluidas = queryset.filter(status='concluida').count()
+
+    return {
+        'total_tarefas': total,
+        'status_data': status_data,
+        'prioridade_data': prioridade_data,
+        'atrasadas': atrasadas,
+        'concluidas': concluidas,
         'tarefas': queryset,
-        'total_tarefas': total_tarefas,
-        'status_data': sorted(status_data, key=lambda x: x['label']),
-        'prioridade_data': prioridade_data,  # ESTA É A VERSÃO CORRIGIDA. VERIFIQUE SE A SUA ESTÁ IGUAL.
-        'status_map': status_map,
-        'prioridade_map': prioridade_map,
-        'now': datetime.now(),
-        'logo_path': finders.find('imagens/logocetest.png'),
     }
 
-    # DEBUG 3: Verificando o valor final no contexto
-    #print("DEBUG 3 (Contexto Final): O valor em context['prioridade_data'] é:", context.get('prioridade_data'))
-    #print("--- FIM DA DEPURAÇÃO ---\n")
-    
-    return context
+
+# =============================================================================
+# EXPORTAÇÃO PDF
+# =============================================================================
 
 def gerar_pdf_relatorio(context):
-    """Gera um relatório em PDF."""
-    template = get_template('tarefas/relatorio_pdf.html')
-    html = template.render(context)
-    response = HttpResponse(content_type='application/pdf')
-    filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-    HTML(string=html, base_url=str(settings.BASE_DIR)).write_pdf(response)
+    """
+    Gera um relatório em PDF usando WeasyPrint (prioridade) ou xhtml2pdf (fallback).
+    """
+    try:
+        from weasyprint import HTML
+
+        html_string = render_to_string('tarefas/relatorios/relatorio_pdf.html', context)
+        pdf_file = HTML(string=html_string).write_pdf()
+
+    except ImportError:
+        try:
+            from xhtml2pdf import pisa
+
+            html_string = render_to_string('tarefas/relatorios/relatorio_pdf.html', context)
+            result = io.BytesIO()
+            pisa_status = pisa.CreatePDF(io.StringIO(html_string), dest=result)
+            if pisa_status.err:
+                logger.error("Erro ao gerar PDF com xhtml2pdf.")
+                return HttpResponse('Erro ao gerar PDF.', status=500)
+            pdf_file = result.getvalue()
+
+        except ImportError:
+            logger.error("Nenhuma biblioteca de PDF instalada (weasyprint ou xhtml2pdf).")
+            return HttpResponse(
+                'Nenhuma biblioteca de PDF instalada (weasyprint ou xhtml2pdf).',
+                status=500,
+            )
+
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="relatorio_tarefas.pdf"'
     return response
+
+
+# =============================================================================
+# EXPORTAÇÃO CSV
+# =============================================================================
 
 def gerar_csv_relatorio(context):
-    """Gera um relatório em CSV."""
+    """
+    Gera um relatório em CSV a partir do contexto.
+    """
     response = HttpResponse(content_type='text/csv; charset=utf-8')
-    filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response['Content-Disposition'] = 'attachment; filename="relatorio_tarefas.csv"'
+    response.write('\ufeff')  # BOM para Excel reconhecer UTF-8
 
-    writer = csv.writer(response)
+    writer = csv.writer(response, delimiter=';')
     writer.writerow([
-        'Título', 'Responsável', 'Status', 'Prioridade', 'Projeto',
-        'Data Criação', 'Prazo', 'Duração Prevista', 'Tempo Gasto',
-        'Lembrete (Dias)', 'Data Lembrete'
+        'ID', 'Título', 'Status', 'Prioridade',
+        'Responsável', 'Data Criação', 'Prazo',
     ])
 
-    status_map = context['status_map']
-    prioridade_map = context['prioridade_map']
-    for tarefa in context['tarefas']:
+    for tarefa in context.get('tarefas', []):
         writer.writerow([
+            tarefa.id,
             tarefa.titulo,
-            tarefa.responsavel.username if tarefa.responsavel else '-',
-            status_map.get(tarefa.status, tarefa.status),
-            prioridade_map.get(tarefa.prioridade, tarefa.prioridade),
-            tarefa.projeto if tarefa.projeto else '-',
-            tarefa.data_criacao.strftime('%d/%m/%Y %H:%M'),
+            tarefa.get_status_display() if hasattr(tarefa, 'get_status_display') else tarefa.status,
+            tarefa.get_prioridade_display() if hasattr(tarefa, 'get_prioridade_display') else tarefa.prioridade,
+            str(tarefa.responsavel) if tarefa.responsavel else '-',
+            tarefa.data_criacao.strftime('%d/%m/%Y %H:%M') if tarefa.data_criacao else '-',
             tarefa.prazo.strftime('%d/%m/%Y %H:%M') if tarefa.prazo else '-',
-            str(tarefa.duracao_prevista) if tarefa.duracao_prevista else '-',
-            str(tarefa.tempo_gasto) if tarefa.tempo_gasto else '-',
-            tarefa.dias_lembrete if tarefa.dias_lembrete else '-',
-            tarefa.data_lembrete.strftime('%d/%m/%Y') if tarefa.data_lembrete else '-',
         ])
+
     return response
+
+
+# =============================================================================
+# EXPORTAÇÃO DOCX
+# =============================================================================
 
 def gerar_docx_relatorio(context):
-    """Gera um relatório em DOCX (Word) com a lógica de tabela corrigida."""
-    document = Document()
-    
-    # --- CABEÇALHO ---
-    if context.get('logo_path'):
-        try:
-            document.add_picture(context['logo_path'], width=Inches(1.5))
-        except Exception:
-            document.add_paragraph('Logotipo não encontrado.')
+    """
+    Gera um relatório em DOCX usando python-docx.
+    """
+    try:
+        from docx import Document
+    except ImportError:
+        logger.error("Biblioteca python-docx não instalada.")
+        return HttpResponse(
+            'Biblioteca python-docx não instalada.',
+            status=500,
+        )
 
-    p = document.add_paragraph()
-    p.add_run('Relatório de Tarefas').bold = True
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p.runs[0].font.size = Pt(16)
-    document.add_paragraph(f"Gerado em: {context['now'].strftime('%d/%m/%Y %H:%M')}", style='Intense Quote')
+    doc = Document()
+    doc.add_heading('Relatório de Tarefas', level=1)
 
-    # --- ANÁLISES (OPCIONAL) ---
-    document.add_heading('Resumo por Status', level=1)
-    for item in context['status_data']:
-        document.add_paragraph(f"{item['label']}: {item['count']} ({item['percent']}%)", style='List Bullet')
+    # Resumo
+    doc.add_paragraph(f"Total de tarefas: {context.get('total_tarefas', 0)}")
+    doc.add_paragraph(f"Atrasadas: {context.get('atrasadas', 0)}")
+    doc.add_paragraph(f"Concluídas: {context.get('concluidas', 0)}")
+    doc.add_paragraph('')
 
-    # --- TABELA DE DETALHES (LÓGICA CORRIGIDA) ---
-    document.add_heading('Detalhes das Tarefas', level=1)
-    
-    # Define os cabeçalhos da tabela
-    headers = [
-        'Título', 'Responsável', 'Status', 'Prioridade', 'Projeto', 'Criação', 'Prazo'
-    ]
-    # Cria a tabela com 1 linha (cabeçalho) e o número correto de colunas
-    table = document.add_table(rows=1, cols=len(headers), style='Table Grid')
+    # Tabela de tarefas
+    tarefas = context.get('tarefas', [])
+    if tarefas:
+        table = doc.add_table(rows=1, cols=5)
+        table.style = 'Light Grid Accent 1'
 
-    # Preenche a primeira linha com os cabeçalhos
-    hdr_cells = table.rows[0].cells
-    for i, header_text in enumerate(headers):
-        hdr_cells[i].text = header_text
-        hdr_cells[i].paragraphs[0].runs[0].bold = True
+        header_cells = table.rows[0].cells
+        headers = ['Título', 'Status', 'Prioridade', 'Responsável', 'Prazo']
+        for i, header in enumerate(headers):
+            header_cells[i].text = header
 
-    # Preenche o resto da tabela com os dados das tarefas
-    status_map = context['status_map']
-    prioridade_map = context['prioridade_map']
-    
-    for tarefa in context['tarefas']:
-        row_cells = table.add_row().cells
-        row_cells[0].text = tarefa.titulo
-        row_cells[1].text = tarefa.responsavel.username if tarefa.responsavel else '-'
-        row_cells[2].text = status_map.get(tarefa.status, tarefa.status)
-        row_cells[3].text = prioridade_map.get(tarefa.prioridade, tarefa.prioridade)
-        row_cells[4].text = tarefa.projeto if tarefa.projeto else '-'
-        row_cells[5].text = tarefa.data_criacao.strftime('%d/%m/%Y')
-        row_cells[6].text = tarefa.prazo.strftime('%d/%m/%Y') if tarefa.prazo else '-'
+        for tarefa in tarefas:
+            row_cells = table.add_row().cells
+            row_cells[0].text = tarefa.titulo or ''
+            row_cells[1].text = (
+                tarefa.get_status_display()
+                if hasattr(tarefa, 'get_status_display')
+                else tarefa.status or ''
+            )
+            row_cells[2].text = (
+                tarefa.get_prioridade_display()
+                if hasattr(tarefa, 'get_prioridade_display')
+                else tarefa.prioridade or ''
+            )
+            row_cells[3].text = str(tarefa.responsavel) if tarefa.responsavel else '-'
+            row_cells[4].text = tarefa.prazo.strftime('%d/%m/%Y %H:%M') if tarefa.prazo else '-'
 
-    # --- SALVA E RETORNA O ARQUIVO ---
+    # Gera response
     buffer = io.BytesIO()
-    document.save(buffer)
+    doc.save(buffer)
     buffer.seek(0)
-    
-    response = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    filename = f"relatorio_tarefas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    )
+    response['Content-Disposition'] = 'attachment; filename="relatorio_tarefas.docx"'
     return response
+
 

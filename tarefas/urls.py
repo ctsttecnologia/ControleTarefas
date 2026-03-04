@@ -1,4 +1,3 @@
-# tarefas/urls.py
 
 # tarefas/urls.py
 
