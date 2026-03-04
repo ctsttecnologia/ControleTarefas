@@ -182,4 +182,3 @@ zope.interface==8.0.1
 zopfli==0.2.3.post1
 django-bootstrap5
 django-autocomplete-light==3.12.1
-
