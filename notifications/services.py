@@ -1,18 +1,27 @@
-
 # notifications/services.py
 
 """
-Serviço central para criação de notificações.
-Todos os módulos devem usar estas funções para criar notificações.
+Serviço central para criação de notificações e envio de e-mails.
+Todos os módulos devem usar estas funções.
 """
 
+import logging
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 from django.urls import reverse
 
 from .models import Notificacao
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
+
+# =============================================================================
+# SERVIÇO DE NOTIFICAÇÕES (SISTEMA / SINO)
+# =============================================================================
 
 def criar_notificacao(
     usuario,
@@ -59,6 +68,18 @@ def criar_notificacao(
         url_destino=url_destino,
         icone=icone,
     )
+
+
+def criar_notificacao_para_grupo(usuarios, titulo, mensagem='', **kwargs):
+    """
+    Cria a mesma notificação para múltiplos usuários.
+    """
+    notificacoes = []
+    for usuario in usuarios:
+        n = criar_notificacao(usuario, titulo, mensagem=mensagem, **kwargs)
+        if n:
+            notificacoes.append(n)
+    return notificacoes
 
 
 # =============================================================================
@@ -123,7 +144,10 @@ def notificar_tarefa_prazo_proximo(tarefa):
 
 
 def notificar_tarefa_status(tarefa, status_anterior, novo_status, alterado_por=None):
-    """Cria notificação de mudança de status."""
+    """
+    Cria notificação de mudança de status para criador e responsável.
+    Não notifica quem fez a alteração.
+    """
     destinatarios = set()
     if tarefa.usuario and tarefa.usuario != alterado_por:
         destinatarios.add(tarefa.usuario)
@@ -204,3 +228,50 @@ def notificar_pgr_plano_atrasado(plano, usuario):
         icone='bi-calendar-x',
     )
 
+
+# =============================================================================
+# SERVIÇO DE E-MAIL (CENTRALIZADO)
+# =============================================================================
+
+def enviar_email(assunto, template_texto, template_html, contexto, destinatarios):
+    """
+    Função genérica e centralizada para enviar e-mails (texto e HTML).
+
+    Args:
+        assunto (str): O assunto do e-mail.
+        template_texto (str): Caminho para o template de texto plano.
+        template_html (str): Caminho para o template HTML.
+        contexto (dict): Dicionário com dados para o template.
+        destinatarios (list): Lista de strings de e-mails dos destinatários.
+    """
+    destinatarios_validos = [email for email in destinatarios if email]
+    if not destinatarios_validos:
+        logger.warning(f"Nenhum destinatário válido fornecido para o e-mail: '{assunto}'.")
+        return False
+
+    try:
+        corpo_texto = render_to_string(template_texto, contexto)
+        corpo_html = render_to_string(template_html, contexto)
+
+        email = EmailMultiAlternatives(
+            subject=assunto,
+            body=corpo_texto,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=destinatarios_validos,
+        )
+        email.attach_alternative(corpo_html, "text/html")
+        email.send()
+        logger.info(f"E-mail '{assunto}' enviado com sucesso para {destinatarios_validos}.")
+        return True
+
+    except Exception as e:
+        logger.error(f"Falha ao enviar e-mail '{assunto}': {e}", exc_info=True)
+        return False
+
+
+# Alias para compatibilidade com imports antigos
+enviar_email_tarefa = enviar_email
+enviar_email_pgr = enviar_email
+enviar_email_chat = enviar_email
+enviar_email_sistema = enviar_email
+enviar_email_notificacao = enviar_email
