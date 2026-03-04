@@ -35,3 +35,4 @@ def notification_processor(request):
         'notification_tasks': all_notification_tasks,
         'now': now # Passa a data atual para o template, útil para comparações
     }
+

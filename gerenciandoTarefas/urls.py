@@ -68,6 +68,9 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('api/auth/', include('dj_rest_auth.urls')),
 
+    path('notificacoes/', include('notifications.urls', namespace='notifications')),
+
+
    
 ]
 
