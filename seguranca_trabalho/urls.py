@@ -37,6 +37,8 @@ from .views import (
     GerarFichaPDFView,
     RegistrarDevolucaoView,
     RelatorioSSTPDFView,
+    AjusteEstoqueView,
+    AssinarTermoView,
     desvincular_funcao_cargo,
     minha_ficha_redirect_view,
 )
@@ -76,6 +78,7 @@ urlpatterns = [
     # --- CRUD de Equipamentos ---
     path('equipamentos/', EquipamentoListView.as_view(), name='equipamento_list'),
     path('equipamentos/novo/', EquipamentoCreateView.as_view(), name='equipamento_create'),
+    path('equipamentos/<int:pk>/ajuste-estoque/', AjusteEstoqueView.as_view(), name='ajuste_estoque'),
     path('equipamentos/<int:pk>/', EquipamentoDetailView.as_view(), name='equipamento_detail'),
     path('equipamentos/<int:pk>/editar/', EquipamentoUpdateView.as_view(), name='equipamento_update'),
     path('equipamentos/<int:pk>/excluir/', EquipamentoDeleteView.as_view(), name='equipamento_delete'),

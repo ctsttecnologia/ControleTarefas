@@ -95,6 +95,12 @@ class Equipamento(models.Model):
     data_validade_ca = models.DateField(null=True, blank=True, verbose_name=_("Data de Validade do CA"))
     vida_util_dias = models.PositiveIntegerField(verbose_name=_("Vida Útil (dias)"), help_text=_("Vida útil em dias após a entrega, conforme fabricante."))
     estoque_minimo = models.PositiveIntegerField(default=5, verbose_name=_("Estoque Mínimo"))
+    estoque_atual = models.IntegerField(
+        default=0,
+        verbose_name=_("Estoque Atual"),
+        help_text=_("Atualizado automaticamente pelas movimentações."),
+        editable=False,  # Não aparece em formulários
+    )
     requer_numero_serie = models.BooleanField(default=False, verbose_name=_("Requer Rastreamento por Nº de Série?"), help_text=_("Marque se cada item individual precisa ser rastreado."))
     foto = models.ImageField(upload_to='epi_fotos/', null=True, blank=True, verbose_name=_("Foto do Equipamento"))
     observacoes = models.TextField(blank=True, verbose_name=_("Observações"))
@@ -123,6 +129,19 @@ class Equipamento(models.Model):
 
     def get_absolute_url(self):
         return reverse('seguranca_trabalho:equipamento_detail', args=[self.pk])
+    
+    @property
+    def estoque_critico(self):
+        return self.estoque_atual <= self.estoque_minimo
+
+    @property
+    def estoque_status(self):
+        if self.estoque_atual <= 0:
+            return 'sem_estoque'
+        elif self.estoque_atual <= self.estoque_minimo:
+            return 'critico'
+        return 'ok'
+
 
 class MatrizEPI(models.Model):
     funcao = models.ForeignKey(Funcao, on_delete=models.CASCADE, related_name='matriz_epis')
@@ -289,7 +308,13 @@ class MovimentacaoEstoque(models.Model):
     data = models.DateTimeField(default=timezone.now, null=True, blank=True)
     responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
     justificativa = models.CharField(max_length=255)
-    entrega_associada = models.OneToOneField(EntregaEPI, on_delete=models.SET_NULL, null=True, blank=True)
+    entrega_associada = models.ForeignKey(
+        'EntregaEPI',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='movimentacoes',
+    )
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,

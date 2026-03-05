@@ -14,4 +14,16 @@ __pycache__/
 # Ambiente Virtual
 /venv/
 /env/
-.env    
+.env  
+
+# Scripts temporários de debug
+check_*.py
+debug_*.py
+debug_*.html
+fix_*.py
+sync_*.py
+seed_*.py
+diagnostico_*.py
+health_monitor.py
+count_*.py
+check_matriz.*py
