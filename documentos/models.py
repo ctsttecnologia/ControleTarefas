@@ -5,10 +5,18 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
-
+import os
+from django.conf import settings
 # Importando a infraestrutura de Filial, conforme seus outros apps
 from usuario.models import Filial
 from core.managers import FilialManager
+
+from django.core.files.storage import FileSystemStorage
+# Storage privado — salva em private_media/ ao invés de midia/
+private_storage = FileSystemStorage(
+    location=getattr(settings, 'PRIVATE_MEDIA_ROOT', os.path.join(settings.BASE_DIR, 'private_media')),
+    base_url='/private/',
+)
 
 def private_document_path(instance, filename):
     """
@@ -35,9 +43,10 @@ class Documento(models.Model):
     nome = models.CharField("Nome do Documento", max_length=255)
     
     arquivo = models.FileField(
-        "Ficheiro",
+        "Arquivo",
         upload_to=private_document_path,
-        help_text="O ficheiro será armazenado em local seguro."
+        storage=private_storage,  # ← AQUI! Usa storage privado
+        help_text="O arquivo será armazenado em local seguro.",
     )
 
     data_emissao = models.DateField("Data de Emissão", null=True, blank=True)
@@ -140,4 +149,10 @@ class Documento(models.Model):
             return False
         return self.data_vencimento < timezone.now().date()
 
-
+    def private_document_path(instance, filename):
+        """
+        Salva arquivos na pasta PRIVATE_MEDIA_ROOT (fora do MEDIA_ROOT público).
+        """
+        app_label = instance.content_type.app_label
+        object_id = instance.object_id
+        return os.path.join('documentos', app_label, str(object_id), filename)

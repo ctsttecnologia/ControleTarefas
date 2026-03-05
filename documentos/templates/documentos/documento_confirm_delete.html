@@ -1,30 +1,46 @@
-
 {% extends "base.html" %}
+
+{% block title %}Excluir Documento | Gerenciando Tarefas{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-lg-6">
+
             <div class="card shadow-sm border-danger">
-                <div class="card-header bg-danger text-white">
-                    Confirmar Exclusão
+                <div class="card-header bg-danger text-white d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Confirmar Exclusão</strong>
                 </div>
-                <div class="card-body">
-                    <p>Tem a certeza que deseja apagar o documento: 
+                <div class="card-body p-4">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-file-earmark-x text-danger" style="font-size: 3rem;"></i>
+                    </div>
+
+                    <p class="text-center fs-5">
+                        Deseja realmente excluir o documento:<br>
                         <strong>"{{ documento.nome }}"</strong>?
                     </p>
-                    <p class="text-muted">Este ficheiro será permanentemente removido.</p>
-                    
-                    <form method="post">
+                    <p class="text-muted text-center small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Esta ação é permanente e o arquivo será removido do servidor.
+                    </p>
+
+                    <form method="post" class="d-flex justify-content-center gap-3 mt-4">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">Sim, apagar</button>
-                        <a href="{{ request.META.HTTP_REFERER|default:"/" }}" class="btn btn-secondary">Cancelar</a>
+                        <a href="{{ request.META.HTTP_REFERER|default:'/' }}"
+                           class="btn btn-secondary px-4">
+                            <i class="bi bi-x-lg me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-trash me-1"></i>Sim, excluir
+                        </button>
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
 {% endblock %}
-
 
