@@ -1,8 +1,9 @@
-
+﻿
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
 {% block title %}Recarga — {{ recarga.linha.numero }}{% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
@@ -179,7 +180,8 @@
                         <div class="col-md-6">
                             <label class="text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Comprovante</label>
                             <div>
-                                <a href="{{ recarga.comprovante.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                {% secure_url recarga "comprovante" as comprovante_url %}
+                                    <a href="{{ comprovante_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-file-earmark-arrow-down me-1"></i>Baixar Comprovante
                                 </a>
                             </div>
@@ -258,4 +260,5 @@
     </div>
 </div>
 {% endblock %}
+
 

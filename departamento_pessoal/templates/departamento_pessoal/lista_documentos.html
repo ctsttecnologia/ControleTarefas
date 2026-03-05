@@ -1,4 +1,5 @@
-{% extends "departamento_pessoal/_base_dp.html" %}
+﻿{% extends "departamento_pessoal/_base_dp.html" %}
+{% load secure_url %}
 
 {% block title %}Documentos - Departamento Pessoal{% endblock %}
 
@@ -74,7 +75,8 @@
                             <td><code>{{ documento.numero|default:"-" }}</code></td>
                             <td class="text-center">
                                 {% if documento.anexo %}
-                                    <a href="{{ documento.anexo.url }}" target="_blank" 
+                                    {% secure_url documento "anexo" as anexo_url %}
+                                <a href="{{ anexo_url }}" target="_blank" 
                                        class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-paperclip me-1"></i> Ver
                                     </a>
@@ -113,5 +115,7 @@
     </div>
 </div>
 {% endblock %}
+
+
 
 

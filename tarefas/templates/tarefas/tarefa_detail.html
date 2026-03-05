@@ -1,10 +1,11 @@
-
+﻿
 <!-- templates/tarefas/tarefa_detail.html -->
 {% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{{ object.titulo }}{% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -85,7 +86,8 @@
                             </div>
                             <p class="mb-1">{{ comentario.texto|linebreaksbr }}</p>
                             {% if comentario.anexo %}
-                            <a href="{{ comentario.anexo.url }}" class="badge bg-light text-dark text-decoration-none" target="_blank">
+                            {% secure_url comentario "anexo" as anexo_url %}
+                            <a href="{{ anexo_url }}" class="badge bg-light text-dark text-decoration-none" target="_blank">
                                 <i class="bi bi-paperclip me-1"></i>{{ comentario.nome_anexo }}
                             </a>
                             {% endif %}
@@ -235,4 +237,5 @@
     </div>
 </div>
 {% endblock %}
+
 

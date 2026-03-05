@@ -1,4 +1,4 @@
-<!-- Página de Visualização de Fotos do Agendamento -->
+﻿<!-- Página de Visualização de Fotos do Agendamento -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -106,6 +106,7 @@
 </style>
 {% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
@@ -131,8 +132,9 @@
             {% with has_photos=False %}
             <div class="photo-grid">
                 {% if agendamento.fotos %}
-                <div class="photo-item" onclick="showPhotoModal('{{ agendamento.fotos.url }}', 'Foto Principal')">
-                    <img src="{{ agendamento.fotos.url }}" alt="Foto Principal" loading="lazy">
+                <div class="photo-item" {% secure_url agendamento "foto_principal" as foto_principal_url %}
+                    onclick="showPhotoModal('{{ foto_principal_url }}', 'Foto Principal')">
+                    <img src="{{ foto_principal_url }}" alt="Foto Principal" loading="lazy">
                     <div class="photo-item-info">
                         <div class="photo-item-label">Foto Principal</div>
                         <div class="photo-item-sub">Agendamento #{{ agendamento.id }}</div>
@@ -142,8 +144,9 @@
 
                 {% for checklist in agendamento.checklists.all %}
                     {% if checklist.foto_frontal %}
-                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_frontal.url }}', 'Frontal')">
-                        <img src="{{ checklist.foto_frontal.url }}" alt="Frontal" loading="lazy">
+                    <div class="photo-item" {% secure_url checklist "foto_frontal" as foto_frontal_url %}
+                    onclick="showPhotoModal('{{ foto_frontal_url }}', 'Frontal')">
+                        <img src="{{ foto_frontal_url }}" alt="Frontal" loading="lazy">
                         <div class="photo-item-info">
                             <div class="photo-item-label">Frontal</div>
                             <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
@@ -152,8 +155,9 @@
                     {% endif %}
 
                     {% if checklist.foto_trazeira %}
-                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_trazeira.url }}', 'Traseira')">
-                        <img src="{{ checklist.foto_trazeira.url }}" alt="Traseira" loading="lazy">
+                    <div class="photo-item" {% secure_url checklist "foto_trazeira" as foto_trazeira_url %}
+                    onclick="showPhotoModal('{{ foto_trazeira_url }}', 'Traseira')">
+                        <img src="{{ foto_trazeira_url }}" alt="Traseira" loading="lazy">
                         <div class="photo-item-info">
                             <div class="photo-item-label">Traseira</div>
                             <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
@@ -162,8 +166,9 @@
                     {% endif %}
 
                     {% if checklist.foto_lado_motorista %}
-                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_lado_motorista.url }}', 'Lado Motorista')">
-                        <img src="{{ checklist.foto_lado_motorista.url }}" alt="Lado Motorista" loading="lazy">
+                    <div class="photo-item" {% secure_url checklist "foto_lado_motorista" as foto_motorista_url %}
+                    onclick="showPhotoModal('{{ foto_motorista_url }}', 'Lado Motorista')">
+                        <img src="{{ foto_motorista_url }}" alt="Lado Motorista" loading="lazy">
                         <div class="photo-item-info">
                             <div class="photo-item-label">Lado Motorista</div>
                             <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
@@ -172,8 +177,9 @@
                     {% endif %}
 
                     {% if checklist.foto_lado_passageiro %}
-                    <div class="photo-item" onclick="showPhotoModal('{{ checklist.foto_lado_passageiro.url }}', 'Lado Passageiro')">
-                        <img src="{{ checklist.foto_lado_passageiro.url }}" alt="Lado Passageiro" loading="lazy">
+                    <div class="photo-item" {% secure_url checklist "foto_lado_passageiro" as foto_passageiro_url %}
+                    onclick="showPhotoModal('{{ foto_passageiro_url }}', 'Lado Passageiro')">
+                        <img src="{{ foto_passageiro_url }}" alt="Lado Passageiro" loading="lazy">
                         <div class="photo-item-info">
                             <div class="photo-item-label">Lado Passageiro</div>
                             <div class="photo-item-sub">Checklist #{{ checklist.id }}</div>
@@ -222,5 +228,6 @@ function showPhotoModal(url, title) {
 }
 </script>
 {% endblock %}
+
 
 

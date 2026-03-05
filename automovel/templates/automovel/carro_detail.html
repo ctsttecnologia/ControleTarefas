@@ -1,4 +1,4 @@
-<!-- Detalhes do Carro -->
+﻿<!-- Detalhes do Carro -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -159,6 +159,7 @@
 </style>
 {% endblock %}
 
+{% load secure_url %}
 {% block content %}
 {% include "partials/_messages.html" %}
 
@@ -223,7 +224,8 @@
                 </div>
                 <div class="vehicle-photo">
                     {% if carro.foto %}
-                    <img src="{{ carro.foto.url }}" alt="{{ carro.modelo }}" loading="lazy">
+                    {% secure_url carro "foto" as foto_url %}
+                        <img src="{{ foto_url }}" alt="{{ carro.modelo }}" loading="lazy">
                     {% else %}
                     <div class="vehicle-photo-empty">
                         <i class="bi bi-car-front"></i>
@@ -655,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
 
 
 

@@ -1,4 +1,4 @@
-<!-- Detalhes do Checklist de Vistoria -->
+﻿<!-- Detalhes do Checklist de Vistoria -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -71,6 +71,7 @@
 </style>
 {% endblock %}
 
+{% load secure_url %}
 {% block content %}
 {% include "partials/_messages.html" %}
 
@@ -178,32 +179,36 @@
             <div class="photo-grid">
                 {% if checklist.foto_frontal %}
                 <div class="photo-card">
-                    <a href="{{ checklist.foto_frontal.url }}" target="_blank">
-                        <img src="{{ checklist.foto_frontal.url }}" alt="Frontal" loading="lazy">
+                    {% secure_url checklist "foto_frontal" as foto_frontal_url %}
+                            <a href="{{ foto_frontal_url }}" target="_blank">
+                        <img src="{{ foto_frontal_url }}" alt="Frontal" loading="lazy">
                     </a>
                     <h6>Frontal</h6>
                 </div>
                 {% endif %}
                 {% if checklist.foto_trazeira %}
                 <div class="photo-card">
-                    <a href="{{ checklist.foto_trazeira.url }}" target="_blank">
-                        <img src="{{ checklist.foto_trazeira.url }}" alt="Traseira" loading="lazy">
+                    {% secure_url checklist "foto_trazeira" as foto_trazeira_url %}
+                            <a href="{{ foto_trazeira_url }}" target="_blank">
+                        <img src="{{ foto_trazeira_url }}" alt="Traseira" loading="lazy">
                     </a>
                     <h6>Traseira</h6>
                 </div>
                 {% endif %}
                 {% if checklist.foto_lado_motorista %}
                 <div class="photo-card">
-                    <a href="{{ checklist.foto_lado_motorista.url }}" target="_blank">
-                        <img src="{{ checklist.foto_lado_motorista.url }}" alt="Lado Motorista" loading="lazy">
+                    {% secure_url checklist "foto_lado_motorista" as foto_motorista_url %}
+                            <a href="{{ foto_motorista_url }}" target="_blank">
+                        <img src="{{ foto_motorista_url }}" alt="Lado Motorista" loading="lazy">
                     </a>
                     <h6>Motorista</h6>
                 </div>
                 {% endif %}
                 {% if checklist.foto_lado_passageiro %}
                 <div class="photo-card">
-                    <a href="{{ checklist.foto_lado_passageiro.url }}" target="_blank">
-                        <img src="{{ checklist.foto_lado_passageiro.url }}" alt="Lado Passageiro" loading="lazy">
+                    {% secure_url checklist "foto_lado_passageiro" as foto_passageiro_url %}
+                            <a href="{{ foto_passageiro_url }}" target="_blank">
+                        <img src="{{ foto_passageiro_url }}" alt="Lado Passageiro" loading="lazy">
                     </a>
                     <h6>Passageiro</h6>
                 </div>
@@ -225,5 +230,6 @@
     {% endif %}
 </div>
 {% endblock %}
+
 
 

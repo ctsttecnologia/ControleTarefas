@@ -1,6 +1,7 @@
-
+﻿
 {# ferramentas/ferramenta_detail.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
+{% load secure_url %}
 
 {% block ferramentas_page_title %}{{ ferramenta.nome }}{% endblock %}
 
@@ -152,9 +153,10 @@
             </div>
             <div class="card-body text-center">
                 {% if ferramenta.qr_code %}
-                    <img src="{{ ferramenta.qr_code.url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
+                    {% secure_url ferramenta "qr_code" as qr_url %}
+                            <img src="{{ qr_url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
                     <div class="d-grid">
-                        <a href="{{ ferramenta.qr_code.url }}" download="qr-{{ ferramenta.codigo_identificacao }}.png" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ qr_url }}" download="qr-{{ ferramenta.codigo_identificacao }}.png" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-download me-1"></i>Baixar
                         </a>
                     </div>
@@ -283,5 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endblock %}
+
+
 
 

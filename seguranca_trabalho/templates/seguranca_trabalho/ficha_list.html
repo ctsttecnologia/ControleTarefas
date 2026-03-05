@@ -1,5 +1,6 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load secure_url %}
 
 {% block title %}Fichas de EPI{% endblock %}
 
@@ -79,7 +80,8 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 {% if ficha.funcionario.foto_3x4 %}
-                                <img src="{{ ficha.funcionario.foto_3x4.url }}" alt="" 
+                                {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
+                                <img src="{{ foto_url }}" alt="" 
                                      class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
                                 {% else %}
                                 <div class="rounded-circle bg-secondary bg-opacity-10 me-2 d-flex align-items-center justify-content-center" 
@@ -142,4 +144,6 @@
 </div>
 
 {% endblock %}
+
+
 

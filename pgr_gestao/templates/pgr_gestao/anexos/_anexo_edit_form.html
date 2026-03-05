@@ -1,3 +1,4 @@
+﻿{% load secure_url %}
 
 <form method="post" action="{% url 'pgr_gestao:anexo_editar' pk=anexo.pk %}"
       enctype="multipart/form-data">
@@ -27,7 +28,8 @@
             <label class="form-label fw-bold">Substituir Arquivo (opcional)</label>
             {{ form.arquivo }}
             <small class="text-muted">
-                Atual: <a href="{{ anexo.arquivo.url }}" target="_blank">{{ anexo.nome_arquivo_original }}</a>
+                {% secure_url anexo "arquivo" as arquivo_url %}
+                    Atual: <a href="{{ arquivo_url }}" target="_blank">{{ anexo.nome_arquivo_original }}</a>
                 ({{ anexo.tamanho_formatado }})
             </small>
         </div>
@@ -45,4 +47,5 @@
         </button>
     </div>
 </form>
+
 
