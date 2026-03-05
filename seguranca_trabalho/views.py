@@ -28,6 +28,7 @@ from django.views.generic import (
 from django.views.generic.edit import FormMixin
 from django.views.decorators.http import require_POST
 from docx import Document
+from packaging.utils import _
 from weasyprint import HTML, default_url_fetcher
 
 from core.mixins import (
@@ -39,7 +40,7 @@ from usuario.models import Filial
 from usuario.views import StaffRequiredMixin
 from .forms import (
     AssinaturaEntregaForm, AssinaturaTermoForm, EntregaEPIForm, EquipamentoForm,
-    FichaEPIForm, FuncaoForm, CargoFuncaoForm
+    FichaEPIForm, FuncaoForm, CargoFuncaoForm, AjusteEstoqueForm
 )
 from .models import (
     EntregaEPI, Equipamento, FichaEPI, Funcao, MatrizEPI, CargoFuncao, MovimentacaoEstoque
@@ -100,17 +101,28 @@ class EquipamentoDetailView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialSc
     permission_required = 'seguranca_trabalho.view_equipamento'
 
 
-class EquipamentoCreateView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+class EquipamentoCreateView(LoginRequiredMixin, CreateView):
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
-    permission_required = 'seguranca_trabalho.add_equipamento'
 
     def form_valid(self, form):
-        messages.success(self.request, f"Equipamento '{form.instance.nome}' cadastrado com sucesso!")
-        return super().form_valid(form)
+        filial = getattr(self.request.user, 'filial_ativa', None)
+        form.instance.filial = filial
+        response = super().form_valid(form)
 
+        estoque_inicial = form.cleaned_data.get('estoque_inicial')
+        if estoque_inicial and estoque_inicial > 0:
+            MovimentacaoEstoque.objects.create(
+                equipamento=self.object,
+                tipo='ENTRADA',
+                quantidade=estoque_inicial,
+                justificativa='Carga inicial de estoque (cadastro do equipamento)',
+                responsavel=self.request.user,
+                filial=filial,
+            )
+        return response
 
 class EquipamentoUpdateView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
     model = Equipamento
@@ -137,6 +149,63 @@ class EquipamentoDeleteView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialSc
     def form_valid(self, form):
         messages.success(self.request, "Equipamento excluído com sucesso!")
         return super().form_valid(form)
+
+class AjusteEstoqueView(LoginRequiredMixin, SSTPermissionMixin, View):
+    """Permite ajustar o estoque de um equipamento com justificativa."""
+    permission_required = 'seguranca_trabalho.change_equipamento'
+
+    def _get_filial(self, request):
+        return getattr(request.user, 'filial_ativa', None)
+
+    def get(self, request, pk):
+        filial = self._get_filial(request)
+        equipamento = get_object_or_404(Equipamento, pk=pk, filial=filial)
+        form = AjusteEstoqueForm()
+        return render(request, 'seguranca_trabalho/ajuste_estoque.html', {
+            'equipamento': equipamento,
+            'form': form,
+        })
+
+    def post(self, request, pk):
+        filial = self._get_filial(request)
+        equipamento = get_object_or_404(Equipamento, pk=pk, filial=filial)
+        form = AjusteEstoqueForm(request.POST)
+
+        if form.is_valid():
+            tipo = form.cleaned_data['tipo']
+            quantidade = form.cleaned_data['quantidade']
+            justificativa = form.cleaned_data['justificativa']
+
+            # Validar que não fique negativo na saída
+            if tipo == 'SAIDA' and quantidade > equipamento.estoque_atual:
+                form.add_error('quantidade', _(
+                    f"Estoque insuficiente. Disponível: {equipamento.estoque_atual}"
+                ))
+                return render(request, 'seguranca_trabalho/ajuste_estoque.html', {
+                    'equipamento': equipamento,
+                    'form': form,
+                })
+
+            MovimentacaoEstoque.objects.create(
+                equipamento=equipamento,
+                tipo=tipo,
+                quantidade=quantidade,
+                justificativa=f"[AJUSTE MANUAL] {justificativa}",
+                responsavel=request.user,
+                filial=filial,
+            )
+
+            tipo_label = "adicionadas ao" if tipo == 'ENTRADA' else "removidas do"
+            messages.success(
+                request,
+                f"{quantidade} unidades {tipo_label} estoque de '{equipamento.nome}'."
+            )
+            return redirect('seguranca_trabalho:equipamento_detail', pk=equipamento.pk)
+
+        return render(request, 'seguranca_trabalho/ajuste_estoque.html', {
+            'equipamento': equipamento,
+            'form': form,
+        })
 
 
 # =============================================================================
@@ -212,10 +281,21 @@ class FichaEPIDetailView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMix
         return self.form_invalid(form)
 
     def form_valid(self, form):
-        nova_entrega = form.save(commit=False)
-        nova_entrega.ficha = self.object
-        nova_entrega.filial = self.object.filial
-        nova_entrega.save()
+        with transaction.atomic():
+            nova_entrega = form.save(commit=False)
+            nova_entrega.ficha = self.object
+            nova_entrega.filial = self.object.filial
+            nova_entrega.save()
+            # Criar movimentação de SAÍDA no estoque
+            MovimentacaoEstoque.objects.create(
+                equipamento=nova_entrega.equipamento,
+                tipo='SAIDA',
+                quantidade=nova_entrega.quantidade,
+                responsavel=self.request.user,
+                justificativa=f"Entrega EPI - Ficha #{self.object.pk} ({self.object.funcionario.nome_completo})",
+                entrega_associada=nova_entrega,
+                filial=nova_entrega.filial,
+            )
         messages.success(self.request, "Nova entrega de EPI registrada com sucesso!")
         return redirect(self.get_success_url())
 
@@ -303,8 +383,17 @@ class RegistrarDevolucaoView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScop
             entrega.data_devolucao = timezone.now().date()
             entrega.recebedor_devolucao = request.user
             entrega.save()
+            # Criar movimentação de ENTRADA (devolução) no estoque
+            MovimentacaoEstoque.objects.create(
+                equipamento=entrega.equipamento,
+                tipo='ENTRADA',
+                quantidade=entrega.quantidade,
+                responsavel=request.user,
+                justificativa=f"Devolução EPI - Ficha #{entrega.ficha.pk} ({entrega.ficha.funcionario.nome_completo})",
+                entrega_associada=entrega,
+                filial=entrega.filial,
+            )
             messages.success(request, f"Devolução do EPI '{entrega.equipamento.nome}' registrada.")
-
         return redirect('seguranca_trabalho:ficha_detail', pk=entrega.ficha.pk)
 
 
@@ -580,10 +669,6 @@ class FuncaoCreateView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMixin
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
     permission_required = 'seguranca_trabalho.add_funcao'
-
-    def form_valid(self, form):
-        messages.success(self.request, f"Função '{form.instance.nome}' criada com sucesso.")
-        return super().form_valid(form)
 
     def get_template_names(self):
         if self.request.htmx:

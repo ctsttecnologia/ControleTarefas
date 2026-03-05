@@ -12,19 +12,24 @@ from django_select2.forms import ModelSelect2Widget
 
 
 class EquipamentoForm(forms.ModelForm):
+    estoque_inicial = forms.IntegerField(
+        required=False,
+        min_value=0,
+        label=_("Estoque Atual"),
+        help_text=_("Quantidade inicial em estoque. Será registrada como entrada de inventário."),
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'placeholder': '0'}),
+    )
 
     class Meta:
         model = Equipamento
-        # REMOVIDO: 'fornecedor' foi retirado da lista de campos.
         fields = [
             'nome', 'modelo', 'fabricante',
             'certificado_aprovacao', 'data_validade_ca', 'vida_util_dias',
             'estoque_minimo', 'requer_numero_serie', 'foto', 'observacoes', 'ativo',
         ]
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug', }),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Protetor Auricular Plug'}),
             'modelo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 1100'}),
-
             'fabricante': ModelSelect2Widget(
                 model=Parceiro,
                 search_fields=['nome_fantasia__icontains', 'razao_social__icontains'],
@@ -33,7 +38,6 @@ class EquipamentoForm(forms.ModelForm):
                     'data-placeholder': 'Buscar fabricante...'
                 }
             ),
-            
             'certificado_aprovacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 5745'}),
             'data_validade_ca': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'vida_util_dias': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
@@ -46,17 +50,34 @@ class EquipamentoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.fields['fabricante'].queryset = Parceiro.objects.filter(eh_fabricante=True)
-        # Lógica para tornar campos somente leitura na edição (mantida)
+
         if self.instance.pk:
+            # Edição: campos CA readonly
             self.fields['certificado_aprovacao'].widget.attrs['readonly'] = True
-            self.fields['data_validade_ca'].widget.attrs['readonly'] = True
             self.fields['data_validade_ca'].widget = forms.TextInput(
                 attrs={'class': 'form-control-plaintext', 'readonly': True}
             )
             if self.instance.data_validade_ca:
                 self.initial['data_validade_ca'] = self.instance.data_validade_ca.strftime('%d/%m/%Y')
+
+            # Estoque: readonly na edição, mostra valor atual
+            self.fields['estoque_inicial'].label = _("Estoque Atual")
+            self.fields['estoque_inicial'].initial = self.instance.estoque_atual
+            self.fields['estoque_inicial'].help_text = _(
+                "Atualizado automaticamente. Use 'Ajuste de Estoque' para alterar."
+            )
+            self.fields['estoque_inicial'].widget.attrs.update({
+                'readonly': True,
+                'class': 'form-control bg-light fw-bold',
+                'tabindex': '-1',
+            })
+        else:
+            # Criação: campo editável
+            self.fields['estoque_inicial'].label = _("Estoque Inicial")
+            self.fields['estoque_inicial'].help_text = _(
+                "Quantidade em estoque. Será registrada como entrada de inventário."
+            )
 
 
 class FichaEPIForm(forms.ModelForm):
@@ -167,3 +188,23 @@ class CargoFuncaoForm(forms.ModelForm):
             'funcao': forms.Select(attrs={'class': 'form-select'}),
         }
 
+class AjusteEstoqueForm(forms.Form):
+    TIPO_CHOICES = [
+        ('ENTRADA', _('Entrada (adicionar ao estoque)')),
+        ('SAIDA', _('Saída (remover do estoque)')),
+    ]
+
+    tipo = forms.ChoiceField(
+        choices=TIPO_CHOICES,
+        label=_("Tipo de Ajuste"),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    quantidade = forms.IntegerField(
+        min_value=1,
+        label=_("Quantidade"),
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'placeholder': 'Ex: 10'}),
+    )
+    justificativa = forms.CharField(
+        label=_("Justificativa"),
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Ex: Compra NF 12345 / Ajuste de inventário'}),
+    )

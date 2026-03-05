@@ -1,0 +1,167 @@
+
+{% extends "seguranca_trabalho/_base_sst.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Ajuste de Estoque - {{ equipamento.nome }}{% endblock %}
+
+{% block sst_content %}
+
+<!-- Header -->
+<div class="card bg-primary text-white shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-1">
+                    <i class="bi bi-arrow-left-right me-2"></i>Ajuste de Estoque
+                </h4>
+                <small class="opacity-75">{{ equipamento.nome }} {{ equipamento.modelo|default:"" }}</small>
+            </div>
+            <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <!-- Resumo do Estoque Atual -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card text-center {% if equipamento.estoque_status == 'sem_estoque' %}border-danger{% elif equipamento.estoque_status == 'critico' %}border-warning{% else %}border-success{% endif %}">
+                    <div class="card-body py-3">
+                        <small class="text-muted">Estoque Atual</small>
+                        <h2 class="mb-0 {% if equipamento.estoque_status == 'sem_estoque' %}text-danger{% elif equipamento.estoque_status == 'critico' %}text-warning{% else %}text-success{% endif %}">
+                            {{ equipamento.estoque_atual }}
+                        </h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body py-3">
+                        <small class="text-muted">Estoque Mínimo</small>
+                        <h2 class="mb-0 text-muted">{{ equipamento.estoque_minimo }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body py-3">
+                        <small class="text-muted">Status</small>
+                        <div class="mt-1">
+                            {% if equipamento.estoque_status == 'sem_estoque' %}
+                            <span class="badge bg-danger fs-6">Sem Estoque</span>
+                            {% elif equipamento.estoque_status == 'critico' %}
+                            <span class="badge bg-warning text-dark fs-6">Crítico</span>
+                            {% else %}
+                            <span class="badge bg-success fs-6">OK</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulário de Ajuste -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-pencil-square me-2"></i>Registrar Movimentação
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.tipo.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.tipo.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.tipo }}
+                            {% for error in form.tipo.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.quantidade.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.quantidade.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.quantidade }}
+                            {% for error in form.quantidade.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form.justificativa.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.justificativa.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.justificativa }}
+                            {% for error in form.justificativa.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Preview do resultado -->
+                    <div class="alert alert-info mt-3 d-none" id="preview-resultado">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Estoque após ajuste: <strong id="preview-valor">-</strong>
+                    </div>
+
+                    <div class="border-top pt-4 mt-4 d-flex justify-content-between">
+                        <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-lg me-1"></i> Confirmar Ajuste
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const estoqueAtual = {{ equipamento.estoque_atual }};
+    const tipoField = document.getElementById('{{ form.tipo.id_for_label }}');
+    const qtdField = document.getElementById('{{ form.quantidade.id_for_label }}');
+    const preview = document.getElementById('preview-resultado');
+    const previewValor = document.getElementById('preview-valor');
+
+    function atualizarPreview() {
+        const tipo = tipoField.value;
+        const qtd = parseInt(qtdField.value) || 0;
+
+        if (qtd > 0) {
+            const resultado = tipo === 'ENTRADA' ? estoqueAtual + qtd : estoqueAtual - qtd;
+            previewValor.textContent = resultado;
+            preview.classList.remove('d-none');
+
+            if (resultado < 0) {
+                preview.className = 'alert alert-danger mt-3';
+                previewValor.parentElement.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Estoque após ajuste: <strong class="text-danger">' + resultado + ' (NEGATIVO!)</strong>';
+            } else {
+                preview.className = 'alert alert-info mt-3';
+                previewValor.parentElement.innerHTML = '<i class="bi bi-info-circle me-1"></i> Estoque após ajuste: <strong>' + resultado + '</strong>';
+            }
+        } else {
+            preview.classList.add('d-none');
+        }
+    }
+
+    tipoField.addEventListener('change', atualizarPreview);
+    qtdField.addEventListener('input', atualizarPreview);
+});
+</script>
+
+{% endblock %}
+
