@@ -27,3 +27,4 @@ diagnostico_*.py
 health_monitor.py
 count_*.py
 check_matriz.*py
+private_media/
