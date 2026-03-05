@@ -1,4 +1,5 @@
-{% extends "departamento_pessoal/_base_dp.html" %}
+﻿{% extends "departamento_pessoal/_base_dp.html" %}
+{% load secure_url %}
 {% load widget_tweaks %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
@@ -36,7 +37,8 @@
                 <div class="col-md-3 text-center mb-4">
                     <h6 class="text-muted mb-3">Foto 3x4</h6>
                     {% if object.foto_3x4 %}
-                        <img src="{{ object.foto_3x4.url }}" alt="Foto" class="rounded mb-2" 
+                        {% secure_url object "foto_3x4" as foto_url %}
+                            <img src="{{ foto_url }}" alt="Foto" class="rounded mb-2" 
                              style="width: 150px; height: 200px; object-fit: cover;">
                     {% else %}
                         <div class="d-flex align-items-center justify-content-center bg-light rounded mb-2 mx-auto" 
@@ -153,3 +155,5 @@ $(document).ready(function() {
 });
 </script>
 {% endblock %}
+
+

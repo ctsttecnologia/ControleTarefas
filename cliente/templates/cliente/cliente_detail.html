@@ -1,8 +1,9 @@
-
+﻿
 {% extends 'base.html' %}
 
 {% block title %}Cliente — CM {{ cliente.contrato|default:"" }}{% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
@@ -131,7 +132,8 @@
                                     <td class="text-end px-3">
                                         <div class="btn-group btn-group-sm" role="group">
                                             {% if doc and doc.arquivo %}
-                                            <a href="{{ doc.arquivo.url }}" target="_blank"
+                                            {% secure_url doc "arquivo" as arquivo_url %}
+                                    <a href="{{ arquivo_url }}" target="_blank"
                                                class="btn btn-outline-primary" title="Baixar">
                                                 <i class="bi bi-download"></i>
                                             </a>
@@ -239,5 +241,6 @@
     </div>
 </div>
 {% endblock %}
+
 
 

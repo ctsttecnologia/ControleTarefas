@@ -1,4 +1,4 @@
-
+﻿
 {% extends 'pgr_gestao/base.html' %}
 {% load static %}
 
@@ -9,6 +9,7 @@
 <li class="breadcrumb-item active">{{ documento.codigo_documento }}</li>
 {% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="page-header">
     <div class="d-flex justify-content-between align-items-start">
@@ -586,7 +587,8 @@
                                 <span class="badge bg-info">{{ anexo.get_tipo_anexo_display }}</span>
                             </td>
                             <td>
-                                <a href="{{ anexo.arquivo.url }}" target="_blank" class="text-decoration-none">
+                                {% secure_url anexo "arquivo" as arquivo_url %}
+                        <a href="{{ arquivo_url }}" target="_blank" class="text-decoration-none">
                                     <i class="fas {{ anexo.icone_tipo }}"></i>
                                     {{ anexo.nome_arquivo_original|default:anexo.arquivo.name|truncatechars:30 }}
                                 </a>
@@ -605,7 +607,7 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ anexo.arquivo.url }}" target="_blank"
+                                    <a href="{{ arquivo_url }}" target="_blank"
                                        class="btn btn-outline-primary" title="Visualizar/Download">
                                         <i class="fas fa-download"></i>
                                     </a>
@@ -1013,5 +1015,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
 
 

@@ -1,5 +1,6 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load secure_url %}
 {% load widget_tweaks %}
 
 {% block title %}Ficha de {{ ficha.funcionario.nome_completo }}{% endblock %}
@@ -12,7 +13,8 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center">
                 {% if ficha.funcionario.foto_3x4 %}
-                <img src="{{ ficha.funcionario.foto_3x4.url }}" alt="" 
+                {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
+                <img src="{{ foto_url }}" alt="" 
                      class="rounded-circle me-3 border border-2 border-white" 
                      style="width: 60px; height: 60px; object-fit: cover;">
                 {% else %}
@@ -237,3 +239,5 @@
 {% include "seguranca_trabalho/partials/_modal_assinatura.html" %}
 
 {% endblock %}
+
+

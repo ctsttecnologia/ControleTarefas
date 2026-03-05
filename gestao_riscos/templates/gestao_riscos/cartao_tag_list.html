@@ -1,10 +1,11 @@
-
+﻿
 <!-- Template para listar os Cartões de Bloqueio (Tags) -->
 {% extends "base.html" %}
 {% load i18n %}
 
 {% block title %}Cartões de Bloqueio{% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -53,7 +54,8 @@
                             <td>
                                 <div class="d-flex align-items-center">
                                     {% if cartao.funcionario.foto_3x4 %}
-                                    <img src="{{ cartao.funcionario.foto_3x4.url }}" 
+                                    {% secure_url cartao.funcionario "foto_3x4" as foto_url %}
+                            <img src="{{ foto_url }}" 
                                          alt="{{ cartao.funcionario.nome_completo }}"
                                          class="rounded-circle me-2" 
                                          style="width: 40px; height: 40px; object-fit: cover;">
@@ -141,4 +143,5 @@
 
 </div>
 {% endblock %}
+
 

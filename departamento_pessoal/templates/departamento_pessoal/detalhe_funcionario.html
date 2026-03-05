@@ -1,5 +1,6 @@
-
+﻿
 {% extends "departamento_pessoal/_base_dp.html" %}
+{% load secure_url %}
 {% load static %}
 
 {% block title %}{{ funcionario.nome_completo }} - Detalhes{% endblock %}
@@ -9,7 +10,8 @@
 <div class="profile-header">
     <div class="profile-info">
         {% if funcionario.foto_3x4 %}
-            <img src="{{ funcionario.foto_3x4.url }}" alt="Foto" class="profile-avatar">
+            {% secure_url funcionario "foto_3x4" as foto_url %}
+                    <img src="{{ foto_url }}" alt="Foto" class="profile-avatar">
         {% else %}
             <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=64&bold=true" 
                  alt="Avatar" class="profile-avatar">
@@ -189,7 +191,8 @@
                             <td><code>{{ doc.numero|default:"-" }}</code></td>
                             <td class="text-center">
                                 {% if doc.anexo %}
-                                    <a href="{{ doc.anexo.url }}" target="_blank" 
+                                    {% secure_url doc "anexo" as anexo_url %}
+                                    <a href="{{ anexo_url }}" target="_blank" 
                                        class="btn btn-sm btn-outline-secondary" style="border-radius: 50px;">
                                         <i class="bi bi-paperclip me-1"></i> Ver
                                     </a>
@@ -228,5 +231,7 @@
     </div>
 </div>
 {% endblock %}
+
+
 
 

@@ -1,6 +1,7 @@
-
+﻿
 {# ferramentas/mala_detail.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
+{% load secure_url %}
 
 {% block ferramentas_page_title %}{{ mala.nome }}{% endblock %}
 
@@ -90,9 +91,10 @@
             </div>
             <div class="card-body text-center">
                 {% if mala.qr_code %}
-                    <img src="{{ mala.qr_code.url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
+                    {% secure_url mala "qr_code" as qr_url %}
+                            <img src="{{ qr_url }}" alt="QR Code" class="img-fluid border rounded p-2 bg-white mb-3" style="max-width: 160px;">
                     <div class="d-grid">
-                        <a href="{{ mala.qr_code.url }}" download="qr-mala-{{ mala.codigo_identificacao }}.png" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ qr_url }}" download="qr-mala-{{ mala.codigo_identificacao }}.png" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-download me-1"></i>Baixar
                         </a>
                     </div>
@@ -173,4 +175,6 @@
     </div>
 </div>
 {% endblock %}
+
+
 

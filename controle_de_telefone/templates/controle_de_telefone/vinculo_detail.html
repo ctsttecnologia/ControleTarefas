@@ -1,8 +1,9 @@
-
+﻿
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
 {% block title %}Vínculo — {{ vinculo.funcionario.nome_completo }}{% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
@@ -167,7 +168,8 @@
                             </span>
                         </div>
                         {% if vinculo.termo_assinado_upload %}
-                        <a href="{{ vinculo.termo_assinado_upload.url }}" target="_blank" class="btn btn-success btn-sm w-100">
+                        {% secure_url vinculo "termo_assinado_upload" as termo_assinado_url %}
+                                        <a href="{{ termo_assinado_url }}" target="_blank" class="btn btn-success btn-sm w-100">
                             <i class="bi bi-download me-1"></i>Baixar Termo Assinado
                         </a>
                         {% else %}
@@ -184,7 +186,8 @@
 
                         {% if vinculo.termo_gerados %}
                         <div class="d-flex flex-column gap-2">
-                            <a href="{{ vinculo.termo_gerados.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                            {% secure_url vinculo "termo_gerado" as termo_gerado_url %}
+                                        <a href="{{ termo_gerado_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-file-earmark-pdf me-1"></i>Ver Termo
                             </a>
                             <a href="{% url 'controle_de_telefone:assinar_termo' object.pk %}" class="btn btn-primary btn-sm">
@@ -211,5 +214,6 @@
     </div>
 </div>
 {% endblock %}
+
 
 

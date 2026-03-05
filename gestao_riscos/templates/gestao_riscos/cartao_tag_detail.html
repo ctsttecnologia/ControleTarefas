@@ -1,4 +1,4 @@
-<!-- Template para exibir os detalhes de um Cartão de Bloqueio -->  
+﻿<!-- Template para exibir os detalhes de um Cartão de Bloqueio -->  
 {% extends "base.html" %}
 {% load static %}
 
@@ -126,6 +126,7 @@
 </style>
 {% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -212,7 +213,8 @@
                 <p class="tag-text tag-main-text">ESTOU TRABALHANDO<br>NESSA INTERVENÇÃO</p>
 
                 {% if cartao.funcionario.foto_3x4 %}
-                <img src="{{ cartao.funcionario.foto_3x4.url }}" 
+                {% secure_url cartao.funcionario "foto_3x4" as foto_url %}
+                                <img src="{{ foto_url }}" 
                      alt="{{ cartao.funcionario.nome_completo }}" 
                      class="tag-photo">
                 {% else %}
@@ -268,3 +270,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+

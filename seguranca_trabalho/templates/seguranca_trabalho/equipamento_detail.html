@@ -1,5 +1,6 @@
-
+﻿
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load secure_url %}
 {% load static %}
 
 {% block title %}{{ equipamento.nome }}{% endblock %}
@@ -34,7 +35,8 @@
         <div class="card shadow-sm h-100">
             <div class="card-body text-center p-4">
                 {% if equipamento.foto %}
-                <img src="{{ equipamento.foto.url }}" alt="{{ equipamento.nome }}"
+                {% secure_url equipamento "foto" as foto_url %}
+                    <img src="{{ foto_url }}" alt="{{ equipamento.nome }}"
                      class="img-fluid rounded mb-3" style="max-height: 250px;">
                 {% else %}
                 <div class="bg-light border rounded d-flex align-items-center justify-content-center mb-3"
@@ -196,5 +198,7 @@
 </div>
 
 {% endblock %}
+
+
 
 

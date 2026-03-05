@@ -1,4 +1,4 @@
-# Ficheiro 1: O seu urls.py PRINCIPAL (gerenciandoTarefas/urls.py)
+﻿# Ficheiro 1: O seu urls.py PRINCIPAL (gerenciandoTarefas/urls.py)
 #
 # Este ficheiro está CORRETO. Ele define o prefixo 'logradouro/'
 # e inclui as URLs da sua aplicação.
@@ -91,3 +91,6 @@ admin.site.index_title = "Painel de Controle"
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # ✅ Serve arquivos privados em desenvolvimento
+    urlpatterns += static(settings.SENDFILE_URL, document_root=settings.PRIVATE_MEDIA_ROOT)
+

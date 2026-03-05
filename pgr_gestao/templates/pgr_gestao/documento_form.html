@@ -1,4 +1,4 @@
-
+﻿
 {% extends 'pgr_gestao/base.html' %}
 {% load static %}
 {% load widget_tweaks %}
@@ -45,6 +45,7 @@
 </style>
 {% endblock %}
 
+{% load secure_url %}
 {% block content %}
 <div class="page-header">
     <h1>
@@ -355,7 +356,8 @@
                                     <br><small class="text-muted">{{ anexo.data_upload|date:"d/m/Y H:i" }}</small>
                                 </div>
                                 <div>
-                                    <a href="{{ anexo.arquivo.url }}" class="btn btn-sm btn-info" target="_blank">
+                                    {% secure_url anexo "arquivo" as arquivo_url %}
+                                    <a href="{{ arquivo_url }}" class="btn btn-sm btn-info" target="_blank">
                                         <i class="fas fa-download"></i>
                                     </a>
                                     <button type="button" class="btn btn-sm btn-danger" onclick="confirmarExclusaoAnexo({{ anexo.id }})">
@@ -764,5 +766,6 @@ function confirmarExclusaoAnexo(anexoId) {
 
 </script>
 {% endblock %}
+
 
 

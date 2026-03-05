@@ -1,5 +1,6 @@
-<!-- Lista de Carros -->
+﻿<!-- Lista de Carros -->
 {% extends "automovel/_base_automovel.html" %}
+{% load secure_url %}
 {% load static %}
 
 {% block title %}Veículos{% endblock %}
@@ -130,7 +131,8 @@
             <a href="{% url 'automovel:carro_detail' carro.id %}" class="vehicle-list-item">
                 <div class="vehicle-thumb">
                     {% if carro.foto %}
-                    <img src="{{ carro.foto.url }}" alt="{{ carro.modelo }}" loading="lazy">
+                    {% secure_url carro "foto" as foto_url %}
+                                <img src="{{ foto_url }}" alt="{{ carro.modelo }}" loading="lazy">
                     {% else %}
                     <span class="vehicle-thumb-empty"><i class="bi bi-car-front"></i></span>
                     {% endif %}
@@ -185,5 +187,7 @@
         {% endif %}
     </div>
 {% endblock %}
+
+
 
 
