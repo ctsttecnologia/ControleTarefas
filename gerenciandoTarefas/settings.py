@@ -366,6 +366,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'documentos.verificar_vencimentos',
         'schedule': crontab(minute=0, hour=3),
     },
+    'gerar-notificacoes-diariamente': {
+        'task': 'notifications.gerar_notificacoes',
+        'schedule': crontab(minute=0, hour=7),  # Todo dia às 7h
+    },
 }
 
 # =============================================================================
