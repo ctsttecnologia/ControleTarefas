@@ -2,139 +2,145 @@
 {% extends "base.html" %}
 {% load humanize %}
 
+{% block title %}{{ titulo_pagina }} | Gerenciando Tarefas{% endblock %}
+
 {% block content %}
-<div class="container py-4" style="background-color: #f8f9fa; border-radius: 8px; padding: 25px;">
-    
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>{{ titulo_pagina|default:"Meus Documentos" }}</h1>
-        {% comment %} O botão de "Adicionar" deve estar na página do objeto (ex: funcionário), não aqui {% endcomment %}
+<div class="container-fluid py-4">
+
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 fw-bold mb-0">
+            <i class="bi bi-file-earmark-text me-2"></i>{{ titulo_pagina|default:"Gestão de Documentos" }}
+        </h1>
         <a href="{% url 'arquivos:lista_documentos' %}" class="btn btn-primary shadow-sm">
-            <i class="bi bi-folder2-open me-2"></i> Gestão de Arquivos
+            <i class="bi bi-folder2-open me-2"></i>Gestão de Arquivos
         </a>
     </div>
 
-    <!-- Filtros/Abas de Status -->
-    <ul class="nav nav-tabs mb-3">
+    <!-- Abas de filtro -->
+    <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link {% if filtro_ativo == 'pendentes' %}active{% endif %}" 
-               href="?filtro=pendentes">Pendentes (Vencidos/A Vencer)</a>
+            <a class="nav-link {% if filtro_ativo == 'pendentes' %}active fw-semibold{% endif %}"
+               href="?filtro=pendentes">
+                <i class="bi bi-exclamation-triangle me-1"></i>Pendentes (Vencidos/A Vencer)
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if filtro_ativo == 'vigentes' %}active{% endif %}" 
-               href="?filtro=vigentes">Vigentes</a>
+            <a class="nav-link {% if filtro_ativo == 'vigentes' %}active fw-semibold{% endif %}"
+               href="?filtro=vigentes">
+                <i class="bi bi-check-circle me-1"></i>Vigentes
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if filtro_ativo == 'renovados' %}active{% endif %}" 
-               href="?filtro=renovados">Renovados/Arquivados</a>
+            <a class="nav-link {% if filtro_ativo == 'renovados' %}active fw-semibold{% endif %}"
+               href="?filtro=renovados">
+                <i class="bi bi-archive me-1"></i>Renovados/Arquivados
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if filtro_ativo == 'todos' %}active{% endif %}" 
-               href="?filtro=todos">Todos</a>
+            <a class="nav-link {% if filtro_ativo == 'todos' %}active fw-semibold{% endif %}"
+               href="?filtro=todos">
+                <i class="bi bi-list-ul me-1"></i>Todos
+            </a>
         </li>
     </ul>
 
-    <!-- Tabela de Documentos -->
-    <div class="card shadow-sm">
+    <!-- Tabela -->
+    <div class="card shadow-sm border-0">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="thead-light">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <th scope="col">Documento</th>
-                        <th scope="col">Anexado a</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Vencimento</th>
-                        <th scope="col">Ações</th>
+                        <th><i class="bi bi-file-earmark me-1"></i>Documento</th>
+                        <th><i class="bi bi-link-45deg me-1"></i>Anexado a</th>
+                        <th><i class="bi bi-flag me-1"></i>Status</th>
+                        <th><i class="bi bi-calendar-event me-1"></i>Vencimento</th>
+                        <th class="text-center"><i class="bi bi-gear me-1"></i>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for doc in documentos %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'documentos:download' doc.pk %}" title="Baixar Documento">
-                                    <i class="fas fa-file-download"></i> {{ doc.nome }}
+                    <tr>
+                        <td>
+                            <a href="{% url 'documentos:download' doc.pk %}"
+                               class="text-decoration-none fw-semibold" title="Baixar documento">
+                                <i class="bi bi-file-earmark-arrow-down me-1 text-primary"></i>{{ doc.nome }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if doc.content_object %}
+                                {% if doc.content_object.get_absolute_url %}
+                                    <a href="{{ doc.content_object.get_absolute_url }}" class="text-decoration-none">
+                                        {{ doc.content_object }}
+                                    </a>
+                                    <br><small class="text-muted">{{ doc.content_type.name|capfirst }}</small>
+                                {% else %}
+                                    {{ doc.content_object }}
+                                    <br><small class="text-muted">{{ doc.content_type.name|capfirst }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted fst-italic">Objeto removido</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if doc.status == 'VENCIDO' %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Vencido</span>
+                            {% elif doc.status == 'A_VENCER' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>A Vencer</span>
+                            {% elif doc.status == 'VIGENTE' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Vigente</span>
+                            {% else %}
+                                <span class="badge bg-secondary"><i class="bi bi-archive me-1"></i>Renovado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if doc.data_vencimento %}
+                                <span>{{ doc.data_vencimento|date:"d/m/Y" }}</span>
+                                <br>
+                                <small class="text-muted">{{ doc.data_vencimento|timesince }} atrás</small>
+                            {% else %}
+                                <span class="text-muted">Sem vencimento</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'documentos:download' doc.pk %}"
+                                   class="btn btn-outline-primary" title="Baixar">
+                                    <i class="bi bi-download"></i>
                                 </a>
-                            </td>
-                            <td>
-                                {% if doc.content_object %}
-                                    <!-- Tenta encontrar um link para o objeto-pai -->
-                                    {% if doc.content_object.get_absolute_url %}
-                                        <a href="{{ doc.content_object.get_absolute_url }}">
-                                            {{ doc.content_object }} ({{ doc.content_type.name|capfirst }})
-                                        </a>
-                                    {% else %}
-                                        {{ doc.content_object }} ({{ doc.content_type.name|capfirst }})
-                                    {% endif %}
-                                {% else %}
-                                    <span class="text-muted">Objeto Apagado</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if doc.status == 'VENCIDO' %}
-                                    <span class="badge bg-danger">{{ doc.get_status_display }}</span>
-                                {% elif doc.status == 'A_VENCER' %}
-                                    <span class="badge bg-warning text-dark">{{ doc.get_status_display }}</span>
-                                {% elif doc.status == 'VIGENTE' %}
-                                    <span class="badge bg-success">{{ doc.get_status_display }}</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ doc.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if doc.data_vencimento %}
-                                    {{ doc.data_vencimento }} ({{ doc.data_vencimento|naturaltime }})
-                                {% else %}
-                                    <span class="text-muted">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <!-- Botão de Renovar (só aparece se estiver vencido/a vencer) -->
                                 {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
-                                <a href="{% url 'documentos:renovar' doc.pk %}" class="btn btn-sm btn-info" title="Renovar">
-                                    <i class="fas fa-sync-alt"></i> Renovar
+                                <a href="{% url 'documentos:renovar' doc.pk %}"
+                                   class="btn btn-outline-info" title="Renovar">
+                                    <i class="bi bi-arrow-repeat"></i>
                                 </a>
                                 {% endif %}
-                                
-                                <a href="{% url 'documentos:deletar' doc.pk %}" class="btn btn-sm btn-danger" title="Deletar">
-                                    <i class="fas fa-trash"></i>
+                                <a href="{% url 'documentos:deletar' doc.pk %}"
+                                   class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash"></i>
                                 </a>
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
+                    </tr>
                     {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center p-4">
-                                Nenhum documento encontrado para este filtro.
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-folder-x fs-1 d-block mb-2 opacity-50"></i>
+                                <p class="mb-0">Nenhum documento encontrado para este filtro.</p>
+                            </div>
+                        </td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        
-        <!-- Paginação -->
-        {% if is_paginated %}
-            <div class="card-footer">
-                <nav aria-label="Paginação">
-                    <ul class="pagination justify-content-center mb-0">
-                        {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page=1&filtro={{ filtro_ativo }}">&laquo; Primeira</a></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&filtro={{ filtro_ativo }}">Anterior</a></li>
-                        {% endif %}
-
-                        <li class="page-item active" aria-current="page">
-                            <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-                        </li>
-
-                        {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&filtro={{ filtro_ativo }}">Próxima</a></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&filtro={{ filtro_ativo }}">Última &raquo;</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-        {% endif %}
     </div>
+
+    <!-- Paginação (única) -->
     {% if is_paginated %}
         {% include "partials/pagination.html" %}
     {% endif %}
+
 </div>
 {% endblock %}
+
