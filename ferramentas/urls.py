@@ -47,3 +47,4 @@ urlpatterns = [
     path('termos/<int:pk>/reverter/', views.ReverterTermoView.as_view(), name='termo_reverter'),
     
 ]
+

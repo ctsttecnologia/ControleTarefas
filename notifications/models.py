@@ -23,16 +23,22 @@ class Notificacao(models.Model):
         ('pgr_plano_atrasado', 'Plano de Ação Atrasado'),
         ('chat_mensagem', 'Nova Mensagem'),
         ('sistema', 'Notificação do Sistema'),
+        # ══════ SUPRIMENTOS (NOVO) ══════
+        ('pedido_pendente', 'Pedido Aguardando Aprovação'),
+        ('pedido_aprovado', 'Pedido Aprovado'),
+        ('pedido_reprovado', 'Pedido Reprovado'),
+        ('pedido_entregue', 'Pedido Entregue'),
+        ('pedido_recebido', 'Pedido Recebido'),
+        ('pedido_verba_excedida', 'Pedido Excede Verba'),
     ]
-
     # --- Categorias (para agrupar/filtrar no dropdown) ---
     CATEGORIA_CHOICES = [
         ('tarefa', 'Tarefas'),
         ('pgr', 'PGR'),
         ('chat', 'Chat'),
         ('sistema', 'Sistema'),
+        ('suprimentos', 'Suprimentos'),  # NOVO
     ]
-
     # --- Prioridade visual ---
     PRIORIDADE_CHOICES = [
         ('baixa', 'Baixa'),
@@ -76,7 +82,6 @@ class Notificacao(models.Model):
     )
     data_criacao = models.DateTimeField('Criada em', auto_now_add=True)
     data_leitura = models.DateTimeField('Lida em', blank=True, null=True)
-
     class Meta:
         ordering = ['-data_criacao']
         verbose_name = 'Notificação'
@@ -86,17 +91,14 @@ class Notificacao(models.Model):
             models.Index(fields=['usuario', 'categoria', 'lida']),
             models.Index(fields=['-data_criacao']),
         ]
-
     def __str__(self):
-        status = '✓' if self.lida else '●'
+        status = '✔' if self.lida else '◉'
         return f"{status} {self.titulo} → {self.usuario.username}"
-
     def marcar_como_lida(self):
         if not self.lida:
             self.lida = True
             self.data_leitura = timezone.now()
             self.save(update_fields=['lida', 'data_leitura'])
-
     @property
     def badge_class(self):
         """Retorna a classe CSS do badge conforme prioridade."""
@@ -107,13 +109,11 @@ class Notificacao(models.Model):
             'critica': 'bg-danger-subtle text-danger-emphasis',
         }
         return mapa.get(self.prioridade, 'bg-secondary')
-
     @property
     def tempo_relativo(self):
         """Retorna tempo relativo (ex: 'há 5 min', 'há 2h')."""
         delta = timezone.now() - self.data_criacao
         segundos = int(delta.total_seconds())
-
         if segundos < 60:
             return 'agora'
         elif segundos < 3600:
@@ -125,5 +125,4 @@ class Notificacao(models.Model):
         else:
             dias = segundos // 86400
             return f'há {dias}d'
-
 

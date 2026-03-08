@@ -19,10 +19,8 @@
     .page-hero::after {
         content: '';
         position: absolute;
-        top: -40%;
-        right: -8%;
-        width: 280px;
-        height: 280px;
+        top: -40%; right: -8%;
+        width: 280px; height: 280px;
         background: rgba(255,255,255,0.07);
         border-radius: 50%;
         pointer-events: none;
@@ -30,16 +28,14 @@
     .page-hero::before {
         content: '';
         position: absolute;
-        bottom: -35%;
-        left: 3%;
-        width: 180px;
-        height: 180px;
+        bottom: -35%; left: 3%;
+        width: 180px; height: 180px;
         background: rgba(255,255,255,0.04);
         border-radius: 50%;
         pointer-events: none;
     }
     .page-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.25rem; }
-    .page-hero p { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
+    .page-hero p  { opacity: 0.85; margin-bottom: 0; font-size: 0.9rem; }
 
     /* ═══ STAT PILLS ═══ */
     .stat-pill {
@@ -99,15 +95,15 @@
     }
     .filter-chip:hover { transform: translateY(-1px); }
     .filter-chip.active { color: #fff !important; }
-    .chip-all       { border-color: #6c757d; color: #6c757d; }
+    .chip-all              { border-color: #6c757d; color: #6c757d; }
     .chip-all.active       { background: #6c757d; }
-    .chip-agendado  { border-color: #0dcaf0; color: #0dcaf0; }
-    .chip-agendado.active  { background: #0dcaf0; }
-    .chip-em_andamento { border-color: #4e73df; color: #4e73df; }
-    .chip-em_andamento.active { background: #4e73df; }
-    .chip-concluido { border-color: #1cc88a; color: #1cc88a; }
-    .chip-concluido.active { background: #1cc88a; }
-    .chip-cancelado { border-color: #e74a3b; color: #e74a3b; }
+    .chip-planejado        { border-color: #0dcaf0; color: #0dcaf0; }
+    .chip-planejado.active { background: #0dcaf0; }
+    .chip-andamento        { border-color: #4e73df; color: #4e73df; }
+    .chip-andamento.active { background: #4e73df; }
+    .chip-finalizado       { border-color: #1cc88a; color: #1cc88a; }
+    .chip-finalizado.active{ background: #1cc88a; }
+    .chip-cancelado        { border-color: #e74a3b; color: #e74a3b; }
     .chip-cancelado.active { background: #e74a3b; }
 
     /* ═══ TABLE ═══ */
@@ -126,21 +122,15 @@
         padding: 0.875rem 1rem;
         white-space: nowrap;
     }
-    .data-table tbody tr {
-        transition: background 0.15s ease;
-    }
-    .data-table tbody tr:hover {
-        background: rgba(28,200,138,0.04);
-    }
+    .data-table tbody tr { transition: background 0.15s ease; }
+    .data-table tbody tr:hover { background: rgba(28,200,138,0.04); }
     .data-table tbody td {
         padding: 0.875rem 1rem;
         vertical-align: middle;
         border-bottom: 1px solid #f1f1f4;
         font-size: 0.875rem;
     }
-    .data-table tbody tr:last-child td {
-        border-bottom: none;
-    }
+    .data-table tbody tr:last-child td { border-bottom: none; }
 
     /* ═══ TRAINING NAME ═══ */
     .training-name {
@@ -154,13 +144,13 @@
 
     /* ═══ STATUS BADGE ═══ */
     .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 0.3rem 0.75rem;
-        border-radius: 50rem;
-        font-size: 0.75rem;
-        font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0.3rem 0.75rem;
+    border-radius: 50rem;
+    font-size: 0.75rem;
+    font-weight: 600;
     }
     .status-badge::before {
         content: '';
@@ -169,19 +159,18 @@
         border-radius: 50%;
         display: inline-block;
     }
-    .status-agendado { background: rgba(13,202,240,0.12); color: #0aa2c0; }
-    .status-agendado::before { background: #0dcaf0; }
-    .status-em_andamento { background: rgba(78,115,223,0.12); color: #4e73df; }
-    .status-em_andamento::before { background: #4e73df; }
-    .status-concluido { background: rgba(28,200,138,0.12); color: #13855c; }
-    .status-concluido::before { background: #1cc88a; }
-    .status-cancelado { background: rgba(231,74,59,0.12); color: #c0392b; }
-    .status-cancelado::before { background: #e74a3b; }
+    .status-P { background: rgba(13,202,240,0.12); color: #0aa2c0; }
+    .status-P::before { background: #0dcaf0; }
+    .status-A { background: rgba(78,115,223,0.12); color: #4e73df; }
+    .status-A::before { background: #4e73df; }
+    .status-F { background: rgba(28,200,138,0.12); color: #13855c; }
+    .status-F::before { background: #1cc88a; }
+    .status-C { background: rgba(231,74,59,0.12); color: #c0392b; }
+    .status-C::before { background: #e74a3b; }
 
     /* ═══ ACTION BUTTONS ═══ */
     .btn-action {
-        width: 34px;
-        height: 34px;
+        width: 34px; height: 34px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -203,14 +192,16 @@
         color: #1cc88a;
         background: rgba(28,200,138,0.06);
     }
+    .btn-action-danger:hover {
+        border-color: #e74a3b;
+        color: #e74a3b;
+        background: rgba(231,74,59,0.06);
+    }
 
     /* ═══ EMPTY STATE ═══ */
-    .empty-state {
-        padding: 4rem 2rem;
-    }
+    .empty-state { padding: 4rem 2rem; }
     .empty-state-icon {
-        width: 80px;
-        height: 80px;
+        width: 80px; height: 80px;
         border-radius: 50%;
         background: linear-gradient(135deg, rgba(28,200,138,0.1), rgba(28,200,138,0.05));
         display: flex;
@@ -240,11 +231,7 @@
     .pagination-pro .page-item.disabled .page-link { color: #d1d3e2; }
 
     /* ═══ RESULT COUNT ═══ */
-    .result-count {
-        font-size: 0.8rem;
-        color: #858796;
-        font-weight: 500;
-    }
+    .result-count { font-size: 0.8rem; color: #858796; font-weight: 500; }
     .result-count strong { color: #2d3748; }
 
     /* ═══ DARK MODE ═══ */
@@ -270,9 +257,7 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- HERO HEADER                                 -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- ═══ HERO HEADER ═══ -->
     <div class="page-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -281,17 +266,11 @@
                 </h1>
                 <p>Gerencie todos os treinamentos, participantes e certificações</p>
 
-                <!-- Stat Pills -->
                 {% if total_treinamentos is not None %}
                 <div class="d-flex flex-wrap gap-2 mt-3">
                     <span class="stat-pill">
                         <i class="bi bi-collection"></i> {{ total_treinamentos|default:"0" }} treinamentos
                     </span>
-                    {% if em_andamento %}
-                    <span class="stat-pill">
-                        <i class="bi bi-play-circle"></i> {{ em_andamento }} em andamento
-                    </span>
-                    {% endif %}
                 </div>
                 {% endif %}
             </div>
@@ -324,9 +303,7 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- SEARCH + FILTERS + TABLE                    -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- ═══ SEARCH + FILTERS + TABLE ═══ -->
     <div class="card search-card shadow-sm">
         <!-- Search Bar -->
         <div class="card-header bg-transparent border-0 pt-4 pb-0 px-4">
@@ -357,34 +334,32 @@
                     {% endif %}
                 </div>
 
-                <!-- Filter Chips -->
+                <!-- Filter Chips — VALORES REAIS DO BANCO -->
                 <div class="d-flex flex-wrap gap-2 mt-3 pb-3">
                     <input type="hidden" name="status" id="statusFilter" value="{{ request.GET.status|default:'' }}">
-
                     <a href="#" class="filter-chip chip-all {% if not request.GET.status %}active{% endif %}"
-                       data-status="">
+                    data-status="">
                         <i class="bi bi-grid-3x3-gap-fill"></i> Todos
                     </a>
-                    <a href="#" class="filter-chip chip-agendado {% if request.GET.status == 'agendado' %}active{% endif %}"
-                       data-status="agendado">
-                        <i class="bi bi-calendar-event"></i> Agendado
+                    <a href="#" class="filter-chip chip-agendado {% if request.GET.status == 'P' %}active{% endif %}"
+                    data-status="P">
+                        <i class="bi bi-calendar-event"></i> Planejado
                     </a>
-                    <a href="#" class="filter-chip chip-em_andamento {% if request.GET.status == 'em_andamento' %}active{% endif %}"
-                       data-status="em_andamento">
+                    <a href="#" class="filter-chip chip-em_andamento {% if request.GET.status == 'A' %}active{% endif %}"
+                    data-status="A">
                         <i class="bi bi-play-circle"></i> Em Andamento
                     </a>
-                    <a href="#" class="filter-chip chip-concluido {% if request.GET.status == 'concluido' %}active{% endif %}"
-                       data-status="concluido">
-                        <i class="bi bi-check-circle"></i> Concluído
+                    <a href="#" class="filter-chip chip-concluido {% if request.GET.status == 'F' %}active{% endif %}"
+                    data-status="F">
+                        <i class="bi bi-check-circle"></i> Finalizado
                     </a>
-                    <a href="#" class="filter-chip chip-cancelado {% if request.GET.status == 'cancelado' %}active{% endif %}"
-                       data-status="cancelado">
+                    <a href="#" class="filter-chip chip-cancelado {% if request.GET.status == 'C' %}active{% endif %}"
+                    data-status="C">
                         <i class="bi bi-x-circle"></i> Cancelado
                     </a>
                 </div>
             </form>
         </div>
-
         <!-- Results Count -->
         <div class="px-4 pb-2">
             <span class="result-count">
@@ -407,7 +382,7 @@
                             <th scope="col">Período</th>
                             <th scope="col">Local</th>
                             <th scope="col" class="text-center">Status</th>
-                            <th scope="col" class="text-end pe-4" style="width: 100px;">Ações</th>
+                            <th scope="col" class="text-end pe-4" style="width: 120px;">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -447,11 +422,13 @@
                                         {{ treinamento.data_inicio|date:"d/m/Y" }}
                                         <span class="text-muted">{{ treinamento.data_inicio|date:"H:i" }}</span>
                                     </small>
+                                    {% if treinamento.data_fim %}
                                     <small class="d-flex align-items-center gap-1 mt-1">
                                         <i class="bi bi-calendar-check text-danger" style="font-size: 0.75rem;"></i>
                                         {{ treinamento.data_fim|date:"d/m/Y" }}
                                         <span class="text-muted">{{ treinamento.data_fim|date:"H:i" }}</span>
                                     </small>
+                                    {% endif %}
                                 </div>
                             </td>
 
@@ -486,10 +463,21 @@
                                     {% if perms.treinamentos.change_treinamento %}
                                     <a href="{% url 'treinamentos:editar_treinamento' treinamento.pk %}"
                                        class="btn-action"
-                                       title="Editar treinamento"
+                                       title="Editar"
                                        data-bs-toggle="tooltip">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if perms.treinamentos.delete_treinamento %}
+                                    <button type="button"
+                                            class="btn-action btn-action-danger"
+                                            title="Excluir"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalExcluir"
+                                            data-id="{{ treinamento.pk }}"
+                                            data-nome="{{ treinamento.nome }}">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
                                     {% endif %}
                                 </div>
                             </td>
@@ -503,9 +491,8 @@
                                     </div>
                                     <h5 class="fw-bold mb-2">Nenhum treinamento encontrado</h5>
                                     <p class="text-muted mb-3" style="max-width: 400px; margin: 0 auto;">
-                                        {% if request.GET.q %}
-                                            Não encontramos resultados para "<strong>{{ request.GET.q }}</strong>".
-                                            Tente outros termos de busca.
+                                        {% if request.GET.q or request.GET.status %}
+                                            Nenhum resultado encontrado com os filtros aplicados.
                                         {% else %}
                                             Comece cadastrando o primeiro treinamento para sua equipe.
                                         {% endif %}
@@ -592,6 +579,42 @@
     </div>
 
 </div>
+
+<!-- ═══ MODAL DE EXCLUSÃO (Reutilizável) ═══ -->
+{% if perms.treinamentos.delete_treinamento %}
+<div class="modal fade" id="modalExcluir" tabindex="-1" aria-labelledby="modalExcluirLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title" id="modalExcluirLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-2">Tem certeza que deseja excluir o treinamento:</p>
+                <p class="fw-bold fs-5 text-danger mb-3" id="modalNomeTreinamento"></p>
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-0" role="alert">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <small>Esta ação é <strong>irreversível</strong>. Todos os participantes vinculados também serão removidos.</small>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i>Cancelar
+                </button>
+                <form method="post" id="formExcluir" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger fw-semibold">
+                        <i class="bi bi-trash3 me-1"></i>Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -607,20 +630,28 @@ document.addEventListener('DOMContentLoaded', () => {
         chip.addEventListener('click', (e) => {
             e.preventDefault();
             const status = chip.dataset.status;
-
-            // Toggle active
             chips.forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
-
-            // Update hidden input e submit
             statusInput.value = status;
             filterForm.submit();
         });
     });
 
+    // ═══ MODAL DE EXCLUSÃO — Preenche dados dinamicamente ═══
+    const modalExcluir = document.getElementById('modalExcluir');
+    if (modalExcluir) {
+        modalExcluir.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const nome = button.getAttribute('data-nome');
+
+            document.getElementById('modalNomeTreinamento').textContent = nome;
+            document.getElementById('formExcluir').action = `/treinamentos/${id}/excluir/`;
+        });
+    }
+
     // ═══ TOOLTIPS ═══
-    const tooltipTriggers = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    tooltipTriggers.forEach(el => {
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
         new bootstrap.Tooltip(el, { trigger: 'hover', placement: 'top' });
     });
 
@@ -635,3 +666,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock extra_js %}
+

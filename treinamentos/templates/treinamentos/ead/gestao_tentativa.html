@@ -1,0 +1,143 @@
+
+{% extends "base.html" %}
+
+{% block title %}Revisão — {{ tentativa.matricula.funcionario }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="bi bi-search me-2"></i>Revisão de Prova
+            </h3>
+            <p class="text-muted mb-0">
+                {{ tentativa.matricula.funcionario }} —
+                Tentativa {{ tentativa.numero_tentativa }} —
+                {{ tentativa.matricula.curso.titulo }}
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'treinamentos:gestao_imprimir_prova' tentativa_id=tentativa.pk %}"
+               class="btn btn-outline-secondary" target="_blank">
+                <i class="bi bi-printer me-1"></i> Imprimir
+            </a>
+            <a href="{% url 'treinamentos:gestao_avaliacoes_curso' slug=tentativa.matricula.curso.slug %}"
+               class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm p-3">
+                <div class="fs-2 fw-bold {% if tentativa.aprovado %}text-success{% else %}text-danger{% endif %}">
+                    {{ tentativa.nota }}
+                </div>
+                <small class="text-muted">Nota</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm p-3">
+                <div class="fs-2 fw-bold text-primary">{{ total_acertos }}/{{ total_questoes }}</div>
+                <small class="text-muted">Acertos</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm p-3">
+                <div class="fs-2 fw-bold">{{ tentativa.matricula.curso.nota_minima }}</div>
+                <small class="text-muted">Nota Mínima</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center border-0 shadow-sm p-3">
+                <div class="fs-2 fw-bold">
+                    {% if tentativa.aprovado %}
+                        <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                    {% else %}
+                        <span class="text-danger"><i class="bi bi-x-circle-fill"></i></span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">Resultado</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gabarito -->
+    {% for item in gabarito %}
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <strong>
+                <span class="badge {% if item.acertou %}bg-success{% else %}bg-danger{% endif %} me-2">
+                    {% if item.acertou %}✔{% else %}✘{% endif %}
+                </span>
+                Questão {{ forloop.counter }}
+            </strong>
+            <span class="badge bg-light text-dark">Peso: {{ item.questao.peso }}</span>
+        </div>
+        <div class="card-body">
+            <p class="fw-medium mb-3">{{ item.questao.enunciado }}</p>
+
+            {% for alt in item.alternativas %}
+            <div class="d-flex align-items-start p-2 rounded mb-1
+                {% if alt.correta %}bg-success bg-opacity-10 border border-success
+                {% elif alt == item.escolhida and not alt.correta %}bg-danger bg-opacity-10 border border-danger
+                {% else %}bg-light{% endif %}">
+                <div class="me-2 mt-1">
+                    {% if alt.correta %}
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                    {% elif alt == item.escolhida %}
+                        <i class="bi bi-x-circle-fill text-danger"></i>
+                    {% else %}
+                        <i class="bi bi-circle text-muted"></i>
+                    {% endif %}
+                </div>
+                <div>
+                    {{ alt.texto }}
+                    {% if alt == item.escolhida %}
+                        <span class="badge bg-primary ms-2">Resposta do aluno</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if item.questao.explicacao %}
+            <div class="alert alert-info mt-3 mb-0 py-2">
+                <i class="bi bi-lightbulb me-1"></i>
+                <strong>Explicação:</strong> {{ item.questao.explicacao }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Ações do Gestor -->
+    <div class="d-flex justify-content-center gap-3 mt-4">
+        {% if not tentativa.aprovado and tentativa.matricula.status == 'reprovado' %}
+        <form method="post"
+              action="{% url 'treinamentos:gestao_liberar_tentativa' matricula_id=tentativa.matricula.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning btn-lg">
+                <i class="bi bi-arrow-repeat me-1"></i> Liberar Nova Tentativa
+            </button>
+        </form>
+        {% endif %}
+
+        {% if tentativa.aprovado and not tentativa.matricula.certificado_ead %}
+        <form method="post"
+              action="{% url 'treinamentos:gestao_gerar_certificado_ead' matricula_id=tentativa.matricula.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-award me-1"></i> Gerar Certificado
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+

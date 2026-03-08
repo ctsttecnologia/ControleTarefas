@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Gerencial de Suprimentos</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1.5cm 1.5cm 2cm 1.5cm;
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-size: 9px;
+                color: #666;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; line-height: 1.4; }
+
+        .header { background: #0d6efd; color: white; padding: 15px 20px; margin-bottom: 15px; }
+        .header h1 { font-size: 18px; margin: 0; }
+        .header p { font-size: 10px; margin: 3px 0 0; opacity: 0.9; }
+
+        h2 { font-size: 14px; color: #0d6efd; border-bottom: 2px solid #0d6efd; padding-bottom: 4px; margin: 15px 0 8px; }
+        h3 { font-size: 12px; color: #333; margin: 10px 0 5px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9px; }
+        th { background: #495057; color: white; padding: 5px 8px; text-align: left; font-size: 9px; }
+        td { padding: 4px 8px; border-bottom: 1px solid #dee2e6; }
+        tr:nth-child(even) { background: #f8f9fa; }
+
+        .text-end { text-align: right; }
+        .text-center { text-align: center; }
+        .text-danger { color: #dc3545; }
+        .text-success { color: #198754; }
+        .fw-bold { font-weight: bold; }
+
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 8px; color: white; }
+        .bg-danger { background: #dc3545; }
+        .bg-warning { background: #ffc107; color: #333; }
+        .bg-success { background: #198754; }
+        .bg-info { background: #0dcaf0; color: #333; }
+
+        .card-grid { display: flex; gap: 10px; margin-bottom: 10px; }
+        .card-grid .card { flex: 1; border: 1px solid #dee2e6; border-radius: 4px; padding: 8px 12px; }
+        .card-grid .card h4 { font-size: 16px; margin: 4px 0; }
+        .card-grid .card h6 { font-size: 9px; color: #666; margin: 0; }
+
+        .section { page-break-inside: avoid; margin-bottom: 15px; }
+        .page-break { page-break-before: always; }
+
+        .footer-info { font-size: 8px; color: #999; text-align: right; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    {# ── CABEÇALHO ── #}
+    <div class="header">
+        <h1>📊 Relatório Gerencial de Suprimentos</h1>
+        <p>Período: {{ relatorio.parametros.periodo_label }} &nbsp;|&nbsp;
+           Gerado em: {{ gerado_em|date:"d/m/Y H:i" }} &nbsp;|&nbsp;
+           Usuário: {{ usuario }}</p>
+    </div>
+
+    {# ═══════════ SEÇÃO 1: QUALITATIVO (RESUMO) ═══════════ #}
+    <div class="section">
+        <h2>1. Resumo Verba × Gasto</h2>
+
+        <div class="card-grid">
+            {% for r in relatorio.qualitativo.resumo_categorias %}
+            <div class="card">
+                <h6>{{ r.categoria_label }}</h6>
+                <div>Verba: <strong>R$ {{ r.verba|floatformat:2 }}</strong></div>
+                <div>Gasto: <strong>R$ {{ r.gasto|floatformat:2 }}</strong></div>
+                <div class="{% if r.saldo < 0 %}text-danger{% else %}text-success{% endif %} fw-bold">
+                    Saldo: R$ {{ r.saldo|floatformat:2 }} ({{ r.pct_uso }}%)
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <table>
+            <tr>
+                <th>Verba Total</th>
+                <th>Gasto Total</th>
+                <th>Saldo Geral</th>
+                <th>% Uso</th>
+            </tr>
+            <tr class="fw-bold">
+                <td>R$ {{ relatorio.qualitativo.total_verba_geral|floatformat:2 }}</td>
+                <td>R$ {{ relatorio.qualitativo.total_gasto_geral|floatformat:2 }}</td>
+                <td class="{% if relatorio.qualitativo.saldo_geral < 0 %}text-danger{% else %}text-success{% endif %}">
+                    R$ {{ relatorio.qualitativo.saldo_geral|floatformat:2 }}
+                </td>
+                <td>{{ relatorio.qualitativo.pct_uso_geral }}%</td>
+            </tr>
+        </table>
+    </div>
+
+    {# ═══════════ SEÇÃO 2: EVOLUÇÃO MENSAL ═══════════ #}
+    <div class="section">
+        <h2>2. Evolução Mensal — Verba × Gasto</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Mês</th>
+                    <th class="text-end">Verba EPI</th>
+                    <th class="text-end">Gasto EPI</th>
+                    <th class="text-end">Verba Consumo</th>
+                    <th class="text-end">Gasto Consumo</th>
+                    <th class="text-end">Verba Ferram.</th>
+                    <th class="text-end">Gasto Ferram.</th>
+                    <th class="text-end">Saldo Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in relatorio.qualitativo.evolucao_mensal %}
+                <tr>
+                    <td>{{ ev.label }}</td>
+                    <td class="text-end">{{ ev.verba_epi|floatformat:2 }}</td>
+                    <td class="text-end">{{ ev.gasto_epi|floatformat:2 }}</td>
+                    <td class="text-end">{{ ev.verba_consumo|floatformat:2 }}</td>
+                    <td class="text-end">{{ ev.gasto_consumo|floatformat:2 }}</td>
+                    <td class="text-end">{{ ev.verba_ferramenta|floatformat:2 }}</td>
+                    <td class="text-end">{{ ev.gasto_ferramenta|floatformat:2 }}</td>
+                    <td class="text-end {% if ev.saldo_total < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                        {{ ev.saldo_total|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ═══════════ SEÇÃO 3: QUANTITATIVO ═══════════ #}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2>3. Quantitativo — Compras por Categoria</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th class="text-center">Pedidos</th>
+                    <th class="text-center">Unidades</th>
+                    <th class="text-end">Valor Total</th>
+                    <th class="text-center">% do Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in relatorio.quantitativo.resumo_geral %}
+                <tr>
+                    <td>{{ r.categoria_label }}</td>
+                    <td class="text-center">{{ r.qtd_pedidos }}</td>
+                    <td class="text-center">{{ r.qtd_unidades }}</td>
+                    <td class="text-end">R$ {{ r.valor_total|floatformat:2 }}</td>
+                    <td class="text-center">{{ r.pct_valor }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Top 15 Materiais Mais Comprados</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Material</th>
+                    <th>Tipo</th>
+                    <th class="text-center">Qtd</th>
+                    <th class="text-end">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in relatorio.quantitativo.top_materiais %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ m.material__descricao }}</td>
+                    <td>{{ m.material__classificacao }}</td>
+                    <td class="text-center">{{ m.qtd_total }}</td>
+                    <td class="text-end">R$ {{ m.valor_total|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# ═══════════ SEÇÃO 4: ALERTAS ═══════════ #}
+    {% if relatorio.alertas.total_alertas > 0 %}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2>4. 🔴 Gastos Acima da Meta — {{ relatorio.alertas.total_alertas }} desvios</h2>
+        <p style="margin-bottom: 8px;">
+            <strong>Excesso total: <span class="text-danger">R$ {{ relatorio.alertas.total_excesso_geral|floatformat:2 }}</span></strong>
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Contrato</th>
+                    <th>Mês</th>
+                    <th>Categoria</th>
+                    <th class="text-end">Verba</th>
+                    <th class="text-end">Gasto</th>
+                    <th class="text-end">Excesso</th>
+                    <th class="text-center">%</th>
+                    <th class="text-center">Sev.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for al in relatorio.alertas.alertas %}
+                <tr>
+                    <td>{{ al.contrato }}</td>
+                    <td>{{ al.mes_label }}</td>
+                    <td>{{ al.categoria_label }}</td>
+                    <td class="text-end">{{ al.verba|floatformat:2 }}</td>
+                    <td class="text-end">{{ al.gasto|floatformat:2 }}</td>
+                    <td class="text-end text-danger fw-bold">{{ al.excesso|floatformat:2 }}</td>
+                    <td class="text-center">{{ al.pct_excesso }}%</td>
+                    <td class="text-center">
+                        <span class="badge {% if al.severidade == 'critico' %}bg-danger{% elif al.severidade == 'alto' %}bg-warning{% else %}bg-info{% endif %}">
+                            {{ al.severidade|upper }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {# ═══════════ SEÇÃO 5: ECONOMIAS ═══════════ #}
+    <div class="page-break"></div>
+    <div class="section">
+        <h2>5. 🟢 Economias</h2>
+        <table>
+            <thead>
+                <tr><th>Categoria</th><th class="text-end">Total Economizado</th></tr>
+            </thead>
+            <tbody>
+                {% for ec in relatorio.economias.resumo_economia %}
+                <tr>
+                    <td>{{ ec.categoria_label }}</td>
+                    <td class="text-end text-success fw-bold">R$ {{ ec.total_economia|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="fw-bold">
+                    <td>TOTAL</td>
+                    <td class="text-end text-success">R$ {{ relatorio.economias.total_economia_geral|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        {% if relatorio.economias.ranking_contratos %}
+        <h3>Ranking — Contratos que Mais Economizaram</h3>
+        <table>
+            <thead><tr><th>#</th><th>Contrato</th><th class="text-end">Economia</th></tr></thead>
+            <tbody>
+                {% for rk in relatorio.economias.ranking_contratos %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ rk.contrato }}</td>
+                    <td class="text-end text-success">R$ {{ rk.economia|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    {# ═══════════ SEÇÃO 6: ESTIMATIVAS ═══════════ #}
+    <div class="section">
+        <h2>6. 📈 Projeção — Próximos 6 Meses</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Mês</th>
+                    <th class="text-end">Verba Total</th>
+                    <th class="text-end">Gasto Estimado</th>
+                    <th class="text-end">Saldo Estimado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pr in relatorio.estimativas.projecao %}
+                <tr>
+                    <td>{{ pr.label }}</td>
+                    <td class="text-end">R$ {{ pr.verba_total|floatformat:2 }}</td>
+                    <td class="text-end">R$ {{ pr.gasto_total|floatformat:2 }}</td>
+                    <td class="text-end {% if pr.saldo_total < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                        R$ {{ pr.saldo_total|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Tendências (Últimos 6 meses)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Categoria</th>
+                    <th class="text-end">Média Mensal</th>
+                    <th class="text-center">Tendência</th>
+                    <th class="text-center">Variação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cod, dados in relatorio.estimativas.media_por_categoria.items %}
+                <tr>
+                    <td>{{ dados.label }}</td>
+                    <td class="text-end">R$ {{ dados.media|floatformat:2 }}</td>
+                    <td class="text-center">
+                        {% if dados.tendencia == 'subindo' %}
+                            <span class="badge bg-danger">↑ SUBINDO</span>
+                        {% elif dados.tendencia == 'descendo' %}
+                            <span class="badge bg-success">↓ DESCENDO</span>
+                        {% else %}
+                            <span class="badge bg-info">— ESTÁVEL</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ dados.variacao_tendencia }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-info">
+

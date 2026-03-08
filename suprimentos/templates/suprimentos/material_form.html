@@ -1,0 +1,307 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container mt-4" style="max-width: 750px;">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>{{ titulo_pagina }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {# ── Campos padrão do Material ── #}
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label for="id_descricao" class="form-label fw-bold">Descrição *</label>
+                        {{ form.descricao }}
+                        {% if form.descricao.errors %}
+                            <div class="text-danger small">{{ form.descricao.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="id_classificacao" class="form-label fw-bold">Classificação *</label>
+                        {{ form.classificacao }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="id_tipo" class="form-label fw-bold">Tipo *</label>
+                        {{ form.tipo }}
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="id_unidade" class="form-label fw-bold">Unidade *</label>
+                        {{ form.unidade }}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="id_marca" class="form-label fw-bold">Marca</label>
+                        {{ form.marca }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="id_valor_unitario" class="form-label fw-bold">Valor Unitário (R$)</label>
+                        {{ form.valor_unitario }}
+                    </div>
+                </div>
+
+                {# ═══════════════════════════════════════════════ #}
+                {# ── BLOCO EPI: Vínculo com SST ──               #}
+                {# ═══════════════════════════════════════════════ #}
+                <div id="bloco-vinculo-epi" style="display:none;">
+                    <hr>
+                    <h5 class="text-primary mb-3">
+                        <i class="bi bi-shield-check me-1"></i> Vínculo com SST
+                    </h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.equipamento_epi.label }}</label>
+                        {{ form.equipamento_epi }}
+                        <div class="form-text">{{ form.equipamento_epi.help_text }}</div>
+                        {% if form.equipamento_epi.errors %}
+                            <div class="text-danger small">{{ form.equipamento_epi.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {# Card para CRIAR novo equipamento EPI #}
+                    <div class="card border-primary mt-3" id="bloco-criar-epi">
+                        <div class="card-header bg-primary bg-opacity-10 py-2">
+                            <div class="form-check">
+                                {{ form.criar_equipamento_epi }}
+                                <label class="form-check-label fw-bold" for="id_criar_equipamento_epi">
+                                    {{ form.criar_equipamento_epi.label }}
+                                </label>
+                            </div>
+                            <small class="text-muted">{{ form.criar_equipamento_epi.help_text }}</small>
+                        </div>
+                        <div class="card-body" id="campos-novo-epi" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_epi_fabricante" class="form-label fw-bold">Fabricante *</label>
+                                    {{ form.epi_fabricante }}
+                                    {% if form.epi_fabricante.errors %}
+                                        <div class="text-danger small">{{ form.epi_fabricante.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_epi_modelo" class="form-label fw-bold">Modelo</label>
+                                    {{ form.epi_modelo }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_epi_ca" class="form-label fw-bold">CA (Certificado de Aprovação) *</label>
+                                    {{ form.epi_ca }}
+                                    {% if form.epi_ca.errors %}
+                                        <div class="text-danger small">{{ form.epi_ca.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_epi_vida_util_dias" class="form-label fw-bold">Vida Útil (dias) *</label>
+                                    {{ form.epi_vida_util_dias }}
+                                    {% if form.epi_vida_util_dias.errors %}
+                                        <div class="text-danger small">{{ form.epi_vida_util_dias.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# ═══════════════════════════════════════════════ #}
+                {# ── BLOCO FERRAMENTA: Vínculo com Ferramentas ── #}
+                {# ═══════════════════════════════════════════════ #}
+                <div id="bloco-vinculo-ferramenta" style="display:none;">
+                    <hr>
+                    <h5 class="text-warning mb-3">
+                        <i class="bi bi-tools me-1"></i> Vínculo com Ferramentas
+                    </h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ form.ferramenta_ref.label }}</label>
+                        {{ form.ferramenta_ref }}
+                        <div class="form-text">{{ form.ferramenta_ref.help_text }}</div>
+                        {% if form.ferramenta_ref.errors %}
+                            <div class="text-danger small">{{ form.ferramenta_ref.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {# Card para CRIAR nova ferramenta #}
+                    <div class="card border-warning mt-3" id="bloco-criar-ferramenta">
+                        <div class="card-header bg-warning bg-opacity-10 py-2">
+                            <div class="form-check">
+                                {{ form.criar_ferramenta }}
+                                <label class="form-check-label fw-bold" for="id_criar_ferramenta">
+                                    {{ form.criar_ferramenta.label }}
+                                </label>
+                            </div>
+                            <small class="text-muted">{{ form.criar_ferramenta.help_text }}</small>
+                        </div>
+                        <div class="card-body" id="campos-nova-ferramenta" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_ferr_codigo" class="form-label fw-bold">Código de Identificação</label>
+                                    {{ form.ferr_codigo }}
+                                    <div class="form-text">Gerado automaticamente se deixado em branco.</div>
+                                    {% if form.ferr_codigo.errors %}
+                                        <div class="text-danger small">{{ form.ferr_codigo.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_ferr_patrimonio" class="form-label fw-bold">Nº de Patrimônio</label>
+                                    {{ form.ferr_patrimonio }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_ferr_localizacao" class="form-label fw-bold">Localização Padrão *</label>
+                                    {{ form.ferr_localizacao }}
+                                    {% if form.ferr_localizacao.errors %}
+                                        <div class="text-danger small">{{ form.ferr_localizacao.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_ferr_data_aquisicao" class="form-label fw-bold">Data de Aquisição *</label>
+                                    {{ form.ferr_data_aquisicao }}
+                                    {% if form.ferr_data_aquisicao.errors %}
+                                        <div class="text-danger small">{{ form.ferr_data_aquisicao.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_ferr_fornecedor" class="form-label fw-bold">Fornecedor</label>
+                                    {{ form.ferr_fornecedor }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="id_ferr_quantidade" class="form-label fw-bold">Quantidade Inicial</label>
+                                    {{ form.ferr_quantidade }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# ── Ativo ── #}
+                <hr>
+                <div class="form-check mb-3">
+                    {{ form.ativo }}
+                    <label class="form-check-label" for="id_ativo">Ativo</label>
+                </div>
+
+                {# ── Botões ── #}
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock suprimentos_content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const classificacao = document.getElementById('id_classificacao');
+
+    // ── Blocos de seção ──
+    const blocoEpi = document.getElementById('bloco-vinculo-epi');
+    const blocoFerramenta = document.getElementById('bloco-vinculo-ferramenta');
+
+    // ── EPI: elementos ──
+    const criarEpiCheck = document.getElementById('id_criar_equipamento_epi');
+    const camposNovoEpi = document.getElementById('campos-novo-epi');
+    const selectEquipamento = document.getElementById('id_equipamento_epi');
+    const blocoCriarEpi = document.getElementById('bloco-criar-epi');
+
+    // ── Ferramenta: elementos ──
+    const criarFerrCheck = document.getElementById('id_criar_ferramenta');
+    const camposNovaFerr = document.getElementById('campos-nova-ferramenta');
+    const selectFerramenta = document.getElementById('id_ferramenta_ref');
+    const blocoCriarFerr = document.getElementById('bloco-criar-ferramenta');
+
+    // ═══════════════════════════════════════
+    // Toggle principal por classificação
+    // ═══════════════════════════════════════
+    function toggleBlocos() {
+        const val = classificacao.value;
+
+        // Mostrar/esconder seções
+        blocoEpi.style.display = val === 'EPI' ? 'block' : 'none';
+        blocoFerramenta.style.display = val === 'FERRAMENTA' ? 'block' : 'none';
+
+        // Reset EPI se não é EPI
+        if (val !== 'EPI') {
+            criarEpiCheck.checked = false;
+            camposNovoEpi.style.display = 'none';
+        }
+
+        // Reset Ferramenta se não é Ferramenta
+        if (val !== 'FERRAMENTA') {
+            criarFerrCheck.checked = false;
+            camposNovaFerr.style.display = 'none';
+        }
+
+        toggleCriarEpi();
+        toggleCriarFerr();
+    }
+
+    // ═══════════════════════════════════════
+    // Toggle criar EPI
+    // ═══════════════════════════════════════
+    function toggleCriarEpi() {
+        // Se já selecionou equipamento existente, esconder criação
+        if (selectEquipamento.value) {
+            blocoCriarEpi.style.display = 'none';
+            criarEpiCheck.checked = false;
+            camposNovoEpi.style.display = 'none';
+        } else {
+            blocoCriarEpi.style.display = 'block';
+        }
+        camposNovoEpi.style.display = criarEpiCheck.checked ? 'block' : 'none';
+    }
+
+    // ═══════════════════════════════════════
+    // Toggle criar Ferramenta
+    // ═══════════════════════════════════════
+    function toggleCriarFerr() {
+        // Se já selecionou ferramenta existente, esconder criação
+        if (selectFerramenta.value) {
+            blocoCriarFerr.style.display = 'none';
+            criarFerrCheck.checked = false;
+            camposNovaFerr.style.display = 'none';
+        } else {
+            blocoCriarFerr.style.display = 'block';
+        }
+        camposNovaFerr.style.display = criarFerrCheck.checked ? 'block' : 'none';
+    }
+
+    // ═══════════════════════════════════════
+    // Event listeners
+    // ═══════════════════════════════════════
+    classificacao.addEventListener('change', toggleBlocos);
+
+    criarEpiCheck.addEventListener('change', toggleCriarEpi);
+    selectEquipamento.addEventListener('change', toggleCriarEpi);
+
+    criarFerrCheck.addEventListener('change', toggleCriarFerr);
+    selectFerramenta.addEventListener('change', toggleCriarFerr);
+
+    // Estado inicial
+    toggleBlocos();
+});
+</script>
+{% endblock %}
+
+

@@ -1,3 +1,4 @@
+
 # notifications/services.py
 
 """
@@ -41,7 +42,7 @@ def criar_notificacao(
         usuario: User instance
         titulo: Texto curto do título
         tipo: Tipo da notificação (ver TIPO_CHOICES)
-        categoria: Categoria (tarefa, pgr, chat, sistema)
+        categoria: Categoria (tarefa, pgr, chat, sistema, suprimentos)
         prioridade: Prioridade visual (baixa, media, alta, critica)
         mensagem: Texto opcional com mais detalhes
         url_destino: URL relativa para redirecionamento
@@ -226,6 +227,187 @@ def notificar_pgr_plano_atrasado(plano, usuario):
         mensagem=f'{plano.descricao_acao[:60]}...',
         url_destino=url,
         icone='bi-calendar-x',
+    )
+
+
+# =============================================================================
+# FUNÇÕES ESPECÍFICAS PARA SUPRIMENTOS
+# =============================================================================
+
+def _obter_gerentes_da_filial(filial):
+    """
+    Retorna queryset de usuários do grupo 'Gerente' vinculados à filial.
+    Inclui superusuários como fallback.
+    """
+    gerentes = User.objects.filter(
+        groups__name='Gerente',
+        is_active=True,
+    )
+
+    if filial:
+        # 1º: Tenta por filiais_permitidas (ManyToMany)
+        gerentes_filial = gerentes.filter(filiais_permitidas=filial)
+        if gerentes_filial.exists():
+            return gerentes_filial
+
+        # 2º: Fallback por filial_ativa (FK)
+        gerentes_filial = gerentes.filter(filial_ativa=filial)
+        if gerentes_filial.exists():
+            return gerentes_filial
+
+    # Último fallback: todos os gerentes + superusers
+    return (gerentes | User.objects.filter(
+        is_superuser=True, is_active=True
+    )).distinct()
+
+
+
+def notificar_pedido_pendente(pedido):
+    """
+    RASCUNHO → PENDENTE: Notifica gerentes da filial do contrato.
+    """
+    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+    filial = pedido.contrato.filial
+    gerentes = _obter_gerentes_da_filial(filial)
+
+    valor_str = f'R$ {pedido.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    return criar_notificacao_para_grupo(
+        usuarios=gerentes,
+        titulo=f'Pedido {pedido.numero} aguarda aprovação',
+        tipo='pedido_pendente',
+        categoria='suprimentos',
+        prioridade='alta',
+        mensagem=(
+            f'Solicitante: {pedido.solicitante.get_full_name() or pedido.solicitante.username}\n'
+            f'Contrato: {pedido.contrato.cm} — {pedido.contrato.cliente}\n'
+            f'Valor total: {valor_str}'
+        ),
+        url_destino=url,
+        icone='bi-cart-check',
+    )
+
+
+def notificar_pedido_aprovado(pedido):
+    """
+    PENDENTE → APROVADO: Notifica o solicitante.
+    """
+    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+
+    return criar_notificacao(
+        usuario=pedido.solicitante,
+        titulo=f'Pedido {pedido.numero} aprovado ✅',
+        tipo='pedido_aprovado',
+        categoria='suprimentos',
+        prioridade='media',
+        mensagem=(
+            f'Aprovado por: {pedido.aprovador.get_full_name() or pedido.aprovador.username}\n'
+            f'Contrato: {pedido.contrato.cm}'
+        ),
+        url_destino=url,
+        icone='bi-check-circle-fill',
+        duplicar=True,
+    )
+
+
+def notificar_pedido_reprovado(pedido):
+    """
+    PENDENTE → REPROVADO: Notifica o solicitante (prioridade alta).
+    """
+    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+
+    motivo = pedido.motivo_reprovacao[:100] if pedido.motivo_reprovacao else 'Sem motivo informado'
+
+    return criar_notificacao(
+        usuario=pedido.solicitante,
+        titulo=f'Pedido {pedido.numero} reprovado ❌',
+        tipo='pedido_reprovado',
+        categoria='suprimentos',
+        prioridade='alta',
+        mensagem=(
+            f'Reprovado por: {pedido.aprovador.get_full_name() or pedido.aprovador.username}\n'
+            f'Motivo: {motivo}'
+        ),
+        url_destino=url,
+        icone='bi-x-circle-fill',
+        duplicar=True,
+    )
+
+
+def notificar_pedido_entregue(pedido):
+    """
+    APROVADO → ENTREGUE: Notifica o solicitante para confirmar recebimento.
+    """
+    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+
+    return criar_notificacao(
+        usuario=pedido.solicitante,
+        titulo=f'Pedido {pedido.numero} entregue 📦',
+        tipo='pedido_entregue',
+        categoria='suprimentos',
+        prioridade='media',
+        mensagem=(
+            f'Contrato: {pedido.contrato.cm}\n'
+            f'Confirme o recebimento dos materiais.'
+        ),
+        url_destino=url,
+        icone='bi-box-seam-fill',
+        duplicar=True,
+    )
+
+
+def notificar_pedido_recebido(pedido):
+    """
+    ENTREGUE → RECEBIDO: Notifica gerentes que o recebimento foi confirmado.
+    """
+    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+    filial = pedido.contrato.filial
+    gerentes = _obter_gerentes_da_filial(filial)
+
+    recebedor_nome = ''
+    if pedido.recebedor:
+        recebedor_nome = pedido.recebedor.get_full_name() or pedido.recebedor.username
+
+    return criar_notificacao_para_grupo(
+        usuarios=gerentes,
+        titulo=f'Pedido {pedido.numero} recebido ✅',
+        tipo='pedido_recebido',
+        categoria='suprimentos',
+        prioridade='baixa',
+        mensagem=(
+            f'Recebido por: {recebedor_nome}\n'
+            f'Contrato: {pedido.contrato.cm}\n'
+            f'Entrada no estoque processada automaticamente.'
+        ),
+        url_destino=url,
+        icone='bi-clipboard-check-fill',
+    )
+
+
+def notificar_pedido_verba_excedida(pedido, erros_verba):
+    """
+    Notifica gerentes quando um pedido é enviado excedendo a verba.
+    Chamada como alerta (não bloqueia o envio).
+    """
+    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+    filial = pedido.contrato.filial
+    gerentes = _obter_gerentes_da_filial(filial)
+
+    detalhes = '\n'.join(f'⚠ {erro}' for erro in erros_verba)
+
+    return criar_notificacao_para_grupo(
+        usuarios=gerentes,
+        titulo=f'Pedido {pedido.numero} excede verba!',
+        tipo='pedido_verba_excedida',
+        categoria='suprimentos',
+        prioridade='critica',
+        mensagem=(
+            f'Solicitante: {pedido.solicitante.get_full_name() or pedido.solicitante.username}\n'
+            f'Contrato: {pedido.contrato.cm}\n'
+            f'{detalhes}'
+        ),
+        url_destino=url,
+        icone='bi-exclamation-diamond-fill',
     )
 
 

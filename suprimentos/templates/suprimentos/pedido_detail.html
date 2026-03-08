@@ -1,0 +1,343 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Pedido {{ pedido.numero }}{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container-fluid mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2><i class="bi bi-cart me-2"></i>{{ pedido.numero }}</h2>
+            <p class="text-muted mb-0">{{ pedido.contrato }} — {{ pedido.get_status_display }}</p>
+        </div>
+        <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+
+    <!-- Status + Info -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <small class="text-muted">Solicitante</small>
+                            <p>{{ pedido.solicitante.get_full_name }}</p>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted">Data do Pedido</small>
+                            <p>{{ pedido.data_pedido|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        {% if pedido.aprovador %}
+                        <div class="col-sm-6">
+                            <small class="text-muted">Aprovador</small>
+                            <p>{{ pedido.aprovador.get_full_name }} — {{ pedido.data_aprovacao|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        {% endif %}
+                        {% if pedido.recebedor %}
+                        <div class="col-sm-6">
+                            <small class="text-muted">Recebido por</small>
+                            <p>{{ pedido.recebedor.get_full_name }} — {{ pedido.data_recebimento|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        {% endif %}
+                        {% if pedido.observacao %}
+                        <div class="col-12">
+                            <small class="text-muted">Observação</small>
+                            <p>{{ pedido.observacao|linebreaksbr }}</p>
+                        </div>
+                        {% endif %}
+                        {% if pedido.motivo_reprovacao %}
+                        <div class="col-12">
+                            <div class="alert alert-danger mb-0">
+                                <strong>Motivo da Reprovação:</strong> {{ pedido.motivo_reprovacao }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saldos da verba -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <small><i class="bi bi-wallet2 me-1"></i> Saldo da Verba</small>
+                </div>
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between"><span>EPI</span>
+                        <span class="{% if verba.saldo_epi >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ verba.saldo_epi|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between"><span>Consumo</span>
+                        <span class="{% if verba.saldo_consumo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ verba.saldo_consumo|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between"><span>Ferramenta</span>
+                        <span class="{% if verba.saldo_ferramenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ verba.saldo_ferramenta|floatformat:2 }}
+                        </span>
+                    </div>
+                    <hr class="my-1">
+                    <div class="d-flex justify-content-between fw-bold"><span>Total</span>
+                        <span class="{% if verba.saldo_total >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ verba.saldo_total|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itens do pedido -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-list-ul me-1"></i> Itens do Pedido</span>
+            <strong>Total: R$ {{ pedido.valor_total|floatformat:2 }}</strong>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Material</th>
+                            <th>Classificação</th>
+                            <th class="text-center">Qtd</th>
+                            <th class="text-end">Valor Unit.</th>
+                            <th class="text-end">Total</th>
+                            {% if pode_editar %}<th class="text-end">Ações</th>{% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>
+                                {{ item.material.descricao }}
+                                {% if item.observacao %}
+                                    <small class="d-block text-muted">{{ item.observacao }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if item.material.classificacao == 'EPI' %}bg-info
+                                    {% elif item.material.classificacao == 'CONSUMO' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ item.material.get_classificacao_display }}
+                                </span>
+                            </td>
+                            <td class="text-center">{{ item.quantidade }} {{ item.material.get_unidade_display }}</td>
+                            <td class="text-end">R$ {{ item.valor_unitario|floatformat:2 }}</td>
+                            <td class="text-end"><strong>R$ {{ item.valor_total|floatformat:2 }}</strong></td>
+                            {% if pode_editar %}
+                            <td class="text-end">
+                                <form method="post" action="{% url 'suprimentos:item_remover' pk=pedido.pk item_pk=item.pk %}"
+                                      style="display:inline"
+                                      onsubmit="return confirm('Remover este item?')">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger" title="Remover">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">Nenhum item adicionado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Totais por classificação -->
+    {% if totais %}
+    <div class="row g-2 mb-4">
+        {% for cat, val in totais.items %}
+        <div class="col-md-4">
+            <div class="alert
+                {% if cat == 'EPI' %}alert-info
+                {% elif cat == 'CONSUMO' %}alert-warning
+                {% else %}alert-secondary{% endif %} mb-0 d-flex justify-content-between">
+                <span>{{ cat }}</span>
+                <strong>R$ {{ val|floatformat:2 }}</strong>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Form adicionar item (se rascunho) -->
+    {% if pode_editar %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-plus-circle me-1"></i> Adicionar Item
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'suprimentos:item_adicionar' pk=pedido.pk %}" class="row g-2 align-items-end">
+                {% csrf_token %}
+                <div class="col-md-4">
+                    <label class="form-label">Material</label>
+                    {{ item_form.material }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Quantidade</label>
+                    {{ item_form.quantidade }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Valor Unitário</label>
+                    {{ item_form.valor_unitario }}
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Observação</label>
+                    {{ item_form.observacao }}
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-plus-lg"></i> Adicionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ações do workflow -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        {% if pode_enviar %}
+        <form method="post" action="{% url 'suprimentos:pedido_enviar' pk=pedido.pk %}"
+              onsubmit="return confirm('Enviar pedido para aprovação?')">
+            {% csrf_token %}
+            <button class="btn btn-primary">
+                <i class="bi bi-send me-1"></i> Enviar para Aprovação
+            </button>
+        </form>
+        {% endif %}
+
+        {% if pode_aprovar %}
+        <form method="post" action="{% url 'suprimentos:pedido_aprovar' pk=pedido.pk %}"
+              onsubmit="return confirm('Aprovar este pedido?')">
+            {% csrf_token %}
+            <button class="btn btn-success">
+                <i class="bi bi-check-circle me-1"></i> Aprovar
+            </button>
+        </form>
+
+        <!-- Botão reprovar abre modal -->
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalReprovar">
+            <i class="bi bi-x-circle me-1"></i> Reprovar
+        </button>
+        {% endif %}
+
+        {% if pode_entregar %}
+        <form method="post" action="{% url 'suprimentos:pedido_entregar' pk=pedido.pk %}"
+              onsubmit="return confirm('Marcar como entregue?')">
+            {% csrf_token %}
+            <button class="btn btn-info">
+                <i class="bi bi-truck me-1"></i> Marcar Entregue
+            </button>
+        </form>
+        {% endif %}
+
+        {% if pode_receber %}
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalReceber">
+            <i class="bi bi-box-arrow-in-down me-1"></i> Confirmar Recebimento
+        </button>
+        {% endif %}
+
+        {% if pode_cancelar %}
+        <form method="post" action="{% url 'suprimentos:pedido_enviar' pk=pedido.pk %}"
+              onsubmit="return false;" style="display:none;">
+        </form>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal Reprovar -->
+{% if pode_aprovar %}
+<div class="modal fade" id="modalReprovar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'suprimentos:pedido_reprovar' pk=pedido.pk %}">
+                {% csrf_token %}
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="bi bi-x-circle me-1"></i> Reprovar Pedido</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    {{ reprovar_form.motivo.label_tag }}
+                    {{ reprovar_form.motivo }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Reprovação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Receber -->
+{% if pode_receber %}
+<div class="modal fade" id="modalReceber" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="{% url 'suprimentos:pedido_receber' pk=pedido.pk %}">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-box-arrow-in-down me-1"></i> Confirmar Recebimento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ receber_form.observacao_recebimento.label_tag }}
+                        {{ receber_form.observacao_recebimento }}
+                    </div>
+                    <div class="form-check">
+                        {{ receber_form.confirmar }}
+                        <label class="form-check-label" for="id_confirmar">
+                            Confirmo que recebi todos os itens deste pedido
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Recebimento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock suprimentos_content %}
+
+{% block extra_js %}
+<script>
+    // Auto-preencher valor unitário ao selecionar material
+    document.querySelector('.select2-material')?.addEventListener('change', function() {
+        const materialId = this.value;
+        if (!materialId) return;
+
+        fetch(`/suprimentos/api/material/${materialId}/preco/`)
+            .then(r => r.json())
+            .then(data => {
+                const valorInput = document.querySelector('#id_valor_unitario');
+                if (valorInput && data.valor_unitario) {
+                    valorInput.value = data.valor_unitario;
+                }
+            });
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,340 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load static %}
+
+{% block title %}Dashboard Suprimentos{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container-fluid mt-4">
+
+    <!-- Cabeçalho + Filtros -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard Suprimentos</h2>
+        <form method="get" class="d-flex gap-2">
+            <select name="mes" class="form-select form-select-sm" style="width:auto">
+                {% for num, nome in meses %}
+                    <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
+                {% endfor %}
+            </select>
+            <select name="ano" class="form-select form-select-sm" style="width:auto">
+                {% for a in anos_disponiveis %}
+                    <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-primary" type="submit">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Cards Resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-primary border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Verba Total</small>
+                    <h4 class="text-primary mb-0">R$ {{ total_verba|floatformat:2 }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-danger border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Compras Total</small>
+                    <h4 class="text-danger mb-0">R$ {{ total_compra|floatformat:2 }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-success border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Saldo Geral</small>
+                    <h4 class="{% if saldo_geral >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                        R$ {{ saldo_geral|floatformat:2 }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-4 shadow-sm h-100">
+                <div class="card-body">
+                    <small class="text-muted">Pedidos Pendentes</small>
+                    <h4 class="text-warning mb-0">{{ pedidos_pendentes|length }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atalhos Rápidos -->
+    <div class="row g-3 mb-4">
+        <div class="col">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success">
+                    <i class="bi bi-cart-plus me-1"></i> Novo Pedido
+                </a>
+                <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-cart me-1"></i> Pedidos
+                </a>
+                <a href="{% url 'suprimentos:contrato_lista' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-file-earmark-text me-1"></i> Contratos
+                </a>
+                <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-box-seam me-1"></i> Materiais
+                </a>
+                <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-people me-1"></i> Fornecedores
+                </a>
+                <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-upload me-1"></i> Importar Parceiros
+                </a>
+                <a href="{% url 'suprimentos:relatorio' %}" class="btn btn-warning">
+                    <i class="bi bi-bar-chart-line me-1"></i> Relatório Gerencial
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalhamento Verba × Compra -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light"><i class="bi bi-shield-check me-1"></i> EPI</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Verba</span><strong>R$ {{ total_verba_epi|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Compra</span><strong class="text-danger">R$ {{ total_compra_epi|floatformat:2 }}</strong>
+                    </div>
+                    {% with saldo=total_verba_epi|add:total_compra_epi %}
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Saldo</span>
+                        <strong>R$ {{ total_verba_epi|floatformat:2 }}</strong>
+                    </div>
+                    {% endwith %}
+                    {% if total_verba_epi > 0 %}
+                        {% widthratio total_compra_epi total_verba_epi 100 as pct_epi %}
+                        <div class="progress mt-2" style="height:8px">
+                            <div class="progress-bar bg-info" style="width:{{ pct_epi }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light"><i class="bi bi-box-seam me-1"></i> Consumo</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Verba</span><strong>R$ {{ total_verba_consumo|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Compra</span><strong class="text-danger">R$ {{ total_compra_consumo|floatformat:2 }}</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Saldo</span>
+                        <strong>R$ {{ total_verba_consumo|floatformat:2 }}</strong>
+                    </div>
+                    {% if total_verba_consumo > 0 %}
+                        {% widthratio total_compra_consumo total_verba_consumo 100 as pct_con %}
+                        <div class="progress mt-2" style="height:8px">
+                            <div class="progress-bar bg-warning" style="width:{{ pct_con }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light"><i class="bi bi-tools me-1"></i> Ferramenta</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Verba</span><strong>R$ {{ total_verba_ferramenta|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Compra</span><strong class="text-danger">R$ {{ total_compra_ferramenta|floatformat:2 }}</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Saldo</span>
+                        <strong>R$ {{ total_verba_ferramenta|floatformat:2 }}</strong>
+                    </div>
+                    {% if total_verba_ferramenta > 0 %}
+                        {% widthratio total_compra_ferramenta total_verba_ferramenta 100 as pct_fer %}
+                        <div class="progress mt-2" style="height:8px">
+                            <div class="progress-bar bg-success" style="width:{{ pct_fer }}%"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════ #}
+    {# CARD DESTAQUE — Relatório Gerencial                   #}
+    {# ══════════════════════════════════════════════════════ #}
+    <div class="card shadow-sm mb-4 border-start border-4 border-info">
+        <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h5 class="mb-1">
+                    <i class="bi bi-bar-chart-line me-2 text-info"></i>
+                    Relatório Gerencial Completo
+                </h5>
+                <p class="text-muted mb-0">
+                    Quantitativo, qualitativo, alertas de gastos acima da meta,
+                    economias e projeções de gastos futuros.
+                </p>
+            </div>
+            <div class="d-flex gap-2 flex-shrink-0">
+                <a href="{% url 'suprimentos:relatorio' %}" class="btn btn-info text-white">
+                    <i class="bi bi-eye me-1"></i> Visualizar
+                </a>
+                <a href="{% url 'suprimentos:relatorio_excel' %}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                </a>
+                <a href="{% url 'suprimentos:relatorio_pdf' %}" class="btn btn-danger" target="_blank">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico 6 meses -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-graph-up me-1"></i> Verba × Compra — Últimos 6 meses
+        </div>
+        <div class="card-body">
+            <canvas id="chartVerbaCompra" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Pedidos Pendentes -->
+    {% if pedidos_pendentes %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning bg-opacity-25">
+            <i class="bi bi-clock-history me-1"></i> Pedidos Aguardando Aprovação
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nº</th>
+                            <th>Contrato</th>
+                            <th>Solicitante</th>
+                            <th>Data</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pedidos_pendentes %}
+                        <tr>
+                            <td><a href="{{ p.get_absolute_url }}">{{ p.numero }}</a></td>
+                            <td>{{ p.contrato }}</td>
+                            <td>{{ p.solicitante.get_full_name }}</td>
+                            <td>{{ p.data_pedido|date:"d/m/Y H:i" }}</td>
+                            <td class="text-end">
+                                <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Ver
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contratos -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-file-earmark-text me-1"></i> Contratos da Filial
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CM</th>
+                            <th>Cliente</th>
+                            <th>Filial</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in contratos %}
+                        <tr>
+                            <td><a href="{{ c.get_absolute_url }}">{{ c.cm }}</a></td>
+                            <td>{{ c.cliente }}</td>
+                            <td>{{ c.filial }}</td>
+                            <td class="text-center">
+                                {% if c.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ c.get_absolute_url }}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock suprimentos_content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+    const dados = {{ grafico_meses|safe }};
+    const labels = dados.map(d => d.label);
+
+    new Chart(document.getElementById('chartVerbaCompra'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Verba Total',
+                    data: dados.map(d => d.verba_total),
+                    backgroundColor: 'rgba(13,110,253,0.6)',
+                },
+                {
+                    label: 'Compra Total',
+                    data: dados.map(d => d.compra_total),
+                    backgroundColor: 'rgba(220,53,69,0.6)',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 2}),
+                    },
+                },
+            },
+        },
+    });
+</script>
+{% endblock %}
+
+

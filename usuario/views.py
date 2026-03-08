@@ -190,7 +190,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
                     {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
-                    {'url': 'treinamentos:treinamento_list', 'text': 'Treinamentos'},
+                    {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
                 ]
             },
             {
@@ -222,8 +222,9 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'links': [
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
-                    {'url': 'suprimentos:parceiro_list', 'text': 'Suprimentos'},
+                    {'url': 'suprimentos:dashboard', 'text': 'Suprimentos'},
                     {'url': 'documentos:lista', 'text': 'Documentos'},
+                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Estoque'},
                 ]
             },
             {
