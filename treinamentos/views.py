@@ -15,28 +15,29 @@ import os
 import io
 import json
 import traceback
-from datetime import datetime
-
+from datetime import datetime, timedelta
 from requests import request
 from treinamentos import treinamento_generators
 from treinamentos.forms import ParticipanteFormSet, TipoCursoForm, TreinamentoForm
+from treinamentos.models import TentativaAvaliacaoEAD, ProgressoAulaEAD
 from django.db import transaction
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from core.mixins import TecnicoScopeMixin 
 from core.mixins import ViewFilialScopedMixin
-
+from .models import CursoEAD, MatriculaEAD, CertificadoEAD
 from django.utils import timezone
 from django.template.loader import render_to_string, get_template
 from django.views.generic import View # Garanta que 'View' está importado
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import HttpResponse, Http404, HttpResponseRedirect, JsonResponse
 from .models import GabaritoCertificado, Assinatura, Participante, Treinamento, TipoCurso
 from num2words import num2words # Biblioteca para converter números em extenso
 import qrcode
 import qrcode.image.svg
 from base64 import b64encode
 
+    # ... demais impor
 try:
     from weasyprint import HTML, CSS
     WEASYPRINT_DISPONIVEL = True
@@ -87,7 +88,7 @@ class CriarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, Permissi
     model = Treinamento
     form_class = TreinamentoForm
     template_name = 'treinamentos/criar_treinamento.html'
-    success_url = reverse_lazy('treinamentos:lista_treinamentos')
+    success_url = reverse_lazy('treinamentos:treinamento_list')
     success_message = "✅ Treinamento cadastrado com sucesso!"
 
     permission_required = 'treinamentos.add_treinamento'
@@ -109,47 +110,47 @@ class CriarTreinamentoView(LoginRequiredMixin, TreinamentoFormsetMixin, Permissi
 class TreinamentoListView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
     """Lista todos os treinamentos com filtros de busca."""
     model = Treinamento
-    template_name = 'treinamentos/lista_treinamentos.html'
+    template_name = 'treinamentos/treinamento_list.html'
     context_object_name = 'treinamentos'
     paginate_by = 30
-
-    # Configura o mixin global para este app específico
     tecnico_scope_lookup = 'participantes__funcionario'
 
-
     def get_queryset(self):
-        """Aplica filtros de status, tipo de curso e busca textual."""
+        """Aplica filtros de status, tipo de curso e busca textual.
+        Exclui treinamentos vinculados a tipos Online (gerenciados pelo EAD)."""
         queryset = super().get_queryset().select_related('tipo_curso')
 
-        status_filter = self.request.GET.get('status')
-        if status_filter:
-            queryset = queryset.filter(status=status_filter)
+        # ✅ Exclui tipos Online — esses são gerenciados pelo fluxo EAD
+        queryset = queryset.exclude(tipo_curso__modalidade='O')
 
-
+        # Filtro por status
         status = self.request.GET.get('status')
-        
         if status:
             queryset = queryset.filter(status=status)
 
+        # Filtro por tipo de curso
         tipo_curso = self.request.GET.get('tipo_curso')
         if tipo_curso:
             queryset = queryset.filter(tipo_curso_id=tipo_curso)
 
-        busca = self.request.GET.get('busca')
+        # Busca textual
+        busca = self.request.GET.get('q')
         if busca:
             queryset = queryset.filter(
                 Q(nome__icontains=busca) |
                 Q(local__icontains=busca) |
                 Q(palestrante__icontains=busca)
             )
+
         return queryset.order_by('-data_inicio')
 
     def get_context_data(self, **kwargs):
-        """Adiciona dados extras ao contexto para os filtros do template."""
         context = super().get_context_data(**kwargs)
-        context['tipos_curso'] = TipoCurso.objects.filter(ativo=True)
-        context['total_treinamentos'] = Treinamento.objects.count()
+        # ✅ Só mostra tipos presenciais/híbridos nos filtros
+        context['tipos_curso'] = TipoCurso.objects.filter(ativo=True).exclude(modalidade='O')
+        context['total_treinamentos'] = Treinamento.objects.exclude(tipo_curso__modalidade='O').count()
         return context
+
 
 class EditarTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, TreinamentoFormsetMixin, SuccessMessageMixin, UpdateView):
     model = Treinamento
@@ -191,16 +192,23 @@ class DetalheTreinamentoView(LoginRequiredMixin, TecnicoScopeMixin, DetailView):
         context['participantes'] = self.object.participantes.select_related('funcionario')
         return context
 
-
 class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessMessageMixin, DeleteView):
-    """View para confirmar e excluir um treinamento."""
     model = Treinamento
-    template_name = 'treinamentos/confirmar_exclusao_treinamento.html'
-    success_url = reverse_lazy('treinamentos:lista_treinamentos')
     permission_required = 'treinamentos.delete_treinamento'
-    success_message = "Treinamento excluído com sucesso!"
-    # Garante que um técnico não possa excluir um objeto nem pela URL
+    success_url = reverse_lazy('treinamentos:treinamento_list')
     tecnico_scope_lookup = 'participantes__funcionario'
+    
+    def get(self, request, *args, **kwargs):
+        # Bloqueia acesso GET direto — exclusão só via POST do modal
+        return HttpResponseRedirect(
+            reverse('treinamentos:detalhe_treinamento', kwargs={'pk': self.get_object().pk})
+        )
+    
+    def delete(self, request, *args, **kwargs):
+        treinamento = self.get_object()
+        messages.success(request, f'Treinamento "{treinamento.nome}" excluído com sucesso.')
+        return super().delete(request, *args, **kwargs)
+
 
 class TipoCursoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
@@ -450,7 +458,7 @@ class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, 
 
         except Http404:
             messages.error(request, "Treinamento não encontrado ou você não tem permissão para acessá-lo.")
-            return redirect('treinamentos:lista_treinamentos')
+            return redirect('treinamentos:treinamento_list')
 
         except Exception as e:
             # Captura qualquer outro erro que possa ocorrer durante o processo
@@ -509,26 +517,22 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMix
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # --- 1. FILTRAGEM PRIMEIRO! ---
-        # Define o queryset base
         base_queryset = Treinamento.objects.all()
-        # APLICA O FILTRO DO TÉCNICO IMEDIATAMENTE
         base_queryset = self.scope_tecnico_queryset(base_queryset)
-  
-        # Mapeamentos para tradução (usando as choices dos modelos)
-        # Definidos apenas uma vez
+
         area_map = dict(TipoCurso.AREA_CHOICES)
         status_map = dict(Treinamento.STATUS_CHOICES)
         modalidade_map = dict(TipoCurso.MODALIDADE_CHOICES)
-        
-        # --- 2. DADOS PARA OS GRÁFICOS (Agora usam o queryset FILTRADO) ---
+
+        # --- 2. DADOS PRESENCIAIS (Existentes) ---
         area_data_db = base_queryset.values('tipo_curso__area').annotate(total=Count('id'))
         treinamentos_por_area = [
             {'nome_legivel': area_map.get(item['tipo_curso__area'], item['tipo_curso__area']), 'total': item['total']}
             for item in area_data_db
         ]
-        
+
         status_data_db = base_queryset.values('status').annotate(total=Count('id'))
         status_treinamentos = [
             {'nome_legivel': status_map.get(item['status'], item['status']), 'total': item['total']}
@@ -548,41 +552,79 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMix
             {'nome_legivel': area_map.get(item['tipo_curso__area'], item['tipo_curso__area']), 'total': item['total']}
             for item in custo_data_db
         ]
-        
-        # --- 3. MONTANDO O JSON ÚNICO (Agora com dados filtrados) ---
+
+        # --- 3. DADOS EAD (NOVO!) ---
+        ead_total_cursos = CursoEAD.objects.filter(status='publicado').count()
+        ead_total_matriculas = MatriculaEAD.objects.count()
+        ead_em_andamento = MatriculaEAD.objects.filter(status='em_andamento').count()  # ← minúsculo!
+        ead_certificados = CertificadoEAD.objects.count()
+        # Matrículas por status (para gráfico donut)
+        ead_status_map = dict(MatriculaEAD._meta.get_field('status').choices)  # ← via _meta
+        ead_status_data = (
+            MatriculaEAD.objects
+            .values('status')
+            .annotate(total=Count('id'))
+            .order_by('-total')
+        )
+        ead_status_chart = [
+            {
+                'status': item['status'],
+                'nome_legivel': ead_status_map.get(item['status'], item['status']),
+                'total': item['total'],
+            }
+            for item in ead_status_data
+        ]
+        # Top cursos com mais matrículas
+        ead_top_cursos = list(
+            CursoEAD.objects
+            .filter(status='publicado')
+            .annotate(total=Count('matriculas_ead'))
+            .filter(total__gt=0)
+            .order_by('-total')
+            .values('titulo', 'total')[:10]
+        )
+
+        # --- 4. MONTANDO O JSON ÚNICO ---
         dashboard_data = {
             'area': treinamentos_por_area,
             'status': status_treinamentos,
             'modalidade': treinamentos_por_modalidade,
             'custo': custo_por_area,
+            # EAD
+            'ead_status': ead_status_chart,
+            'ead_top_cursos': ead_top_cursos,
         }
-        
-        # --- 4. DADOS PARA CARDS E TABELA (Já estavam corretos) ---
+
+        # --- 5. KPIs PRESENCIAIS ---
         total_treinamentos = base_queryset.count()
         em_andamento = base_queryset.filter(status='A').count()
-        
         total_custo = base_queryset.aggregate(
             total=Coalesce(Sum('custo'), 0.0, output_field=FloatField())
         )['total']
-        
-        # Filtra participantes baseado nos treinamentos filtrados
         total_participantes = Participante.objects.filter(
             treinamento__in=base_queryset
         ).count()
-        
         treinamentos_recentes = base_queryset.select_related('tipo_curso').order_by('-data_inicio')[:5]
 
-        # --- 5. ATUALIZAÇÃO FINAL DO CONTEXTO ---
+        # --- 6. CONTEXT FINAL ---
         context.update({
+            # Presencial
             'total_treinamentos': total_treinamentos,
             'total_participantes': total_participantes,
             'total_custo': total_custo,
             'em_andamento': em_andamento,
             'treinamentos_recentes': treinamentos_recentes,
+            # EAD KPIs
+            'ead_total_cursos': ead_total_cursos,
+            'ead_total_matriculas': ead_total_matriculas,
+            'ead_em_andamento': ead_em_andamento,
+            'ead_certificados': ead_certificados,
+            # JSON
             'dashboard_data_json': json.dumps(dashboard_data, cls=DecimalEncoder),
         })
-        
+
         return context
+
 
 class VerificarCertificadoView(View):
     """
@@ -789,7 +831,7 @@ Gera o QR Code para a URL de validação e retorna como uma string SVG.
     def get(self, request, *args, **kwargs):
         if not WEASYPRINT_DISPONIVEL:
             messages.error(request, "A biblioteca 'WeasyPrint' não foi encontrada. Geração de PDF está desabilitada.")
-            return redirect(request.META.get('HTTP_REFERER', 'treinamentos:lista_treinamentos'))
+            return redirect(request.META.get('HTTP_REFERER', 'treinamentos:treinamento_list'))
 
         try:
             # Aplica o filtro de escopo do Técnico
@@ -810,11 +852,11 @@ Gera o QR Code para a URL de validação e retorna como uma string SVG.
         
         except Http404:
             messages.error(request, "Participante não encontrado ou você não tem permissão.")
-            return redirect('treinamentos:lista_treinamentos')
+            return redirect('treinamentos:treinamento_list')
             
         except Exception as e:
             messages.error(request, f"Erro ao buscar participante: {e}")
-            return redirect('treinamentos:lista_treinamentos')
+            return redirect('treinamentos:treinamento_list')
 
 
         # --- Validações de Negócio ---
@@ -870,3 +912,764 @@ Gera o QR Code para a URL de validação e retorna como uma string SVG.
             print(traceback.format_exc())
             messages.error(request, f"Ocorreu um erro inesperado ao gerar o PDF: {e}")
             return redirect('treinamentos:detalhe_treinamento', pk=participante.treinamento.pk)
+        
+# =============================================================================
+# =============================================================================
+#
+#  EAD — VIEWS (Catálogo, Player, Avaliação, Certificado)
+#
+# =============================================================================
+# =============================================================================
+
+from .models import (
+    CursoEAD, ModuloEAD, AulaEAD, MatriculaEAD,
+    ProgressoAulaEAD, AvaliacaoEAD, QuestaoEAD, AlternativaEAD,
+    TentativaAvaliacaoEAD, RespostaAlunoEAD, CertificadoEAD,
+    PlanoEstudo,
+)
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+import random
+
+
+# =============================================================================
+# CATÁLOGO DE CURSOS EAD
+# =============================================================================
+
+class EADCatalogoView(LoginRequiredMixin, ListView):
+    """Lista de cursos EAD publicados."""
+    model = CursoEAD
+    template_name = "treinamentos/ead/catalogo.html"
+    context_object_name = "cursos"
+    paginate_by = 12
+
+    def get_queryset(self):
+        qs = CursoEAD.objects.filter(
+            status=CursoEAD.Status.PUBLICADO,
+            filial=self.request.user.filial_ativa,
+        ).select_related("tipo_curso").annotate(
+            total_modulos_count=Count("modulos_ead", distinct=True),
+            total_aulas_count=Count("modulos_ead__aulas_ead", distinct=True),
+            total_matriculados_count=Count("matriculas_ead", distinct=True),
+        )
+
+        # Filtro por busca
+        q = self.request.GET.get("q")
+        if q:
+            qs = qs.filter(
+                Q(titulo__icontains=q) | Q(descricao__icontains=q)
+            )
+
+        # Filtro por tipo
+        tipo = self.request.GET.get("tipo")
+        if tipo:
+            qs = qs.filter(tipo_curso_id=tipo)
+
+        # Filtro por nível
+        nivel = self.request.GET.get("nivel")
+        if nivel:
+            qs = qs.filter(nivel=nivel)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["tipos_curso"] = TipoCurso.objects.filter(ativo=True).order_by("nome")
+        ctx["niveis"] = CursoEAD.Nivel.choices
+        ctx["filtro_q"] = self.request.GET.get("q", "")
+        ctx["filtro_tipo"] = self.request.GET.get("tipo", "")
+        ctx["filtro_nivel"] = self.request.GET.get("nivel", "")
+
+        # Matrícula do usuário em cada curso
+        if self.request.user.is_authenticated:
+            try:
+                funcionario = self.request.user.funcionario
+                matriculas = MatriculaEAD.objects.filter(
+                    funcionario=funcionario,
+                ).values_list("curso_id", "status", "progresso_percentual")
+                ctx["matriculas_map"] = {
+                    str(m[0]): {"status": m[1], "progresso": m[2]} for m in matriculas
+                }
+            except Exception:
+                ctx["matriculas_map"] = {}
+        return ctx
+
+# =============================================================================
+# DETALHE DO CURSO EAD
+# =============================================================================
+
+class EADCursoDetailView(LoginRequiredMixin, DetailView):
+    """Página de detalhe do curso com módulos, aulas e resultado da avaliação."""
+    model = CursoEAD
+    template_name = "treinamentos/ead/curso_detail.html"
+    context_object_name = "curso"
+    slug_field = "slug"
+
+    def get_queryset(self):
+        return CursoEAD.objects.filter(
+            status=CursoEAD.Status.PUBLICADO,
+            filial=self.request.user.filial_ativa,
+        ).select_related("tipo_curso", "criado_por")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        curso = self.object
+
+        # Módulos com aulas
+        ctx["modulos"] = curso.modulos_ead.filter(
+            ativo=True,
+        ).prefetch_related("aulas_ead").order_by("ordem")
+
+        # Valores padrão
+        ctx["matricula"] = None
+        ctx["progressos_concluidos"] = set()
+        ctx["ultima_tentativa"] = None
+        ctx["tentativas_restantes"] = 0
+        ctx["nota_ok"] = False
+        ctx["ch_ok"] = False
+
+        try:
+            funcionario = self.request.user.funcionario
+            matricula = MatriculaEAD.objects.filter(
+                funcionario=funcionario, curso=curso,
+            ).first()
+            ctx["matricula"] = matricula
+
+            if matricula:
+                # IDs de aulas concluídas
+                ctx["progressos_concluidos"] = set(
+                    ProgressoAulaEAD.objects.filter(
+                        matricula=matricula, concluida=True,
+                    ).values_list("aula_id", flat=True)
+                )
+
+                # Última tentativa finalizada
+                ultima = TentativaAvaliacaoEAD.objects.filter(
+                    matricula=matricula, finalizada_em__isnull=False,
+                ).order_by("-numero_tentativa").first()
+                ctx["ultima_tentativa"] = ultima
+
+                # Tentativas restantes
+                ctx["tentativas_restantes"] = max(
+                    0, curso.max_tentativas_avaliacao - matricula.tentativas_avaliacao
+                )
+
+                # Status dos dois critérios (para feedback no template)
+                if ultima and ultima.nota is not None:
+                    ctx["nota_ok"] = ultima.nota >= curso.nota_minima
+                ctx["ch_ok"] = matricula.carga_horaria_atingida
+
+        except Exception:
+            pass
+
+        return ctx
+
+# =============================================================================
+# MEUS CURSOS (Área do Aluno)
+# =============================================================================
+
+class EADMeusCursosView(LoginRequiredMixin, ListView):
+    """Cursos em que o aluno está matriculado."""
+    model = MatriculaEAD
+    template_name = "treinamentos/ead/meus_cursos.html"
+    context_object_name = "matriculas"
+
+    def get_queryset(self):
+        try:
+            funcionario = self.request.user.funcionario
+            return MatriculaEAD.objects.filter(
+                funcionario=funcionario,
+                filial=self.request.user.filial_ativa,
+            ).select_related("curso", "curso__tipo_curso").order_by(
+                "-data_matricula"
+            )
+        except Exception:
+            return MatriculaEAD.objects.none()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        matriculas = ctx["matriculas"]
+        ctx["em_andamento"] = [m for m in matriculas if m.status == MatriculaEAD.Status.EM_ANDAMENTO]
+        ctx["concluidos"] = [m for m in matriculas if m.status in (
+            MatriculaEAD.Status.APROVADO, MatriculaEAD.Status.CONCLUIDO
+        )]
+        return ctx
+
+
+# =============================================================================
+# MATRICULAR
+# =============================================================================
+
+class EADMatricularView(LoginRequiredMixin, View):
+    """Matricula o funcionário no curso EAD."""
+
+    def post(self, request, slug):
+        curso = get_object_or_404(
+            CursoEAD,
+            slug=slug,
+            status=CursoEAD.Status.PUBLICADO,
+            filial=request.user.filial_ativa,
+        )
+
+        try:
+            funcionario = request.user.funcionario
+        except Exception:
+            messages.error(request, "Seu usuário não está vinculado a um funcionário.")
+            return redirect("treinamentos:ead_curso_detail", slug=slug)
+
+        # Verifica se já está matriculado
+        if MatriculaEAD.objects.filter(funcionario=funcionario, curso=curso).exists():
+            messages.warning(request, "Você já está matriculado neste curso.")
+            return redirect("treinamentos:ead_curso_detail", slug=slug)
+
+        # Cria matrícula
+        MatriculaEAD.objects.create(
+            funcionario=funcionario,
+            curso=curso,
+            filial=request.user.filial_ativa,
+            matriculado_por=request.user,
+            prazo_limite=timezone.now() + timedelta(days=90),
+        )
+
+        messages.success(request, f"Matrícula confirmada! Bons estudos no curso: {curso.titulo}")
+        return redirect("treinamentos:ead_curso_detail", slug=slug)
+
+
+# =============================================================================
+# PLAYER DE AULA
+# ============================================================================
+class EADAulaPlayerView(LoginRequiredMixin, DetailView):
+    """Player de vídeo / conteúdo da aula."""
+    model = AulaEAD
+    template_name = "treinamentos/ead/aula_player.html"
+    context_object_name = "aula"
+
+    def get_queryset(self):
+        return AulaEAD.objects.filter(
+            ativo=True,
+            modulo__curso__filial=self.request.user.filial_ativa,
+        ).select_related("modulo", "modulo__curso")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        aula = self.object
+        curso = aula.modulo.curso
+
+        # Matrícula e progresso
+        try:
+            funcionario = self.request.user.funcionario
+            matricula = MatriculaEAD.objects.get(
+                funcionario=funcionario, curso=curso,
+            )
+            ctx["matricula"] = matricula
+
+            progresso, _ = ProgressoAulaEAD.objects.get_or_create(
+                matricula=matricula,
+                aula=aula,
+                defaults={"iniciado_em": timezone.now()},
+            )
+            ctx["progresso"] = progresso
+        except (MatriculaEAD.DoesNotExist, Exception):
+            ctx["matricula"] = None
+            ctx["progresso"] = None
+
+        # Navegação: aulas do mesmo módulo
+        modulos = curso.modulos_ead.filter(
+            ativo=True
+        ).prefetch_related("aulas_ead").order_by("ordem")
+        ctx["modulos"] = modulos
+
+        # Aula anterior / próxima
+        todas_aulas = list(
+            AulaEAD.objects.filter(
+                modulo__curso=curso, ativo=True,
+            ).order_by("modulo__ordem", "ordem")
+        )
+        idx = next(
+            (i for i, a in enumerate(todas_aulas) if a.pk == aula.pk), None
+        )
+        ctx["aula_anterior"] = todas_aulas[idx - 1] if idx and idx > 0 else None
+        ctx["aula_proxima"] = todas_aulas[idx + 1] if idx is not None and idx < len(todas_aulas) - 1 else None
+
+        # Progressos de todas as aulas (para sidebar)
+        if ctx.get("matricula"):
+            progs = ProgressoAulaEAD.objects.filter(
+                matricula=ctx["matricula"],
+            ).values_list("aula_id", "concluida")
+            ctx["progressos_map"] = {p[0]: p[1] for p in progs}
+        else:
+            ctx["progressos_map"] = {}
+
+        return ctx
+
+
+# =============================================================================
+# SALVAR PROGRESSO (AJAX/HTMX)
+# =============================================================================
+
+@method_decorator(require_POST, name="dispatch")
+class EADSalvarProgressoView(LoginRequiredMixin, View):
+    """Salva progresso parcial da aula (posição do vídeo, tempo gasto)."""
+
+    def post(self, request, pk):
+        aula = get_object_or_404(AulaEAD, pk=pk)
+
+        try:
+            funcionario = request.user.funcionario
+            matricula = MatriculaEAD.objects.get(
+                funcionario=funcionario, curso=aula.modulo.curso,
+            )
+        except Exception:
+            return JsonResponse({"error": "Matrícula não encontrada"}, status=404)
+
+        progresso, _ = ProgressoAulaEAD.objects.get_or_create(
+            matricula=matricula, aula=aula,
+            defaults={"iniciado_em": timezone.now()},
+        )
+
+        # Atualiza dados enviados via POST/JSON
+        try:
+            data = json.loads(request.body)
+        except (json.JSONDecodeError, ValueError):
+            data = request.POST
+
+        if "video_posicao_segundos" in data:
+            progresso.video_posicao_segundos = int(data["video_posicao_segundos"])
+        if "video_duracao_total" in data:
+            progresso.video_duracao_total = int(data["video_duracao_total"])
+        if "tempo_gasto_segundos" in data:
+            progresso.tempo_gasto_segundos = int(data["tempo_gasto_segundos"])
+        if "percentual_assistido" in data:
+            progresso.percentual_assistido = Decimal(str(data["percentual_assistido"]))
+
+        progresso.save()
+        return JsonResponse({"ok": True, "percentual": float(progresso.percentual_assistido)})
+
+
+# =============================================================================
+# CONCLUIR AULA
+# =============================================================================
+
+@method_decorator(require_POST, name="dispatch")
+class EADConcluirAulaView(LoginRequiredMixin, View):
+    """Marca aula como concluída."""
+
+    def post(self, request, pk):
+        aula = get_object_or_404(AulaEAD, pk=pk)
+
+        try:
+            funcionario = request.user.funcionario
+            matricula = MatriculaEAD.objects.get(
+                funcionario=funcionario, curso=aula.modulo.curso,
+            )
+        except Exception:
+            return JsonResponse({"error": "Matrícula não encontrada"}, status=404)
+
+        progresso, _ = ProgressoAulaEAD.objects.get_or_create(
+            matricula=matricula, aula=aula,
+            defaults={"iniciado_em": timezone.now()},
+        )
+
+        progresso.marcar_concluida()
+
+        return JsonResponse({
+            "ok": True,
+            "concluida": True,
+            "progresso_curso": float(matricula.progresso_percentual),
+            "pode_avaliar": matricula.pode_fazer_avaliacao,
+        })
+
+
+# =============================================================================
+# AVALIAÇÃO
+# =============================================================================
+
+class EADAvaliacaoView(LoginRequiredMixin, View):
+    """GET: exibe prova / POST: submete respostas."""
+    template_name = "treinamentos/ead/avaliacao.html"
+
+    def get_matricula(self, request, matricula_id):
+        try:
+            funcionario = request.user.funcionario
+            return MatriculaEAD.objects.select_related(
+                "curso", "curso__avaliacao_ead",
+            ).get(pk=matricula_id, funcionario=funcionario)
+        except MatriculaEAD.DoesNotExist:
+            return None
+
+    def get(self, request, matricula_id):
+        matricula = self.get_matricula(request, matricula_id)
+        if not matricula:
+            messages.error(request, "Matrícula não encontrada.")
+            return redirect("treinamentos:ead_meus_cursos")
+
+        if not matricula.pode_fazer_avaliacao:
+            messages.warning(
+                request,
+                "Você ainda não pode fazer a avaliação. "
+                f"Complete pelo menos {matricula.curso.percentual_minimo_assistido}% das aulas."
+            )
+            return redirect("treinamentos:ead_curso_detail", slug=matricula.curso.slug)
+
+        try:
+            avaliacao = matricula.curso.avaliacao_ead
+        except AvaliacaoEAD.DoesNotExist:
+            messages.error(request, "Este curso não possui avaliação cadastrada.")
+            return redirect("treinamentos:ead_curso_detail", slug=matricula.curso.slug)
+
+        # Questões
+        questoes = list(avaliacao.questoes_ead.filter(
+            ativo=True
+        ).prefetch_related("alternativas_ead"))
+
+        if avaliacao.embaralhar_questoes:
+            random.shuffle(questoes)
+
+        for q in questoes:
+            alts = list(q.alternativas_ead.all())
+            if avaliacao.embaralhar_alternativas:
+                random.shuffle(alts)
+            q.alternativas_embaralhadas = alts
+
+        return render(request, self.template_name, {
+            "matricula": matricula,
+            "avaliacao": avaliacao,
+            "questoes": questoes,
+            "tentativa_numero": matricula.tentativas_avaliacao + 1,
+        })
+
+    def post(self, request, matricula_id):
+        matricula = self.get_matricula(request, matricula_id)
+        if not matricula or not matricula.pode_fazer_avaliacao:
+            messages.error(request, "Não é possível realizar a avaliação.")
+            return redirect("treinamentos:ead_meus_cursos")
+
+        avaliacao = matricula.curso.avaliacao_ead
+
+        with transaction.atomic():
+            # Cria tentativa
+            tentativa = TentativaAvaliacaoEAD.objects.create(
+                matricula=matricula,
+                avaliacao=avaliacao,
+                numero_tentativa=matricula.tentativas_avaliacao + 1,
+            )
+
+            # Salva respostas
+            questoes = avaliacao.questoes_ead.filter(ativo=True)
+            for questao in questoes:
+                alt_id = request.POST.get(f"questao_{questao.pk}")
+                alternativa = None
+                if alt_id:
+                    try:
+                        alternativa = AlternativaEAD.objects.get(
+                            pk=alt_id, questao=questao,
+                        )
+                    except AlternativaEAD.DoesNotExist:
+                        pass
+
+                RespostaAlunoEAD.objects.create(
+                    tentativa=tentativa,
+                    questao=questao,
+                    alternativa_escolhida=alternativa,
+                )
+
+            # Calcula nota
+            tentativa.calcular_nota()
+
+        return redirect("treinamentos:ead_resultado", tentativa_id=tentativa.pk)
+
+
+# =============================================================================
+# RESULTADO DA AVALIAÇÃO
+# =============================================================================
+
+class EADResultadoView(LoginRequiredMixin, DetailView):
+    """Exibe resultado da tentativa com gabarito. Colaborador confirma a nota."""
+    model = TentativaAvaliacaoEAD
+    template_name = "treinamentos/ead/resultado.html"
+    context_object_name = "tentativa"
+    pk_url_kwarg = "tentativa_id"
+
+    def get_queryset(self):
+        try:
+            funcionario = self.request.user.funcionario
+            return TentativaAvaliacaoEAD.objects.filter(
+                matricula__funcionario=funcionario,
+            ).select_related(
+                "matricula", "matricula__curso", "avaliacao",
+            )
+        except Exception:
+            return TentativaAvaliacaoEAD.objects.none()
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        tentativa = self.object
+        matricula = tentativa.matricula
+        curso = matricula.curso
+
+        respostas = tentativa.respostas_ead.select_related(
+            "questao", "alternativa_escolhida",
+        ).order_by("questao__ordem")
+
+        gabarito = []
+        for resp in respostas:
+            correta = resp.questao.alternativas_ead.filter(correta=True).first()
+            gabarito.append({
+                "questao": resp.questao,
+                "alternativas": resp.questao.alternativas_ead.all(),
+                "escolhida": resp.alternativa_escolhida,
+                "correta_obj": correta,
+                "acertou": (
+                    resp.alternativa_escolhida
+                    and resp.alternativa_escolhida.correta
+                ),
+            })
+
+        ctx["gabarito"] = gabarito
+        ctx["matricula"] = matricula
+        ctx["total_questoes"] = len(gabarito)
+        ctx["total_acertos"] = sum(1 for g in gabarito if g["acertou"])
+
+        # Critérios separados para feedback
+        nota_ok = tentativa.nota is not None and tentativa.nota >= curso.nota_minima
+        ch_ok = matricula.carga_horaria_atingida
+        ctx["nota_ok"] = nota_ok
+        ctx["ch_ok"] = ch_ok
+        ctx["aprovado_completo"] = nota_ok and ch_ok
+
+        return ctx
+
+
+
+# =============================================================================
+# CERTIFICADO EAD (visualização pública por UUID)
+# =============================================================================
+
+class EADCertificadoView(DetailView):
+    """Página pública de verificação do certificado EAD."""
+    model = CertificadoEAD
+    template_name = "treinamentos/ead/certificado.html"
+    context_object_name = "certificado"
+    slug_field = "uuid"
+    slug_url_kwarg = "uuid"
+
+# =============================================================================
+# GESTÃO DE AVALIAÇÕES (Área do Gestor)
+# =============================================================================
+
+class GestaoAvaliacoesCursoView(LoginRequiredMixin, DetailView):
+    """Gestor vê todas as tentativas de avaliação de um curso."""
+    model = CursoEAD
+    template_name = "treinamentos/ead/gestao_avaliacoes.html"
+    context_object_name = "curso"
+    slug_field = "slug"
+
+    def get_queryset(self):
+        return CursoEAD.objects.filter(
+            filial=self.request.user.filial_ativa,
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        curso = self.object
+
+        matriculas = MatriculaEAD.objects.filter(
+            curso=curso,
+        ).select_related("funcionario").order_by("funcionario__nome")
+
+        dados = []
+        for mat in matriculas:
+            tentativas = TentativaAvaliacaoEAD.objects.filter(
+                matricula=mat, finalizada_em__isnull=False,
+            ).order_by("-numero_tentativa")
+
+            dados.append({
+                "matricula": mat,
+                "tentativas": tentativas,
+                "ultima": tentativas.first(),
+            })
+
+        ctx["dados_alunos"] = dados
+        return ctx
+
+
+class GestaoTentativaDetailView(LoginRequiredMixin, DetailView):
+    """Gestor revisa a prova de um colaborador (gabarito completo)."""
+    model = TentativaAvaliacaoEAD
+    template_name = "treinamentos/ead/gestao_tentativa.html"
+    context_object_name = "tentativa"
+    pk_url_kwarg = "tentativa_id"
+
+    def get_queryset(self):
+        return TentativaAvaliacaoEAD.objects.filter(
+            matricula__curso__filial=self.request.user.filial_ativa,
+        ).select_related(
+            "matricula", "matricula__funcionario",
+            "matricula__curso", "avaliacao",
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        tentativa = self.object
+
+        respostas = tentativa.respostas_ead.select_related(
+            "questao", "alternativa_escolhida",
+        ).order_by("questao__ordem")
+
+        gabarito = []
+        for resp in respostas:
+            correta = resp.questao.alternativas_ead.filter(correta=True).first()
+            gabarito.append({
+                "questao": resp.questao,
+                "alternativas": resp.questao.alternativas_ead.all(),
+                "escolhida": resp.alternativa_escolhida,
+                "correta_obj": correta,
+                "acertou": (
+                    resp.alternativa_escolhida
+                    and resp.alternativa_escolhida.correta
+                ),
+            })
+
+        ctx["gabarito"] = gabarito
+        ctx["matricula"] = tentativa.matricula
+        ctx["total_questoes"] = len(gabarito)
+        ctx["total_acertos"] = sum(1 for g in gabarito if g["acertou"])
+        return ctx
+
+
+class GestaoLiberarTentativaView(LoginRequiredMixin, View):
+    """Gestor libera uma nova tentativa para o colaborador."""
+
+    def post(self, request, matricula_id):
+        try:
+            matricula = MatriculaEAD.objects.get(
+                pk=matricula_id,
+                curso__filial=request.user.filial_ativa,
+            )
+        except MatriculaEAD.DoesNotExist:
+            messages.error(request, "Matrícula não encontrada.")
+            return redirect("treinamentos:ead_catalogo")
+
+        curso = matricula.curso
+
+        if matricula.status == MatriculaEAD.Status.APROVADO:
+            messages.info(request, "Este colaborador já está aprovado.")
+        elif matricula.tentativas_avaliacao >= curso.max_tentativas_avaliacao:
+            # Reseta para permitir mais uma tentativa
+            matricula.tentativas_avaliacao = max(
+                0, matricula.tentativas_avaliacao - 1
+            )
+            matricula.status = MatriculaEAD.Status.EM_ANDAMENTO
+            matricula.save(update_fields=["tentativas_avaliacao", "status"])
+            messages.success(
+                request,
+                f"Nova tentativa liberada para {matricula.funcionario}."
+            )
+        else:
+            messages.info(
+                request,
+                f"O colaborador ainda tem "
+                f"{curso.max_tentativas_avaliacao - matricula.tentativas_avaliacao} "
+                f"tentativa(s) disponível(is)."
+            )
+
+        return redirect(
+            "treinamentos:gestao_avaliacoes_curso",
+            slug=curso.slug,
+        )
+
+
+class GestaoImprimirProvaView(LoginRequiredMixin, DetailView):
+    """Versão para impressão da prova com respostas do colaborador."""
+    model = TentativaAvaliacaoEAD
+    template_name = "treinamentos/ead/imprimir_prova.html"
+    context_object_name = "tentativa"
+    pk_url_kwarg = "tentativa_id"
+
+    def get_queryset(self):
+        return TentativaAvaliacaoEAD.objects.filter(
+            matricula__curso__filial=self.request.user.filial_ativa,
+        ).select_related(
+            "matricula", "matricula__funcionario",
+            "matricula__curso", "avaliacao",
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        tentativa = self.object
+
+        respostas = tentativa.respostas_ead.select_related(
+            "questao", "alternativa_escolhida",
+        ).order_by("questao__ordem")
+
+        gabarito = []
+        for resp in respostas:
+            correta = resp.questao.alternativas_ead.filter(correta=True).first()
+            gabarito.append({
+                "questao": resp.questao,
+                "alternativas": resp.questao.alternativas_ead.all(),
+                "escolhida": resp.alternativa_escolhida,
+                "correta_obj": correta,
+                "acertou": (
+                    resp.alternativa_escolhida
+                    and resp.alternativa_escolhida.correta
+                ),
+            })
+
+        ctx["gabarito"] = gabarito
+        ctx["total_questoes"] = len(gabarito)
+        ctx["total_acertos"] = sum(1 for g in gabarito if g["acertou"])
+        return ctx
+
+
+class GestaoGerarCertificadoEADView(LoginRequiredMixin, View):
+    """Gestor gera o certificado EAD para um colaborador aprovado."""
+
+    def post(self, request, matricula_id):
+        try:
+            matricula = MatriculaEAD.objects.select_related(
+                "curso", "curso__tipo_curso", "funcionario",
+            ).get(
+                pk=matricula_id,
+                curso__filial=request.user.filial_ativa,
+            )
+        except MatriculaEAD.DoesNotExist:
+            messages.error(request, "Matrícula não encontrada.")
+            return redirect("treinamentos:ead_catalogo")
+
+        # Verificações
+        if matricula.status != MatriculaEAD.Status.APROVADO:
+            messages.error(request, "O colaborador precisa estar aprovado.")
+            return redirect(
+                "treinamentos:gestao_avaliacoes_curso",
+                slug=matricula.curso.slug,
+            )
+
+        # Verifica se já existe certificado
+        if hasattr(matricula, "certificado_ead"):
+            messages.info(request, "Certificado já foi emitido anteriormente.")
+            return redirect(matricula.certificado_ead.get_absolute_url())
+
+        # Cria o certificado
+        funcionario = matricula.funcionario
+        curso = matricula.curso
+
+        certificado = CertificadoEAD.objects.create(
+            matricula=matricula,
+            nome_funcionario=getattr(funcionario, "nome_completo", str(funcionario)),
+            cpf_funcionario=getattr(funcionario, "cpf", ""),
+            nome_curso=curso.titulo,
+            nome_tipo_curso=curso.tipo_curso.nome if curso.tipo_curso else "",
+            carga_horaria_exigida=curso.carga_horaria_total,
+            carga_horaria_cumprida=matricula.carga_horaria_cumprida_horas,
+            nota=matricula.nota_final or Decimal("0.0"),
+            nome_instrutor=curso.instrutor_nome,
+            filial=curso.filial,
+            emitido_por=request.user,
+        )
+
+        messages.success(
+            request,
+            f"Certificado emitido com sucesso para {certificado.nome_funcionario}."
+        )
+        return redirect(certificado.get_absolute_url())

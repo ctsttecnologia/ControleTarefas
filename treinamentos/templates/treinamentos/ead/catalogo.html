@@ -1,0 +1,248 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Cursos EAD{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ═══ HERO padronizado com Dashboard ═══ */
+    .ead-hero {
+        background: linear-gradient(135deg, #00b8d4 0%, #667eea 100%);
+        border-radius: 0 0 1rem 1rem;
+        padding: 3rem 0;
+        margin-bottom: 0;
+        position: relative;
+        overflow: hidden;
+    }
+    .ead-hero::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    .ead-hero h1 { color: #fff; font-weight: 700; }
+    .ead-hero p { color: rgba(255,255,255,.7); }
+
+    /* ═══ CARDS padronizados ═══ */
+    .curso-card {
+        transition: transform .2s, box-shadow .2s;
+        border: none;
+        border-radius: 0.875rem;
+        height: 100%;
+        overflow: hidden;
+    }
+    .curso-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,.12);
+    }
+    .curso-card .card-img-placeholder {
+        height: 180px;
+        background: linear-gradient(135deg, #00b8d4 0%, #667eea 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,.6);
+        font-size: 3rem;
+    }
+    .curso-card .card-img-top {
+        height: 180px;
+        object-fit: cover;
+    }
+    .badge-nivel {
+        font-size: .7rem;
+        font-weight: 600;
+    }
+    .progress-mini {
+        height: 6px;
+        border-radius: 3px;
+    }
+    .filtros-bar {
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+        padding: 1rem 0;
+    }
+
+    /* ═══ Botão primário padronizado ═══ */
+    .btn-primary {
+        background-color: #00b8d4;
+        border-color: #00b8d4;
+    }
+    .btn-primary:hover {
+        background-color: #0097a7;
+        border-color: #0097a7;
+    }
+    .btn-outline-primary {
+        color: #00b8d4;
+        border-color: #00b8d4;
+    }
+    .btn-outline-primary:hover {
+        background-color: #00b8d4;
+        border-color: #00b8d4;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<section class="ead-hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-mortarboard-fill me-2"></i>Cursos EAD</h1>
+                <p class="lead mb-0">Capacite-se com nossos treinamentos online. Estude no seu ritmo.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{% url 'treinamentos:ead_meus_cursos' %}" class="btn btn-outline-light">
+                    <i class="bi bi-book me-1"></i> Meus Cursos
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Filtros -->
+<section class="filtros-bar">
+    <div class="container">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control" placeholder="Buscar curso..."
+                           value="{{ filtro_q }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="tipo" class="form-select">
+                    <option value="">Todas as áreas</option>
+                    {% for tipo in tipos_curso %}
+                    <option value="{{ tipo.pk }}" {% if filtro_tipo == tipo.pk|stringformat:"d" %}selected{% endif %}>
+                        {{ tipo.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="nivel" class="form-select">
+                    <option value="">Todos os níveis</option>
+                    {% for value, label in niveis %}
+                    <option value="{{ value }}" {% if filtro_nivel == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<!-- Grid de Cursos -->
+<section class="container py-4">
+    {% if cursos %}
+    <div class="row g-4">
+        {% for curso in cursos %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">
+            <div class="card curso-card shadow-sm">
+                {% if curso.imagem_capa %}
+                <img src="{{ curso.imagem_capa.url }}" class="card-img-top" alt="{{ curso.titulo }}">
+                {% else %}
+                <div class="card-img-placeholder">
+                    <i class="bi bi-play-circle"></i>
+                </div>
+                {% endif %}
+
+                <div class="card-body d-flex flex-column">
+                    <div class="mb-2">
+                        <span class="badge bg-primary badge-nivel me-1">{{ curso.get_nivel_display }}</span>
+                        <span class="badge bg-secondary badge-nivel">{{ curso.tipo_curso.nome }}</span>
+                    </div>
+
+                    <h6 class="card-title fw-bold mb-1">{{ curso.titulo }}</h6>
+                    <p class="text-muted small mb-2 flex-grow-1">
+                        {{ curso.descricao_curta|default:curso.descricao|truncatewords:15 }}
+                    </p>
+
+                    <div class="d-flex justify-content-between text-muted small mb-2">
+                        <span><i class="bi bi-clock me-1"></i>{{ curso.carga_horaria_total }}h</span>
+                        <span><i class="bi bi-collection me-1"></i>{{ curso.total_modulos_count }} mód.</span>
+                        <span><i class="bi bi-film me-1"></i>{{ curso.total_aulas_count }} aulas</span>
+                    </div>
+
+                    {% with curso_pk=curso.pk|stringformat:"d" %}
+                    {% if matriculas_map and curso_pk in matriculas_map %}
+                    {% with mat_info=matriculas_map|default:"" %}
+                    <div class="mb-2">
+                        <div class="progress progress-mini">
+                            <div class="progress-bar bg-success" style="width: 50%"></div>
+                        </div>
+                        <small class="text-muted">Em andamento</small>
+                    </div>
+                    {% endwith %}
+                    {% endif %}
+                    {% endwith %}
+
+                    <a href="{% url 'treinamentos:ead_curso_detail' slug=curso.slug %}"
+                       class="btn btn-sm btn-outline-primary w-100 mt-auto">
+                        <i class="bi bi-arrow-right me-1"></i> Ver Curso
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ filtro_q }}&tipo={{ filtro_tipo }}&nivel={{ filtro_nivel }}">
+                    <i class="bi bi-chevron-left"></i> Anterior
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}&q={{ filtro_q }}&tipo={{ filtro_tipo }}&nivel={{ filtro_nivel }}">{{ num }}</a>
+            </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ filtro_q }}&tipo={{ filtro_tipo }}&nivel={{ filtro_nivel }}">
+                    Próxima <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-search display-3 text-muted"></i>
+        <h5 class="mt-3 text-muted">Nenhum curso encontrado</h5>
+        <p class="text-muted">Tente ajustar os filtros ou volte mais tarde.</p>
+    </div>
+    {% endif %}
+</section>
+
+{% endblock %}
+

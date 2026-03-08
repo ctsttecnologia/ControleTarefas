@@ -1,0 +1,140 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Avaliação — {{ avaliacao.titulo }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .questao-card { border-left: 4px solid var(--bs-primary); margin-bottom: 1.5rem; }
+    .questao-card .card-header { background: var(--bs-primary-bg-subtle); }
+    .alt-label {
+        display: block;
+        padding: .75rem 1rem;
+        border: 2px solid var(--bs-border-color);
+        border-radius: .5rem;
+        margin-bottom: .5rem;
+        cursor: pointer;
+        transition: all .15s;
+    }
+    .alt-label:hover { border-color: var(--bs-primary); background: var(--bs-primary-bg-subtle); }
+    .alt-label input:checked + .alt-text { font-weight: 600; }
+    .alt-label:has(input:checked) { border-color: var(--bs-primary); background: var(--bs-primary-bg-subtle); }
+    .timer-bar {
+        position: sticky; top: 70px; z-index: 10;
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+        padding: .5rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-4" style="max-width: 800px;">
+
+    <!-- Header -->
+    <div class="text-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-pencil-square me-2"></i>{{ avaliacao.titulo }}</h2>
+        <p class="text-muted">
+            {{ avaliacao.curso.titulo }} · Tentativa {{ tentativa_numero }} de {{ matricula.curso.max_tentativas_avaliacao }}
+        </p>
+        {% if avaliacao.descricao %}
+        <div class="alert alert-info">{{ avaliacao.descricao }}</div>
+        {% endif %}
+    </div>
+
+    <!-- Timer -->
+    {% if avaliacao.tempo_limite_min > 0 %}
+    <div class="timer-bar text-center">
+        <span class="badge bg-dark fs-6 px-3 py-2">
+            <i class="bi bi-stopwatch me-1"></i>
+            Tempo restante: <span id="timer">{{ avaliacao.tempo_limite_min }}:00</span>
+        </span>
+    </div>
+    {% endif %}
+
+    <!-- Formulário -->
+    <form method="post" id="form-avaliacao">
+        {% csrf_token %}
+
+        {% for questao in questoes %}
+        <div class="card questao-card">
+            <div class="card-header">
+                <strong>Questão {{ forloop.counter }}</strong>
+                <span class="float-end text-muted small">Peso: {{ questao.peso }}</span>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">{{ questao.enunciado|linebreaksbr }}</p>
+
+                {% for alt in questao.alternativas_embaralhadas %}
+                <label class="alt-label">
+                    <input type="radio" name="questao_{{ questao.pk }}" value="{{ alt.pk }}"
+                           class="form-check-input me-2" style="display:none;">
+                    <span class="alt-text">
+                        <strong class="me-1">{{ forloop.counter|add:0|stringformat:"s" }})</strong>
+                        {{ alt.texto }}
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="text-center mt-4 mb-5">
+            <button type="submit" class="btn btn-primary btn-lg px-5" id="btn-submit">
+                <i class="bi bi-send me-1"></i> Enviar Avaliação
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Confirmação ao enviar
+    document.getElementById('form-avaliacao').addEventListener('submit', function(e) {
+        const total = document.querySelectorAll('.questao-card').length;
+        const respondidas = document.querySelectorAll('input[type="radio"]:checked').length;
+
+        if (respondidas < total) {
+            if (!confirm(`Você respondeu ${respondidas} de ${total} questões. Deseja enviar mesmo assim?`)) {
+                e.preventDefault();
+                return;
+            }
+        }
+
+        document.getElementById('btn-submit').disabled = true;
+        document.getElementById('btn-submit').innerHTML =
+            '<span class="spinner-border spinner-border-sm me-1"></span> Enviando...';
+    });
+
+    // Timer
+    {% if avaliacao.tempo_limite_min > 0 %}
+    let tempoRestante = {{ avaliacao.tempo_limite_min }} * 60;
+    const timerEl = document.getElementById('timer');
+
+    const interval = setInterval(() => {
+        tempoRestante--;
+        const min = Math.floor(tempoRestante / 60);
+        const seg = tempoRestante % 60;
+        timerEl.textContent = `${min}:${seg.toString().padStart(2, '0')}`;
+
+        if (tempoRestante <= 60) {
+            timerEl.parentElement.classList.remove('bg-dark');
+            timerEl.parentElement.classList.add('bg-danger');
+        }
+
+        if (tempoRestante <= 0) {
+            clearInterval(interval);
+            alert('Tempo esgotado! Sua avaliação será enviada automaticamente.');
+            document.getElementById('form-avaliacao').submit();
+        }
+    }, 1000);
+    {% endif %}
+});
+</script>
+{% endblock %}
+

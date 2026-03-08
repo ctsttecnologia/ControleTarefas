@@ -1,0 +1,99 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-cart me-2"></i>{{ titulo_pagina }}</h2>
+        <div>
+            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+            <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg me-1"></i> Novo Pedido
+            </a>
+        </div> 
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <!-- Filtros -->
+            <form method="get" class="row g-2 mb-4">
+                <div class="col-md-5">
+                    <input type="text" name="q" class="form-control"
+                           placeholder="Buscar nº pedido ou cliente..."
+                           value="{{ filtro_q }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">Todos os Status</option>
+                        {% for val, label in status_choices %}
+                            <option value="{{ val }}" {% if filtro_status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nº Pedido</th>
+                            <th>Contrato</th>
+                            <th>Solicitante</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                            <th class="text-end">Valor</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pedidos %}
+                        <tr>
+                            <td><a href="{{ p.get_absolute_url }}"><strong>{{ p.numero }}</strong></a></td>
+                            <td>{{ p.contrato }}</td>
+                            <td>{{ p.solicitante.get_full_name }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if p.status == 'APROVADO' %}bg-success
+                                    {% elif p.status == 'PENDENTE' %}bg-warning text-dark
+                                    {% elif p.status == 'REPROVADO' %}bg-danger
+                                    {% elif p.status == 'RECEBIDO' %}bg-primary
+                                    {% elif p.status == 'ENTREGUE' %}bg-info
+                                    {% elif p.status == 'CANCELADO' %}bg-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ p.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ p.data_pedido|date:"d/m/Y" }}</td>
+                            <td class="text-end">R$ {{ p.valor_total|floatformat:2 }}</td>
+                            <td class="text-end">
+                                <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">Nenhum pedido encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+                {% include 'partials/pagination.html' %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock suprimentos_content %}
+

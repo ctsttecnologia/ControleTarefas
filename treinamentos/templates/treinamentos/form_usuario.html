@@ -1,4 +1,3 @@
-
 {# templates/usuario/form_usuario.html #}
 {% extends 'base.html' %}
 {% load static widget_tweaks %}
@@ -41,26 +40,21 @@
     .brand-panel::after {
         content: '';
         position: absolute;
-        top: -30%;
-        right: -20%;
-        width: 300px;
-        height: 300px;
+        top: -30%; right: -20%;
+        width: 300px; height: 300px;
         background: rgba(255,255,255,0.05);
         border-radius: 50%;
     }
     .brand-panel::before {
         content: '';
         position: absolute;
-        bottom: -25%;
-        left: -15%;
-        width: 220px;
-        height: 220px;
+        bottom: -25%; left: -15%;
+        width: 220px; height: 220px;
         background: rgba(255,255,255,0.04);
         border-radius: 50%;
     }
     .brand-icon {
-        width: 80px;
-        height: 80px;
+        width: 80px; height: 80px;
         border-radius: 1.25rem;
         background: rgba(255,255,255,0.15);
         backdrop-filter: blur(8px);
@@ -72,56 +66,39 @@
     .brand-icon i { font-size: 2.25rem; }
     .brand-panel h3 { font-weight: 700; font-size: 1.4rem; position: relative; }
     .brand-panel p { opacity: 0.8; font-size: 0.9rem; position: relative; max-width: 280px; }
-
     .brand-features {
-        list-style: none;
-        padding: 0;
-        margin: 1.5rem 0 0;
-        text-align: left;
-        position: relative;
+        list-style: none; padding: 0;
+        margin: 1.5rem 0 0; text-align: left; position: relative;
     }
     .brand-features li {
-        padding: 0.4rem 0;
-        font-size: 0.85rem;
-        opacity: 0.85;
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        padding: 0.4rem 0; font-size: 0.85rem; opacity: 0.85;
+        display: flex; align-items: center; gap: 8px;
     }
     .brand-features li i { font-size: 0.7rem; opacity: 0.6; }
 
     /* ═══ FORM PANEL ═══ */
     .form-panel {
         padding: 2.5rem;
+        background-color: #ffffff;
     }
     .form-panel h2 {
-        font-weight: 700;
-        font-size: 1.5rem;
-        color: #2d3748;
-        margin-bottom: 0.25rem;
+        font-weight: 700; font-size: 1.5rem;
+        color: #2d3748; margin-bottom: 0.25rem;
     }
     .form-panel .subtitle {
-        color: #a0aec0;
-        font-size: 0.875rem;
-        margin-bottom: 2rem;
+        color: #a0aec0; font-size: 0.875rem; margin-bottom: 2rem;
     }
 
     /* ═══ FORM FIELDS ═══ */
     .field-group { margin-bottom: 1.25rem; }
     .field-group .form-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #4a5568;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        margin-bottom: 0.4rem;
+        font-size: 0.8rem; font-weight: 600; color: #4a5568;
+        text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 0.4rem;
     }
     .field-group .form-control,
     .field-group .form-select {
-        border: 2px solid #e2e8f0;
-        border-radius: 0.625rem;
-        padding: 0.625rem 0.875rem;
-        font-size: 0.9rem;
+        border: 2px solid #e2e8f0; border-radius: 0.625rem;
+        padding: 0.625rem 0.875rem; font-size: 0.9rem;
         transition: border-color 0.2s, box-shadow 0.2s;
     }
     .field-group .form-control:focus,
@@ -130,20 +107,15 @@
         box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
     }
     .field-group .form-control.is-invalid,
-    .field-group .form-select.is-invalid {
-        border-color: #e74a3b;
-    }
+    .field-group .form-select.is-invalid { border-color: #e74a3b; }
     .field-group .form-text { font-size: 0.78rem; }
 
     /* ═══ BUTTONS ═══ */
     .btn-save {
         background: linear-gradient(135deg, #4e73df, #224abe);
-        border: none;
-        color: #fff;
-        padding: 0.625rem 2rem;
-        border-radius: 0.625rem;
-        font-weight: 600;
-        transition: all 0.2s;
+        border: none; color: #fff;
+        padding: 0.625rem 2rem; border-radius: 0.625rem;
+        font-weight: 600; transition: all 0.2s;
     }
     .btn-save:hover {
         transform: translateY(-1px);
@@ -151,46 +123,31 @@
         color: #fff;
     }
     .btn-cancel {
-        border: 2px solid #e2e8f0;
-        color: #718096;
-        padding: 0.625rem 1.5rem;
-        border-radius: 0.625rem;
-        font-weight: 600;
-        background: transparent;
-        transition: all 0.2s;
+        border: 2px solid #e2e8f0; color: #718096;
+        padding: 0.625rem 1.5rem; border-radius: 0.625rem;
+        font-weight: 600; background: transparent; transition: all 0.2s;
     }
-    .btn-cancel:hover {
-        border-color: #cbd5e0;
-        background: #f7fafc;
-        color: #4a5568;
-    }
+    .btn-cancel:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
 
     /* ═══ ERROR ALERT ═══ */
     .alert-errors {
-        background: #fff5f5;
-        border: 1px solid #fed7d7;
-        border-radius: 0.75rem;
-        color: #c53030;
-        padding: 1rem 1.25rem;
+        background: #fff5f5; border: 1px solid #fed7d7;
+        border-radius: 0.75rem; color: #c53030; padding: 1rem 1.25rem;
     }
     .alert-errors p { margin-bottom: 0; font-size: 0.85rem; }
 
     /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .form-page { background: #1a1d23; }
     [data-bs-theme="dark"] .form-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    [data-bs-theme="dark"] .form-panel { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .form-panel { background-color: var(--bs-body-bg); }
     [data-bs-theme="dark"] .form-panel h2 { color: #e2e8f0; }
     [data-bs-theme="dark"] .field-group .form-label { color: #a0aec0; }
     [data-bs-theme="dark"] .field-group .form-control,
     [data-bs-theme="dark"] .field-group .form-select {
-        border-color: #2d3748;
-        background: rgba(255,255,255,0.03);
-        color: #e2e8f0;
+        border-color: #2d3748; background: rgba(255,255,255,0.03); color: #e2e8f0;
     }
     [data-bs-theme="dark"] .field-group .form-control:focus,
-    [data-bs-theme="dark"] .field-group .form-select:focus {
-        border-color: #4e73df;
-    }
+    [data-bs-theme="dark"] .field-group .form-select:focus { border-color: #4e73df; }
     [data-bs-theme="dark"] .btn-cancel { border-color: #2d3748; color: #a0aec0; }
     [data-bs-theme="dark"] .btn-cancel:hover { background: rgba(255,255,255,0.03); }
 </style>
@@ -243,19 +200,16 @@
                                             {{ field.label }}
                                             {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
                                         </label>
-
                                         {% if field.errors %}
                                             {% render_field field class+="form-control is-invalid" %}
                                         {% else %}
                                             {% render_field field class+="form-control" %}
                                         {% endif %}
-
                                         {% for error in field.errors %}
                                         <div class="invalid-feedback d-block">
                                             <i class="bi bi-exclamation-circle me-1" style="font-size: 0.75rem;"></i>{{ error }}
                                         </div>
                                         {% endfor %}
-
                                         {% if field.help_text %}
                                         <small class="form-text text-muted">{{ field.help_text|safe }}</small>
                                         {% endif %}
@@ -280,3 +234,4 @@
     </div>
 </div>
 {% endblock %}
+

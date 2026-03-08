@@ -6,10 +6,12 @@
 
 {% block extra_css %}
 <style>
-    /* ═══ VARIÁVEIS ═══ */
+    /* ═══ VARIÁVEIS UNIFICADAS ═══ */
     :root {
-        --dash-gradient-start: #667eea;
-        --dash-gradient-end: #764ba2;
+        --dash-primary: #00b8d4;
+        --dash-primary-dark: #0097a7;
+        --dash-gradient-start: #00b8d4;
+        --dash-gradient-end: #667eea;
     }
 
     /* ═══ HERO HEADER ═══ */
@@ -25,10 +27,8 @@
     .dash-hero::after {
         content: '';
         position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 300px;
-        height: 300px;
+        top: -50%; right: -10%;
+        width: 300px; height: 300px;
         background: rgba(255,255,255,0.08);
         border-radius: 50%;
         pointer-events: none;
@@ -36,82 +36,84 @@
     .dash-hero::before {
         content: '';
         position: absolute;
-        bottom: -30%;
-        left: 5%;
-        width: 200px;
-        height: 200px;
+        bottom: -30%; left: 5%;
+        width: 200px; height: 200px;
         background: rgba(255,255,255,0.05);
         border-radius: 50%;
         pointer-events: none;
     }
     .dash-hero h1 { font-weight: 700; font-size: 1.75rem; }
-    .dash-hero p { opacity: 0.85; margin-bottom: 0; }
+    .dash-hero p  { opacity: 0.85; margin-bottom: 0; }
+
+    /* ═══ TABS DE MÓDULO ═══ */
+    .module-tabs { border-bottom: 2px solid var(--bs-border-color); margin-bottom: 2rem; }
+    .module-tabs .nav-link {
+        font-weight: 600; color: var(--bs-secondary-color);
+        border: none; border-bottom: 3px solid transparent;
+        padding: 0.75rem 1.5rem; transition: all 0.2s;
+    }
+    .module-tabs .nav-link:hover { color: var(--dash-primary); border-bottom-color: rgba(0,184,212,0.3); }
+    .module-tabs .nav-link.active { color: var(--dash-primary); border-bottom-color: var(--dash-primary); background: transparent; }
+    .module-tabs .nav-link i { font-size: 1.1rem; }
 
     /* ═══ KPI CARDS ═══ */
     .kpi-card {
-        border: none;
-        border-radius: 0.875rem;
+        border: none; border-radius: 0.875rem;
+        background-color: #ffffff;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         overflow: hidden;
     }
-    .kpi-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
-    }
+    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important; }
     .kpi-icon-wrapper {
-        width: 56px;
-        height: 56px;
-        border-radius: 0.75rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        width: 56px; height: 56px; border-radius: 0.75rem;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
     .kpi-icon-wrapper i { font-size: 1.5rem; }
     .kpi-value { font-size: 1.75rem; font-weight: 800; line-height: 1.2; }
-    .kpi-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-    .kpi-trend {
-        font-size: 0.75rem;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 2px;
-        padding: 2px 8px;
-        border-radius: 50rem;
-    }
+    .kpi-label  { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
 
     /* ═══ CHART CARDS ═══ */
     .chart-card {
-        border: none;
-        border-radius: 0.875rem;
+        border: none; border-radius: 0.875rem;
+        background-color: #ffffff;
         overflow: hidden;
     }
     .chart-card .card-header {
         background: transparent;
         border-bottom: 1px solid rgba(0,0,0,0.06);
         padding: 1.25rem 1.5rem;
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 700; font-size: 1rem;
     }
-    .chart-wrapper {
-        position: relative;
-        height: 320px;
-        width: 100%;
-        padding: 1rem;
+    .chart-wrapper { position: relative; height: 320px; width: 100%; padding: 1rem; }
+
+    /* ═══ EAD CARD DE ACESSO RÁPIDO ═══ */
+    .ead-access-card {
+        border: none; border-radius: 0.875rem;
+        background: linear-gradient(135deg, var(--dash-gradient-start), var(--dash-gradient-end));
+        color: #fff; transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden; position: relative;
     }
-    .chart-wrapper-sm {
-        height: 260px;
+    .ead-access-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,184,212,0.3) !important; }
+    .ead-access-card::after {
+        content: ''; position: absolute; top: -40%; right: -20%;
+        width: 200px; height: 200px;
+        background: rgba(255,255,255,0.06); border-radius: 50%; pointer-events: none;
+    }
+    .ead-quick-link {
+        display: flex; align-items: center; gap: 1rem;
+        padding: 1rem 1.25rem; border-radius: 0.75rem;
+        background: rgba(255,255,255,0.1); color: #fff;
+        text-decoration: none; transition: background 0.2s;
+    }
+    .ead-quick-link:hover { background: rgba(255,255,255,0.2); color: #fff; }
+    .ead-quick-link i {
+        font-size: 1.5rem; width: 44px; height: 44px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.15); border-radius: 0.625rem;
     }
 
     /* ═══ EMPTY STATE ═══ */
-    .empty-chart {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: #adb5bd;
-    }
+    .empty-chart { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #adb5bd; }
     .empty-chart i { font-size: 3rem; margin-bottom: 0.5rem; opacity: 0.4; }
 
     /* ═══ PRINT ═══ */
@@ -121,18 +123,18 @@
         .no-print { display: none !important; }
     }
 
-    /* ═══ DARK MODE SUPPORT ═══ */
-    [data-bs-theme="dark"] .kpi-card { background-color: var(--bs-body-bg); }
+    /* ═══ DARK MODE ═══ */
+    [data-bs-theme="dark"] .kpi-card,
+    [data-bs-theme="dark"] .chart-card { background-color: var(--bs-body-bg); }
     [data-bs-theme="dark"] .chart-card .card-header { border-bottom-color: rgba(255,255,255,0.08); }
+    [data-bs-theme="dark"] .module-tabs { border-bottom-color: rgba(255,255,255,0.1); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- HERO HEADER                                 -->
-    <!-- ═══════════════════════════════════════════ -->
+    <!-- HERO HEADER -->
     <div class="dash-hero">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
             <div>
@@ -152,199 +154,349 @@
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- KPIs                                        -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div class="row g-4 mb-4">
-        <!-- Total Treinamentos -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card kpi-card shadow-sm h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
-                            <i class="bi bi-collection text-primary"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="kpi-label text-muted">Total Treinamentos</div>
-                            <div class="kpi-value text-primary">{{ total_treinamentos|default:"0" }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- TABS -->
+    <ul class="nav module-tabs no-print" id="moduleTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-presencial" data-bs-toggle="tab"
+                    data-bs-target="#panel-presencial" type="button" role="tab">
+                <i class="bi bi-clipboard-check me-2"></i>Presencial
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-ead" data-bs-toggle="tab"
+                    data-bs-target="#panel-ead" type="button" role="tab">
+                <i class="bi bi-laptop me-2"></i>EAD
+            </button>
+        </li>
+    </ul>
 
-        <!-- Total Participantes -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card kpi-card shadow-sm h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="kpi-icon-wrapper bg-success bg-opacity-10">
-                            <i class="bi bi-people-fill text-success"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="kpi-label text-muted">Total Participantes</div>
-                            <div class="kpi-value text-success">{{ total_participantes|default:"0" }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="tab-content" id="moduleTabsContent">
 
-        <!-- Em Andamento -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card kpi-card shadow-sm h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="kpi-icon-wrapper bg-info bg-opacity-10">
-                            <i class="bi bi-play-circle-fill text-info"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="kpi-label text-muted">Em Andamento</div>
-                            <div class="kpi-value text-info">{{ em_andamento|default:"0" }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- ══════════ PANEL: PRESENCIAL ══════════ -->
+        <div class="tab-pane fade show active" id="panel-presencial" role="tabpanel">
 
-        <!-- Investimento -->
-        <div class="col-sm-6 col-xl-3">
-            <div class="card kpi-card shadow-sm h-100">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="kpi-icon-wrapper bg-warning bg-opacity-10">
-                            <i class="bi bi-cash-stack text-warning"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <div class="kpi-label text-muted">Investimento Total</div>
-                            <div class="kpi-value text-warning">
-                                <small class="fs-6 fw-normal">R$</small>
-                                {{ total_custo|floatformat:2|default:"0,00" }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- GRÁFICOS — LINHA 1                          -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div class="row g-4 mb-4">
-        <!-- Por Área (Pizza) -->
-        <div class="col-lg-6">
-            <div class="card chart-card shadow-sm h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-pie-chart-fill text-primary me-2"></i>Treinamentos por Área</span>
-                    <span class="badge bg-primary bg-opacity-10 text-primary" id="badgeAreaTotal">—</span>
-                </div>
-                <div class="card-body p-0">
-                    <div class="chart-wrapper">
-                        <canvas id="chartArea"></canvas>
-                        <div class="empty-chart d-none" id="emptyArea">
-                            <i class="bi bi-pie-chart"></i>
-                            <span>Nenhum dado disponível</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Por Status (Donut) -->
-        <div class="col-lg-6">
-            <div class="card chart-card shadow-sm h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-bullseye text-success me-2"></i>Status dos Treinamentos</span>
-                    <span class="badge bg-success bg-opacity-10 text-success" id="badgeStatusTotal">—</span>
-                </div>
-                <div class="card-body p-0">
-                    <div class="chart-wrapper">
-                        <canvas id="chartStatus"></canvas>
-                        <div class="empty-chart d-none" id="emptyStatus">
-                            <i class="bi bi-bullseye"></i>
-                            <span>Nenhum dado disponível</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════ -->
-    <!-- GRÁFICOS — LINHA 2                          -->
-    <!-- ═══════════════════════════════════════════ -->
-    <div class="row g-4">
-        <!-- Custo por Área (Barras) -->
-        <div class="col-lg-8">
-            <div class="card chart-card shadow-sm h-100">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <span><i class="bi bi-bar-chart-fill text-warning me-2"></i>Investimento por Área</span>
-                    <span class="badge bg-warning bg-opacity-10 text-warning" id="badgeCustoTotal">—</span>
-                </div>
-                <div class="card-body p-0">
-                    <div class="chart-wrapper">
-                        <canvas id="chartCusto"></canvas>
-                        <div class="empty-chart d-none" id="emptyCusto">
-                            <i class="bi bi-bar-chart"></i>
-                            <span>Nenhum dado disponível</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Evolução Mensal (Linha) -->
-        <div class="col-lg-4">
-            <div class="card chart-card shadow-sm h-100">
-                <div class="card-header">
-                    <i class="bi bi-graph-up text-info me-2"></i>Resumo Rápido
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+            <!-- KPIs Presencial -->
+            <div class="row g-4 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
                                     <i class="bi bi-collection text-primary"></i>
-                                </span>
-                                <span class="text-muted small">Treinamentos</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Total Treinamentos</div>
+                                    <div class="kpi-value text-primary">{{ total_treinamentos|default:"0" }}</div>
+                                </div>
                             </div>
-                            <span class="fw-bold fs-5">{{ total_treinamentos|default:"0" }}</span>
-                        </li>
-                        <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
-                                    <i class="bi bi-people text-success"></i>
-                                </span>
-                                <span class="text-muted small">Participantes</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-success bg-opacity-10">
+                                    <i class="bi bi-people-fill text-success"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Total Participantes</div>
+                                    <div class="kpi-value text-success">{{ total_participantes|default:"0" }}</div>
+                                </div>
                             </div>
-                            <span class="fw-bold fs-5">{{ total_participantes|default:"0" }}</span>
-                        </li>
-                        <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
-                                    <i class="bi bi-play-circle text-info"></i>
-                                </span>
-                                <span class="text-muted small">Em Andamento</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-info bg-opacity-10">
+                                    <i class="bi bi-play-circle-fill text-info"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Em Andamento</div>
+                                    <div class="kpi-value text-info">{{ em_andamento|default:"0" }}</div>
+                                </div>
                             </div>
-                            <span class="fw-bold fs-5">{{ em_andamento|default:"0" }}</span>
-                        </li>
-                        <li class="d-flex justify-content-between align-items-center py-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-warning bg-opacity-10">
                                     <i class="bi bi-cash-stack text-warning"></i>
-                                </span>
-                                <span class="text-muted small">Investimento</span>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Investimento Total</div>
+                                    <div class="kpi-value text-warning">
+                                        <small class="fs-6 fw-normal">R$</small>
+                                        {{ total_custo|floatformat:2|default:"0,00" }}
+                                    </div>
+                                </div>
                             </div>
-                            <span class="fw-bold fs-5">R$ {{ total_custo|floatformat:0|default:"0" }}</span>
-                        </li>
-                    </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Rodapé informativo -->
+            <!-- Gráficos Presencial — Linha 1 -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-6">
+                    <div class="card chart-card shadow-sm h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-pie-chart-fill text-primary me-2"></i>Treinamentos por Área</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary" id="badgeAreaTotal">—</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="chart-wrapper">
+                                <canvas id="chartArea"></canvas>
+                                <div class="empty-chart d-none" id="emptyArea">
+                                    <i class="bi bi-pie-chart"></i><span>Nenhum dado disponível</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card chart-card shadow-sm h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bullseye text-success me-2"></i>Status dos Treinamentos</span>
+                            <span class="badge bg-success bg-opacity-10 text-success" id="badgeStatusTotal">—</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="chart-wrapper">
+                                <canvas id="chartStatus"></canvas>
+                                <div class="empty-chart d-none" id="emptyStatus">
+                                    <i class="bi bi-bullseye"></i><span>Nenhum dado disponível</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos Presencial — Linha 2 -->
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card chart-card shadow-sm h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-bar-chart-fill text-warning me-2"></i>Investimento por Área</span>
+                            <span class="badge bg-warning bg-opacity-10 text-warning" id="badgeCustoTotal">—</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="chart-wrapper">
+                                <canvas id="chartCusto"></canvas>
+                                <div class="empty-chart d-none" id="emptyCusto">
+                                    <i class="bi bi-bar-chart"></i><span>Nenhum dado disponível</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card chart-card shadow-sm h-100">
+                        <div class="card-header">
+                            <i class="bi bi-graph-up text-info me-2"></i>Resumo Rápido
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                            <i class="bi bi-collection text-primary"></i>
+                                        </span>
+                                        <span class="text-muted small">Treinamentos</span>
+                                    </div>
+                                    <span class="fw-bold fs-5">{{ total_treinamentos|default:"0" }}</span>
+                                </li>
+                                <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                            <i class="bi bi-people text-success"></i>
+                                        </span>
+                                        <span class="text-muted small">Participantes</span>
+                                    </div>
+                                    <span class="fw-bold fs-5">{{ total_participantes|default:"0" }}</span>
+                                </li>
+                                <li class="d-flex justify-content-between align-items-center py-3 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                            <i class="bi bi-play-circle text-info"></i>
+                                        </span>
+                                        <span class="text-muted small">Em Andamento</span>
+                                    </div>
+                                    <span class="fw-bold fs-5">{{ em_andamento|default:"0" }}</span>
+                                </li>
+                                <li class="d-flex justify-content-between align-items-center py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center" style="width:36px;height:36px;">
+                                            <i class="bi bi-cash-stack text-warning"></i>
+                                        </span>
+                                        <span class="text-muted small">Investimento</span>
+                                    </div>
+                                    <span class="fw-bold fs-5">R$ {{ total_custo|floatformat:0|default:"0" }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /panel-presencial -->
+
+        <!-- ══════════ PANEL: EAD ══════════ -->
+        <div class="tab-pane fade" id="panel-ead" role="tabpanel">
+
+            <!-- KPIs EAD -->
+            <div class="row g-4 mb-4">
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-primary bg-opacity-10">
+                                    <i class="bi bi-collection-play text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Cursos Publicados</div>
+                                    <div class="kpi-value text-primary">{{ ead_total_cursos|default:"0" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-success bg-opacity-10">
+                                    <i class="bi bi-person-video3 text-success"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Alunos Matriculados</div>
+                                    <div class="kpi-value text-success">{{ ead_total_matriculas|default:"0" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-warning bg-opacity-10">
+                                    <i class="bi bi-hourglass-split text-warning"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Em Andamento</div>
+                                    <div class="kpi-value text-warning">{{ ead_em_andamento|default:"0" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6 col-xl-3">
+                    <div class="card kpi-card shadow-sm h-100">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrapper bg-info bg-opacity-10">
+                                    <i class="bi bi-patch-check-fill text-info"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="kpi-label text-muted">Certificados Emitidos</div>
+                                    <div class="kpi-value text-info">{{ ead_certificados|default:"0" }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acesso Rápido EAD + Gráfico Status -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="card ead-access-card shadow-sm">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-1">
+                                <i class="bi bi-laptop me-2"></i>Plataforma EAD
+                            </h5>
+                            <p class="mb-4 opacity-75">
+                                Gerencie cursos online, acompanhe matrículas e emita certificados.
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-sm-6 col-md-4">
+                                    <a href="{% url 'treinamentos:ead_catalogo' %}" class="ead-quick-link">
+                                        <i class="bi bi-collection-play"></i>
+                                        <div>
+                                            <div class="fw-semibold">Catálogo de Cursos</div>
+                                            <small class="opacity-75">Cursos disponíveis</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <a href="{% url 'treinamentos:ead_meus_cursos' %}" class="ead-quick-link">
+                                        <i class="bi bi-book"></i>
+                                        <div>
+                                            <div class="fw-semibold">Meus Cursos</div>
+                                            <small class="opacity-75">Seus cursos matriculados</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-sm-6 col-md-4">
+                                    <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="ead-quick-link">
+                                        <i class="bi bi-tags"></i>
+                                        <div>
+                                            <div class="fw-semibold">Tipos de Curso</div>
+                                            <small class="opacity-75">Gerenciar categorias</small>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card chart-card shadow-sm h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-pie-chart-fill text-info me-2"></i>Matrículas por Status</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="chart-wrapper" style="height:260px;">
+                                <canvas id="chartEadStatus"></canvas>
+                                <div class="empty-chart d-none" id="emptyEadStatus">
+                                    <i class="bi bi-pie-chart"></i><span>Nenhum dado disponível</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Cursos EAD -->
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card chart-card shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-trophy-fill text-warning me-2"></i>Top Cursos — Mais Matriculados</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="chart-wrapper" style="height: 280px;">
+                                <canvas id="chartEadTopCursos"></canvas>
+                                <div class="empty-chart d-none" id="emptyEadTop">
+                                    <i class="bi bi-bar-chart"></i><span>Nenhum curso com matrículas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /panel-ead -->
+
+    </div><!-- /tab-content -->
+
     <div class="text-muted text-center small mt-4 py-2">
         <i class="bi bi-clock me-1"></i> Dados atualizados em tempo real ao acessar esta página
     </div>
@@ -357,34 +509,39 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     let chartInstances = [];
-    let dashboardData;
 
-    // ═══ 1. PARSE JSON DO DJANGO ═══
+    // ═══ 1. PARSE JSON ═══
+    let dashboardData;
     try {
         dashboardData = JSON.parse('{{ dashboard_data_json|escapejs }}');
-        if (typeof dashboardData !== 'object' || dashboardData === null) {
-            throw new Error("Dados inválidos");
-        }
+        if (typeof dashboardData !== 'object' || dashboardData === null) throw new Error("inválido");
     } catch (e) {
-        console.error("Erro ao carregar dados do dashboard:", e);
-        dashboardData = { area: [], status: [], custo: [] };
+        console.error("Erro dados dashboard:", e);
+        dashboardData = { area: [], status: [], custo: [], ead_status: [], ead_top_cursos: [] };
     }
 
-    // ═══ 2. PALETAS PROFISSIONAIS ═══
-    const PALETA_AREA = [
-        '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b',
-        '#858796', '#5a5c69', '#2e59d9', '#17a673', '#2c9faf'
+    // ═══ 2. PALETAS ═══
+    const PALETA = [
+        '#00b8d4', '#1cc88a', '#667eea', '#f6c23e', '#e74a3b',
+        '#858796', '#36b9cc', '#4e73df', '#17a673', '#2c9faf'
     ];
-
     const PALETA_STATUS = {
-        'planejado':    { bg: '#858796', label: 'Planejado' },
-        'em_andamento': { bg: '#4e73df', label: 'Em Andamento' },
-        'cancelado':    { bg: '#e74a3b', label: 'Cancelado' },
-        'concluido':    { bg: '#1cc88a', label: 'Concluído' },
+        'planejado':    '#858796',
+        'em_andamento': '#00b8d4',
+        'cancelado':    '#e74a3b',
+        'concluido':    '#1cc88a',
+    };
+    const PALETA_EAD_STATUS = {
+        'em_andamento': '#00b8d4',
+        'concluido':    '#1cc88a',
+        'aprovado':     '#28a745',
+        'reprovado':    '#e74a3b',
+        'cancelado':    '#858796',
+        'expirado':     '#f6c23e',
     };
 
-    // ═══ 3. OPÇÕES DINÂMICAS (DARK/LIGHT) ═══
-    const getThemeOptions = () => {
+    // ═══ 3. HELPERS ═══
+    const getTheme = () => {
         const dark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         return {
             fontColor: dark ? 'rgba(255,255,255,0.75)' : '#6c757d',
@@ -393,159 +550,84 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltipFont: dark ? '#ffffff' : '#212529',
         };
     };
-
-    // ═══ 4. FORMATADORES ═══
     const fmtBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-    // ═══ 5. TOGGLE EMPTY STATE ═══
     const toggleEmpty = (id, hasData) => {
         const el = document.getElementById(id);
         if (el) el.classList.toggle('d-none', hasData);
     };
 
-    // ═══ 6. INIT CHARTS ═══
+    // ═══ 4. INIT TODOS OS CHARTS ═══
     const initCharts = () => {
         chartInstances.forEach(c => c.destroy());
         chartInstances = [];
-
-        const theme = getThemeOptions();
-
+        const t = getTheme();
         const baseTooltip = {
-            backgroundColor: theme.tooltipBg,
-            titleColor: theme.tooltipFont,
-            bodyColor: theme.tooltipFont,
-            borderColor: theme.gridColor,
-            borderWidth: 1,
-            padding: 12,
-            cornerRadius: 8,
-            titleFont: { weight: '600' },
+            backgroundColor: t.tooltipBg, titleColor: t.tooltipFont,
+            bodyColor: t.tooltipFont, borderColor: t.gridColor,
+            borderWidth: 1, padding: 12, cornerRadius: 8,
+        };
+        const bodyBg = getComputedStyle(document.body).backgroundColor || '#fff';
+
+        // ── DOUGHNUT HELPER ──
+        const makeDoughnut = (canvasId, emptyId, badgeId, data, colorFn) => {
+            const labels = data.map(i => i.nome_legivel || i.label);
+            const values = data.map(i => i.total || i.count || 0);
+            const hasData = labels.length > 0 && values.some(v => v > 0);
+            toggleEmpty(emptyId, hasData);
+            if (badgeId) {
+                const badge = document.getElementById(badgeId);
+                if (badge) badge.textContent = hasData ? values.reduce((a,b) => a+b, 0) + ' total' : '—';
+            }
+            if (!hasData) return;
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+            const colors = colorFn ? data.map(colorFn) : PALETA.slice(0, labels.length);
+            chartInstances.push(new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values, backgroundColor: colors,
+                        borderWidth: 3, borderColor: bodyBg, hoverOffset: 8,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: t.fontColor, usePointStyle: true, pointStyle: 'circle', padding: 16, font: { size: 12 } }
+                        },
+                        tooltip: {
+                            ...baseTooltip,
+                            callbacks: {
+                                label: (tip) => {
+                                    const total = tip.dataset.data.reduce((a,b) => a+b, 0);
+                                    const pct = ((tip.parsed / total) * 100).toFixed(1);
+                                    return ` ${tip.label}: ${tip.parsed} (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            }));
         };
 
-        // ── ÁREA (PIE) ──────────────────────────
-        const areaLabels = (dashboardData.area || []).map(i => i.nome_legivel);
-        const areaValues = (dashboardData.area || []).map(i => i.total);
-        const hasArea = areaLabels.length > 0;
+        // ── PRESENCIAL: Área ──
+        makeDoughnut('chartArea', 'emptyArea', 'badgeAreaTotal', dashboardData.area || []);
 
-        toggleEmpty('emptyArea', hasArea);
-        document.getElementById('badgeAreaTotal').textContent = hasArea
-            ? areaValues.reduce((a, b) => a + b, 0) + ' total' : '—';
+        // ── PRESENCIAL: Status ──
+        makeDoughnut('chartStatus', 'emptyStatus', 'badgeStatusTotal', dashboardData.status || [],
+            (item) => PALETA_STATUS[(item.nome_legivel || '').toLowerCase()] || '#adb5bd'
+        );
 
-        if (hasArea) {
-            const ctx = document.getElementById('chartArea');
-            if (ctx) {
-                chartInstances.push(new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: areaLabels,
-                        datasets: [{
-                            data: areaValues,
-                            backgroundColor: PALETA_AREA.slice(0, areaLabels.length),
-                            borderWidth: 3,
-                            borderColor: getComputedStyle(document.body).backgroundColor || '#fff',
-                            hoverOffset: 8,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '60%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    color: theme.fontColor,
-                                    usePointStyle: true,
-                                    pointStyle: 'circle',
-                                    padding: 16,
-                                    font: { size: 12 }
-                                }
-                            },
-                            tooltip: {
-                                ...baseTooltip,
-                                callbacks: {
-                                    label: (ctx) => {
-                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                        const pct = ((ctx.parsed / total) * 100).toFixed(1);
-                                        return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }));
-            }
-        }
-
-        // ── STATUS (DONUT) ──────────────────────
-        const statusLabels = (dashboardData.status || []).map(i => i.nome_legivel);
-        const statusValues = (dashboardData.status || []).map(i => i.total);
-        const statusKeys = (dashboardData.status || []).map(i => i.status || i.nome_legivel);
-        const hasStatus = statusLabels.length > 0;
-
-        toggleEmpty('emptyStatus', hasStatus);
-        document.getElementById('badgeStatusTotal').textContent = hasStatus
-            ? statusValues.reduce((a, b) => a + b, 0) + ' total' : '—';
-
-        if (hasStatus) {
-            const statusColors = statusKeys.map(k => {
-                const key = k.toLowerCase().replace(/ /g, '_');
-                return PALETA_STATUS[key]?.bg || '#adb5bd';
-            });
-
-            const ctx = document.getElementById('chartStatus');
-            if (ctx) {
-                chartInstances.push(new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: statusLabels,
-                        datasets: [{
-                            data: statusValues,
-                            backgroundColor: statusColors,
-                            borderWidth: 3,
-                            borderColor: getComputedStyle(document.body).backgroundColor || '#fff',
-                            hoverOffset: 8,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '60%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    color: theme.fontColor,
-                                    usePointStyle: true,
-                                    pointStyle: 'circle',
-                                    padding: 16,
-                                    font: { size: 12 }
-                                }
-                            },
-                            tooltip: {
-                                ...baseTooltip,
-                                callbacks: {
-                                    label: (ctx) => {
-                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                        const pct = ((ctx.parsed / total) * 100).toFixed(1);
-                                        return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }));
-            }
-        }
-
-        // ── CUSTO (BARRAS) ──────────────────────
+        // ── PRESENCIAL: Custo (Barras) ──
         const custoLabels = (dashboardData.custo || []).map(i => i.nome_legivel);
         const custoValues = (dashboardData.custo || []).map(i => i.total);
-        const hasCusto = custoLabels.length > 0;
-
+        const hasCusto = custoLabels.length > 0 && custoValues.some(v => v > 0);
         toggleEmpty('emptyCusto', hasCusto);
-        document.getElementById('badgeCustoTotal').textContent = hasCusto
-            ? fmtBRL(custoValues.reduce((a, b) => a + b, 0)) : '—';
-
+        const badgeCusto = document.getElementById('badgeCustoTotal');
+        if (badgeCusto) badgeCusto.textContent = hasCusto ? fmtBRL(custoValues.reduce((a,b) => a+b, 0)) : '—';
         if (hasCusto) {
             const ctx = document.getElementById('chartCusto');
             if (ctx) {
@@ -556,43 +638,59 @@ document.addEventListener('DOMContentLoaded', () => {
                         datasets: [{
                             label: 'Investimento (R$)',
                             data: custoValues,
-                            backgroundColor: PALETA_AREA.slice(0, custoLabels.length).map(c => c + '33'),
-                            borderColor: PALETA_AREA.slice(0, custoLabels.length),
-                            borderWidth: 2,
-                            borderRadius: 8,
-                            maxBarThickness: 60,
+                            backgroundColor: PALETA.slice(0, custoLabels.length).map(c => c + '33'),
+                            borderColor: PALETA.slice(0, custoLabels.length),
+                            borderWidth: 2, borderRadius: 8, maxBarThickness: 60,
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
+                        responsive: true, maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false },
-                            tooltip: {
-                                ...baseTooltip,
-                                callbacks: {
-                                    label: (ctx) => ` ${fmtBRL(ctx.parsed.y)}`
-                                }
-                            }
+                            tooltip: { ...baseTooltip, callbacks: { label: (tip) => ` ${fmtBRL(tip.parsed.y)}` } }
                         },
                         scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    color: theme.fontColor,
-                                    callback: (v) => fmtBRL(v),
-                                    font: { size: 11 }
-                                },
-                                grid: { color: theme.gridColor, drawBorder: false }
-                            },
-                            x: {
-                                ticks: {
-                                    color: theme.fontColor,
-                                    font: { size: 11 },
-                                    maxRotation: 45,
-                                },
-                                grid: { display: false }
-                            }
+                            y: { beginAtZero: true, ticks: { color: t.fontColor, callback: (v) => fmtBRL(v), font: { size: 11 } }, grid: { color: t.gridColor, drawBorder: false } },
+                            x: { ticks: { color: t.fontColor, font: { size: 11 }, maxRotation: 45 }, grid: { display: false } }
+                        }
+                    }
+                }));
+            }
+        }
+
+        // ── EAD: Matrículas por Status (UMA VEZ SÓ!) ──
+        makeDoughnut('chartEadStatus', 'emptyEadStatus', null, dashboardData.ead_status || [],
+            (item) => PALETA_EAD_STATUS[item.status || ''] || '#adb5bd'
+        );
+
+        // ── EAD: Top Cursos (Barras Horizontais) ──
+        const topData = dashboardData.ead_top_cursos || [];
+        const hasTop = topData.length > 0;
+        toggleEmpty('emptyEadTop', hasTop);
+        if (hasTop) {
+            const ctx = document.getElementById('chartEadTopCursos');
+            if (ctx) {
+                chartInstances.push(new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: topData.map(i => i.titulo),
+                        datasets: [{
+                            label: 'Matrículas',
+                            data: topData.map(i => i.total),
+                            backgroundColor: PALETA.slice(0, topData.length).map(c => c + '33'),
+                            borderColor: PALETA.slice(0, topData.length),
+                            borderWidth: 2, borderRadius: 8,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { ...baseTooltip }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { color: t.fontColor, stepSize: 1, font: { size: 11 } }, grid: { color: t.gridColor } },
+                            y: { ticks: { color: t.fontColor, font: { size: 11 } }, grid: { display: false } }
                         }
                     }
                 }));
@@ -600,19 +698,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ═══ 7. OBSERVER PARA TROCA DE TEMA ═══
-    const observer = new MutationObserver((mutations) => {
+    // ═══ 5. OBSERVER DE TEMA ═══
+    new MutationObserver((mutations) => {
         for (const m of mutations) {
-            if (m.attributeName === 'data-bs-theme') {
-                initCharts();
-                break;
-            }
+            if (m.attributeName === 'data-bs-theme') { initCharts(); break; }
         }
-    });
-    observer.observe(document.documentElement, { attributes: true });
+    }).observe(document.documentElement, { attributes: true });
 
-    // ═══ 8. GO! ═══
+    // ═══ 6. REDIMENSIONAR CHARTS AO TROCAR ABA ═══
+    document.getElementById('tab-ead')?.addEventListener('shown.bs.tab', () => {
+        chartInstances.forEach(c => c.resize());
+    });
+    document.getElementById('tab-presencial')?.addEventListener('shown.bs.tab', () => {
+        chartInstances.forEach(c => c.resize());
+    });
+
+    // ═══ 7. GO! ═══
     initCharts();
 });
 </script>
 {% endblock extra_js %}
+

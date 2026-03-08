@@ -1,0 +1,234 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ aula.titulo }} — EAD{% endblock %}
+
+{% block extra_css %}
+<style>
+    .player-layout { display: grid; grid-template-columns: 1fr 320px; gap: 0; min-height: calc(100vh - 70px); }
+    .player-main { padding: 1.5rem; overflow-y: auto; }
+    .player-sidebar {
+        background: var(--bs-tertiary-bg);
+        border-left: 1px solid var(--bs-border-color);
+        overflow-y: auto;
+        max-height: calc(100vh - 70px);
+        position: sticky;
+        top: 70px;
+    }
+    .video-wrapper {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        background: #000;
+        border-radius: .75rem;
+        overflow: hidden;
+    }
+    .video-wrapper iframe,
+    .video-wrapper video {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+    }
+    .sidebar-aula {
+        padding: .5rem .75rem;
+        border-bottom: 1px solid var(--bs-border-color);
+        transition: background .15s;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        text-decoration: none;
+        color: inherit;
+        font-size: .85rem;
+    }
+    .sidebar-aula:hover { background: var(--bs-body-bg); }
+    .sidebar-aula.active { background: var(--bs-primary-bg-subtle); border-left: 3px solid var(--bs-primary); }
+    .sidebar-aula.concluida { opacity: .6; }
+    .sidebar-modulo-header {
+        padding: .5rem .75rem;
+        font-weight: 700;
+        font-size: .8rem;
+        text-transform: uppercase;
+        color: var(--bs-secondary);
+        background: var(--bs-body-bg);
+        border-bottom: 1px solid var(--bs-border-color);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    @media (max-width: 991px) {
+        .player-layout { grid-template-columns: 1fr; }
+        .player-sidebar { max-height: none; position: static; border-left: none; border-top: 1px solid var(--bs-border-color); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="player-layout">
+    <!-- Main Content -->
+    <div class="player-main">
+        <!-- Breadcrumb -->
+        <nav class="mb-3">
+            <ol class="breadcrumb small">
+                <li class="breadcrumb-item"><a href="{% url 'treinamentos:ead_meus_cursos' %}">Meus Cursos</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'treinamentos:ead_curso_detail' slug=aula.modulo.curso.slug %}">{{ aula.modulo.curso.titulo|truncatewords:5 }}</a></li>
+                <li class="breadcrumb-item active">{{ aula.titulo|truncatewords:6 }}</li>
+            </ol>
+        </nav>
+
+        <!-- Player de Vídeo -->
+        {% if aula.tipo_conteudo == 'video_externo' and aula.embed_url %}
+        <div class="video-wrapper mb-3" id="video-container">
+            <iframe id="video-player"
+                    src="{{ aula.embed_url }}&enablejsapi=1"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+        </div>
+        {% elif aula.tipo_conteudo == 'video_upload' and aula.arquivo_video %}
+        <div class="video-wrapper mb-3">
+            <video id="video-player" controls>
+                <source src="{{ aula.arquivo_video.url }}" type="video/mp4">
+                Seu navegador não suporta vídeo.
+            </video>
+        </div>
+        {% elif aula.tipo_conteudo == 'pdf' and aula.arquivo_pdf %}
+        <div class="card mb-3">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-file-pdf display-4 text-danger"></i>
+                <h5 class="mt-2">{{ aula.titulo }}</h5>
+                <a href="{{ aula.arquivo_pdf.url }}" target="_blank" class="btn btn-outline-danger mt-2">
+                    <i class="bi bi-download me-1"></i> Abrir PDF
+                </a>
+            </div>
+        </div>
+        {% elif aula.tipo_conteudo == 'texto' %}
+        <div class="card mb-3">
+            <div class="card-body">
+                {{ aula.conteudo_texto|safe }}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Info da Aula -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">{{ aula.titulo }}</h4>
+                <span class="text-muted small">
+                    {{ aula.modulo.titulo }} · {{ aula.duracao_estimada_min }} min
+                </span>
+            </div>
+            {% if matricula %}
+            <div>
+                {% if progresso and progresso.concluida %}
+                <span class="badge bg-success fs-6 px-3 py-2">
+                    <i class="bi bi-check-circle me-1"></i> Concluída
+                </span>
+                {% else %}
+                <button id="btn-concluir" class="btn btn-success"
+                        data-url="{% url 'treinamentos:ead_concluir_aula' pk=aula.pk %}">
+                    <i class="bi bi-check-circle me-1"></i> Marcar como Concluída
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Descrição da Aula -->
+        {% if aula.descricao %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <p class="mb-0">{{ aula.descricao|linebreaksbr }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Navegação Anterior/Próxima -->
+        <div class="d-flex justify-content-between mt-4">
+            {% if aula_anterior %}
+            <a href="{% url 'treinamentos:ead_aula_player' pk=aula_anterior.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-chevron-left me-1"></i> {{ aula_anterior.titulo|truncatewords:5 }}
+            </a>
+            {% else %}
+            <div></div>
+            {% endif %}
+
+            {% if aula_proxima %}
+            <a href="{% url 'treinamentos:ead_aula_player' pk=aula_proxima.pk %}" class="btn btn-primary">
+                {{ aula_proxima.titulo|truncatewords:5 }} <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+            {% else %}
+            <a href="{% url 'treinamentos:ead_curso_detail' slug=aula.modulo.curso.slug %}"
+               class="btn btn-outline-primary">
+                Voltar ao Curso <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="player-sidebar">
+        {% for modulo in modulos %}
+        <div class="sidebar-modulo-header">
+            {{ modulo.ordem }}. {{ modulo.titulo }}
+        </div>
+        {% for a in modulo.aulas_ead.all %}
+        <a href="{% url 'treinamentos:ead_aula_player' pk=a.pk %}"
+           class="sidebar-aula {% if a.pk == aula.pk %}active{% endif %} {% if progressos_map and a.pk in progressos_map and progressos_map %}concluida{% endif %}">
+            {% if progressos_map and progressos_map|default_if_none:"" %}
+            <i class="bi bi-check-circle-fill text-success flex-shrink-0"></i>
+            {% elif a.is_video %}
+            <i class="bi bi-play-circle flex-shrink-0"></i>
+            {% else %}
+            <i class="bi bi-file-text flex-shrink-0"></i>
+            {% endif %}
+            <span class="flex-grow-1">{{ a.titulo }}</span>
+            <span class="text-muted" style="font-size:.7rem">{{ a.duracao_estimada_min }}m</span>
+        </a>
+        {% endfor %}
+        {% endfor %}
+    </aside>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+                      || '{{ csrf_token }}';
+
+    // Botão Concluir Aula
+    const btnConcluir = document.getElementById('btn-concluir');
+    if (btnConcluir) {
+        btnConcluir.addEventListener('click', async function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando...';
+
+            try {
+                const resp = await fetch(this.dataset.url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                });
+                const data = await resp.json();
+                if (data.ok) {
+                    this.outerHTML = `
+                        <span class="badge bg-success fs-6 px-3 py-2">
+                            <i class="bi bi-check-circle me-1"></i> Concluída
+                        </span>`;
+                    // Atualiza sidebar
+                    location.reload();
+                }
+            } catch(e) {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-check-circle me-1"></i> Marcar como Concluída';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+

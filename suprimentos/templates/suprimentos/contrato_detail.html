@@ -1,0 +1,203 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}CM {{ contrato.cm }}{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container-fluid mt-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-text me-2"></i>CM {{ contrato.cm }}</h2>
+            <p class="text-muted mb-0">{{ contrato.cliente }} — {{ contrato.filial }}</p>
+        </div>
+        <div>
+            <a href="{% url 'suprimentos:contrato_editar' pk=contrato.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-pencil-square me-1"></i> Editar
+            </a>
+            <a href="{% url 'suprimentos:contrato_lista' %}" class="btn btn-outline-secondary ms-1">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtro mês/ano -->
+    <form method="get" class="d-flex gap-2 mb-4">
+        <select name="mes" class="form-select form-select-sm" style="width:auto">
+            {% for num, nome in meses %}
+                <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
+            {% endfor %}
+        </select>
+        <select name="ano" class="form-select form-select-sm" style="width:auto">
+            {% for a in anos_disponiveis %}
+                <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+        <button class="btn btn-sm btn-primary" type="submit">
+            <i class="bi bi-funnel"></i> Filtrar
+        </button>
+    </form>
+
+    <div class="row g-4">
+        <!-- Verbas do mês -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <i class="bi bi-wallet2 me-1"></i> Verba — {{ mes|stringformat:"02d" }}/{{ ano }}
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr><th></th><th class="text-end">Verba</th><th class="text-end">Compra</th><th class="text-end">Saldo</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-info">EPI</span></td>
+                                <td class="text-end">R$ {{ verba.verba_epi|floatformat:2 }}</td>
+                                <td class="text-end text-danger">R$ {{ verba.compra_epi|floatformat:2 }}</td>
+                                <td class="text-end {% if verba.saldo_epi >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    R$ {{ verba.saldo_epi|floatformat:2 }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark">Consumo</span></td>
+                                <td class="text-end">R$ {{ verba.verba_consumo|floatformat:2 }}</td>
+                                <td class="text-end text-danger">R$ {{ verba.compra_consumo|floatformat:2 }}</td>
+                                <td class="text-end {% if verba.saldo_consumo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    R$ {{ verba.saldo_consumo|floatformat:2 }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-secondary">Ferramenta</span></td>
+                                <td class="text-end">R$ {{ verba.verba_ferramenta|floatformat:2 }}</td>
+                                <td class="text-end text-danger">R$ {{ verba.compra_ferramenta|floatformat:2 }}</td>
+                                <td class="text-end {% if verba.saldo_ferramenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    R$ {{ verba.saldo_ferramenta|floatformat:2 }}
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <th>Total</th>
+                                <th class="text-end">R$ {{ verba.verba_total|floatformat:2 }}</th>
+                                <th class="text-end text-danger">R$ {{ verba.compra_total|floatformat:2 }}</th>
+                                <th class="text-end {% if verba.saldo_total >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    R$ {{ verba.saldo_total|floatformat:2 }}
+                                </th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form editar verba (só gerente) -->
+        {% if is_gerente %}
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <i class="bi bi-pencil me-1"></i> Atualizar Verba
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {{ verba_form|crispy }}
+                        <button type="submit" class="btn btn-primary mt-2">
+                            <i class="bi bi-check-lg me-1"></i> Salvar Verba
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Histórico de verbas -->
+    {% if historico %}
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-clock-history me-1"></i> Histórico de Verbas
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mês/Ano</th>
+                            <th class="text-end">EPI</th>
+                            <th class="text-end">Consumo</th>
+                            <th class="text-end">Ferramenta</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in historico %}
+                        <tr>
+                            <td>{{ v.mes|stringformat:"02d" }}/{{ v.ano }}</td>
+                            <td class="text-end">R$ {{ v.verba_epi|floatformat:2 }}</td>
+                            <td class="text-end">R$ {{ v.verba_consumo|floatformat:2 }}</td>
+                            <td class="text-end">R$ {{ v.verba_ferramenta|floatformat:2 }}</td>
+                            <td class="text-end"><strong>R$ {{ v.verba_total|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Pedidos recentes -->
+    {% if pedidos %}
+    <div class="card shadow-sm mt-4 mb-4">
+        <div class="card-header bg-light">
+            <i class="bi bi-cart me-1"></i> Pedidos Recentes
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nº</th>
+                            <th>Solicitante</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pedidos %}
+                        <tr>
+                            <td><a href="{{ p.get_absolute_url }}">{{ p.numero }}</a></td>
+                            <td>{{ p.solicitante.get_full_name }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if p.status == 'APROVADO' %}bg-success
+                                    {% elif p.status == 'PENDENTE' %}bg-warning text-dark
+                                    {% elif p.status == 'REPROVADO' %}bg-danger
+                                    {% elif p.status == 'RECEBIDO' %}bg-primary
+                                    {% elif p.status == 'ENTREGUE' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ p.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{{ p.data_pedido|date:"d/m/Y" }}</td>
+                            <td class="text-end">
+                                <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock suprimentos_content %}
+

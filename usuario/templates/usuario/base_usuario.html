@@ -8,18 +8,7 @@
     {% include 'usuario/includes/submenu.html' %}
 
     <div class="container py-4">
-        {# Mensagens do Django #}
-        {% if messages %}
-        <div class="mb-3">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
+        
         {% block usuario_content %}{% endblock usuario_content %}
     </div>
 {% endblock %}

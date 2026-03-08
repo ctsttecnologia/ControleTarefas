@@ -414,12 +414,13 @@ if IS_PRE_PRODUCTION:
     except Exception as e:
         print(f"Erro ao criar diretório de logs: {e}")
 
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
         'simple': {
@@ -433,16 +434,39 @@ LOGGING = {
             'formatter': 'simple',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'WARNING',  # Só mostra WARNING, ERROR e CRITICAL
-    },
     'loggers': {
+        # ── Django ──
         'django': {
             'handlers': ['console'],
-            'level': 'WARNING',
-            'propagate': False,
+            'level': 'INFO',
         },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        # ── Silenciar fontTools (WeasyPrint) ──
+        'fontTools': {
+            'handlers': ['console'],
+            'level': 'WARNING',  # Só mostra WARNING e ERROR
+        },
+        'fontTools.subset': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        # ── Silenciar WeasyPrint verbose ──
+        'weasyprint': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+        },
+        # ── Seu app ──
+        'suprimentos': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Seus logs você mantém
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
     },
 }
 
@@ -467,3 +491,32 @@ else:
 
 # Flag para identificar ambiente de teste
 TESTING = 'test' in sys.argv or 'pytest' in sys.modules
+
+# ══════════════════════════════════════════════════════════════════════
+# (necessário porque Daphne/fontTools inicializam antes do LOGGING dict)
+# ══════════════════════════════════════════════════════════════════════
+import logging as _logging
+
+_QUIET_LOGGERS = [
+    # fontTools (subsetting de fontes do WeasyPrint)
+    'fontTools', 'fontTools.subset', 'fontTools.ttLib',
+    'fontTools.ttLib.tables', 'fontTools.misc',
+    'fontTools.subset.timer', 'fontTools.cff',
+    # WeasyPrint
+    'weasyprint', 'weasyprint.css', 'weasyprint.html',
+    'weasyprint.document', 'weasyprint.images',
+    # Daphne / Twisted
+    'daphne', 'daphne.server', 'daphne.http_protocol',
+    'daphne.ws_protocol',
+    'twisted',
+]
+
+for _name in _QUIET_LOGGERS:
+    _logging.getLogger(_name).setLevel(_logging.ERROR)
+    _logging.getLogger(_name).propagate = False  # Não propagar pro root
+    # Root logger — só WARNING pra cima (elimina DEBUG/INFO soltos)
+    _logging.getLogger().setLevel(_logging.WARNING)
+    # Manter Django e seus apps visíveis
+    _logging.getLogger('django').setLevel(_logging.INFO)
+    _logging.getLogger('django.server').setLevel(_logging.WARNING)
+    _logging.getLogger('suprimentos').setLevel(_logging.DEBUG)

@@ -2,7 +2,6 @@
 
 import logging
 from io import BytesIO
-
 import base64
 import json
 import subprocess

@@ -1,0 +1,113 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box-seam me-2"></i>{{ titulo_pagina }}</h2>
+        <div>
+            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+            <a href="{% url 'suprimentos:material_criar' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg me-1"></i> Novo Material
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <!-- Filtros -->
+            <form method="get" class="row g-2 mb-4">
+                <div class="col-md-4">
+                    <input type="text" name="q" class="form-control" placeholder="Buscar descrição, marca ou código..."
+                           value="{{ filtro_q }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="classificacao" class="form-select">
+                        <option value="">Todas Classificações</option>
+                        {% for val, label in classificacoes %}
+                            <option value="{{ val }}" {% if filtro_classificacao == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos Tipos</option>
+                        {% for val, label in tipos %}
+                            <option value="{{ val }}" {% if filtro_tipo == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th>Classificação</th>
+                            <th>Tipo</th>
+                            <th>Marca</th>
+                            <th>Unidade</th>
+                            <th class="text-end">Valor Unit.</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in materiais %}
+                        <tr>
+                            <td><code>{{ m.codigo }}</code></td>
+                            <td>{{ m.descricao }}</td>
+                            <td>
+                                <span class="badge
+                                    {% if m.classificacao == 'EPI' %}bg-info
+                                    {% elif m.classificacao == 'CONSUMO' %}bg-warning text-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ m.get_classificacao_display }}
+                                </span>
+                            </td>
+                            <td>{{ m.get_tipo_display }}</td>
+                            <td>{{ m.marca|default:"-" }}</td>
+                            <td>{{ m.get_unidade_display }}</td>
+                            <td class="text-end">R$ {{ m.valor_unitario|floatformat:2 }}</td>
+                            <td class="text-center">
+                                {% if m.ativo %}
+                                    <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'suprimentos:material_editar' pk=m.pk %}"
+                                   class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">Nenhum material encontrado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+                {% include 'partials/pagination.html' %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock suprimentos_content %}
+

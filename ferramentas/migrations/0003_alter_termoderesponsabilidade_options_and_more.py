@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('ferramentas', '0002_initial'),
-        ('suprimentos', '0002_initial'),
+        ('suprimentos', '0002_contrato_alter_parceiro_managers_pedido_material_and_more'),
         ('usuario', '0002_alter_filial_options'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

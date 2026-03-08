@@ -1,4 +1,3 @@
-<!-- Pagina de Assinatura -->
 {% extends "base.html" %}
 {% load static %}
 
@@ -14,7 +13,6 @@
         padding: 2rem 1rem;
         background: #f0f2f5;
     }
-
     .sign-card {
         max-width: 700px;
         width: 100%;
@@ -33,17 +31,14 @@
     .sign-header::after {
         content: '';
         position: absolute;
-        top: -30%;
-        right: -15%;
-        width: 200px;
-        height: 200px;
+        top: -30%; right: -15%;
+        width: 200px; height: 200px;
         background: rgba(255,255,255,0.06);
         border-radius: 50%;
         pointer-events: none;
     }
     .sign-header-icon {
-        width: 64px;
-        height: 64px;
+        width: 64px; height: 64px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -53,15 +48,15 @@
     }
     .sign-header h3 { font-weight: 700; font-size: 1.25rem; margin-bottom: 0; }
 
-    /* Success variant */
     .sign-header-success { background: linear-gradient(135deg, #1cc88a, #13855c); color: #fff; }
     .sign-header-success .sign-header-icon { background: rgba(255,255,255,0.15); }
-
-    /* Pending variant */
     .sign-header-pending { background: linear-gradient(135deg, #4e73df, #224abe); color: #fff; }
     .sign-header-pending .sign-header-icon { background: rgba(255,255,255,0.15); }
 
-    .sign-body { padding: 2rem 2.5rem; }
+    .sign-body {
+        padding: 2rem 2.5rem;
+        background-color: #ffffff;
+    }
     .sign-body .lead { font-size: 1rem; color: #4a5568; }
     .sign-body .lead strong { color: #2d3748; }
 
@@ -74,7 +69,10 @@
         margin-top: 1.25rem;
     }
     .success-details dl { margin: 0; }
-    .success-details dt { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.4px; color: #858796; font-weight: 700; }
+    .success-details dt {
+        font-size: 0.78rem; text-transform: uppercase;
+        letter-spacing: 0.4px; color: #858796; font-weight: 700;
+    }
     .success-details dd { font-weight: 600; color: #2d3748; margin-bottom: 0.75rem; }
     .success-details dd:last-child { margin-bottom: 0; }
 
@@ -111,8 +109,7 @@
     }
     .btn-sign-save {
         background: linear-gradient(135deg, #1cc88a, #17a673);
-        border: none;
-        color: #fff;
+        border: none; color: #fff;
     }
     .btn-sign-save:hover {
         transform: translateY(-2px);
@@ -121,14 +118,14 @@
     }
     .btn-sign-clear {
         border: 2px solid #e2e8f0;
-        color: #718096;
-        background: transparent;
+        color: #718096; background: transparent;
     }
     .btn-sign-clear:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
 
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .sign-container { background: #1a1d23; }
     [data-bs-theme="dark"] .sign-card { box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-    [data-bs-theme="dark"] .sign-body { background: var(--bs-body-bg); }
+    [data-bs-theme="dark"] .sign-body { background-color: var(--bs-body-bg); }
     [data-bs-theme="dark"] .sign-body .lead { color: #a0aec0; }
     [data-bs-theme="dark"] .sign-body .lead strong { color: #e2e8f0; }
     [data-bs-theme="dark"] .signature-wrapper { border-color: #2d3748; background: rgba(255,255,255,0.02); }
@@ -226,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
         maxWidth: 2.5,
     });
 
-    // Resize
     function resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
@@ -237,21 +233,17 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Active state
     canvas.addEventListener('pointerdown', () => wrapper.classList.add('active'));
     canvas.addEventListener('pointerup', () => wrapper.classList.remove('active'));
 
-    // Save
     document.getElementById('save-button').addEventListener('click', function(e) {
         e.preventDefault();
         if (signaturePad.isEmpty()) {
-            // Shake animation
             wrapper.style.transition = 'transform 0.1s';
             wrapper.style.transform = 'translateX(-5px)';
             setTimeout(() => wrapper.style.transform = 'translateX(5px)', 100);
             setTimeout(() => wrapper.style.transform = 'translateX(-3px)', 200);
             setTimeout(() => wrapper.style.transform = 'translateX(0)', 300);
-
             alert('Por favor, forneça sua assinatura.');
             return;
         }
@@ -259,9 +251,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('signature-form').submit();
     });
 
-    // Clear
     document.getElementById('clear-button').addEventListener('click', () => signaturePad.clear());
 });
 </script>
 {% endblock %}
+
 

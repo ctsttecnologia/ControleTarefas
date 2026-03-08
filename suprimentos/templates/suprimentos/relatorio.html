@@ -1,0 +1,699 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block suprimentos_content %}
+<div class="container-fluid mt-4">
+
+    {# ═══════════════════════════════════════════════ #}
+    {# CABEÇALHO + FILTROS                            #}
+    {# ═══════════════════════════════════════════════ #}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="bi bi-bar-chart-line me-2"></i>{{ titulo_pagina }}</h3>
+        <div class="btn-group">
+            <a href="{% url 'suprimentos:relatorio_pdf' %}?ano={{ filtro_ano }}&mes_ini={{ filtro_mes_ini }}&mes_fim={{ filtro_mes_fim }}{% for c in filtro_contratos %}&contrato={{ c }}{% endfor %}"
+               class="btn btn-danger" target="_blank">
+                <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+            </a>
+            <a href="{% url 'suprimentos:relatorio_excel' %}?ano={{ filtro_ano }}&mes_ini={{ filtro_mes_ini }}&mes_fim={{ filtro_mes_fim }}{% for c in filtro_contratos %}&contrato={{ c }}{% endfor %}"
+               class="btn btn-success">
+                <i class="bi bi-file-earmark-excel me-1"></i> Excel
+            </a>
+        </div>
+    </div>
+
+    {# ── Filtros ── #}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Ano</label>
+                    <input type="number" name="ano" class="form-control" value="{{ filtro_ano }}" min="2024" max="2030">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Mês Início</label>
+                    <select name="mes_ini" class="form-select">
+                        {% for val, label in meses_choices %}
+                            <option value="{{ val }}" {% if val == filtro_mes_ini %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">Mês Fim</label>
+                    <select name="mes_fim" class="form-select">
+                        {% for val, label in meses_choices %}
+                            <option value="{{ val }}" {% if val == filtro_mes_fim %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Contratos (vazio = todos)</label>
+                    <select name="contrato" class="form-select" multiple size="3">
+                        {% for ct in contratos_disponiveis %}
+                            <option value="{{ ct.id }}" {% if ct.id|stringformat:"s" in filtro_contratos %}selected{% endif %}>
+                                {{ ct.cm }} — {{ ct.cliente }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# Período #}
+    <div class="alert alert-info text-center">
+        <strong>Período:</strong> {{ relatorio.parametros.periodo_label }}
+    </div>
+
+    {# ═══════════════════════════════════════════════ #}
+    {# TABS DE NAVEGAÇÃO                              #}
+    {# ═══════════════════════════════════════════════ #}
+    <ul class="nav nav-tabs mb-4" id="relatorioTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-quantitativo" type="button">
+                <i class="bi bi-123 me-1"></i> Quantitativo
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-qualitativo" type="button">
+                <i class="bi bi-currency-dollar me-1"></i> Qualitativo
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-alertas" type="button">
+                <i class="bi bi-exclamation-triangle me-1 text-danger"></i> Alertas
+                {% if relatorio.alertas.total_alertas > 0 %}
+                    <span class="badge bg-danger">{{ relatorio.alertas.total_alertas }}</span>
+                {% endif %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-economias" type="button">
+                <i class="bi bi-piggy-bank me-1 text-success"></i> Economias
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-estimativas" type="button">
+                <i class="bi bi-graph-up-arrow me-1"></i> Estimativas
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="relatorioTabContent">
+
+        {# ═══════════════════════════════════════════════ #}
+        {# TAB 1: QUANTITATIVO                            #}
+        {# ═══════════════════════════════════════════════ #}
+        <div class="tab-pane fade show active" id="tab-quantitativo">
+
+            {# Cards resumo #}
+            <div class="row mb-4">
+                {% for r in relatorio.quantitativo.resumo_geral %}
+                <div class="col-md-4">
+                    <div class="card shadow-sm border-start border-4 {% if r.categoria == 'EPI' %}border-primary{% elif r.categoria == 'CONSUMO' %}border-info{% else %}border-warning{% endif %}">
+                        <div class="card-body">
+                            <h6 class="text-muted">{{ r.categoria_label }}</h6>
+                            <h3 class="mb-1">R$ {{ r.valor_total|floatformat:2 }}</h3>
+                            <small class="text-muted">
+                                {{ r.qtd_pedidos }} pedidos · {{ r.qtd_unidades }} unidades · {{ r.pct_valor }}% do total
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Gráfico por mês #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Compras por Mês</h5></div>
+                <div class="card-body">
+                    <canvas id="chartQuantitativoMes" height="80"></canvas>
+                </div>
+            </div>
+
+            {# Top materiais #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top 15 Materiais</h5></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Material</th>
+                                <th>Classificação</th>
+                                <th class="text-center">Qtd Total</th>
+                                <th class="text-end">Valor Total</th>
+                                <th class="text-center">Pedidos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in relatorio.quantitativo.top_materiais %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ m.material__descricao }}</td>
+                                <td><span class="badge bg-secondary">{{ m.material__classificacao }}</span></td>
+                                <td class="text-center">{{ m.qtd_total }}</td>
+                                <td class="text-end">R$ {{ m.valor_total|floatformat:2 }}</td>
+                                <td class="text-center">{{ m.vezes_pedido }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {# Por contrato #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-building me-2"></i>Compras por Contrato</h5></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Contrato</th>
+                                <th class="text-end">EPI (R$)</th>
+                                <th class="text-end">Consumo (R$)</th>
+                                <th class="text-end">Ferramenta (R$)</th>
+                                <th class="text-end fw-bold">Total (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ct in relatorio.quantitativo.por_contrato %}
+                            <tr>
+                                <td>{{ ct.contrato }}</td>
+                                <td class="text-end">{{ ct.valor_epi|floatformat:2 }}</td>
+                                <td class="text-end">{{ ct.valor_consumo|floatformat:2 }}</td>
+                                <td class="text-end">{{ ct.valor_ferramenta|floatformat:2 }}</td>
+                                <td class="text-end fw-bold">{{ ct.valor_total|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# ═══════════════════════════════════════════════ #}
+        {# TAB 2: QUALITATIVO                             #}
+        {# ═══════════════════════════════════════════════ #}
+        <div class="tab-pane fade" id="tab-qualitativo">
+
+            {# Cards verba × gasto #}
+            <div class="row mb-4">
+                {% for r in relatorio.qualitativo.resumo_categorias %}
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted">{{ r.categoria_label }}</h6>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Verba: <strong>R$ {{ r.verba|floatformat:2 }}</strong></span>
+                                <span>Gasto: <strong>R$ {{ r.gasto|floatformat:2 }}</strong></span>
+                            </div>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar {% if r.status == 'acima' %}bg-danger{% elif r.status == 'alerta' %}bg-warning{% else %}bg-success{% endif %}"
+                                     style="width: {% if r.pct_uso > 100 %}100{% else %}{{ r.pct_uso }}{% endif %}%;">
+                                    {{ r.pct_uso }}%
+                                </div>
+                            </div>
+                            <div class="text-end {% if r.saldo < 0 %}text-danger{% else %}text-success{% endif %}">
+                                <strong>Saldo: R$ {{ r.saldo|floatformat:2 }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Card resumo geral #}
+            <div class="card shadow-sm border-start border-4 {% if relatorio.qualitativo.saldo_geral < 0 %}border-danger{% else %}border-success{% endif %} mb-4">
+                <div class="card-body text-center">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Verba Total</h6>
+                            <h4>R$ {{ relatorio.qualitativo.total_verba_geral|floatformat:2 }}</h4>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Gasto Total</h6>
+                            <h4>R$ {{ relatorio.qualitativo.total_gasto_geral|floatformat:2 }}</h4>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Saldo Geral</h6>
+                            <h4 class="{% if relatorio.qualitativo.saldo_geral < 0 %}text-danger{% else %}text-success{% endif %}">
+                                R$ {{ relatorio.qualitativo.saldo_geral|floatformat:2 }}
+                            </h4>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">% Uso</h6>
+                            <h4>{{ relatorio.qualitativo.pct_uso_geral }}%</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Gráfico evolução mensal #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolução Verba × Gasto</h5></div>
+                <div class="card-body">
+                    <canvas id="chartEvolucao" height="80"></canvas>
+                </div>
+            </div>
+
+            {# Tabela por contrato #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0"><i class="bi bi-building me-2"></i>Verba × Gasto por Contrato</h5></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Contrato</th>
+                                <th class="text-end">Verba</th>
+                                <th class="text-end">Gasto</th>
+                                <th class="text-end">Saldo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ct in relatorio.qualitativo.por_contrato %}
+                            <tr>
+                                <td>{{ ct.contrato }}</td>
+                                <td class="text-end">R$ {{ ct.verba_total|floatformat:2 }}</td>
+                                <td class="text-end">R$ {{ ct.gasto_total|floatformat:2 }}</td>
+                                <td class="text-end {% if ct.saldo_total < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                    R$ {{ ct.saldo_total|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# ═══════════════════════════════════════════════ #}
+        {# TAB 3: ALERTAS                                 #}
+        {# ═══════════════════════════════════════════════ #}
+        <div class="tab-pane fade" id="tab-alertas">
+
+            {% if relatorio.alertas.total_alertas > 0 %}
+                {# Resumo de excesso #}
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white shadow-sm">
+                            <div class="card-body text-center">
+                                <h6>Total de Desvios</h6>
+                                <h2>{{ relatorio.alertas.total_alertas }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white shadow-sm">
+                            <div class="card-body text-center">
+                                <h6>Excesso Total</h6>
+                                <h2>R$ {{ relatorio.alertas.total_excesso_geral|floatformat:2 }}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h6 class="text-muted">Excesso por Categoria</h6>
+                                {% for ec in relatorio.alertas.resumo_excesso %}
+                                    {% if ec.total_excesso > 0 %}
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ ec.categoria_label }}</span>
+                                        <strong class="text-danger">R$ {{ ec.total_excesso|floatformat:2 }}</strong>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {# Tabela de alertas #}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Desvios Detalhados</h5>
+                    </div>
+                    <div class="card-body table-responsive">
+                        <table class="table table-striped table-hover table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Contrato</th>
+                                    <th>Mês</th>
+                                    <th>Categoria</th>
+                                    <th class="text-end">Verba</th>
+                                    <th class="text-end">Gasto</th>
+                                    <th class="text-end">Excesso</th>
+                                    <th class="text-center">% Excesso</th>
+                                    <th class="text-center">Severidade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for al in relatorio.alertas.alertas %}
+                                <tr>
+                                    <td>{{ al.contrato }}</td>
+                                    <td>{{ al.mes_label }}</td>
+                                    <td><span class="badge bg-secondary">{{ al.categoria_label }}</span></td>
+                                    <td class="text-end">R$ {{ al.verba|floatformat:2 }}</td>
+                                    <td class="text-end">R$ {{ al.gasto|floatformat:2 }}</td>
+                                    <td class="text-end text-danger fw-bold">R$ {{ al.excesso|floatformat:2 }}</td>
+                                    <td class="text-center">{{ al.pct_excesso }}%</td>
+                                    <td class="text-center">
+                                        {% if al.severidade == 'critico' %}
+                                            <span class="badge bg-danger">CRÍTICO</span>
+                                        {% elif al.severidade == 'alto' %}
+                                            <span class="badge bg-warning text-dark">ALTO</span>
+                                        {% else %}
+                                            <span class="badge bg-info">MODERADO</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {# Contratos mais críticos #}
+                {% if relatorio.alertas.contratos_criticos %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header"><h5 class="mb-0">🔴 Contratos com Mais Desvios</h5></div>
+                    <div class="card-body">
+                        <ol class="list-group list-group-numbered">
+                            {% for cc in relatorio.alertas.contratos_criticos %}
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>{{ cc.contrato }}</span>
+                                <span class="badge bg-danger rounded-pill">{{ cc.desvios }} desvios</span>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <div class="alert alert-success text-center py-5">
+                    <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3">Nenhum gasto acima da meta! 🎉</h4>
+                    <p>Todos os contratos estão dentro das verbas planejadas no período.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {# ═══════════════════════════════════════════════ #}
+        {# TAB 4: ECONOMIAS                               #}
+        {# ═══════════════════════════════════════════════ #}
+        <div class="tab-pane fade" id="tab-economias">
+
+            {# Cards resumo economia #}
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-success text-white shadow-sm">
+                        <div class="card-body text-center">
+                            <h6>Total Economizado</h6>
+                            <h2>R$ {{ relatorio.economias.total_economia_geral|floatformat:2 }}</h2>
+                        </div>
+                    </div>
+                </div>
+                {% for ec in relatorio.economias.resumo_economia %}
+                <div class="col-md-{% if forloop.counter == 1 %}4{% else %}4{% endif %}">
+                    <div class="card shadow-sm">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted">{{ ec.categoria_label }}</h6>
+                            <h4 class="text-success">R$ {{ ec.total_economia|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Ranking contratos #}
+            {% if relatorio.economias.ranking_contratos %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Ranking — Contratos que Mais Economizaram</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="list-group list-group-numbered">
+                        {% for rk in relatorio.economias.ranking_contratos %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ rk.contrato }}</span>
+                            <span class="badge bg-success rounded-pill">R$ {{ rk.economia|floatformat:2 }}</span>
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# ═══════════════════════════════════════════════ #}
+        {# TAB 5: ESTIMATIVAS                             #}
+        {# ═══════════════════════════════════════════════ #}
+        <div class="tab-pane fade" id="tab-estimativas">
+
+            {# Cards tendência #}
+            <div class="row mb-4">
+                {% for cod, dados in relatorio.estimativas.media_por_categoria.items %}
+                <div class="col-md-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h6 class="text-muted">{{ dados.label }} — Média Mensal</h6>
+                            <h3>R$ {{ dados.media|floatformat:2 }}</h3>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Mín: R$ {{ dados.min|floatformat:2 }}</span>
+                                <span>Máx: R$ {{ dados.max|floatformat:2 }}</span>
+                            </div>
+                            <div class="mt-2">
+                                {% if dados.tendencia == 'subindo' %}
+                                    <span class="badge bg-danger"><i class="bi bi-arrow-up"></i> Subindo {{ dados.variacao_tendencia }}%</span>
+                                {% elif dados.tendencia == 'descendo' %}
+                                    <span class="badge bg-success"><i class="bi bi-arrow-down"></i> Descendo {{ dados.variacao_tendencia }}%</span>
+                                {% elif dados.tendencia == 'estavel' %}
+                                    <span class="badge bg-secondary"><i class="bi bi-dash"></i> Estável</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">Dados insuficientes</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# Gráfico projeção #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up-arrow me-2"></i>Histórico + Projeção (6 meses)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartEstimativas" height="80"></canvas>
+                </div>
+            </div>
+
+            {# Tabela projeção #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><h5 class="mb-0">📊 Projeção Detalhada — Próximos 6 Meses</h5></div>
+                <div class="card-body table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Mês</th>
+                                <th class="text-end">Verba Total</th>
+                                <th class="text-end">Gasto Estimado</th>
+                                <th class="text-end">Saldo Estimado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pr in relatorio.estimativas.projecao %}
+                            <tr>
+                                <td>{{ pr.label }}</td>
+                                <td class="text-end">R$ {{ pr.verba_total|floatformat:2 }}</td>
+                                <td class="text-end">R$ {{ pr.gasto_total|floatformat:2 }}</td>
+                                <td class="text-end {% if pr.saldo_total < 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                    R$ {{ pr.saldo_total|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- tab-content -->
+</div><!-- container -->
+{% endblock suprimentos_content %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ═══════════════════════════════════════
+    // DADOS JSON
+    // ═══════════════════════════════════════
+    const dadosMeses = JSON.parse('{{ json_quantitativo_meses|escapejs }}');
+    const dadosEvolucao = JSON.parse('{{ json_evolucao|escapejs }}');
+    const dadosHistorico = JSON.parse('{{ json_estimativas_hist|escapejs }}');
+    const dadosProjecao = JSON.parse('{{ json_estimativas_proj|escapejs }}');
+
+    // ═══════════════════════════════════════
+    // CHART 1: Quantitativo por Mês
+    // ═══════════════════════════════════════
+    new Chart(document.getElementById('chartQuantitativoMes'), {
+        type: 'bar',
+        data: {
+            labels: dadosMeses.map(d => d.label),
+            datasets: [
+                {
+                    label: 'EPI',
+                    data: dadosMeses.map(d => parseFloat(d.valor_epi || 0)),
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                },
+                {
+                    label: 'Consumo',
+                    data: dadosMeses.map(d => parseFloat(d.valor_consumo || 0)),
+                    backgroundColor: 'rgba(13, 202, 240, 0.7)',
+                },
+                {
+                    label: 'Ferramenta',
+                    data: dadosMeses.map(d => parseFloat(d.valor_ferramenta || 0)),
+                    backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                x: { stacked: true },
+                y: {
+                    stacked: true,
+                    ticks: {
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 0}),
+                    },
+                },
+            },
+        },
+    });
+
+    // ═══════════════════════════════════════
+    // CHART 2: Evolução Verba × Gasto
+    // ═══════════════════════════════════════
+    new Chart(document.getElementById('chartEvolucao'), {
+        type: 'line',
+        data: {
+            labels: dadosEvolucao.map(d => d.label),
+            datasets: [
+                {
+                    label: 'Verba Total',
+                    data: dadosEvolucao.map(d => parseFloat(d.verba_total || 0)),
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'Gasto Total',
+                    data: dadosEvolucao.map(d => parseFloat(d.gasto_total || 0)),
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 0}),
+                    },
+                },
+            },
+        },
+    });
+
+    // ═══════════════════════════════════════
+    // CHART 3: Estimativas (Histórico + Projeção)
+    // ═══════════════════════════════════════
+    const allEstData = [...dadosHistorico, ...dadosProjecao];
+    const allLabels = allEstData.map(d => d.label);
+    const divider = dadosHistorico.length;
+
+    new Chart(document.getElementById('chartEstimativas'), {
+        type: 'line',
+        data: {
+            labels: allLabels,
+            datasets: [
+                {
+                    label: 'Gasto Real (Histórico)',
+                    data: allEstData.map((d, i) => i < divider ? parseFloat(d.gasto_total || 0) : null),
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'Gasto Estimado (Projeção)',
+                    data: allEstData.map((d, i) => i >= divider ? parseFloat(d.gasto_total || 0) : null),
+                    borderColor: '#fd7e14',
+                    borderDash: [8, 4],
+                    backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                },
+                {
+                    label: 'Verba Planejada',
+                    data: allEstData.map(d => parseFloat(d.verba_total || 0)),
+                    borderColor: '#198754',
+                    borderDash: [4, 2],
+                    fill: false,
+                    tension: 0.3,
+                    pointStyle: 'rect',
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top' },
+                annotation: {
+                    annotations: {
+                        line1: {
+                            type: 'line',
+                            xMin: divider - 0.5,
+                            xMax: divider - 0.5,
+                            borderColor: 'rgba(0,0,0,0.3)',
+                            borderDash: [6, 6],
+                            label: {
+                                display: true,
+                                content: 'Hoje',
+                                position: 'start',
+                            },
+                        },
+                    },
+                },
+            },
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 0}),
+                    },
+                },
+            },
+        },
+    });
+});
+</script>
+{% endblock %}
+

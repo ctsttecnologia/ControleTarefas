@@ -1,0 +1,149 @@
+
+<!-- templates/notifications/notificacao_list.html -->
+{% extends "pgr_gestao/base.html" %}
+
+{% block title %}Notificações{% endblock %}
+
+{% block breadcrumb_items %}
+    <li class="breadcrumb-item active">Notificações</li>
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h2><i class="fas fa-bell me-2"></i>Notificações</h2>
+        <p class="mb-0">{{ nao_lidas_count }} não lida{{ nao_lidas_count|pluralize:"s" }}</p>
+    </div>
+    {% if nao_lidas_count > 0 %}
+        <form action="{% url 'notifications:marcar_todas_como_lidas' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-light">
+                <i class="fas fa-check-double me-1"></i>Marcar todas como lidas
+            </button>
+        </form>
+    {% endif %}
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-auto">
+                <select name="filtro" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="todas" {% if filtro == 'todas' %}selected{% endif %}>Todas</option>
+                    <option value="nao_lidas" {% if filtro == 'nao_lidas' %}selected{% endif %}>Não lidas</option>
+                    <option value="lidas" {% if filtro == 'lidas' %}selected{% endif %}>Lidas</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="categoria" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Todas as categorias</option>
+                    <option value="tarefa" {% if categoria == 'tarefa' %}selected{% endif %}>Tarefas</option>
+                    <option value="pgr" {% if categoria == 'pgr' %}selected{% endif %}>PGR</option>
+                    <option value="suprimentos" {% if categoria == 'suprimentos' %}selected{% endif %}>Suprimentos</option>
+                    <option value="chat" {% if categoria == 'chat' %}selected{% endif %}>Chat</option>
+                    <option value="sistema" {% if categoria == 'sistema' %}selected{% endif %}>Sistema</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista de Notificações -->
+{% if notificacoes %}
+    <div class="list-group">
+        {% for notif in notificacoes %}
+            <a href="{% url 'notifications:marcar_como_lida' notif.pk %}"
+               class="list-group-item list-group-item-action {% if not notif.lida %}border-start border-4
+                  {% if notif.prioridade == 'critica' %}border-danger bg-danger bg-opacity-10
+                  {% elif notif.prioridade == 'alta' %}border-warning bg-warning bg-opacity-10
+                  {% else %}border-primary bg-light{% endif %}
+               {% endif %}">
+                <div class="d-flex align-items-start">
+                    <i class="{{ notif.icone }} me-3 mt-1 fs-5
+                       {% if notif.prioridade == 'critica' %}text-danger
+                       {% elif notif.prioridade == 'alta' %}text-warning
+                       {% elif notif.prioridade == 'media' %}text-primary
+                       {% else %}text-secondary{% endif %}"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="mb-1 {% if not notif.lida %}fw-bold{% endif %}">
+                                {{ notif.titulo }}
+                            </h6>
+                            <small class="text-muted">{{ notif.tempo_relativo }}</small>
+                        </div>
+                        {% if notif.mensagem %}
+                            <p class="mb-1 small text-muted" style="white-space: pre-line;">
+                                {{ notif.mensagem|truncatechars:150 }}
+                            </p>
+                        {% endif %}
+                        <div>
+                            <span class="badge {{ notif.badge_class }}" style="font-size: .7rem;">
+                                {{ notif.get_categoria_display }}
+                            </span>
+                            {% if not notif.lida %}
+                                <span class="badge bg-primary" style="font-size: .7rem;">Nova</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+
+    <!-- Paginação -->
+    {% if notificacoes.has_other_pages %}
+        <nav class="mt-4" aria-label="Paginação">
+            <ul class="pagination justify-content-center">
+                {% if notificacoes.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ notificacoes.previous_page_number }}&filtro={{ filtro }}&categoria={{ categoria }}">
+                            &laquo; Anterior
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in notificacoes.paginator.page_range %}
+                    {% if notificacoes.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > notificacoes.number|add:'-3' and num < notificacoes.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?page={{ num }}&filtro={{ filtro }}&categoria={{ categoria }}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if notificacoes.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ notificacoes.next_page_number }}&filtro={{ filtro }}&categoria={{ categoria }}">
+                            Próxima &raquo;
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+{% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-bell-slash fa-3x text-muted mb-3 d-block"></i>
+        <h5 class="text-muted">Nenhuma notificação encontrada</h5>
+        <p class="text-muted small">
+            {% if filtro == 'nao_lidas' %}
+                Todas as notificações já foram lidas! 🎉
+            {% else %}
+                Não há notificações para os filtros selecionados.
+            {% endif %}
+        </p>
+    </div>
+{% endif %}
+{% endblock %}
+
+
