@@ -6,50 +6,471 @@
 {% block title %}Quadro Kanban{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tarefas/kanban.css' %}">
+<style>
+/* =============================================================================
+   KANBAN BOARD — Responsivo
+   ============================================================================= */
+
+/* ── Wrapper ── */
+.kanban-wrapper {
+    padding: 1rem;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .kanban-wrapper {
+        padding: 1.5rem 2rem;
+    }
+}
+
+/* ── Header ── */
+.kanban-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.kanban-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+    color: #1a1a2e;
+}
+
+.kanban-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ── Board Layout ── */
+.kanban-board {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+    min-height: calc(100vh - 220px);
+}
+
+@media (min-width: 768px) {
+    .kanban-board {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.85rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .kanban-board {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .kanban-board {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.75rem;
+    }
+}
+
+@media (min-width: 1600px) {
+    .kanban-board {
+        gap: 1rem;
+        max-width: 1800px;
+    }
+}
+
+/* ── Column ── */
+.kanban-column {
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fc;
+    border-radius: 12px;
+    border: 1px solid #e2e6ee;
+    min-height: 200px;
+    max-height: none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+@media (min-width: 1200px) {
+    .kanban-column {
+        max-height: calc(100vh - 200px);
+    }
+}
+
+.kanban-column:hover {
+    border-color: #c5cde0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* ── Column Header ── */
+.kanban-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.85rem 1rem;
+    border-bottom: 2px solid #e2e6ee;
+    flex-shrink: 0;
+}
+
+.kanban-column-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+    color: #3a3f55;
+}
+
+/* ── Status Dots ── */
+.kanban-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.kanban-dot-pendente     { background: #f59e0b; }
+.kanban-dot-atrasada     { background: #ef4444; }
+.kanban-dot-andamento,
+.kanban-dot-em_andamento { background: #3b82f6; }
+.kanban-dot-concluida    { background: #22c55e; }
+.kanban-dot-pausada      { background: #8b5cf6; }
+
+/* Header color accents */
+.kanban-header-pendente     { border-bottom-color: #f59e0b; }
+.kanban-header-atrasada     { border-bottom-color: #ef4444; }
+.kanban-header-andamento,
+.kanban-header-em_andamento { border-bottom-color: #3b82f6; }
+.kanban-header-concluida    { border-bottom-color: #22c55e; }
+.kanban-header-pausada      { border-bottom-color: #8b5cf6; }
+
+/* ── Count Badge ── */
+.kanban-count {
+    background: #e2e6ee;
+    color: #3a3f55;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2em 0.6em;
+    border-radius: 999px;
+    min-width: 1.5rem;
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* ── Cards Container ── */
+.kanban-cards {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 80px;
+}
+
+/* Scrollbar — Webkit */
+.kanban-cards::-webkit-scrollbar {
+    width: 5px;
+}
+.kanban-cards::-webkit-scrollbar-track {
+    background: transparent;
+}
+.kanban-cards::-webkit-scrollbar-thumb {
+    background: #d1d5e0;
+    border-radius: 10px;
+}
+.kanban-cards::-webkit-scrollbar-thumb:hover {
+    background: #b0b7c8;
+}
+
+/* Scrollbar — Firefox */
+.kanban-cards {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5e0 transparent;
+}
+
+/* ── Card ── */
+.kanban-card {
+    background: #ffffff;
+    border: 1px solid #e8ecf2;
+    border-radius: 10px;
+    padding: 0.85rem;
+    cursor: grab;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.kanban-card:hover {
+    border-color: #c0c8d8;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+}
+
+/* Card Title */
+.kanban-card-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 0.4rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Card Description */
+.kanban-card-desc {
+    font-size: 0.73rem;
+    color: #6b7280;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+/* Card Footer */
+.kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f0f2f5;
+}
+
+.kanban-card-date {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.kanban-card-date.overdue {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Priority Badges */
+.kanban-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.15em 0.55em;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.kanban-badge-alta,
+.kanban-badge-urgente {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.kanban-badge-media {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #fde68a;
+}
+
+.kanban-badge-baixa {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.kanban-badge-normal {
+    background: #f0f4ff;
+    color: #4f6dca;
+    border: 1px solid #c7d8f5;
+}
+
+/* Avatar */
+.kanban-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #6366f1;
+    flex-shrink: 0;
+}
+
+/* ── Empty State ── */
+.kanban-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    color: #9ca3af;
+    font-size: 0.78rem;
+    font-style: italic;
+    text-align: center;
+    flex: 1;
+}
+
+/* ── Drag & Drop States ── */
+.kanban-ghost {
+    opacity: 0.4;
+    border: 2px dashed #6366f1 !important;
+    background: #eef2ff !important;
+    border-radius: 10px;
+}
+
+.kanban-chosen {
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25) !important;
+    transform: rotate(1.5deg) scale(1.03);
+    z-index: 999;
+}
+
+.kanban-drag {
+    opacity: 0.9;
+}
+
+/* Destaque colunas durante arrasto */
+body.kanban-dragging .kanban-cards {
+    background: rgba(99, 102, 241, 0.02);
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+body.kanban-dragging .kanban-column:hover .kanban-cards {
+    background: rgba(99, 102, 241, 0.06);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* ── Mobile ── */
+@media (max-width: 767.98px) {
+    .kanban-wrapper {
+        padding: 0.75rem;
+    }
+    .kanban-title {
+        font-size: 1.15rem;
+    }
+    .kanban-column {
+        min-height: 120px;
+    }
+    .kanban-card {
+        padding: 0.75rem;
+    }
+    .kanban-actions .btn {
+        padding: 0.3rem 0.5rem;
+    }
+}
+
+/* ── Print ── */
+@media print {
+    .kanban-board {
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+    .kanban-actions {
+        display: none !important;
+    }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid p-3 p-md-4">
+<div class="kanban-wrapper">
 
-    <!-- Header -->
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <!-- Header -->
+    <div class="kanban-header">
         <div>
-            <h1 class="h3 mb-1">
+            <h1 class="kanban-title">
                 <i class="bi bi-kanban me-2"></i>Quadro Kanban
             </h1>
-            <p class="text-muted mb-0 small">Arraste e solte para alterar o status</p>
+            <p class="kanban-subtitle">Arraste as tarefas entre colunas para atualizar o status</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-list-ul me-1"></i> Lista
+        <div class="kanban-actions">
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-calendar3 me-1"></i> Calendário
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
+                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
             </a>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
+                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
+            </a>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
+                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
             </a>
         </div>
     </div>
 
     <!-- Board -->
-    <div class="kanban-board d-flex gap-3 overflow-auto pb-3">
+    <div class="kanban-board" id="kanbanBoard">
         {% for coluna in colunas %}
-        <div class="kanban-column">
-            <div class="kanban-column-header">
-                <h2 class="h6 mb-0 text-uppercase fw-bold">{{ coluna.nome }}</h2>
-                <span class="badge bg-dark-subtle text-emphasis-dark rounded-pill">
+        <div class="kanban-column" data-status="{{ coluna.id }}">
+            <!-- Column Header -->
+            <div class="kanban-column-header kanban-header-{{ coluna.id }}">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="kanban-status-dot kanban-dot-{{ coluna.id }}"></span>
+                    <h2 class="kanban-column-title">{{ coluna.nome }}</h2>
+                </div>
+                <span class="kanban-count">
                     {{ coluna.tarefas|length }}
                 </span>
             </div>
 
-            <div class="kanban-cards-container custom-scrollbar" id="{{ coluna.id }}">
+            <!-- Cards Container -->
+            <div class="kanban-cards" id="{{ coluna.id }}">
                 {% for tarefa in coluna.tarefas %}
-                {% include "tarefas/_task_card.html" with tarefa=tarefa now=now %}
+                <div class="kanban-card" data-task-id="{{ tarefa.id }}" data-bs-toggle="tooltip" title="Clique para detalhes">
+                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="text-decoration-none">
+                        <div class="kanban-card-title">{{ tarefa.titulo }}</div>
+                    </a>
+
+                    {% if tarefa.descricao %}
+                    <div class="kanban-card-desc">{{ tarefa.descricao|truncatechars:80 }}</div>
+                    {% endif %}
+
+                    <div class="kanban-card-footer">
+                        {% if tarefa.data_vencimento %}
+                        <span class="kanban-card-date {% if tarefa.data_vencimento < now %}overdue{% endif %}">
+                            <i class="bi bi-calendar-event"></i>
+                            {{ tarefa.data_vencimento|date:"d/m/y" }}
+                        </span>
+                        {% endif %}
+
+                        <div class="d-flex align-items-center gap-1">
+                            {% if tarefa.prioridade %}
+                            <span class="kanban-badge kanban-badge-{{ tarefa.prioridade|lower }}">
+                                {{ tarefa.get_prioridade_display }}
+                            </span>
+                            {% endif %}
+
+                            {% if tarefa.responsavel %}
+                            <span class="kanban-avatar" title="{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}">
+                                {{ tarefa.responsavel.first_name|make_list|first|default:"?" }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
                 {% empty %}
-                <div class="text-center text-muted p-5 small fst-italic">
-                    Nenhuma tarefa aqui.
+                <div class="kanban-empty">
+                    <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
+                    <span>Nenhuma tarefa aqui.</span>
                 </div>
                 {% endfor %}
             </div>
@@ -80,15 +501,56 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    // Atualizar contadores das colunas
+    function updateColumnCounts() {
+        document.querySelectorAll('.kanban-column').forEach(col => {
+            const cards = col.querySelectorAll('.kanban-cards > .kanban-card');
+            const count = col.querySelector('.kanban-count');
+            const empty = col.querySelector('.kanban-empty');
+            const container = col.querySelector('.kanban-cards');
+
+            if (count) count.textContent = cards.length;
+
+            if (cards.length > 0 && empty) {
+                empty.remove();
+            } else if (cards.length === 0 && !empty) {
+                container.innerHTML = `
+                    <div class="kanban-empty">
+                        <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
+                        <span>Nenhuma tarefa aqui.</span>
+                    </div>`;
+            }
+        });
+    }
+
     // Sortable (Drag & Drop)
-    document.querySelectorAll('.kanban-cards-container').forEach(container => {
+    document.querySelectorAll('.kanban-cards').forEach(container => {
         new Sortable(container, {
             group: 'kanban',
-            animation: 150,
+            animation: 200,
+            easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
             ghostClass: 'kanban-ghost',
+            chosenClass: 'kanban-chosen',
+            dragClass: 'kanban-drag',
+            delay: 50,
+            delayOnTouchOnly: true,
+            touchStartThreshold: 5,
+            fallbackOnBody: true,
+            swapThreshold: 0.65,
+
+            onStart: function(evt) {
+                document.body.classList.add('kanban-dragging');
+                evt.from.querySelectorAll('.kanban-empty').forEach(el => el.remove());
+            },
+
             onEnd: function(evt) {
+                document.body.classList.remove('kanban-dragging');
+
                 const taskId = evt.item.dataset.taskId;
                 const newStatus = evt.to.id;
+
+                evt.to.querySelectorAll('.kanban-empty').forEach(el => el.remove());
+                updateColumnCounts();
 
                 fetch("{% url 'tarefas:update_task_status' %}", {
                     method: 'POST',
@@ -116,5 +578,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% endblock %}
-
 

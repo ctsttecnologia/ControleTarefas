@@ -1,0 +1,27 @@
+
+{# templates/tarefas/emails/email_notificacao_status.txt #}
+ATUALIZAÇÃO DE STATUS
+=====================
+
+Olá{% if tarefa.responsavel.first_name %} {{ tarefa.responsavel.first_name }}{% endif %},
+
+{{ alterado_por.get_full_name|default:alterado_por.username }} alterou o status da tarefa.
+
+MUDANÇA DE STATUS
+-----------------
+  {{ status_anterior }}  →  {{ novo_status }}
+
+DETALHES DA TAREFA
+------------------
+Título:       {{ tarefa.titulo }}
+Prioridade:   {{ tarefa.get_prioridade_display }}
+Responsável:  {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"Não atribuído" }}
+{% if tarefa.prazo %}Prazo:        {{ tarefa.prazo|date:"d/m/Y H:i" }}
+{% endif %}{% if tarefa.projeto %}Projeto:      {{ tarefa.projeto }}
+{% endif %}
+Acesse: {{ tarefa_url }}
+
+--
+Gerenciando Tarefas · Cetest Minas
+Este é um email automático. Por favor, não responda.
+

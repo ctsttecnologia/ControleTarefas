@@ -1,0 +1,99 @@
+
+<!-- templates/tarefas/emails/email_lembrete_prazo.html -->
+{% extends 'tarefas/emails/_email_base.html' %}
+
+{% block email_title %}Lembrete de Prazo{% endblock %}
+
+{% block header_color %}#f59e0b{% endblock %}
+
+{% block header_icon %}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 12px auto;">
+    <tr>
+        <td style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; text-align:center; line-height:48px;">
+            <span style="font-size:22px;">⏰</span>
+        </td>
+    </tr>
+</table>
+{% endblock %}
+
+{% block header_title %}Lembrete de Prazo{% endblock %}
+
+{% block header_subtitle %}
+<p style="margin:8px 0 0; font-size:13px; color:rgba(255,255,255,0.85);">
+    Uma tarefa está próxima do vencimento
+</p>
+{% endblock %}
+
+{% block email_body %}
+<p style="margin:0 0 20px; font-size:15px; color:#1a1a2e; line-height:1.5;">
+    Olá{% if tarefa.responsavel.first_name %} <strong>{{ tarefa.responsavel.first_name }}</strong>{% endif %},
+</p>
+
+<p style="margin:0 0 24px; font-size:14px; color:#3a3f55; line-height:1.6;">
+    A tarefa abaixo está com o prazo se aproximando. Verifique se está tudo em ordem.
+</p>
+
+<!-- Urgency Banner -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+    <tr>
+        <td style="background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:8px; padding:16px 20px;">
+            <p style="margin:0 0 4px; font-size:12px; font-weight:700; color:#92400e; text-transform:uppercase; letter-spacing:0.04em;">
+                ⚠️ Prazo em {{ dias_restantes }} dia{{ dias_restantes|pluralize:"s" }}
+            </p>
+            <p style="margin:0; font-size:14px; font-weight:600; color:#92400e;">
+                Vencimento: {{ tarefa.prazo|date:"d/m/Y H:i" }}
+            </p>
+        </td>
+    </tr>
+</table>
+
+<!-- Task Details -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc; border:1px solid #e2e6ee; border-radius:10px; overflow:hidden; margin-bottom:24px;">
+    <tr>
+        <td colspan="2" style="padding:16px 20px 12px; border-bottom:1px solid #edf0f5;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Tarefa</p>
+            <p style="margin:0; font-size:16px; font-weight:700; color:#1a1a2e;">
+                {{ tarefa.titulo }}
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Prioridade</p>
+            <p style="margin:0; font-size:13px; font-weight:600; color:{% if tarefa.prioridade == 'alta' %}#dc2626{% elif tarefa.prioridade == 'media' %}#d97706{% else %}#16a34a{% endif %};">
+                {{ tarefa.get_prioridade_display }}
+            </p>
+        </td>
+        <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Status Atual</p>
+            <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
+                {{ tarefa.get_status_display }}
+            </p>
+        </td>
+    </tr>
+    {% if tarefa.projeto %}
+    <tr>
+        <td colspan="2" style="padding:12px 20px;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Projeto</p>
+            <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
+                📁 {{ tarefa.projeto }}
+            </p>
+        </td>
+    </tr>
+    {% endif %}
+</table>
+{% endblock %}
+
+{% block cta_button %}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+    <tr>
+        <td style="background-color:#f59e0b; border-radius:8px;">
+            <a href="{{ tarefa_url }}"
+               style="display:inline-block; padding:14px 32px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:0.02em;">
+                Ver Tarefa →
+            </a>
+        </td>
+    </tr>
+</table>
+{% endblock %}
+

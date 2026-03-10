@@ -1,4 +1,4 @@
-# tarefas/views.py
+
 # tarefas/views.py
 
 import json
@@ -405,6 +405,180 @@ class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
 
         return redirect('tarefas:relatorio_tarefas')
 
+# =============================================================================
+# RELATÓRIOS (adicionar ao views.py existente)
+# =============================================================================
+
+class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+    """Página principal de relatórios com tabela, gráficos e exportação."""
+    model = Tarefas
+    template_name = 'tarefas/relatorio_tarefas.html'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs.order_by('-data_criacao')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = self.get_queryset()
+        report_context = preparar_contexto_relatorio(qs)
+        context.update(report_context)
+
+        # JSON para gráficos
+        context['status_data_json'] = json.dumps(
+            report_context.get('status_data', []),
+            cls=DjangoJSONEncoder
+        )
+        context['priority_data_json'] = json.dumps(
+            report_context.get('prioridade_data', []),
+            cls=DjangoJSONEncoder
+        )
+        context['status_choices'] = Tarefas.STATUS_CHOICES
+        context['current_filters'] = self.request.GET
+        return context
+
+    def post(self, request, *args, **kwargs):
+        """Exportação direta via offcanvas."""
+        export_format = request.POST.get('export_format')
+        if not export_format:
+            return self.get(request, *args, **kwargs)
+
+        qs = self.get_queryset()
+        context = preparar_contexto_relatorio(qs)
+        context['request'] = request
+        context['now'] = timezone.now()
+
+        exporters = {
+            'pdf': gerar_pdf_relatorio,
+            'csv': gerar_csv_relatorio,
+            'docx': gerar_docx_relatorio,
+        }
+        exporter = exporters.get(export_format)
+        if exporter:
+            return exporter(context)
+
+        messages.error(request, 'Formato de exportação inválido.')
+        return redirect('tarefas:relatorio_tarefas')
+
+
+class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
+    """Formulário para gerar relatório com filtros e escolher formato."""
+    template_name = 'tarefas/gerar_relatorio.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['status_choices'] = Tarefas.STATUS_CHOICES
+        context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
+        return context
+
+    def post(self, request, *args, **kwargs):
+        export_format = request.POST.get('export_format', 'html')
+        status_filter = request.POST.get('status', '')
+        prioridade_filter = request.POST.get('prioridade', '')
+
+        # Monta queryset filtrado
+        filial_id = request.session.get('active_filial_id')
+        qs = Tarefas.objects.all()
+        if filial_id:
+            qs = qs.filter(filial_id=filial_id)
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if prioridade_filter:
+            qs = qs.filter(prioridade=prioridade_filter)
+        qs = qs.order_by('-data_criacao')
+
+        context = preparar_contexto_relatorio(qs)
+        context['request'] = request
+        context['now'] = timezone.now()
+
+        # Exportar
+        if export_format == 'html':
+            # Redireciona para display com filtros na query string
+            params = []
+            if status_filter:
+                params.append(f'status={status_filter}')
+            if prioridade_filter:
+                params.append(f'prioridade={prioridade_filter}')
+            query_string = '&'.join(params)
+            url = reverse('tarefas:relatorio_display')
+            if query_string:
+                url += f'?{query_string}'
+            return redirect(url)
+
+        exporters = {
+            'pdf': gerar_pdf_relatorio,
+            'csv': gerar_csv_relatorio,
+            'docx': gerar_docx_relatorio,
+        }
+        exporter = exporters.get(export_format)
+        if exporter:
+            return exporter(context)
+
+        messages.error(request, 'Formato inválido.')
+        return redirect('tarefas:gerar_relatorio')
+
+
+class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+    """Exibe relatório filtrado na tela (HTML)."""
+    model = Tarefas
+    template_name = 'tarefas/relatorio_display.html'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_filter = self.request.GET.get('status')
+        prioridade_filter = self.request.GET.get('prioridade')
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if prioridade_filter:
+            qs = qs.filter(prioridade=prioridade_filter)
+        return qs.order_by('-data_criacao')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = self.get_queryset()
+        context.update(preparar_contexto_relatorio(qs))
+        context['current_filters'] = self.request.GET
+        context['status_choices'] = Tarefas.STATUS_CHOICES
+        return context
+
+
+class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):
+    """API de exportação direta via GET (para botões de download)."""
+
+    def get(self, request, *args, **kwargs):
+        export_format = request.GET.get('formato', '')
+        status_filter = request.GET.get('status', '')
+        prioridade_filter = request.GET.get('prioridade', '')
+
+        filial_id = request.session.get('active_filial_id')
+        qs = Tarefas.objects.all()
+        if filial_id:
+            qs = qs.filter(filial_id=filial_id)
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if prioridade_filter:
+            qs = qs.filter(prioridade=prioridade_filter)
+        qs = qs.order_by('-data_criacao')
+
+        context = preparar_contexto_relatorio(qs)
+        context['request'] = request
+        context['now'] = timezone.now()
+
+        exporters = {
+            'pdf': gerar_pdf_relatorio,
+            'csv': gerar_csv_relatorio,
+            'docx': gerar_docx_relatorio,
+        }
+        exporter = exporters.get(export_format)
+        if exporter:
+            return exporter(context)
+
+        messages.error(request, 'Formato de exportação inválido.')
+        return redirect('tarefas:relatorio_tarefas')
+
 
 class DashboardAnaliticoView(
     LoginRequiredMixin, ViewFilialScopedMixin,
@@ -415,39 +589,102 @@ class DashboardAnaliticoView(
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         filial_id = self.request.session.get('active_filial_id')
+        agora = timezone.now()
 
         # Queryset base
         base_qs = Tarefas.objects.all()
         if filial_id:
             base_qs = base_qs.filter(filial_id=filial_id)
 
+        # =====================================================================
+        # KPIs — Dados que vieram da Lista de Tarefas
+        # =====================================================================
+        total = base_qs.count()
+        concluidas = base_qs.filter(status='concluida').count()
+        pendentes = base_qs.filter(status='pendente').count()
+        em_andamento = base_qs.filter(status='andamento').count()
+        atrasadas = base_qs.filter(prazo__lt=agora).exclude(
+            status__in=['concluida', 'cancelada']
+        ).count()
+        pausadas = base_qs.filter(status='pausada').count()
+
+        # Taxa de conclusão (%)
+        taxa_conclusao = round((concluidas / total * 100), 1) if total > 0 else 0
+
+        context.update({
+            'total_tarefas': total,
+            'tarefas_concluidas': concluidas,
+            'tarefas_pendentes': pendentes,
+            'tarefas_andamento': em_andamento,
+            'tarefas_atrasadas': atrasadas,
+            'tarefas_pausadas': pausadas,
+            'taxa_conclusao': taxa_conclusao,
+        })
+
+        # =====================================================================
+        # Dados por status e prioridade (para gráficos)
+        # =====================================================================
+        status_counts = (
+            base_qs.values('status')
+            .annotate(total=Count('id'))
+            .order_by('status')
+        )
+        prioridade_counts = (
+            base_qs.values('prioridade')
+            .annotate(total=Count('id'))
+            .order_by('prioridade')
+        )
+
+        status_labels = dict(Tarefas.STATUS_CHOICES)
+        prioridade_labels = dict(Tarefas.PRIORIDADE_CHOICES)
+
+        context['status_data'] = [
+            {'status': status_labels.get(s['status'], s['status']), 'total': s['total']}
+            for s in status_counts
+        ]
+        context['prioridade_data'] = [
+            {'prioridade': prioridade_labels.get(p['prioridade'], p['prioridade']), 'total': p['total']}
+            for p in prioridade_counts
+        ]
+
+        # =====================================================================
+        # Tarefas recentes (últimas 5)
+        # =====================================================================
+        context['tarefas_recentes'] = base_qs.select_related(
+            'responsavel'
+        ).order_by('-data_criacao')[:5]
+
+        # =====================================================================
+        # Performance dos usuários
+        # =====================================================================
         usuarios = User.objects.filter(is_active=True)
         if filial_id:
             usuarios = usuarios.filter(filiais_permitidas__id=filial_id)
 
-        # Performance dos usuários
-        thirty_days_ago = timezone.now() - timedelta(days=30)
+        thirty_days_ago = agora - timedelta(days=30)
         usuarios_performance = []
         for usuario in usuarios:
             ativas = base_qs.filter(
                 responsavel=usuario,
                 status__in=['pendente', 'andamento', 'atrasada']
             ).count()
-            concluidas = base_qs.filter(
+            concluidas_user = base_qs.filter(
                 responsavel=usuario,
                 status='concluida',
                 concluida_em__gte=thirty_days_ago
             ).count()
-            if ativas > 0 or concluidas > 0:
+            if ativas > 0 or concluidas_user > 0:
                 usuarios_performance.append({
                     'username': usuario.get_full_name() or usuario.username,
                     'tarefas_ativas': ativas,
-                    'tarefas_concluidas_30d': concluidas,
+                    'tarefas_concluidas_30d': concluidas_user,
                 })
         context['usuarios_performance'] = usuarios_performance
 
+        # =====================================================================
         # Gráfico de tendência (últimas 6 semanas)
-        six_weeks_ago = timezone.now() - timedelta(weeks=6)
+        # =====================================================================
+        six_weeks_ago = agora - timedelta(weeks=6)
 
         criadas_qs = (
             base_qs.filter(data_criacao__gte=six_weeks_ago)
@@ -467,7 +704,7 @@ class DashboardAnaliticoView(
         dados_criadas = {item['semana'].date(): item['total'] for item in criadas_qs}
         dados_concluidas = {item['semana'].date(): item['total'] for item in concluidas_qs}
 
-        hoje = timezone.now().date()
+        hoje = agora.date()
         semana_inicio = hoje - timedelta(weeks=5)
         current_week = semana_inicio - timedelta(days=semana_inicio.weekday())
 
@@ -483,10 +720,13 @@ class DashboardAnaliticoView(
             'tendencia_criadas': criadas_list,
             'tendencia_concluidas': concluidas_list,
             'performance_equipe': usuarios_performance,
+            'status_data': context['status_data'],
+            'prioridade_data': context['prioridade_data'],
         }
         context['charts_data_json'] = json.dumps(charts_data, cls=DjangoJSONEncoder)
 
         return context
+
 
 
 # =============================================================================

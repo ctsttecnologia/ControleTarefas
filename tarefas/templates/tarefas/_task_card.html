@@ -1,56 +1,34 @@
 
 <!-- templates/tarefas/_task_card.html -->
-<div class="kanban-card card shadow-sm h-100" data-task-id="{{ tarefa.pk }}">
-    <div class="card-body p-3 d-flex flex-column">
+<div class="kanban-card" data-task-id="{{ tarefa.id }}" data-bs-toggle="tooltip" title="Clique para detalhes">
+    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="text-decoration-none">
+        <div class="kanban-card-title">{{ tarefa.titulo }}</div>
+    </a>
 
-        <h6 class="fw-bold mb-2">
-            <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" 
-               class="stretched-link text-decoration-none text-body">
-                {{ tarefa.titulo }}
-            </a>
-        </h6>
+    {% if tarefa.descricao %}
+    <div class="kanban-card-desc">{{ tarefa.descricao|truncatechars:80 }}</div>
+    {% endif %}
 
-        {% if tarefa.descricao %}
-        <p class="text-muted small mb-2">{{ tarefa.descricao|truncatewords:12 }}</p>
+    <div class="kanban-card-footer">
+        {% if tarefa.data_vencimento %}
+        <span class="kanban-card-date {% if tarefa.data_vencimento < now %}overdue{% endif %}">
+            <i class="bi bi-calendar-event"></i>
+            {{ tarefa.data_vencimento|date:"d/m/y" }}
+        </span>
         {% endif %}
 
-        <!-- Alertas -->
-        {% if tarefa.atrasada %}
-        <div class="mb-2">
-            <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">
-                <i class="bi bi-exclamation-octagon-fill me-1"></i> Atrasada
+        <div class="d-flex align-items-center gap-1">
+            {% if tarefa.prioridade %}
+            <span class="kanban-badge kanban-badge-{{ tarefa.prioridade|lower }}">
+                {{ tarefa.get_prioridade_display }}
             </span>
-        </div>
-        {% elif tarefa.data_lembrete and tarefa.data_lembrete.date == now.date and tarefa.status != 'concluida' %}
-        <div class="mb-2">
-            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
-                <i class="bi bi-bell-fill me-1"></i> Lembrete Hoje
+            {% endif %}
+
+            {% if tarefa.responsavel %}
+            <span class="kanban-avatar" title="{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}">
+                {{ tarefa.responsavel.first_name|make_list|first|default:"?" }}
             </span>
-        </div>
-        {% endif %}
-
-        <!-- Metadados -->
-        <div class="mt-auto d-flex justify-content-between align-items-center small">
-            <span class="text-muted {% if tarefa.atrasada %}fw-bold text-danger{% endif %}">
-                <i class="bi bi-calendar-check me-1"></i>
-                {% if tarefa.prazo %}{{ tarefa.prazo|date:"d/m/y" }}{% else %}Sem Prazo{% endif %}
-            </span>
-
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge rounded-pill
-                    {% if tarefa.prioridade == 'alta' %}bg-danger-subtle text-danger-emphasis
-                    {% elif tarefa.prioridade == 'media' %}bg-warning-subtle text-warning-emphasis
-                    {% else %}bg-success-subtle text-success-emphasis{% endif %}">
-                    {{ tarefa.get_prioridade_display }}
-                </span>
-
-                {% if tarefa.responsavel %}
-                <span class="avatar-kanban" data-bs-toggle="tooltip"
-                      title="{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}">
-                    {{ tarefa.responsavel.username.0|upper }}
-                </span>
-                {% endif %}
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>

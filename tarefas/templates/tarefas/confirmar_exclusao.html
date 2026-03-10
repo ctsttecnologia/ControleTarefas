@@ -1,53 +1,241 @@
 
-   <!-- templates/tarefas/confirmar_exclusao.html -->
+<!-- templates/tarefas/confirmar_exclusao.html -->
 {% extends 'base.html' %}
 
 {% block title %}Excluir Tarefa{% endblock %}
 
+{% block extra_css %}
+<style>
+:root,
+[data-bs-theme="light"] {
+    --del-bg: #f4f6fb;
+    --del-card-bg: #ffffff;
+    --del-card-border: #e2e6ee;
+    --del-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --del-text: #1a1a2e;
+    --del-text-muted: #6b7280;
+    --del-divider: #edf0f5;
+    --del-danger-bg: rgba(239, 68, 68, 0.08);
+    --del-danger-border: rgba(239, 68, 68, 0.2);
+    --del-warning-bg: #fffbeb;
+    --del-warning-border: #fde68a;
+    --del-warning-text: #92400e;
+    --del-footer-bg: #f8f9fc;
+}
+
+[data-bs-theme="dark"] {
+    --del-bg: #13131f;
+    --del-card-bg: #1e1e2e;
+    --del-card-border: #2e2e44;
+    --del-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --del-text: #e2e4f0;
+    --del-text-muted: #8b8ea8;
+    --del-divider: #2e2e44;
+    --del-danger-bg: rgba(239, 68, 68, 0.1);
+    --del-danger-border: rgba(239, 68, 68, 0.25);
+    --del-warning-bg: rgba(245, 158, 11, 0.1);
+    --del-warning-border: rgba(245, 158, 11, 0.25);
+    --del-warning-text: #fbbf24;
+    --del-footer-bg: #252536;
+}
+
+.del-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 120px);
+    padding: 1.5rem;
+}
+
+.del-card {
+    background: var(--del-card-bg);
+    border: 1px solid var(--del-card-border);
+    border-radius: 16px;
+    box-shadow: var(--del-card-shadow);
+    overflow: hidden;
+    max-width: 440px;
+    width: 100%;
+}
+
+/* ── Header ── */
+.del-card-header {
+    background: #ef4444;
+    padding: 1rem;
+    text-align: center;
+}
+
+.del-card-header-title {
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* ── Body ── */
+.del-card-body {
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.del-icon-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: var(--del-danger-bg);
+    border: 2px solid var(--del-danger-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+
+.del-icon-circle i {
+    font-size: 1.75rem;
+    color: #ef4444;
+}
+
+.del-question {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--del-text);
+    margin-bottom: 1rem;
+}
+
+.del-task-name {
+    background: var(--del-warning-bg);
+    border: 1px solid var(--del-warning-border);
+    color: var(--del-warning-text);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    word-break: break-word;
+}
+
+.del-warning-text {
+    font-size: 0.78rem;
+    color: var(--del-text-muted);
+    line-height: 1.5;
+}
+
+/* ── Footer ── */
+.del-card-footer {
+    background: var(--del-footer-bg);
+    border-top: 1px solid var(--del-divider);
+    padding: 1rem 1.5rem;
+}
+
+.del-btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.del-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.del-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.del-btn--cancel {
+    background: var(--del-card-bg);
+    color: var(--del-text);
+    border: 1px solid var(--del-card-border);
+}
+
+.del-btn--cancel:hover {
+    background: var(--del-footer-bg);
+    color: var(--del-text);
+}
+
+.del-btn--confirm {
+    background: #ef4444;
+    color: #fff;
+}
+
+.del-btn--confirm:hover {
+    background: #dc2626;
+    color: #fff;
+}
+
+/* ── Mobile ── */
+@media (max-width: 575.98px) {
+    .del-wrapper { padding: 1rem; }
+    .del-card-body { padding: 1.5rem 1rem; }
+    .del-btn-group { flex-direction: column; }
+    .del-btn { justify-content: center; }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
+<div class="del-wrapper">
+    <div class="del-card">
 
-            <div class="card shadow-sm border-danger">
-                <div class="card-header bg-danger text-white text-center py-3">
-                    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
-                    <span class="fw-semibold">Confirmar Exclusão</span>
-                </div>
-                <div class="card-body text-center p-4">
-                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
-                         style="width: 80px; height: 80px;">
-                        <i class="bi bi-trash text-danger fs-1"></i>
-                    </div>
+        <!-- Header -->
+        <div class="del-card-header">
+            <h5 class="del-card-header-title">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Confirmar Exclusão
+            </h5>
+        </div>
 
-                    <h5 class="mb-3">Deseja realmente excluir?</h5>
-
-                    <div class="alert alert-warning py-3">
-                        <i class="bi bi-clipboard-check me-2"></i>
-                        <strong>"{{ object.titulo }}"</strong>
-                    </div>
-
-                    <p class="text-muted small">
-                        <i class="bi bi-exclamation-circle me-1"></i>
-                        Esta ação não poderá ser desfeita. Todos os comentários e históricos serão removidos.
-                    </p>
-                </div>
-                <div class="card-footer bg-light py-3">
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="d-flex justify-content-center gap-3">
-                            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-trash me-1"></i> Sim, Excluir
-                            </button>
-                        </div>
-                    </form>
-                </div>
+        <!-- Body -->
+        <div class="del-card-body">
+            <div class="del-icon-circle">
+                <i class="bi bi-trash3"></i>
             </div>
 
+            <h5 class="del-question">Deseja realmente excluir?</h5>
+
+            <div class="del-task-name">
+                <i class="bi bi-clipboard-check"></i>
+                "{{ object.titulo }}"
+            </div>
+
+            <p class="del-warning-text">
+                <i class="bi bi-exclamation-circle me-1"></i>
+                Esta ação não poderá ser desfeita. Todos os comentários e históricos associados serão removidos permanentemente.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="del-card-footer">
+            <form method="post">
+                {% csrf_token %}
+                <div class="del-btn-group">
+                    <a href="{% url 'tarefas:listar_tarefas' %}" class="del-btn del-btn--cancel">
+                        <i class="bi bi-arrow-left"></i> Cancelar
+                    </a>
+                    <button type="submit" class="del-btn del-btn--confirm">
+                        <i class="bi bi-trash3"></i> Sim, Excluir
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
+

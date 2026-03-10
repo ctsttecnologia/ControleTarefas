@@ -2,209 +2,573 @@
 <!-- templates/tarefas/tarefa_detail.html -->
 {% extends 'base.html' %}
 {% load static %}
+{% load secure_url %}
 
 {% block title %}{{ object.titulo }}{% endblock %}
 
-{% load secure_url %}
-{% block content %}
-<div class="container-fluid py-4">
+{% block extra_css %}
+<style>
+/* =============================================================================
+   DETALHE DE TAREFA — Tema Claro / Escuro
+   ============================================================================= */
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+:root,
+[data-bs-theme="light"] {
+    --detail-bg: #f4f6fb;
+    --detail-card-bg: #ffffff;
+    --detail-card-border: #e2e6ee;
+    --detail-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --detail-text: #1a1a2e;
+    --detail-text-muted: #6b7280;
+    --detail-divider: #edf0f5;
+    --detail-hover-bg: #f8f9fc;
+    --detail-sidebar-label: #9ca3af;
+    --detail-comment-bg: #f8f9fc;
+    --detail-avatar-bg: #e8ecf2;
+    --detail-avatar-color: #6b7280;
+    --detail-history-bg: #f8f9fc;
+    --detail-input-bg: #ffffff;
+    --detail-input-border: #d1d5e0;
+}
+
+[data-bs-theme="dark"] {
+    --detail-bg: #13131f;
+    --detail-card-bg: #1e1e2e;
+    --detail-card-border: #2e2e44;
+    --detail-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --detail-text: #e2e4f0;
+    --detail-text-muted: #8b8ea8;
+    --detail-divider: #2e2e44;
+    --detail-hover-bg: #252536;
+    --detail-sidebar-label: #6b6e85;
+    --detail-comment-bg: #252536;
+    --detail-avatar-bg: #2e2e44;
+    --detail-avatar-color: #8b8ea8;
+    --detail-history-bg: #252536;
+    --detail-input-bg: #252536;
+    --detail-input-border: #3a3a52;
+}
+
+/* ── Layout ── */
+.detail-wrapper {
+    padding: 1rem;
+    min-height: calc(100vh - 60px);
+}
+
+@media (min-width: 768px) {
+    .detail-wrapper {
+        padding: 1.5rem 2rem;
+    }
+}
+
+/* ── Header ── */
+.detail-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--detail-text);
+    margin-bottom: 0.3rem;
+    line-height: 1.3;
+}
+
+.detail-meta {
+    font-size: 0.82rem;
+    color: var(--detail-text-muted);
+    margin: 0;
+}
+
+.detail-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ── Cards ── */
+.detail-card {
+    background: var(--detail-card-bg);
+    border: 1px solid var(--detail-card-border);
+    border-radius: 12px;
+    box-shadow: var(--detail-card-shadow);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.detail-card-header {
+    padding: 0.75rem 1.15rem;
+    border-bottom: 1px solid var(--detail-divider);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--detail-text);
+    margin: 0;
+}
+
+.detail-card-body {
+    padding: 1.15rem;
+}
+
+/* ── Description ── */
+.detail-description {
+    font-size: 0.88rem;
+    color: var(--detail-text);
+    line-height: 1.65;
+}
+
+.detail-description-empty {
+    color: var(--detail-text-muted);
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+/* ── Sidebar ── */
+.sidebar-field {
+    margin-bottom: 1rem;
+}
+
+.sidebar-field:last-child {
+    margin-bottom: 0;
+}
+
+.sidebar-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--detail-sidebar-label);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+}
+
+.sidebar-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--detail-text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid var(--detail-divider);
+    margin: 0.85rem 0;
+}
+
+/* ── Badges (reuso) ── */
+.detail-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2em 0.6em;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.badge-status-pendente   { background: rgba(245,158,11,0.12); color: #d97706; }
+.badge-status-atrasada   { background: rgba(239,68,68,0.12);  color: #dc2626; }
+.badge-status-andamento  { background: rgba(59,130,246,0.12);  color: #2563eb; }
+.badge-status-concluida  { background: rgba(34,197,94,0.12);   color: #16a34a; }
+.badge-status-pausada    { background: rgba(139,92,246,0.12);  color: #7c3aed; }
+.badge-status-cancelada  { background: rgba(100,116,139,0.12); color: #475569; }
+
+.badge-prio-alta    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-prio-media   { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-prio-baixa   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+[data-bs-theme="dark"] .badge-prio-alta  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+[data-bs-theme="dark"] .badge-prio-media { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); }
+[data-bs-theme="dark"] .badge-prio-baixa { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
+
+.badge-overdue {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+}
+
+/* ── Progress Bar ── */
+.detail-progress-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--detail-divider);
+    overflow: hidden;
+}
+
+.detail-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+/* ── Participant Tags ── */
+.participant-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--detail-comment-bg);
+    color: var(--detail-text);
+    padding: 0.25em 0.6em;
+    border-radius: 6px;
+    border: 1px solid var(--detail-card-border);
+}
+
+/* ── Comments ── */
+.comment-form textarea {
+    background: var(--detail-input-bg);
+    border-color: var(--detail-input-border);
+    color: var(--detail-text);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.comment-form textarea:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+.comment-item {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--detail-divider);
+}
+
+.comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--detail-avatar-bg);
+    color: var(--detail-avatar-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+}
+
+.comment-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-author {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--detail-text);
+}
+
+.comment-date {
+    font-size: 0.7rem;
+    color: var(--detail-text-muted);
+}
+
+.comment-text {
+    font-size: 0.83rem;
+    color: var(--detail-text);
+    line-height: 1.5;
+    margin-top: 0.25rem;
+}
+
+.comment-attachment {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    color: #6366f1;
+    text-decoration: none;
+    background: var(--detail-comment-bg);
+    padding: 0.2em 0.55em;
+    border-radius: 5px;
+    margin-top: 0.35rem;
+    border: 1px solid var(--detail-card-border);
+}
+
+.comment-attachment:hover {
+    background: var(--detail-hover-bg);
+}
+
+.comment-empty {
+    text-align: center;
+    color: var(--detail-text-muted);
+    font-style: italic;
+    font-size: 0.82rem;
+    padding: 1.5rem 0;
+}
+
+/* ── History ── */
+.history-item {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid var(--detail-divider);
+    font-size: 0.78rem;
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-item:hover {
+    background: var(--detail-hover-bg);
+}
+
+.history-author {
+    font-weight: 700;
+    color: var(--detail-text);
+}
+
+.history-date {
+    color: var(--detail-text-muted);
+    font-size: 0.7rem;
+}
+
+.history-change {
+    color: var(--detail-text-muted);
+}
+
+.history-arrow {
+    color: var(--detail-text-muted);
+    margin: 0 0.25rem;
+}
+
+/* ── Layout Grid ── */
+.detail-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .detail-grid {
+        grid-template-columns: 1fr 340px;
+    }
+}
+
+/* ── Count Badge ── */
+.comment-count {
+    background: #6366f1;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15em 0.5em;
+    border-radius: 999px;
+    min-width: 1.3rem;
+    text-align: center;
+}
+
+/* ── Mobile ── */
+@media (max-width: 767.98px) {
+    .detail-wrapper { padding: 0.75rem; }
+    .detail-title { font-size: 1.15rem; }
+    .detail-card-body { padding: 0.85rem; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrapper">
+
+        <!-- Header -->
+    <div class="detail-header">
         <div>
-            <h1 class="h2 mb-1">{{ object.titulo }}</h1>
-            <p class="text-muted mb-0">
+            <h1 class="detail-title">{{ object.titulo }}</h1>
+            <p class="detail-meta">
                 Criada por <strong>{{ object.usuario.get_full_name|default:object.usuario.username }}</strong>
                 em {{ object.data_criacao|date:"d/m/Y" }}
             </p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
+        <div class="detail-actions">
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph"></i>
+            </a>
             {% if object.status != 'concluida' and object.status != 'cancelada' %}
-            <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-primary">
+            <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-sm btn-primary" title="Editar">
                 <i class="bi bi-pencil me-1"></i> Editar
             </a>
             {% endif %}
         </div>
     </div>
 
-    <div class="row g-4">
-        <!-- Coluna Principal -->
-        <div class="col-lg-8">
+    <!-- Grid: Main + Sidebar -->
+    <div class="detail-grid">
 
+        <!-- Coluna Principal -->
+        <div>
             <!-- Descrição -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-text-left me-2"></i>Descrição</h6>
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h6 class="detail-card-title"><i class="bi bi-text-left me-2"></i>Descrição</h6>
                 </div>
-                <div class="card-body">
+                <div class="detail-card-body">
                     {% if object.descricao %}
-                    <p class="mb-0">{{ object.descricao|linebreaksbr }}</p>
+                    <div class="detail-description">{{ object.descricao|linebreaksbr }}</div>
                     {% else %}
-                    <p class="text-muted mb-0 fst-italic">Nenhuma descrição informada.</p>
+                    <p class="detail-description-empty mb-0">Nenhuma descrição informada.</p>
                     {% endif %}
                 </div>
             </div>
 
             <!-- Comentários -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
-                        <i class="bi bi-chat-dots me-2"></i>Comentários
-                    </h6>
-                    <span class="badge bg-primary">{{ comentarios.count }}</span>
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h6 class="detail-card-title"><i class="bi bi-chat-dots me-2"></i>Comentários</h6>
+                    <span class="comment-count">{{ comentarios.count }}</span>
                 </div>
-                <div class="card-body">
+                <div class="detail-card-body">
 
                     <!-- Form -->
-                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                    <form method="post" enctype="multipart/form-data" class="comment-form mb-3">
                         {% csrf_token %}
                         {{ form.texto }}
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            <div>{{ form.anexo }}</div>
-                            <button type="submit" class="btn btn-primary">
+                        <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
+                            <div class="small">{{ form.anexo }}</div>
+                            <button type="submit" class="btn btn-sm btn-primary">
                                 <i class="bi bi-send me-1"></i> Enviar
                             </button>
                         </div>
                     </form>
 
-                    <hr>
+                    <hr style="border-color: var(--detail-divider);">
 
-                    <!-- Lista de Comentários -->
+                    <!-- Lista -->
                     {% for comentario in comentarios %}
-                    <div class="d-flex gap-3 mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
-                        <div class="rounded-circle bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                             style="width: 40px; height: 40px;">
-                            <i class="bi bi-person text-secondary"></i>
+                    <div class="comment-item">
+                        <div class="comment-avatar">
+                            <i class="bi bi-person"></i>
                         </div>
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <strong class="small">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</strong>
-                                <small class="text-muted">{{ comentario.criado_em|date:"d/m/Y H:i" }}</small>
+                        <div class="comment-body">
+                            <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
+                                <span class="comment-author">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
+                                <span class="comment-date">{{ comentario.criado_em|date:"d/m/Y H:i" }}</span>
                             </div>
-                            <p class="mb-1">{{ comentario.texto|linebreaksbr }}</p>
+                            <div class="comment-text">{{ comentario.texto|linebreaksbr }}</div>
                             {% if comentario.anexo %}
                             {% secure_url comentario "anexo" as anexo_url %}
-                            <a href="{{ anexo_url }}" class="badge bg-light text-dark text-decoration-none" target="_blank">
-                                <i class="bi bi-paperclip me-1"></i>{{ comentario.nome_anexo }}
+                            <a href="{{ anexo_url }}" class="comment-attachment" target="_blank">
+                                <i class="bi bi-paperclip"></i>{{ comentario.nome_anexo }}
                             </a>
                             {% endif %}
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-center text-muted fst-italic">Nenhum comentário ainda.</p>
+                    <p class="comment-empty mb-0">Nenhum comentário ainda.</p>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
         <!-- Sidebar -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
+        <div>
+            <!-- Detalhes -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h6 class="detail-card-title"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
                 </div>
-                <div class="card-body">
+                <div class="detail-card-body">
 
-                    <!-- Status -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Status</label>
-                        <div>
-                            <span class="badge fs-6 rounded-pill
-                                {% if object.status == 'concluida' %}bg-success
-                                {% elif object.status == 'atrasada' %}bg-danger
-                                {% elif object.status == 'andamento' %}bg-primary
-                                {% elif object.status == 'pausada' %}bg-secondary
-                                {% elif object.status == 'cancelada' %}bg-dark
-                                {% else %}bg-warning text-dark{% endif %}">
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Status</div>
+                        <div class="sidebar-value">
+                            <span class="detail-badge badge-status-{{ object.status }}">
                                 {{ object.get_status_display }}
                             </span>
                         </div>
                     </div>
 
-                    <!-- Prioridade -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Prioridade</label>
-                        <div>
-                            <span class="badge fs-6 rounded-pill
-                                {% if object.prioridade == 'alta' %}bg-danger
-                                {% elif object.prioridade == 'media' %}bg-warning text-dark
-                                {% else %}bg-success{% endif %}">
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Prioridade</div>
+                        <div class="sidebar-value">
+                            <span class="detail-badge badge-prio-{{ object.prioridade|lower }}">
                                 {{ object.get_prioridade_display }}
                             </span>
                         </div>
                     </div>
 
-                    <hr>
+                    <hr class="sidebar-divider">
 
-                    <!-- Responsável -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Responsável</label>
-                        <p class="fw-semibold mb-0">
-                            <i class="bi bi-person-check me-1"></i>
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Responsável</div>
+                        <p class="sidebar-value">
+                            <i class="bi bi-person-check"></i>
                             {{ object.responsavel.get_full_name|default:object.responsavel.username|default:"Não atribuído" }}
                         </p>
                     </div>
 
-                    <!-- Participantes -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Participantes</label>
-                        <div>
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Participantes</div>
+                        <div class="d-flex flex-wrap gap-1">
                             {% for p in object.participantes.all %}
-                            <span class="badge bg-secondary me-1">{{ p.get_full_name|default:p.username }}</span>
+                            <span class="participant-tag">{{ p.get_full_name|default:p.username }}</span>
                             {% empty %}
-                            <span class="text-muted small">Nenhum participante</span>
+                            <span style="font-size:0.78rem;color:var(--detail-text-muted);">Nenhum participante</span>
                             {% endfor %}
                         </div>
                     </div>
 
-                    <!-- Projeto -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Projeto</label>
-                        <p class="fw-semibold mb-0">
-                            <i class="bi bi-folder me-1"></i>
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Projeto</div>
+                        <p class="sidebar-value">
+                            <i class="bi bi-folder"></i>
                             {{ object.projeto|default:"Sem projeto" }}
                         </p>
                     </div>
 
-                    <hr>
+                    <hr class="sidebar-divider">
 
-                    <!-- Prazo -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Prazo Final</label>
-                        <p class="fw-semibold mb-0">
-                            <i class="bi bi-calendar me-1"></i>
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Prazo Final</div>
+                        <p class="sidebar-value">
+                            <i class="bi bi-calendar-event"></i>
                             {{ object.prazo|date:"d/m/Y H:i"|default:"Não definido" }}
                             {% if object.atrasada %}
-                            <span class="badge bg-danger ms-2">Atrasada</span>
+                            <span class="badge-overdue">Atrasada</span>
                             {% endif %}
                         </p>
                     </div>
 
-                    <!-- Atualização -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Última Atualização</label>
-                        <p class="fw-semibold mb-0">
-                            <i class="bi bi-clock-history me-1"></i>
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Última Atualização</div>
+                        <p class="sidebar-value">
+                            <i class="bi bi-clock-history"></i>
                             {{ object.data_atualizacao|date:"d/m/Y H:i" }}
                         </p>
                     </div>
 
-                    <hr>
+                    <hr class="sidebar-divider">
 
-                    <!-- Progresso -->
-                    <div>
-                        <label class="form-label text-muted small">
-                            Progresso: {{ object.progresso }}%
-                        </label>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar
+                    <div class="sidebar-field">
+                        <div class="sidebar-label">Progresso: {{ object.progresso }}%</div>
+                        <div class="detail-progress-bar mt-1">
+                            <div class="detail-progress-fill
                                 {% if object.progresso == 100 %}bg-success
                                 {% elif object.progresso >= 50 %}bg-primary
                                 {% else %}bg-warning{% endif %}"
-                                 style="width: {{ object.progresso }}%"></div>
+                                style="width: {{ object.progresso }}%"></div>
                         </div>
                     </div>
                 </div>
@@ -212,24 +576,22 @@
 
             <!-- Histórico -->
             {% if historicos %}
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Histórico</h6>
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>
                 </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        {% for h in historicos %}
-                        <div class="list-group-item py-2">
-                            <div class="d-flex justify-content-between">
-                                <small class="fw-semibold">{{ h.alterado_por.get_full_name|default:h.alterado_por.username }}</small>
-                                <small class="text-muted">{{ h.data_alteracao|date:"d/m/Y H:i" }}</small>
-                            </div>
-                            <small class="text-muted">
-                                {{ h.status_anterior }} → <strong>{{ h.novo_status }}</strong>
-                            </small>
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for h in historicos %}
+                    <div class="history-item">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="history-author">{{ h.alterado_por.get_full_name|default:h.alterado_por.username }}</span>
+                            <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
                         </div>
-                        {% endfor %}
+                        <div class="history-change">
+                            {{ h.status_anterior }}<span class="history-arrow">→</span><strong>{{ h.novo_status }}</strong>
+                        </div>
                     </div>
+                    {% endfor %}
                 </div>
             </div>
             {% endif %}
@@ -237,5 +599,4 @@
     </div>
 </div>
 {% endblock %}
-
 

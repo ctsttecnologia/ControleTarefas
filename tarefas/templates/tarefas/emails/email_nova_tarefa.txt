@@ -1,0 +1,27 @@
+
+{# templates/tarefas/emails/email_nova_tarefa.txt #}
+NOVA TAREFA ATRIBUÍDA
+=====================
+
+Olá{% if tarefa.responsavel.first_name %} {{ tarefa.responsavel.first_name }}{% endif %},
+
+{{ criador.get_full_name|default:criador.username }} criou uma nova tarefa e atribuiu a você.
+
+DETALHES DA TAREFA
+------------------
+Título:      {{ tarefa.titulo }}
+Prioridade:  {{ tarefa.get_prioridade_display }}
+Status:      {{ tarefa.get_status_display }}
+{% if tarefa.prazo %}Prazo:       {{ tarefa.prazo|date:"d/m/Y H:i" }}
+{% endif %}{% if tarefa.projeto %}Projeto:     {{ tarefa.projeto }}
+{% endif %}{% if tarefa.descricao %}
+Descrição:
+{{ tarefa.descricao|truncatewords:50 }}
+{% endif %}
+
+Acesse: {{ tarefa_url }}
+
+--
+Gerenciando Tarefas · Cetest Minas
+Este é um email automático. Por favor, não responda.
+
