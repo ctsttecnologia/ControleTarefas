@@ -2,96 +2,524 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Dashboard Analítico{% endblock %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* =============================================================================
+   DASHBOARD — Tema Claro / Escuro
+   ============================================================================= */
+
+:root,
+[data-bs-theme="light"] {
+    --dash-bg: #f4f6fb;
+    --dash-card-bg: #ffffff;
+    --dash-card-border: #e2e6ee;
+    --dash-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --dash-text: #1a1a2e;
+    --dash-text-muted: #6b7280;
+    --dash-kpi-icon-bg: rgba(99, 102, 241, 0.1);
+    --dash-divider: #edf0f5;
+    --dash-table-hover: #f8f9fc;
+    --dash-chart-bg: #ffffff;
+}
+
+[data-bs-theme="dark"] {
+    --dash-bg: #13131f;
+    --dash-card-bg: #1e1e2e;
+    --dash-card-border: #2e2e44;
+    --dash-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --dash-text: #e2e4f0;
+    --dash-text-muted: #8b8ea8;
+    --dash-kpi-icon-bg: rgba(99, 102, 241, 0.15);
+    --dash-divider: #2e2e44;
+    --dash-table-hover: #252536;
+    --dash-chart-bg: #1e1e2e;
+}
+
+/* ── Layout ── */
+.dash-wrapper {
+    padding: 1rem;
+    background: var(--dash-bg);
+    min-height: calc(100vh - 60px);
+}
+
+@media (min-width: 768px) {
+    .dash-wrapper {
+        padding: 1.5rem 2rem;
+    }
+}
+
+/* ── Header ── */
+.dash-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.dash-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--dash-text);
+    margin-bottom: 0.15rem;
+}
+
+.dash-subtitle {
+    font-size: 0.85rem;
+    color: var(--dash-text-muted);
+    margin: 0;
+}
+
+.dash-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ── KPI Cards ── */
+.kpi-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .kpi-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .kpi-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+.kpi-card {
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-card-border);
+    border-radius: 12px;
+    padding: 1.1rem 1rem;
+    box-shadow: var(--dash-card-shadow);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.kpi-icon--total      { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+.kpi-icon--concluida  { background: rgba(34, 197, 94, 0.12);  color: #22c55e; }
+.kpi-icon--pendente   { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+.kpi-icon--andamento  { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+.kpi-icon--atrasada   { background: rgba(239, 68, 68, 0.12);  color: #ef4444; }
+.kpi-icon--taxa       { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+
+.kpi-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.kpi-value {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--dash-text);
+    line-height: 1.2;
+}
+
+.kpi-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--dash-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ── Dashboard Cards (Gráficos, Tabelas) ── */
+.dash-card {
+    background: var(--dash-card-bg);
+    border: 1px solid var(--dash-card-border);
+    border-radius: 12px;
+    box-shadow: var(--dash-card-shadow);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.dash-card-header {
+    padding: 0.85rem 1.15rem;
+    border-bottom: 1px solid var(--dash-divider);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dash-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--dash-text);
+    margin: 0;
+}
+
+.dash-card-body {
+    padding: 1.15rem;
+}
+
+/* ── Charts Grid ── */
+.charts-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 992px) {
+    .charts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.chart-container {
+    position: relative;
+    height: 280px;
+    width: 100%;
+}
+
+/* ── Tabela de Performance ── */
+.dash-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.dash-table th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--dash-text-muted);
+    padding: 0.65rem 0.85rem;
+    border-bottom: 2px solid var(--dash-divider);
+    text-align: left;
+}
+
+.dash-table td {
+    font-size: 0.82rem;
+    color: var(--dash-text);
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--dash-divider);
+}
+
+.dash-table tbody tr:hover {
+    background: var(--dash-table-hover);
+}
+
+.dash-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ── Tarefas Recentes ── */
+.recent-task {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--dash-divider);
+}
+
+.recent-task:last-child {
+    border-bottom: none;
+}
+
+.recent-task-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.recent-task-dot--pendente   { background: #f59e0b; }
+.recent-task-dot--andamento,
+.recent-task-dot--em_andamento { background: #3b82f6; }
+.recent-task-dot--concluida  { background: #22c55e; }
+.recent-task-dot--atrasada   { background: #ef4444; }
+.recent-task-dot--pausada    { background: #8b5cf6; }
+
+.recent-task-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.recent-task-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--dash-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-task-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.recent-task-title a:hover {
+    color: #6366f1;
+}
+
+.recent-task-meta {
+    font-size: 0.7rem;
+    color: var(--dash-text-muted);
+}
+
+.recent-task-badge {
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* ── Progress Ring ── */
+.progress-ring {
+    width: 52px;
+    height: 52px;
+}
+
+/* ── Badge Colors ── */
+.badge--alta, .badge--urgente {
+    background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+}
+.badge--media {
+    background: #fffbeb; color: #d97706; border: 1px solid #fde68a;
+}
+.badge--baixa {
+    background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+}
+
+/* ── Mobile ── */
+@media (max-width: 767.98px) {
+    .dash-wrapper { padding: 0.75rem; }
+    .dash-title { font-size: 1.15rem; }
+    .kpi-value { font-size: 1.1rem; }
+    .kpi-icon { width: 38px; height: 38px; font-size: 1rem; }
+    .chart-container { height: 220px; }
+}
+
+/* ── Print ── */
+@media print {
+    .dash-actions { display: none !important; }
+    .dash-card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="dash-wrapper">
 
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div class="dash-header">
         <div>
-            <h1 class="h2 mb-1">
-                <i class="bi bi-bar-chart-line me-2"></i>Dashboard Analítico
+            <h1 class="dash-title">
+                <i class="bi bi-speedometer2 me-2"></i>Dashboard
             </h1>
-            <p class="text-muted mb-0">Visão geral do desempenho das tarefas</p>
+            <p class="dash-subtitle">Visão geral das suas tarefas</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-list-ul me-1"></i> Lista
+        <div class="dash-actions">
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
-            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-outline-primary">
-                <i class="bi bi-kanban me-1"></i> Kanban
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
+                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
             </a>
+            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-secondary" title="Kanban">
+                <i class="bi bi-kanban me-1"></i><span class="d-none d-lg-inline">Kanban</span>
+            </a>
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
+                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
+            </a>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
+                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
+            </a>
+        </div>
+    </div>
+
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-icon--total"><i class="bi bi-collection"></i></div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ total_tarefas }}</div>
+                <div class="kpi-label">Total</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-icon--concluida"><i class="bi bi-check-circle"></i></div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ tarefas_concluidas }}</div>
+                <div class="kpi-label">Concluídas</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-icon--pendente"><i class="bi bi-hourglass-split"></i></div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ tarefas_pendentes }}</div>
+                <div class="kpi-label">Pendentes</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-icon--andamento"><i class="bi bi-arrow-repeat"></i></div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ tarefas_andamento }}</div>
+                <div class="kpi-label">Em Andamento</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-icon--atrasada"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ tarefas_atrasadas }}</div>
+                <div class="kpi-label">Atrasadas</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon kpi-icon--taxa"><i class="bi bi-graph-up-arrow"></i></div>
+            <div class="kpi-info">
+                <div class="kpi-value">{{ taxa_conclusao }}%</div>
+                <div class="kpi-label">Taxa de Conclusão</div>
+            </div>
         </div>
     </div>
 
     <!-- Gráficos -->
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-graph-up me-2"></i>Tendência: Criadas vs. Concluídas
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div style="position: relative; height: 350px;">
-                        <canvas id="tendenciaChart"></canvas>
-                    </div>
+    <div class="charts-grid">
+        <!-- Tendência Semanal -->
+        <div class="dash-card">
+            <div class="dash-card-header">
+                <h2 class="dash-card-title"><i class="bi bi-graph-up me-2"></i>Tendência Semanal</h2>
+            </div>
+            <div class="dash-card-body">
+                <div class="chart-container">
+                    <canvas id="chartTendencia"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-people me-2"></i>Performance da Equipe
-                    </h6>
+
+        <!-- Status -->
+        <div class="dash-card">
+            <div class="dash-card-header">
+                <h2 class="dash-card-title"><i class="bi bi-pie-chart me-2"></i>Por Status</h2>
+            </div>
+            <div class="dash-card-body">
+                <div class="chart-container">
+                    <canvas id="chartStatus"></canvas>
                 </div>
-                <div class="card-body">
-                    <div style="position: relative; height: 350px;">
-                        <canvas id="equipeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Prioridade -->
+        <div class="dash-card">
+            <div class="dash-card-header">
+                <h2 class="dash-card-title"><i class="bi bi-bar-chart me-2"></i>Por Prioridade</h2>
+            </div>
+            <div class="dash-card-body">
+                <div class="chart-container">
+                    <canvas id="chartPrioridade"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarefas Recentes -->
+        <div class="dash-card">
+            <div class="dash-card-header">
+                <h2 class="dash-card-title"><i class="bi bi-clock-history me-2"></i>Tarefas Recentes</h2>
+            </div>
+            <div class="dash-card-body">
+                {% for tarefa in tarefas_recentes %}
+                <div class="recent-task">
+                    <span class="recent-task-dot recent-task-dot--{{ tarefa.status }}"></span>
+                    <div class="recent-task-info">
+                        <div class="recent-task-title">
+                            <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}">{{ tarefa.titulo }}</a>
+                        </div>
+                        <div class="recent-task-meta">
+                            {{ tarefa.get_status_display }} · {{ tarefa.data_criacao|date:"d/m/Y" }}
+                            {% if tarefa.responsavel %} · {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% endif %}
+                        </div>
                     </div>
+                    {% if tarefa.prioridade %}
+                    <span class="recent-task-badge badge--{{ tarefa.prioridade|lower }}">
+                        {{ tarefa.get_prioridade_display }}
+                    </span>
+                    {% endif %}
                 </div>
+                {% empty %}
+                <p class="text-center text-muted py-3 small fst-italic mb-0">Nenhuma tarefa recente.</p>
+                {% endfor %}
             </div>
         </div>
     </div>
 
-    <!-- Tabela -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h6 class="mb-0">
-                <i class="bi bi-table me-2"></i>Resumo por Responsável
-            </h6>
+    <!-- Performance da Equipe -->
+    {% if usuarios_performance %}
+    <div class="dash-card">
+        <div class="dash-card-header">
+            <h2 class="dash-card-title"><i class="bi bi-people me-2"></i>Performance da Equipe (30 dias)</h2>
         </div>
-        <div class="card-body p-0">
+        <div class="dash-card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                <table class="dash-table">
+                    <thead>
                         <tr>
-                            <th>Responsável</th>
-                            <th class="text-center">Tarefas Ativas</th>
+                            <th>Colaborador</th>
+                            <th class="text-center">Ativas</th>
                             <th class="text-center">Concluídas (30d)</th>
+                            <th class="text-center">Produtividade</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for usuario in usuarios_performance %}
+                        {% for u in usuarios_performance %}
                         <tr>
                             <td>
-                                <i class="bi bi-person me-1 text-muted"></i>
-                                {{ usuario.username }}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span style="width:28px;height:28px;border-radius:50%;background:#6366f1;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;">
+                                        {{ u.username|make_list|first|upper }}
+                                    </span>
+                                    {{ u.username }}
+                                </div>
                             </td>
+                            <td class="text-center fw-semibold">{{ u.tarefas_ativas }}</td>
+                            <td class="text-center fw-semibold text-success">{{ u.tarefas_concluidas_30d }}</td>
                             <td class="text-center">
-                                <span class="badge bg-primary rounded-pill">{{ usuario.tarefas_ativas }}</span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-success rounded-pill">{{ usuario.tarefas_concluidas_30d }}</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3" class="text-center py-4 text-muted">
-                                Nenhum dado de performance disponível.
+                                {% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 as prod %}
+                                {% if u.tarefas_ativas > 0 %}
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <div class="progress" style="width:80px;height:6px;">
+                                        <div class="progress-bar bg-primary" style="width:{% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 %}%"></div>
+                                    </div>
+                                    <small class="text-muted">{% widthratio u.tarefas_concluidas_30d u.tarefas_ativas 100 %}%</small>
+                                </div>
+                                {% else %}
+                                <small class="text-muted">—</small>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -100,78 +528,133 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    let chartsData;
+    let chartsData = {};
     try {
-        chartsData = JSON.parse('{{ charts_data_json|safe }}');
+        chartsData = JSON.parse('{{ charts_data_json|escapejs }}');
     } catch (e) {
-        console.error("Erro ao parsear JSON:", e);
+        console.error('Erro ao parsear dados dos gráficos:', e);
         return;
     }
 
-    // Tendência
-    const tendenciaCtx = document.getElementById('tendenciaChart')?.getContext('2d');
-    if (tendenciaCtx && chartsData.tendencia_labels) {
-        const labels = chartsData.tendencia_labels.map(s =>
-            new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-        );
-        new Chart(tendenciaCtx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Criadas', data: chartsData.tendencia_criadas,
-                        borderColor: '#0d6efd', backgroundColor: 'rgba(13,110,253,0.1)',
-                        fill: true, tension: 0.4
-                    },
-                    {
-                        label: 'Concluídas', data: chartsData.tendencia_concluidas,
-                        borderColor: '#198754', backgroundColor: 'rgba(25,135,84,0.1)',
-                        fill: true, tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                plugins: { legend: { position: 'top' } }
-            }
-        });
-    }
+    // Detectar tema
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#8b8ea8' : '#6b7280';
 
-    // Equipe
-    const equipeCtx = document.getElementById('equipeChart')?.getContext('2d');
-    if (equipeCtx && chartsData.performance_equipe?.length) {
-        new Chart(equipeCtx, {
-            type: 'bar',
-            data: {
-                labels: chartsData.performance_equipe.map(u => u.username),
-                datasets: [
-                    {
-                        label: 'Ativas', backgroundColor: '#0d6efd',
-                        data: chartsData.performance_equipe.map(u => u.tarefas_ativas)
-                    },
-                    {
-                        label: 'Concluídas (30d)', backgroundColor: '#198754',
-                        data: chartsData.performance_equipe.map(u => u.tarefas_concluidas_30d)
-                    }
-                ]
-            },
-            options: {
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                scales: { x: { stacked: true }, y: { stacked: true } },
-                plugins: { legend: { position: 'top' } }
+    // Defaults
+    Chart.defaults.color = textColor;
+    Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+    Chart.defaults.font.size = 12;
+
+    // ── Tendência Semanal ──
+    const tendLabels = (chartsData.tendencia_labels || []).map(d => {
+        const dt = new Date(d);
+        return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+    });
+
+    new Chart(document.getElementById('chartTendencia'), {
+        type: 'line',
+        data: {
+            labels: tendLabels,
+            datasets: [
+                {
+                    label: 'Criadas',
+                    data: chartsData.tendencia_criadas || [],
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#6366f1',
+                },
+                {
+                    label: 'Concluídas',
+                    data: chartsData.tendencia_concluidas || [],
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#22c55e',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { font: { size: 11 } } },
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1 } }
             }
-        });
-    }
+        }
+    });
+
+    // ── Status (Doughnut) ──
+    const statusData = chartsData.status_data || [];
+    const statusColors = {
+        'Pendente': '#f59e0b', 'Atrasada': '#ef4444', 'Em Andamento': '#3b82f6',
+        'Concluída': '#22c55e', 'Pausada': '#8b5cf6', 'Cancelada': '#64748b'
+    };
+
+    new Chart(document.getElementById('chartStatus'), {
+        type: 'doughnut',
+        data: {
+            labels: statusData.map(s => s.status),
+            datasets: [{
+                data: statusData.map(s => s.total),
+                backgroundColor: statusData.map(s => statusColors[s.status] || '#94a3b8'),
+                borderWidth: 0,
+                hoverOffset: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } }
+            }
+        }
+    });
+
+    // ── Prioridade (Bar) ──
+    const prioData = chartsData.prioridade_data || [];
+    const prioColors = { 'Alta': '#ef4444', 'Média': '#f59e0b', 'Baixa': '#22c55e', 'Normal': '#3b82f6' };
+
+    new Chart(document.getElementById('chartPrioridade'), {
+        type: 'bar',
+        data: {
+            labels: prioData.map(p => p.prioridade),
+            datasets: [{
+                label: 'Tarefas',
+                data: prioData.map(p => p.total),
+                backgroundColor: prioData.map(p => prioColors[p.prioridade] || '#94a3b8'),
+                borderRadius: 6,
+                borderSkipped: false,
+                barThickness: 40,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1 } }
+            }
+        }
+    });
 });
 </script>
 {% endblock %}
-

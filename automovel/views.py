@@ -21,6 +21,7 @@ from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 import openpyxl
+from django.urls import reverse 
 from .models import Carro, Carro_agendamento, Carro_checklist, Carro_rastreamento, Carro_manutencao
 from .forms import CarroForm, AgendamentoForm, ChecklistForm, ManutencaoForm
 from core.mixins import ViewFilialScopedMixin
@@ -937,7 +938,7 @@ class RastreamentoCreateView(LoginRequiredMixin, View):
             # Exemplo com OpenStreetMap Nominatim (gratuito)
             import requests
             response = requests.get(
-                f'https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&zoom=18'
+                f'https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}&zoom=18', timeout=10
             )
             if response.status_code == 200:
                 data = response.json()

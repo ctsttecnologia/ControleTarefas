@@ -1,8 +1,11 @@
+
 from django.contrib import admin
 from django.http import JsonResponse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 import requests
+
+from django.urls import reverse
 from .models import Logradouro
 from .constant import ESTADOS_BRASIL
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
@@ -85,9 +88,9 @@ def consulta_cep(request):
         return JsonResponse({'erro': 'CEP inválido. Deve conter 8 dígitos numéricos.'}, status=400)
 
     try:
-        response = requests.get(f'https://viacep.com.br/ws/{cep}/json/')
         response.raise_for_status()  # Lança um erro para respostas HTTP 4xx/5xx
         data = response.json()
+        response = requests.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=10)
 
         if data.get('erro'):
             return JsonResponse({'erro': 'CEP não encontrado.'}, status=404)

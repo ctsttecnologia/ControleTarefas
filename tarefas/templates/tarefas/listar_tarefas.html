@@ -4,87 +4,386 @@
 
 {% block title %}Lista de Tarefas{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
+{% block extra_css %}
+<style>
+/* =============================================================================
+   LISTA DE TAREFAS — Tema Claro / Escuro
+   ============================================================================= */
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+:root,
+[data-bs-theme="light"] {
+    --list-bg: #f4f6fb;
+    --list-card-bg: #ffffff;
+    --list-card-border: #e2e6ee;
+    --list-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --list-text: #1a1a2e;
+    --list-text-muted: #6b7280;
+    --list-hover-bg: #f8f9fc;
+    --list-divider: #edf0f5;
+    --list-table-header-bg: #f8f9fc;
+    --list-priority-bar-alta: #ef4444;
+    --list-priority-bar-media: #f59e0b;
+    --list-priority-bar-baixa: #22c55e;
+}
+
+[data-bs-theme="dark"] {
+    --list-bg: #13131f;
+    --list-card-bg: #1e1e2e;
+    --list-card-border: #2e2e44;
+    --list-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --list-text: #e2e4f0;
+    --list-text-muted: #8b8ea8;
+    --list-hover-bg: #252536;
+    --list-divider: #2e2e44;
+    --list-table-header-bg: #252536;
+    --list-priority-bar-alta: #ef4444;
+    --list-priority-bar-media: #f59e0b;
+    --list-priority-bar-baixa: #22c55e;
+}
+
+/* ── Layout ── */
+.list-wrapper {
+    padding: 1rem;
+    min-height: calc(100vh - 60px);
+}
+
+@media (min-width: 768px) {
+    .list-wrapper {
+        padding: 1.5rem 2rem;
+    }
+}
+
+/* ── Header ── */
+.list-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.list-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--list-text);
+    margin-bottom: 0.15rem;
+}
+
+.list-subtitle {
+    font-size: 0.85rem;
+    color: var(--list-text-muted);
+    margin: 0;
+}
+
+.list-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+/* ── Cards padrão ── */
+.list-card {
+    background: var(--list-card-bg);
+    border: 1px solid var(--list-card-border);
+    border-radius: 12px;
+    box-shadow: var(--list-card-shadow);
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.list-card-header {
+    padding: 0.75rem 1.15rem;
+    border-bottom: 1px solid var(--list-divider);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--list-card-bg);
+}
+
+.list-card-header-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--list-text);
+    margin: 0;
+}
+
+.list-card-body {
+    padding: 1rem 1.15rem;
+}
+
+/* ── Filtros ── */
+.filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--list-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.35rem;
+}
+
+/* ── Tabela ── */
+.list-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.list-table thead th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--list-text-muted);
+    padding: 0.7rem 0.85rem;
+    border-bottom: 2px solid var(--list-divider);
+    background: var(--list-table-header-bg);
+    white-space: nowrap;
+}
+
+.list-table tbody td {
+    font-size: 0.82rem;
+    color: var(--list-text);
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid var(--list-divider);
+    vertical-align: middle;
+}
+
+.list-table tbody tr:hover {
+    background: var(--list-hover-bg);
+}
+
+.list-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ── Task link ── */
+.task-link {
+    font-weight: 600;
+    color: var(--list-text);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.task-link:hover {
+    color: #6366f1;
+}
+
+.task-desc {
+    font-size: 0.73rem;
+    color: var(--list-text-muted);
+    margin-top: 0.15rem;
+}
+
+/* ── Badges ── */
+.task-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2em 0.6em;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+/* Status */
+.badge-status-pendente   { background: rgba(245,158,11,0.12); color: #d97706; }
+.badge-status-atrasada   { background: rgba(239,68,68,0.12);  color: #dc2626; }
+.badge-status-andamento  { background: rgba(59,130,246,0.12);  color: #2563eb; }
+.badge-status-concluida  { background: rgba(34,197,94,0.12);   color: #16a34a; }
+.badge-status-pausada    { background: rgba(139,92,246,0.12);  color: #7c3aed; }
+.badge-status-cancelada  { background: rgba(100,116,139,0.12); color: #475569; }
+
+/* Prioridade */
+.badge-prio-alta    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-prio-media   { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-prio-baixa   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.badge-prio-normal  { background: #f0f4ff; color: #4f6dca; border: 1px solid #c7d8f5; }
+
+[data-bs-theme="dark"] .badge-prio-alta   { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
+[data-bs-theme="dark"] .badge-prio-media  { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); }
+[data-bs-theme="dark"] .badge-prio-baixa  { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
+[data-bs-theme="dark"] .badge-prio-normal { background: rgba(79,109,202,0.15); border-color: rgba(79,109,202,0.3); }
+
+/* ── Date ── */
+.task-date {
+    font-size: 0.78rem;
+    color: var(--list-text-muted);
+    white-space: nowrap;
+}
+
+.task-date.overdue {
+    color: #ef4444;
+    font-weight: 700;
+}
+
+/* ── Progress ── */
+.task-progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--list-divider);
+    overflow: hidden;
+    min-width: 70px;
+}
+
+.task-progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.task-progress-text {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--list-text-muted);
+    min-width: 32px;
+    text-align: right;
+}
+
+/* ── Action Buttons ── */
+.action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--list-card-border);
+    background: var(--list-card-bg);
+    color: var(--list-text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.action-btn--view:hover   { color: #6366f1; border-color: #6366f1; }
+.action-btn--edit:hover   { color: #f59e0b; border-color: #f59e0b; }
+.action-btn--delete:hover { color: #ef4444; border-color: #ef4444; }
+
+/* ── Empty State ── */
+.list-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.list-empty-icon {
+    font-size: 2.5rem;
+    color: var(--list-text-muted);
+    opacity: 0.4;
+    margin-bottom: 1rem;
+}
+
+.list-empty-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--list-text);
+    margin-bottom: 0.5rem;
+}
+
+.list-empty-text {
+    font-size: 0.82rem;
+    color: var(--list-text-muted);
+}
+
+/* ── Pagination ── */
+.list-pagination {
+    padding: 0.75rem 1.15rem;
+    border-top: 1px solid var(--list-divider);
+    display: flex;
+    justify-content: center;
+}
+
+/* ── Mobile ── */
+@media (max-width: 767.98px) {
+    .list-wrapper { padding: 0.75rem; }
+    .list-title { font-size: 1.15rem; }
+    .list-table thead { display: none; }
+    .list-table,
+    .list-table tbody,
+    .list-table tr,
+    .list-table td {
+        display: block;
+        width: 100%;
+    }
+    .list-table tbody tr {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--list-divider);
+        position: relative;
+    }
+    .list-table tbody td {
+        padding: 0.25rem 0;
+        border: none;
+        text-align: left;
+    }
+    .list-table tbody td::before {
+        content: attr(data-label);
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--list-text-muted);
+        display: block;
+        margin-bottom: 0.15rem;
+    }
+    .list-table tbody td:last-child {
+        padding-top: 0.5rem;
+    }
+    .list-actions .btn span { display: none; }
+}
+</style>
+{% endblock %}
+
+{% include 'tarefas/partials/_nav_views.html' with active_view='lista' %}
+{% include 'tarefas/partials/_nav_views.html' with active_view='kanban' %}
+{% include 'tarefas/partials/_nav_views.html' with active_view='relatorio' %}
+
+{% block content %}
+<div class="list-wrapper">
+
+        <!-- Header -->
+    <div class="list-header">
         <div>
-            <h1 class="h2 mb-1">
+            <h1 class="list-title">
                 <i class="bi bi-check2-square me-2"></i>Lista de Tarefas
             </h1>
-            <p class="text-muted mb-0">Gerencie suas tarefas de forma eficiente</p>
+            <p class="list-subtitle">Gerencie suas tarefas de forma eficiente</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-bar-chart me-1"></i> Dashboard
+        <div class="list-actions">
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-calendar3 me-1"></i> Calendário
+            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Dashboard">
+                <i class="bi bi-speedometer2 me-1"></i><span class="d-none d-md-inline">Dashboard</span>
             </a>
-            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-kanban me-1"></i> Kanban
+            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
+                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
             </a>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
+            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-secondary" title="Kanban">
+                <i class="bi bi-kanban me-1"></i><span class="d-none d-lg-inline">Kanban</span>
             </a>
-        </div>
-    </div>
-
-    <!-- KPIs -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card border-start border-primary border-4 shadow-sm">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-collection text-primary fs-4"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0 fw-bold">{{ total_tarefas|default:"0" }}</h3>
-                        <small class="text-muted text-uppercase">Total</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-start border-success border-4 shadow-sm">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-check2-circle text-success fs-4"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0 fw-bold">{{ tarefas_concluidas|default:"0" }}</h3>
-                        <small class="text-muted text-uppercase">Concluídas</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-start border-warning border-4 shadow-sm">
-                <div class="card-body d-flex align-items-center">
-                    <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-                        <i class="bi bi-hourglass-split text-warning fs-4"></i>
-                    </div>
-                    <div>
-                        <h3 class="mb-0 fw-bold">{{ tarefas_pendentes|default:"0" }}</h3>
-                        <small class="text-muted text-uppercase">Pendentes</small>
-                    </div>
-                </div>
-            </div>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
+                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
+            </a>
         </div>
     </div>
 
     <!-- Filtros -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white py-2">
-            <i class="bi bi-funnel me-1"></i> <strong>Filtros</strong>
+    <div class="list-card">
+        <div class="list-card-header">
+            <h6 class="list-card-header-title">
+                <i class="bi bi-funnel me-2"></i>Filtros
+            </h6>
         </div>
-        <div class="card-body">
+        <div class="list-card-body">
             <form method="get">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Status</label>
-                        <select name="status" class="form-select">
+                        <label class="filter-label">Status</label>
+                        <select name="status" class="form-select form-select-sm">
                             <option value="">Todos</option>
                             {% for val, label in status_options %}
                             <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
@@ -92,8 +391,8 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-semibold">Prioridade</label>
-                        <select name="prioridade" class="form-select">
+                        <label class="filter-label">Prioridade</label>
+                        <select name="prioridade" class="form-select form-select-sm">
                             <option value="">Todas</option>
                             {% for val, label in prioridade_options %}
                             <option value="{{ val }}" {% if request.GET.prioridade == val %}selected{% endif %}>{{ label }}</option>
@@ -101,19 +400,19 @@
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label small fw-semibold">Buscar</label>
-                        <div class="input-group">
+                        <label class="filter-label">Buscar</label>
+                        <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" name="q" class="form-control" 
+                            <input type="text" name="q" class="form-control"
                                    placeholder="Título, descrição, projeto..."
                                    value="{{ request.GET.q|default:'' }}">
                         </div>
                     </div>
                     <div class="col-md-2 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-fill">
+                        <button type="submit" class="btn btn-sm btn-primary flex-fill">
                             <i class="bi bi-funnel me-1"></i> Filtrar
                         </button>
-                        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary" title="Limpar">
+                        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Limpar">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     </div>
@@ -123,107 +422,102 @@
     </div>
 
     <!-- Tabela -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-white">
-            <h6 class="mb-0"><i class="bi bi-table me-2"></i>Minhas Tarefas</h6>
+    <div class="list-card">
+        <div class="list-card-header">
+            <h6 class="list-card-header-title">
+                <i class="bi bi-table me-2"></i>Minhas Tarefas
+            </h6>
+            <span class="task-badge badge-status-andamento">{{ total_tarefas }} total</span>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tarefa</th>
-                            <th>Prioridade</th>
-                            <th>Status</th>
-                            <th>Prazo</th>
-                            <th class="text-center">Progresso</th>
-                            <th class="text-center" style="width: 120px;">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for tarefa in object_list %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="fw-semibold text-decoration-none">
-                                    {{ tarefa.titulo }}
+        <div class="table-responsive">
+            <table class="list-table">
+                <thead>
+                    <tr>
+                        <th>Tarefa</th>
+                        <th>Prioridade</th>
+                        <th>Status</th>
+                        <th>Prazo</th>
+                        <th style="min-width:130px;">Progresso</th>
+                        <th style="width:100px;" class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tarefa in object_list %}
+                    <tr>
+                        <td data-label="Tarefa">
+                            <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
+                                {{ tarefa.titulo }}
+                            </a>
+                            {% if tarefa.descricao %}
+                            <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
+                            {% endif %}
+                        </td>
+                        <td data-label="Prioridade">
+                            <span class="task-badge badge-prio-{{ tarefa.prioridade|lower }}">
+                                {{ tarefa.get_prioridade_display }}
+                            </span>
+                        </td>
+                        <td data-label="Status">
+                            <span class="task-badge badge-status-{{ tarefa.status }}">
+                                {{ tarefa.get_status_display }}
+                            </span>
+                        </td>
+                        <td data-label="Prazo">
+                            {% if tarefa.prazo %}
+                            <span class="task-date {% if tarefa.atrasada %}overdue{% endif %}">
+                                <i class="bi bi-calendar-event me-1"></i>{{ tarefa.prazo|date:"d/m/Y" }}
+                            </span>
+                            {% else %}
+                            <span class="task-date">—</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Progresso">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="task-progress-bar flex-fill">
+                                    <div class="task-progress-fill
+                                        {% if tarefa.progresso == 100 %}bg-success
+                                        {% elif tarefa.progresso >= 50 %}bg-primary
+                                        {% else %}bg-warning{% endif %}"
+                                        style="width: {{ tarefa.progresso }}%"></div>
+                                </div>
+                                <span class="task-progress-text">{{ tarefa.progresso }}%</span>
+                            </div>
+                        </td>
+                        <td data-label="Ações" class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="action-btn action-btn--view" title="Ver">
+                                    <i class="bi bi-eye"></i>
                                 </a>
-                                {% if tarefa.descricao %}
-                                <br><small class="text-muted">{{ tarefa.descricao|truncatewords:10 }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill
-                                    {% if tarefa.prioridade == 'alta' %}bg-danger
-                                    {% elif tarefa.prioridade == 'media' %}bg-warning text-dark
-                                    {% else %}bg-success{% endif %}">
-                                    {{ tarefa.get_prioridade_display }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge rounded-pill
-                                    {% if tarefa.status == 'concluida' %}bg-success
-                                    {% elif tarefa.status == 'atrasada' %}bg-danger
-                                    {% elif tarefa.status == 'andamento' %}bg-primary
-                                    {% elif tarefa.status == 'pausada' %}bg-secondary
-                                    {% elif tarefa.status == 'cancelada' %}bg-dark
-                                    {% else %}bg-warning text-dark{% endif %}">
-                                    {{ tarefa.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if tarefa.prazo %}
-                                <span class="{% if tarefa.atrasada %}text-danger fw-bold{% endif %}">
-                                    <i class="bi bi-calendar me-1"></i>{{ tarefa.prazo|date:"d/m/Y" }}
-                                </span>
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center" style="min-width: 120px;">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="progress flex-fill" style="height: 6px;">
-                                        <div class="progress-bar
-                                            {% if tarefa.progresso == 100 %}bg-success
-                                            {% elif tarefa.progresso >= 50 %}bg-primary
-                                            {% else %}bg-warning{% endif %}"
-                                             style="width: {{ tarefa.progresso }}%"></div>
-                                    </div>
-                                    <small class="text-muted">{{ tarefa.progresso }}%</small>
-                                </div>
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="btn btn-outline-info" title="Ver">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="btn btn-outline-warning" title="Editar">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="btn btn-outline-danger" title="Excluir"
-                                       onclick="return confirm('Excluir esta tarefa?')">
-                                        <i class="bi bi-trash"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <i class="bi bi-inbox text-muted fs-1"></i>
-                                <h6 class="mt-3 text-muted">Nenhuma tarefa encontrada</h6>
-                                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary btn-sm mt-2">
+                                <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="action-btn action-btn--edit" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="action-btn action-btn--delete" title="Excluir"
+                                   onclick="return confirm('Excluir esta tarefa?')">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="list-empty">
+                                <div class="list-empty-icon"><i class="bi bi-inbox"></i></div>
+                                <div class="list-empty-title">Nenhuma tarefa encontrada</div>
+                                <p class="list-empty-text">Tente limpar os filtros ou crie uma nova tarefa.</p>
+                                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary mt-2">
                                     <i class="bi bi-plus-circle me-1"></i> Criar primeira tarefa
                                 </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
 
         {% if is_paginated %}
-        <div class="card-footer bg-white">
+        <div class="list-pagination">
             {% include 'partials/pagination.html' %}
         </div>
         {% endif %}

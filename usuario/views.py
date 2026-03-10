@@ -245,7 +245,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'ferramentas.view_ferramentas',
                 'icon': 'images/serviço.gif',
                 'links': [
-                    {'url': 'tarefas:listar_tarefas', 'text': 'Tarefas'},
+                    {'url': 'tarefas:dashboard', 'text': 'Tarefas'},
                     {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
                 ]
             },

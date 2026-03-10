@@ -7,10 +7,10 @@ import sys
 from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
+import logging
 
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-
+logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -58,7 +58,7 @@ if IS_PRE_PRODUCTION:
     USE_X_FORWARDED_HOST = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = False
+    SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000  # 1 ano
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
@@ -72,14 +72,7 @@ else:
     SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_HSTS_PRELOAD = False
-    print("Configurações de segurança HTTP ativadas (Desenvolvimento)")
-
-# ADICIONE AQUI SUA NOVA CONDIÇÃO PARA DESENVOLVIMENTO
-if IS_DEVELOPMENT:
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
-    print("Configurações de SSL desativadas para ambiente de desenvolvimento")
+    
 
 # Configurações de segurança que se aplicam em qualquer ambiente
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -266,10 +259,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Configuração de storage adaptativa
 if IS_DEVELOPMENT:
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-    print("Usando storage simples para arquivos estáticos (Desenvolvimento)")
+    logger.debug("Usando storage simples para arquivos estáticos (Desenvolvimento)")
 else:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    print("Usando storage comprimido para arquivos estáticos (Pré-produção)")
+    logger.debug("Usando storage comprimido para arquivos estáticos (Pré-produção)")
 
 # =============================================================================
 # ARQUIVOS MÍDIA - STORAGE_PROVIDER SERVIÇO EM NUVENS
@@ -318,8 +311,7 @@ SENDGRID_TEMPLATE_ID = config('SENDGRID_TEMPLATE_ID', default='')
 # REST FRAMEWORK
 # =============================================================================
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated'
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
@@ -339,11 +331,11 @@ REST_FRAMEWORK = {
 if IS_DEVELOPMENT:
     # Em desenvolvimento, usa 'localhost' como padrão se não houver .env
     REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-    print(f"Redis URL (Desenvolvimento): {REDIS_URL}")
+
 else:
     # Em produção (hospedagem), EXIGE que a variável de ambiente exista.
     REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-    print(f"Redis URL (Pré-produção): configurado via variável de ambiente")
+
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
@@ -381,7 +373,7 @@ if IS_DEVELOPMENT:
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
-    print("Usando InMemory para WebSockets (Desenvolvimento)")
+    logger.debug("Usando InMemory para WebSockets (Desenvolvimento)")
 else:
     # Em produção, usa o Redis
     CHANNEL_LAYERS = {
@@ -392,7 +384,7 @@ else:
             },
         },
     }
-    print("Usando Redis para WebSockets (Pré-produção)")
+    logger.debug("Usando Redis para WebSockets (Pré-produção)")
 
 CHAT_CONFIG = {
     'DESKTOP_NOTIFICATIONS': True,
@@ -410,9 +402,9 @@ LOGS_DIR = BASE_DIR / 'logs'
 if IS_PRE_PRODUCTION:
     try:
         os.makedirs(LOGS_DIR, exist_ok=True)
-        print(f"Diretório de logs criado/verificado: {LOGS_DIR}")
+        logger.debug(f"Diretório de logs criado/verificado: {LOGS_DIR}")
     except Exception as e:
-        print(f"Erro ao criar diretório de logs: {e}")
+        logger.debug(f"Erro ao criar diretório de logs: {e}")
 
 
 LOGGING = {
@@ -482,11 +474,11 @@ if IS_PRE_PRODUCTION and LOGS_DIR.exists():
         # Adicionar o handler de arquivo aos loggers
         LOGGING['loggers']['django']['handlers'].append('file')
         LOGGING['root']['handlers'].append('file')
-        print("Logging em arquivo ativado para pré-produção")
+        logger.debug("Logging em arquivo ativado para pré-produção")
     except Exception as e:
-        print(f"Não foi possível configurar logging em arquivo: {e}")
+        logger.debug(f"Não foi possível configurar logging em arquivo: {e}")
 else:
-    print("Logging apenas no console (Desenvolvimento)")
+    logger.debug("Logging apenas no console (Desenvolvimento)")
 
 
 # Flag para identificar ambiente de teste

@@ -1,0 +1,88 @@
+
+<!-- templates/tarefas/emails/_email_base.html -->
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block email_title %}Notificação{% endblock %}</title>
+    <!--[if mso]>
+    <style>
+        table { border-collapse: collapse; }
+        td { font-family: Arial, sans-serif; }
+    </style>
+    <![endif]-->
+</head>
+<body style="margin:0; padding:0; background-color:#f0f2f7; font-family:'Segoe UI',Roboto,Arial,sans-serif; -webkit-font-smoothing:antialiased;">
+
+    <!-- Wrapper -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f2f7; padding:24px 16px;">
+        <tr>
+            <td align="center">
+
+                <!-- Container -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color:{% block header_color %}#6366f1{% endblock %}; padding:28px 32px; text-align:center;">
+                            {% block header_icon %}
+                            <div style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; display:inline-flex; margin:0 auto 12px auto; line-height:48px; text-align:center;">
+                                <span style="font-size:22px; color:#ffffff; display:block; width:100%; text-align:center;">📋</span>
+                            </div>
+                            {% endblock %}
+                            <h1 style="margin:0; font-size:20px; font-weight:700; color:#ffffff; letter-spacing:-0.02em;">
+                                {% block header_title %}Notificação{% endblock %}
+                            </h1>
+                            {% block header_subtitle %}{% endblock %}
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding:32px;">
+                            {% block email_body %}{% endblock %}
+                        </td>
+                    </tr>
+
+                    <!-- CTA Button -->
+                    {% block cta_section %}
+                    <tr>
+                        <td style="padding:0 32px 32px; text-align:center;">
+                            {% block cta_button %}{% endblock %}
+                        </td>
+                    </tr>
+                    {% endblock %}
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color:#f8f9fc; border-top:1px solid #edf0f5; padding:20px 32px; text-align:center;">
+                            <p style="margin:0 0 4px; font-size:12px; color:#9ca3af; font-weight:600;">
+                                {% block footer_app_name %}Gerenciando Tarefas{% endblock %}
+                            </p>
+                            <p style="margin:0; font-size:11px; color:#c0c5d0;">
+                                Este é um email automático. Por favor, não responda.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+                <!-- Sub-footer -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
+                    <tr>
+                        <td style="padding:16px 0; text-align:center;">
+                            <p style="margin:0; font-size:11px; color:#9ca3af;">
+                                © {% now "Y" %} Cetest Minas — Todos os direitos reservados.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+

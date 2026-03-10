@@ -5,103 +5,319 @@
 
 {% block title %}Relatório de Tarefas{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
+{% block extra_css %}
+<style>
+/* =============================================================================
+   RELATÓRIO DE TAREFAS — Tema Claro / Escuro
+   ============================================================================= */
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+:root,
+[data-bs-theme="light"] {
+    --rel-bg: #f4f6fb;
+    --rel-card-bg: #ffffff;
+    --rel-card-border: #e2e6ee;
+    --rel-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    --rel-text: #1a1a2e;
+    --rel-text-muted: #6b7280;
+    --rel-divider: #edf0f5;
+    --rel-hover-bg: #f8f9fc;
+    --rel-table-header-bg: #f8f9fc;
+    --rel-offcanvas-bg: #ffffff;
+    --rel-offcanvas-border: #e2e6ee;
+}
+
+[data-bs-theme="dark"] {
+    --rel-bg: #13131f;
+    --rel-card-bg: #1e1e2e;
+    --rel-card-border: #2e2e44;
+    --rel-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --rel-text: #e2e4f0;
+    --rel-text-muted: #8b8ea8;
+    --rel-divider: #2e2e44;
+    --rel-hover-bg: #252536;
+    --rel-table-header-bg: #252536;
+    --rel-offcanvas-bg: #1e1e2e;
+    --rel-offcanvas-border: #2e2e44;
+}
+
+.rel-wrapper { padding: 1rem; min-height: calc(100vh - 60px); }
+@media (min-width: 768px) { .rel-wrapper { padding: 1.5rem 2rem; } }
+
+.rel-header {
+    display: flex; flex-wrap: wrap; justify-content: space-between;
+    align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;
+}
+
+.rel-title { font-size: 1.4rem; font-weight: 700; color: var(--rel-text); margin-bottom: 0.15rem; }
+.rel-subtitle { font-size: 0.85rem; color: var(--rel-text-muted); margin: 0; }
+.rel-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
+
+/* Cards */
+.rel-card {
+    background: var(--rel-card-bg); border: 1px solid var(--rel-card-border);
+    border-radius: 12px; box-shadow: var(--rel-card-shadow); overflow: hidden; margin-bottom: 1rem;
+}
+.rel-card-header {
+    padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--rel-divider);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.rel-card-title { font-size: 0.85rem; font-weight: 700; color: var(--rel-text); margin: 0; }
+.rel-card-body { padding: 1.15rem; }
+
+/* Table */
+.rel-table { width: 100%; border-collapse: collapse; }
+.rel-table thead th {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--rel-text-muted); padding: 0.7rem 0.85rem;
+    border-bottom: 2px solid var(--rel-divider); background: var(--rel-table-header-bg); white-space: nowrap;
+}
+.rel-table tbody td {
+    font-size: 0.82rem; color: var(--rel-text); padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--rel-divider); vertical-align: middle;
+}
+.rel-table tbody tr:hover { background: var(--rel-hover-bg); }
+.rel-table tbody tr:last-child td { border-bottom: none; }
+.rel-table-title { font-weight: 600; color: var(--rel-text); }
+
+/* Badges */
+.rel-badge {
+    font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px;
+    text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+}
+.rel-badge-pendente  { background: rgba(245,158,11,0.12); color: #d97706; }
+.rel-badge-atrasada  { background: rgba(239,68,68,0.12);  color: #dc2626; }
+.rel-badge-andamento { background: rgba(59,130,246,0.12);  color: #2563eb; }
+.rel-badge-concluida { background: rgba(34,197,94,0.12);   color: #16a34a; }
+.rel-badge-pausada   { background: rgba(139,92,246,0.12);  color: #7c3aed; }
+.rel-badge-cancelada { background: rgba(100,116,139,0.12); color: #475569; }
+
+.rel-count {
+    background: #6366f1; color: #fff; font-size: 0.68rem; font-weight: 700;
+    padding: 0.2em 0.6em; border-radius: 999px; min-width: 1.5rem; text-align: center;
+}
+
+/* Charts Grid */
+.rel-charts-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+@media (min-width: 768px) { .rel-charts-grid { grid-template-columns: repeat(2, 1fr); } }
+.rel-chart-container { position: relative; height: 280px; width: 100%; }
+
+/* Offcanvas */
+.rel-offcanvas { background: var(--rel-offcanvas-bg) !important; border-left: 1px solid var(--rel-offcanvas-border) !important; }
+.rel-offcanvas .offcanvas-header { border-bottom: 1px solid var(--rel-divider); }
+.rel-offcanvas .offcanvas-title { font-size: 1rem; font-weight: 700; color: var(--rel-text); }
+.rel-offcanvas .form-label {
+    font-size: 0.75rem; font-weight: 600; color: var(--rel-text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+}
+.rel-offcanvas .form-select,
+.rel-offcanvas .form-control {
+    background: var(--rel-card-bg); border-color: var(--rel-card-border);
+    color: var(--rel-text); font-size: 0.85rem; border-radius: 8px;
+}
+.rel-offcanvas .form-select:focus,
+.rel-offcanvas .form-control:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+.rel-offcanvas hr { border-color: var(--rel-divider); }
+.rel-section-label { font-size: 0.78rem; font-weight: 700; color: var(--rel-text); margin-bottom: 0.85rem; }
+
+/* Export Buttons */
+.rel-export-btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.55rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    border: none; transition: all 0.15s ease; width: 100%; cursor: pointer; text-decoration: none;
+}
+.rel-export-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.rel-export-pdf  { background: #ef4444; color: #fff; }
+.rel-export-docx { background: #3b82f6; color: #fff; }
+.rel-export-csv  { background: #22c55e; color: #fff; }
+.rel-export-pdf:hover  { background: #dc2626; color: #fff; }
+.rel-export-docx:hover { background: #2563eb; color: #fff; }
+.rel-export-csv:hover  { background: #16a34a; color: #fff; }
+
+/* Quick Export Bar */
+.rel-quick-export {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    padding: 0.85rem 1.15rem; border-top: 1px solid var(--rel-divider);
+    background: var(--rel-card-bg);
+}
+.rel-quick-export-label {
+    font-size: 0.72rem; font-weight: 700; color: var(--rel-text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.5rem;
+}
+.rel-quick-btn {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+    border: 1px solid var(--rel-card-border); background: var(--rel-card-bg);
+    color: var(--rel-text); text-decoration: none; transition: all 0.15s ease; cursor: pointer;
+}
+.rel-quick-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.rel-quick-btn--pdf:hover  { color: #ef4444; border-color: #ef4444; }
+.rel-quick-btn--docx:hover { color: #3b82f6; border-color: #3b82f6; }
+.rel-quick-btn--csv:hover  { color: #22c55e; border-color: #22c55e; }
+
+/* Active Filter Tags */
+.rel-filter-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.rel-filter-tag {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.72rem; font-weight: 600; background: rgba(99,102,241,0.1);
+    color: #6366f1; padding: 0.25em 0.65em; border-radius: 6px;
+}
+.rel-filter-tag a { color: #6366f1; text-decoration: none; font-weight: 800; margin-left: 0.2rem; }
+.rel-filter-tag a:hover { color: #ef4444; }
+
+/* Empty */
+.rel-empty { text-align: center; padding: 3rem 1rem; color: var(--rel-text-muted); font-size: 0.85rem; }
+
+/* Mobile */
+@media (max-width: 767.98px) {
+    .rel-wrapper { padding: 0.75rem; }
+    .rel-title { font-size: 1.15rem; }
+    .rel-chart-container { height: 220px; }
+    .rel-table thead { display: none; }
+    .rel-table, .rel-table tbody, .rel-table tr, .rel-table td { display: block; width: 100%; }
+    .rel-table tbody tr { padding: 0.75rem; border-bottom: 1px solid var(--rel-divider); }
+    .rel-table tbody td { padding: 0.2rem 0; border: none; }
+    .rel-table tbody td::before {
+        content: attr(data-label); font-size: 0.63rem; font-weight: 700;
+        text-transform: uppercase; color: var(--rel-text-muted); display: block; margin-bottom: 0.1rem;
+    }
+}
+
+@media print {
+    .rel-actions, .rel-offcanvas, .rel-quick-export, .rel-filter-tags { display: none !important; }
+    .rel-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rel-wrapper">
+
+        <!-- Header -->
+    <div class="rel-header">
         <div>
-            <h1 class="h2 mb-1">
+            <h1 class="rel-title">
                 <i class="bi bi-file-earmark-bar-graph me-2"></i>Relatório de Tarefas
             </h1>
-            <p class="text-muted mb-0">Análise e exportação de dados</p>
+            <p class="rel-subtitle">Análise e exportação de dados</p>
         </div>
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters">
-                <i class="bi bi-funnel-fill me-1"></i> Filtros e Exportação
+        <div class="rel-actions">
+            <button class="btn btn-sm btn-primary" data-bs-toggle="offcanvas" data-bs-target="#offcanvasFilters" title="Filtros e Exportação">
+                <i class="bi bi-funnel-fill me-1"></i><span class="d-none d-sm-inline">Filtros</span>
             </button>
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
+            <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-primary" title="Gerador Avançado">
+                <i class="bi bi-file-earmark-plus me-1"></i><span class="d-none d-md-inline">Gerar Novo</span>
+            </a>
+            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Dashboard">
+                <i class="bi bi-speedometer2 me-1"></i><span class="d-none d-md-inline">Dashboard</span>
+            </a>
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista de Tarefas">
+                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
             </a>
         </div>
     </div>
 
-    <!-- Tabela de Resultados -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-table me-2"></i>Resultados</h6>
-            <span class="badge bg-primary">{{ total_tarefas|default:0 }} tarefas</span>
+    <!-- Active Filters -->
+    {% if request.GET.status %}
+    <div class="rel-filter-tags">
+        <span class="rel-filter-tag">
+            <i class="bi bi-funnel-fill"></i>
+            Status: {{ request.GET.status }}
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" title="Remover filtro">&times;</a>
+        </span>
+    </div>
+    {% endif %}
+
+    <!-- Tabela -->
+    <div class="rel-card">
+        <div class="rel-card-header">
+            <h6 class="rel-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
+            <span class="rel-count">{{ total_tarefas|default:0 }}</span>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Título</th>
-                            <th>Responsável</th>
-                            <th>Status</th>
-                            <th>Prioridade</th>
-                            <th>Projeto</th>
-                            <th>Criação</th>
-                            <th>Prazo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for tarefa in tarefas %}
-                        <tr>
-                            <td class="fw-semibold">{{ tarefa.titulo }}</td>
-                            <td>{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"—" }}</td>
-                            <td>
-                                <span class="badge rounded-pill
-                                    {% if tarefa.status == 'concluida' %}bg-success
-                                    {% elif tarefa.status == 'atrasada' %}bg-danger
-                                    {% elif tarefa.status == 'andamento' %}bg-primary
-                                    {% elif tarefa.status == 'pausada' %}bg-secondary
-                                    {% else %}bg-warning text-dark{% endif %}">
-                                    {{ tarefa.get_status_display }}
-                                </span>
-                            </td>
-                            <td>{{ tarefa.get_prioridade_display }}</td>
-                            <td>{{ tarefa.projeto|default:"—" }}</td>
-                            <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                            <td>{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center py-5 text-muted">
+        <div class="table-responsive">
+            <table class="rel-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Responsável</th>
+                        <th>Status</th>
+                        <th>Prioridade</th>
+                        <th>Projeto</th>
+                        <th>Criação</th>
+                        <th>Prazo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tarefa in tarefas %}
+                    <tr>
+                        <td data-label="Título">
+                            <span class="rel-table-title">{{ tarefa.titulo }}</span>
+                        </td>
+                        <td data-label="Responsável">
+                            {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"—" }}
+                        </td>
+                        <td data-label="Status">
+                            <span class="rel-badge rel-badge-{{ tarefa.status }}">
+                                {{ tarefa.get_status_display }}
+                            </span>
+                        </td>
+                        <td data-label="Prioridade">{{ tarefa.get_prioridade_display }}</td>
+                        <td data-label="Projeto">{{ tarefa.projeto|default:"—" }}</td>
+                        <td data-label="Criação">{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                        <td data-label="Prazo">{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="rel-empty">
+                                <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:0.4;"></i>
                                 Nenhuma tarefa encontrada. Use os filtros para refinar.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+
+        <!-- Quick Export Bar -->
+        {% if tarefas %}
+        <div class="rel-quick-export">
+            <span class="rel-quick-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+               class="rel-quick-btn rel-quick-btn--pdf">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+               class="rel-quick-btn rel-quick-btn--docx">
+                <i class="bi bi-file-earmark-word"></i> Word
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+               class="rel-quick-btn rel-quick-btn--csv">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </a>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Gráficos -->
-    <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Por Status</h6>
-                </div>
-                <div class="card-body">
-                    <div style="position: relative; height: 300px;">
-                        <canvas id="statusChart"></canvas>
-                    </div>
+    <div class="rel-charts-grid">
+        <div class="rel-card">
+            <div class="rel-card-header">
+                <h6 class="rel-card-title"><i class="bi bi-pie-chart me-2"></i>Por Status</h6>
+            </div>
+            <div class="rel-card-body">
+                <div class="rel-chart-container">
+                    <canvas id="statusChart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Por Prioridade</h6>
-                </div>
-                <div class="card-body">
-                    <div style="position: relative; height: 300px;">
-                        <canvas id="priorityChart"></canvas>
-                    </div>
+        <div class="rel-card">
+            <div class="rel-card-header">
+                <h6 class="rel-card-title"><i class="bi bi-bar-chart me-2"></i>Por Prioridade</h6>
+            </div>
+            <div class="rel-card-body">
+                <div class="rel-chart-container">
+                    <canvas id="priorityChart"></canvas>
                 </div>
             </div>
         </div>
@@ -109,18 +325,21 @@
 </div>
 
 <!-- Offcanvas: Filtros e Exportação -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasFilters">
-    <div class="offcanvas-header border-bottom">
-        <h5 class="offcanvas-title">Filtros e Exportação</h5>
+<div class="offcanvas offcanvas-end rel-offcanvas" tabindex="-1" id="offcanvasFilters">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">
+            <i class="bi bi-sliders me-2"></i>Filtros e Exportação
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
+
         <!-- Filtros -->
         <form method="get">
-            <h6 class="fw-bold mb-3">Filtrar</h6>
+            <div class="rel-section-label"><i class="bi bi-funnel me-1"></i> Filtrar</div>
             <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
-                <select name="status" id="status" class="form-select">
+                <select name="status" id="status" class="form-select form-select-sm">
                     <option value="">Todos</option>
                     {% for key, value in status_choices %}
                     <option value="{{ key }}" {% if current_filters.status == key %}selected{% endif %}>{{ value }}</option>
@@ -128,84 +347,114 @@
                 </select>
             </div>
             <div class="d-grid gap-2 mb-4">
-                <button type="submit" class="btn btn-primary">Aplicar</button>
-                <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-outline-secondary">Limpar</a>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Aplicar
+                </button>
+                <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i> Limpar
+                </a>
             </div>
         </form>
 
         <hr>
 
         <!-- Exportação -->
-        <form method="post">
-            {% csrf_token %}
-            <h6 class="fw-bold mb-3">Exportar</h6>
-            <input type="hidden" name="status" value="{{ request.GET.status|default:'' }}">
-            <div class="d-grid gap-2">
-                <button type="submit" name="export_format" value="pdf" class="btn btn-danger">
-                    <i class="bi bi-file-pdf me-1"></i> PDF
-                </button>
-                <button type="submit" name="export_format" value="docx" class="btn btn-info text-white">
-                    <i class="bi bi-file-word me-1"></i> Word
-                </button>
-                <button type="submit" name="export_format" value="csv" class="btn btn-success">
-                    <i class="bi bi-file-spreadsheet me-1"></i> CSV
-                </button>
-            </div>
-        </form>
+        <div class="rel-section-label"><i class="bi bi-download me-1"></i> Exportar</div>
+        <div class="d-grid gap-2">
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+               class="rel-export-btn rel-export-pdf">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+               class="rel-export-btn rel-export-docx">
+                <i class="bi bi-file-earmark-word"></i> Exportar Word
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+               class="rel-export-btn rel-export-csv">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+            </a>
+        </div>
+
+        <hr>
+
+        <!-- Link para Gerador -->
+        <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-secondary w-100">
+            <i class="bi bi-file-earmark-plus me-1"></i> Gerador Avançado
+        </a>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const statusData = JSON.parse('{{ status_data_json|escapejs }}' || '[]');
-    const priorityData = JSON.parse('{{ priority_data_json|escapejs }}' || '[]');
+    let statusData = [], priorityData = [];
+    try {
+        statusData = JSON.parse('{{ status_data_json|escapejs }}' || '[]');
+        priorityData = JSON.parse('{{ priority_data_json|escapejs }}' || '[]');
+    } catch(e) { console.error('Erro ao parsear dados:', e); }
+
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#8b8ea8' : '#6b7280';
+
+    Chart.defaults.color = textColor;
+    Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
 
     const statusColors = {
-        'pendente': '#ffc107', 'andamento': '#0d6efd', 'concluida': '#198754',
-        'atrasada': '#dc3545', 'cancelada': '#6c757d', 'pausada': '#6f42c1'
+        'pendente': '#f59e0b', 'andamento': '#3b82f6', 'concluida': '#22c55e',
+        'atrasada': '#ef4444', 'cancelada': '#64748b', 'pausada': '#8b5cf6'
     };
-    const prioridadeColors = { 'alta': '#dc3545', 'media': '#ffc107', 'baixa': '#198754' };
+    const prioColors = { 'alta': '#ef4444', 'media': '#f59e0b', 'baixa': '#22c55e' };
 
-    // Status
+    // Status Chart
     const statusCtx = document.getElementById('statusChart');
     if (statusCtx && statusData.length) {
         new Chart(statusCtx, {
             type: 'doughnut',
             data: {
-                labels: statusData.map(i => `${i.label} (${i.percent}%)`),
+                labels: statusData.map(i => i.status || i.label),
                 datasets: [{
-                    data: statusData.map(i => i.count),
-                    backgroundColor: statusData.map(i => statusColors[i.key] || '#adb5bd')
+                    data: statusData.map(i => i.total || i.count),
+                    backgroundColor: statusData.map(i => statusColors[i.status || i.key] || '#94a3b8'),
+                    borderWidth: 0, hoverOffset: 6,
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '60%',
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } } }
+            }
         });
     }
 
-    // Prioridade
+    // Priority Chart
     const prioCtx = document.getElementById('priorityChart');
     if (prioCtx && priorityData.length) {
         new Chart(prioCtx, {
             type: 'bar',
             data: {
-                labels: priorityData.map(i => i.label),
+                labels: priorityData.map(i => i.prioridade || i.label),
                 datasets: [{
                     label: 'Tarefas',
-                    data: priorityData.map(i => i.count),
-                    backgroundColor: priorityData.map(i => prioridadeColors[i.key] || '#adb5bd')
+                    data: priorityData.map(i => i.total || i.count),
+                    backgroundColor: priorityData.map(i => prioColors[i.prioridade || i.key] || '#94a3b8'),
+                    borderRadius: 6, borderSkipped: false, barThickness: 40,
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                plugins: { legend: { display: false } }
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1 } }
+                }
             }
         });
     }
 });
 </script>
 {% endblock %}
+
+
 

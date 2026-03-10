@@ -6,48 +6,531 @@
 {% block title %}Calendário de Tarefas{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tarefas/calendario.css' %}">
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.css" rel="stylesheet">
 <style>
-    .fc-event-status-atrasada { background-color: #dc3545; border-color: #b02a37; }
-    .fc-event-status-recente { background-color: #198754; border-color: #146c43; }
-    .fc-event-status-proximo-prazo { background-color: #fd7e14; border-color: #e8590c; }
-    .fc-event-status-em-andamento { background-color: #0d6efd; border-color: #0a58ca; }
+/* =============================================================================
+   CALENDÁRIO DE TAREFAS — Tema Claro / Escuro
+   ============================================================================= */
+
+/* ── Variáveis Tema Claro ── */
+:root,
+[data-bs-theme="light"] {
+    --cal-bg: #ffffff;
+    --cal-bg-subtle: #f8f9fc;
+    --cal-border: #e2e6ee;
+    --cal-text: #1a1a2e;
+    --cal-text-muted: #6b7280;
+    --cal-header-bg: #f0f2f7;
+    --cal-today-bg: #eef2ff;
+    --cal-today-border: #6366f1;
+    --cal-hover-bg: #f5f6fa;
+    --cal-day-number: #3a3f55;
+    --cal-day-other: #c0c5d0;
+    --cal-toolbar-btn-bg: #ffffff;
+    --cal-toolbar-btn-border: #d1d5e0;
+    --cal-toolbar-btn-text: #3a3f55;
+    --cal-toolbar-btn-hover-bg: #f0f2f7;
+    --cal-toolbar-btn-active-bg: #6366f1;
+    --cal-toolbar-btn-active-text: #ffffff;
+    --cal-card-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    --cal-event-radius: 6px;
+    --cal-legend-bg: #f8f9fc;
+    --cal-legend-border: #e2e6ee;
+    --cal-popover-bg: #ffffff;
+    --cal-popover-border: #e2e6ee;
+    --cal-grid-border: #edf0f5;
+}
+
+/* ── Variáveis Tema Escuro ── */
+[data-bs-theme="dark"] {
+    --cal-bg: #1e1e2e;
+    --cal-bg-subtle: #252536;
+    --cal-border: #3a3a52;
+    --cal-text: #e2e4f0;
+    --cal-text-muted: #8b8ea8;
+    --cal-header-bg: #252536;
+    --cal-today-bg: rgba(99, 102, 241, 0.12);
+    --cal-today-border: #6366f1;
+    --cal-hover-bg: #2a2a40;
+    --cal-day-number: #c8cad8;
+    --cal-day-other: #4a4a65;
+    --cal-toolbar-btn-bg: #252536;
+    --cal-toolbar-btn-border: #3a3a52;
+    --cal-toolbar-btn-text: #c8cad8;
+    --cal-toolbar-btn-hover-bg: #2f2f48;
+    --cal-toolbar-btn-active-bg: #6366f1;
+    --cal-toolbar-btn-active-text: #ffffff;
+    --cal-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --cal-legend-bg: #252536;
+    --cal-legend-border: #3a3a52;
+    --cal-popover-bg: #2a2a40;
+    --cal-popover-border: #3a3a52;
+    --cal-grid-border: #2e2e44;
+}
+
+/* ── Wrapper ── */
+.calendario-wrapper {
+    padding: 1rem;
+    max-width: 100%;
+}
+
+@media (min-width: 768px) {
+    .calendario-wrapper {
+        padding: 1.5rem 2rem;
+    }
+}
+
+/* ── Header ── */
+.calendario-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.calendario-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--cal-text);
+    margin-bottom: 0.15rem;
+}
+
+.calendario-subtitle {
+    font-size: 0.85rem;
+    color: var(--cal-text-muted);
+    margin-bottom: 0;
+}
+
+.calendario-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+/* ── Legenda ── */
+.calendario-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.legenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--cal-text-muted);
+    background: var(--cal-legend-bg);
+    border: 1px solid var(--cal-legend-border);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.legenda-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legenda-dot--andamento { background: #3b82f6; }
+.legenda-dot--recente   { background: #22c55e; }
+.legenda-dot--proximo   { background: #f59e0b; }
+.legenda-dot--atrasada  { background: #ef4444; }
+
+/* ── Card Container ── */
+.calendario-card {
+    background: var(--cal-bg);
+    border: 1px solid var(--cal-border);
+    border-radius: 14px;
+    box-shadow: var(--cal-card-shadow);
+    overflow: hidden;
+}
+
+.calendario-card-body {
+    padding: 1rem;
+}
+
+@media (min-width: 768px) {
+    .calendario-card-body {
+        padding: 1.5rem;
+    }
+}
+
+/* =============================================================================
+   FULLCALENDAR — Overrides
+   ============================================================================= */
+
+/* ── Toolbar / Header ── */
+.fc .fc-toolbar {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem !important;
+}
+
+.fc .fc-toolbar-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: var(--cal-text) !important;
+    text-transform: capitalize;
+}
+
+@media (max-width: 575.98px) {
+    .fc .fc-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 1rem !important;
+        text-align: center;
+        order: -1;
+        margin-bottom: 0.5rem;
+    }
+    .fc .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+    }
+}
+
+/* ── Buttons ── */
+.fc .fc-button {
+    background: var(--cal-toolbar-btn-bg) !important;
+    border: 1px solid var(--cal-toolbar-btn-border) !important;
+    color: var(--cal-toolbar-btn-text) !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    padding: 0.4rem 0.85rem !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    transition: all 0.15s ease !important;
+    text-transform: capitalize !important;
+}
+
+.fc .fc-button:hover {
+    background: var(--cal-toolbar-btn-hover-bg) !important;
+    border-color: var(--cal-today-border) !important;
+    color: var(--cal-today-border) !important;
+}
+
+.fc .fc-button-active,
+.fc .fc-button:active {
+    background: var(--cal-toolbar-btn-active-bg) !important;
+    border-color: var(--cal-toolbar-btn-active-bg) !important;
+    color: var(--cal-toolbar-btn-active-text) !important;
+}
+
+.fc .fc-button-group > .fc-button {
+    border-radius: 0 !important;
+}
+
+.fc .fc-button-group > .fc-button:first-child {
+    border-radius: 8px 0 0 8px !important;
+}
+
+.fc .fc-button-group > .fc-button:last-child {
+    border-radius: 0 8px 8px 0 !important;
+}
+
+.fc .fc-today-button:disabled {
+    opacity: 0.4 !important;
+}
+
+/* ── Table / Grid ── */
+.fc .fc-scrollgrid {
+    border: none !important;
+}
+
+.fc .fc-scrollgrid-section > * {
+    border-color: var(--cal-grid-border) !important;
+}
+
+.fc th {
+    background: var(--cal-header-bg) !important;
+    border-color: var(--cal-grid-border) !important;
+    padding: 0.6rem 0 !important;
+}
+
+.fc .fc-col-header-cell-cushion {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: var(--cal-text-muted) !important;
+    text-decoration: none !important;
+}
+
+.fc td {
+    border-color: var(--cal-grid-border) !important;
+}
+
+/* ── Day Cells ── */
+.fc .fc-daygrid-day {
+    background: var(--cal-bg) !important;
+    transition: background 0.15s ease;
+}
+
+.fc .fc-daygrid-day:hover {
+    background: var(--cal-hover-bg) !important;
+}
+
+.fc .fc-day-today {
+    background: var(--cal-today-bg) !important;
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+    background: var(--cal-today-border);
+    color: #fff !important;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.fc .fc-daygrid-day-number {
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    color: var(--cal-day-number) !important;
+    text-decoration: none !important;
+    padding: 0.4rem 0.55rem !important;
+}
+
+.fc .fc-day-other .fc-daygrid-day-number {
+    color: var(--cal-day-other) !important;
+}
+
+/* ── Events ── */
+.fc .fc-event {
+    border-radius: var(--cal-event-radius) !important;
+    border: none !important;
+    padding: 2px 6px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+    line-height: 1.4 !important;
+}
+
+.fc .fc-event:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.08);
+}
+
+.fc .fc-daygrid-event-dot {
+    display: none !important;
+}
+
+.fc .fc-event-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Event Status Colors ── */
+.fc-event-status-em-andamento {
+    background-color: #3b82f6 !important;
+    color: #fff !important;
+}
+
+.fc-event-status-recente {
+    background-color: #22c55e !important;
+    color: #fff !important;
+}
+
+.fc-event-status-proximo-prazo {
+    background-color: #f59e0b !important;
+    color: #fff !important;
+}
+
+.fc-event-status-atrasada {
+    background-color: #ef4444 !important;
+    color: #fff !important;
+}
+
+/* ── Popover (More Events) ── */
+.fc .fc-popover {
+    background: var(--cal-popover-bg) !important;
+    border: 1px solid var(--cal-popover-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
+}
+
+.fc .fc-popover-header {
+    background: var(--cal-header-bg) !important;
+    border-bottom: 1px solid var(--cal-popover-border) !important;
+    border-radius: 10px 10px 0 0 !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    color: var(--cal-text) !important;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.fc .fc-more-link {
+    font-size: 0.7rem !important;
+    font-weight: 700 !important;
+    color: var(--cal-today-border) !important;
+    text-decoration: none !important;
+}
+
+.fc .fc-more-link:hover {
+    text-decoration: underline !important;
+}
+
+/* ── List View ── */
+.fc .fc-list {
+    border: none !important;
+}
+
+.fc .fc-list-day-cushion {
+    background: var(--cal-header-bg) !important;
+    color: var(--cal-text) !important;
+    font-weight: 700 !important;
+    font-size: 0.82rem !important;
+}
+
+.fc .fc-list-event:hover td {
+    background: var(--cal-hover-bg) !important;
+}
+
+.fc .fc-list-event-title a {
+    color: var(--cal-text) !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+}
+
+.fc .fc-list-event-time {
+    color: var(--cal-text-muted) !important;
+}
+
+/* ── Week View Time Grid ── */
+.fc .fc-timegrid-slot {
+    border-color: var(--cal-grid-border) !important;
+}
+
+.fc .fc-timegrid-slot-label-cushion {
+    font-size: 0.7rem !important;
+    color: var(--cal-text-muted) !important;
+}
+
+.fc .fc-timegrid-now-indicator-line {
+    border-color: #ef4444 !important;
+    border-width: 2px !important;
+}
+
+.fc .fc-timegrid-now-indicator-arrow {
+    border-color: #ef4444 !important;
+}
+
+/* ── Responsivo ── */
+@media (max-width: 767.98px) {
+    .calendario-wrapper {
+        padding: 0.75rem;
+    }
+    .calendario-title {
+        font-size: 1.15rem;
+    }
+    .calendario-card-body {
+        padding: 0.6rem;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 0.95rem !important;
+    }
+    .fc .fc-button {
+        padding: 0.3rem 0.55rem !important;
+        font-size: 0.72rem !important;
+    }
+    .fc .fc-daygrid-day-number {
+        font-size: 0.72rem !important;
+        padding: 0.25rem 0.35rem !important;
+    }
+    .fc .fc-event {
+        font-size: 0.65rem !important;
+        padding: 1px 4px !important;
+    }
+    .fc .fc-col-header-cell-cushion {
+        font-size: 0.65rem !important;
+    }
+}
+
+/* ── Print ── */
+@media print {
+    .calendario-actions,
+    .calendario-legenda {
+        display: none !important;
+    }
+    .calendario-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+
+/* ── Tooltip override para dark mode ── */
+[data-bs-theme="dark"] .tooltip-inner {
+    background: #2a2a40;
+    border: 1px solid #3a3a52;
+    color: #e2e4f0;
+}
+
+[data-bs-theme="dark"] .tooltip .tooltip-arrow::before {
+    border-top-color: #3a3a52;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="calendario-wrapper">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <!-- Header -->
+    <div class="calendario-header">
         <div>
-            <h1 class="h2 mb-1">
+            <h1 class="calendario-title">
                 <i class="bi bi-calendar3 me-2"></i>Calendário de Tarefas
             </h1>
-            <p class="text-muted mb-0">Visualize suas tarefas organizadas por data</p>
+            <p class="calendario-subtitle">Visualize suas tarefas organizadas por data</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
+        <div class="calendario-actions">
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
-            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Nova Tarefa
+            <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
+                <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
+            </a>
+            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-secondary" title="Kanban">
+                <i class="bi bi-kanban me-1"></i><span class="d-none d-lg-inline">Kanban</span>
+            </a>
+            <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
+                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
             </a>
         </div>
     </div>
 
     <!-- Legenda -->
-    <div class="d-flex flex-wrap gap-3 mb-3">
-        <span><i class="bi bi-circle-fill text-primary me-1"></i> Em andamento</span>
-        <span><i class="bi bi-circle-fill text-success me-1"></i> Recente</span>
-        <span><i class="bi bi-circle-fill" style="color:#fd7e14;"></i> Próximo do prazo</span>
-        <span><i class="bi bi-circle-fill text-danger me-1"></i> Atrasada</span>
+    <div class="calendario-legenda">
+        <span class="legenda-item">
+            <span class="legenda-dot legenda-dot--andamento"></span> Em andamento
+        </span>
+        <span class="legenda-item">
+            <span class="legenda-dot legenda-dot--recente"></span> Recente
+        </span>
+        <span class="legenda-item">
+            <span class="legenda-dot legenda-dot--proximo"></span> Próximo do prazo
+        </span>
+        <span class="legenda-item">
+            <span class="legenda-dot legenda-dot--atrasada"></span> Atrasada
+        </span>
     </div>
 
     <!-- Calendário -->
-    <div class="card shadow-sm">
-        <div class="card-body">
+    <div class="calendario-card">
+        <div class="calendario-card-body">
             <div id="calendar"></div>
         </div>
     </div>
@@ -56,43 +539,99 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/bootstrap5@6.1.14/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.14/locales/pt-br.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const calendarEl = document.getElementById('calendar');
-    const calendarEvents = JSON.parse('{{ eventos_json|safe }}' || '[]');
+    let calendarEvents = [];
+
+    try {
+        calendarEvents = JSON.parse('{{ eventos_json|escapejs }}' || '[]');
+    } catch (e) {
+        console.error('Erro ao parsear eventos:', e);
+    }
+
+    // Detectar se é mobile
+    const isMobile = window.innerWidth < 768;
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        themeSystem: 'bootstrap5',
         locale: 'pt-br',
-        initialView: 'dayGridMonth',
+        initialView: isMobile ? 'listWeek' : 'dayGridMonth',
+        height: isMobile ? 'auto' : 'auto',
+
         headerToolbar: {
-            left: 'prev,next today',
+            left: isMobile ? 'prev,next' : 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,listWeek'
+            right: isMobile ? 'dayGridMonth,listWeek' : 'dayGridMonth,timeGridWeek,listWeek'
         },
-        buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', list: 'Lista' },
+
+        buttonText: {
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            list: 'Lista'
+        },
+
         navLinks: true,
         editable: false,
-        dayMaxEvents: true,
+        dayMaxEvents: 3,
+        moreLinkText: 'mais',
         events: calendarEvents,
+        fixedWeekCount: false,
+        showNonCurrentDates: true,
+        weekNumbers: false,
+        nowIndicator: true,
+
+        // Click no evento → detalhe
+        eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            const url = info.event.url || info.event.extendedProps.url;
+            if (url) {
+                window.location.href = url;
+            }
+        },
+
+        // Tooltip
         eventDidMount: function(info) {
-            const prazo = info.event.extendedProps.prazo || 'N/A';
-            const status = info.event.extendedProps.status || 'N/A';
+            const status = info.event.extendedProps.status || '';
+            const prioridade = info.event.extendedProps.prioridade || '';
+
+            let tooltipHtml = `<strong>${info.event.title}</strong>`;
+            if (status) tooltipHtml += `<br><small>Status: ${status}</small>`;
+            if (prioridade) tooltipHtml += `<br><small>Prioridade: ${prioridade}</small>`;
+
             if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
                 new bootstrap.Tooltip(info.el, {
-                    title: `<strong>${info.event.title}</strong><br>Status: ${status}`,
+                    title: tooltipHtml,
                     placement: 'top',
                     trigger: 'hover',
-                    html: true
+                    html: true,
+                    container: 'body'
                 });
             }
         },
+
+        // Resize responsivo
+        windowResize: function(view) {
+            const mobile = window.innerWidth < 768;
+            calendar.changeView(mobile ? 'listWeek' : 'dayGridMonth');
+        },
+
+        // Loading state
+        loading: function(isLoading) {
+            const card = document.querySelector('.calendario-card');
+            if (isLoading) {
+                card.style.opacity = '0.6';
+            } else {
+                card.style.opacity = '1';
+            }
+        }
     });
+
     calendar.render();
 });
 </script>
 {% endblock %}
+
 
 

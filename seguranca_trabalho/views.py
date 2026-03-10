@@ -4,6 +4,7 @@ import base64
 import logging
 from pathlib import Path
 from django.conf import settings
+import re
 import io
 import json
 from datetime import datetime, timedelta
@@ -50,6 +51,12 @@ from django.utils.safestring import mark_safe
 
 logger = logging.getLogger(__name__)
 
+
+def _safe_data_uri(sig):
+    pattern = r'^data:image/(png|jpeg|jpg|gif|svg\+xml);base64,[A-Za-z0-9+/=\s]+$'
+    if re.match(pattern, sig):
+        return mark_safe(sig)
+    return ''
 
 def custom_url_fetcher(url):
     """Permite que o WeasyPrint acesse arquivos de media locais."""

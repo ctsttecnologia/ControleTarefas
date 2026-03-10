@@ -25,7 +25,12 @@ urlpatterns = [
     path('kanban/', views.KanbanView.as_view(), name='kanban_board'),
     path('calendario/', views.CalendarioTarefasView.as_view(), name='calendario_tarefas'),
     path('dashboard/', views.DashboardAnaliticoView.as_view(), name='dashboard'),
+
+    # --- Relatórios ---
     path('relatorio/', views.RelatorioTarefasView.as_view(), name='relatorio_tarefas'),
+    path('relatorio/gerar/', views.GerarRelatorioView.as_view(), name='gerar_relatorio'),
+    path('relatorio/resultado/', views.RelatorioDisplayView.as_view(), name='relatorio_display'),
+    path('relatorio/exportar/', views.ExportarRelatorioView.as_view(), name='exportar_relatorio'),
 
     # --- Admin ---
     path('admin/todas/', views.TarefaAdminListView.as_view(), name='tarefas_admin'),
@@ -34,4 +39,5 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='update_task_status'),
 ]
+
 

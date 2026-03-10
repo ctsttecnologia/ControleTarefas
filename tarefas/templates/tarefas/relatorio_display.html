@@ -1,64 +1,196 @@
-
+<!-- templates/tarefas/relatorio_display.html -->
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Resultado do Relatório{% endblock %}
+
 {% block extra_css %}
-    {# REUTILIZANDO o CSS da lista de tarefas para manter a consistência #}
-    <link rel="stylesheet" href="{% static 'css/tarefas/lista_tarefa.css' %}">
+<style>
+:root,
+[data-bs-theme="light"] {
+    --rd-card-bg: #ffffff; --rd-card-border: #e2e6ee; --rd-card-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    --rd-text: #1a1a2e; --rd-text-muted: #6b7280; --rd-divider: #edf0f5;
+    --rd-hover-bg: #f8f9fc; --rd-table-header-bg: #f8f9fc;
+}
+[data-bs-theme="dark"] {
+    --rd-card-bg: #1e1e2e; --rd-card-border: #2e2e44; --rd-card-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    --rd-text: #e2e4f0; --rd-text-muted: #8b8ea8; --rd-divider: #2e2e44;
+    --rd-hover-bg: #252536; --rd-table-header-bg: #252536;
+}
+
+.rd-wrapper { padding: 1rem; }
+@media (min-width: 768px) { .rd-wrapper { padding: 1.5rem 2rem; } }
+
+.rd-header {
+    display: flex; flex-wrap: wrap; justify-content: space-between;
+    align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;
+}
+.rd-title { font-size: 1.4rem; font-weight: 700; color: var(--rd-text); margin-bottom: 0.15rem; }
+.rd-subtitle { font-size: 0.85rem; color: var(--rd-text-muted); margin: 0; }
+.rd-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
+
+.rd-card {
+    background: var(--rd-card-bg); border: 1px solid var(--rd-card-border);
+    border-radius: 12px; box-shadow: var(--rd-card-shadow); overflow: hidden;
+}
+.rd-card-header {
+    padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--rd-divider);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.rd-card-title { font-size: 0.85rem; font-weight: 700; color: var(--rd-text); margin: 0; }
+.rd-count {
+    background: #6366f1; color: #fff; font-size: 0.68rem; font-weight: 700;
+    padding: 0.2em 0.6em; border-radius: 999px;
+}
+
+.rd-table { width: 100%; border-collapse: collapse; }
+.rd-table thead th {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--rd-text-muted); padding: 0.7rem 0.85rem;
+    border-bottom: 2px solid var(--rd-divider); background: var(--rd-table-header-bg);
+}
+.rd-table tbody td {
+    font-size: 0.82rem; color: var(--rd-text); padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--rd-divider); vertical-align: middle;
+}
+.rd-table tbody tr:hover { background: var(--rd-hover-bg); }
+.rd-table tbody tr:last-child td { border-bottom: none; }
+
+.rd-badge {
+    font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px; text-transform: uppercase;
+}
+.rd-badge-pendente  { background: rgba(245,158,11,0.12); color: #d97706; }
+.rd-badge-atrasada  { background: rgba(239,68,68,0.12);  color: #dc2626; }
+.rd-badge-andamento { background: rgba(59,130,246,0.12);  color: #2563eb; }
+.rd-badge-concluida { background: rgba(34,197,94,0.12);   color: #16a34a; }
+.rd-badge-pausada   { background: rgba(139,92,246,0.12);  color: #7c3aed; }
+.rd-badge-cancelada { background: rgba(100,116,139,0.12); color: #475569; }
+
+.rd-export-bar {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    padding: 0.85rem 1.15rem; border-top: 1px solid var(--rd-divider);
+}
+.rd-export-label {
+    font-size: 0.72rem; font-weight: 700; color: var(--rd-text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.5rem;
+}
+.rd-export-btn {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+    border: 1px solid var(--rd-card-border); background: var(--rd-card-bg);
+    color: var(--rd-text); text-decoration: none; transition: all 0.15s ease;
+}
+.rd-export-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+.rd-export-btn--pdf:hover  { color: #ef4444; border-color: #ef4444; }
+.rd-export-btn--docx:hover { color: #3b82f6; border-color: #3b82f6; }
+.rd-export-btn--csv:hover  { color: #22c55e; border-color: #22c55e; }
+
+.rd-empty { text-align: center; padding: 3rem 1rem; color: var(--rd-text-muted); font-size: 0.85rem; }
+
+@media (max-width: 767.98px) {
+    .rd-wrapper { padding: 0.75rem; }
+    .rd-title { font-size: 1.15rem; }
+}
+
+@media print {
+    .rd-actions, .rd-export-bar { display: none !important; }
+    .rd-card { box-shadow: none; border: 1px solid #ccc; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Resultado do Relatório</h1>
-        <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-filter me-1"></i> Novos Filtros
-        </a>
+<div class="rd-wrapper">
+
+    <!-- Header -->
+    <div class="rd-header">
+        <div>
+            <h1 class="rd-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do Relatório</h1>
+            <p class="rd-subtitle">
+                {{ total_tarefas|default:0 }} tarefa{{ total_tarefas|pluralize:"s" }} encontrada{{ total_tarefas|pluralize:"s" }}
+                {% if request.GET.status %} · Filtro: {{ request.GET.status }}{% endif %}
+            </p>
+        </div>
+        <div class="rd-actions">
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-printer me-1"></i><span class="d-none d-sm-inline">Imprimir</span>
+            </button>
+            <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-funnel me-1"></i><span class="d-none d-sm-inline">Novos Filtros</span>
+            </a>
+            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i><span class="d-none d-sm-inline">Relatórios</span>
+            </a>
+        </div>
     </div>
 
-    {# Usando a mesma classe de card da lista de tarefas #}
-    <div class="card shadow-sm">
-        <div class="card-header fw-bold bg-transparent border-bottom-0 pt-3 px-3">
-            Resultados ({{ total_tarefas }})
+    <!-- Card -->
+    <div class="rd-card">
+        <div class="rd-card-header">
+            <h6 class="rd-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
+            <span class="rd-count">{{ total_tarefas|default:0 }}</span>
         </div>
-        <div class="card-body pt-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0">
-                    <thead> 
-                        <tr>
-                            <th>Título</th>
-                            <th>Responsável</th>
-                            <th>Status</th>
-                            <th>Criação</th>
-                            <th>Prazo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for tarefa in tarefas %}
-                            <tr class="align-middle">
-                                <td>{{ tarefa.titulo }}</td>
-                                <td>{{ tarefa.responsavel.username|default:"-" }}</td>
-                                <td>
-                                    {# CORREÇÃO: Classe ajustada para bater com o CSS #}
-                                    <span class="status-badge status-{{ tarefa.status }}">
-                                        {{ tarefa.get_status_display }}
-                                    </span>
-                                </td>
-                                <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                                <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <div class="alert alert-info mb-0">Nenhuma tarefa encontrada para os filtros selecionados.</div>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="table-responsive">
+            <table class="rd-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Responsável</th>
+                        <th>Status</th>
+                        <th>Prioridade</th>
+                        <th>Criação</th>
+                        <th>Prazo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tarefa in tarefas %}
+                    <tr>
+                        <td><strong>{{ tarefa.titulo }}</strong></td>
+                        <td>{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"-" }}</td>
+                        <td>
+                            <span class="rd-badge rd-badge-{{ tarefa.status }}">
+                                {{ tarefa.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ tarefa.get_prioridade_display }}</td>
+                        <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="rd-empty">
+                                <i class="bi bi-inbox d-block mb-2" style="font-size:2rem;opacity:0.4;"></i>
+                                Nenhuma tarefa encontrada para os filtros selecionados.
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+
+        <!-- Export Bar -->
+        {% if tarefas %}
+        <div class="rd-export-bar">
+            <span class="rd-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.prioridade %}&prioridade={{ request.GET.prioridade }}{% endif %}"
+               class="rd-export-btn rd-export-btn--pdf">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.prioridade %}&prioridade={{ request.GET.prioridade }}{% endif %}"
+               class="rd-export-btn rd-export-btn--docx">
+                <i class="bi bi-file-earmark-word"></i> Word
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.prioridade %}&prioridade={{ request.GET.prioridade }}{% endif %}"
+               class="rd-export-btn rd-export-btn--csv">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
+
+
 

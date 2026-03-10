@@ -1,0 +1,39 @@
+
+<!-- templates/tarefas/partials/_nav_views.html -->
+{% load querystring_tags %}
+
+<nav class="views-nav" aria-label="Navegação de visualizações">
+    <div class="views-nav-inner">
+        <a href="{% url 'tarefas:listar_tarefas' %}"
+           class="views-nav-item {% if active_view == 'lista' %}active{% endif %}"
+           title="Lista">
+            <i class="bi bi-list-ul"></i>
+            <span>Lista</span>
+        </a>
+        <a href="{% url 'tarefas:kanban_board' %}"
+           class="views-nav-item {% if active_view == 'kanban' %}active{% endif %}"
+           title="Kanban">
+            <i class="bi bi-kanban"></i>
+            <span>Kanban</span>
+        </a>
+        <a href="{% url 'tarefas:calendario_tarefas' %}"
+           class="views-nav-item {% if active_view == 'calendario' %}active{% endif %}"
+           title="Calendário">
+            <i class="bi bi-calendar3"></i>
+            <span>Calendário</span>
+        </a>
+        <a href="{% url 'tarefas:dashboard' %}"
+           class="views-nav-item {% if active_view == 'dashboard' %}active{% endif %}"
+           title="Dashboard">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{% url 'tarefas:relatorio_tarefas' %}"
+           class="views-nav-item {% if active_view == 'relatorio' %}active{% endif %}"
+           title="Relatórios">
+            <i class="bi bi-file-earmark-bar-graph"></i>
+            <span>Relatórios</span>
+        </a>
+    </div>
+</nav>
+

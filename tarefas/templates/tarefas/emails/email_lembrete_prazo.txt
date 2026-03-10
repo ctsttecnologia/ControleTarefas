@@ -1,0 +1,25 @@
+
+{# templates/tarefas/emails/email_lembrete_prazo.txt #}
+LEMBRETE DE PRAZO
+=================
+
+Olá{% if tarefa.responsavel.first_name %} {{ tarefa.responsavel.first_name }}{% endif %},
+
+A tarefa abaixo está com o prazo se aproximando.
+
+⚠️  PRAZO EM {{ dias_restantes }} DIA(S)
+    Vencimento: {{ tarefa.prazo|date:"d/m/Y H:i" }}
+
+DETALHES DA TAREFA
+------------------
+Título:      {{ tarefa.titulo }}
+Prioridade:  {{ tarefa.get_prioridade_display }}
+Status:      {{ tarefa.get_status_display }}
+{% if tarefa.projeto %}Projeto:     {{ tarefa.projeto }}
+{% endif %}
+Acesse: {{ tarefa_url }}
+
+--
+Gerenciando Tarefas · Cetest Minas
+Este é um email automático. Por favor, não responda.
+
