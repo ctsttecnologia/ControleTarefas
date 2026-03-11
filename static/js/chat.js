@@ -1408,7 +1408,7 @@ class ChatManager {
             return;
         }
         
-        // ✅ CORREÇÃO: Prepara dados da mensagem com fallbacks
+        // ✅ Prepara dados da mensagem com fallbacks
         const messageData = {
             id: data.message_id || data.id,
             message: data.message || data.content || '',
@@ -2437,9 +2437,9 @@ class ChatManager {
 
     async preloadSounds() {
         const sounds = {
-            notification: '/static/sounds/notification_1.mp3',
-            message: '/static/sounds/notification_2.mp3',
-            connect: '/static/sounds/notification_2.mp3'
+            notification: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_1.mp3',
+            message: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_2.mp3',
+            connect: 'https://storage.googleapis.com/ctst-bucket-estatico-2026/static/sounds/notification_2.mp3',
         };
 
         for (const [key, url] of Object.entries(sounds)) {
