@@ -19,12 +19,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # =============================================================================
 IS_WINDOWS = sys.platform == 'win32'
 IS_RUNSERVER = 'runserver' in sys.argv or any('uvicorn' in arg for arg in sys.argv)
-IS_UVICORN = any('uvicorn' in arg for arg in sys.argv)  # NOVA LINHA
-IS_DEVELOPMENT = IS_WINDOWS and (IS_RUNSERVER or IS_UVICORN)  # ATUALIZADA
+IS_UVICORN = any('uvicorn' in arg for arg in sys.argv)
+IS_DEVELOPMENT = IS_WINDOWS and (IS_RUNSERVER or IS_UVICORN)
 IS_PRE_PRODUCTION = not IS_DEVELOPMENT
-
-# Debug adicional para verificar ambiente (remova depois)
-#print(f"Ambiente detectado: {'DESENVOLVIMENTO' if IS_DEVELOPMENT else 'PRÉ-PRODUÇÃO'}")
 
 # =============================================================================
 # SEGURANÇA
@@ -53,17 +50,15 @@ else:
 # SEGURANÇA - CONFIGURAÇÕES ADAPTATIVAS POR AMBIENTE
 # =============================================================================
 if IS_PRE_PRODUCTION:
-    # Configurações de segurança para pré-produção
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_X_FORWARDED_HOST = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 else:
-    # Configurações relaxadas para desenvolvimento local
     SECURE_PROXY_SSL_HEADER = None
     USE_X_FORWARDED_HOST = False
     CSRF_COOKIE_SECURE = False
@@ -74,7 +69,6 @@ else:
     SECURE_HSTS_PRELOAD = False
     
 
-# Configurações de segurança que se aplicam em qualquer ambiente
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'DENY'
@@ -83,7 +77,6 @@ CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 
 
-# Apps que rodam em todos os ambientes    
 INSTALLED_APPS = [
     'daphne',
     'channels',
@@ -114,7 +107,8 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'dal',
     'dal_select2',
-     # Apps Locais
+    'storages',                                          # ← NOVO
+    # Apps Locais
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig', 
     'home',
@@ -145,7 +139,6 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
 ]
 
-# Adiciona WhiteNoise apenas em pré-produção
 if IS_PRE_PRODUCTION:
     MIDDLEWARE.append('whitenoise.middleware.WhiteNoiseMiddleware')
 
@@ -160,8 +153,7 @@ MIDDLEWARE.extend([
     'core.middleware.MaintenanceModeMiddleware',
 ])
 
-# Ativar/desativar modo de manutenção
-MAINTENANCE_MODE = False  # Altere para True quando necessário
+MAINTENANCE_MODE = False
 
 # =============================================================================
 # URLs E TEMPLATES
@@ -206,17 +198,15 @@ DATABASES = {
         'PASSWORD': config('DB_PASSWORD'),
         'HOST': config('DB_HOST'),
         'PORT': config('DB_PORT', cast=int),
-        'CONN_MAX_AGE': 0 if IS_DEVELOPMENT else 300,  # Mantém conexão por 5 min         
-        'CONN_HEALTH_CHECKS': True,   # Django 5.x verifica se conexão está viva
+        'CONN_MAX_AGE': 0 if IS_DEVELOPMENT else 300,
+        'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'connect_timeout': 10 if IS_DEVELOPMENT else 5,  # Timeout maior em dev
+            'connect_timeout': 10 if IS_DEVELOPMENT else 5,
         }
     }
 }
 
-# Configuração para usar banco de dados em memória durante os testes
-# Isso evita problemas de permissão para criar um test_db
 if 'test' in sys.argv:
     DATABASES = {
         'default': {
@@ -250,35 +240,90 @@ USE_TZ = True
 TIME_ZONE = 'America/Sao_Paulo'
 
 # =============================================================================
-# ARQUIVOS ESTÁTICOS E MÍDIA - ADAPTATIVO POR AMBIENTE
+# GOOGLE CLOUD STORAGE - CONFIGURAÇÃO
 # =============================================================================
-STATIC_URL = '/static/'
+GS_BUCKET_NAME = config('GS_BUCKET_NAME', default='ctst-bucket-estatico-2026')
+GS_PROJECT_ID = config('GS_PROJECT_ID', default='ctst-project-2026')
+GS_CREDENTIALS_PATH = config('GS_CREDENTIALS', default='ctst-storage-key.json')
+
+STORAGE_PROVIDER = config('STORAGE_PROVIDER', default='LOCAL')
+
+# Carregar credenciais GCS apenas quando necessário
+GS_CREDENTIALS = None
+if STORAGE_PROVIDER == 'GCS':
+    try:
+        from google.oauth2 import service_account
+        import json
+
+        # OPÇÃO 1: Credenciais via variável de ambiente (JSON inline) - PRODUÇÃO
+        gs_credentials_json = os.getenv('GS_CREDENTIALS_JSON', '')
+
+        if gs_credentials_json:
+            credentials_info = json.loads(gs_credentials_json)
+            GS_CREDENTIALS = service_account.Credentials.from_service_account_info(
+                credentials_info
+            )
+            logger.info("✅ Credenciais GCS carregadas via variável de ambiente")
+        else:
+            # OPÇÃO 2: Fallback para arquivo local (desenvolvimento)
+            _credentials_file = os.path.join(BASE_DIR, GS_CREDENTIALS_PATH)
+            if os.path.exists(_credentials_file):
+                GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+                    _credentials_file
+                )
+                logger.info("✅ Credenciais GCS carregadas via arquivo local")
+            else:
+                logger.warning(f"⚠️ Arquivo de credenciais não encontrado: {_credentials_file}")
+
+    except Exception as e:
+        logger.error(f"❌ Erro ao carregar credenciais GCS: {e}")
+
+GS_DEFAULT_ACL = None
+GS_QUERYSTRING_AUTH = False
+GS_FILE_OVERWRITE = False
+
+
+# =============================================================================
+# ARQUIVOS ESTÁTICOS E MÍDIA - ADAPTATIVO POR AMBIENTE              ← ALTERADO
+# =============================================================================
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Configuração de storage adaptativa
-if IS_DEVELOPMENT:
+if STORAGE_PROVIDER == 'GCS':
+    # ── PRODUÇÃO COM GOOGLE CLOUD STORAGE ──
+    STATICFILES_STORAGE = 'storage_backends.StaticStorage'
+    STATIC_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/static/'
+
+    DEFAULT_FILE_STORAGE = 'storage_backends.MediaStorage'
+    MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/media/'
+
+    logger.info(f"☁️ Usando Google Cloud Storage: {GS_BUCKET_NAME}")
+
+elif IS_DEVELOPMENT:
+    # ── DESENVOLVIMENTO LOCAL ──
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-    logger.debug("Usando storage simples para arquivos estáticos (Desenvolvimento)")
+    STATIC_URL = '/static/'
+
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/midia/'
+    MEDIA_ROOT = BASE_DIR / 'midia'
+
+    logger.debug("📁 Usando storage local (Desenvolvimento)")
+
 else:
+    # ── PRÉ-PRODUÇÃO COM WHITENOISE (sem GCS) ──
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    logger.debug("Usando storage comprimido para arquivos estáticos (Pré-produção)")
+    STATIC_URL = '/static/'
+
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/midia/'
+    MEDIA_ROOT = BASE_DIR / 'midia'
+
+    logger.debug("📦 Usando WhiteNoise (Pré-produção sem GCS)")
 
 # =============================================================================
-# ARQUIVOS MÍDIA - STORAGE_PROVIDER SERVIÇO EM NUVENS
+# ARQUIVOS PRIVADOS (sendfile2 - mantém local em qualquer ambiente)
 # =============================================================================
-
-# No seu painel de hospedagem (em "Variável Ambiente"), você definirá:
-# STORAGE_PROVIDER="AWS" ou STORAGE_PROVIDER="GCS"
-# Se a variável não existir, usaremos o armazenamento local (para desenvolvimento)
-STORAGE_PROVIDER = os.getenv('STORAGE_PROVIDER', 'LOCAL')
-
- 
-MEDIA_URL = '/midia/'
-MEDIA_ROOT = BASE_DIR / 'midia'
-# Aqui você pode usar a solução com WhiteNoise se quiser simular o ambiente de produção
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-
 PRIVATE_MEDIA_ROOT = os.path.join(BASE_DIR, 'private_media')
 SENDFILE_BACKEND = 'sendfile2.backends.simple'
 SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
@@ -299,10 +344,8 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-# Configurações de E-mail para notificações PGR
 EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='seu-email@empresa.com')
 EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='seu-email@empresa.com')
-
 
 SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
 SENDGRID_TEMPLATE_ID = config('SENDGRID_TEMPLATE_ID', default='')
@@ -329,11 +372,8 @@ REST_FRAMEWORK = {
 # CELERY - CONFIGURAÇÃO ADAPTATIVA
 # =============================================================================
 if IS_DEVELOPMENT:
-    # Em desenvolvimento, usa 'localhost' como padrão se não houver .env
     REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
-
 else:
-    # Em produção (hospedagem), EXIGE que a variável de ambiente exista.
     REDIS_URL = config('REDIS_URL', default='redis://localhost:6379/0')
 
 
@@ -360,7 +400,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'gerar-notificacoes-diariamente': {
         'task': 'notifications.gerar_notificacoes',
-        'schedule': crontab(minute=0, hour=7),  # Todo dia às 7h
+        'schedule': crontab(minute=0, hour=7),
     },
 }
 
@@ -375,7 +415,6 @@ if IS_DEVELOPMENT:
     }
     logger.debug("Usando InMemory para WebSockets (Desenvolvimento)")
 else:
-    # Em produção, usa o Redis
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -397,7 +436,6 @@ CHAT_CONFIG = {
 # LOGGING - CONFIGURAÇÃO ADAPTATIVA E SEGURA
 # =============================================================================
 
-# Criar diretório de logs se não existir (antes de configurar o logging)
 LOGS_DIR = BASE_DIR / 'logs'
 if IS_PRE_PRODUCTION:
     try:
@@ -427,7 +465,6 @@ LOGGING = {
         },
     },
     'loggers': {
-        # ── Django ──
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
@@ -436,24 +473,21 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'WARNING',
         },
-        # ── Silenciar fontTools (WeasyPrint) ──
         'fontTools': {
             'handlers': ['console'],
-            'level': 'WARNING',  # Só mostra WARNING e ERROR
+            'level': 'WARNING',
         },
         'fontTools.subset': {
             'handlers': ['console'],
             'level': 'WARNING',
         },
-        # ── Silenciar WeasyPrint verbose ──
         'weasyprint': {
             'handlers': ['console'],
             'level': 'WARNING',
         },
-        # ── Seu app ──
         'suprimentos': {
             'handlers': ['console'],
-            'level': 'DEBUG',  # Seus logs você mantém
+            'level': 'DEBUG',
         },
     },
     'root': {
@@ -463,7 +497,6 @@ LOGGING = {
 }
 
 
-# Adicionar handler de arquivo apenas em pré-produção e se o diretório existir
 if IS_PRE_PRODUCTION and LOGS_DIR.exists():
     try:
         LOGGING['handlers']['file'] = {
@@ -471,7 +504,6 @@ if IS_PRE_PRODUCTION and LOGS_DIR.exists():
             'filename': LOGS_DIR / 'django.log',
             'formatter': 'verbose',
         }
-        # Adicionar o handler de arquivo aos loggers
         LOGGING['loggers']['django']['handlers'].append('file')
         LOGGING['root']['handlers'].append('file')
         logger.debug("Logging em arquivo ativado para pré-produção")
@@ -481,7 +513,6 @@ else:
     logger.debug("Logging apenas no console (Desenvolvimento)")
 
 
-# Flag para identificar ambiente de teste
 TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 
 # ══════════════════════════════════════════════════════════════════════
@@ -490,14 +521,11 @@ TESTING = 'test' in sys.argv or 'pytest' in sys.modules
 import logging as _logging
 
 _QUIET_LOGGERS = [
-    # fontTools (subsetting de fontes do WeasyPrint)
     'fontTools', 'fontTools.subset', 'fontTools.ttLib',
     'fontTools.ttLib.tables', 'fontTools.misc',
     'fontTools.subset.timer', 'fontTools.cff',
-    # WeasyPrint
     'weasyprint', 'weasyprint.css', 'weasyprint.html',
     'weasyprint.document', 'weasyprint.images',
-    # Daphne / Twisted
     'daphne', 'daphne.server', 'daphne.http_protocol',
     'daphne.ws_protocol',
     'twisted',
@@ -505,10 +533,8 @@ _QUIET_LOGGERS = [
 
 for _name in _QUIET_LOGGERS:
     _logging.getLogger(_name).setLevel(_logging.ERROR)
-    _logging.getLogger(_name).propagate = False  # Não propagar pro root
-    # Root logger — só WARNING pra cima (elimina DEBUG/INFO soltos)
+    _logging.getLogger(_name).propagate = False
     _logging.getLogger().setLevel(_logging.WARNING)
-    # Manter Django e seus apps visíveis
     _logging.getLogger('django').setLevel(_logging.INFO)
     _logging.getLogger('django.server').setLevel(_logging.WARNING)
     _logging.getLogger('suprimentos').setLevel(_logging.DEBUG)

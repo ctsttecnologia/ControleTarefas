@@ -28,3 +28,7 @@ health_monitor.py
 count_*.py
 check_matriz.*py
 private_media/
+
+resultado_bandit
+
+ctst-storage-key.json
