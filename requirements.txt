@@ -182,5 +182,7 @@ zope.interface==8.0.1
 zopfli==0.2.3.post1
 django-bootstrap5
 django-autocomplete-light==3.12.1
-django-storages
-google-cloud-storage
+django-storages==1.14.6
+google-cloud-core==2.5.0
+google-cloud-storage==3.8.0
+google-auth==2.47.0
