@@ -1,6 +1,6 @@
 ﻿# core/views.py
 
-import os
+
 import mimetypes
 
 from django.shortcuts import redirect, render, get_object_or_404
@@ -20,13 +20,11 @@ from usuario.models import Filial
 class SecureFileDownloadView(LoginRequiredMixin, View):
     """
     View genérica para servir qualquer arquivo de mídia de forma segura.
+    Compatível com qualquer storage backend (local, GCS, S3, etc.)
     
     Uso nas URLs:
         path('download/<str:app>/<str:model>/<int:pk>/<str:field>/',
              SecureFileDownloadView.as_view(), name='secure_download'),
-    
-    Exemplo no template:
-        <a href="{% url 'core:secure_download' 'departamento_pessoal' 'funcionario' func.pk 'foto_3x4' %}">
     """
 
     def get(self, request, app, model, pk, field):
@@ -47,25 +45,21 @@ class SecureFileDownloadView(LoginRequiredMixin, View):
         if not file_field:
             raise Http404("Nenhum arquivo associado.")
 
-        # 4. Verificar se o arquivo existe no disco
-        try:
-            file_path = file_field.path
-        except ValueError:
-            raise Http404("Arquivo não encontrado.")
-
-        if not os.path.exists(file_path):
+        # 4. Verificar se o arquivo existe no storage
+        if not file_field.storage.exists(file_field.name):
             raise Http404("Arquivo não encontrado no servidor.")
 
-        # 5. Determinar Content-Type
-        content_type, _ = mimetypes.guess_type(file_path)
+        # 5. Extrair o nome do arquivo
+        filename = file_field.name.split('/')[-1]
+
+        # 6. Determinar Content-Type
+        content_type, _ = mimetypes.guess_type(filename)
         if content_type is None:
             content_type = 'application/octet-stream'
 
-        filename = os.path.basename(file_path)
-
-        # 6. Servir o arquivo
+        # 7. Servir o arquivo (compatível com qualquer storage)
         response = FileResponse(
-            open(file_path, 'rb'),
+            file_field.open('rb'),
             content_type=content_type,
         )
 

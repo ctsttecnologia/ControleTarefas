@@ -10,12 +10,13 @@
 <div class="profile-header">
     <div class="profile-info">
         {% if funcionario.foto_3x4 %}
-            {% secure_url funcionario "foto_3x4" as foto_url %}
-                    <img src="{{ foto_url }}" alt="Foto" class="profile-avatar">
+            <img src="{{ funcionario.foto_3x4.url }}" alt="Foto" class="profile-avatar"
+                onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=64&bold=true';">
         {% else %}
-            <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=64&bold=true" 
-                 alt="Avatar" class="profile-avatar">
+            <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=64&bold=true"
+                alt="Avatar" class="profile-avatar">
         {% endif %}
+
         <div>
             <div class="profile-name">{{ funcionario.nome_completo|upper }}</div>
             <div class="profile-role">

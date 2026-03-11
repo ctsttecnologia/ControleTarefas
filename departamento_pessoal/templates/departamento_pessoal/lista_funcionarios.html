@@ -1,4 +1,5 @@
-﻿{% extends "departamento_pessoal/_base_dp.html" %}
+﻿
+{% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
 {% load static %}
 
@@ -54,13 +55,13 @@
                 {% for funcionario in funcionarios %}
                 <tr>
                     <td>
-                        <div class="d-flex align-items-center gap-2">
-                            {% if funcionario.foto_3x4 %}
-                                {% secure_url funcionario "foto_3x4" as foto_url %}
-                                    <img src="{{ foto_url }}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                        {% if funcionario.foto_3x4 %}
+                                <img src="{{ funcionario.foto_3x4.url }}" 
+                                    class="rounded-circle" width="40" height="40" style="object-fit: cover;"
+                                    onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=40&bold=true';">
                             {% else %}
                                 <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=40&bold=true"
-                                     class="rounded-circle" width="40" height="40">
+                                    class="rounded-circle" width="40" height="40">
                             {% endif %}
                             <div>
                                 <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}"

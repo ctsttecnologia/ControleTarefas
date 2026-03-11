@@ -1,8 +1,4 @@
-﻿# Ficheiro 1: O seu urls.py PRINCIPAL (gerenciandoTarefas/urls.py)
-#
-# Este ficheiro está CORRETO. Ele define o prefixo 'logradouro/'
-# e inclui as URLs da sua aplicação.
-
+﻿
 # gerenciandoTarefas/urls.py
 
 from django.contrib import admin
