@@ -25,8 +25,7 @@
             {% endif %}
 
             {% if tarefa.responsavel %}
-            <span class="kanban-avatar" title="{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}">
-                {{ tarefa.responsavel.first_name|make_list|first|default:"?" }}
+                <span class="kanban-avatar" title="{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}">
             </span>
             {% endif %}
         </div>

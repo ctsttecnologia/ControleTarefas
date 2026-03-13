@@ -1,80 +1,101 @@
-
-# notifications/signals.py
+# notifications/signals.py — SUBSTITUIR completamente
 
 """
-Signals que geram notificações automaticamente
-a partir de eventos em outros módulos.
-
-Centraliza:
-- Notificações no sistema (sino)
-- Envio de e-mails
+Signals que geram notificações automaticamente.
+- HistoricoTarefa (status) → Notificação sino + E-mail
+- M2M participantes → Histórico + Notificação + E-mail
 """
 
-from django.db.models.signals import post_save
+import logging
+
+from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
-from tarefas.models import HistoricoStatus
-from .services import notificar_tarefa_status, enviar_email
+from tarefas.models import HistoricoTarefa, Tarefas
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# SIGNAL: Mudança de status de tarefa → Notificação + E-mail
+# SIGNAL: HistoricoTarefa criado (tipo=status) → Notificação + E-mail
 # =============================================================================
 
-@receiver(post_save, sender=HistoricoStatus)
-def gerar_notificacao_mudanca_status(sender, instance, created, **kwargs):
-    """
-    Quando o status de uma tarefa muda:
-    1. Cria notificação no sistema (sino) via notificar_tarefa_status
-    2. Envia e-mail para responsável e criador
-    """
+@receiver(post_save, sender=HistoricoTarefa)
+def gerar_notificacao_historico(sender, instance, created, **kwargs):
+    """Quando um HistoricoTarefa de tipo 'status' é criado, notifica todos."""
     if not created:
         return
 
-    tarefa = instance.tarefa
-    alterado_por = instance.alterado_por if hasattr(instance, 'alterado_por') else None
-
-    status_anterior = (
-        instance.get_status_anterior_display()
-        if hasattr(instance, 'get_status_anterior_display')
-        else instance.status_anterior
-    )
-    novo_status = (
-        instance.get_novo_status_display()
-        if hasattr(instance, 'get_novo_status_display')
-        else instance.novo_status
-    )
-
-    # ─── 1. Notificação no sistema (sino) ───
-    notificar_tarefa_status(
-        tarefa=tarefa,
-        status_anterior=status_anterior,
-        novo_status=novo_status,
-        alterado_por=alterado_por,
-    )
-
-    # ─── 2. Envio de e-mail ───
-    destinatarios = set()
-    if tarefa.usuario and tarefa.usuario.email:
-        destinatarios.add(tarefa.usuario.email)
-    if tarefa.responsavel and tarefa.responsavel.email:
-        destinatarios.add(tarefa.responsavel.email)
-
-    if not destinatarios:
+    # Só status gera notificação (participante é tratado no m2m signal)
+    if instance.tipo_alteracao != 'status':
         return
 
-    contexto = {
-        'tarefa': tarefa,
-        'status_anterior': status_anterior,
-        'novo_status': novo_status,
-        'alterado_por': alterado_por,
-    }
+    from .services import notificar_tarefa_status_participantes
 
-    enviar_email(
-        assunto=f"Status da tarefa '{tarefa.titulo}' alterado",
-        template_texto='tarefas/emails/email_notificacao_status.txt',
-        template_html='tarefas/emails/email_notificacao_status.html',
-        contexto=contexto,
-        destinatarios=list(destinatarios),
-    )
+    try:
+        notificar_tarefa_status_participantes(
+            tarefa=instance.tarefa,
+            status_anterior=instance.valor_anterior,
+            novo_status=instance.valor_novo,
+            alterado_por=instance.alterado_por,
+        )
+    except Exception as e:
+        logger.error(
+            f'Erro ao notificar status da tarefa {instance.tarefa_id}: {e}',
+            exc_info=True,
+        )
+
+
+# =============================================================================
+# SIGNAL: Participantes M2M → Histórico + Notificação + E-mail
+# =============================================================================
+
+@receiver(m2m_changed, sender=Tarefas.participantes.through)
+def registrar_e_notificar_participantes(sender, instance, action, pk_set, **kwargs):
+    """
+    Quando participantes são adicionados ou removidos:
+    1. Registra no histórico (HistoricoTarefa)
+    2. Notifica os novos participantes (sino + e-mail)
+    """
+    if action not in ('post_add', 'post_remove') or not pk_set:
+        return
+
+    from django.contrib.auth import get_user_model
+    from tarefas.services import registrar_alteracao_participantes
+    from .services import notificar_tarefa_participante_adicionado
+
+    User = get_user_model()
+    tarefa = instance
+    alterado_por = getattr(tarefa, '_user', None)
+    usuarios = User.objects.filter(pk__in=pk_set)
+
+    # ── 1. Registrar no Histórico ──
+    acao = 'add' if action == 'post_add' else 'remove'
+    try:
+        registrar_alteracao_participantes(
+            tarefa=tarefa,
+            usuarios=usuarios,
+            acao=acao,
+            alterado_por=alterado_por,
+        )
+    except Exception as e:
+        logger.error(
+            f'Erro ao registrar histórico participantes tarefa {tarefa.pk}: {e}',
+            exc_info=True,
+        )
+
+    # ── 2. Notificar novos participantes (apenas adição) ──
+    if action == 'post_add':
+        try:
+            notificar_tarefa_participante_adicionado(
+                tarefa=tarefa,
+                novos_participantes=usuarios,
+                adicionado_por=alterado_por,
+            )
+        except Exception as e:
+            logger.error(
+                f'Erro ao notificar participantes tarefa {tarefa.pk}: {e}',
+                exc_info=True,
+            )
+
 

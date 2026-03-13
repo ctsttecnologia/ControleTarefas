@@ -450,6 +450,463 @@ def enviar_email(assunto, template_texto, template_html, contexto, destinatarios
         logger.error(f"Falha ao enviar e-mail '{assunto}': {e}", exc_info=True)
         return False
 
+# =============================================================================
+# FUNÇÕES ESPECÍFICAS PARA PARTICIPANTES DE TAREFAS
+# =============================================================================
+
+def _coletar_interessados_tarefa(tarefa, excluir_usuario=None):
+    """
+    Retorna set de usuários interessados numa tarefa:
+    criador + responsável + participantes, excluindo quem disparou a ação.
+    """
+    interessados = set()
+
+    if tarefa.usuario:
+        interessados.add(tarefa.usuario)
+    if tarefa.responsavel:
+        interessados.add(tarefa.responsavel)
+
+    for p in tarefa.participantes.all():
+        interessados.add(p)
+
+    if excluir_usuario:
+        interessados.discard(excluir_usuario)
+
+    return interessados
+
+
+def notificar_tarefa_criada(tarefa, criador):
+    """
+    Notifica responsável e participantes que foram incluídos numa nova tarefa.
+    Também envia e-mail.
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=criador)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Nova tarefa: {tarefa.titulo[:50]}',
+            tipo='tarefa_atribuida',
+            categoria='tarefa',
+            prioridade='media',
+            mensagem=(
+                f'Você foi incluído na tarefa "{tarefa.titulo}".\n'
+                f'Criada por: {criador.get_full_name() or criador.username}\n'
+                f'Prazo: {tarefa.prazo.strftime("%d/%m/%Y %H:%M") if tarefa.prazo else "Não definido"}'
+            ),
+            url_destino=url,
+            icone='bi-plus-circle-fill',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail
+    emails_destinatarios = [u.email for u in destinatarios if u.email]
+    if emails_destinatarios:
+        enviar_email(
+            assunto=f"Nova tarefa: {tarefa.titulo}",
+            template_texto='tarefas/emails/email_tarefa_criada.txt',
+            template_html='tarefas/emails/email_tarefa_criada.html',
+            contexto={
+                'tarefa': tarefa,
+                'criador': criador,
+                'url': url,
+            },
+            destinatarios=emails_destinatarios,
+        )
+
+    return resultados
+
+
+def notificar_tarefa_comentario(tarefa, autor, texto_comentario):
+    """
+    Notifica responsável, criador e participantes sobre novo comentário.
+    Também envia e-mail.
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=autor)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    texto_curto = texto_comentario[:80] + ('...' if len(texto_comentario) > 80 else '')
+    resultados = []
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Comentário em: {tarefa.titulo[:40]}',
+            tipo='tarefa_comentario',
+            categoria='tarefa',
+            prioridade='baixa',
+            mensagem=(
+                f'{autor.get_full_name() or autor.username}: "{texto_curto}"'
+            ),
+            url_destino=url,
+            icone='bi-chat-dots-fill',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail
+    emails_destinatarios = [u.email for u in destinatarios if u.email]
+    if emails_destinatarios:
+        enviar_email(
+            assunto=f"Novo comentário em: {tarefa.titulo}",
+            template_texto='tarefas/emails/email_tarefa_comentario.txt',
+            template_html='tarefas/emails/email_tarefa_comentario.html',
+            contexto={
+                'tarefa': tarefa,
+                'autor': autor,
+                'texto_comentario': texto_comentario,
+                'url': url,
+            },
+            destinatarios=emails_destinatarios,
+        )
+
+    return resultados
+
+
+def notificar_tarefa_status_participantes(tarefa, status_anterior, novo_status, alterado_por=None):
+    """
+    Versão expandida do notificar_tarefa_status que inclui PARTICIPANTES
+    além de criador e responsável. Também envia e-mail.
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=alterado_por)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    # Define prioridade conforme status
+    if novo_status in ('concluida', 'Concluída'):
+        prioridade = 'media'
+        icone = 'bi-check-circle-fill'
+    elif novo_status in ('cancelada', 'Cancelada'):
+        prioridade = 'alta'
+        icone = 'bi-x-circle-fill'
+    else:
+        prioridade = 'baixa'
+        icone = 'bi-arrow-repeat'
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Status alterado: {tarefa.titulo[:40]}',
+            tipo='tarefa_status',
+            categoria='tarefa',
+            prioridade=prioridade,
+            mensagem=f'{status_anterior} → {novo_status}',
+            url_destino=url,
+            icone=icone,
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail
+    emails_destinatarios = [u.email for u in destinatarios if u.email]
+    if emails_destinatarios:
+        enviar_email(
+            assunto=f"Status da tarefa '{tarefa.titulo}' alterado para {novo_status}",
+            template_texto='tarefas/emails/email_notificacao_status.txt',
+            template_html='tarefas/emails/email_notificacao_status.html',
+            contexto={
+                'tarefa': tarefa,
+                'status_anterior': status_anterior,
+                'novo_status': novo_status,
+                'alterado_por': alterado_por,
+            },
+            destinatarios=emails_destinatarios,
+        )
+
+    return resultados
+
+
+def notificar_tarefa_participante_adicionado(tarefa, novos_participantes, adicionado_por=None):
+    """
+    Notifica novos participantes quando são adicionados a uma tarefa existente.
+    """
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    for user in novos_participantes:
+        if user == adicionado_por:
+            continue
+
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Adicionado à tarefa: {tarefa.titulo[:45]}',
+            tipo='tarefa_atribuida',
+            categoria='tarefa',
+            prioridade='media',
+            mensagem=(
+                f'Você foi adicionado como participante.\n'
+                f'Responsável: {tarefa.responsavel.get_full_name() if tarefa.responsavel else "N/A"}\n'
+                f'Prazo: {tarefa.prazo.strftime("%d/%m/%Y %H:%M") if tarefa.prazo else "Não definido"}'
+            ),
+            url_destino=url,
+            icone='bi-person-plus-fill',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail
+    emails = [u.email for u in novos_participantes if u.email and u != adicionado_por]
+    if emails:
+        enviar_email(
+            assunto=f"Você foi adicionado à tarefa: {tarefa.titulo}",
+            template_texto='tarefas/emails/email_tarefa_criada.txt',
+            template_html='tarefas/emails/email_tarefa_criada.html',
+            contexto={
+                'tarefa': tarefa,
+                'criador': adicionado_por,
+                'url': url,
+            },
+            destinatarios=emails,
+        )
+
+    return resultados
+
+# ═══════════════════════════════════════════════════════════════════════
+# FUNÇÕES PARA PARTICIPANTES DE TAREFAS (sino + e-mail)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _coletar_interessados_tarefa(tarefa, excluir_usuario=None):
+    """
+    Retorna set de usuários interessados numa tarefa:
+    criador + responsável + participantes, excluindo quem disparou a ação.
+    """
+    interessados = set()
+
+    if tarefa.usuario:
+        interessados.add(tarefa.usuario)
+    if tarefa.responsavel:
+        interessados.add(tarefa.responsavel)
+
+    for p in tarefa.participantes.all():
+        interessados.add(p)
+
+    if excluir_usuario:
+        interessados.discard(excluir_usuario)
+
+    return interessados
+
+
+def notificar_tarefa_criada(tarefa, criador):
+    """
+    Notifica responsável e participantes que foram incluídos numa nova tarefa.
+    Cria notificação no sino + envia e-mail usando template existente.
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=criador)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Nova tarefa: {tarefa.titulo[:50]}',
+            tipo='tarefa_atribuida',
+            categoria='tarefa',
+            prioridade='media',
+            mensagem=(
+                f'Criada por: {criador.get_full_name() or criador.username}\n'
+                f'Prazo: {tarefa.prazo.strftime("%d/%m/%Y %H:%M") if tarefa.prazo else "Não definido"}'
+            ),
+            url_destino=url,
+            icone='bi-plus-circle-fill',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail — usa template existente email_nova_tarefa
+    emails_dest = [u.email for u in destinatarios if u.email]
+    if emails_dest:
+        enviar_email(
+            assunto=f"Nova tarefa atribuída: {tarefa.titulo}",
+            template_texto='tarefas/emails/email_nova_tarefa.txt',
+            template_html='tarefas/emails/email_nova_tarefa.html',
+            contexto={
+                'tarefa': tarefa,
+                'criador': criador,
+                'tarefa_url': url,
+            },
+            destinatarios=emails_dest,
+        )
+
+    return resultados
+
+
+def notificar_tarefa_comentario(tarefa, autor, texto_comentario):
+    """
+    Notifica criador, responsável e participantes sobre novo comentário.
+    Cria notificação no sino + envia e-mail.
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=autor)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    texto_curto = texto_comentario[:80] + ('...' if len(texto_comentario) > 80 else '')
+    resultados = []
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Comentário em: {tarefa.titulo[:40]}',
+            tipo='tarefa_comentario',
+            categoria='tarefa',
+            prioridade='baixa',
+            mensagem=f'{autor.get_full_name() or autor.username}: "{texto_curto}"',
+            url_destino=url,
+            icone='bi-chat-dots-fill',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail — usa novo template email_tarefa_comentario
+    emails_dest = [u.email for u in destinatarios if u.email]
+    if emails_dest:
+        enviar_email(
+            assunto=f"Novo comentário em: {tarefa.titulo}",
+            template_texto='tarefas/emails/email_tarefa_comentario.txt',
+            template_html='tarefas/emails/email_tarefa_comentario.html',
+            contexto={
+                'tarefa': tarefa,
+                'autor': autor,
+                'texto_comentario': texto_comentario,
+                'tarefa_url': url,
+            },
+            destinatarios=emails_dest,
+        )
+
+    return resultados
+
+
+def notificar_tarefa_status_participantes(tarefa, status_anterior, novo_status, alterado_por=None):
+    """
+    Versão expandida: notifica criador, responsável E participantes
+    sobre mudança de status. Cria sino + envia e-mail.
+    """
+    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=alterado_por)
+    if not destinatarios:
+        return []
+
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    # Prioridade e ícone conforme o novo status
+    if novo_status in ('concluida', 'Concluída'):
+        prioridade = 'media'
+        icone = 'bi-check-circle-fill'
+    elif novo_status in ('cancelada', 'Cancelada'):
+        prioridade = 'alta'
+        icone = 'bi-x-circle-fill'
+    elif novo_status in ('atrasada', 'Atrasada'):
+        prioridade = 'alta'
+        icone = 'bi-exclamation-triangle-fill'
+    else:
+        prioridade = 'baixa'
+        icone = 'bi-arrow-repeat'
+
+    for user in destinatarios:
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Status alterado: {tarefa.titulo[:40]}',
+            tipo='tarefa_status',
+            categoria='tarefa',
+            prioridade=prioridade,
+            mensagem=f'{status_anterior} → {novo_status}',
+            url_destino=url,
+            icone=icone,
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail — usa template existente email_notificacao_status
+    emails_dest = [u.email for u in destinatarios if u.email]
+    if emails_dest:
+        enviar_email(
+            assunto=f"Status da tarefa '{tarefa.titulo}' alterado para {novo_status}",
+            template_texto='tarefas/emails/email_notificacao_status.txt',
+            template_html='tarefas/emails/email_notificacao_status.html',
+            contexto={
+                'tarefa': tarefa,
+                'status_anterior': status_anterior,
+                'novo_status': novo_status,
+                'alterado_por': alterado_por,
+                'tarefa_url': url,
+            },
+            destinatarios=emails_dest,
+        )
+
+    return resultados
+
+
+def notificar_tarefa_participante_adicionado(tarefa, novos_participantes, adicionado_por=None):
+    """
+    Notifica novos participantes quando são adicionados a uma tarefa existente.
+    Cria sino + envia e-mail com template específico.
+    """
+    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
+    resultados = []
+
+    for user in novos_participantes:
+        if user == adicionado_por:
+            continue
+
+        n = criar_notificacao(
+            usuario=user,
+            titulo=f'Adicionado à tarefa: {tarefa.titulo[:45]}',
+            tipo='tarefa_atribuida',
+            categoria='tarefa',
+            prioridade='media',
+            mensagem=(
+                f'Você foi adicionado como participante.\n'
+                f'Responsável: {tarefa.responsavel.get_full_name() if tarefa.responsavel else "N/A"}\n'
+                f'Prazo: {tarefa.prazo.strftime("%d/%m/%Y %H:%M") if tarefa.prazo else "Não definido"}'
+            ),
+            url_destino=url,
+            icone='bi-person-plus-fill',
+            duplicar=True,
+        )
+        if n:
+            resultados.append(n)
+
+    # E-mail — usa novo template email_tarefa_participante
+    emails_dest = [
+        u.email for u in novos_participantes
+        if u.email and u != adicionado_por
+    ]
+    if emails_dest:
+        enviar_email(
+            assunto=f"Você foi adicionado à tarefa: {tarefa.titulo}",
+            template_texto='tarefas/emails/email_tarefa_participante.txt',
+            template_html='tarefas/emails/email_tarefa_participante.html',
+            contexto={
+                'tarefa': tarefa,
+                'adicionado_por': adicionado_por,
+                'tarefa_url': url,
+            },
+            destinatarios=emails_dest,
+        )
+
+    return resultados
+
 
 # Alias para compatibilidade com imports antigos
 enviar_email_tarefa = enviar_email

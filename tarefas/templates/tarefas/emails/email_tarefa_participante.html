@@ -1,75 +1,57 @@
 
-<!-- templates/tarefas/emails/email_notificacao_status.html -->
+<!-- templates/tarefas/emails/email_tarefa_participante.html -->
 {% extends 'tarefas/emails/_email_base.html' %}
 
-{% block email_title %}Atualização de Status{% endblock %}
+{% block email_title %}Adicionado a uma Tarefa{% endblock %}
 
-{% block header_color %}#3b82f6{% endblock %}
+{% block header_color %}#0ea5e9{% endblock %}
 
 {% block header_icon %}
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 12px auto;">
     <tr>
         <td style="width:48px; height:48px; background:rgba(255,255,255,0.2); border-radius:50%; text-align:center; line-height:48px;">
-            <span style="font-size:22px;">🔄</span>
+            <span style="font-size:22px;">👥</span>
         </td>
     </tr>
 </table>
 {% endblock %}
 
-{% block header_title %}Atualização de Status{% endblock %}
+{% block header_title %}Adicionado como Participante{% endblock %}
 
 {% block header_subtitle %}
 <p style="margin:8px 0 0; font-size:13px; color:rgba(255,255,255,0.85);">
-    O status de uma tarefa foi alterado
+    Você foi incluído em uma tarefa existente
 </p>
 {% endblock %}
 
 {% block email_body %}
 <!-- Greeting -->
 <p style="margin:0 0 20px; font-size:15px; color:#1a1a2e; line-height:1.5;">
-    Olá{% if tarefa.responsavel.first_name %} <strong>{{ tarefa.responsavel.first_name }}</strong>{% endif %},
+    Olá,
 </p>
 
 <p style="margin:0 0 24px; font-size:14px; color:#3a3f55; line-height:1.6;">
-    <strong>{{ alterado_por.get_full_name|default:alterado_por.username }}</strong> alterou o status da tarefa abaixo.
+    {% if adicionado_por %}
+    <strong>{{ adicionado_por.get_full_name|default:adicionado_por.username }}</strong> adicionou você como participante na tarefa abaixo.
+    {% else %}
+    Você foi adicionado como participante na tarefa abaixo.
+    {% endif %}
 </p>
 
-<!-- Status Change Highlight -->
+<!-- Info Banner -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
     <tr>
-        <td style="text-align:center; padding:20px; background:#f8f9fc; border:1px solid #e2e6ee; border-radius:10px;">
-            <!-- Old Status -->
-            <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-table; vertical-align:middle;">
-                <tr>
-                    <td style="text-align:center;">
-                        <p style="margin:0 0 4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Anterior</p>
-                        <span style="display:inline-block; padding:6px 16px; background:#e2e6ee; color:#475569; border-radius:20px; font-size:13px; font-weight:700;">
-                            {{ status_anterior }}
-                        </span>
-                    </td>
-                </tr>
-            </table>
-
-            <!-- Arrow -->
-            <span style="display:inline-block; vertical-align:middle; margin:0 16px; font-size:24px; color:#9ca3af;">→</span>
-
-            <!-- New Status -->
-            <table role="presentation" cellpadding="0" cellspacing="0" style="display:inline-table; vertical-align:middle;">
-                <tr>
-                    <td style="text-align:center;">
-                        <p style="margin:0 0 4px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Novo</p>
-                        <span style="display:inline-block; padding:6px 16px; background:{% if novo_status == 'Concluída' or novo_status == 'concluida' %}#dcfce7; color:#16a34a{% elif novo_status == 'Atrasada' or novo_status == 'atrasada' %}#fef2f2; color:#dc2626{% elif novo_status == 'Em Andamento' or novo_status == 'andamento' %}#dbeafe; color:#2563eb{% elif novo_status == 'Pausada' or novo_status == 'pausada' %}#f3e8ff; color:#7c3aed{% else %}#fef9c3; color:#a16207{% endif %}; border-radius:20px; font-size:13px; font-weight:700;">
-                            {{ novo_status }}
-                        </span>
-                    </td>
-                </tr>
-            </table>
+        <td style="background:#f0f9ff; border:1px solid #bae6fd; border-left:4px solid #0ea5e9; border-radius:8px; padding:16px 20px;">
+            <p style="margin:0; font-size:13px; color:#0c4a6e; line-height:1.5;">
+                👥 Como participante, você receberá notificações sobre atualizações de status, comentários e alterações nesta tarefa.
+            </p>
         </td>
     </tr>
 </table>
 
-<!-- Task Details -->
+<!-- Task Card -->
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fc; border:1px solid #e2e6ee; border-radius:10px; overflow:hidden; margin-bottom:24px;">
+    <!-- Task Title -->
     <tr>
         <td colspan="2" style="padding:16px 20px 12px; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Tarefa</p>
@@ -79,6 +61,7 @@
         </td>
     </tr>
 
+    <!-- Details Row -->
     <tr>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Prioridade</p>
@@ -87,26 +70,35 @@
             </p>
         </td>
         <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Status</p>
+            <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
+                {{ tarefa.get_status_display }}
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Responsável</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
                 {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}
                 {% else %}Não atribuído{% endif %}
             </p>
         </td>
+        <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Criado por</p>
+            <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
+                {{ tarefa.usuario.get_full_name|default:tarefa.usuario.username }}
+            </p>
+        </td>
     </tr>
 
     {% if tarefa.prazo %}
     <tr>
-        <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
+        <td colspan="2" style="padding:12px 20px; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Prazo</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
                 📅 {{ tarefa.prazo|date:"d/m/Y H:i" }}
-            </p>
-        </td>
-        <td style="padding:12px 20px; width:50%; border-bottom:1px solid #edf0f5;">
-            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Alterado por</p>
-            <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
-                {{ alterado_por.get_full_name|default:alterado_por.username }}
             </p>
         </td>
     </tr>
@@ -114,10 +106,21 @@
 
     {% if tarefa.projeto %}
     <tr>
-        <td colspan="2" style="padding:12px 20px;">
+        <td colspan="2" style="padding:12px 20px; border-bottom:1px solid #edf0f5;">
             <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Projeto</p>
             <p style="margin:0; font-size:13px; font-weight:600; color:#3a3f55;">
                 📁 {{ tarefa.projeto }}
+            </p>
+        </td>
+    </tr>
+    {% endif %}
+
+    {% if tarefa.descricao %}
+    <tr>
+        <td colspan="2" style="padding:12px 20px;">
+            <p style="margin:0 0 2px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#9ca3af;">Descrição</p>
+            <p style="margin:0; font-size:13px; color:#3a3f55; line-height:1.5;">
+                {{ tarefa.descricao|truncatewords:50 }}
             </p>
         </td>
     </tr>
@@ -128,7 +131,7 @@
 {% block cta_button %}
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
     <tr>
-        <td style="background-color:#3b82f6; border-radius:8px;">
+        <td style="background-color:#0ea5e9; border-radius:8px;">
             <a href="{{ tarefa_url }}"
                style="display:inline-block; padding:14px 32px; font-size:14px; font-weight:700; color:#ffffff; text-decoration:none; letter-spacing:0.02em;">
                 Ver Tarefa →
@@ -137,4 +140,5 @@
     </tr>
 </table>
 {% endblock %}
+
 

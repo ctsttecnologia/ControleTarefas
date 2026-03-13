@@ -214,9 +214,13 @@
 
                 {% if cartao.funcionario.foto_3x4 %}
                 {% secure_url cartao.funcionario "foto_3x4" as foto_url %}
-                                <img src="{{ foto_url }}" 
+                <img src="{{ foto_url }}" 
                      alt="{{ cartao.funcionario.nome_completo }}" 
-                     class="tag-photo">
+                     class="tag-photo"
+                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="tag-photo align-items-center justify-content-center bg-light" style="display:none;">
+                    <i class="bi bi-person fs-1 text-muted"></i>
+                </div>
                 {% else %}
                 <div class="tag-photo d-flex align-items-center justify-content-center bg-light">
                     <i class="bi bi-person fs-1 text-muted"></i>

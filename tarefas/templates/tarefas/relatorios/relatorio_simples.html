@@ -143,7 +143,7 @@
                     {% for tarefa in tarefas %}
                     <tr>
                         <td data-label="Título"><strong>{{ tarefa.titulo }}</strong></td>
-                        <td data-label="Responsável">{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"-" }}</td>
+                        <td data-label="Responsável">{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}-{% endif %}</td>
                         <td data-label="Status">
                             <span class="status-badge badge-{{ tarefa.status }}">
                                 {{ tarefa.get_status_display }}

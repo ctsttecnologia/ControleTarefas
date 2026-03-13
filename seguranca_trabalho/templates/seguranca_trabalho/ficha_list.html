@@ -1,4 +1,4 @@
-﻿
+﻿<!-- Template para listar as fichas de entrega de EPIs -->-->
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load secure_url %}
 
@@ -82,13 +82,19 @@
                                 {% if ficha.funcionario.foto_3x4 %}
                                 {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
                                 <img src="{{ foto_url }}" alt="" 
-                                     class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                     class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;"
+                                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="rounded-circle bg-secondary bg-opacity-10 me-2 align-items-center justify-content-center" 
+                                     style="width: 40px; height: 40px; display:none;">
+                                    <i class="bi bi-person text-secondary"></i>
+                                </div>
                                 {% else %}
                                 <div class="rounded-circle bg-secondary bg-opacity-10 me-2 d-flex align-items-center justify-content-center" 
                                      style="width: 40px; height: 40px;">
                                     <i class="bi bi-person text-secondary"></i>
                                 </div>
                                 {% endif %}
+
                                 <div>
                                     <a href="{% url 'seguranca_trabalho:ficha_detail' ficha.pk %}" class="fw-semibold text-decoration-none">
                                         {{ ficha.funcionario.nome_completo }}

@@ -16,13 +16,19 @@
                 {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
                 <img src="{{ foto_url }}" alt="" 
                      class="rounded-circle me-3 border border-2 border-white" 
-                     style="width: 60px; height: 60px; object-fit: cover;">
+                     style="width: 60px; height: 60px; object-fit: cover;"
+                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="rounded-circle bg-white bg-opacity-20 me-3 align-items-center justify-content-center" 
+                     style="width: 60px; height: 60px; display:none;">
+                    <i class="bi bi-person fs-3"></i>
+                </div>
                 {% else %}
                 <div class="rounded-circle bg-white bg-opacity-20 me-3 d-flex align-items-center justify-content-center" 
                      style="width: 60px; height: 60px;">
                     <i class="bi bi-person fs-3"></i>
                 </div>
                 {% endif %}
+
                 <div>
                     <h4 class="mb-0">{{ ficha.funcionario.nome_completo }}</h4>
                     <small class="opacity-75">

@@ -50,332 +50,168 @@
 }
 
 /* ── Layout ── */
-.detail-wrapper {
-    padding: 1rem;
-    min-height: calc(100vh - 60px);
-}
-
-@media (min-width: 768px) {
-    .detail-wrapper {
-        padding: 1.5rem 2rem;
-    }
-}
+.detail-wrapper { padding: 1rem; min-height: calc(100vh - 60px); }
+@media (min-width: 768px) { .detail-wrapper { padding: 1.5rem 2rem; } }
 
 /* ── Header ── */
-.detail-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.detail-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--detail-text);
-    margin-bottom: 0.3rem;
-    line-height: 1.3;
-}
-
-.detail-meta {
-    font-size: 0.82rem;
-    color: var(--detail-text-muted);
-    margin: 0;
-}
-
-.detail-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-}
+.detail-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 0.75rem; margin-bottom: 1.5rem; }
+.detail-title { font-size: 1.4rem; font-weight: 700; color: var(--detail-text); margin-bottom: 0.3rem; line-height: 1.3; }
+.detail-meta { font-size: 0.82rem; color: var(--detail-text-muted); margin: 0; }
+.detail-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
 
 /* ── Cards ── */
-.detail-card {
-    background: var(--detail-card-bg);
-    border: 1px solid var(--detail-card-border);
-    border-radius: 12px;
-    box-shadow: var(--detail-card-shadow);
-    overflow: hidden;
-    margin-bottom: 1rem;
-}
-
-.detail-card-header {
-    padding: 0.75rem 1.15rem;
-    border-bottom: 1px solid var(--detail-divider);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.detail-card-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--detail-text);
-    margin: 0;
-}
-
-.detail-card-body {
-    padding: 1.15rem;
-}
+.detail-card { background: var(--detail-card-bg); border: 1px solid var(--detail-card-border); border-radius: 12px; box-shadow: var(--detail-card-shadow); overflow: hidden; margin-bottom: 1rem; }
+.detail-card-header { padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--detail-divider); display: flex; justify-content: space-between; align-items: center; }
+.detail-card-title { font-size: 0.85rem; font-weight: 700; color: var(--detail-text); margin: 0; }
+.detail-card-body { padding: 1.15rem; }
 
 /* ── Description ── */
-.detail-description {
-    font-size: 0.88rem;
-    color: var(--detail-text);
-    line-height: 1.65;
-}
-
-.detail-description-empty {
-    color: var(--detail-text-muted);
-    font-style: italic;
-    font-size: 0.85rem;
-}
+.detail-description { font-size: 0.88rem; color: var(--detail-text); line-height: 1.65; }
+.detail-description-empty { color: var(--detail-text-muted); font-style: italic; font-size: 0.85rem; }
 
 /* ── Sidebar ── */
-.sidebar-field {
-    margin-bottom: 1rem;
-}
+.sidebar-field { margin-bottom: 1rem; }
+.sidebar-field:last-child { margin-bottom: 0; }
+.sidebar-label { font-size: 0.68rem; font-weight: 700; color: var(--detail-sidebar-label); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+.sidebar-value { font-size: 0.85rem; font-weight: 600; color: var(--detail-text); margin: 0; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.sidebar-divider { border: none; border-top: 1px solid var(--detail-divider); margin: 0.85rem 0; }
 
-.sidebar-field:last-child {
-    margin-bottom: 0;
-}
-
-.sidebar-label {
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--detail-sidebar-label);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 0.3rem;
-}
-
-.sidebar-value {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--detail-text);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    flex-wrap: wrap;
-}
-
-.sidebar-divider {
-    border: none;
-    border-top: 1px solid var(--detail-divider);
-    margin: 0.85rem 0;
-}
-
-/* ── Badges (reuso) ── */
-.detail-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.2em 0.6em;
-    border-radius: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
+/* ── Badges ── */
+.detail-badge { font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.03em; }
 .badge-status-pendente   { background: rgba(245,158,11,0.12); color: #d97706; }
 .badge-status-atrasada   { background: rgba(239,68,68,0.12);  color: #dc2626; }
 .badge-status-andamento  { background: rgba(59,130,246,0.12);  color: #2563eb; }
 .badge-status-concluida  { background: rgba(34,197,94,0.12);   color: #16a34a; }
 .badge-status-pausada    { background: rgba(139,92,246,0.12);  color: #7c3aed; }
 .badge-status-cancelada  { background: rgba(100,116,139,0.12); color: #475569; }
-
 .badge-prio-alta    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 .badge-prio-media   { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 .badge-prio-baixa   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-
 [data-bs-theme="dark"] .badge-prio-alta  { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.3); }
 [data-bs-theme="dark"] .badge-prio-media { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.3); }
 [data-bs-theme="dark"] .badge-prio-baixa { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
-
-.badge-overdue {
-    background: rgba(239, 68, 68, 0.12);
-    color: #ef4444;
-    font-size: 0.6rem;
-    font-weight: 700;
-    padding: 0.15em 0.5em;
-    border-radius: 4px;
-}
+.badge-overdue { background: rgba(239, 68, 68, 0.12); color: #ef4444; font-size: 0.6rem; font-weight: 700; padding: 0.15em 0.5em; border-radius: 4px; }
 
 /* ── Progress Bar ── */
-.detail-progress-bar {
-    height: 8px;
-    border-radius: 4px;
-    background: var(--detail-divider);
-    overflow: hidden;
-}
-
-.detail-progress-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.4s ease;
-}
+.detail-progress-bar { height: 8px; border-radius: 4px; background: var(--detail-divider); overflow: hidden; }
+.detail-progress-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
 
 /* ── Participant Tags ── */
-.participant-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    background: var(--detail-comment-bg);
-    color: var(--detail-text);
-    padding: 0.25em 0.6em;
-    border-radius: 6px;
-    border: 1px solid var(--detail-card-border);
-}
+.participant-tag { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 600; background: var(--detail-comment-bg); color: var(--detail-text); padding: 0.25em 0.6em; border-radius: 6px; border: 1px solid var(--detail-card-border); }
 
 /* ── Comments ── */
-.comment-form textarea {
-    background: var(--detail-input-bg);
-    border-color: var(--detail-input-border);
-    color: var(--detail-text);
-    border-radius: 8px;
-    font-size: 0.85rem;
-    resize: vertical;
-    min-height: 80px;
-}
-
-.comment-form textarea:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-}
-
-.comment-item {
-    display: flex;
-    gap: 0.75rem;
-    padding: 0.85rem 0;
-    border-bottom: 1px solid var(--detail-divider);
-}
-
-.comment-item:last-child {
-    border-bottom: none;
-}
-
-.comment-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--detail-avatar-bg);
-    color: var(--detail-avatar-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 0.85rem;
-}
-
-.comment-body {
-    flex: 1;
-    min-width: 0;
-}
-
-.comment-author {
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: var(--detail-text);
-}
-
-.comment-date {
-    font-size: 0.7rem;
-    color: var(--detail-text-muted);
-}
-
-.comment-text {
-    font-size: 0.83rem;
-    color: var(--detail-text);
-    line-height: 1.5;
-    margin-top: 0.25rem;
-}
-
-.comment-attachment {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.72rem;
-    color: #6366f1;
-    text-decoration: none;
-    background: var(--detail-comment-bg);
-    padding: 0.2em 0.55em;
-    border-radius: 5px;
-    margin-top: 0.35rem;
-    border: 1px solid var(--detail-card-border);
-}
-
-.comment-attachment:hover {
-    background: var(--detail-hover-bg);
-}
-
-.comment-empty {
-    text-align: center;
-    color: var(--detail-text-muted);
-    font-style: italic;
-    font-size: 0.82rem;
-    padding: 1.5rem 0;
-}
+.comment-form textarea { background: var(--detail-input-bg); border-color: var(--detail-input-border); color: var(--detail-text); border-radius: 8px; font-size: 0.85rem; resize: vertical; min-height: 80px; }
+.comment-form textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
+.comment-item { display: flex; gap: 0.75rem; padding: 0.85rem 0; border-bottom: 1px solid var(--detail-divider); }
+.comment-item:last-child { border-bottom: none; }
+.comment-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--detail-avatar-bg); color: var(--detail-avatar-color); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem; }
+.comment-body { flex: 1; min-width: 0; }
+.comment-author { font-size: 0.78rem; font-weight: 700; color: var(--detail-text); }
+.comment-date { font-size: 0.7rem; color: var(--detail-text-muted); }
+.comment-text { font-size: 0.83rem; color: var(--detail-text); line-height: 1.5; margin-top: 0.25rem; }
+.comment-attachment { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; color: #6366f1; text-decoration: none; background: var(--detail-comment-bg); padding: 0.2em 0.55em; border-radius: 5px; margin-top: 0.35rem; border: 1px solid var(--detail-card-border); }
+.comment-attachment:hover { background: var(--detail-hover-bg); }
+.comment-empty { text-align: center; color: var(--detail-text-muted); font-style: italic; font-size: 0.82rem; padding: 1.5rem 0; }
+.comment-count { background: #6366f1; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 0.15em 0.5em; border-radius: 999px; min-width: 1.3rem; text-align: center; }
 
 /* ── History ── */
-.history-item {
-    padding: 0.55rem 1rem;
-    border-bottom: 1px solid var(--detail-divider);
-    font-size: 0.78rem;
-}
+.history-item { padding: 0.55rem 1rem; border-bottom: 1px solid var(--detail-divider); font-size: 0.78rem; }
+.history-item:last-child { border-bottom: none; }
+.history-item:hover { background: var(--detail-hover-bg); }
+.history-author { font-weight: 700; color: var(--detail-text); }
+.history-date { color: var(--detail-text-muted); font-size: 0.7rem; }
+.history-change { color: var(--detail-text-muted); }
+.history-arrow { color: var(--detail-text-muted); margin: 0 0.25rem; }
 
-.history-item:last-child {
-    border-bottom: none;
-}
+/* ── Layout Grid ── */
+.detail-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; }
+@media (min-width: 992px) { .detail-grid { grid-template-columns: 1fr 340px; } }
 
-.history-item:hover {
-    background: var(--detail-hover-bg);
-}
+/* =============================================================================
+   ★ STATUS CHANGER — Dropdown inline para alterar status
+   ============================================================================= */
+.status-changer { position: relative; }
 
-.history-author {
-    font-weight: 700;
+.status-current-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.15s;
+    border: 1px solid var(--detail-card-border);
+    background: var(--detail-card-bg);
+    width: 100%;
+    text-align: left;
     color: var(--detail-text);
 }
 
-.history-date {
-    color: var(--detail-text-muted);
-    font-size: 0.7rem;
+.status-current-btn:hover {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
-.history-change {
-    color: var(--detail-text-muted);
-}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-dot-pendente   { background: #d97706; }
+.status-dot-atrasada   { background: #dc2626; }
+.status-dot-andamento  { background: #2563eb; }
+.status-dot-concluida  { background: #16a34a; }
+.status-dot-pausada    { background: #7c3aed; }
+.status-dot-cancelada  { background: #475569; }
 
-.history-arrow {
-    color: var(--detail-text-muted);
-    margin: 0 0.25rem;
+.status-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    z-index: 50;
+    background: var(--detail-card-bg);
+    border: 1px solid var(--detail-card-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    padding: 0.35rem;
+    display: none;
 }
+[data-bs-theme="dark"] .status-dropdown { box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); }
+.status-dropdown.show { display: block; }
 
-/* ── Layout Grid ── */
-.detail-grid {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 1fr;
+.status-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.65rem;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: background 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    color: var(--detail-text);
 }
+.status-option:hover { background: var(--detail-hover-bg); }
+.status-option.active { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
 
-@media (min-width: 992px) {
-    .detail-grid {
-        grid-template-columns: 1fr 340px;
-    }
+.status-feedback {
+    display: none;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.73rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    animation: statusFadeIn 0.2s ease;
 }
+.status-feedback.success { display: flex; background: rgba(34, 197, 94, 0.1); color: #16a34a; }
+.status-feedback.error   { display: flex; background: rgba(239, 68, 68, 0.1); color: #dc2626; }
 
-/* ── Count Badge ── */
-.comment-count {
-    background: #6366f1;
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.15em 0.5em;
-    border-radius: 999px;
-    min-width: 1.3rem;
-    text-align: center;
+@keyframes statusFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Mobile ── */
@@ -390,7 +226,7 @@
 {% block content %}
 <div class="detail-wrapper">
 
-        <!-- Header -->
+    <!-- Header -->
     <div class="detail-header">
         <div>
             <h1 class="detail-title">{{ object.titulo }}</h1>
@@ -406,18 +242,19 @@
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
                 <i class="bi bi-file-earmark-bar-graph"></i>
             </a>
-            {% if object.status != 'concluida' and object.status != 'cancelada' %}
-            <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-sm btn-primary" title="Editar">
+            {% if can_edit and object.status != 'concluida' and object.status != 'cancelada' %}
+            <a href="{% url 'tarefas:editar_tarefa' object.pk %}" class="btn btn-sm btn-primary">
                 <i class="bi bi-pencil me-1"></i> Editar
             </a>
             {% endif %}
+
         </div>
     </div>
 
-    <!-- Grid: Main + Sidebar -->
+    <!-- Grid -->
     <div class="detail-grid">
 
-        <!-- Coluna Principal -->
+        <!-- ═══ Coluna Principal ═══ -->
         <div>
             <!-- Descrição -->
             <div class="detail-card">
@@ -440,8 +277,6 @@
                     <span class="comment-count">{{ comentarios.count }}</span>
                 </div>
                 <div class="detail-card-body">
-
-                    <!-- Form -->
                     <form method="post" enctype="multipart/form-data" class="comment-form mb-3">
                         {% csrf_token %}
                         {{ form.texto }}
@@ -455,12 +290,9 @@
 
                     <hr style="border-color: var(--detail-divider);">
 
-                    <!-- Lista -->
                     {% for comentario in comentarios %}
                     <div class="comment-item">
-                        <div class="comment-avatar">
-                            <i class="bi bi-person"></i>
-                        </div>
+                        <div class="comment-avatar"><i class="bi bi-person"></i></div>
                         <div class="comment-body">
                             <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap gap-1">
                                 <span class="comment-author">{{ comentario.autor.get_full_name|default:comentario.autor.username }}</span>
@@ -482,21 +314,41 @@
             </div>
         </div>
 
-        <!-- Sidebar -->
+        <!-- ═══ Sidebar ═══ -->
         <div>
-            <!-- Detalhes -->
             <div class="detail-card">
                 <div class="detail-card-header">
                     <h6 class="detail-card-title"><i class="bi bi-info-circle me-2"></i>Detalhes</h6>
                 </div>
                 <div class="detail-card-body">
 
+                    <!-- ★ STATUS COM ALTERAÇÃO INLINE ★ -->
                     <div class="sidebar-field">
                         <div class="sidebar-label">Status</div>
-                        <div class="sidebar-value">
-                            <span class="detail-badge badge-status-{{ object.status }}">
-                                {{ object.get_status_display }}
-                            </span>
+                        <div class="status-changer" id="statusChanger">
+                            <button type="button" class="status-current-btn" id="statusToggleBtn"
+                                    title="Clique para alterar o status">
+                                <span class="status-dot status-dot-{{ object.status }}" id="statusDot"></span>
+                                <span id="statusDisplay">{{ object.get_status_display }}</span>
+                                <i class="bi bi-chevron-expand ms-auto" style="font-size:0.7rem; opacity:0.4;"></i>
+                            </button>
+
+                            <div class="status-dropdown" id="statusDropdown">
+                                {% for key, label in status_choices %}
+                                <button type="button"
+                                        class="status-option {% if key == object.status %}active{% endif %}"
+                                        data-status="{{ key }}"
+                                        data-label="{{ label }}">
+                                    <span class="status-dot status-dot-{{ key }}"></span>
+                                    {{ label }}
+                                    {% if key == object.status %}
+                                    <i class="bi bi-check2 ms-auto" style="color:#6366f1;"></i>
+                                    {% endif %}
+                                </button>
+                                {% endfor %}
+                            </div>
+
+                            <div class="status-feedback" id="statusFeedback"></div>
                         </div>
                     </div>
 
@@ -515,7 +367,8 @@
                         <div class="sidebar-label">Responsável</div>
                         <p class="sidebar-value">
                             <i class="bi bi-person-check"></i>
-                            {{ object.responsavel.get_full_name|default:object.responsavel.username|default:"Não atribuído" }}
+                            {% if object.responsavel %}{{ object.responsavel.get_full_name|default:object.responsavel.username }}
+                            {% else %}Não atribuído{% endif %}
                         </p>
                     </div>
 
@@ -553,7 +406,7 @@
 
                     <div class="sidebar-field">
                         <div class="sidebar-label">Última Atualização</div>
-                        <p class="sidebar-value">
+                        <p class="sidebar-value" id="dataAtualizacao">
                             <i class="bi bi-clock-history"></i>
                             {{ object.data_atualizacao|date:"d/m/Y H:i" }}
                         </p>
@@ -562,12 +415,15 @@
                     <hr class="sidebar-divider">
 
                     <div class="sidebar-field">
-                        <div class="sidebar-label">Progresso: {{ object.progresso }}%</div>
+                        <div class="sidebar-label">
+                            Progresso: <span id="progressoPercent">{{ object.progresso }}</span>%
+                        </div>
                         <div class="detail-progress-bar mt-1">
                             <div class="detail-progress-fill
                                 {% if object.progresso == 100 %}bg-success
                                 {% elif object.progresso >= 50 %}bg-primary
                                 {% else %}bg-warning{% endif %}"
+                                id="progressoBar"
                                 style="width: {{ object.progresso }}%"></div>
                         </div>
                     </div>
@@ -576,27 +432,244 @@
 
             <!-- Histórico -->
             {% if historicos %}
-            <div class="detail-card">
+            <div class="detail-card" id="historicoCard">
                 <div class="detail-card-header">
                     <h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>
+                    <span class="comment-count">{{ historicos|length }}</span>
                 </div>
-                <div style="max-height: 300px; overflow-y: auto;">
+                <div style="max-height: 400px; overflow-y: auto;" id="historicoList">
                     {% for h in historicos %}
                     <div class="history-item">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="history-author">{{ h.alterado_por.get_full_name|default:h.alterado_por.username }}</span>
+                            <span class="history-author">
+                                {{ h.alterado_por.get_full_name|default:h.alterado_por.username|default:"Sistema" }}
+                            </span>
                             <span class="history-date">{{ h.data_alteracao|date:"d/m/Y H:i" }}</span>
                         </div>
                         <div class="history-change">
-                            {{ h.status_anterior }}<span class="history-arrow">→</span><strong>{{ h.novo_status }}</strong>
+                            <i class="bi {{ h.icone }} me-1" style="color:{{ h.cor }}; font-size:0.75rem;"></i>
+                            {% if h.tipo_alteracao == 'status' %}
+                                {{ h.valor_anterior }}
+                                <span class="history-arrow">→</span>
+                                <strong>{{ h.valor_novo }}</strong>
+                            {% elif h.tipo_alteracao == 'criacao' %}
+                                <strong>{{ h.descricao }}</strong>
+                            {% else %}
+                                {{ h.descricao }}
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
             {% endif %}
+
         </div>
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ═══════════════════════════════════════════════════════════════
+    // STATUS CHANGER — Alterar status via AJAX
+    // ═══════════════════════════════════════════════════════════════
+
+    var toggleBtn  = document.getElementById('statusToggleBtn');
+    var dropdown   = document.getElementById('statusDropdown');
+    var display    = document.getElementById('statusDisplay');
+    var dot        = document.getElementById('statusDot');
+    var feedback   = document.getElementById('statusFeedback');
+    var progressBar     = document.getElementById('progressoBar');
+    var progressPercent = document.getElementById('progressoPercent');
+    var dataAtualiz     = document.getElementById('dataAtualizacao');
+    var changer         = document.getElementById('statusChanger');
+
+    var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var ajaxUrl   = "{% url 'tarefas:alterar_status_tarefa' object.pk %}";
+    var currentStatus = '{{ object.status }}';
+    var isLoading = false;
+
+    // Toggle
+    toggleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!isLoading) dropdown.classList.toggle('show');
+    });
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', function(e) {
+        if (!changer.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    // ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') dropdown.classList.remove('show');
+    });
+
+    // Limpar feedback
+    function limparFeedback() {
+        feedback.className = 'status-feedback';
+        feedback.style.display = 'none';
+    }
+
+    // Clique nas opções
+    dropdown.querySelectorAll('.status-option').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var novoStatus = this.dataset.status;
+            var novoLabel  = this.dataset.label;
+
+            if (novoStatus === currentStatus || isLoading) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            var statusAnteriorDisplay = display.textContent;
+
+            // Loading state
+            isLoading = true;
+            dropdown.classList.remove('show');
+            toggleBtn.style.opacity = '0.5';
+            toggleBtn.style.pointerEvents = 'none';
+            limparFeedback();
+
+            fetch(ajaxUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: 'status=' + encodeURIComponent(novoStatus)
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                isLoading = false;
+                toggleBtn.style.opacity = '1';
+                toggleBtn.style.pointerEvents = 'auto';
+
+                if (data.ok) {
+                    currentStatus = data.novo_status;
+
+                    // Atualizar botão
+                    display.textContent = data.novo_status_display;
+                    dot.className = 'status-dot status-dot-' + data.novo_status;
+
+                    // Atualizar opções
+                    dropdown.querySelectorAll('.status-option').forEach(function(opt) {
+                        opt.classList.remove('active');
+                        var chk = opt.querySelector('.bi-check2');
+                        if (chk) chk.remove();
+
+                        if (opt.dataset.status === data.novo_status) {
+                            opt.classList.add('active');
+                            var icon = document.createElement('i');
+                            icon.className = 'bi bi-check2 ms-auto';
+                            icon.style.color = '#6366f1';
+                            opt.appendChild(icon);
+                        }
+                    });
+
+                    // Progresso
+                    if (data.progresso !== undefined) {
+                        progressPercent.textContent = data.progresso;
+                        progressBar.style.width = data.progresso + '%';
+                        progressBar.className = 'detail-progress-fill';
+                        if (data.progresso == 100) progressBar.classList.add('bg-success');
+                        else if (data.progresso >= 50) progressBar.classList.add('bg-primary');
+                        else progressBar.classList.add('bg-warning');
+                    }
+
+                    // Data atualização
+                    if (data.data_atualizacao) {
+                        dataAtualiz.innerHTML = '<i class="bi bi-clock-history"></i> ' + data.data_atualizacao;
+                    }
+
+                    // Histórico — inserir novo item no topo
+                    var histList = document.getElementById('historicoList');
+                    if (histList) {
+                        var userName = '{{ request.user.get_full_name|default:request.user.username|escapejs }}';
+                        var agora = new Date();
+                        var dataStr = agora.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'})
+                                    + ' '
+                                    + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+                        var novoItem = document.createElement('div');
+                        novoItem.className = 'history-item';
+                        novoItem.style.animation = 'statusFadeIn 0.3s ease';
+                        novoItem.innerHTML =
+                            '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                '<span class="history-author">' + userName + '</span>' +
+                                '<span class="history-date">' + dataStr + '</span>' +
+                            '</div>' +
+                            '<div class="history-change">' +
+                                statusAnteriorDisplay +
+                                '<span class="history-arrow">→</span>' +
+                                '<strong>' + data.novo_status_display + '</strong>' +
+                            '</div>';
+
+                        histList.insertBefore(novoItem, histList.firstChild);
+                    } else {
+                        // Se não tinha histórico, cria o card
+                        var sidebar = document.querySelector('.detail-grid > div:last-child');
+                        if (sidebar) {
+                            var card = document.createElement('div');
+                            card.className = 'detail-card';
+                            card.id = 'historicoCard';
+                            card.innerHTML =
+                                '<div class="detail-card-header">' +
+                                    '<h6 class="detail-card-title"><i class="bi bi-clock-history me-2"></i>Histórico</h6>' +
+                                '</div>' +
+                                '<div style="max-height:300px;overflow-y:auto;" id="historicoList">' +
+                                    '<div class="history-item" style="animation:statusFadeIn 0.3s ease;">' +
+                                        '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                                            '<span class="history-author">' +
+                                                '{{ request.user.get_full_name|default:request.user.username|escapejs }}' +
+                                            '</span>' +
+                                            '<span class="history-date">' +
+                                                new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'}) +
+                                                ' ' +
+                                                new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) +
+                                            '</span>' +
+                                        '</div>' +
+                                        '<div class="history-change">' +
+                                            statusAnteriorDisplay +
+                                            '<span class="history-arrow">→</span>' +
+                                            '<strong>' + data.novo_status_display + '</strong>' +
+                                        '</div>' +
+                                    '</div>' +
+                                '</div>';
+                            sidebar.appendChild(card);
+                        }
+                    }
+
+                    // Feedback sucesso
+                    feedback.innerHTML = '<i class="bi bi-check-circle-fill"></i> Status atualizado!';
+                    feedback.className = 'status-feedback success';
+                    setTimeout(limparFeedback, 3500);
+
+                } else {
+                    feedback.innerHTML = '<i class="bi bi-exclamation-circle-fill"></i> ' + (data.error || 'Erro ao atualizar.');
+                    feedback.className = 'status-feedback error';
+                    setTimeout(limparFeedback, 4000);
+                }
+            })
+            .catch(function() {
+                isLoading = false;
+                toggleBtn.style.opacity = '1';
+                toggleBtn.style.pointerEvents = 'auto';
+                feedback.innerHTML = '<i class="bi bi-wifi-off"></i> Erro de conexão. Tente novamente.';
+                feedback.className = 'status-feedback error';
+                setTimeout(limparFeedback, 4000);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+
+
+
 

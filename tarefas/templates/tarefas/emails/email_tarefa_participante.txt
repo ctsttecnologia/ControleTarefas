@@ -1,0 +1,33 @@
+
+{# templates/tarefas/emails/email_tarefa_participante.txt #}
+ADICIONADO COMO PARTICIPANTE
+=============================
+
+Olá,
+
+{% if adicionado_por %}{{ adicionado_por.get_full_name|default:adicionado_por.username }} adicionou você como participante na tarefa abaixo.{% else %}Você foi adicionado como participante na tarefa abaixo.{% endif %}
+
+Como participante, você receberá notificações sobre atualizações
+de status, comentários e alterações nesta tarefa.
+
+DETALHES DA TAREFA
+------------------
+Título:       {{ tarefa.titulo }}
+Prioridade:   {{ tarefa.get_prioridade_display }}
+Status:       {{ tarefa.get_status_display }}
+Responsável:  {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"Não atribuído" }}
+Criado por:   {{ tarefa.usuario.get_full_name|default:tarefa.usuario.username }}
+{% if tarefa.prazo %}Prazo:        {{ tarefa.prazo|date:"d/m/Y H:i" }}
+{% endif %}{% if tarefa.projeto %}Projeto:      {{ tarefa.projeto }}
+{% endif %}{% if tarefa.descricao %}
+Descrição:
+{{ tarefa.descricao|truncatewords:50 }}
+{% endif %}
+
+Acesse: {{ tarefa_url }}
+
+--
+Gerenciando Tarefas · Cetest Minas
+Este é um email automático. Por favor, não responda.
+
+

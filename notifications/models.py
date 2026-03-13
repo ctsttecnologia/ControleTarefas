@@ -17,6 +17,10 @@ class Notificacao(models.Model):
         ('tarefa_lembrete', 'Lembrete de Tarefa'),
         ('tarefa_prazo_proximo', 'Prazo Próximo'),
         ('tarefa_status', 'Mudança de Status'),
+        ('tarefa_criada', 'Tarefa Criada'),
+        ('tarefa_atribuida', 'Tarefa Atribuída'),
+        ('tarefa_comentario', 'Novo Comentário'),
+        ('tarefa_concluida', 'Tarefa Concluída'),
         ('pgr_vencimento', 'PGR Próximo ao Vencimento'),
         ('pgr_criado', 'Novo PGR Criado'),
         ('pgr_risco_critico', 'Risco Crítico Identificado'),
@@ -70,6 +74,9 @@ class Notificacao(models.Model):
     titulo = models.CharField('Título', max_length=120, default='')
     mensagem = models.TextField('Mensagem', blank=True)
     lida = models.BooleanField('Lida', default=False, db_index=True)
+    enviada_email = models.BooleanField(default=False)
+    criada_em = models.DateTimeField(auto_now_add=True)
+
     url_destino = models.CharField(
         'URL de Destino', max_length=500,
         blank=True, null=True,

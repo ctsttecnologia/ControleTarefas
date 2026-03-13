@@ -393,7 +393,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
 {% block content %}
 <div class="kanban-wrapper">
 
-        <!-- Header -->
+    <!-- Header -->
     <div class="kanban-header">
         <div>
             <h1 class="kanban-title">
@@ -412,7 +412,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
                 <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
             </a>
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
-                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
+                <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova</span>
             </a>
         </div>
     </div>
@@ -420,12 +420,12 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     <!-- Board -->
     <div class="kanban-board" id="kanbanBoard">
         {% for coluna in colunas %}
-        <div class="kanban-column" data-status="{{ coluna.id }}">
+        <div class="kanban-column" data-status="{{ coluna.key }}">
             <!-- Column Header -->
-            <div class="kanban-column-header kanban-header-{{ coluna.id }}">
+            <div class="kanban-column-header kanban-header-{{ coluna.key }}">
                 <div class="d-flex align-items-center gap-2">
-                    <span class="kanban-status-dot kanban-dot-{{ coluna.id }}"></span>
-                    <h2 class="kanban-column-title">{{ coluna.nome }}</h2>
+                    <span class="kanban-status-dot kanban-dot-{{ coluna.key }}"></span>
+                    <h2 class="kanban-column-title">{{ coluna.label }}</h2>
                 </div>
                 <span class="kanban-count">
                     {{ coluna.tarefas|length }}
@@ -433,9 +433,9 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             </div>
 
             <!-- Cards Container -->
-            <div class="kanban-cards" id="{{ coluna.id }}">
+            <div class="kanban-cards" id="col-{{ coluna.key }}">
                 {% for tarefa in coluna.tarefas %}
-                <div class="kanban-card" data-task-id="{{ tarefa.id }}" data-bs-toggle="tooltip" title="Clique para detalhes">
+                <div class="kanban-card" data-task-id="{{ tarefa.pk }}" data-bs-toggle="tooltip" title="Clique para detalhes">
                     <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="text-decoration-none">
                         <div class="kanban-card-title">{{ tarefa.titulo }}</div>
                     </a>
@@ -461,7 +461,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
 
                             {% if tarefa.responsavel %}
                             <span class="kanban-avatar" title="{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}">
-                                {{ tarefa.responsavel.first_name|make_list|first|default:"?" }}
+                                {{ tarefa.responsavel.first_name|make_list|first|default:"?" }}{{ tarefa.responsavel.last_name|make_list|first|default:"" }}
                             </span>
                             {% endif %}
                         </div>
@@ -484,46 +484,75 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+
     // Tooltips
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
         new bootstrap.Tooltip(el);
     });
 
-    // CSRF Token
-    function getCookie(name) {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-            cookie = cookie.trim();
-            if (cookie.startsWith(name + '=')) {
-                return decodeURIComponent(cookie.substring(name.length + 1));
-            }
-        }
-        return null;
-    }
+    // CSRF Token — direto do Django (resolve o erro 403)
+    const csrfToken = '{{ csrf_token }}';
 
-    // Atualizar contadores das colunas
+    // Atualizar contadores e estados vazios
     function updateColumnCounts() {
         document.querySelectorAll('.kanban-column').forEach(col => {
-            const cards = col.querySelectorAll('.kanban-cards > .kanban-card');
-            const count = col.querySelector('.kanban-count');
-            const empty = col.querySelector('.kanban-empty');
             const container = col.querySelector('.kanban-cards');
+            const cards = container.querySelectorAll('.kanban-card');
+            const count = col.querySelector('.kanban-count');
+            const empty = container.querySelector('.kanban-empty');
 
             if (count) count.textContent = cards.length;
 
             if (cards.length > 0 && empty) {
                 empty.remove();
             } else if (cards.length === 0 && !empty) {
-                container.innerHTML = `
-                    <div class="kanban-empty">
-                        <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
-                        <span>Nenhuma tarefa aqui.</span>
-                    </div>`;
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'kanban-empty';
+                emptyDiv.innerHTML = `
+                    <i class="bi bi-inbox text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
+                    <span>Nenhuma tarefa aqui.</span>`;
+                container.appendChild(emptyDiv);
             }
         });
     }
 
-    // Sortable (Drag & Drop)
+    // Toast de feedback
+    function showToast(msg, tipo) {
+        let container = document.getElementById('kanban-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'kanban-toast-container';
+            container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:9999;max-width:350px;';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${tipo || 'info'} alert-dismissible fade show shadow-sm py-2 px-3 mb-2`;
+        toast.style.cssText = 'font-size:0.83rem;animation:fadeIn 0.2s ease;';
+        toast.innerHTML = msg +
+            '<button type="button" class="btn-close btn-close-sm ms-2" data-bs-dismiss="alert"></button>';
+        container.appendChild(toast);
+
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
+    }
+
+    // Reverter card para coluna original
+    function revertCard(card, oldStatus) {
+        const oldColumn = document.querySelector(`.kanban-column[data-status="${oldStatus}"]`);
+        if (oldColumn) {
+            const oldContainer = oldColumn.querySelector('.kanban-cards');
+            oldContainer.querySelectorAll('.kanban-empty').forEach(el => el.remove());
+            oldContainer.appendChild(card);
+        }
+        updateColumnCounts();
+        card.classList.add('kanban-save-error');
+        setTimeout(() => card.classList.remove('kanban-save-error'), 2000);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // SORTABLE — Drag & Drop
+    // ═══════════════════════════════════════════════════════
+
     document.querySelectorAll('.kanban-cards').forEach(container => {
         new Sortable(container, {
             group: 'kanban',
@@ -546,36 +575,91 @@ document.addEventListener('DOMContentLoaded', () => {
             onEnd: function(evt) {
                 document.body.classList.remove('kanban-dragging');
 
-                const taskId = evt.item.dataset.taskId;
-                const newStatus = evt.to.id;
+                const card = evt.item;
+                const taskId = card.dataset.taskId;
+
+                // Pega o status pelo data-status da coluna pai
+                const newStatus = evt.to.closest('.kanban-column').dataset.status;
+                const oldStatus = evt.from.closest('.kanban-column').dataset.status;
 
                 evt.to.querySelectorAll('.kanban-empty').forEach(el => el.remove());
                 updateColumnCounts();
 
+                // Se soltou na mesma coluna, não faz nada
+                if (oldStatus === newStatus) return;
+
+                card.style.opacity = '0.6';
+                card.style.pointerEvents = 'none';
+
+                // ── Persistir no servidor ──
                 fetch("{% url 'tarefas:update_task_status' %}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
-                        'X-CSRFToken': getCookie('csrftoken'),
+                        'X-CSRFToken': csrfToken,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: `task_id=${taskId}&new_status=${newStatus}`
                 })
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(data => {
-                    if (!data.success) {
-                        console.error('Erro:', data.message);
-                        location.reload();
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+
+                    if (data.success) {
+                        card.classList.add('kanban-save-success');
+                        setTimeout(() => card.classList.remove('kanban-save-success'), 1500);
+                        showToast(
+                            '<i class="bi bi-check-circle me-1"></i>Status atualizado!',
+                            'success'
+                        );
+                    } else {
+                        revertCard(card, oldStatus);
+                        showToast(
+                            '<i class="bi bi-exclamation-triangle me-1"></i>' + (data.message || 'Erro ao mover tarefa.'),
+                            'danger'
+                        );
                     }
                 })
                 .catch(err => {
                     console.error('Erro AJAX:', err);
-                    location.reload();
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    revertCard(card, oldStatus);
+                    showToast(
+                        '<i class="bi bi-wifi-off me-1"></i>Erro de conexão. A tarefa foi revertida.',
+                        'danger'
+                    );
                 });
             }
         });
     });
 });
 </script>
-{% endblock %}
 
+<style>
+.kanban-save-success {
+    animation: kanbanFlashSuccess 1.5s ease !important;
+}
+.kanban-save-error {
+    animation: kanbanFlashError 2s ease !important;
+}
+@keyframes kanbanFlashSuccess {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+    30%  { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.3); }
+    100% { box-shadow: none; }
+}
+@keyframes kanbanFlashError {
+    0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    30%  { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3); }
+    100% { box-shadow: none; }
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}

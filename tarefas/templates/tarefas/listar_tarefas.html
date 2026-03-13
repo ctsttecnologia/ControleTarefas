@@ -434,6 +434,7 @@
                 <thead>
                     <tr>
                         <th>Tarefa</th>
+                        <th>Responsavel</th>
                         <th>Prioridade</th>
                         <th>Status</th>
                         <th>Prazo</th>
@@ -452,6 +453,26 @@
                             <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
                         </td>
+                        <td data-label="Responsável">
+                            {% if tarefa.responsavel %}
+                            <span class="task-badge badge-responsavel">
+                                {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|truncatewords:10|upper }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+
+                            {% if tarefa.participantes.exists %}
+                            <div class="task-desc mt-1">
+                                {% for p in tarefa.participantes.all %}
+                                    <small class="d-block text-muted">
+                                        <i class="bi bi-person me-1"></i>{{ p.get_full_name|default:p.username }}
+                                    </small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+
                         <td data-label="Prioridade">
                             <span class="task-badge badge-prio-{{ tarefa.prioridade|lower }}">
                                 {{ tarefa.get_prioridade_display }}
