@@ -253,7 +253,7 @@
                             <span class="rel-table-title">{{ tarefa.titulo }}</span>
                         </td>
                         <td data-label="Responsável">
-                            {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"—" }}
+                            {% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}
                         </td>
                         <td data-label="Status">
                             <span class="rel-badge rel-badge-{{ tarefa.status }}">

@@ -1,0 +1,26 @@
+
+{# templates/tarefas/emails/email_tarefa_comentario.txt #}
+NOVO COMENTÁRIO
+===============
+
+Olá,
+
+{{ autor.get_full_name|default:autor.username }} adicionou um comentário na tarefa.
+
+💬 COMENTÁRIO
+-------------
+{{ texto_comentario|truncatewords:80 }}
+
+DETALHES DA TAREFA
+------------------
+Título:       {{ tarefa.titulo }}
+Status:       {{ tarefa.get_status_display }}
+Responsável:  {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|default:"Não atribuído" }}
+{% if tarefa.prazo %}Prazo:        {{ tarefa.prazo|date:"d/m/Y H:i" }}
+{% endif %}
+Acesse: {{ tarefa_url }}
+
+--
+Gerenciando Tarefas · Cetest Minas
+Este é um email automático. Por favor, não responda.
+

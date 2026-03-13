@@ -106,8 +106,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'notifications.apps.NotificationsConfig',
     'dal',
-    'dal_select2',
-    'storages',                                          # ← NOVO
+    'dal_select2',                                       
     # Apps Locais
     'dashboard.apps.DashboardConfig',
     'usuario.apps.UsuarioConfig', 
@@ -130,6 +129,18 @@ INSTALLED_APPS = [
     'api',
     'pgr_gestao.apps.PgrGestaoConfig', 
 ]
+
+# Adicionar storages apenas quando disponível (produção)
+_storage_provider = config('STORAGE_PROVIDER', default='LOCAL')
+if _storage_provider == 'GCS':
+    try:
+        import storages  # noqa: F401
+        if 'storages' not in INSTALLED_APPS:
+            INSTALLED_APPS.append('storages')
+    except ImportError:
+        logger.warning(
+            "⚠️ STORAGE_PROVIDER=GCS mas 'django-storages' não está instalado!"
+        )
 
 
 # =============================================================================
@@ -288,6 +299,7 @@ GS_FILE_OVERWRITE = False
 # =============================================================================
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_ROOT = BASE_DIR / 'midia'                     # ← SEMPRE definido (fallback)
 
 if STORAGE_PROVIDER == 'GCS':
     # ── PRODUÇÃO COM GOOGLE CLOUD STORAGE ──
@@ -297,6 +309,7 @@ if STORAGE_PROVIDER == 'GCS':
     DEFAULT_FILE_STORAGE = 'storage_backends.MediaStorage'
     MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/media/'
 
+    # MEDIA_ROOT já definido acima como fallback para management commands
     logger.info(f"☁️ Usando Google Cloud Storage: {GS_BUCKET_NAME}")
 
 elif IS_DEVELOPMENT:
@@ -306,7 +319,7 @@ elif IS_DEVELOPMENT:
 
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL = '/midia/'
-    MEDIA_ROOT = BASE_DIR / 'midia'
+    # MEDIA_ROOT já definido acima
 
     logger.debug("📁 Usando storage local (Desenvolvimento)")
 
@@ -317,7 +330,7 @@ else:
 
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     MEDIA_URL = '/midia/'
-    MEDIA_ROOT = BASE_DIR / 'midia'
+    # MEDIA_ROOT já definido acima
 
     logger.debug("📦 Usando WhiteNoise (Pré-produção sem GCS)")
 
@@ -538,3 +551,4 @@ for _name in _QUIET_LOGGERS:
     _logging.getLogger('django').setLevel(_logging.INFO)
     _logging.getLogger('django.server').setLevel(_logging.WARNING)
     _logging.getLogger('suprimentos').setLevel(_logging.DEBUG)
+

@@ -196,3 +196,14 @@ def gerar_docx_relatorio(context):
     return response
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Re-exportar funções de histórico para manter imports simples
+# ═══════════════════════════════════════════════════════════════════════
+
+from .historico_services import (  # noqa: F401, E402
+    registrar_criacao_tarefa,
+    registrar_alteracoes_tarefa,
+    registrar_alteracao_status,
+    registrar_alteracao_participantes,
+)
+

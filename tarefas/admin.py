@@ -5,8 +5,9 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-from .models import Tarefas, Comentario, HistoricoStatus
+from .models import Tarefas, Comentario, HistoricoTarefa
 from core.mixins import AdminFilialScopedMixin, ChangeFilialAdminMixin
+
 
 # --- INLINES ---
 class ComentarioInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.TabularInline):
@@ -20,7 +21,7 @@ class ComentarioInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.Tab
     verbose_name_plural = "Comentários"
 
 class HistoricoStatusInline(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.TabularInline):
-    model = HistoricoStatus
+    model = HistoricoTarefa
     extra = 0
     # Adicionado 'filial' para que o campo seja exibido
     fields = ('novo_status', 'data_alteracao', 'alterado_por', 'filial',)
@@ -151,3 +152,20 @@ class TarefasAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAd
         else:
             super().save_formset(request, form, formset, change)
 
+
+
+
+@admin.register(HistoricoTarefa)
+class HistoricoTarefaAdmin(admin.ModelAdmin):
+    list_display = [
+        'tarefa', 'tipo_alteracao', 'alterado_por',
+        'campo_alterado', 'valor_anterior', 'valor_novo',
+        'data_alteracao',
+    ]
+    list_filter = ['tipo_alteracao', 'data_alteracao', 'filial']
+    search_fields = ['tarefa__titulo', 'descricao', 'alterado_por__username']
+    readonly_fields = [
+        'tarefa', 'alterado_por', 'tipo_alteracao', 'campo_alterado',
+        'valor_anterior', 'valor_novo', 'descricao', 'filial', 'data_alteracao',
+    ]
+    date_hierarchy = 'data_alteracao'

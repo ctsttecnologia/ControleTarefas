@@ -20,10 +20,16 @@ urlpatterns = [
     path('<int:pk>/editar/', views.TarefaUpdateView.as_view(), name='editar_tarefa'),
     path('<int:pk>/excluir/', views.TarefaDeleteView.as_view(), name='excluir_tarefa'),
     path('<int:pk>/concluir/', views.ConcluirTarefaView.as_view(), name='concluir_tarefa'),
+    path('<int:pk>/alterar-status/', views.alterar_status_tarefa, name='alterar_status_tarefa'),
 
-    # --- Visualizações ---
+    # --- Kanban ---
     path('kanban/', views.KanbanView.as_view(), name='kanban_board'),
+    path('kanban/update-status/', views.update_task_status, name='update_task_status'),
+
+    # --- Calendário ---
     path('calendario/', views.CalendarioTarefasView.as_view(), name='calendario_tarefas'),
+
+    # --- Dashboard ---
     path('dashboard/', views.DashboardAnaliticoView.as_view(), name='dashboard'),
 
     # --- Relatórios ---
@@ -37,7 +43,8 @@ urlpatterns = [
 
     # --- API ---
     path('api/', include(router.urls)),
-    path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='update_task_status'),
+    path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='api_update_task_status'),
 ]
+
 
 

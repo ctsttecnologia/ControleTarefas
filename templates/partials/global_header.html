@@ -122,8 +122,8 @@
         <li><hr class="dropdown-divider my-0"></li>
 
                             <!-- Lista de notificações -->
-                            {% if notification_list %}
-                                {% for notif in notification_list %}
+                            {% if notificacao_list %}
+                                {% for notif in notificacao_list %}
                                 <li>
                                     <form method="post" action="{% url 'notifications:marcar_como_lida' notif.pk %}" class="d-inline w-100">
                                         {% csrf_token %}

@@ -176,14 +176,23 @@ class Tarefas(models.Model):
 
     # --- Save ---
     def save(self, *args, **kwargs):
+        usuario = getattr(self, '_user', None)
+        is_new = self.pk is None
+
         # Captura status antigo
         old_status = None
-        is_new = self.pk is None
         if not is_new:
             try:
-                old_status = Tarefas.objects.filter(pk=self.pk).values_list('status', flat=True).first()
-            except Tarefas.DoesNotExist:
+                old_status = Tarefas.objects.filter(pk=self.pk).values_list(
+                    'status', flat=True
+                ).first()
+            except Exception:
                 pass
+
+        # ── Registrar TODAS as alterações ANTES do save (exceto status) ──
+        if not is_new and usuario:
+            from tarefas.services import registrar_alteracoes_tarefa
+            registrar_alteracoes_tarefa(self, usuario)
 
         # Calcula data do lembrete
         if self.prazo and self.dias_lembrete:
@@ -192,8 +201,11 @@ class Tarefas(models.Model):
             self.data_lembrete = None
 
         # Auto-atrasada
-        if (self.prazo and self.prazo < timezone.now()
-                and self.status not in ('concluida', 'cancelada')):
+        if (
+            self.prazo
+            and self.prazo < timezone.now()
+            and self.status not in ('concluida', 'cancelada')
+        ):
             self.status = 'atrasada'
 
         # Conclusão automática
@@ -202,22 +214,45 @@ class Tarefas(models.Model):
         elif self.status != 'concluida':
             self.concluida_em = None
 
-        # ✅ Salva ANTES de criar recorrência (não corrompe self)
+        # ✅ Salva
         super().save(*args, **kwargs)
 
-        # Cria recorrência se status mudou para concluída
-        if old_status and old_status != 'concluida' and self.status == 'concluida' and self.recorrente:
-            self._criar_proxima_recorrencia()
+        # ── Registrar criação ──
+        if is_new and usuario:
+            from tarefas.services import registrar_criacao_tarefa
+            registrar_criacao_tarefa(self, usuario)
 
-        # Registra histórico
-        if old_status and old_status != self.status and hasattr(self, '_user'):
-            HistoricoStatus.objects.create(
+        # ── Registrar mudança de status ──
+        if old_status and old_status != self.status and usuario:
+            from tarefas.services import registrar_alteracao_status
+            registrar_alteracao_status(
                 tarefa=self,
-                status_anterior=old_status,
-                novo_status=self.status,
-                alterado_por=self._user,
-                filial=self.filial,
+                status_anterior_key=old_status,
+                novo_status_key=self.status,
+                alterado_por=usuario,
             )
+
+            # Manter compatibilidade: criar HistoricoStatus antigo também
+            # (remova este bloco quando migrar completamente)
+            try:
+                HistoricoTarefa.objects.create(
+                    tarefa=self,
+                    status_anterior=old_status,
+                    novo_status=self.status,
+                    alterado_por=usuario,
+                    filial=self.filial,
+                )
+            except Exception:
+                pass
+
+        # Cria recorrência se concluída
+        if (
+            old_status
+            and old_status != 'concluida'
+            and self.status == 'concluida'
+            and self.recorrente
+        ):
+            self._criar_proxima_recorrencia()
 
     def _criar_proxima_recorrencia(self):
         """Cria a próxima ocorrência SEM corromper self."""
@@ -265,36 +300,135 @@ class Tarefas(models.Model):
 
 
 # =============================================================================
-# HISTÓRICO DE STATUS
+# HISTÓRICO TAREFAS
 # =============================================================================
-class HistoricoStatus(models.Model):
-    tarefa = models.ForeignKey(
-        Tarefas, on_delete=models.CASCADE,
-        related_name='historicos', verbose_name=_('Tarefa')
-    )
-    status_anterior = models.CharField(_('Status Anterior'), max_length=20)
-    novo_status = models.CharField(_('Novo Status'), max_length=20)
-    alterado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-        verbose_name=_('Alterado por')
-    )
-    data_alteracao = models.DateTimeField(_('Data da Alteração'), auto_now_add=True)
-    observacao = models.TextField(_('Observação'), blank=True, null=True)
-    filial = models.ForeignKey(
-        Filial, on_delete=models.PROTECT,
-        related_name='historicos_status_tarefas',
-        verbose_name=_('Filial'), null=True
-    )
+class HistoricoTarefa(models.Model):
+    """
+    Registra QUALQUER alteração em uma tarefa:
+    status, participantes, responsável, prioridade, prazo, título, etc.
+    """
 
-    objects = FilialManager()
+    TIPO_ALTERACAO_CHOICES = [
+        ('criacao', _('Criação')),
+        ('status', _('Mudança de Status')),
+        ('participante_add', _('Participante Adicionado')),
+        ('participante_remove', _('Participante Removido')),
+        ('responsavel', _('Mudança de Responsável')),
+        ('prioridade', _('Mudança de Prioridade')),
+        ('prazo', _('Mudança de Prazo')),
+        ('titulo', _('Mudança de Título')),
+        ('descricao', _('Mudança de Descrição')),
+        ('projeto', _('Mudança de Projeto')),
+        ('recorrencia', _('Mudança de Recorrência')),
+        ('geral', _('Alteração Geral')),
+    ]
+
+    ICONE_MAP = {
+        'criacao': 'bi-plus-circle-fill',
+        'status': 'bi-arrow-repeat',
+        'participante_add': 'bi-person-plus-fill',
+        'participante_remove': 'bi-person-dash-fill',
+        'responsavel': 'bi-person-check-fill',
+        'prioridade': 'bi-flag-fill',
+        'prazo': 'bi-calendar-event',
+        'titulo': 'bi-pencil-fill',
+        'descricao': 'bi-text-left',
+        'projeto': 'bi-folder-fill',
+        'recorrencia': 'bi-arrow-clockwise',
+        'geral': 'bi-gear-fill',
+    }
+
+    COR_MAP = {
+        'criacao': '#22c55e',
+        'status': '#3b82f6',
+        'participante_add': '#0ea5e9',
+        'participante_remove': '#f97316',
+        'responsavel': '#8b5cf6',
+        'prioridade': '#f59e0b',
+        'prazo': '#ef4444',
+        'titulo': '#6366f1',
+        'descricao': '#6366f1',
+        'projeto': '#14b8a6',
+        'recorrencia': '#8b5cf6',
+        'geral': '#6b7280',
+    }
+
+    tarefa = models.ForeignKey(
+        Tarefas,
+        on_delete=models.CASCADE,
+        related_name='historicos_v2',  # ← diferente do antigo 'historicos'
+        verbose_name=_('Tarefa'),
+    )
+    alterado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name=_('Alterado por'),
+    )
+    tipo_alteracao = models.CharField(
+        _('Tipo de Alteração'),
+        max_length=25,
+        choices=TIPO_ALTERACAO_CHOICES,
+        default='status',
+        db_index=True,
+    )
+    campo_alterado = models.CharField(
+        _('Campo Alterado'),
+        max_length=50,
+        blank=True,
+        default='',
+    )
+    valor_anterior = models.TextField(_('Valor Anterior'), blank=True, default='')
+    valor_novo = models.TextField(_('Valor Novo'), blank=True, default='')
+    descricao = models.TextField(
+        _('Descrição'),
+        blank=True,
+        default='',
+        help_text=_('Descrição legível da alteração'),
+    )
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name='historicos_tarefas_v2',
+        verbose_name=_('Filial'),
+        null=True, blank=True,
+    )
+    data_alteracao = models.DateTimeField(
+        _('Data da Alteração'),
+        auto_now_add=True,
+        db_index=True,
+    )
 
     class Meta:
-        verbose_name = _('Histórico de Status')
-        verbose_name_plural = _('Históricos de Status')
         ordering = ['-data_alteracao']
+        verbose_name = _('Histórico da Tarefa')
+        verbose_name_plural = _('Históricos das Tarefas')
+        indexes = [
+            models.Index(fields=['tarefa', '-data_alteracao']),
+            models.Index(fields=['tipo_alteracao']),
+        ]
 
     def __str__(self):
-        return f"{self.tarefa} — {self.status_anterior} → {self.novo_status}"
+        if self.tipo_alteracao == 'status':
+            return f'{self.valor_anterior} → {self.valor_novo}'
+        return self.descricao[:80] or self.get_tipo_alteracao_display()
+
+    @property
+    def icone(self):
+        return self.ICONE_MAP.get(self.tipo_alteracao, 'bi-gear-fill')
+
+    @property
+    def cor(self):
+        return self.COR_MAP.get(self.tipo_alteracao, '#6b7280')
+
+    # ── Compatibilidade com código antigo ──
+    @property
+    def status_anterior(self):
+        return self.valor_anterior
+
+    @property
+    def novo_status(self):
+        return self.valor_novo
 
 
 # =============================================================================

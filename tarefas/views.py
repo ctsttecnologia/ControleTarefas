@@ -3,11 +3,11 @@
 
 import json
 import logging
-from collections import defaultdict
 from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Count
@@ -17,24 +17,22 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 )
-from django.views.generic.edit import FormMixin
 
-from core.mixins import ViewFilialScopedMixin, TarefaPermissionMixin
+from core.mixins import ViewFilialScopedMixin, TarefaAccessMixin
 from .forms import TarefaForm, ComentarioForm
-from .models import Tarefas, HistoricoStatus
+from .models import HistoricoTarefa, Tarefas
 from .services import (
     preparar_contexto_relatorio,
     gerar_pdf_relatorio,
     gerar_csv_relatorio,
     gerar_docx_relatorio,
+    registrar_alteracao_status,
 )
-from notifications.services import enviar_email as enviar_email_tarefa
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
-
+from notifications.services import notificar_tarefa_criada, notificar_tarefa_comentario
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -44,7 +42,7 @@ logger = logging.getLogger(__name__)
 # CRUD
 # =============================================================================
 
-class TarefaListView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
+class TarefaListView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/listar_tarefas.html'
     context_object_name = 'object_list'
@@ -85,113 +83,103 @@ class TarefaListView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermission
         return context
 
 
-class TarefaDetailView(
-    LoginRequiredMixin, ViewFilialScopedMixin,
-    TarefaPermissionMixin, FormMixin, DetailView
-):
+class TarefaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, DetailView):
     model = Tarefas
     template_name = 'tarefas/tarefa_detail.html'
-    form_class = ComentarioForm
-
-    def get_queryset(self):
-        return super().get_queryset().select_related('usuario', 'responsavel', 'filial')
-
-    def get_success_url(self):
-        return reverse('tarefas:tarefa_detail', kwargs={'pk': self.object.pk})
+    context_object_name = 'object'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        tarefa = self.get_object()
-        context['form'] = self.get_form()
-        context['comentarios'] = tarefa.comentarios.select_related('autor').order_by('-criado_em')
-        context['historicos'] = tarefa.historicos.select_related('alterado_por').order_by('-data_alteracao')
-        return context
+        ctx = super().get_context_data(**kwargs)
+        tarefa = self.object
+        user = self.request.user
+
+        ctx['comentarios'] = tarefa.comentarios.select_related('autor').all()
+
+        # ★ Usar o novo HistoricoTarefa (historicos_v2)
+        ctx['historicos'] = tarefa.historicos_v2.select_related(
+            'alterado_por'
+        ).order_by('-data_alteracao')[:50]
+
+        ctx['form'] = ComentarioForm()
+        ctx['status_choices'] = Tarefas.STATUS_CHOICES
+
+        # Permissões para o template
+        ctx['can_edit'] = TarefaAccessMixin.user_can_edit(user, tarefa)
+        ctx['can_change_status'] = TarefaAccessMixin.user_can_access(user, tarefa)
+
+        return ctx
 
     def post(self, request, *args, **kwargs):
+        """Salvar comentário — qualquer pessoa com acesso pode comentar."""
         self.object = self.get_object()
-        form = self.get_form()
-        return self.form_valid(form) if form.is_valid() else self.form_invalid(form)
+        form = ComentarioForm(request.POST, request.FILES)
+        if form.is_valid():
+            comentario = form.save(commit=False)
+            comentario.tarefa = self.object
+            comentario.autor = request.user
+            comentario.filial = self.object.filial
+            comentario.save()
+
+            # Notificar (sino + e-mail)
+            notificar_tarefa_comentario(
+                tarefa=self.object,
+                autor=request.user,
+                texto_comentario=comentario.texto,
+            )
+
+            return redirect('tarefas:tarefa_detail', pk=self.object.pk)
+
+        ctx = self.get_context_data()
+        ctx['form'] = form
+        return self.render_to_response(ctx)
+
+
+class TarefaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, CreateView):
+    model = Tarefas
+    form_class = TarefaForm
+    template_name = 'tarefas/tarefa_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
 
     def form_valid(self, form):
-        comentario = form.save(commit=False)
-        comentario.tarefa = self.object
-        comentario.autor = self.request.user
-        comentario.filial_id = self.request.session.get('active_filial_id')
-        comentario.save()
-        messages.success(self.request, 'Comentário adicionado!')
+        form.instance._user = self.request.user
+        response = super().form_valid(form)
+
+        # Notificar responsável e participantes
+        notificar_tarefa_criada(
+            tarefa=self.object,
+            criador=self.request.user,
+        )
+
+        return response
+
+
+class TarefaUpdateView(TarefaAccessMixin, UpdateView):
+    model = Tarefas
+    form_class = TarefaForm
+    template_name = 'tarefas/tarefa_form.html'
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if not TarefaAccessMixin.user_can_edit(self.request.user, obj):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied('Apenas o criador, responsável ou admin pode editar.')
+        return obj
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance._user = self.request.user
         return super().form_valid(form)
 
 
-class TarefaCreateView(
-    LoginRequiredMixin, ViewFilialScopedMixin,
-    TarefaPermissionMixin, CreateView
-):
-    model = Tarefas
-    form_class = TarefaForm
-    template_name = 'tarefas/tarefa_form.html'
-    success_url = reverse_lazy('tarefas:kanban_board')
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request
-        return kwargs
-
-    def form_valid(self, form):
-        form.instance.usuario = self.request.user
-        filial_id = self.request.session.get('active_filial_id')
-        if filial_id:
-            form.instance.filial_id = filial_id
-
-        response = super().form_valid(form)
-        tarefa = self.object
-
-        # Notifica responsável
-        if tarefa.responsavel and tarefa.responsavel.email:
-            enviar_email_tarefa(
-                assunto=f"Nova tarefa: '{tarefa.titulo}'",
-                template_texto='tarefas/emails/email_nova_tarefa.txt',
-                template_html='tarefas/emails/email_nova_tarefa.html',
-                contexto={'tarefa': tarefa, 'criador': self.request.user},
-                destinatarios=[tarefa.responsavel.email],
-            )
-
-        messages.success(self.request, "Tarefa criada com sucesso!")
-        return response
-
-
-class TarefaUpdateView(
-    LoginRequiredMixin, ViewFilialScopedMixin,
-    TarefaPermissionMixin, UpdateView
-):
-    model = Tarefas
-    form_class = TarefaForm
-    template_name = 'tarefas/tarefa_form.html'
-    context_object_name = 'tarefa'
-    success_url = reverse_lazy('tarefas:listar_tarefas')
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request
-        return kwargs
-
-    def form_valid(self, form):
-        # Captura status antes da edição
-        status_anterior = Tarefas.objects.filter(
-            pk=self.object.pk
-        ).values_list('status', flat=True).first()
-
-        response = super().form_valid(form)
-        tarefa = self.object
-
-        # Email é enviado pelo signal de HistoricoStatus, evitando duplicação
-        messages.success(self.request, f"Tarefa '{tarefa.titulo}' atualizada!")
-        return response
-
-
-class TarefaDeleteView(
-    LoginRequiredMixin, ViewFilialScopedMixin,
-    TarefaPermissionMixin, DeleteView
-):
+class TarefaDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, DeleteView):
     model = Tarefas
     template_name = 'tarefas/confirmar_exclusao.html'
     success_url = reverse_lazy('tarefas:listar_tarefas')
@@ -224,50 +212,199 @@ class ConcluirTarefaView(LoginRequiredMixin, View):
 
 
 # =============================================================================
-# KANBAN E CALENDÁRIO
+# ALTERAR STATUS — AJAX (Detail page)
 # =============================================================================
-@method_decorator(ensure_csrf_cookie, name='dispatch')
-class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaPermissionMixin, ListView):
-    model = Tarefas
-    template_name = 'tarefas/kanban_board.html'
-    context_object_name = 'tarefas'
 
-    def get_queryset(self):
-        active_statuses = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
-        return super().get_queryset().filter(
-            status__in=active_statuses
-        ).select_related('responsavel')
+@login_required
+@require_POST
+def alterar_status_tarefa(request, pk):
+    """Altera o status de uma tarefa via AJAX (usado no detalhe)."""
+    tarefa = get_object_or_404(Tarefas, pk=pk)
+
+    # Verificar acesso
+    if not TarefaAccessMixin.user_can_access(request.user, tarefa):
+        return JsonResponse({'error': 'Sem permissão.'}, status=403)
+
+    novo_status = request.POST.get('status', '').strip()
+
+    status_validos = dict(Tarefas.STATUS_CHOICES)
+    if novo_status not in status_validos:
+        return JsonResponse({'error': 'Status inválido.'}, status=400)
+
+    if tarefa.status == novo_status:
+        return JsonResponse({'error': 'A tarefa já possui este status.'}, status=400)
+
+    status_anterior_key = tarefa.status
+    status_anterior_display = tarefa.get_status_display()
+
+    # Registrar no novo histórico
+    registrar_alteracao_status(
+        tarefa=tarefa,
+        status_anterior_key=status_anterior_key,
+        novo_status_key=novo_status,
+        alterado_por=request.user,
+    )
+
+    # Atualizar sem disparar save() (evita duplicação de histórico)
+    update_fields = {'status': novo_status}
+    if novo_status == 'concluida':
+        update_fields['concluida_em'] = timezone.now()
+    elif status_anterior_key == 'concluida':
+        update_fields['concluida_em'] = None
+
+    Tarefas.objects.filter(pk=pk).update(**update_fields)
+    tarefa.refresh_from_db()
+
+    # Manter compatibilidade com HistoricoStatus antigo
+    try:
+        from .models import HistoricoStatus
+        HistoricoStatus.objects.create(
+            tarefa=tarefa,
+            status_anterior=status_anterior_key,
+            novo_status=novo_status,
+            alterado_por=request.user,
+            filial=tarefa.filial,
+        )
+    except Exception:
+        pass
+
+    return JsonResponse({
+        'ok': True,
+        'novo_status': novo_status,
+        'novo_status_display': tarefa.get_status_display(),
+        'status_anterior_display': status_anterior_display,
+        'progresso': tarefa.progresso,
+        'data_atualizacao': tarefa.data_atualizacao.strftime('%d/%m/%Y %H:%M'),
+    })
+
+
+# =============================================================================
+# KANBAN — View + Mover tarefa AJAX
+# =============================================================================
+
+class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, TemplateView):
+    """View do Kanban Board."""
+    template_name = 'tarefas/kanban_board.html'
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        ctx = super().get_context_data(**kwargs)
+        user = self.request.user
+        filial_id = self.request.session.get('active_filial_id')
 
-        tarefas_por_status = defaultdict(list)
-        for tarefa in self.object_list:
-            status_coluna = 'atrasada' if tarefa.atrasada else tarefa.status
-            tarefas_por_status[status_coluna].append(tarefa)
+        # Queryset base respeitando filial
+        qs = Tarefas.objects.select_related('responsavel', 'usuario')
+        if filial_id:
+            qs = qs.filter(filial_id=filial_id)
 
-        colunas_ordem = ['pendente', 'atrasada', 'andamento', 'concluida', 'pausada']
-        status_nomes = dict(Tarefas.STATUS_CHOICES)
+        if not (user.is_superuser or user.is_staff):
+            qs = qs.filter(
+                Q(usuario=user) |
+                Q(responsavel=user) |
+                Q(participantes=user)
+            ).distinct()
 
-        context['colunas'] = [
-            {
-                'id': status_id,
-                'nome': status_nomes.get(status_id, status_id),
-                'tarefas': sorted(
-                    tarefas_por_status.get(status_id, []),
-                    key=lambda t: (t.prazo is None, t.prazo)
-                ),
-            }
-            for status_id in colunas_ordem
-        ]
-        context['now'] = timezone.now()
-        return context
+        # Agrupar por status
+        ctx['colunas'] = []
+        for key, label in Tarefas.STATUS_CHOICES:
+            ctx['colunas'].append({
+                'key': key,
+                'label': label,
+                'tarefas': qs.filter(status=key),
+            })
+
+        ctx['status_choices'] = Tarefas.STATUS_CHOICES
+        return ctx
 
 
-class CalendarioTarefasView(
-    LoginRequiredMixin, ViewFilialScopedMixin,
-    TarefaPermissionMixin, ListView
-):
+@login_required
+@require_POST
+def update_task_status(request):
+    """
+    Endpoint AJAX para o Kanban — mover tarefa entre colunas.
+    Espera: task_id e new_status via POST form-encoded.
+    """
+    task_id = request.POST.get('task_id')
+    new_status = request.POST.get('new_status', '').strip()
+
+    if not task_id or not new_status:
+        return JsonResponse({
+            'success': False,
+            'message': 'Dados incompletos.'
+        })
+
+    try:
+        tarefa = Tarefas.objects.get(pk=task_id)
+    except Tarefas.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Tarefa não encontrada.'
+        })
+
+    # Verificar permissão
+    if not TarefaAccessMixin.user_can_access(request.user, tarefa):
+        return JsonResponse({
+            'success': False,
+            'message': 'Sem permissão.'
+        })
+
+    # Validar status
+    status_validos = dict(Tarefas.STATUS_CHOICES)
+    if new_status not in status_validos:
+        return JsonResponse({
+            'success': False,
+            'message': f'Status "{new_status}" inválido.'
+        })
+
+    # Se não mudou, retorna sucesso sem alterar
+    if tarefa.status == new_status:
+        return JsonResponse({'success': True, 'changed': False})
+
+    old_status_key = tarefa.status
+
+    # Registrar no novo histórico
+    registrar_alteracao_status(
+        tarefa=tarefa,
+        status_anterior_key=old_status_key,
+        novo_status_key=new_status,
+        alterado_por=request.user,
+    )
+
+    # Atualizar via .update() para não disparar save() e duplicar histórico
+    update_fields = {'status': new_status}
+    if new_status == 'concluida':
+        update_fields['concluida_em'] = timezone.now()
+    elif old_status_key == 'concluida':
+        update_fields['concluida_em'] = None
+
+    Tarefas.objects.filter(pk=task_id).update(**update_fields)
+
+    # Manter compatibilidade com HistoricoStatus antigo
+    try:
+        from .models import HistoricoStatus
+        HistoricoStatus.objects.create(
+            tarefa=tarefa,
+            status_anterior=old_status_key,
+            novo_status=new_status,
+            alterado_por=request.user,
+            filial=tarefa.filial,
+        )
+    except Exception:
+        pass
+
+    return JsonResponse({
+        'success': True,
+        'changed': True,
+        'task_id': task_id,
+        'new_status': new_status,
+        'new_status_display': status_validos[new_status],
+    })
+
+
+# =============================================================================
+# CALENDÁRIO
+# =============================================================================
+
+class CalendarioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/calendario.html'
 
@@ -320,11 +457,11 @@ class CalendarioTarefasView(
 
 
 # =============================================================================
-# API E RELATÓRIOS
+# API — UpdateTaskStatusView (class-based, legado)
 # =============================================================================
 
 class UpdateTaskStatusView(LoginRequiredMixin, View):
-    """API AJAX para atualizar status de tarefa (Kanban drag & drop)."""
+    """API AJAX para atualizar status de tarefa (Kanban drag & drop) — versão legada."""
 
     def post(self, request, *args, **kwargs):
         if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
@@ -363,50 +500,8 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
             )
 
 
-class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
-    model = Tarefas
-    template_name = 'tarefas/relatorio_tarefas.html'
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        status_filter = self.request.GET.get('status') or self.request.POST.get('status')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        return qs.order_by('-data_criacao')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        qs = self.get_queryset()
-        report_context = preparar_contexto_relatorio(qs)
-        context.update(report_context)
-        context['status_data_json'] = json.dumps(report_context.get('status_data', []))
-        context['priority_data_json'] = json.dumps(report_context.get('prioridade_data', []))
-        context['status_choices'] = Tarefas.STATUS_CHOICES
-        context['current_filters'] = self.request.GET
-        return context
-
-    def post(self, request, *args, **kwargs):
-        export_format = request.POST.get('export_format')
-        if not export_format:
-            return self.get(request, *args, **kwargs)
-
-        qs = self.get_queryset()
-        context = preparar_contexto_relatorio(qs)
-        context['request'] = request
-
-        exporters = {
-            'pdf': gerar_pdf_relatorio,
-            'csv': gerar_csv_relatorio,
-            'docx': gerar_docx_relatorio,
-        }
-        exporter = exporters.get(export_format)
-        if exporter:
-            return exporter(context)
-
-        return redirect('tarefas:relatorio_tarefas')
-
 # =============================================================================
-# RELATÓRIOS (adicionar ao views.py existente)
+# RELATÓRIOS
 # =============================================================================
 
 class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
@@ -496,7 +591,6 @@ class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView
 
         # Exportar
         if export_format == 'html':
-            # Redireciona para display com filtros na query string
             params = []
             if status_filter:
                 params.append(f'status={status_filter}')
@@ -580,10 +674,11 @@ class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):
         return redirect('tarefas:relatorio_tarefas')
 
 
-class DashboardAnaliticoView(
-    LoginRequiredMixin, ViewFilialScopedMixin,
-    TarefaPermissionMixin, TemplateView
-):
+# =============================================================================
+# DASHBOARD ANALÍTICO
+# =============================================================================
+
+class DashboardAnaliticoView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, TemplateView):
     template_name = 'tarefas/dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -596,9 +691,7 @@ class DashboardAnaliticoView(
         if filial_id:
             base_qs = base_qs.filter(filial_id=filial_id)
 
-        # =====================================================================
-        # KPIs — Dados que vieram da Lista de Tarefas
-        # =====================================================================
+        # KPIs
         total = base_qs.count()
         concluidas = base_qs.filter(status='concluida').count()
         pendentes = base_qs.filter(status='pendente').count()
@@ -607,8 +700,6 @@ class DashboardAnaliticoView(
             status__in=['concluida', 'cancelada']
         ).count()
         pausadas = base_qs.filter(status='pausada').count()
-
-        # Taxa de conclusão (%)
         taxa_conclusao = round((concluidas / total * 100), 1) if total > 0 else 0
 
         context.update({
@@ -621,9 +712,7 @@ class DashboardAnaliticoView(
             'taxa_conclusao': taxa_conclusao,
         })
 
-        # =====================================================================
         # Dados por status e prioridade (para gráficos)
-        # =====================================================================
         status_counts = (
             base_qs.values('status')
             .annotate(total=Count('id'))
@@ -647,16 +736,12 @@ class DashboardAnaliticoView(
             for p in prioridade_counts
         ]
 
-        # =====================================================================
-        # Tarefas recentes (últimas 5)
-        # =====================================================================
+        # Tarefas recentes
         context['tarefas_recentes'] = base_qs.select_related(
             'responsavel'
         ).order_by('-data_criacao')[:5]
 
-        # =====================================================================
         # Performance dos usuários
-        # =====================================================================
         usuarios = User.objects.filter(is_active=True)
         if filial_id:
             usuarios = usuarios.filter(filiais_permitidas__id=filial_id)
@@ -681,9 +766,7 @@ class DashboardAnaliticoView(
                 })
         context['usuarios_performance'] = usuarios_performance
 
-        # =====================================================================
         # Gráfico de tendência (últimas 6 semanas)
-        # =====================================================================
         six_weeks_ago = agora - timedelta(weeks=6)
 
         criadas_qs = (
@@ -728,7 +811,6 @@ class DashboardAnaliticoView(
         return context
 
 
-
 # =============================================================================
 # ADMIN (SUPERUSER)
 # =============================================================================
@@ -743,4 +825,5 @@ class TarefaAdminListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def test_func(self):
         return self.request.user.is_superuser
+
 

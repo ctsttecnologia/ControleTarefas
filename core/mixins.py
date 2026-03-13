@@ -8,6 +8,7 @@ from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
 from ferramentas.models import Atividade
 from django.http import HttpResponse
 
+
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (A SUA ARQUITETURA DE 3 NÍVEIS)
 # =============================================================================
@@ -270,3 +271,40 @@ class HTMXModalFormMixin:
         # Se não for HTMX, retorna a resposta padrão (redirecionamento)
         return response
 
+# tarefas/mixins
+
+class TarefaAccessMixin:
+    """
+    Mixin que garante acesso à tarefa.
+    Acesso: criador, responsável, participantes, staff, superuser.
+    """
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        if not self.user_can_access(self.request.user, obj):
+            raise PermissionDenied('Você não tem permissão para acessar esta tarefa.')
+        return obj
+
+    @staticmethod
+    def user_can_access(user, tarefa):
+        """Verifica se o usuário pode VER/COMENTAR/MUDAR STATUS."""
+        if user.is_superuser or user.is_staff:
+            return True
+        if tarefa.usuario_id == user.pk:
+            return True
+        if tarefa.responsavel_id == user.pk:
+            return True
+        if tarefa.participantes.filter(pk=user.pk).exists():
+            return True
+        return False
+
+    @staticmethod
+    def user_can_edit(user, tarefa):
+        """Verifica se o usuário pode EDITAR campos da tarefa."""
+        if user.is_superuser or user.is_staff:
+            return True
+        if tarefa.usuario_id == user.pk:
+            return True
+        if tarefa.responsavel_id == user.pk:
+            return True
+        return False
