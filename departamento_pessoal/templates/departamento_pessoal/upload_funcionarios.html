@@ -1,118 +1,392 @@
 {% extends "departamento_pessoal/_base_dp.html" %}
-{% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Importar Funcionários{% endblock %}
+{% block title %}Importar Funcionários - Departamento Pessoal{% endblock %}
 
 {% block dp_content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <!-- Cabeçalho -->
-            <header class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h2 class="h4 mb-0">
-                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Importar Funcionários em Lote
-                </h2>
-                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
-                </a>
-            </header>
+<!-- Header do Módulo -->
+<div class="module-header d-flex justify-content-between align-items-center flex-wrap">
+    <div>
+        <h1><i class="bi bi-cloud-upload me-2"></i>Importação em Massa</h1>
+        <p>Importe funcionários a partir de uma planilha Excel (.xlsx) ou CSV (.csv)</p>
+    </div>
+    <div class="d-flex gap-2 mt-3 mt-md-0">
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-header">
+            <i class="bi bi-arrow-left me-1"></i> Voltar
+        </a>
+    </div>
+</div>
 
-            <!-- Card Principal -->
-            <div class="card shadow-sm">
-                <div class="card-body p-4">
-                    <!-- Instruções -->
-                    <div class="alert alert-light border mb-4">
-                        <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Instruções</h6>
-                        <ol class="mb-0 ps-3">
-                            <li class="mb-2">
-                                Baixe a planilha modelo clicando no botão abaixo.
-                                <div class="mt-2">
-                                    <a href="{% url 'departamento_pessoal:baixar_modelo_funcionarios' %}" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-download me-1"></i> Baixar Modelo
-                                    </a>
+<div class="row g-4">
+    <!-- Coluna Esquerda: Upload -->
+    <div class="col-lg-7">
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5><i class="bi bi-file-earmark-arrow-up me-2"></i>Enviar Planilha</h5>
+            </div>
+            <div class="content-card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Área de Upload Drag & Drop -->
+                    <div class="upload-area mb-4" id="uploadArea">
+                        <div class="upload-area-content text-center p-5">
+                            <div class="upload-icon mb-3">
+                                <i class="bi bi-cloud-arrow-up" style="font-size: 3rem; color: var(--dp-primary-light);"></i>
+                            </div>
+                            <h5 class="mb-2" style="color: var(--dp-text-primary);">
+                                Arraste e solte o arquivo aqui
+                            </h5>
+                            <p class="text-muted mb-3">ou clique para selecionar</p>
+
+                            {% render_field form.arquivo class+="form-control" id="id_arquivo" %}
+
+                            {% for error in form.arquivo.errors %}
+                                <div class="text-danger small mt-2">{{ error }}</div>
+                            {% endfor %}
+
+                            <div id="fileInfo" class="mt-3 d-none">
+                                <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" 
+                                     style="background-color: var(--dp-success-soft-bg);">
+                                    <i class="bi bi-file-earmark-check" style="color: var(--dp-success-soft-text);"></i>
+                                    <span id="fileName" class="fw-semibold" style="color: var(--dp-success-soft-text);"></span>
+                                    <span id="fileSize" class="small text-muted"></span>
                                 </div>
-                            </li>
-                            <li class="mb-2">Preencha a planilha com os dados dos funcionários. <strong>Não altere o nome das colunas.</strong></li>
-                            <li>Salve a planilha e faça o upload usando o formulário abaixo.</li>
-                        </ol>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Mensagens -->
-                    {% if messages %}
-                        {% for message in messages %}
-                        <div class="alert alert-{{ message.tags|default:'info' }} d-flex justify-content-between align-items-center" role="alert">
-                            <span>
-                                {% if message.tags == 'error' or message.tags == 'danger' %}
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                {% elif message.tags == 'success' %}
-                                    <i class="bi bi-check-circle me-2"></i>
-                                {% else %}
-                                    <i class="bi bi-info-circle me-2"></i>
-                                {% endif %}
-                                {{ message }}
-                            </span>
-                            {% if message.level == 40 and request.session.upload_erros %}
-                                <a href="{% url 'departamento_pessoal:baixar_relatorio_erros' %}" class="btn btn-danger btn-sm">
-                                    <i class="bi bi-file-earmark-excel me-1"></i> Baixar Relatório de Erros
-                                </a>
-                            {% endif %}
+                    <!-- Opções -->
+                    <div class="p-3 rounded mb-4" style="background-color: var(--dp-bg-table-header); border: 1px solid var(--dp-border-color);">
+                        <h6 class="mb-2" style="color: var(--dp-text-primary);">
+                            <i class="bi bi-gear me-1"></i> Comportamento em caso de duplicidade (matrícula)
+                        </h6>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="duplicidade" id="dup_atualizar" value="atualizar" checked>
+                            <label class="form-check-label" for="dup_atualizar">
+                                <strong>Atualizar</strong> — sobrescreve os dados do funcionário existente
+                            </label>
                         </div>
-                        {% endfor %}
-                    {% endif %}
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="radio" name="duplicidade" id="dup_pular" value="pular">
+                            <label class="form-check-label" for="dup_pular">
+                                <strong>Pular</strong> — ignora a linha e reporta no relatório de erros
+                            </label>
+                        </div>
+                    </div>
 
-                    <!-- Formulário de Upload -->
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <div class="mb-4">
-                            <label class="form-label">Selecione o arquivo Excel (.xlsx)</label>
-                            {% render_field form.arquivo class+="form-control form-control-lg" %}
-                            {% if form.arquivo.errors %}
-                                <div class="invalid-feedback d-block">{{ form.arquivo.errors|striptags }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary btn-lg w-100">
-                            <i class="bi bi-upload me-2"></i> Enviar e Processar Planilha
+                    <!-- Botão de Envio -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Máximo de <strong>500 registros</strong> por importação
+                        </small>
+                        <button type="submit" class="btn btn-primary px-4" id="btnSubmit" disabled>
+                            <i class="bi bi-upload me-1"></i> Importar Funcionários
                         </button>
-                    </form>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Relatório de Erros (se houver) -->
+        {% if request.session.upload_erros %}
+        <div class="content-card mt-4">
+            <div class="content-card-header" style="background-color: var(--dp-danger-soft-bg);">
+                <h5 style="color: var(--dp-danger-soft-text);">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Erros na Última Importação
+                </h5>
+                <a href="{% url 'departamento_pessoal:baixar_relatorio_erros' %}" class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-download me-1"></i> Baixar Relatório
+                </a>
+            </div>
+            <div class="content-card-body">
+                <p style="color: var(--dp-text-secondary);">
+                    Foram encontrados <strong style="color: var(--dp-danger-soft-text);">
+                    {{ request.session.upload_erros|length }} erros</strong> na última tentativa de importação.
+                    Nenhum registro foi salvo. Baixe o relatório, corrija os problemas e tente novamente.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Coluna Direita: Instruções -->
+    <div class="col-lg-5">
+        <!-- Download do Modelo -->
+        <div class="content-card mb-4">
+            <div class="content-card-header">
+                <h5><i class="bi bi-download me-2"></i>Planilha Modelo</h5>
+            </div>
+            <div class="content-card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-file-earmark-spreadsheet" 
+                       style="font-size: 3rem; color: var(--dp-success-soft-text);"></i>
+                </div>
+                <p class="text-muted mb-3">
+                    Baixe a planilha modelo com os cabeçalhos corretos e validações de dados já configuradas.
+                </p>
+                <a href="{% url 'departamento_pessoal:baixar_modelo_funcionarios' %}" 
+                   class="btn btn-success">
+                    <i class="bi bi-download me-1"></i> Baixar Modelo (.xlsx)
+                </a>
+            </div>
+        </div>
+
+        <!-- Instruções -->
+        <div class="content-card mb-4">
+            <div class="content-card-header">
+                <h5><i class="bi bi-question-circle me-2"></i>Instruções</h5>
+            </div>
+            <div class="content-card-body">
+                <div class="instruction-list">
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="kpi-icon bg-primary-soft flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                            <strong>1</strong>
+                        </div>
+                        <div>
+                            <strong style="color: var(--dp-text-primary);">Baixe o modelo</strong>
+                            <p class="small text-muted mb-0">Use a planilha modelo para garantir que as colunas estejam corretas.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="kpi-icon bg-primary-soft flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                            <strong>2</strong>
+                        </div>
+                        <div>
+                            <strong style="color: var(--dp-text-primary);">Preencha os dados</strong>
+                            <p class="small text-muted mb-0">Cada linha = 1 funcionário. Respeite os formatos de data e os valores dos dropdowns.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 mb-3">
+                        <div class="kpi-icon bg-primary-soft flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                            <strong>3</strong>
+                        </div>
+                        <div>
+                            <strong style="color: var(--dp-text-primary);">Envie o arquivo</strong>
+                            <p class="small text-muted mb-0">Formatos aceitos: <code>.xlsx</code> ou <code>.csv</code>. Máximo 500 linhas.</p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3">
+                        <div class="kpi-icon bg-primary-soft flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem;">
+                            <strong>4</strong>
+                        </div>
+                        <div>
+                            <strong style="color: var(--dp-text-primary);">Confira o resultado</strong>
+                            <p class="small text-muted mb-0">Se houver erros, baixe o relatório, corrija e reenvie.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Resultado do Processamento -->
-            {% if sucessos or erros %}
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Resultado do Processamento</h5>
-                </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                    {% if erros %}
-                    <div class="alert alert-danger">
-                        <h6 class="alert-heading">Erros Encontrados:</h6>
-                        <ul class="mb-0">
-                            {% for erro in erros %}
-                                <li>{{ erro }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-
-                    {% if sucessos and not erros %}
-                    <div class="alert alert-success">
-                        <h6 class="alert-heading">Registros Processados:</h6>
-                        <ul class="mb-0">
-                            {% for sucesso in sucessos %}
-                                <li>{{ sucesso }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    {% endif %}
-                </div>
+        <!-- Campos Obrigatórios -->
+        <div class="content-card">
+            <div class="content-card-header">
+                <h5><i class="bi bi-list-check me-2"></i>Campos da Planilha</h5>
             </div>
-            {% endif %}
+            <div class="content-card-body p-0">
+                <table class="table table-modern mb-0">
+                    <thead>
+                        <tr>
+                            <th>Coluna</th>
+                            <th>Obrigatório</th>
+                            <th>Formato</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>matricula</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">Texto único</td>
+                        </tr>
+                        <tr>
+                            <td><code>nome_completo</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">Texto</td>
+                        </tr>
+                        <tr>
+                            <td><code>data_admissao</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">DD-MM-AAAA</td>
+                        </tr>
+                        <tr>
+                            <td><code>nome_cargo</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">Texto (cria se não existir)</td>
+                        </tr>
+                        <tr>
+                            <td><code>nome_departamento</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">Texto (cria se não existir)</td>
+                        </tr>
+                        <tr>
+                            <td><code>nome_filial</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">Deve existir no sistema</td>
+                        </tr>
+                        <tr>
+                            <td><code>status</code></td>
+                            <td><span class="badge-status bg-danger-soft text-danger">Sim</span></td>
+                            <td class="small text-muted">ATIVO, INATIVO, FERIAS, AFASTADO</td>
+                        </tr>
+                        <tr>
+                            <td><code>salario</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">Numérico (ex: 3500.00)</td>
+                        </tr>
+                        <tr>
+                            <td><code>data_nascimento</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">DD-MM-AAAA</td>
+                        </tr>
+                        <tr>
+                            <td><code>email_pessoal</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">email@exemplo.com</td>
+                        </tr>
+                        <tr>
+                            <td><code>telefone</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">Texto</td>
+                        </tr>
+                        <tr>
+                            <td><code>sexo</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">M, F ou O</td>
+                        </tr>
+                        <tr>
+                            <td><code>cbo</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">Código CBO do cargo</td>
+                        </tr>
+                        <tr>
+                            <td><code>nome_funcao</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">Texto (cria se não existir)</td>
+                        </tr>
+                        <tr>
+                            <td><code>nome_cliente</code></td>
+                            <td><span class="badge-status bg-warning-soft text-warning">Não</span></td>
+                            <td class="small text-muted">Deve existir no sistema</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .upload-area {
+        border: 2px dashed var(--dp-border-color);
+        border-radius: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background-color: var(--dp-bg-card);
+    }
+    .upload-area:hover,
+    .upload-area.drag-over {
+        border-color: var(--dp-primary-light);
+        background-color: var(--dp-primary-soft-bg);
+    }
+    .upload-area.drag-over .upload-icon i {
+        transform: scale(1.15);
+    }
+    .upload-icon i {
+        transition: transform 0.3s ease;
+    }
+    #id_arquivo {
+        max-width: 350px;
+        margin: 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('id_arquivo');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    // Validação do arquivo selecionado
+    fileInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            const validExts = ['xlsx', 'csv'];
+
+            if (!validExts.includes(ext)) {
+                alert('Formato inválido. Use .xlsx ou .csv');
+                this.value = '';
+                fileInfo.classList.add('d-none');
+                btnSubmit.disabled = true;
+                return;
+            }
+
+            // Limite de 10MB
+            if (file.size > 10 * 1024 * 1024) {
+                alert('O arquivo é muito grande. Máximo: 10MB.');
+                this.value = '';
+                fileInfo.classList.add('d-none');
+                btnSubmit.disabled = true;
+                return;
+            }
+
+            fileName.textContent = file.name;
+            fileSize.textContent = '(' + (file.size / 1024).toFixed(1) + ' KB)';
+            fileInfo.classList.remove('d-none');
+            btnSubmit.disabled = false;
+        } else {
+            fileInfo.classList.add('d-none');
+            btnSubmit.disabled = true;
+        }
+    });
+
+    // Drag & Drop visual
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadArea.addEventListener(evt, function(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadArea.addEventListener(evt, function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+        });
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        const files = e.dataTransfer.files;
+        if (files.length) {
+            fileInput.files = files;
+            fileInput.dispatchEvent(new Event('change'));
+        }
+    });
+
+    // Loading no submit
+    const form = btnSubmit.closest('form');
+    form.addEventListener('submit', function() {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Processando...';
+    });
+});
+</script>
+{% endblock %}

@@ -57,8 +57,8 @@ class EntregaEPIInline(TabularInline):
 
 @admin.register(Funcao)
 class FuncaoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
-    list_display = ('nome', 'filial', 'ativo')
-    list_filter = ('ativo', 'filial')
+    list_display = ('nome', 'filial', 'ativo', 'registro')
+    list_filter = ('ativo', 'filial', 'registro')
     search_fields = ('nome',)
     readonly_fields = ('filial',)
     inlines = [MatrizEPIInline]

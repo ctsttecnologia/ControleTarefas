@@ -171,8 +171,9 @@ class FuncaoForm(forms.ModelForm):
         model = Funcao
         # Vamos incluir apenas os campos que o usuário deve preencher.
         # A 'filial' será adicionada automaticamente na view.
-        fields = ['nome', 'ativo', 'descricao']
+        fields = ['nome', 'ativo', 'descricao', 'registro']
         widgets = {
+            'registro': forms.NumberInput(attrs={'class': 'form-control'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'descricao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

@@ -5,6 +5,15 @@
 
 <div class="row g-3">
     <!-- Nome -->
+     <div class="col-md-8">
+        <label for="{{ form.registro.id_for_label }}" class="form-label fw-semibold">
+            Registro da Função<span class="text-danger">*</span>
+        </label>
+        {{ form.registro }}
+        {% if form.registro.errors %}
+        <div class="invalid-feedback d-block">{{ form.registro.errors.0 }}</div>
+        {% endif %}
+    </div>
     <div class="col-md-8">
         <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
             Nome da Função <span class="text-danger">*</span>

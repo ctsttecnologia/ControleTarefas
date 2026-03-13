@@ -19,7 +19,7 @@ class DocumentoInline(admin.TabularInline):
 @admin.register(Departamento)
 class DepartamentoAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
     # O mixin FilialAdminScopedMixin já filtra por filial.
-    list_display = ('nome', 'filial', 'ativo')
+    list_display = ('registro', 'nome', 'filial', 'ativo')
     search_fields = ('nome',)
     list_filter = ('ativo',) # Filtro por filial é redundante agora
     # Impede a edição da filial após a criação.

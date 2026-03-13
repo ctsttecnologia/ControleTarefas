@@ -16,6 +16,7 @@ from usuario.models import Filial
 # para a aplicação 'suprimentos' e o modelo 'Parceiro'.
 
 class Funcao(models.Model):
+    registro = models.PositiveIntegerField(default=0, verbose_name=_("Registro da Função"))
     nome = models.CharField(max_length=100, verbose_name=_("Nome da Função"))
     descricao = models.TextField(blank=True, verbose_name=_("Descrição das Atividades"))
     ativo = models.BooleanField(default=True, verbose_name=_("Ativo"))
