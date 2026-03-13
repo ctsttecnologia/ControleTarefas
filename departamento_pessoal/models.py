@@ -18,6 +18,7 @@ class Departamento(models.Model):
     Representa um departamento dentro de uma filial da empresa.
     Ex: Financeiro, Recursos Humanos, TI.
     """
+    registro = models.PositiveIntegerField(default=0, verbose_name=_("Registro de Departamento"))
     nome = models.CharField(
         _("Nome do Departamento"),
         max_length=100,

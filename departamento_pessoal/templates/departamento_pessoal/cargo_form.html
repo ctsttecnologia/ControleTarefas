@@ -72,6 +72,11 @@
             </div>
         </div>
     </div>
+    {% if is_paginated %}
+    <div class="content-card-body border-top">
+        {% include 'partials/pagination.html' %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 

@@ -23,6 +23,7 @@
         <table class="table table-modern">
             <thead>
                 <tr>
+                    <th>Registro</th>
                     <th>Departamento</th>
                     <th>Centro de Custo</th>
                     <th>Status</th>
@@ -37,7 +38,12 @@
                             <div class="kpi-icon bg-primary-soft" style="width: 40px; height: 40px; font-size: 1rem;">
                                 <i class="bi bi-building"></i>
                             </div>
-                            <strong>{{ depto.nome }}</strong>
+                            <strong>{{ depto.registro }}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                          |  <strong>{{ depto.nome }}</strong>
                         </div>
                     </td>
                     <td><code>{{ depto.centro_custo|default:"-" }}</code></td>

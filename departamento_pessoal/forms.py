@@ -14,14 +14,14 @@ User = get_user_model()
 class DepartamentoForm(forms.ModelForm):
     class Meta:
         model = Departamento
-        # REMOVA 'filial' desta lista. O usuário não precisa mais interagir com este campo.
-        fields = ['nome', 'centro_custo', 'ativo']
+        fields = ['registro', 'nome', 'centro_custo', 'ativo']
 
     def __init__(self, *args, **kwargs):
         # A lógica complexa de __init__ para filtrar o queryset não é mais necessária.
         super().__init__(*args, **kwargs)
         
         # Podemos manter a estilização dos widgets
+        self.fields['registro'].widget.attrs.update({'placeholder': 'Ex: 000'})
         self.fields['nome'].widget.attrs.update({'placeholder': 'Ex: Contabilidade'})
         self.fields['centro_custo'].widget.attrs.update({'placeholder': 'Ex: 101.02'})
 
@@ -162,8 +162,19 @@ class AdmissaoForm(forms.ModelForm):
         self.fields['data_demissao'].help_text = "Preencha apenas se o status do funcionário for 'Inativo'."
         self.fields['matricula'].help_text = "Pode ser deixado em branco para geração automática (requer lógica na view ou model)."
 
+
 class UploadFuncionariosForm(forms.Form):
     arquivo = forms.FileField(
-        label='Selecione a planilha de funcionários (.xlsx)',
-        widget=forms.ClearableFileInput(attrs={'accept': '.xlsx'})
+        label='Selecione a planilha (.xlsx ou .csv)',
+        widget=forms.ClearableFileInput(attrs={'accept': '.xlsx,.csv'})
     )
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data['arquivo']
+        ext = arquivo.name.split('.')[-1].lower()
+        if ext not in ('xlsx', 'csv'):
+            raise forms.ValidationError('Formato inválido. Envie um arquivo .xlsx ou .csv')
+        # Limite de 10MB
+        if arquivo.size > 10 * 1024 * 1024:
+            raise forms.ValidationError('O arquivo excede o limite de 10MB.')
+        return arquivo

@@ -59,74 +59,126 @@ COLUNAS_ESPERADAS = [
 ]
 
 
+LIMITE_REGISTROS = 500
+
 class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """
-    View para lidar com o upload e processamento da planilha de funcionários.
+    View para upload e processamento de planilha de funcionários.
+    Suporta .xlsx e .csv. Limite de 500 registros.
     """
     permission_required = 'departamento_pessoal.add_funcionario'
     form_class = UploadFuncionariosForm
     template_name = 'departamento_pessoal/upload_funcionarios.html'
 
     def get(self, request, *args, **kwargs):
-        """Lida com a requisição GET, exibindo o formulário limpo."""
-        # A limpeza da sessão foi movida para a view 'baixar_relatorio_erros'.
         form = self.form_class()
         return render(request, self.template_name, {'form': form})
 
     def post(self, request, *args, **kwargs):
-        """
-        Lida com a requisição POST, orquestrando a validação e o processamento do arquivo.
-        """
         form = self.form_class(request.POST, request.FILES)
         if not form.is_valid():
             return render(request, self.template_name, {'form': form})
 
-        arquivo_excel = request.FILES['arquivo']
+        arquivo = request.FILES['arquivo']
+        modo_duplicidade = request.POST.get('duplicidade', 'atualizar')
 
-        # 1. Validações iniciais do arquivo e das colunas
+        # 1. Ler e validar estrutura
         try:
-            df = self._ler_e_validar_planilha(arquivo_excel)
+            df = self._ler_e_validar_planilha(arquivo)
         except ValueError as e:
             messages.error(request, str(e))
             return render(request, self.template_name, {'form': form})
-        
-        # 2. Processamento dos dados da planilha
-        sucessos_count, linhas_com_erro = self._processar_dataframe(df)
 
-        # 3. Feedback ao usuário com base no resultado
+        # 2. Processar dados
+        sucessos_count, linhas_com_erro = self._processar_dataframe(df, modo_duplicidade)
+
+        # 3. Feedback
         if linhas_com_erro:
             request.session['upload_erros'] = linhas_com_erro
-            msg = (f"A importação falhou. Foram encontrados {len(linhas_com_erro)} erros. "
-                   "Nenhum funcionário foi salvo. Baixe o relatório de erros para corrigi-los.")
+            msg = (
+                f"A importação falhou. Foram encontrados {len(linhas_com_erro)} erro(s). "
+                "Nenhum funcionário foi salvo. Baixe o relatório de erros para corrigi-los."
+            )
             messages.error(request, msg)
         else:
-            msg = f"Importação concluída com sucesso! {sucessos_count} funcionários foram criados/atualizados."
-            messages.success(request, msg)
+            messages.success(
+                request,
+                f"Importação concluída com sucesso! {sucessos_count} funcionário(s) criado(s)/atualizado(s)."
+            )
 
         return redirect(reverse('departamento_pessoal:upload_funcionarios'))
 
     def _ler_e_validar_planilha(self, arquivo):
         """
-        Lê o arquivo Excel para um DataFrame e valida sua estrutura.
-        Lança ValueError se houver problemas.
+        Lê .xlsx ou .csv para DataFrame e valida estrutura.
         """
-        if not arquivo.name.endswith('.xlsx'):
-            raise ValueError('Erro: O arquivo deve ser do formato .xlsx')
+        nome = arquivo.name.lower()
 
         try:
-            df = pd.read_excel(arquivo, dtype=str).fillna('')
-        except Exception as e:
-            raise ValueError(f"Erro ao ler o arquivo Excel: {e}")
+            if nome.endswith('.csv'):
+                # Tenta detectar encoding e separador
+                import csv
+                conteudo = arquivo.read()
+                arquivo.seek(0)
 
-        if not all(col in df.columns for col in COLUNAS_ESPERADAS):
-            colunas_faltantes = set(COLUNAS_ESPERADAS) - set(df.columns)
-            raise ValueError(f"Erro: As seguintes colunas obrigatórias não foram encontradas na planilha: {', '.join(colunas_faltantes)}")
-        
+                # Tenta UTF-8 primeiro, depois latin-1
+                for encoding in ('utf-8', 'latin-1', 'cp1252'):
+                    try:
+                        df = pd.read_csv(
+                            io.BytesIO(conteudo),
+                            dtype=str,
+                            encoding=encoding,
+                            sep=None,       # auto-detect separador
+                            engine='python'
+                        ).fillna('')
+                        break
+                    except (UnicodeDecodeError, pd.errors.ParserError):
+                        continue
+                else:
+                    raise ValueError(
+                        'Não foi possível ler o arquivo CSV. '
+                        'Verifique a codificação (recomendado: UTF-8).'
+                    )
+
+            elif nome.endswith('.xlsx'):
+                df = pd.read_excel(arquivo, dtype=str).fillna('')
+
+            else:
+                raise ValueError('Formato de arquivo não suportado. Use .xlsx ou .csv')
+
+        except ValueError:
+            raise
+        except Exception as e:
+            raise ValueError(f'Erro ao ler o arquivo: {e}')
+
+        # Normaliza nomes das colunas (remove espaços, lowercase)
+        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+
+        # Valida colunas
+        colunas_faltantes = set(COLUNAS_ESPERADAS) - set(df.columns)
+        if colunas_faltantes:
+            raise ValueError(
+                f"Colunas obrigatórias não encontradas na planilha: {', '.join(sorted(colunas_faltantes))}"
+            )
+
+        # Remove linhas completamente vazias
+        df = df.loc[~(df == '').all(axis=1)]
+
+        # Valida limite de registros
+        if len(df) == 0:
+            raise ValueError('A planilha está vazia. Nenhum registro encontrado para importar.')
+
+        if len(df) > LIMITE_REGISTROS:
+            raise ValueError(
+                f'A planilha contém {len(df)} registros, mas o limite é de {LIMITE_REGISTROS}. '
+                f'Divida o arquivo em partes menores.'
+            )
+
         return df
 
-    def _processar_dataframe(self, df):
+    def _processar_dataframe(self, df, modo_duplicidade='atualizar'):
         """
-        Itera sobre o DataFrame, processando cada linha e formatando os erros de forma clara.
+        Itera sobre o DataFrame, processando cada linha.
         """
         linhas_com_erro = []
         sucessos_count = 0
@@ -134,80 +186,102 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         try:
             with transaction.atomic():
                 for index, row in df.iterrows():
-                    linha_num = index + 2  # Número da linha como visto no Excel
+                    linha_num = index + 2
                     try:
-                        self._processar_linha(row)
+                        self._processar_linha(row, modo_duplicidade)
                         sucessos_count += 1
                     except ImportacaoError as e:
-                        # Captura nosso erro customizado e formata a mensagem
                         erro_msg = f"Linha {linha_num}, {e}"
                         linha_erro = row.to_dict()
                         linha_erro['Erro'] = erro_msg
                         linhas_com_erro.append(linha_erro)
                     except Exception as e:
-                        # Captura qualquer outro erro inesperado e o reporta
-                        erro_msg = f"Linha {linha_num}: Erro inesperado. Contate o suporte. (Detalhe: {str(e)})"
+                        erro_msg = f"Linha {linha_num}: Erro inesperado — {str(e)}"
                         linha_erro = row.to_dict()
                         linha_erro['Erro'] = erro_msg
                         linhas_com_erro.append(linha_erro)
-                
+
                 if linhas_com_erro:
                     raise IntegrityError("Erros encontrados durante a importação.")
-        
+
         except IntegrityError:
             return 0, linhas_com_erro
-        
+
         return sucessos_count, linhas_com_erro
 
-    def _processar_linha(self, row):
+    def _processar_linha(self, row, modo_duplicidade='atualizar'):
         """
         Valida e salva os dados de uma única linha.
-        Exige que Filial e Cliente já existam no sistema.
-        Cria Cargos, Funções e Departamentos automaticamente se necessário.
+        Suporta modos 'atualizar' e 'pular' para duplicatas.
         """
-        # 1. Validação de datas (sem alterações, já estava correto)
+        # --- Validação de campos obrigatórios simples ---
+        matricula = row.get('matricula', '').strip()
+        if not matricula:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='matricula')
+
+        nome_completo = row.get('nome_completo', '').strip()
+        if not nome_completo:
+            raise ImportacaoError("Este campo é obrigatório.", column_name='nome_completo')
+
+        # --- Modo duplicidade: PULAR ---
+        if modo_duplicidade == 'pular':
+            if Funcionario.objects.filter(matricula=matricula).exists():
+                raise ImportacaoError(
+                    f"Matrícula '{matricula}' já existe no sistema. "
+                    f"Linha pulada conforme configuração.",
+                    column_name='matricula'
+                )
+
+        # --- Validação de datas ---
         data_admissao_str = row.get('data_admissao', '').strip()
         if not data_admissao_str:
             raise ImportacaoError("Este campo é obrigatório.", column_name='data_admissao')
         data_admissao = pd.to_datetime(data_admissao_str, dayfirst=True, errors='coerce')
         if pd.isna(data_admissao):
-            raise ImportacaoError(f"O valor '{data_admissao_str}' está em um formato inválido. Use DD-MM-AAAA.", column_name='data_admissao')
-        
-        data_nascimento_str = row.get('data_nascimento', '').strip()
-        data_nascimento = pd.to_datetime(data_nascimento_str, dayfirst=True, errors='coerce') if data_nascimento_str else None
-        if data_nascimento_str and pd.isna(data_nascimento):
-                raise ImportacaoError(f"O valor '{data_nascimento_str}' está em um formato inválido. Use DD-MM-AAAA.", column_name='data_nascimento')
+            raise ImportacaoError(
+                f"O valor '{data_admissao_str}' está em formato inválido. Use DD-MM-AAAA.",
+                column_name='data_admissao'
+            )
 
-        # 2. Busca de Objetos Relacionados
-        
-        nome_filial_excel = row['nome_filial'].strip()
+        data_nascimento_str = row.get('data_nascimento', '').strip()
+        data_nascimento = None
+        if data_nascimento_str:
+            data_nascimento = pd.to_datetime(data_nascimento_str, dayfirst=True, errors='coerce')
+            if pd.isna(data_nascimento):
+                raise ImportacaoError(
+                    f"O valor '{data_nascimento_str}' está em formato inválido. Use DD-MM-AAAA.",
+                    column_name='data_nascimento'
+                )
+
+        # --- Filial (deve existir) ---
+        nome_filial_excel = row.get('nome_filial', '').strip()
         if not nome_filial_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_filial')
         try:
             filial = Filial.objects.get(nome__iexact=nome_filial_excel)
         except Filial.DoesNotExist:
-            raise ImportacaoError(f"A Filial '{nome_filial_excel}' não foi encontrada no sistema. Cadastre-a primeiro.", column_name='nome_filial')
+            raise ImportacaoError(
+                f"A Filial '{nome_filial_excel}' não foi encontrada. Cadastre-a primeiro.",
+                column_name='nome_filial'
+            )
 
-        # Etapa B: Garante que o CARGO exista (ou o cria), associado à filial e com o CBO correto.
-        nome_cargo_excel = row['nome_cargo'].strip()
+        # --- Cargo (cria se não existir) ---
+        nome_cargo_excel = row.get('nome_cargo', '').strip()
         if not nome_cargo_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_cargo')
-        
-        # Pega a string do CBO da planilha.
-        cbo_excel = row.get('cbo', '').strip() 
-        
-        # cria um novo usando os valores em 'defaults', incluindo o CBO.
+        cbo_excel = row.get('cbo', '').strip()
+
         cargo, _ = Cargo.objects.get_or_create(
             nome__iexact=nome_cargo_excel,
             filial=filial,
             defaults={
-                'nome': nome_cargo_excel.title(), 
+                'nome': nome_cargo_excel.title(),
                 'filial': filial,
-                'cbo': cbo_excel  # Salva a STRING do CBO diretamente no Cargo.
+                'cbo': cbo_excel
             }
         )
 
-        # Etapa C: Garante que a FUNÇÃO exista (ou a cria), se informada. (Seu código está correto)
+        # --- Função SST (cria se não existir, opcional) ---
         funcao = None
         nome_funcao_excel = row.get('nome_funcao', '').strip()
         if nome_funcao_excel:
@@ -217,55 +291,90 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 defaults={'nome': nome_funcao_excel.title(), 'filial': filial}
             )
 
-        # Etapa D: Departamento 
-        nome_dpto_excel = row['nome_departamento'].strip()
+        # --- Departamento (cria se não existir) ---
+        nome_dpto_excel = row.get('nome_departamento', '').strip()
         if not nome_dpto_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_departamento')
         departamento, _ = Departamento.objects.get_or_create(
-            nome__iexact=nome_dpto_excel, 
-            filial=filial, 
+            nome__iexact=nome_dpto_excel,
+            filial=filial,
             defaults={'nome': nome_dpto_excel.title(), 'filial': filial}
         )
 
-        # Etapa E: Cliente 
+        # --- Cliente (deve existir, opcional) ---
         cliente = None
         nome_cliente_excel = row.get('nome_cliente', '').strip()
         if nome_cliente_excel:
             try:
                 cliente = Cliente.objects.get(nome__iexact=nome_cliente_excel)
             except Cliente.DoesNotExist:
-                raise ImportacaoError(f"O Cliente '{nome_cliente_excel}' não foi encontrado no sistema. Cadastre-o primeiro.", column_name='nome_cliente')
+                raise ImportacaoError(
+                    f"O Cliente '{nome_cliente_excel}' não foi encontrado. Cadastre-o primeiro.",
+                    column_name='nome_cliente'
+                )
 
-        # 3. Validação de campos de escolha 
+        # --- Validação de choices ---
         status = row.get('status', '').upper().strip()
         if not status:
             raise ImportacaoError("Este campo é obrigatório.", column_name='status')
         if status not in dict(Funcionario.STATUS_CHOICES):
-            raise ImportacaoError(f"O valor '{row.get('status')}' é inválido.", column_name='status')
-        
+            opcoes = ', '.join(dict(Funcionario.STATUS_CHOICES).keys())
+            raise ImportacaoError(
+                f"O valor '{row.get('status')}' é inválido. Opções: {opcoes}",
+                column_name='status'
+            )
+
         sexo = row.get('sexo', '').upper().strip() or None
         if sexo and sexo not in dict(Funcionario.SEXO_CHOICES):
-            raise ImportacaoError(f"O valor '{row.get('sexo')}' para 'sexo' é inválido.", column_name='sexo')
+            opcoes = ', '.join(dict(Funcionario.SEXO_CHOICES).keys())
+            raise ImportacaoError(
+                f"O valor '{row.get('sexo')}' é inválido. Opções: {opcoes}",
+                column_name='sexo'
+            )
 
-        # 4. Criação ou atualização do funcionário (agora com a variável `cbo` correta)
+        # --- Validação de salário ---
+        salario_str = row.get('salario', '').strip()
+        salario = 0.00
+        if salario_str:
+            try:
+                # Aceita vírgula como decimal (padrão BR)
+                salario = float(salario_str.replace(',', '.'))
+            except ValueError:
+                raise ImportacaoError(
+                    f"O valor '{salario_str}' não é um número válido.",
+                    column_name='salario'
+                )
+
+        # --- Validação de e-mail duplicado ---
+        email = row.get('email_pessoal', '').strip() or None
+        if email:
+            email_existente = Funcionario.objects.filter(email_pessoal__iexact=email).exclude(matricula=matricula)
+            if email_existente.exists():
+                raise ImportacaoError(
+                    f"O e-mail '{email}' já está cadastrado para outro funcionário.",
+                    column_name='email_pessoal'
+                )
+
+        # --- Salvar ---
         Funcionario.objects.update_or_create(
-            matricula=row['matricula'].strip(),
+            matricula=matricula,
             defaults={
-                'nome_completo': row['nome_completo'].strip().upper(),
+                'nome_completo': nome_completo.upper(),
                 'data_admissao': data_admissao.date(),
-                'data_nascimento': data_nascimento.date() if pd.notna(data_nascimento) else None,
+                'data_nascimento': data_nascimento.date() if data_nascimento and pd.notna(data_nascimento) else None,
                 'cargo': cargo,
                 'funcao': funcao,
                 'departamento': departamento,
                 'filial': filial,
                 'cliente': cliente,
                 'status': status,
-                'salario': float(row['salario']) if row['salario'] else 0.00,
-                'email_pessoal': row['email_pessoal'].strip() or None,
-                'telefone': row['telefone'].strip(),
+                'salario': salario,
+                'email_pessoal': email,
+                'telefone': row.get('telefone', '').strip(),
                 'sexo': sexo,
             }
         )
+
     
 def baixar_modelo_funcionarios(request):
     """
@@ -516,6 +625,7 @@ class CargoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
+    paginate_by = 20
 
     def get_queryset(self):
         return super().get_queryset().filter(ativo=True)
@@ -526,7 +636,7 @@ class CargoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     template_name = 'departamento_pessoal/cargo_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_cargo')
     extra_context = {'titulo_pagina': 'Novo Cargo'}
-
+    
 class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
     model = Cargo
     form_class = CargoForm
