@@ -4,6 +4,7 @@ Django settings for gerenciandoTarefas 1.02 por Emerson Goncalves.
 
 import os
 import sys
+import ssl
 from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
@@ -351,18 +352,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # E-MAIL
 # =============================================================================
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.sendgrid.net')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.cetestsp.com.br')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 
-EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='seu-email@empresa.com')
-EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='seu-email@empresa.com')
+# O certificado do servidor SMTP é emitido para *.m9.network,
+# não para smtp.cetestsp.com.br, então desabilitamos a verificação de hostname
+# mantendo a validação do certificado em si (CERT_REQUIRED continua ativo)
+EMAIL_SSL_CONTEXT = ssl.create_default_context()
+EMAIL_SSL_CONTEXT.check_hostname = False
 
-SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
-SENDGRID_TEMPLATE_ID = config('SENDGRID_TEMPLATE_ID', default='')
+EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='esg@cetestsp.com.br')
+EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='esg@cetestsp.com.br')
+
 
 # =============================================================================
 # REST FRAMEWORK
