@@ -352,7 +352,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # E-MAIL
 # =============================================================================
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.cetestsp.com.br')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.m9.network')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
@@ -364,6 +364,7 @@ DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL')
 # mantendo a validação do certificado em si (CERT_REQUIRED continua ativo)
 EMAIL_SSL_CONTEXT = ssl.create_default_context()
 EMAIL_SSL_CONTEXT.check_hostname = False
+EMAIL_SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
 EMAIL_NOTIFICACAO_PGR = config('EMAIL_NOTIFICACAO_PGR', default='esg@cetestsp.com.br')
 EMAIL_ALERTA_RISCO_CRITICO = config('EMAIL_ALERTA_RISCO_CRITICO', default='esg@cetestsp.com.br')
