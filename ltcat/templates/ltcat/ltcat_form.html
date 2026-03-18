@@ -1,0 +1,206 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Risco - LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Risco</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-xl-10 col-lg-11">
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-0 py-3"
+                 style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                         style="width:44px; height:44px; background: rgba(255,255,255,0.15);">
+                        <i class="fas fa-exclamation-triangle text-white fa-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h5 class="mb-0 text-white fw-bold">
+                            {% if form.instance.pk %}Editar Risco{% else %}Novo Reconhecimento de Risco{% endif %}
+                        </h5>
+                        <small class="text-white-50 text-truncate d-block">
+                            {{ ltcat.codigo_documento }}
+                            {% if funcao %} — GHE: {{ funcao.nome_funcao }}{% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-lg-4 p-3">
+                {# ── Contexto ── #}
+                {% if funcao %}
+                <div class="alert border-0 py-2 mb-4" style="background: var(--bs-warning-bg-subtle, #fff3cd); color: var(--bs-warning-text-emphasis, #664d03);">
+                    <i class="fas fa-users me-2"></i>
+                    <small>
+                        <strong>Função/GHE:</strong> {{ funcao.nome_funcao }} (CBO: {{ funcao.cbo }})
+                        {% if funcao.departamento %} | <strong>Departamento:</strong> {{ funcao.departamento }}{% endif %}
+                    </small>
+                </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            <span>{{ error }}</span>{% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    {# ═══════════ CLASSIFICAÇÃO DO RISCO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-tag me-2"></i>Classificação do Agente
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.tipo_risco.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.tipo_risco.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tipo_risco }}
+                                <div class="form-text">Físico, Químico, Biológico, Ergonômico ou Acidente</div>
+                                {% for error in form.tipo_risco.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-8">
+                                <label for="{{ form.agente.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.agente.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.agente }}
+                                <div class="form-text">
+                                    Ex: <em>Ruído</em>, <em>Bactérias e Vírus</em>, <em>Postura Inadequada</em>, <em>Eletricidade</em>
+                                </div>
+                                {% for error in form.agente.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ FONTE E EXPOSIÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-broadcast-tower me-2"></i>Fonte Geradora e Exposição
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.fonte_geradora.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.fonte_geradora.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.fonte_geradora }}
+                                <div class="form-text">
+                                    Ex: <em>Máquinas, Equipamentos, ferramentas elétricas</em>
+                                </div>
+                                {% for error in form.fonte_geradora.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.exposicao.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.exposicao.label }}
+                                </label>
+                                {{ form.exposicao }}
+                                {% for error in form.exposicao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.tipo_avaliacao.label }}
+                                </label>
+                                {{ form.tipo_avaliacao }}
+                                {% for error in form.tipo_avaliacao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ AVALIAÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-chart-bar me-2"></i>Resultado da Avaliação
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.limite_tolerancia.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.limite_tolerancia.label }}
+                                </label>
+                                {{ form.limite_tolerancia }}
+                                <div class="form-text">Ex: <em>85,0 dB(A)</em> ou <em>NA</em></div>
+                                {% for error in form.limite_tolerancia.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.resultado_avaliacao.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.resultado_avaliacao.label }}
+                                </label>
+                                {{ form.resultado_avaliacao }}
+                                <div class="form-text">Ex: <em>70,92 dB(A)</em> ou <em>Qualitativo</em></div>
+                                {% for error in form.resultado_avaliacao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.unidade_medida.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.unidade_medida.label }}
+                                </label>
+                                {{ form.unidade_medida }}
+                                {% for error in form.unidade_medida.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ BOTÕES ═══════════ #}
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
+                            <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
+                        </a>
+                        <button type="submit" class="btn btn-warning px-4 order-1 order-sm-2">
+                            <i class="fas fa-save me-1"></i>
+                            {% if form.instance.pk %}Atualizar Risco{% else %}Cadastrar Risco{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+
+
+
+

@@ -226,58 +226,380 @@ class Funcionario(models.Model):
         
 class Documento(models.Model):
     """
-    Armazena documentos específicos (CPF, RG, etc.) associados a um funcionário.
+    Armazena documentos pessoais e profissionais de funcionários.
+    Campos específicos são exibidos condicionalmente conforme o tipo.
     """
+
+    # ── Tipos de documento (completo para DP brasileiro) ──
     TIPO_CHOICES = [
-        ('CPF', _('CPF')),
-        ('RG', _('RG')),
-        ('CTPS', _('CTPS')),
-        ('CNH', _('CNH')),
-        ('PIS', _('PIS')),
-        ('OUTRO', _('Outro'))
+        # Documentos pessoais
+        ('CPF', 'CPF'),
+        ('RG', 'RG / Carteira de Identidade'),
+        ('CNH', 'CNH - Carteira de Habilitação'),
+        ('CTPS', 'CTPS - Carteira de Trabalho'),
+        ('PIS', 'PIS / PASEP / NIT'),
+        ('TITULO', 'Título de Eleitor'),
+        ('RESERVISTA', 'Certificado de Reservista'),
+        ('CERTIDAO_NASC', 'Certidão de Nascimento'),
+        ('CERTIDAO_CAS', 'Certidão de Casamento'),
+        ('PASSAPORTE', 'Passaporte'),
+        ('RNE', 'RNE / CRNM (Estrangeiro)'),
+        # Documentos profissionais
+        ('REGISTRO_CLASSE', 'Registro de Classe (CREA, CRM, OAB, etc.)'),
+        ('CERTIFICADO', 'Certificado / Diploma'),
+        ('ASO', 'ASO - Atestado de Saúde Ocupacional'),
+        ('NR', 'Certificado de NR (NR-10, NR-35, etc.)'),
+        ('COMPROVANTE_END', 'Comprovante de Endereço'),
+        ('COMP_ESCOLAR', 'Comprovante de Escolaridade'),
+        ('OUTRO', 'Outro'),
     ]
 
+    # ── Categorias de CNH ──
+    CNH_CATEGORIA_CHOICES = [
+        ('A', 'A - Motos'),
+        ('B', 'B - Carros'),
+        ('AB', 'AB - Motos e Carros'),
+        ('C', 'C - Caminhões'),
+        ('D', 'D - Ônibus'),
+        ('E', 'E - Carretas / Articulados'),
+        ('AC', 'AC'), ('AD', 'AD'), ('AE', 'AE'),
+    ]
+
+    # ── UF para órgão expedidor ──
+    UF_CHOICES = [
+        ('AC', 'AC'), ('AL', 'AL'), ('AM', 'AM'), ('AP', 'AP'),
+        ('BA', 'BA'), ('CE', 'CE'), ('DF', 'DF'), ('ES', 'ES'),
+        ('GO', 'GO'), ('MA', 'MA'), ('MG', 'MG'), ('MS', 'MS'),
+        ('MT', 'MT'), ('PA', 'PA'), ('PB', 'PB'), ('PE', 'PE'),
+        ('PI', 'PI'), ('PR', 'PR'), ('RJ', 'RJ'), ('RN', 'RN'),
+        ('RO', 'RO'), ('RR', 'RR'), ('RS', 'RS'), ('SC', 'SC'),
+        ('SE', 'SE'), ('SP', 'SP'), ('TO', 'TO'),
+    ]
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS COMUNS A TODOS OS TIPOS
+    # ═══════════════════════════════════════════════════════════
     funcionario = models.ForeignKey(
         'departamento_pessoal.Funcionario',
-        on_delete=models.PROTECT,  
-        verbose_name=_("Funcionário"),
+        on_delete=models.PROTECT,
+        verbose_name='Funcionário',
         related_name='documentos_dp',
-        related_query_name='documento_dp'
+        related_query_name='documento_dp',
     )
-    tipo_documento = models.CharField(_("Tipo de Documento"), max_length=10, choices=TIPO_CHOICES)
-    numero = models.CharField(_("Número/Código do Documento"), max_length=50)
+    tipo_documento = models.CharField(
+        'Tipo de Documento', max_length=20,
+        choices=TIPO_CHOICES,
+    )
+    numero = models.CharField(
+        'Número do Documento', max_length=50,
+        blank=True, null=True,
+        help_text='Número principal do documento',
+    )
+    data_emissao = models.DateField(
+        'Data de Emissão', blank=True, null=True,
+    )
+    data_validade = models.DateField(
+        'Data de Validade', blank=True, null=True,
+        help_text='Deixe em branco se não tem validade',
+    )
+    orgao_expedidor = models.CharField(
+        'Órgão Expedidor', max_length=50,
+        blank=True, null=True,
+        help_text='Ex: SSP-MG, DETRAN-SP, CREA-MG',
+    )
+    uf_expedidor = models.CharField(
+        'UF do Expedidor', max_length=2,
+        choices=UF_CHOICES,
+        blank=True, null=True,
+    )
+    observacoes = models.TextField(
+        'Observações', blank=True, null=True,
+    )
     anexo = models.FileField(
-        _("Arquivo Anexado"),
-        upload_to='documentos_funcionarios/',
-        blank=True,
-        null=True
+        'Arquivo Anexado',
+        upload_to='documentos_funcionarios/%Y/%m/',
+        blank=True, null=True,
+        help_text='PDF ou imagem (máx. 10MB)',
     )
-    # Adicionei a classe Filial aqui para que o código seja auto-suficiente
-    class Filial(models.Model):
-        # Apenas para o exemplo, você deve usar seu modelo real
-        nome = models.CharField(max_length=100)
 
-    # A Filial e o FilialManager já estavam no seu código, mas precisam ser definidos
-    # class FilialManager(models.Manager):
-    #     pass
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — RG
+    # ═══════════════════════════════════════════════════════════
+    rg_nome_pai = models.CharField(
+        'Nome do Pai', max_length=200, blank=True, null=True,
+    )
+    rg_nome_mae = models.CharField(
+        'Nome da Mãe', max_length=200, blank=True, null=True,
+    )
+    rg_naturalidade = models.CharField(
+        'Naturalidade', max_length=100, blank=True, null=True,
+        help_text='Ex: Belo Horizonte/MG',
+    )
 
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — CNH
+    # ═══════════════════════════════════════════════════════════
+    cnh_categoria = models.CharField(
+        'Categoria da CNH', max_length=3,
+        choices=CNH_CATEGORIA_CHOICES, blank=True, null=True,
+    )
+    cnh_numero_registro = models.CharField(
+        'Nº de Registro CNH', max_length=30, blank=True, null=True,
+    )
+    cnh_primeira_habilitacao = models.DateField(
+        'Data da 1ª Habilitação', blank=True, null=True,
+    )
+    cnh_observacoes_detran = models.CharField(
+        'Observações DETRAN', max_length=200, blank=True, null=True,
+        help_text='Ex: Exerce Atividade Remunerada (EAR)',
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — CTPS
+    # ═══════════════════════════════════════════════════════════
+    ctps_serie = models.CharField(
+        'Série da CTPS', max_length=20, blank=True, null=True,
+    )
+    ctps_uf = models.CharField(
+        'UF da CTPS', max_length=2,
+        choices=UF_CHOICES, blank=True, null=True,
+    )
+    ctps_digital = models.BooleanField(
+        'CTPS Digital?', default=False,
+        help_text='Marque se a CTPS é digital (sem número físico)',
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — TÍTULO DE ELEITOR
+    # ═══════════════════════════════════════════════════════════
+    titulo_zona = models.CharField(
+        'Zona Eleitoral', max_length=10, blank=True, null=True,
+    )
+    titulo_secao = models.CharField(
+        'Seção Eleitoral', max_length=10, blank=True, null=True,
+    )
+    titulo_municipio = models.CharField(
+        'Município', max_length=100, blank=True, null=True,
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — RESERVISTA
+    # ═══════════════════════════════════════════════════════════
+    reservista_categoria = models.CharField(
+        'Categoria Reservista', max_length=10, blank=True, null=True,
+    )
+    reservista_regiao_militar = models.CharField(
+        'Região Militar', max_length=50, blank=True, null=True,
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — REGISTRO DE CLASSE
+    # ═══════════════════════════════════════════════════════════
+    registro_orgao = models.CharField(
+        'Órgão de Classe', max_length=50, blank=True, null=True,
+        help_text='Ex: CREA, CRM, OAB, CRN, COREN',
+    )
+    registro_especialidade = models.CharField(
+        'Especialidade', max_length=200, blank=True, null=True,
+        help_text='Ex: Engenharia Mecânica e de Segurança do Trabalho',
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — ASO
+    # ═══════════════════════════════════════════════════════════
+    ASO_TIPO_CHOICES = [
+        ('admissional', 'Admissional'),
+        ('periodico', 'Periódico'),
+        ('retorno', 'Retorno ao Trabalho'),
+        ('mudanca', 'Mudança de Função'),
+        ('demissional', 'Demissional'),
+    ]
+    aso_tipo_exame = models.CharField(
+        'Tipo de Exame ASO', max_length=20,
+        choices=ASO_TIPO_CHOICES, blank=True, null=True,
+    )
+    aso_apto = models.BooleanField(
+        'Apto?', default=True, null=True,
+        help_text='Resultado: Apto ou Inapto',
+    )
+    aso_medico_nome = models.CharField(
+        'Médico Responsável', max_length=200, blank=True, null=True,
+    )
+    aso_medico_crm = models.CharField(
+        'CRM do Médico', max_length=20, blank=True, null=True,
+    )
+    aso_proximo_exame = models.DateField(
+        'Próximo Exame', blank=True, null=True,
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — CERTIFICADO NR
+    # ═══════════════════════════════════════════════════════════
+    nr_numero = models.CharField(
+        'Número da NR', max_length=10, blank=True, null=True,
+        help_text='Ex: NR-10, NR-35, NR-33',
+    )
+    nr_carga_horaria = models.PositiveIntegerField(
+        'Carga Horária (horas)', blank=True, null=True,
+    )
+    nr_instituicao = models.CharField(
+        'Instituição / Empresa', max_length=200, blank=True, null=True,
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — CERTIFICADO / DIPLOMA
+    # ═══════════════════════════════════════════════════════════
+    ESCOLARIDADE_CHOICES = [
+        ('fundamental', 'Ensino Fundamental'),
+        ('medio', 'Ensino Médio'),
+        ('tecnico', 'Curso Técnico'),
+        ('graduacao', 'Graduação'),
+        ('pos', 'Pós-Graduação / MBA'),
+        ('mestrado', 'Mestrado'),
+        ('doutorado', 'Doutorado'),
+        ('curso_livre', 'Curso Livre / Extensão'),
+    ]
+    certificado_nivel = models.CharField(
+        'Nível/Grau', max_length=20,
+        choices=ESCOLARIDADE_CHOICES, blank=True, null=True,
+    )
+    certificado_curso = models.CharField(
+        'Nome do Curso', max_length=200, blank=True, null=True,
+    )
+    certificado_instituicao = models.CharField(
+        'Instituição de Ensino', max_length=200, blank=True, null=True,
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPOS ESPECÍFICOS — PASSAPORTE
+    # ═══════════════════════════════════════════════════════════
+    passaporte_pais_emissao = models.CharField(
+        'País de Emissão', max_length=100,
+        blank=True, null=True, default='Brasil',
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CAMPO GENÉRICO — OUTRO
+    # ═══════════════════════════════════════════════════════════
+    outro_descricao = models.CharField(
+        'Descrição do Documento', max_length=200,
+        blank=True, null=True,
+        help_text='Descreva o tipo de documento quando "Outro"',
+    )
+
+    # ═══════════════════════════════════════════════════════════
+    # CONTROLE / FILIAL (usa o import do topo: from usuario.models import Filial)
+    # ═══════════════════════════════════════════════════════════
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
-        related_name='documentos_filial', 
-        verbose_name=_("Filial"),
-        null=True,
-        blank=False
+        related_name='documentos_dp_filial',  
+        verbose_name='Filial',
+        null=True, blank=False,
     )
-    
-    # Manager customizado para segregação de dados
-    # objects = FilialManager()
+
+    _filial_lookup = 'filial_id'
+    objects = FilialManager()
+
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
 
     class Meta:
-        verbose_name = _("Documento")
-        verbose_name_plural = _("Documentos")
-        # Garante que um funcionário só pode ter um documento de cada tipo.
-        unique_together = ('funcionario', 'tipo_documento')
+        db_table = 'departamento_pessoal_documento'
+        verbose_name = 'Documento'
+        verbose_name_plural = 'Documentos'
+        unique_together = ('funcionario', 'tipo_documento', 'numero')
+        ordering = ['funcionario__nome_completo', 'tipo_documento']
 
     def __str__(self):
-        return f"{self.get_tipo_documento_display()} de {self.funcionario.nome_completo}"
+        return f"{self.get_tipo_documento_display()} — {self.funcionario.nome_completo}"
+
+    @property
+    def esta_vencido(self):
+        """Retorna True se o documento está vencido."""
+        if self.data_validade:
+            return self.data_validade < date.today()
+        return False
+
+    @property
+    def vence_em_30_dias(self):
+        """Retorna True se vence nos próximos 30 dias."""
+        if self.data_validade:
+            from datetime import timedelta
+            hoje = date.today()
+            return hoje <= self.data_validade <= hoje + timedelta(days=30)
+        return False
+
+    @property
+    def icone(self):
+        """Retorna ícone Bootstrap para o tipo de documento."""
+        icones = {
+            'CPF': 'bi-person-vcard',
+            'RG': 'bi-person-badge',
+            'CNH': 'bi-car-front',
+            'CTPS': 'bi-briefcase-fill',
+            'PIS': 'bi-123',
+            'TITULO': 'bi-check2-square',
+            'RESERVISTA': 'bi-shield-check',
+            'CERTIDAO_NASC': 'bi-file-earmark-person',
+            'CERTIDAO_CAS': 'bi-heart',
+            'PASSAPORTE': 'bi-globe',
+            'RNE': 'bi-globe2',
+            'REGISTRO_CLASSE': 'bi-award',
+            'CERTIFICADO': 'bi-mortarboard',
+            'ASO': 'bi-heart-pulse',
+            'NR': 'bi-shield-exclamation',
+            'COMPROVANTE_END': 'bi-house',
+            'COMP_ESCOLAR': 'bi-book',
+            'OUTRO': 'bi-file-earmark-text',
+        }
+        return icones.get(self.tipo_documento, 'bi-file-earmark')
+
+    @property
+    def cor_badge(self):
+        """Retorna a cor do badge conforme status de validade."""
+        if self.esta_vencido:
+            return 'danger'
+        if self.vence_em_30_dias:
+            return 'warning'
+        return 'success'
+
+    def clean(self):
+        """Validações condicionais por tipo de documento."""
+        from django.core.exceptions import ValidationError
+        errors = {}
+
+        # CPF — validação de formato
+        if self.tipo_documento == 'CPF' and self.numero:
+            cpf = self.numero.replace('.', '').replace('-', '').replace(' ', '')
+            if len(cpf) != 11 or not cpf.isdigit():
+                errors['numero'] = 'CPF deve ter 11 dígitos numéricos.'
+
+        # CNH — categoria obrigatória
+        if self.tipo_documento == 'CNH':
+            if not self.cnh_categoria:
+                errors['cnh_categoria'] = 'Categoria é obrigatória para CNH.'
+            if not self.data_validade:
+                errors['data_validade'] = 'Data de validade é obrigatória para CNH.'
+
+        # CTPS — série obrigatória se não digital
+        if self.tipo_documento == 'CTPS' and not self.ctps_digital:
+            if not self.numero:
+                errors['numero'] = 'Número é obrigatório para CTPS física.'
+            if not self.ctps_serie:
+                errors['ctps_serie'] = 'Série é obrigatória para CTPS física.'
+
+        # ASO — tipo de exame obrigatório
+        if self.tipo_documento == 'ASO' and not self.aso_tipo_exame:
+            errors['aso_tipo_exame'] = 'Tipo de exame é obrigatório para ASO.'
+
+        # NR — número da NR obrigatório
+        if self.tipo_documento == 'NR' and not self.nr_numero:
+            errors['nr_numero'] = 'Número da NR é obrigatório.'
+
+        # OUTRO — descrição obrigatória
+        if self.tipo_documento == 'OUTRO' and not self.outro_descricao:
+            errors['outro_descricao'] = 'Descrição é obrigatória para tipo "Outro".'
+
+        if errors:
+            raise ValidationError(errors)

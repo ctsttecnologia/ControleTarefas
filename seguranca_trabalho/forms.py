@@ -184,10 +184,23 @@ class CargoFuncaoForm(forms.ModelForm):
     class Meta:
         model = CargoFuncao
         fields = ['cargo', 'funcao']
-        widgets = {
-            'cargo': forms.Select(attrs={'class': 'form-select'}),
-            'funcao': forms.Select(attrs={'class': 'form-select'}),
-        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        cargo = cleaned_data.get('cargo')
+        funcao = cleaned_data.get('funcao')
+
+        if cargo and funcao:
+            # Exclui o próprio objeto em caso de edição
+            qs = CargoFuncao.objects.filter(cargo=cargo, funcao=funcao)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(
+                    f"A associação entre '{cargo}' e '{funcao}' já existe."
+                )
+
+        return cleaned_data
 
 class AjusteEstoqueForm(forms.Form):
     TIPO_CHOICES = [

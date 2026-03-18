@@ -702,8 +702,9 @@ class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
         funcionario_pk = self.kwargs.get('funcionario_pk')
         if funcionario_pk:
             filial_id = self.request.session.get('active_filial_id')
-            # Usando filter().first() para evitar 404 se a filial mudar durante a sessão
-            funcionario = Funcionario.objects.filter(pk=funcionario_pk, filial_id=filial_id).first()
+            funcionario = Funcionario.objects.filter(
+                pk=funcionario_pk, filial_id=filial_id
+            ).first()
             if funcionario:
                 initial['funcionario'] = funcionario
         return initial
@@ -714,18 +715,22 @@ class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
         if funcionario_pk:
             context['funcionario'] = Funcionario.objects.filter(pk=funcionario_pk).first()
         return context
-        
+
     def form_valid(self, form):
         try:
             messages.success(self.request, "Documento adicionado com sucesso.")
             return super().form_valid(form)
         except IntegrityError:
-            # Captura erro de unicidade (ex: tentar cadastrar CPF duas vezes para o mesmo funcionário)
-            form.add_error('tipo_documento', 'Este funcionário já possui um documento deste tipo cadastrado.')
+            form.add_error(None,
+                'Este funcionário já possui um documento deste tipo com o mesmo número.'
+            )
             return self.form_invalid(form)
 
     def get_success_url(self):
-        return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
+        return reverse(
+            'departamento_pessoal:detalhe_funcionario',
+            kwargs={'pk': self.object.funcionario.pk}
+        )
 
 # A lógica de update de documento precisa garantir que o usuário não edite
 # um documento de outra filial. Podemos criar um mixin simples para isso.
@@ -784,6 +789,11 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         # Querysets base
         funcionarios_qs = Funcionario.objects.filter(filial_id=filial_id)
         departamentos_qs = Departamento.objects.filter(filial_id=filial_id)
+        
+        context['ultimos_funcionarios'] = funcionarios_qs.select_related(
+            'cargo', 'departamento'
+        ).order_by('-data_admissao')[:5]
+
         
         # KPIs básicos
         context['total_funcionarios_ativos'] = funcionarios_qs.filter(status='ATIVO').count()

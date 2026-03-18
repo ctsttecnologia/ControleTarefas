@@ -1,0 +1,119 @@
+
+{# ═══════════════════════════════════════════════════════════ #}
+{# Partial: campos do formulário de Local (usado na edição)    #}
+{# ═══════════════════════════════════════════════════════════ #}
+
+<!-- ════ Identificação do Local ════ -->
+<h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+    <i class="fas fa-building me-1"></i> Identificação do Local
+</h6>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <label class="form-label">{{ form.empresa.label }} *</label>
+        {{ form.empresa }}
+        {% if form.empresa.errors %}
+        <div class="invalid-feedback d-block">{{ form.empresa.errors.0 }}</div>
+        {% endif %}
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">{{ form.nome_local.label }} *</label>
+        {{ form.nome_local }}
+        {% if form.nome_local.errors %}
+        <div class="invalid-feedback d-block">{{ form.nome_local.errors.0 }}</div>
+        {% endif %}
+        <small class="text-muted">Ex: Unidade Operacional Camaçari, Sede Administrativa</small>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-5">
+        <label class="form-label">{{ form.razao_social.label }}</label>
+        {{ form.razao_social }}
+        <small class="text-muted">Razão social do local (se diferente da empresa)</small>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">{{ form.cnpj.label }}</label>
+        {{ form.cnpj }}
+    </div>
+</div>
+
+<div class="mb-4">
+    <label class="form-label">{{ form.descricao.label }}</label>
+    {{ form.descricao }}
+</div>
+
+<!-- ════ Endereço via Logradouro (Autocomplete) ════ -->
+<div class="border rounded p-3 mb-4" style="border-color: #4caf50 !important;">
+    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+        <i class="fas fa-search-location me-1"></i> Endereço (Logradouro Cadastrado)
+        <span class="badge bg-success ms-2">Recomendado</span>
+    </h6>
+    <p class="text-muted small mb-3">
+        Digite para buscar um endereço já cadastrado no sistema. Mínimo 2 caracteres.
+    </p>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Buscar Logradouro</label>
+        {{ form.logradouro }}
+        {% if form.logradouro.errors %}
+        <div class="invalid-feedback d-block">{{ form.logradouro.errors.0 }}</div>
+        {% endif %}
+    </div>
+
+    <!-- Preview do endereço selecionado -->
+    <div id="logradouro-preview" class="logradouro-preview d-none">
+        <div class="d-flex align-items-start">
+            <i class="fas fa-map-pin text-success me-2 mt-1"></i>
+            <div>
+                <strong id="preview-endereco"></strong>
+                <div class="text-muted" id="preview-bairro-cidade"></div>
+                <div class="text-muted" id="preview-cep"></div>
+            </div>
+            <button type="button" id="btn-limpar-logradouro"
+                    class="btn btn-sm btn-outline-danger ms-auto" title="Limpar seleção">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ════ Endereço Manual (Fallback) ════ -->
+<div class="border rounded p-3 mb-4" id="endereco-manual-section">
+    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+        <i class="fas fa-map me-1"></i> Endereço Manual
+        <small class="text-muted fw-normal">(preencha apenas se NÃO usar logradouro acima)</small>
+    </h6>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">{{ form.endereco.label }}</label>
+            {{ form.endereco }}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">{{ form.numero.label }}</label>
+            {{ form.numero }}
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">{{ form.complemento.label }}</label>
+            {{ form.complemento }}
+        </div>
+    </div>
+    <div class="row g-3 mt-1">
+        <div class="col-md-4">
+            <label class="form-label">{{ form.bairro.label }}</label>
+            {{ form.bairro }}
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">{{ form.cidade.label }}</label>
+            {{ form.cidade }}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">{{ form.estado.label }}</label>
+            {{ form.estado }}
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">{{ form.cep.label }}</label>
+            {{ form.cep }}
+        </div>
+    </div>
+</div>
+

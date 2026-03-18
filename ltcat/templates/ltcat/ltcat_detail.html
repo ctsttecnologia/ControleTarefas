@@ -1,0 +1,1750 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+{% load ltcat_tags %}
+
+{% block ltcat_title %}{{ ltcat.empresa.razao_social }} - LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
+<li class="breadcrumb-item active">{{ ltcat.codigo_documento }}</li>
+{% endblock %}
+
+{% block ltcat_content %}
+
+<!-- Cabeçalho -->
+<div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h4 class="fw-bold mb-1">
+                <i class="fas fa-file-medical me-2"></i>{{ ltcat.titulo }}
+            </h4>
+            <p class="mb-0 opacity-75">
+                {{ ltcat.empresa.razao_social }} &bull;
+                Código: {{ ltcat.codigo_documento }} &bull;
+                Rev. {{ ltcat.versao_atual|stringformat:"02d" }}
+            </p>
+        </div>
+        <div class="d-flex gap-2 no-print">
+            <a href="{% url 'ltcat:gerar_pdf' ltcat.pk %}" class="btn btn-light btn-sm" target="_blank">
+                <i class="fas fa-file-pdf me-1"></i> PDF
+            </a>
+            <a href="{% url 'ltcat:ltcat_update' ltcat.pk %}" class="btn btn-light btn-sm">
+                <i class="fas fa-edit me-1"></i> Editar
+            </a>
+            <a href="{% url 'ltcat:ltcat_delete' ltcat.pk %}" class="btn btn-danger btn-sm">
+                <i class="fas fa-trash me-1"></i> Excluir
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Info Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card shadow-sm">
+            <div class="card-body">
+                <small class="text-muted text-uppercase fw-semibold">Status</small>
+                <div class="mt-1">
+                    <span class="badge {{ ltcat.status|status_badge }} fs-6">
+                        {{ ltcat.get_status_display }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card info shadow-sm">
+            <div class="card-body">
+                <small class="text-muted text-uppercase fw-semibold">Elaboração</small>
+                <div class="fs-5 fw-bold mt-1">{{ ltcat.data_elaboracao|date:"d/m/Y" }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card shadow-sm">
+            <div class="card-body">
+                <small class="text-muted text-uppercase fw-semibold">Vencimento</small>
+                <div class="fs-5 fw-bold mt-1 {% if ltcat.is_vencido %}text-danger{% endif %}">
+                    {% if ltcat.data_vencimento %}
+                        {{ ltcat.data_vencimento|date:"d/m/Y" }}
+                    {% else %}
+                        <span class="text-muted">Sem vencimento</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card success shadow-sm">
+            <div class="card-body">
+                <small class="text-muted text-uppercase fw-semibold">Funções</small>
+                <div class="fs-5 fw-bold mt-1">{{ ltcat.funcoes|length }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ EMPRESAS: CONTRATADA E CONTRATANTE ═══ -->
+<div class="row g-3 mb-4">
+
+    <!-- EMPRESA CONTRATADA  -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="section-header d-flex justify-content-between align-items-center"
+                     data-bs-toggle="collapse" data-bs-target="#secaoContratada">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-building me-2 text-success"></i>
+                        Empresa Contratada (Elaboradora)
+                    </h6>
+                    <div class="d-flex align-items-center gap-2 no-print">
+                        {% if ltcat.empresa_contratada %}
+                        <a href="{% url 'ltcat:empresa_ltcat_update' ltcat.empresa_contratada.pk %}?next={{ request.path }}"
+                           class="btn btn-sm btn-outline-success" title="Editar dados da contratada">
+                            <i class="fas fa-pencil"></i>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'ltcat:empresa_ltcat_create' %}?next={{ request.path }}"
+                           class="btn btn-sm btn-outline-success" title="Cadastrar empresa contratada">
+                            <i class="fas fa-plus me-1"></i> Cadastrar
+                        </a>
+                        {% endif %}
+                        <i class="fas fa-chevron-down text-muted"></i>
+                    </div>
+                </div>
+                <div class="collapse show" id="secaoContratada">
+                    {% if ltcat.empresa_contratada %}
+                        {% with emp=ltcat.empresa_contratada %}
+                        <table class="table table-sm table-borderless mt-3 mb-0" style="font-size: 0.88rem;">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted fw-semibold" style="width: 140px;">Razão Social</td>
+                                    <td class="fw-bold">{{ emp.razao_social }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">CNPJ</td>
+                                    <td>{{ emp.cnpj|default:"—" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">CNAE</td>
+                                    <td>
+                                        {{ emp.cnae|default:"—" }}
+                                        {% if emp.descricao_cnae %}
+                                            <small class="text-muted d-block">{{ emp.descricao_cnae }}</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Grau de Risco</td>
+                                    <td>{{ emp.grau_risco_texto|default:emp.grau_risco|default:"—" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Atividade</td>
+                                    <td>{{ emp.atividade_principal|default:"—" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Nº Empregados</td>
+                                    <td>{{ emp.numero_empregados_texto|default:emp.numero_empregados|default:"—" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Jornada</td>
+                                    <td>{{ emp.jornada_trabalho|default:"—" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Endereço</td>
+                                    <td>{{ emp.endereco_completo }}</td>
+                                </tr>
+                                {% if emp.telefone %}
+                                <tr>
+                                    <td class="text-muted fw-semibold">Telefone</td>
+                                    <td>{{ emp.telefone }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if emp.email %}
+                                <tr>
+                                    <td class="text-muted fw-semibold">E-mail</td>
+                                    <td>{{ emp.email }}</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        {% endwith %}
+                    {% else %}
+                        <div class="text-center text-muted py-4 mt-3">
+                            <i class="fas fa-building fa-2x d-block mb-2 opacity-50"></i>
+                            <p class="mb-2">Nenhuma empresa contratada vinculada.</p>
+                            <small>
+                                <a href="{% url 'ltcat:ltcat_update' ltcat.pk %}" class="text-decoration-underline">
+                                    Edite o LTCAT
+                                </a> para selecionar, ou
+                                <a href="{% url 'ltcat:empresa_ltcat_create' %}?next={{ request.path }}" class="text-decoration-underline">
+                                    cadastre uma nova
+                                </a>.
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMPRESA CONTRATANTE (Cliente) -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <div class="section-header d-flex justify-content-between align-items-center"
+                     data-bs-toggle="collapse" data-bs-target="#secaoContratante">
+                    <h6 class="fw-bold mb-0">
+                        <i class="fas fa-hospital me-2 text-primary"></i>
+                        Empresa Contratante (Cliente)
+                    </h6>
+                    <i class="fas fa-chevron-down text-muted"></i>
+                </div>
+                <div class="collapse show" id="secaoContratante">
+                    {% if ltcat.empresa %}
+                        {% with cli=ltcat.empresa %}
+                        <table class="table table-sm table-borderless mt-3 mb-0" style="font-size: 0.88rem;">
+                            <tbody>
+                                <tr>
+                                    <td class="text-muted fw-semibold" style="width: 140px;">Razão Social</td>
+                                    <td class="fw-bold">{{ cli.razao_social }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">CNPJ</td>
+                                    <td>{{ cli.cnpj|default:"—" }}</td>
+                                </tr>
+                                {% if cli.logradouro %}
+                                <tr>
+                                    <td class="text-muted fw-semibold">Endereço</td>
+                                    <td>
+                                        {{ cli.logradouro.endereco|default:"" }}
+                                        {% if cli.logradouro.numero %}, nº {{ cli.logradouro.numero }}{% endif %}
+                                        {% if cli.logradouro.complemento %} - {{ cli.logradouro.complemento }}{% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Bairro</td>
+                                    <td>{{ cli.logradouro.bairro|default:"—" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">Cidade/UF</td>
+                                    <td>{{ cli.logradouro.cidade|default:"" }} - {{ cli.logradouro.estado|default:"" }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted fw-semibold">CEP</td>
+                                    <td>{{ cli.logradouro.cep|default:"—" }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if cli.telefone %}
+                                <tr>
+                                    <td class="text-muted fw-semibold">Telefone</td>
+                                    <td>{{ cli.telefone }}</td>
+                                </tr>
+                                {% endif %}
+                                {% if cli.email %}
+                                <tr>
+                                    <td class="text-muted fw-semibold">E-mail</td>
+                                    <td>{{ cli.email }}</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        {% endwith %}
+                    {% else %}
+                        <div class="text-center text-muted py-4 mt-3">
+                            <i class="fas fa-hospital fa-2x d-block mb-2 opacity-50"></i>
+                            Empresa contratante não definida.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══ LOCAIS DE PRESTAÇÃO ═══ -->
+{% with doc_locais=ltcat.documento_locais.all %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoLocais">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                Locais de Prestação de Serviço
+                <span class="badge bg-primary ms-2" id="badgeLocaisCount">{{ doc_locais|length }}</span>
+            </h6>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+
+        <div class="collapse show" id="secaoLocais">
+            <!-- Botão para gerenciar locais -->
+            <div class="d-flex justify-content-end mt-3 mb-2">
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal" data-bs-target="#modalVincularLocais">
+                    <i class="fas fa-plus me-1"></i> Vincular Locais
+                </button>
+            </div>
+
+            <!-- Tabela de locais vinculados -->
+            <div class="table-responsive" id="tabelaLocaisVinculados">
+                {% if doc_locais %}
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Local</th>
+                            <th>CNPJ</th>
+                            <th>Endereço</th>
+                            <th class="text-center">Principal</th>
+                            <th class="text-center" style="width: 80px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyLocais">
+                        {% for vinculo in doc_locais %}
+                        <tr id="vinculo-row-{{ vinculo.pk }}">
+                            <td class="fw-semibold">{{ vinculo.local_prestacao.nome_local }}</td>
+                            <td>{{ vinculo.local_prestacao.cnpj|default:"-" }}</td>
+                            <td>{{ vinculo.local_prestacao.endereco_completo }}</td>
+                            <td class="text-center">
+                                <button type="button"
+                                        class="btn btn-sm btn-link p-0 btn-toggle-principal"
+                                        data-vinculo-id="{{ vinculo.pk }}"
+                                        data-ltcat-id="{{ ltcat.pk }}"
+                                        title="{% if vinculo.principal %}Desmarcar principal{% else %}Marcar como principal{% endif %}">
+                                    {% if vinculo.principal %}
+                                        <i class="fas fa-star text-warning fa-lg"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endif %}
+                                </button>
+                            </td>
+                            <td class="text-center">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger btn-desvincular-local"
+                                        data-vinculo-id="{{ vinculo.pk }}"
+                                        data-ltcat-id="{{ ltcat.pk }}"
+                                        data-nome="{{ vinculo.local_prestacao.nome_local }}"
+                                        title="Desvincular">
+                                    <i class="fas fa-unlink"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center py-4" id="locaisVazio">
+                    <i class="fas fa-map-marker-alt fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Nenhum local vinculado a este documento.</p>
+                    <small class="text-muted">Clique em "Vincular Locais" para adicionar.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endwith %}
+
+<!-- ═══ MODAL: Vincular Locais ao Documento ═══ -->
+<div class="modal fade" id="modalVincularLocais" tabindex="-1"
+     aria-labelledby="modalVincularLocaisLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--ltcat-primary, #0d9488); color: white;">
+                <h5 class="modal-title" id="modalVincularLocaisLabel">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    Vincular Locais de Prestação
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Info da empresa -->
+                <div class="alert alert-info py-2 mb-3">
+                    <i class="fas fa-building me-1"></i>
+                    <strong>Empresa:</strong> {{ ltcat.empresa.razao_social }}
+                </div>
+
+                <!-- Busca -->
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="buscaLocalVincular"
+                           placeholder="Buscar por nome do local...">
+                </div>
+
+                <!-- Lista de locais disponíveis -->
+                <div id="listaLocaisDisponiveis" class="border rounded p-2"
+                     style="max-height: 400px; overflow-y: auto;">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <span class="ms-2 text-muted">Carregando locais...</span>
+                    </div>
+                </div>
+
+                <div class="mt-2 text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Selecione os locais que deseja vincular a este documento.
+                    Locais já vinculados aparecem desabilitados.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarVincular" disabled>
+                    <i class="fas fa-link me-1"></i>
+                    Vincular Selecionados (<span id="countSelecionados">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ FUNÇÕES ANALISADAS ═══ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoFuncoes">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-users me-2 text-primary"></i>
+                Funções Analisadas
+                <span class="badge bg-primary ms-2">{{ funcoes|length }}</span>
+            </h6>
+            <div class="d-flex align-items-center gap-2">    
+                <i class="fas fa-chevron-down text-muted"></i>                
+            </div>
+        </div>
+        <div class="collapse show" id="secaoFuncoes">
+            <div class="d-flex align-items-right justify-content-end gap-2">  
+                <a href="{% url 'ltcat:funcao_create' ltcat.pk %}" class="btn btn-sm btn-outline-primary no-print">
+                    <i class="fas fa-plus me-1"></i> Nova Função
+                </a>
+            </div> 
+            {% if funcoes %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Função</th>
+                            <th>CBO</th>
+                            <th>GHE</th>
+                            <th>Riscos</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for funcao in funcoes %}
+                        <tr>
+                            <td class="fw-semibold">{{ funcao.nome_funcao }}</td>
+                            <td><code>{{ funcao.cbo }}</code></td>
+                            <td>{{ funcao.ghe|default:"-" }}</td>
+                            <td>
+                                <span class="badge bg-info bg-opacity-10 text-info">
+                                    {{ funcao.riscos.count }} riscos 
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'ltcat:risco_create' ltcat.pk funcao.pk %}"
+                                       class="btn btn-outline-success" title="Adicionar Risco">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                    <a href="{% url 'ltcat:funcao_update' ltcat.pk funcao.pk %}"
+                                       class="btn btn-outline-warning" title="Editar">
+                                        <i class="fas fa-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'ltcat:funcao_delete' ltcat.pk funcao.pk %}"
+                                       class="btn btn-outline-danger" title="Excluir">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Riscos sub-tabela -->
+                        {% if funcao.riscos.all %}
+                        <tr>
+                            <td colspan="5" class="p-0 border-0">
+                                <div class="ms-4 me-2 mb-2">
+                                    <table class="table table-sm table-bordered mb-0" style="font-size: 0.8rem;">
+                                        <thead class="table-secondary">
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Agente</th>
+                                                <th>Fonte</th>
+                                                <th>Resultado</th>
+                                                <th>Exposição</th>
+                                                <th class="text-end">Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for risco in funcao.riscos.all %}
+                                            <tr>
+                                                <td>
+                                                    <span class="badge" style="background-color: {{ risco.cor_tipo_risco }};">
+                                                        {{ risco.get_tipo_risco_display }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ risco.agente }}</td>
+                                                <td>{{ risco.fonte_geradora|truncatechars:40 }}</td>
+                                                <td>{{ risco.resultado_avaliacao|default:"-" }}</td>
+                                                <td>{{ risco.get_exposicao_display }}</td>
+                                                <td class="text-end">
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a href="{% url 'ltcat:risco_update' ltcat.pk risco.pk %}"
+                                                           class="btn btn-outline-warning btn-sm">
+                                                            <i class="fas fa-pencil"></i>
+                                                        </a>
+                                                        <a href="{% url 'ltcat:risco_delete' ltcat.pk risco.pk %}"
+                                                           class="btn btn-outline-danger btn-sm">
+                                                            <i class="fas fa-trash"></i>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4 mt-3">
+                <i class="fas fa-users fa-2x d-block mb-2"></i>
+                Nenhuma função cadastrada.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══ PERICULOSIDADE ═══ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoPericulosidade">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-bolt me-2 text-warning"></i>
+                Avaliação de Periculosidade
+                <span class="badge bg-warning text-dark ms-2">{{ periculosidades|length }}</span>
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+        </div>
+        <div class="collapse show" id="secaoPericulosidade">
+            <div class="d-flex align-items-right justify-content-end gap-2">
+                <a href="{% url 'ltcat:periculosidade_create' ltcat.pk %}" class="btn btn-sm btn-outline-warning no-print">
+                    <i class="fas fa-plus me-1"></i> Nova Avaliação
+                </a>
+            </div>
+            {% if periculosidades %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Aplicável?</th>
+                            <th>Descrição</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in periculosidades %}
+                        <tr>
+                            <td class="fw-semibold">{{ p.get_tipo_display }}</td>
+                            <td>
+                                {% if p.aplicavel %}
+                                    <span class="badge bg-danger">Sim</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ p.descricao|truncatechars:80|default:"-" }}</td>
+                            <td class="text-end">
+                                <a href="{% url 'ltcat:periculosidade_update' ltcat.pk p.pk %}"
+                                   class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-3 mt-3">
+                Nenhuma avaliação de periculosidade cadastrada.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══ CONCLUSÕES ═══ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoConclusoes">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-gavel me-2 text-success"></i>
+                Conclusões por Função
+                <span class="badge bg-success ms-2">{{ conclusoes|length }}</span>
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+        </div>
+        <div class="collapse show" id="secaoConclusoes">
+            <div class="d-flex align-items-right justify-content-end gap-2">
+                <a href="{% url 'ltcat:conclusao_create' ltcat.pk %}" class="btn btn-sm btn-outline-success no-print">
+                    <i class="fas fa-plus me-1"></i> Nova Conclusão
+                </a>
+            </div>
+            {% if conclusoes %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Função</th>
+                            <th>Conclusão</th>
+                            <th>GFIP</th>
+                            <th class="text-center">Insalub.</th>
+                            <th class="text-center">Pericul.</th>
+                            <th class="text-center">Apos. Esp.</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in conclusoes %}
+                        <tr>
+                            <td class="fw-semibold">{{ c.funcao.nome_funcao }}</td>
+                            <td>{{ c.get_tipo_conclusao_display }}</td>
+                            <td><code>{{ c.codigo_gfip }}</code></td>
+                            <td class="text-center">
+                                {% if c.faz_jus_insalubridade %}<i class="fas fa-check text-danger"></i>
+                                {% else %}<i class="fas fa-minus text-muted"></i>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if c.faz_jus_periculosidade %}<i class="fas fa-check text-danger"></i>
+                                {% else %}<i class="fas fa-minus text-muted"></i>{% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if c.faz_jus_aposentadoria_especial %}<i class="fas fa-check text-danger"></i>
+                                {% else %}<i class="fas fa-minus text-muted"></i>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'ltcat:conclusao_update' ltcat.pk c.pk %}"
+                                   class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-3 mt-3">Nenhuma conclusão cadastrada.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══ RECOMENDAÇÕES ═══ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoRecomendacoes">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-lightbulb me-2 text-info"></i>
+                Recomendações Técnicas
+                <span class="badge bg-info ms-2">{{ recomendacoes|length }}</span>
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+        </div>
+        <div class="collapse show" id="secaoRecomendacoes">
+            <div class="d-flex align-items-rigth justify-content-end gap-2">
+                <a href="{% url 'ltcat:recomendacao_create' ltcat.pk %}" class="btn btn-sm btn-outline-info no-print">
+                    <i class="fas fa-plus me-1"></i> Nova Recomendação
+                </a>
+            </div>
+            {% if recomendacoes %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>Descrição</th>
+                            <th>Prioridade</th>
+                            <th>Implementada</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recomendacoes %}
+                        <tr>
+                            <td>{{ r.ordem }}</td>
+                            <td>{{ r.descricao|truncatechars:80 }}</td>
+                            <td>
+                                <span class="badge {% if r.prioridade == 'alta' %}bg-danger{% elif r.prioridade == 'media' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                    {{ r.get_prioridade_display }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if r.implementada %}<i class="fas fa-check-circle text-success"></i>
+                                {% else %}<i class="fas fa-clock text-muted"></i>{% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'ltcat:recomendacao_update' ltcat.pk r.pk %}"
+                                       class="btn btn-outline-warning"><i class="fas fa-pencil"></i></a>
+                                    <a href="{% url 'ltcat:recomendacao_delete' ltcat.pk r.pk %}"
+                                       class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-3 mt-3">Nenhuma recomendação cadastrada.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══ REVISÕES ═══ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoRevisoes">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-history me-2 text-secondary"></i>
+                Revisões
+                <span class="badge bg-secondary ms-2">{{ revisoes|length }}</span>
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+        </div>
+        <div class="collapse show" id="secaoRevisoes">
+            <div class="d-flex align-items-right justify-content-end gap-2">
+                <a href="{% url 'ltcat:revisao_create' ltcat.pk %}" class="btn btn-sm btn-outline-secondary no-print">
+                    <i class="fas fa-plus me-1"></i> Nova Revisão
+                </a>
+            </div>
+            {% if revisoes %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Revisão</th>
+                            <th>Descrição</th>
+                            <th>Data</th>
+                            <th>Responsável</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rev in revisoes %}
+                        <tr>
+                            <td><strong>Rev. {{ rev.numero_revisao|stringformat:"02d" }}</strong></td>
+                            <td>{{ rev.descricao|truncatechars:60 }}</td>
+                            <td>{{ rev.data_realizada|date:"d/m/Y" }}</td>
+                            <td>{{ rev.realizada_por|default:"-" }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'ltcat:revisao_update' ltcat.pk rev.pk %}"
+                                       class="btn btn-outline-warning">
+                                       <i class="fas fa-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'ltcat:revisao_delete' ltcat.pk rev.pk %}"
+                                       class="btn btn-outline-danger">
+                                       <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-3 mt-3">Nenhuma revisão cadastrada.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══ ANEXOS ═══ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoAnexos">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-paperclip me-2 text-secondary"></i>
+                Anexos
+                <span class="badge bg-secondary ms-2">{{ anexos|length }}</span>
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-chevron-down text-muted"></i>
+            </div>
+        </div>
+        <div class="collapse show" id="secaoAnexos">
+            <div class="d-flex align-items-right justify-content-end gap-2">
+                <a href="{% url 'ltcat:anexo_create' ltcat.pk %}" class="btn btn-sm btn-outline-secondary no-print">
+                    <i class="fas fa-plus me-1"></i> Novo Anexos
+                </a>
+            </div>
+            {% if anexos %}
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Anexo</th>
+                            <th>Tipo</th>
+                            <th>Tamanho</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for anexo in anexos %}
+                        <tr>
+                            <td>
+                                <i class="fas {{ anexo.icone_tipo }} me-1"></i>
+                                <strong>{{ anexo.titulo_completo }}</strong>
+                            </td>
+                            <td>{{ anexo.get_tipo_display }}</td>
+                            <td>{{ anexo.tamanho_formatado }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ anexo.arquivo.url }}" class="btn btn-outline-primary" target="_blank">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <a href="{% url 'ltcat:anexo_delete' ltcat.pk anexo.pk %}"
+                                       class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-3 mt-3">Nenhum anexo cadastrado.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- RESPONSÁVEIS PELA ELABORAÇÃO                                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoResponsaveis">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-user-tie me-2 text-info"></i>
+                Responsáveis pela Elaboração
+                <span class="badge bg-info ms-2" id="badgeResponsaveisCount">
+                    {{ responsaveis_doc|length }}
+                </span>
+            </h6>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+
+        <div class="collapse show" id="secaoResponsaveis">
+
+            <!-- Botão vincular -->
+            <div class="d-flex justify-content-end mt-3 mb-2 no-print">
+                <button type="button" class="btn btn-sm btn-outline-info"
+                        data-bs-toggle="modal" data-bs-target="#modalVincularResponsavel">
+                    <i class="fas fa-user-plus me-1"></i> Vincular Responsável
+                </button>
+            </div>
+
+            <!-- Cards dos responsáveis -->
+            <div id="responsaveisContainer">
+                {% if responsaveis_doc %}
+                    {% for resp in responsaveis_doc %}
+                    <div class="card border mb-3" id="resp-card-{{ resp.pk }}">
+                        <div class="card-body py-3">
+                            <div class="row align-items-center">
+
+                                <!-- Info -->
+                                <div class="col-md-5">
+                                    <h6 class="fw-bold mb-1">
+                                        <i class="fas fa-user-md me-1 text-info"></i>
+                                        {{ resp.profissional.nome_completo }}
+                                    </h6>
+                                    <p class="mb-1 text-muted small">
+                                        <i class="fas fa-briefcase me-1"></i>
+                                        {{ resp.profissional.funcao }}
+                                    </p>
+                                    <p class="mb-1 text-muted small">
+                                        <i class="fas fa-id-badge me-1"></i>
+                                        {{ resp.profissional.registro_classe }}
+                                        {% if resp.profissional.orgao_classe %}
+                                            — {{ resp.profissional.orgao_classe }}
+                                        {% endif %}
+                                    </p>
+                                    <span class="badge bg-info bg-opacity-10 text-info small">
+                                        {{ resp.get_tipo_responsabilidade_display }}
+                                    </span>
+                                </div>
+
+                                <!-- Assinatura preview -->
+                                <div class="col-md-4 text-center">
+                                    <div class="border rounded p-2 bg-light"
+                                         style="min-height: 80px;"
+                                         id="assinatura-preview-{{ resp.profissional.pk }}">
+                                        {% if resp.profissional.assinatura_imagem %}
+                                            <img src="{{ resp.profissional.assinatura_imagem.url }}"
+                                                 alt="Assinatura de {{ resp.profissional.nome_completo }}"
+                                                 class="img-fluid" style="max-height: 70px;">
+                                        {% else %}
+                                            <div class="text-muted small py-3">
+                                                <i class="fas fa-signature fa-lg"></i><br>
+                                                Sem assinatura
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mt-2 no-print">
+                                        <button type="button"
+                                                class="btn btn-xs btn-outline-primary btn-abrir-assinatura"
+                                                data-profissional-id="{{ resp.profissional.pk }}"
+                                                data-profissional-nome="{{ resp.profissional.nome_completo }}"
+                                                title="Assinar digitalmente">
+                                            <i class="fas fa-pen-nib me-1"></i> Assinar
+                                        </button>
+                                        {% if resp.profissional.assinatura_imagem %}
+                                        <button type="button"
+                                                class="btn btn-xs btn-outline-danger btn-limpar-assinatura ms-1"
+                                                data-profissional-id="{{ resp.profissional.pk }}"
+                                                title="Remover assinatura">
+                                            <i class="fas fa-eraser"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Ações -->
+                                <div class="col-md-3 text-end no-print">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger btn-desvincular-resp"
+                                            data-vinculo-id="{{ resp.pk }}"
+                                            data-nome="{{ resp.profissional.nome_completo }}"
+                                            title="Desvincular responsável">
+                                        <i class="fas fa-unlink me-1"></i> Desvincular
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4" id="responsaveisVazio">
+                        <i class="fas fa-user-tie fa-2x text-muted mb-2 d-block"></i>
+                        <p class="text-muted mb-0">Nenhum responsável vinculado a este documento.</p>
+                        <small class="text-muted">
+                            Clique em "Vincular Responsável" para adicionar.
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Vincular Responsável (Select de Funcionário)            -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalVincularResponsavel" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--ltcat-primary, #0d9488); color: white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i> Vincular Responsável
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Busca de funcionário -->
+                <div class="mb-3">
+                    <label for="buscaFuncionarioResp" class="form-label fw-semibold">
+                        <i class="fas fa-search me-1"></i> Buscar Funcionário
+                    </label>
+                    <input type="text" id="buscaFuncionarioResp" class="form-control"
+                           placeholder="Digite o nome do funcionário..." autocomplete="off">
+                </div>
+
+                <!-- Select -->
+                <div class="mb-3">
+                    <label for="selectFuncionarioResp" class="form-label fw-semibold">
+                        Funcionário
+                    </label>
+                    <select id="selectFuncionarioResp" class="form-select" size="6"
+                            style="overflow-y: auto;">
+                        {% for func in funcionarios_disponiveis %}
+                        <option value="{{ func.pk }}"
+                                data-nome="{{ func.nome_completo }}"
+                                data-cargo="{{ func.cargo|default:'' }}">
+                            {{ func.nome_completo }}
+                            {% if func.cargo %} — {{ func.cargo }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">
+                        {{ funcionarios_disponiveis|length }} funcionário(s) ativo(s)
+                    </small>
+                </div>
+
+                <hr>
+
+                <!-- Dados profissionais (preenchimento obrigatório) -->
+                <div id="dadosProfissionaisResp" class="border rounded p-3 bg-light">
+                    <h6 class="fw-semibold mb-3">
+                        <i class="fas fa-id-card me-1 text-info"></i>
+                        Dados Profissionais
+                        <small class="text-muted">(obrigatório para o LTCAT)</small>
+                    </h6>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="funcaoProfResp" class="form-label fw-semibold">
+                                Função/Especialidade *
+                            </label>
+                            <input type="text" id="funcaoProfResp" class="form-control"
+                                   placeholder="Ex: Engenheiro de Segurança do Trabalho">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="registroClasseResp" class="form-label fw-semibold">
+                                Registro de Classe *
+                            </label>
+                            <input type="text" id="registroClasseResp" class="form-control"
+                                   placeholder="Ex: CREA-MG 92307/D">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="orgaoClasseResp" class="form-label fw-semibold">
+                                Órgão de Classe
+                            </label>
+                            <input type="text" id="orgaoClasseResp" class="form-control"
+                                   placeholder="Ex: CREA-MG, CRM-SP">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tipoRespSelect" class="form-label fw-semibold">
+                                Tipo de Responsabilidade
+                            </label>
+                            <select id="tipoRespSelect" class="form-select">
+                                {% for valor, label in tipos_responsabilidade %}
+                                <option value="{{ valor }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Indicador se já tem dados cadastrados -->
+                    <div id="profJaCadastrado" class="alert alert-success py-2 d-none">
+                        <i class="fas fa-check-circle me-1"></i>
+                        Este funcionário já possui dados profissionais cadastrados.
+                        Os campos foram preenchidos automaticamente. Altere se necessário.
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-info text-white" id="btnConfirmarVincularResp" disabled>
+                    <i class="fas fa-link me-1"></i> Vincular Responsável
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Assinatura Digital (Canvas)                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalAssinatura" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--ltcat-primary, #0d9488); color: white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-pen-nib me-2"></i>
+                    Assinatura Digital — <span id="nomeAssinante"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted small mb-2">
+                    Assine abaixo usando o mouse ou o dedo (tela touch).
+                    A assinatura será salva como imagem do profissional.
+                </p>
+
+                <!-- Canvas -->
+                <div class="border rounded position-relative mx-auto"
+                     style="width: 100%; max-width: 600px; background: #fff;">
+                    <canvas id="canvasAssinatura" width="600" height="200"
+                            style="width: 100%; cursor: crosshair; touch-action: none;">
+                    </canvas>
+                    <!-- Linha guia -->
+                    <div style="position: absolute; bottom: 40px; left: 40px; right: 40px;
+                                border-bottom: 1px dashed #ccc; pointer-events: none;"></div>
+                </div>
+
+                <input type="hidden" id="assinaturaProfissionalId" value="">
+
+                <div class="mt-3 d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnLimparCanvas">
+                        <i class="fas fa-eraser me-1"></i> Limpar
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm active" id="btnPenFina"
+                            title="Traço fino">
+                        <i class="fas fa-pen me-1"></i> Fina
+                    </button>
+                    <button type="button" class="btn btn-outline-dark btn-sm" id="btnPenGrossa"
+                            title="Traço grosso">
+                        <i class="fas fa-marker me-1"></i> Grossa
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-success" id="btnSalvarAssinatura">
+                    <i class="fas fa-save me-1"></i> Salvar Assinatura
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══ CONTEÚDO DO LAUDO ═══ -->
+{% if ltcat.objetivo or ltcat.condicoes_preliminares or ltcat.avaliacao_periculosidade_texto or ltcat.referencias_bibliograficas %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="section-header d-flex justify-content-between align-items-center"
+             data-bs-toggle="collapse" data-bs-target="#secaoConteudo">
+            <h6 class="fw-bold mb-0">
+                <i class="fas fa-file-alt me-2 text-primary"></i>
+                Conteúdo do Laudo
+            </h6>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+        <div class="collapse" id="secaoConteudo">
+            {% if ltcat.objetivo %}
+            <div class="mt-3">
+                <strong>Objetivo:</strong>
+                <p class="mt-1">{{ ltcat.objetivo|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+            {% if ltcat.condicoes_preliminares %}
+            <div class="mt-3">
+                <strong>Condições Preliminares:</strong>
+                <p class="mt-1">{{ ltcat.condicoes_preliminares|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+            {% if ltcat.avaliacao_periculosidade_texto %}
+            <div class="mt-3">
+                <strong>Avaliação de Periculosidade:</strong>
+                <p class="mt-1">{{ ltcat.avaliacao_periculosidade_texto|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+            {% if ltcat.referencias_bibliograficas %}
+            <div class="mt-3">
+                <strong>Referências Bibliográficas:</strong>
+                <p class="mt-1">{{ ltcat.referencias_bibliograficas|linebreaksbr }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block ltcat_extra_js %}
+<script>
+(function() {
+    // ═══════════════════════════════════════════════════════════════
+    // FIX CRÍTICO: Impedir que o collapse do Bootstrap engula
+    // cliques nos botões/links dentro dos section-headers
+    // ═══════════════════════════════════════════════════════════════
+    document.querySelectorAll('.section-header a, .section-header button').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.stopPropagation();
+        }, true); // ← "true" = fase de CAPTURA (roda ANTES do Bootstrap)
+    });
+
+    // Para os botões que usam onclick com window.location.href,
+    // garantir que também funcione via mousedown como fallback
+    document.querySelectorAll('.section-header [onclick]').forEach(function(el) {
+        el.addEventListener('mousedown', function(e) {
+            e.stopPropagation();
+        }, true);
+    });
+
+    const LTCAT_ID = {{ ltcat.pk }};
+    const EMPRESA_ID = {{ ltcat.empresa_id }};
+    const CSRF = '{{ csrf_token }}';
+
+    // ——— Carregar locais disponíveis no modal ————————————
+    const modal = document.getElementById('modalVincularLocais');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', carregarLocaisDisponiveis);
+    }
+
+    function carregarLocaisDisponiveis() {
+        const container = document.getElementById('listaLocaisDisponiveis');
+        container.innerHTML = `
+            <div class="text-center py-3">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <span class="ms-2 text-muted">Carregando locais...</span>
+            </div>`;
+
+        fetch(`{% url 'ltcat:ajax_locais_por_empresa' %}?empresa_id=${EMPRESA_ID}`)
+            .then(r => r.json())
+            .then(locais => {
+                const rowsVinculados = document.querySelectorAll('#tbodyLocais tr');
+                const nomesVinculados = new Set();
+                rowsVinculados.forEach(row => {
+                    const nome = row.querySelector('td:first-child')?.textContent?.trim();
+                    if (nome) nomesVinculados.add(nome);
+                });
+
+                if (locais.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>Nenhum local cadastrado para esta empresa.</p>
+                            <a href="{% url 'ltcat:local_list' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-plus me-1"></i> Cadastrar Locais
+                            </a>
+                        </div>`;
+                    return;
+                }
+
+                let html = '';
+                locais.forEach(loc => {
+                    const jaVinculado = nomesVinculados.has(loc.nome.split(' - ')[0]?.trim());
+                    html += `
+                        <div class="form-check py-2 px-3 border-bottom local-item"
+                             data-nome="${loc.nome.toLowerCase()}">
+                            <input class="form-check-input chk-local" type="checkbox"
+                                   value="${loc.id}" id="local_${loc.id}"
+                                   ${jaVinculado ? 'disabled checked' : ''}>
+                            <label class="form-check-label w-100 ${jaVinculado ? 'text-muted' : ''}"
+                                   for="local_${loc.id}">
+                                <strong>${loc.nome}</strong>
+                                ${jaVinculado ? '<span class="badge bg-secondary ms-2">Já vinculado</span>' : ''}
+                            </label>
+                        </div>`;
+                });
+
+                container.innerHTML = html;
+                atualizarContadorSelecionados();
+            })
+            .catch(err => {
+                container.innerHTML = `
+                    <div class="text-center py-3 text-danger">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Erro ao carregar locais.
+                    </div>`;
+                console.error(err);
+            });
+    }
+
+    // ——— Busca/filtro no modal ————————————————————————————————
+    document.getElementById('buscaLocalVincular')?.addEventListener('input', function() {
+        const termo = this.value.toLowerCase();
+        document.querySelectorAll('.local-item').forEach(item => {
+            const nome = item.dataset.nome || '';
+            item.style.display = nome.includes(termo) ? '' : 'none';
+        });
+    });
+
+    // ——— Contador de selecionados ——————————————————————————————
+    document.getElementById('listaLocaisDisponiveis')?.addEventListener('change', function(e) {
+        if (e.target.classList.contains('chk-local')) {
+            atualizarContadorSelecionados();
+        }
+    });
+
+    function atualizarContadorSelecionados() {
+        const checks = document.querySelectorAll('.chk-local:checked:not(:disabled)');
+        const count = checks.length;
+        const spanCount = document.getElementById('countSelecionados');
+        const btn = document.getElementById('btnConfirmarVincular');
+        if (spanCount) spanCount.textContent = count;
+        if (btn) btn.disabled = count === 0;
+    }
+
+    // ——— Confirmar vinculação ——————————————————————————————————
+    document.getElementById('btnConfirmarVincular')?.addEventListener('click', function() {
+        const checks = document.querySelectorAll('.chk-local:checked:not(:disabled)');
+        const localIds = Array.from(checks).map(c => parseInt(c.value));
+        if (localIds.length === 0) return;
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Vinculando...';
+
+        fetch(`/ltcat/${LTCAT_ID}/locais/vincular/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF,
+            },
+            body: JSON.stringify({ local_ids: localIds }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(modal).hide();
+                location.reload();
+            } else {
+                alert(data.error || 'Erro ao vincular locais.');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-link me-1"></i> Vincular Selecionados (<span id="countSelecionados">0</span>)';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão.');
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-link me-1"></i> Vincular Selecionados (<span id="countSelecionados">0</span>)';
+        });
+    });
+
+    // ——— Desvincular local —————————————————————————————————————
+    document.querySelectorAll('.btn-desvincular-local').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const vinculoId = this.dataset.vinculoId;
+            const nome = this.dataset.nome;
+            if (!confirm(`Deseja desvincular "${nome}" deste documento?`)) return;
+
+            fetch(`/ltcat/${LTCAT_ID}/locais/${vinculoId}/desvincular/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`vinculo-row-${vinculoId}`);
+                    if (row) row.remove();
+                    const badge = document.getElementById('badgeLocaisCount');
+                    if (badge) {
+                        const current = parseInt(badge.textContent) - 1;
+                        badge.textContent = current;
+                    }
+                    const tbody = document.getElementById('tbodyLocais');
+                    if (tbody && tbody.children.length === 0) {
+                        location.reload();
+                    }
+                } else {
+                    alert(data.error || 'Erro ao desvincular.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Erro de conexão.');
+            });
+        });
+    });
+
+    // ——— Toggle Principal ——————————————————————————————————————
+    document.querySelectorAll('.btn-toggle-principal').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const vinculoId = this.dataset.vinculoId;
+
+            fetch(`/ltcat/${LTCAT_ID}/locais/${vinculoId}/toggle-principal/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Erro ao alterar principal.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Erro de conexão.');
+            });
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESPONSÁVEIS — Vincular
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('btnConfirmarVincularResp')?.addEventListener('click', function() {
+        const profId = document.getElementById('selectProfissional').value;
+        const tipo = document.getElementById('selectTipoResp').value;
+        if (!profId) {
+            alert('Selecione um profissional.');
+            return;
+        }
+
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Vinculando...';
+
+        fetch(`/ltcat/${LTCAT_ID}/responsaveis/vincular/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ profissional_id: parseInt(profId), tipo_responsabilidade: tipo }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalVincularResponsavel')).hide();
+                location.reload();
+            } else {
+                alert(data.error || 'Erro ao vincular.');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-link me-1"></i> Vincular';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão.');
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-link me-1"></i> Vincular';
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESPONSÁVEIS — Desvincular
+    // ═══════════════════════════════════════════════════════════════
+    document.querySelectorAll('.btn-desvincular-resp').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const vinculoId = this.dataset.vinculoId;
+            const nome = this.dataset.nome;
+            if (!confirm(`Deseja desvincular "${nome}" deste documento?`)) return;
+
+            fetch(`/ltcat/${LTCAT_ID}/responsaveis/${vinculoId}/desvincular/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.getElementById(`resp-card-${vinculoId}`);
+                    if (card) card.remove();
+                    const badge = document.getElementById('badgeResponsaveisCount');
+                    if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent) - 1);
+                } else {
+                    alert(data.error || 'Erro ao desvincular.');
+                }
+            })
+            .catch(err => { console.error(err); alert('Erro de conexão.'); });
+        });
+    });
+
+        // ═══════════════════════════════════════════════════════════════
+    // RESPONSÁVEIS — Busca/Filtro no select de funcionários
+    // ═══════════════════════════════════════════════════════════════
+    const buscaFunc = document.getElementById('buscaFuncionarioResp');
+    const selectFunc = document.getElementById('selectFuncionarioResp');
+
+    if (buscaFunc && selectFunc) {
+        buscaFunc.addEventListener('input', function() {
+            const termo = this.value.toLowerCase().trim();
+            Array.from(selectFunc.options).forEach(opt => {
+                const nome = (opt.dataset.nome || '').toLowerCase();
+                const cargo = (opt.dataset.cargo || '').toLowerCase();
+                opt.style.display = (nome.includes(termo) || cargo.includes(termo)) ? '' : 'none';
+            });
+        });
+
+        // Ao selecionar funcionário → buscar dados profissionais existentes
+        selectFunc.addEventListener('change', function() {
+            const funcId = this.value;
+            const btnVincular = document.getElementById('btnConfirmarVincularResp');
+            const alerta = document.getElementById('profJaCadastrado');
+
+            if (!funcId) {
+                if (btnVincular) btnVincular.disabled = true;
+                return;
+            }
+            if (btnVincular) btnVincular.disabled = false;
+
+            // Busca se já tem ProfissionalResponsavelLTCAT
+            fetch(`/ltcat/api/profissional-por-funcionario/?funcionario_id=${funcId}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.found) {
+                    document.getElementById('funcaoProfResp').value = data.funcao_profissional || '';
+                    document.getElementById('registroClasseResp').value = data.registro_classe || '';
+                    document.getElementById('orgaoClasseResp').value = data.orgao_classe || '';
+                    if (alerta) alerta.classList.remove('d-none');
+                } else {
+                    // Limpa campos
+                    document.getElementById('funcaoProfResp').value = '';
+                    document.getElementById('registroClasseResp').value = '';
+                    document.getElementById('orgaoClasseResp').value = '';
+                    if (alerta) alerta.classList.add('d-none');
+                }
+            })
+            .catch(() => {
+                if (alerta) alerta.classList.add('d-none');
+            });
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESPONSÁVEIS — Vincular
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('btnConfirmarVincularResp')?.addEventListener('click', function() {
+        const funcId = document.getElementById('selectFuncionarioResp')?.value;
+        const tipo = document.getElementById('tipoRespSelect')?.value || 'elaborador';
+        const funcaoProf = document.getElementById('funcaoProfResp')?.value.trim();
+        const registro = document.getElementById('registroClasseResp')?.value.trim();
+        const orgao = document.getElementById('orgaoClasseResp')?.value.trim();
+
+        if (!funcId) { alert('Selecione um funcionário.'); return; }
+        if (!funcaoProf) { alert('Informe a função profissional.'); return; }
+        if (!registro) { alert('Informe o registro de classe.'); return; }
+
+        this.disabled = true;
+        const btnOriginal = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Vinculando...';
+
+        fetch(`/ltcat/${LTCAT_ID}/responsaveis/vincular/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({
+                funcionario_id: parseInt(funcId),
+                tipo_responsabilidade: tipo,
+                funcao_profissional: funcaoProf,
+                registro_classe: registro,
+                orgao_classe: orgao,
+            }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const modal = bootstrap.Modal.getInstance(
+                    document.getElementById('modalVincularResponsavel')
+                );
+                if (modal) modal.hide();
+                location.reload();
+            } else {
+                alert(data.error || 'Erro ao vincular.');
+                this.disabled = false;
+                this.innerHTML = btnOriginal;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão.');
+            this.disabled = false;
+            this.innerHTML = btnOriginal;
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESPONSÁVEIS — Desvincular
+    // ═══════════════════════════════════════════════════════════════
+    document.querySelectorAll('.btn-desvincular-resp').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const vinculoId = this.dataset.vinculoId;
+            const nome = this.dataset.nome;
+            if (!confirm(`Deseja desvincular "${nome}" deste documento?`)) return;
+
+            fetch(`/ltcat/${LTCAT_ID}/responsaveis/${vinculoId}/desvincular/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.getElementById(`resp-card-${vinculoId}`);
+                    if (card) card.remove();
+                    const badge = document.getElementById('badgeResponsaveisCount');
+                    if (badge) {
+                        badge.textContent = Math.max(0, parseInt(badge.textContent) - 1);
+                    }
+                } else {
+                    alert(data.error || 'Erro ao desvincular.');
+                }
+            })
+            .catch(err => { console.error(err); alert('Erro de conexão.'); });
+        });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // ASSINATURA DIGITAL — Canvas
+    // ═══════════════════════════════════════════════════════════════
+    const canvas = document.getElementById('canvasAssinatura');
+    const ctx2d = canvas ? canvas.getContext('2d') : null;
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+    let penWidth = 2;
+
+    function getCanvasPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let cx, cy;
+        if (e.touches && e.touches.length > 0) {
+            cx = e.touches[0].clientX;
+            cy = e.touches[0].clientY;
+        } else {
+            cx = e.clientX;
+            cy = e.clientY;
+        }
+        return { x: (cx - rect.left) * scaleX, y: (cy - rect.top) * scaleY };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const p = getCanvasPos(e);
+        lastX = p.x; lastY = p.y;
+    }
+
+    function doDraw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const p = getCanvasPos(e);
+        ctx2d.beginPath();
+        ctx2d.moveTo(lastX, lastY);
+        ctx2d.lineTo(p.x, p.y);
+        ctx2d.strokeStyle = '#000';
+        ctx2d.lineCap = 'round';
+        ctx2d.lineJoin = 'round';
+        ctx2d.lineWidth = penWidth;
+        ctx2d.stroke();
+        lastX = p.x; lastY = p.y;
+    }
+
+    function stopDraw(e) {
+        if (e) e.preventDefault();
+        isDrawing = false;
+    }
+
+    if (canvas && ctx2d) {
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', doDraw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', doDraw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw, { passive: false });
+        canvas.addEventListener('touchcancel', stopDraw, { passive: false });
+    }
+
+    // Limpar canvas
+    document.getElementById('btnLimparCanvas')?.addEventListener('click', () => {
+        if (ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // Pen fina
+    document.getElementById('btnPenFina')?.addEventListener('click', function() {
+        penWidth = 1.5;
+        this.classList.add('active');
+        document.getElementById('btnPenGrossa')?.classList.remove('active');
+    });
+
+    // Pen grossa
+    document.getElementById('btnPenGrossa')?.addEventListener('click', function() {
+        penWidth = 3.5;
+        this.classList.add('active');
+        document.getElementById('btnPenFina')?.classList.remove('active');
+    });
+
+    // ═══ Abrir modal de assinatura ═══
+    document.querySelectorAll('.btn-abrir-assinatura').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const profId = this.dataset.profissionalId;
+            const nome = this.dataset.profissionalNome;
+            document.getElementById('assinaturaProfissionalId').value = profId;
+            document.getElementById('nomeAssinante').textContent = nome;
+            if (ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
+            new bootstrap.Modal(document.getElementById('modalAssinatura')).show();
+        });
+    });
+
+    // ═══ Salvar assinatura ═══
+    document.getElementById('btnSalvarAssinatura')?.addEventListener('click', function() {
+        const profId = document.getElementById('assinaturaProfissionalId').value;
+        if (!profId) return;
+
+        // Verifica canvas vazio
+        const blank = document.createElement('canvas');
+        blank.width = canvas.width;
+        blank.height = canvas.height;
+        if (canvas.toDataURL() === blank.toDataURL()) {
+            alert('Por favor, faça a assinatura antes de salvar.');
+            return;
+        }
+
+        this.disabled = true;
+        const btnOrig = this.innerHTML;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Salvando...';
+
+        const dataURL = canvas.toDataURL('image/png');
+
+        fetch(`/ltcat/profissional/${profId}/salvar-assinatura/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ assinatura: dataURL }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('modalAssinatura')).hide();
+                location.reload();
+            } else {
+                alert(data.error || 'Erro ao salvar assinatura.');
+                this.disabled = false;
+                this.innerHTML = btnOrig;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Erro de conexão.');
+            this.disabled = false;
+            this.innerHTML = btnOrig;
+        });
+    });
+
+    // ═══ Limpar assinatura existente ═══
+    document.querySelectorAll('.btn-limpar-assinatura').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const profId = this.dataset.profissionalId;
+            if (!confirm('Deseja remover a assinatura deste profissional?')) return;
+
+            fetch(`/ltcat/profissional/${profId}/limpar-assinatura/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF },
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.error || 'Erro ao remover.');
+            })
+            .catch(err => { console.error(err); alert('Erro de conexão.'); });
+        });
+    });
+
+})();
+</script>
+{% endblock %}

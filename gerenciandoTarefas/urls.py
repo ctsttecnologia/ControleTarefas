@@ -57,14 +57,13 @@ urlpatterns = [
     path('arquivos/', include('arquivos.urls')),
     path('documentos/', include('documentos.urls', namespace='documentos')),
     path('pgr_gestao/', include('pgr_gestao.urls', namespace='pgr_gestao')),
-
     # Isso permite usar o namespace "dashboard..."
     path('dashboard/', include('dashboard.urls')),
     # API URLs
     path('api/', include('api.urls')),
     path('api/auth/', include('dj_rest_auth.urls')),
-
     path('notificacoes/', include('notifications.urls', namespace='notifications')),
+    path("ltcat/", include("ltcat.urls")),
 
 
    

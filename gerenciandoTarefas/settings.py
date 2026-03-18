@@ -127,7 +127,8 @@ INSTALLED_APPS = [
     'arquivos',
     'documentos',
     'api',
-    'pgr_gestao.apps.PgrGestaoConfig', 
+    'pgr_gestao.apps.PgrGestaoConfig',
+    'ltcat',
 ]
 
 # Adicionar storages apenas quando disponível (produção)

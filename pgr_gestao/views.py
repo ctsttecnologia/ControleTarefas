@@ -834,6 +834,11 @@ class RiscoIdentificadoCreateView(SSTPermissionMixin, FilialCreateMixin, CreateV
     template_name = 'pgr_gestao/risco_form.html'
     permission_required = 'pgr_gestao.add_riscoidentificado'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
     def get_initial(self):
         initial = super().get_initial()
         ges_id = self.request.GET.get('ges')
@@ -872,6 +877,11 @@ class RiscoIdentificadoUpdateView(SSTPermissionMixin, ViewFilialScopedMixin, Upd
     form_class = RiscoIdentificadoForm
     template_name = 'pgr_gestao/risco_form.html'
     permission_required = 'pgr_gestao.change_riscoidentificado'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
 
     def get_success_url(self):
         return reverse_lazy('pgr_gestao:risco_detail', kwargs={'pk': self.object.pk})
@@ -951,6 +961,11 @@ class AvaliacaoQuantitativaCreateView(SSTPermissionMixin, FilialCreateMixin, Cre
     template_name = 'pgr_gestao/avaliacao_form.html'
     permission_required = 'pgr_gestao.add_avaliacaoquantitativa'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
     def get_initial(self):
         initial = super().get_initial()
         risco_pk = self.kwargs.get('risco_pk') or self.request.GET.get('risco')
@@ -958,6 +973,16 @@ class AvaliacaoQuantitativaCreateView(SSTPermissionMixin, FilialCreateMixin, Cre
             initial['risco_identificado'] = get_object_or_404(RiscoIdentificado, pk=risco_pk)
         initial['data_avaliacao'] = timezone.now().date()
         return initial
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        risco_pk = self.kwargs.get('risco_pk') or self.request.GET.get('risco')
+        if risco_pk:
+            context['risco'] = get_object_or_404(
+                RiscoIdentificado.objects.select_related('tipo_risco', 'ges'),
+                pk=risco_pk
+            )
+        return context
 
     def form_valid(self, form):
         form.instance.criado_por = self.request.user
@@ -972,6 +997,17 @@ class AvaliacaoQuantitativaUpdateView(SSTPermissionMixin, ViewFilialScopedMixin,
     form_class = AvaliacaoQuantitativaForm
     template_name = 'pgr_gestao/avaliacao_form.html'
     permission_required = 'pgr_gestao.change_avaliacaoquantitativa'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Na edição, o risco vem da instância
+        context['risco'] = self.object.risco_identificado
+        return context
 
     def form_valid(self, form):
         messages.success(self.request, 'Avaliação quantitativa atualizada com sucesso!')

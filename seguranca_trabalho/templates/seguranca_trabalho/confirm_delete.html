@@ -1,58 +1,65 @@
 
 
+<!-- seguranca_trabalho/templates/seguranca_trabalho/confirm_delete.html -->
+
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
-{% block title %}Confirmar Exclusão{% endblock %}
-
 {% block sst_content %}
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            
-            <div class="card shadow-sm border-danger">
-                <div class="card-header bg-danger text-white text-center py-3">
-                    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
-                    <span class="fw-semibold">Confirmar Exclusão</span>
-                </div>
-                <div class="card-body text-center p-4">
-                    
-                    <!-- Ícone -->
-                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
-                         style="width: 80px; height: 80px;">
-                        <i class="bi bi-trash text-danger fs-1"></i>
+<div class="container py-4">
+    <div class="card border-danger shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Confirmar Exclusão
+            </h5>
+        </div>
+        <div class="card-body">
+
+            {% if has_entregas %}
+                <!-- ══════════ BLOQUEIO: tem entregas vinculadas ══════════ -->
+                <div class="alert alert-warning d-flex align-items-start">
+                    <i class="bi bi-shield-exclamation fs-3 me-3 text-warning"></i>
+                    <div>
+                        <h6 class="alert-heading mb-1">Exclusão bloqueada</h6>
+                        <p class="mb-0">
+                            Esta ficha possui <strong>{{ entregas_count }} entrega(s) de EPI</strong> vinculada(s).
+                            <br>
+                            Remova ou registre a devolução de todas as entregas antes de excluir a ficha.
+                        </p>
                     </div>
-                    
-                    <h5 class="mb-3">Deseja realmente excluir?</h5>
-
-                    <!-- Info do item -->
-                    <div class="alert alert-warning py-3">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>"{{ object }}"</strong>
-                    </div>
-
-                    <p class="text-muted small">
-                        <i class="bi bi-exclamation-circle me-1"></i>
-                        Esta ação não poderá ser desfeita.
-                    </p>
-
                 </div>
-                <div class="card-footer bg-light py-3">
+
+                <div class="text-end">
+                    <a href="{% url 'seguranca_trabalho:ficha_detail' object.pk %}" 
+                       class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar para a Ficha
+                    </a>
+                </div>
+
+            {% else %}
+                <!-- ══════════ PERMITIDO: sem dependências ══════════ -->
+                <p class="fs-5">
+                    Tem certeza que deseja excluir 
+                    <strong>"{{ object }}"</strong>?
+                </p>
+                <p class="text-muted">Esta ação não poderá ser desfeita.</p>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ request.META.HTTP_REFERER|default:'/' }}" 
+                       class="btn btn-secondary">
+                        <i class="bi bi-x-lg me-1"></i> Cancelar
+                    </a>
                     <form method="post">
                         {% csrf_token %}
-                        <div class="d-flex justify-content-center gap-3">
-                            <a href="{{ request.META.HTTP_REFERER|default:'javascript:history.back()' }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-trash me-1"></i> Sim, Excluir
-                            </button>
-                        </div>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Sim, Excluir
+                        </button>
                     </form>
                 </div>
-            </div>
+            {% endif %}
 
         </div>
     </div>
 </div>
-{% endblock %}
+{% endblock sst_content %}
 

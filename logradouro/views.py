@@ -1,4 +1,8 @@
 
+import json
+from urllib.request import urlopen
+from urllib.error import URLError, HTTPError
+from django.http import HttpResponse, Http404, JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -21,6 +25,7 @@ from .models import Logradouro, Filial
 from .forms import LogradouroForm, UploadFileForm
 from .constant import ESTADOS_BRASIL
 from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin, FilialCreateMixin
+import requests as http_requests
 
 
 # =============================================================================
@@ -429,3 +434,40 @@ class DownloadTemplateView(LoginRequiredMixin, View):
         response['Content-Disposition'] = 'attachment; filename="enderecos.xlsx"'
         return response
 
+
+def consulta_cep(request):
+    """
+    Consulta o CEP na API ViaCEP e retorna JSON.
+    GET /logradouro/consulta-cep/?cep=01001000
+    """
+    cep = request.GET.get("cep", "").replace("-", "").replace(".", "").strip()
+
+    if not cep or len(cep) != 8 or not cep.isdigit():
+        return JsonResponse(
+            {"erro": "CEP inválido. Informe 8 dígitos numéricos."}, status=400
+        )
+
+    url = f"https://viacep.com.br/ws/{cep}/json/"
+
+    try:
+        with urlopen(url, timeout=5) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+
+        if data.get("erro"):
+            return JsonResponse({"erro": "CEP não encontrado."}, status=404)
+
+        return JsonResponse({
+            "cep": data.get("cep", ""),
+            "endereco": data.get("logradouro", ""),
+            "complemento": data.get("complemento", ""),
+            "bairro": data.get("bairro", ""),
+            "cidade": data.get("localidade", ""),
+            "estado": data.get("uf", ""),
+        })
+
+    except HTTPError:
+        return JsonResponse({"erro": "CEP não encontrado."}, status=404)
+    except URLError:
+        return JsonResponse({"erro": "Não foi possível conectar ao serviço de CEP."}, status=504)
+    except Exception as e:
+        return JsonResponse({"erro": f"Erro inesperado: {e}"}, status=500)

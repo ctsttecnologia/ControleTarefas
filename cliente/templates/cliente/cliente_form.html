@@ -2,24 +2,88 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
 
-{% block title %}{% if object %}Editar Cliente{% else %}Cadastrar Cliente{% endif %}{% endblock %}
+{% block title %}
+    {% if object %}Editar Cliente — {{ object.nome }}{% else %}Cadastrar Cliente{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+{# ── TomSelect (autocomplete logradouro) ── #}
+<link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css">
+<style>
+    /* Wrapper */
+    .ts-wrapper.ts-logradouro .ts-control {
+        min-height: 38px;
+        border-color: #dee2e6;
+        border-radius: 0.375rem;
+    }
+    .ts-wrapper.ts-logradouro.focus .ts-control {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    /* Dropdown */
+    .ts-wrapper.ts-logradouro .ts-dropdown {
+        max-height: 280px;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,.08);
+    }
+    .ts-wrapper.ts-logradouro .ts-dropdown .option {
+        padding: 10px 14px;
+        font-size: .875rem;
+        line-height: 1.4;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    .ts-wrapper.ts-logradouro .ts-dropdown .option:last-child { border-bottom: none; }
+    .ts-wrapper.ts-logradouro .ts-dropdown .option .ts-logr-main {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    .ts-wrapper.ts-logradouro .ts-dropdown .option .ts-logr-sub {
+        font-size: .8rem;
+        color: #6c757d;
+        margin-top: 2px;
+    }
+    .ts-wrapper.ts-logradouro .ts-dropdown .option.active {
+        background: #e7f1ff;
+        color: inherit;
+    }
+    .ts-wrapper.ts-logradouro .ts-dropdown .option.active .ts-logr-main { color: #0d6efd; }
+
+    /* Preview */
+    .logradouro-preview-card {
+        background: #f0f7ff;
+        border: 1px solid #b6d4fe;
+        border-radius: .375rem;
+        padding: 10px 14px;
+        font-size: .85rem;
+        margin-top: 8px;
+        transition: all .3s ease;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- Cabeçalho -->
+    {# ══════════════════════════════════════════════ #}
+    {# CABEÇALHO                                      #}
+    {# ══════════════════════════════════════════════ #}
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
             <h2 class="h4 fw-bold mb-1">
                 {% if object %}
-                <i class="bi bi-pencil-square text-primary me-2"></i>Editar Cliente
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Editar Cliente
                 {% else %}
-                <i class="bi bi-person-plus-fill text-primary me-2"></i>Novo Cliente
+                    <i class="bi bi-person-plus-fill text-primary me-2"></i>Novo Cliente
                 {% endif %}
             </h2>
             {% if object %}
             <small class="text-muted">
-                Contrato <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">CM {{ object.contrato }}</span>
+                Contrato
+                <span class="badge bg-primary bg-opacity-10 text-primary fw-semibold">
+                    CM {{ object.contrato }}
+                </span>
             </small>
             {% endif %}
         </div>
@@ -28,64 +92,106 @@
         </a>
     </header>
 
-    <!-- Card do Formulário -->
+    {# ══════════════════════════════════════════════ #}
+    {# FORMULÁRIO                                     #}
+    {# ══════════════════════════════════════════════ #}
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4 p-lg-5">
             <form method="post" novalidate>
                 {% csrf_token %}
 
-                <!-- Erros gerais -->
+                {# ── Erros globais ── #}
                 {% if form.non_field_errors %}
                 <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
                     <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-                    <div>{{ form.non_field_errors }}</div>
+                    <div>
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
 
-                <!-- Campos -->
-                <div class="row g-4">
-                    {% for field in form %}
-                    <div class="col-md-6">
-                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold text-dark" style="font-size: 0.85rem;">
-                            {{ field.label }}
-                            {% if field.field.required %}
-                            <span class="text-danger">*</span>
-                            {% endif %}
-                        </label>
-
-                        {% if field.field.widget.input_type == 'checkbox' %}
-                            <div class="form-check form-switch mt-1">
-                                {% render_field field class+="form-check-input" %}
-                                <label class="form-check-label text-muted" for="{{ field.id_for_label }}">
-                                    {{ field.help_text|default:"Ativar" }}
-                                </label>
-                            </div>
-                        {% elif field.field.widget.input_type == 'select' %}
-                            {% if field.errors %}
-                                {% render_field field class+="form-select is-invalid" %}
-                            {% else %}
-                                {% render_field field class+="form-select" %}
-                            {% endif %}
-                        {% else %}
-                            {% if field.errors %}
-                                {% render_field field class+="form-control is-invalid" placeholder=field.label %}
-                            {% else %}
-                                {% render_field field class+="form-control" placeholder=field.label %}
-                            {% endif %}
-                        {% endif %}
-
-                        {% for error in field.errors %}
-                        <div class="invalid-feedback">{{ error }}</div>
-                        {% endfor %}
-
-                        {% if field.help_text and field.field.widget.input_type != 'checkbox' %}
-                        <div class="form-text">{{ field.help_text }}</div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+                {# ════════════════════════════════════════ #}
+                {# SEÇÃO 1 — Identificação                 #}
+                {# ════════════════════════════════════════ #}
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="bi bi-building me-1"></i> Identificação
+                </h6>
+                <div class="row g-3 mb-4">
+                    {% include 'cliente/_includes/_field.html' with field=form.razao_social col="col-md-6" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.nome col="col-md-6" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.cnpj col="col-md-4" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.contrato col="col-md-4" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.unidade col="col-md-4" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.inscricao_estadual col="col-md-6" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.inscricao_municipal col="col-md-6" %}
                 </div>
 
-                <!-- Botões -->
+                <hr class="my-4">
+
+                {# ════════════════════════════════════════ #}
+                {# SEÇÃO 2 — Contato                       #}
+                {# ════════════════════════════════════════ #}
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="bi bi-telephone me-1"></i> Contato
+                </h6>
+                <div class="row g-3 mb-4">
+                    {% include 'cliente/_includes/_field.html' with field=form.telefone col="col-md-6" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.email col="col-md-6" %}
+                </div>
+
+                <hr class="my-4">
+
+                {# ════════════════════════════════════════ #}
+                {# SEÇÃO 3 — Endereço (Logradouro)         #}
+                {# ════════════════════════════════════════ #}
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="bi bi-geo-alt me-1"></i> Endereço
+                </h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        {% include 'cliente/_includes/_field.html' with field=form.logradouro col="" hint="Digite ao menos 2 caracteres para buscar (rua, bairro, cidade ou CEP)" %}
+
+                        {# Preview do endereço selecionado #}
+                        <div id="js-logradouro-preview" class="logradouro-preview-card d-none mt-2">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-geo-alt-fill text-primary me-2 mt-1"></i>
+                                <span id="js-logradouro-preview-text" class="fw-semibold"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                {# ════════════════════════════════════════ #}
+                {# SEÇÃO 4 — Vigência e Status             #}
+                {# ════════════════════════════════════════ #}
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="bi bi-calendar-check me-1"></i> Vigência
+                </h6>
+                <div class="row g-3 mb-4">
+                    {% include 'cliente/_includes/_field.html' with field=form.data_de_inicio col="col-md-4" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.data_encerramento col="col-md-4" %}
+                    {% include 'cliente/_includes/_field.html' with field=form.estatus col="col-md-4" %}
+                </div>
+
+                <hr class="my-4">
+
+                {# ════════════════════════════════════════ #}
+                {# SEÇÃO 5 — Observações                   #}
+                {# ════════════════════════════════════════ #}
+                <h6 class="fw-bold text-primary mb-3">
+                    <i class="bi bi-chat-left-text me-1"></i> Observações
+                </h6>
+                <div class="row g-3 mb-4">
+                    {% include 'cliente/_includes/_field.html' with field=form.observacoes col="col-12" %}
+                </div>
+
+                {# ════════════════════════════════════════ #}
+                {# BOTÕES                                   #}
+                {# ════════════════════════════════════════ #}
                 <div class="d-flex justify-content-end mt-5 pt-4 border-top gap-2">
                     <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-light px-4">
                         <i class="bi bi-x-lg me-1"></i>Cancelar
@@ -102,28 +208,138 @@
 {% endblock %}
 
 {% block extra_js %}
+{# ── jQuery + Masks (existentes) ── #}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+
+{# ── TomSelect ── #}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+
 <script>
-$(document).ready(function() {
-    // Máscara dinâmica para telefone
-    var phoneBehavior = function(val) {
-        return val.replace(/\D/g, '').length === 11 ? '(00) 00000-0000' : '(00) 0000-0000';
-    };
-    var phoneOptions = {
-        onKeyPress: function(val, e, field, options) {
-            field.mask(phoneBehavior.apply({}, arguments), options);
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ══════════════════════════════════════════════════
+    // 1. MÁSCARAS DE INPUT
+    // ══════════════════════════════════════════════════
+    (function initMasks() {
+        var phoneBehavior = function (val) {
+            return val.replace(/\D/g, '').length === 11
+                ? '(00) 00000-0000'
+                : '(00) 0000-0000';
+        };
+        var phoneOptions = {
+            onKeyPress: function (val, e, field, options) {
+                field.mask(phoneBehavior.apply({}, arguments), options);
+            }
+        };
+
+        var $tel = $('#id_telefone');
+        if ($tel.length) $tel.mask(phoneBehavior, phoneOptions);
+        $('#id_cnpj').mask('00.000.000/0000-00', { reverse: true });
+        $('#id_cep').mask('00000-000');
+        $('#id_contrato').mask('0000');
+    })();
+
+    // ══════════════════════════════════════════════════
+    // 2. TOMSELECT — Autocomplete Logradouro
+    // ══════════════════════════════════════════════════
+    (function initLogradouroAutocomplete() {
+        var el = document.getElementById('id_logradouro');
+        if (!el) return;
+
+        var AJAX_URL   = "{% url 'cliente:ajax_buscar_logradouros' %}";
+        var previewBox = document.getElementById('js-logradouro-preview');
+        var previewTxt = document.getElementById('js-logradouro-preview-text');
+
+        // Preservar valor existente (modo edição)
+        var initOpts  = {};
+        var initItems = [];
+        Array.from(el.options).forEach(function (opt) {
+            if (opt.value) {
+                initOpts[opt.value] = { id: opt.value, text: opt.textContent.trim() };
+                if (opt.selected) initItems.push(opt.value);
+            }
+        });
+
+        var ts = new TomSelect(el, {
+            // Dados
+            valueField:  'id',
+            labelField:  'text',
+            searchField: ['text'],
+            options:      Object.values(initOpts),
+            items:        initItems,
+
+            // UX
+            placeholder:     '🔍 Buscar endereço...',
+            maxItems:        1,
+            maxOptions:      20,
+            openOnFocus:     false,
+            closeAfterSelect: true,
+            highlight:       true,
+            create:          false,
+            preload:         false,
+            loadThrottle:    300,
+
+            // Classe customizada
+            wrapperClass: 'ts-wrapper ts-logradouro',
+
+            // Busca AJAX
+            load: function (query, callback) {
+                if (query.length < 2) return callback();
+                fetch(AJAX_URL + '?q=' + encodeURIComponent(query))
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        callback(data.map(function (item) {
+                            return { id: String(item.id), text: item.text };
+                        }));
+                    })
+                    .catch(function () { callback(); });
+            },
+
+            // Templates
+            render: {
+                option: function (data, escape) {
+                    var parts = data.text.split(' - ');
+                    var rua   = parts[0] || '';
+                    var resto = parts.slice(1).join(' - ');
+                    return '<div class="option">'
+                        + '<div class="ts-logr-main"><i class="bi bi-geo-alt text-primary me-1"></i>' + escape(rua) + '</div>'
+                        + (resto ? '<div class="ts-logr-sub">' + escape(resto) + '</div>' : '')
+                        + '</div>';
+                },
+                item: function (data, escape) {
+                    return '<div><i class="bi bi-geo-alt-fill text-primary me-1"></i>' + escape(data.text) + '</div>';
+                },
+                no_results: function () {
+                    return '<div class="p-3 text-center text-muted">'
+                        + '<i class="bi bi-search me-1"></i>Nenhum endereço encontrado</div>';
+                },
+                loading: function () {
+                    return '<div class="p-3 text-center text-muted">'
+                        + '<i class="bi bi-hourglass-split me-1"></i>Buscando...</div>';
+                }
+            },
+
+            // Eventos
+            onChange: function (value) {
+                if (value && this.options[value]) {
+                    previewTxt.textContent = this.options[value].text;
+                    previewBox.classList.remove('d-none');
+                } else {
+                    previewBox.classList.add('d-none');
+                    previewTxt.textContent = '';
+                }
+            }
+        });
+
+        // Estado inicial (edição)
+        var val = ts.getValue();
+        if (val && ts.options[val]) {
+            previewTxt.textContent = ts.options[val].text;
+            previewBox.classList.remove('d-none');
         }
-    };
-
-    var $telefone = $('#id_telefone');
-    if ($telefone.length) $telefone.mask(phoneBehavior, phoneOptions);
-
-    $('#id_cnpj').mask('00.000.000/0000-00', { reverse: true });
-    $('#id_cep').mask('00000-000');
-    $('#id_contrato').mask('0000');
+    })();
 });
 </script>
 {% endblock %}
-
 

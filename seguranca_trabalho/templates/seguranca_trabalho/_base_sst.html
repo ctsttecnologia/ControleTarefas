@@ -94,6 +94,13 @@
                                 </a>
                             </li>
                             {% endif %}
+                            {% if perms.gestao_riscos.view_inspecao %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'ltcat:ltcat_list' %}">
+                                    <i class="bi bi-exclamation-triangle me-2"></i> LTCAT
+                                </a>
+                            </li>
+                            {% endif %}
                             {% if perms.seguranca_trabalho.view_cargofuncao %}
                             <li><hr class="dropdown-divider"></li>
                             <li>

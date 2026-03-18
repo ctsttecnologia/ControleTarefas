@@ -1,0 +1,53 @@
+
+{# Partial: tabela de locais vinculados ao documento LTCAT #}
+{% load static %}
+
+{% with vinculos=ltcat.documento_locais.all %}
+{% if vinculos %}
+<table class="table table-hover table-sm mb-0 align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Local</th>
+            <th>CNPJ</th>
+            <th>Endereço</th>
+            <th class="text-center" style="width:90px">Principal</th>
+            <th class="text-end" style="width:80px">Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vinculo in vinculos %}
+        <tr>
+            <td class="fw-semibold">{{ vinculo.local_prestacao.nome_local }}</td>
+            <td>{{ vinculo.local_prestacao.cnpj|default:"-" }}</td>
+            <td><small>{{ vinculo.local_prestacao.endereco_completo }}</small></td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-link p-0 btn-toggle-principal"
+                        data-vinculo-id="{{ vinculo.pk }}"
+                        title="{% if vinculo.principal %}Remover principal{% else %}Marcar como principal{% endif %}">
+                    {% if vinculo.principal %}
+                        <i class="fas fa-star text-warning fa-lg"></i>
+                    {% else %}
+                        <i class="far fa-star text-muted fa-lg"></i>
+                    {% endif %}
+                </button>
+            </td>
+            <td class="text-end">
+                <button class="btn btn-outline-danger btn-sm btn-desvincular-local"
+                        data-vinculo-id="{{ vinculo.pk }}"
+                        data-nome="{{ vinculo.local_prestacao.nome_local }}"
+                        title="Desvincular">
+                    <i class="fas fa-unlink"></i>
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="text-center text-muted py-4">
+    <i class="fas fa-map-marker-alt fa-2x mb-2 d-block opacity-50"></i>
+    Nenhum local vinculado a este documento.
+</div>
+{% endif %}
+{% endwith %}
+

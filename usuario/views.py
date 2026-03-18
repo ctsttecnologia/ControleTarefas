@@ -179,7 +179,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'icon': 'images/cliente.gif',
                 'links': [
                     {'url': 'cliente:lista_clientes', 'text': 'Lista de Clientes'},
-                    {'url': 'cliente:cadastro_cliente', 'text': 'Cadastrar Cliente'},
+                    {'url': 'cliente:cliente_create', 'text': 'Cadastrar Cliente'},
                 ]
             },
             {

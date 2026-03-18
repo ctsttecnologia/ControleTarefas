@@ -8,56 +8,61 @@
 {% block title %}{% if object %}Editar Documento{% else %}Novo Documento{% endif %}{% endblock %}
 
 {% block extra_css %}
+{{ block.super }}
 <style>
+    /* ═══ Seletor visual de tipo ═══ */
     .doc-selector-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 0.6rem;
     }
     .doc-card {
         background: #fff;
         border: 2px solid var(--bs-border-color);
         border-radius: 0.5rem;
-        padding: 1rem 0.5rem;
+        padding: 0.75rem 0.5rem;
         text-align: center;
         cursor: pointer;
         transition: all 0.2s ease;
+        user-select: none;
     }
-    .doc-card:hover {
-        border-color: var(--bs-primary);
-        background-color: rgba(var(--bs-primary-rgb), 0.05);
-    }
-    .doc-card.active {
-        border-color: var(--bs-primary);
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
-        color: var(--bs-primary);
-    }
-    .doc-card .doc-icon {
-        font-size: 1.75rem;
-        display: block;
-        margin-bottom: 0.25rem;
-    }
-    .doc-card .doc-label {
+    .doc-card:hover { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.04); }
+    .doc-card.active { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.1); color: var(--bs-primary); }
+    .doc-card .doc-icon { font-size: 1.6rem; display: block; margin-bottom: 0.2rem; }
+    .doc-card .doc-label { font-size: 0.78rem; font-weight: 500; line-height: 1.2; }
+
+    /* ═══ Campos condicionais ═══ */
+    .campo-condicional { display: none; }
+    .campo-condicional.visible { display: block; }
+
+    /* ═══ Seção de tipo ═══ */
+    .tipo-section-title {
         font-size: 0.85rem;
-        font-weight: 500;
+        font-weight: 600;
+        color: var(--bs-primary);
+        padding: 0.5rem 0;
+        margin: 1rem 0 0.5rem 0;
+        border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.15);
     }
+
+    /* ═══ Upload ═══ */
     .file-upload-wrapper {
         position: relative;
         border: 2px dashed var(--bs-border-color);
         border-radius: 0.5rem;
-        padding: 2rem;
+        padding: 1.5rem;
         text-align: center;
-        background-color: var(--bs-body-bg);
+        background: var(--bs-body-bg);
         transition: all 0.2s ease;
     }
-    .file-upload-wrapper:hover {
-        border-color: var(--bs-primary);
-    }
-    .file-upload-wrapper input[type="file"] {
-        position: absolute;
-        inset: 0;
-        opacity: 0;
-        cursor: pointer;
+    .file-upload-wrapper:hover { border-color: var(--bs-primary); }
+    .file-upload-wrapper input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+    /* ═══ Ícone tipos ═══ */
+    .doc-tipo-group { margin-bottom: 0.5rem; }
+    .doc-tipo-group-label {
+        font-size: 0.7rem; text-transform: uppercase; color: var(--bs-secondary);
+        font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.4rem;
     }
 </style>
 {% endblock %}
@@ -65,7 +70,7 @@
 {% block dp_content %}
 <div class="container py-4">
     <div class="row justify-content-center">
-        <div class="col-lg-7">
+        <div class="col-lg-8">
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <div class="d-flex justify-content-between align-items-center">
@@ -75,10 +80,12 @@
                                 {% if object %}Editar Documento{% else %}Novo Documento{% endif %}
                             </h5>
                             {% if funcionario %}
-                                <small class="text-muted">Funcionário: <strong>{{ funcionario.nome_completo }}</strong></small>
+                                <small class="text-muted">
+                                    Funcionário: <strong>{{ funcionario.nome_completo }}</strong>
+                                </small>
                             {% endif %}
                         </div>
-                        <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}" 
+                        <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}"
                            class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-x-lg"></i>
                         </a>
@@ -88,93 +95,425 @@
                 <div class="card-body p-4">
                     <form method="post" enctype="multipart/form-data" novalidate id="documentForm">
                         {% csrf_token %}
-                        
                         {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
 
                         {% if form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                {{ form.non_field_errors|join:", " }}
-                            </div>
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            {{ form.non_field_errors|join:", " }}
+                        </div>
                         {% endif %}
 
-                        <!-- Funcionário (se não pré-selecionado) -->
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                            <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+                                <small><strong>{{ field.label }}:</strong> {{ error }}</small>
+                                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endfor %}
+                        {% endfor %}
+
+                        <!-- ═══ FUNCIONÁRIO (se não pré-selecionado) ═══ -->
                         {% if form.funcionario.field.widget.input_type != 'hidden' and not funcionario %}
                         <div class="mb-4">
-                            <label class="form-label">Selecione o Funcionário <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">
+                                Selecione o Funcionário <span class="text-danger">*</span>
+                            </label>
                             {% render_field form.funcionario class+="form-select form-select-lg" %}
-                            {% for error in form.funcionario.errors %}
-                                <div class="text-danger small mt-1">{{ error }}</div>
-                            {% endfor %}
                         </div>
                         {% endif %}
 
-                        <!-- Tipo de Documento (Seletor Visual) -->
+                        <!-- ═══ TIPO DE DOCUMENTO (Seletor Visual) ═══ -->
                         <div class="mb-4">
-                            <label class="form-label">Tipo de Documento <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">
+                                Tipo de Documento <span class="text-danger">*</span>
+                            </label>
                             {% render_field form.tipo_documento class+="d-none" id="id_tipo_documento" %}
-                            
-                            <div class="doc-selector-grid">
-                                {% for value, label in form.tipo_documento.field.choices %}
-                                    {% if value %}
-                                    <div class="doc-card" data-value="{{ value }}">
-                                        <i class="bi {% if value == 'CPF' %}bi-person-vcard{% elif value == 'RG' %}bi-person-badge{% elif value == 'CNH' %}bi-car-front{% elif value == 'CTPS' %}bi-briefcase{% elif value == 'PIS' %}bi-123{% else %}bi-file-earmark-text{% endif %} doc-icon"></i>
-                                        <span class="doc-label">{{ label }}</span>
+
+                            <!-- Pessoais -->
+                            <div class="doc-tipo-group">
+                                <div class="doc-tipo-group-label">
+                                    <i class="bi bi-person me-1"></i> Documentos Pessoais
+                                </div>
+                                <div class="doc-selector-grid">
+                                    <div class="doc-card" data-value="CPF">
+                                        <i class="bi bi-person-vcard doc-icon"></i>
+                                        <span class="doc-label">CPF</span>
                                     </div>
-                                    {% endif %}
-                                {% endfor %}
+                                    <div class="doc-card" data-value="RG">
+                                        <i class="bi bi-person-badge doc-icon"></i>
+                                        <span class="doc-label">RG</span>
+                                    </div>
+                                    <div class="doc-card" data-value="CNH">
+                                        <i class="bi bi-car-front doc-icon"></i>
+                                        <span class="doc-label">CNH</span>
+                                    </div>
+                                    <div class="doc-card" data-value="CTPS">
+                                        <i class="bi bi-briefcase-fill doc-icon"></i>
+                                        <span class="doc-label">CTPS</span>
+                                    </div>
+                                    <div class="doc-card" data-value="PIS">
+                                        <i class="bi bi-123 doc-icon"></i>
+                                        <span class="doc-label">PIS/PASEP</span>
+                                    </div>
+                                    <div class="doc-card" data-value="TITULO">
+                                        <i class="bi bi-check2-square doc-icon"></i>
+                                        <span class="doc-label">Título Eleitor</span>
+                                    </div>
+                                    <div class="doc-card" data-value="RESERVISTA">
+                                        <i class="bi bi-shield-check doc-icon"></i>
+                                        <span class="doc-label">Reservista</span>
+                                    </div>
+                                    <div class="doc-card" data-value="CERTIDAO_NASC">
+                                        <i class="bi bi-file-earmark-person doc-icon"></i>
+                                        <span class="doc-label">Cert. Nascim.</span>
+                                    </div>
+                                    <div class="doc-card" data-value="CERTIDAO_CAS">
+                                        <i class="bi bi-heart doc-icon"></i>
+                                        <span class="doc-label">Cert. Casam.</span>
+                                    </div>
+                                    <div class="doc-card" data-value="PASSAPORTE">
+                                        <i class="bi bi-globe doc-icon"></i>
+                                        <span class="doc-label">Passaporte</span>
+                                    </div>
+                                    <div class="doc-card" data-value="RNE">
+                                        <i class="bi bi-globe2 doc-icon"></i>
+                                        <span class="doc-label">RNE/CRNM</span>
+                                    </div>
+                                </div>
                             </div>
-                            {% for error in form.tipo_documento.errors %}
-                                <div class="text-danger small mt-1">{{ error }}</div>
-                            {% endfor %}
+
+                            <!-- Profissionais / Saúde -->
+                            <div class="doc-tipo-group mt-3">
+                                <div class="doc-tipo-group-label">
+                                    <i class="bi bi-briefcase me-1"></i> Profissionais / Saúde / Treinamentos
+                                </div>
+                                <div class="doc-selector-grid">
+                                    <div class="doc-card" data-value="REGISTRO_CLASSE">
+                                        <i class="bi bi-award doc-icon"></i>
+                                        <span class="doc-label">Reg. Classe</span>
+                                    </div>
+                                    <div class="doc-card" data-value="CERTIFICADO">
+                                        <i class="bi bi-mortarboard doc-icon"></i>
+                                        <span class="doc-label">Certificado</span>
+                                    </div>
+                                    <div class="doc-card" data-value="ASO">
+                                        <i class="bi bi-heart-pulse doc-icon"></i>
+                                        <span class="doc-label">ASO</span>
+                                    </div>
+                                    <div class="doc-card" data-value="NR">
+                                        <i class="bi bi-shield-exclamation doc-icon"></i>
+                                        <span class="doc-label">NR</span>
+                                    </div>
+                                    <div class="doc-card" data-value="COMPROVANTE_END">
+                                        <i class="bi bi-house doc-icon"></i>
+                                        <span class="doc-label">Comp. Endereço</span>
+                                    </div>
+                                    <div class="doc-card" data-value="COMP_ESCOLAR">
+                                        <i class="bi bi-book doc-icon"></i>
+                                        <span class="doc-label">Comp. Escolar</span>
+                                    </div>
+                                    <div class="doc-card" data-value="OUTRO">
+                                        <i class="bi bi-file-earmark-text doc-icon"></i>
+                                        <span class="doc-label">Outro</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Número do Documento -->
-                        <div class="mb-4">
-                            <label class="form-label">Número do Documento</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                                {% render_field form.numero class+="form-control" placeholder="Ex: 123.456.789-00" %}
+                        <!-- ═══════════════════════════════════════════════════════ -->
+                        <!-- CAMPOS DINÂMICOS (exibidos conforme tipo selecionado)  -->
+                        <!-- ═══════════════════════════════════════════════════════ -->
+                        <div id="camposDinamicos">
+
+                            <!-- ── CAMPOS COMUNS ── -->
+                            <div class="tipo-section-title campo-condicional"
+                                 data-tipos="CPF,RG,CNH,CTPS,PIS,TITULO,RESERVISTA,CERTIDAO_NASC,CERTIDAO_CAS,PASSAPORTE,RNE,REGISTRO_CLASSE,OUTRO">
+                                <i class="bi bi-hash me-1"></i> Número do Documento
                             </div>
-                            {% for error in form.numero.errors %}
-                                <div class="text-danger small mt-1">{{ error }}</div>
-                            {% endfor %}
+                            <div class="campo-condicional mb-3"
+                                 data-tipos="CPF,RG,CNH,CTPS,PIS,TITULO,RESERVISTA,CERTIDAO_NASC,CERTIDAO_CAS,PASSAPORTE,RNE,REGISTRO_CLASSE,OUTRO">
+                                <label class="form-label">Número do Documento</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                                    {% render_field form.numero placeholder="Número do documento" %}
+                                </div>
+                            </div>
+
+                            <!-- ── RG — Campos específicos ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="RG">
+                                <i class="bi bi-person-badge me-1"></i> Dados do RG
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="RG">
+                                    <label class="form-label">Nome da Mãe</label>
+                                    {% render_field form.rg_nome_mae placeholder="Nome completo da mãe" %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="RG">
+                                    <label class="form-label">Nome do Pai</label>
+                                    {% render_field form.rg_nome_pai placeholder="Nome completo do pai" %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="RG">
+                                    <label class="form-label">Naturalidade</label>
+                                    {% render_field form.rg_naturalidade placeholder="Ex: Belo Horizonte/MG" %}
+                                </div>
+                            </div>
+
+                            <!-- ── CNH — Campos específicos ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="CNH">
+                                <i class="bi bi-car-front me-1"></i> Dados da CNH
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CNH">
+                                    <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                                    {% render_field form.cnh_categoria %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CNH">
+                                    <label class="form-label">Nº Registro</label>
+                                    {% render_field form.cnh_numero_registro placeholder="Nº do registro" %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CNH">
+                                    <label class="form-label">1ª Habilitação</label>
+                                    {% render_field form.cnh_primeira_habilitacao %}
+                                </div>
+                            </div>
+                            <div class="campo-condicional mb-3" data-tipos="CNH">
+                                <label class="form-label">Obs. DETRAN</label>
+                                {% render_field form.cnh_observacoes_detran placeholder="Ex: EAR" %}
+                            </div>
+
+                            <!-- ── CTPS — Campos específicos ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="CTPS">
+                                <i class="bi bi-briefcase-fill me-1"></i> Dados da CTPS
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CTPS">
+                                    <label class="form-label">Série</label>
+                                    {% render_field form.ctps_serie placeholder="Série" %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CTPS">
+                                    <label class="form-label">UF</label>
+                                    {% render_field form.ctps_uf %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3 d-flex align-items-end" data-tipos="CTPS">
+                                    <div class="form-check">
+                                        {% render_field form.ctps_digital %}
+                                        <label class="form-check-label" for="{{ form.ctps_digital.id_for_label }}">
+                                            CTPS Digital (sem número físico)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ── TÍTULO DE ELEITOR — Campos específicos ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="TITULO">
+                                <i class="bi bi-check2-square me-1"></i> Dados do Título de Eleitor
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 campo-condicional mb-3" data-tipos="TITULO">
+                                    <label class="form-label">Zona</label>
+                                    {% render_field form.titulo_zona placeholder="Zona" %}
+                                </div>
+                                <div class="col-md-3 campo-condicional mb-3" data-tipos="TITULO">
+                                    <label class="form-label">Seção</label>
+                                    {% render_field form.titulo_secao placeholder="Seção" %}
+                                </div>
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="TITULO">
+                                    <label class="form-label">Município</label>
+                                    {% render_field form.titulo_municipio placeholder="Município" %}
+                                </div>
+                            </div>
+
+                            <!-- ── RESERVISTA ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="RESERVISTA">
+                                <i class="bi bi-shield-check me-1"></i> Dados da Reservista
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="RESERVISTA">
+                                    <label class="form-label">Categoria</label>
+                                    {% render_field form.reservista_categoria placeholder="Ex: 1ª, 2ª, 3ª" %}
+                                </div>
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="RESERVISTA">
+                                    <label class="form-label">Região Militar</label>
+                                    {% render_field form.reservista_regiao_militar placeholder="Ex: 4ª RM" %}
+                                </div>
+                            </div>
+
+                            <!-- ── REGISTRO DE CLASSE ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="REGISTRO_CLASSE">
+                                <i class="bi bi-award me-1"></i> Registro Profissional
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="REGISTRO_CLASSE">
+                                    <label class="form-label">Órgão de Classe</label>
+                                    {% render_field form.registro_orgao placeholder="Ex: CREA, CRM, OAB" %}
+                                </div>
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="REGISTRO_CLASSE">
+                                    <label class="form-label">Especialidade</label>
+                                    {% render_field form.registro_especialidade placeholder="Ex: Engenharia Mecânica" %}
+                                </div>
+                            </div>
+
+                            <!-- ── CERTIFICADO / DIPLOMA ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="CERTIFICADO,COMP_ESCOLAR">
+                                <i class="bi bi-mortarboard me-1"></i> Dados do Certificado
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CERTIFICADO,COMP_ESCOLAR">
+                                    <label class="form-label">Nível/Grau</label>
+                                    {% render_field form.certificado_nivel %}
+                                </div>
+                                <div class="col-md-8 campo-condicional mb-3" data-tipos="CERTIFICADO">
+                                    <label class="form-label">Nome do Curso</label>
+                                    {% render_field form.certificado_curso placeholder="Ex: Eng. de Segurança do Trabalho" %}
+                                </div>
+                            </div>
+                            <div class="campo-condicional mb-3" data-tipos="CERTIFICADO,COMP_ESCOLAR">
+                                <label class="form-label">Instituição de Ensino</label>
+                                {% render_field form.certificado_instituicao placeholder="Ex: UFMG, SENAI" %}
+                            </div>
+
+                            <!-- ── ASO ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="ASO">
+                                <i class="bi bi-heart-pulse me-1"></i> Atestado de Saúde Ocupacional
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="ASO">
+                                    <label class="form-label">Tipo de Exame <span class="text-danger">*</span></label>
+                                    {% render_field form.aso_tipo_exame %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="ASO">
+                                    <label class="form-label">Resultado</label>
+                                    <div class="form-check form-switch mt-2">
+                                        {% render_field form.aso_apto %}
+                                        <label class="form-check-label" for="{{ form.aso_apto.id_for_label }}">
+                                            Apto
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="ASO">
+                                    <label class="form-label">Próximo Exame</label>
+                                    {% render_field form.aso_proximo_exame %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="ASO">
+                                    <label class="form-label">Médico Responsável</label>
+                                    {% render_field form.aso_medico_nome placeholder="Nome do médico" %}
+                                </div>
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="ASO">
+                                    <label class="form-label">CRM</label>
+                                    {% render_field form.aso_medico_crm placeholder="Ex: CRM-MG 12345" %}
+                                </div>
+                            </div>
+
+                            <!-- ── NR ── -->
+                            <div class="tipo-section-title campo-condicional" data-tipos="NR">
+                                <i class="bi bi-shield-exclamation me-1"></i> Certificado de NR
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3 campo-condicional mb-3" data-tipos="NR">
+                                    <label class="form-label">Nº da NR <span class="text-danger">*</span></label>
+                                    {% render_field form.nr_numero placeholder="Ex: NR-10" %}
+                                </div>
+                                <div class="col-md-3 campo-condicional mb-3" data-tipos="NR">
+                                    <label class="form-label">Carga Horária (h)</label>
+                                    {% render_field form.nr_carga_horaria placeholder="Ex: 40" %}
+                                </div>
+                                <div class="col-md-6 campo-condicional mb-3" data-tipos="NR">
+                                    <label class="form-label">Instituição</label>
+                                    {% render_field form.nr_instituicao placeholder="Empresa ou instituição" %}
+                                </div>
+                            </div>
+
+                            <!-- ── PASSAPORTE ── -->
+                            <div class="campo-condicional mb-3" data-tipos="PASSAPORTE">
+                                <label class="form-label">País de Emissão</label>
+                                {% render_field form.passaporte_pais_emissao placeholder="Brasil" %}
+                            </div>
+
+                            <!-- ── OUTRO ── -->
+                            <div class="campo-condicional mb-3" data-tipos="OUTRO">
+                                <label class="form-label">
+                                    Descrição do Documento <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.outro_descricao placeholder="Descreva o tipo de documento" %}
+                            </div>
+
+                            <!-- ═══ CAMPOS COMUNS: DATAS + ÓRGÃO EXPEDIDOR ═══ -->
+                            <div class="tipo-section-title campo-condicional"
+                                 data-tipos="RG,CNH,CTPS,CERTIDAO_NASC,CERTIDAO_CAS,PASSAPORTE,RNE,REGISTRO_CLASSE,CERTIFICADO,ASO,NR,COMPROVANTE_END,COMP_ESCOLAR,OUTRO">
+                                <i class="bi bi-calendar3 me-1"></i> Datas e Expedição
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3"
+                                     data-tipos="RG,CNH,CTPS,CERTIDAO_NASC,CERTIDAO_CAS,PASSAPORTE,RNE,REGISTRO_CLASSE,CERTIFICADO,ASO,NR,COMPROVANTE_END,COMP_ESCOLAR,OUTRO">
+                                    <label class="form-label">Data de Emissão</label>
+                                    {% render_field form.data_emissao %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3"
+                                     data-tipos="CNH,PASSAPORTE,RNE,REGISTRO_CLASSE,NR,OUTRO">
+                                    <label class="form-label">Data de Validade</label>
+                                    {% render_field form.data_validade %}
+                                </div>
+                                <div class="col-md-4 campo-condicional mb-3"
+                                     data-tipos="RG,CNH,RESERVISTA,CERTIDAO_NASC,CERTIDAO_CAS,RNE">
+                                    <label class="form-label">Órgão Expedidor</label>
+                                    {% render_field form.orgao_expedidor placeholder="Ex: SSP, DETRAN" %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 campo-condicional mb-3"
+                                     data-tipos="RG,CNH,TITULO,RESERVISTA,CERTIDAO_NASC,CERTIDAO_CAS,REGISTRO_CLASSE">
+                                    <label class="form-label">UF</label>
+                                    {% render_field form.uf_expedidor %}
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Upload de Arquivo -->
-                        <div class="mb-4">
-                            <label class="form-label">Anexar Arquivo</label>
+                        <!-- ═══ OBSERVAÇÕES (sempre visível quando um tipo é selecionado) ═══ -->
+                        <div class="campo-condicional mb-3"
+                             data-tipos="CPF,RG,CNH,CTPS,PIS,TITULO,RESERVISTA,CERTIDAO_NASC,CERTIDAO_CAS,PASSAPORTE,RNE,REGISTRO_CLASSE,CERTIFICADO,ASO,NR,COMPROVANTE_END,COMP_ESCOLAR,OUTRO">
+                            <label class="form-label">Observações</label>
+                            {% render_field form.observacoes placeholder="Observações adicionais (opcional)" %}
+                        </div>
+
+                        <!-- ═══ UPLOAD DE ARQUIVO ═══ -->
+                        <div class="campo-condicional mb-4"
+                             data-tipos="CPF,RG,CNH,CTPS,PIS,TITULO,RESERVISTA,CERTIDAO_NASC,CERTIDAO_CAS,PASSAPORTE,RNE,REGISTRO_CLASSE,CERTIFICADO,ASO,NR,COMPROVANTE_END,COMP_ESCOLAR,OUTRO">
+                            <label class="form-label fw-semibold">Anexar Arquivo</label>
                             <div class="file-upload-wrapper" id="dropZone">
-                                <i class="bi bi-cloud-arrow-up display-4 text-primary"></i>
+                                <i class="bi bi-cloud-arrow-up display-5 text-primary"></i>
                                 <p class="mb-1" id="fileName">Clique ou arraste o arquivo aqui</p>
-                                <small class="text-muted">PDF ou imagem (máx. 5MB)</small>
+                                <small class="text-muted">PDF ou imagem (máx. 10MB)</small>
                                 {% render_field form.anexo id="fileInput" %}
                             </div>
-                            
+
                             {% if object.anexo %}
                             <div class="mt-2 p-2 bg-light rounded d-flex align-items-center justify-content-between">
                                 <small class="text-muted">
                                     <i class="bi bi-paperclip me-1"></i>
                                     {% secure_url object "anexo" as anexo_url %}
-                            Atual: <a href="{{ anexo_url }}" target="_blank">{{ object.anexo.name|truncatechars:30 }}</a>
+                                    Atual: <a href="{{ anexo_url }}" target="_blank">
+                                        {{ object.anexo.name|truncatechars:30 }}
+                                    </a>
                                 </small>
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input" type="checkbox" name="anexo-clear" id="anexo-clear_id">
-                                    <label class="form-check-label small text-danger" for="anexo-clear_id">Remover</label>
+                                    <input class="form-check-input" type="checkbox"
+                                           name="anexo-clear" id="anexo-clear_id">
+                                    <label class="form-check-label small text-danger"
+                                           for="anexo-clear_id">Remover</label>
                                 </div>
                             </div>
                             {% endif %}
-                            
-                            {% for error in form.anexo.errors %}
-                                <div class="text-danger small mt-1">{{ error }}</div>
-                            {% endfor %}
                         </div>
 
+                        <!-- ═══ BOTÕES ═══ -->
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}" 
+                            <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}"
                                class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-lg me-1"></i> Salvar
+                            <button type="submit" class="btn btn-primary px-4" id="btnSalvarDoc">
+                                <i class="bi bi-check-lg me-1"></i> Salvar Documento
                             </button>
                         </div>
                     </form>
@@ -190,38 +529,100 @@
 document.addEventListener('DOMContentLoaded', function() {
     const hiddenSelect = document.getElementById('id_tipo_documento');
     const cards = document.querySelectorAll('.doc-card');
+    const camposCondicionais = document.querySelectorAll('.campo-condicional');
     const fileInput = document.getElementById('fileInput');
     const fileNameDisplay = document.getElementById('fileName');
     const dropZone = document.getElementById('dropZone');
 
-    // Seleção de tipo de documento
+    // ═══ Exibe/esconde campos conforme tipo selecionado ═══
+    function atualizarCampos(tipo) {
+        camposCondicionais.forEach(el => {
+            const tipos = (el.dataset.tipos || '').split(',').map(t => t.trim());
+            if (tipo && tipos.includes(tipo)) {
+                el.classList.add('visible');
+            } else {
+                el.classList.remove('visible');
+            }
+        });
+
+        // Placeholder dinâmico para número
+        const inputNumero = document.getElementById('{{ form.numero.id_for_label }}');
+        if (inputNumero) {
+            const placeholders = {
+                'CPF': '000.000.000-00',
+                'RG': 'MG-00.000.000',
+                'CNH': '00000000000',
+                'CTPS': '0000000',
+                'PIS': '000.00000.00-0',
+                'TITULO': '0000 0000 0000',
+                'RESERVISTA': '000000000000',
+                'PASSAPORTE': 'AA000000',
+                'RNE': 'A000000-0',
+                'REGISTRO_CLASSE': 'Ex: CREA-MG 92307/D',
+            };
+            inputNumero.placeholder = placeholders[tipo] || 'Número do documento';
+        }
+    }
+
+    // ═══ Click nos cards ═══
     cards.forEach(card => {
         card.addEventListener('click', function() {
             cards.forEach(c => c.classList.remove('active'));
             this.classList.add('active');
             hiddenSelect.value = this.dataset.value;
+            atualizarCampos(this.dataset.value);
         });
-        
-        // Ativar card se já tiver valor
+
+        // Ativar card se já tiver valor (edição)
         if (hiddenSelect.value === card.dataset.value) {
             card.classList.add('active');
         }
     });
 
-    // Upload visual
-    fileInput.addEventListener('change', function() {
-        if (this.files && this.files.length > 0) {
-            fileNameDisplay.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>' + this.files[0].name + '</span>';
-            dropZone.style.borderColor = 'var(--bs-success)';
-        } else {
-            fileNameDisplay.textContent = 'Clique ou arraste o arquivo aqui';
-            dropZone.style.borderColor = '';
-        }
-    });
+    // Inicializar campos se editando
+    if (hiddenSelect.value) {
+        atualizarCampos(hiddenSelect.value);
+    }
+
+    // ═══ Upload visual ═══
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                const file = this.files[0];
+                const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+                fileNameDisplay.innerHTML =
+                    '<span class="text-success">' +
+                    '<i class="bi bi-check-circle me-1"></i>' +
+                    file.name + ' (' + sizeMB + ' MB)</span>';
+                dropZone.style.borderColor = 'var(--bs-success)';
+            } else {
+                fileNameDisplay.textContent = 'Clique ou arraste o arquivo aqui';
+                dropZone.style.borderColor = '';
+            }
+        });
+    }
+
+    // ═══ Máscara simples para CPF ═══
+    const inputNumero = document.getElementById('{{ form.numero.id_for_label }}');
+    if (inputNumero) {
+        inputNumero.addEventListener('input', function() {
+            if (hiddenSelect.value === 'CPF') {
+                let v = this.value.replace(/\D/g, '').slice(0, 11);
+                if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+                else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+                else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+                this.value = v;
+            }
+            if (hiddenSelect.value === 'PIS') {
+                let v = this.value.replace(/\D/g, '').slice(0, 11);
+                if (v.length > 9) v = v.replace(/(\d{3})(\d{5})(\d{2})(\d{1})/, '$1.$2.$3-$4');
+                else if (v.length > 5) v = v.replace(/(\d{3})(\d{5})(\d{1,2})/, '$1.$2.$3');
+                else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,5})/, '$1.$2');
+                this.value = v;
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
-
-
-
 

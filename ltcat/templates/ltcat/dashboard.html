@@ -1,0 +1,116 @@
+
+
+{% extends "ltcat/base_ltcat.html" %}
+{% load ltcat_tags %}
+
+{% block ltcat_title %}Dashboard - LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="fas fa-tachometer-alt me-2"></i>Dashboard LTCAT
+            </h3>
+            <p class="mb-0 opacity-75">Visão geral dos Laudos Técnicos das Condições Ambientais de Trabalho</p>
+        </div>
+        <a href="{% url 'ltcat:ltcat_create' %}" class="btn btn-light">
+            <i class="fas fa-plus me-1"></i> Novo LTCAT
+        </a>
+    </div>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stats-card shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Total LTCATs</div>
+                <div class="fs-3 fw-bold mt-1">{{ total_ltcats }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stats-card success shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Vigentes</div>
+                <div class="fs-3 fw-bold text-success mt-1">{{ total_vigentes }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stats-card info shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Rascunhos</div>
+                <div class="fs-3 fw-bold mt-1">{{ total_rascunhos }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stats-card danger shadow-sm">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Vencidos</div>
+                <div class="fs-3 fw-bold text-danger mt-1">{{ total_vencidos }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Laudos Recentes -->
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-clock me-1"></i> Laudos Recentes</span>
+        <a href="{% url 'ltcat:ltcat_list' %}" class="btn btn-sm btn-light">Ver todos</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Elaboração</th>
+                        <th>Responsável</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ltcat in recentes %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ ltcat.empresa.razao_social|truncatechars:40 }}</div>
+                            <small class="text-muted">{{ ltcat.filial.nome }}</small>
+                        </td>
+                        <td>{{ ltcat.data_elaboracao|date:"d/m/Y" }}</td>
+                        <td>{{ ltcat.responsavel_tecnico.nome|default:"-" }}</td>
+                        <td>
+                            <span class="badge {{ ltcat.status|status_badge }}">
+                                {{ ltcat.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}"
+                               class="btn btn-sm btn-outline-primary" title="Visualizar">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-2x d-block mb-2"></i>
+                            Nenhum LTCAT cadastrado ainda.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

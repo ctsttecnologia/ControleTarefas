@@ -8,14 +8,14 @@ import re
 import io
 import json
 from datetime import datetime, timedelta
-from django.db.models import Sum, Value, IntegerField
+from django.db.models import ProtectedError, Sum, Value, IntegerField
 from django.db.models.functions import Coalesce
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q, Count, Func
 from django.http import Http404, HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -252,7 +252,6 @@ class FichaEPICreateView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMix
 
     def form_valid(self, form):
         form.instance.filial = form.cleaned_data['funcionario'].filial
-        messages.success(self.request, "Ficha de EPI criada com sucesso!")
         return super().form_valid(form)
 
 
@@ -329,6 +328,28 @@ class FichaEPIDeleteView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScope
     context_object_name = 'object'
     permission_required = 'seguranca_trabalho.delete_fichaepi'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        ficha = self.get_object()
+        entregas = ficha.entregas.select_related('equipamento')
+        context['has_entregas'] = entregas.exists()
+        context['entregas_count'] = entregas.count()
+        return context
+
+    def form_valid(self, form):
+        try:
+            messages.success(self.request, "Ficha de EPI excluída com sucesso!")
+            return super().form_valid(form)
+        except ProtectedError:
+            ficha = self.get_object()
+            count = ficha.entregas.count()
+            messages.error(
+                self.request,
+                f"Não é possível excluir esta ficha. "
+                f"Existem {count} entrega(s) de EPI vinculada(s). "
+                f"Remova ou devolva todas as entregas antes de excluir a ficha."
+            )
+            return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
 
 # =============================================================================
 # AÇÕES DE ENTREGA (Assinatura, Devolução)
@@ -740,8 +761,18 @@ class AssociacaoCreateView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateM
     permission_required = 'seguranca_trabalho.add_cargofuncao'
 
     def form_valid(self, form):
-        messages.success(self.request, "Associação criada com sucesso!")
-        return super().form_valid(form)
+        try:
+            return super().form_valid(form)
+        except IntegrityError:
+            cargo = form.cleaned_data.get('cargo')
+            funcao = form.cleaned_data.get('funcao')
+            messages.error(
+                self.request,
+                f"A associação entre o cargo '{cargo}' e a função '{funcao}' já existe."
+            )
+            return self.form_invalid(form)
+
+    
 
 
 @login_required
