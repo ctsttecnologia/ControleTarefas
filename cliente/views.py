@@ -1,6 +1,7 @@
 
 # Módulos Django e de Terceiros
-from pyexpat.errors import messages
+from django.contrib import messages 
+from django.db import models
 from django.db.models import Q
 from django.urls import reverse_lazy
 from django.http import HttpResponse
@@ -18,8 +19,10 @@ from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from core.mixins import ViewFilialScopedMixin
 from usuario.models import Filial
-from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.db import models as db_models
+from logradouro.models import Logradouro
  
 
 # --- VIEWS DE CLIENTE (CRUD) ---
@@ -191,3 +194,33 @@ def cliente_autocomplete_view(request):
     ).values('id', 'razao_social')[:10]
 
     return JsonResponse(list(clientes), safe=False)
+
+#___AJAX___
+
+def ajax_buscar_logradouros(request):
+    """
+    Retorna logradouros filtrados para o autocomplete TomSelect.
+    GET /cliente/ajax/logradouros/?q=termo
+    """
+    q = request.GET.get("q", "").strip()
+
+    if len(q) < 2:
+        return JsonResponse([], safe=False)
+
+    qs = Logradouro.objects.filter(
+        db_models.Q(endereco__icontains=q)
+        | db_models.Q(bairro__icontains=q)
+        | db_models.Q(cidade__icontains=q)
+        | db_models.Q(cep__icontains=q)
+    )[:20]
+
+    results = [
+        {
+            "id": log.pk,
+            "text": f"{log.endereco}, {log.numero} - {log.bairro} - {log.cidade}/{log.estado} - CEP: {log.cep}",
+        }
+        for log in qs
+    ]
+
+    return JsonResponse(results, safe=False)
+    

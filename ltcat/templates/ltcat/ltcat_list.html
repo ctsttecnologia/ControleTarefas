@@ -1,0 +1,150 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+{% load ltcat_tags %}
+
+{% block ltcat_title %}Laudos LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active">Laudos</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Laudos LTCAT</h4>
+    <a href="{% url 'ltcat:ltcat_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i> Novo LTCAT
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small">Buscar</label>
+                <input type="text" name="q" class="form-control form-control-sm"
+                       placeholder="Empresa ou título..." value="{{ busca }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_atual == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i class="fas fa-filter me-1"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Lista -->
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Elaboração</th>
+                        <th>Vencimento</th>
+                        <th>Funções</th>
+                        <th>Status</th>
+                        <th class="text-end">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ltcat in ltcats %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ ltcat.empresa.razao_social|truncatechars:50 }}</div>
+                            <small class="text-muted">
+                                {{ ltcat.responsavel_tecnico.nome|default:"Sem responsável" }}
+                            </small>
+                        </td>
+                        <td>{{ ltcat.data_elaboracao|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if ltcat.data_vencimento %}
+                                <span class="{% if ltcat.is_vencido %}text-danger fw-bold{% endif %}">
+                                    {{ ltcat.data_vencimento|date:"d/m/Y" }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">Sem vencimento</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">
+                                {{ ltcat.total_funcoes }} funções
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {{ ltcat.status|status_badge }}">
+                                {{ ltcat.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}"
+                                   class="btn btn-outline-primary" title="Visualizar">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'ltcat:ltcat_update' ltcat.pk %}"
+                                   class="btn btn-outline-warning" title="Editar">
+                                    <i class="fas fa-pencil"></i>
+                                </a>
+                                <a href="{% url 'ltcat:ltcat_delete' ltcat.pk %}"
+                                   class="btn btn-outline-danger" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-5">
+                            <i class="fas fa-inbox fa-2x d-block mb-2"></i>
+                            Nenhum laudo encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginação -->
+{% if is_paginated %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_atual }}&q={{ busca }}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if num == page_obj.number %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}&status={{ status_atual }}&q={{ busca }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_atual }}&q={{ busca }}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+

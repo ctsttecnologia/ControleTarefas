@@ -1,0 +1,156 @@
+
+
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}Revisão - LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Revisão</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-10">
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-0 py-3"
+                 style="background: linear-gradient(135deg, #6b7280, #4b5563);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                         style="width:44px; height:44px; background: rgba(255,255,255,0.15);">
+                        <i class="fas fa-history text-white fa-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h5 class="mb-0 text-white fw-bold">
+                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Revisão
+                        </h5>
+                        <small class="text-white-50 text-truncate d-block">
+                            Seção 1 — Controle de Revisão | {{ ltcat.codigo_documento }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-lg-4 p-3">
+                <div class="alert border-0 py-2 mb-4" style="background: var(--bs-secondary-bg-subtle, #e2e3e5); color: var(--bs-secondary-text-emphasis, #2b2f32);">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>
+                        A <strong>Seção 1</strong> do LTCAT registra o histórico de revisões.
+                        A revisão <code>00</code> é a emissão inicial.
+                    </small>
+                </div>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            <span>{{ error }}</span>{% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    {# ═══════════ DADOS DA REVISÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-info-circle me-2"></i>Dados da Revisão
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="{{ form.numero_revisao.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.numero_revisao.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.numero_revisao }}
+                                <div class="form-text">Ex: <code>00</code>, <code>01</code>, <code>02</code></div>
+                                {% for error in form.numero_revisao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.data_realizada.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.data_realizada.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.data_realizada }}
+                                {% for error in form.data_realizada.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-5">
+                                <label for="{{ form.realizada_por.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.realizada_por.label }}
+                                </label>
+                                {{ form.realizada_por }}
+                                <div class="form-text">Nome do responsável pela revisão</div>
+                                {% for error in form.realizada_por.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ DESCRIÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-align-left me-2"></i>Descrição da Revisão
+                        </legend>
+                        <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.descricao.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.descricao }}
+                        <div class="form-text">
+                            Ex: <em>Emissão inicial (Elaboração do LTCAT)</em> ou <em>Inclusão de nova função e atualização de riscos</em>
+                        </div>
+                        {% for error in form.descricao.errors %}
+                        <div class="invalid-feedback d-block">
+                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+
+                    {# ═══════════ OBSERVAÇÕES ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-sticky-note me-2"></i>Observações
+                        </legend>
+                        <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.observacoes.label }}
+                        </label>
+                        {{ form.observacoes }}
+                        {% for error in form.observacoes.errors %}
+                        <div class="invalid-feedback d-block">
+                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+
+                    {# ═══════════ BOTÕES ═══════════ #}
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
+                            <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
+                        </a>
+                        <button type="submit" class="btn btn-dark px-4 order-1 order-sm-2">
+                            <i class="fas fa-save me-1"></i>
+                            {% if form.instance.pk %}Atualizar Revisão{% else %}Cadastrar Revisão{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+
+

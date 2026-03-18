@@ -156,6 +156,25 @@
     {% endif %}
 
     <!-- ═══════════════════════════════════════════════════════════════════════
+         LTCAT
+    ═══════════════════════════════════════════════════════════════════════ -->
+
+    {% if perms.pgr_gestao.view_pgrdocumento %}
+    <div class="col-lg-3 col-md-6">
+        <a href="{% url 'ltcat:dashboard' %}" class="card text-decoration-none h-100 shadow-sm border-0 card-hover">
+            <div class="card-body text-center p-4">
+                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-shield-check text-success fs-2"></i>
+                </div>
+                <h6 class="fw-bold mb-2">LTCAT</h6>
+                <p class="text-muted small mb-0">Gestão de Laudos.</p>
+            </div>
+        </a>
+    </div>
+    {% endif %}
+
+   
+    <!-- ═══════════════════════════════════════════════════════════════════════
          GESTÃO DE RISCOS
     ═══════════════════════════════════════════════════════════════════════ -->
 

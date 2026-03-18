@@ -1,0 +1,184 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}Recomendação Técnica - LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Recomendação</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-10">
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-0 py-3"
+                 style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                         style="width:44px; height:44px; background: rgba(255,255,255,0.15);">
+                        <i class="fas fa-lightbulb text-white fa-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h5 class="mb-0 text-white fw-bold">
+                            {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Recomendação Técnica
+                        </h5>
+                        <small class="text-white-50 text-truncate d-block">
+                            Seção 10 — Recomendações | {{ ltcat.codigo_documento }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-lg-4 p-3">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            <span>{{ error }}</span>{% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    {# ═══════════ DESCRIÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-align-left me-2"></i>Descrição da Recomendação
+                        </legend>
+                        <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.descricao.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.descricao }}
+                        <div class="form-text">
+                            Ex: <em>Ter como prioridade a eliminação dos riscos. Não conseguindo, deve-se neutralizar
+                            ou minimizar o risco através do uso dos EPC.</em>
+                        </div>
+                        {% for error in form.descricao.errors %}
+                        <div class="invalid-feedback d-block">
+                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+
+                    {# ═══════════ PRIORIDADE E PRAZOS ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-flag me-2"></i>Prioridade e Prazos
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ form.prioridade.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.prioridade.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.prioridade }}
+                                {% for error in form.prioridade.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.prazo_implementacao.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.prazo_implementacao.label }}
+                                </label>
+                                {{ form.prazo_implementacao }}
+                                {% for error in form.prazo_implementacao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.ordem.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.ordem.label }}
+                                </label>
+                                {{ form.ordem }}
+                                <div class="form-text">Ordem de exibição no PDF</div>
+                                {% for error in form.ordem.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ IMPLEMENTAÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-check-double me-2"></i>Controle de Implementação
+                        </legend>
+                        <div class="card border-0 rounded-3" style="background: var(--bs-tertiary-bg, #f8f9fa);">
+                            <div class="card-body py-3">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-md-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="form-check form-switch me-2">
+                                                {{ form.implementada }}
+                                            </div>
+                                            <label class="form-check-label fw-semibold"
+                                                   for="{{ form.implementada.id_for_label }}">
+                                                Implementada?
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4" id="div-data-implementacao">
+                                        <label for="{{ form.data_implementacao.id_for_label }}" class="form-label fw-semibold">
+                                            {{ form.data_implementacao.label }}
+                                        </label>
+                                        {{ form.data_implementacao }}
+                                        {% for error in form.data_implementacao.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ BOTÕES ═══════════ #}
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
+                            <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
+                        </a>
+                        <button type="submit" class="btn px-4 text-white order-1 order-sm-2"
+                                style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                            <i class="fas fa-save me-1"></i>
+                            {% if form.instance.pk %}Atualizar{% else %}Cadastrar{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ltcat_extra_js %}
+<script>
+(function() {
+    const chk = document.getElementById('{{ form.implementada.id_for_label }}');
+    const divData = document.getElementById('div-data-implementacao');
+
+    function toggle() {
+        if (!divData || !chk) return;
+        divData.style.opacity = chk.checked ? '1' : '0.4';
+        const input = divData.querySelector('input');
+        if (input) input.disabled = !chk.checked;
+    }
+
+    if (chk) { chk.addEventListener('change', toggle); toggle(); }
+})();
+</script>
+{% endblock %}
+
+

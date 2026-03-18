@@ -1,0 +1,342 @@
+
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% block ltcat_title %}LTCAT - Laudos Técnicos{% endblock %}{% endblock %}
+
+{% block body_class %}ltcat-app{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+    /* ═══════════════════════════════════════
+       VARIÁVEIS — TEMA VERDE DEGRADÊ LTCAT
+       ═══════════════════════════════════════ */
+    :root {
+        --ltcat-primary:    #1b6b3a;
+        --ltcat-secondary:  #2e9e5e;
+        --ltcat-accent:     #43c680;
+        --ltcat-dark:       #0f3d21;
+        --ltcat-light:      #e8f5ee;
+    }
+
+    /* ═══ Layout LTCAT ═══ */
+    .ltcat-app #main-content {
+        padding: 0;
+    }
+    .ltcat-wrapper {
+        display: flex;
+        min-height: calc(100vh - 72px);
+        margin-top: 0;
+    }
+
+    /* ═══ Sidebar ═══ */
+    .ltcat-sidebar {
+        width: 240px;
+        min-width: 240px;
+        background-color: #ffffff;
+        padding: 20px 0;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        min-height: calc(100vh - 72px);
+    }
+    .ltcat-sidebar .nav-link {
+        color: #495057;
+        padding: 12px 20px;
+        margin: 2px 10px;
+        border-radius: 5px;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+    .ltcat-sidebar .nav-link:hover {
+        background-color: var(--ltcat-light);
+        color: var(--ltcat-primary);
+        transform: translateX(5px);
+    }
+    .ltcat-sidebar .nav-link.active {
+        background: linear-gradient(135deg, var(--ltcat-primary), var(--ltcat-secondary));
+        color: white;
+    }
+    .ltcat-sidebar .nav-link i {
+        width: 20px;
+        margin-right: 10px;
+    }
+    .ltcat-sidebar .sidebar-section-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        color: #6c757d;
+        padding: 0 20px;
+    }
+
+    /* ═══ Conteúdo Principal ═══ */
+    .ltcat-content-area {
+        flex: 1;
+        padding: 20px 30px;
+        background-color: #f8f9fa;
+        overflow-x: hidden;
+    }
+    .ltcat-main-content {
+        background-color: #ffffff;
+        border-radius: 10px;
+        padding: 25px;
+        min-height: calc(100vh - 200px);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ═══ Cards ═══ */
+    .ltcat-app .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        transition: transform 0.3s;
+    }
+    .ltcat-app .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .ltcat-app .card-header {
+        background: linear-gradient(135deg, var(--ltcat-primary), var(--ltcat-secondary));
+        color: white;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0 !important;
+        padding: 15px 20px;
+    }
+
+    /* ═══ Stats Cards ═══ */
+    .stats-card              { border-left: 4px solid var(--ltcat-primary); }
+    .stats-card.danger       { border-left-color: #dc3545; }
+    .stats-card.warning      { border-left-color: #ffc107; }
+    .stats-card.success      { border-left-color: #28a745; }
+    .stats-card.info         { border-left-color: #17a2b8; }
+
+    /* ═══ Page Header ═══ */
+    .page-header {
+        background: linear-gradient(135deg, var(--ltcat-dark) 0%, var(--ltcat-primary) 40%, var(--ltcat-secondary) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+
+    /* ═══ Botões ═══ */
+    .ltcat-app .btn-primary {
+        background: linear-gradient(135deg, var(--ltcat-primary), var(--ltcat-secondary));
+        border: none;
+    }
+    .ltcat-app .btn-primary:hover {
+        background: linear-gradient(135deg, var(--ltcat-dark), var(--ltcat-primary));
+        border: none;
+    }
+    .ltcat-app .btn-outline-primary {
+        color: var(--ltcat-primary);
+        border-color: var(--ltcat-primary);
+    }
+    .ltcat-app .btn-outline-primary:hover {
+        background-color: var(--ltcat-primary);
+        border-color: var(--ltcat-primary);
+        color: #fff;
+    }
+
+    /* ═══ Badges de Status LTCAT ═══ */
+    .badge-status-vigente      { background-color: #28a745; }
+    .badge-status-vencido      { background-color: #dc3545; }
+    .badge-status-rascunho     { background-color: #6c757d; }
+    .badge-status-em-revisao   { background-color: #ffc107; color: #000; }
+    .badge-status-em-elaboracao { background-color: #ffc107; color: #000; }
+    .badge-status-aprovado     { background-color: #17a2b8; }
+    .badge-status-cancelado    { background-color: #6c757d; }
+
+    /* ═══ Tabelas ═══ */
+    .ltcat-app .table-hover tbody tr:hover {
+        background-color: var(--ltcat-light);
+    }
+
+    /* ═══ Breadcrumb ═══ */
+    .ltcat-breadcrumb {
+        background-color: transparent;
+        padding: 0;
+        margin-bottom: 15px;
+    }
+    .ltcat-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+    }
+    .ltcat-breadcrumb a {
+        color: var(--ltcat-primary);
+        text-decoration: none;
+    }
+    .ltcat-breadcrumb a:hover {
+        color: var(--ltcat-dark);
+    }
+
+    /* ═══ Seções colapsáveis (detail) ═══ */
+    .section-header {
+        cursor: pointer;
+        padding: 12px 20px;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+    .section-header:hover {
+        background-color: var(--ltcat-light);
+    }
+
+    /* ═══ Print ═══ */
+    @media print {
+        .ltcat-sidebar, .no-print, #global-header {
+            display: none !important;
+        }
+        .ltcat-main-content {
+            box-shadow: none;
+            margin: 0;
+            padding: 0;
+        }
+    }
+
+    /* ═══ Responsivo ═══ */
+    @media (max-width: 767.98px) {
+        .ltcat-sidebar {
+            display: none;
+        }
+        .ltcat-sidebar.show {
+            display: block;
+            position: fixed;
+            top: 72px;
+            left: 0;
+            width: 260px;
+            height: calc(100vh - 72px);
+            z-index: 1040;
+            overflow-y: auto;
+        }
+        .ltcat-sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1039;
+        }
+        .ltcat-sidebar-overlay.show {
+            display: block;
+        }
+        .ltcat-content-area {
+            padding: 15px;
+        }
+    }
+</style>
+{% block ltcat_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="ltcat-wrapper">
+
+    <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+    <nav class="ltcat-sidebar d-none d-md-block" id="ltcatSidebar">
+        <div class="position-sticky" style="top: 72px;">
+            <ul class="nav flex-column">
+
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                       href="{% url 'ltcat:dashboard' %}">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+
+                <!-- LAUDOS -->
+                <li class="nav-item mt-3">
+                    <span class="sidebar-section-title">LAUDOS</span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'ltcat_list' or request.resolver_match.url_name == 'ltcat_detail' %}active{% endif %}"
+                       href="{% url 'ltcat:ltcat_list' %}">
+                        <i class="fas fa-file-medical"></i> Documentos LTCAT
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'ltcat_create' %}active{% endif %}"
+                       href="{% url 'ltcat:ltcat_create' %}">
+                        <i class="fas fa-plus-circle"></i> Novo LTCAT
+                    </a>
+                </li>
+                <!-- CADASTROS -->
+                <li class="nav-item mt-3">
+                    <span class="sidebar-section-title">CADASTROS</span>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if 'locais' in request.path %}active{% endif %}"
+                       href="{% url 'ltcat:local_list' %}">
+                        <i class="fas fa-map-marker-alt"></i> Locais de Prestação
+                    </a>
+                </li>
+
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Overlay mobile -->
+    <div class="ltcat-sidebar-overlay" id="ltcatSidebarOverlay"></div>
+
+    <!-- ═══════════════════ CONTEÚDO ═══════════════════ -->
+    <div class="ltcat-content-area">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb ltcat-breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'ltcat:dashboard' %}">
+                        <i class="fas fa-file-medical me-1"></i>LTCAT
+                    </a>
+                </li>
+                {% block breadcrumb_items %}{% endblock %}
+            </ol>
+        </nav>
+
+        <!-- Container fundo branco -->
+        <div class="ltcat-main-content">
+            {% block ltcat_content %}{% endblock %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // Auto-hide alerts (5s)
+    setTimeout(function() {
+        document.querySelectorAll('.ltcat-content-area .alert').forEach(function(el) {
+            el.style.transition = 'opacity 0.5s';
+            el.style.opacity = '0';
+            setTimeout(function() { el.remove(); }, 500);
+        });
+    }, 5000);
+
+    // Sidebar toggle mobile
+    var sidebar = document.getElementById('ltcatSidebar');
+    var overlay = document.getElementById('ltcatSidebarOverlay');
+
+    // Botão hamburger mobile para sidebar LTCAT
+    var mobileToggle = document.getElementById('ltcatMobileToggle');
+    if (mobileToggle && sidebar && overlay) {
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('show');
+            sidebar.classList.toggle('d-none');
+            overlay.classList.toggle('show');
+        });
+        overlay.addEventListener('click', function() {
+            sidebar.classList.add('d-none');
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        });
+    }
+})();
+</script>
+{% block ltcat_extra_js %}{% endblock %}
+{% endblock %}
+
+
+

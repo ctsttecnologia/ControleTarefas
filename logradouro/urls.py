@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from logradouro.admin import consulta_cep
+from logradouro.views import consulta_cep
 from .views import (
     DownloadErroRelatorioView,
     DownloadTemplateView,
@@ -33,4 +33,5 @@ urlpatterns = [
     path('logradouros/upload/', UploadLogradourosView.as_view(), name='upload_logradouros'),
     path('logradouros/upload/template/', DownloadTemplateView.as_view(), name='download_logradouro_template'),
     path('logradouros/upload/download-erros/', DownloadErroRelatorioView.as_view(), name='download_erros_logradouro'),
+    
 ]

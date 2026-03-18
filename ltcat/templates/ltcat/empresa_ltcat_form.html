@@ -1,0 +1,248 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Empresa Contratada{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:empresa_ltcat_list' %}">Empresas Contratadas</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %}</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus-circle{% endif %} me-2"></i>
+                    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Empresa Contratada (Elaboradora do LTCAT)
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- ════ Seleção do Cliente ════ -->
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Selecione o <b>Cliente</b> correspondente à empresa contratada (ex: CETEST).
+                        Os campos de endereço serão preenchidos automaticamente e você pode complementar as informações específicas do LTCAT.
+                    </div>
+
+                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+                        <i class="fas fa-building me-1"></i> Identificação
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label">{{ form.cliente.label }} *</label>
+                            {{ form.cliente }}
+                            {% if form.cliente.errors %}
+                            <div class="invalid-feedback d-block">{{ form.cliente.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.cliente.help_text }}</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.cnpj.label }}</label>
+                            {{ form.cnpj }}
+                            <small class="text-muted">{{ form.cnpj.help_text }}</small>
+                        </div>
+                    </div>
+
+                    <!-- ════ Dados Complementares LTCAT ════ -->
+                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+                        <i class="fas fa-clipboard-list me-1"></i> Dados Complementares do LTCAT
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.cnae.label }}</label>
+                            {{ form.cnae }}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">{{ form.descricao_cnae.label }}</label>
+                            {{ form.descricao_cnae }}
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">{{ form.grau_risco.label }}</label>
+                            {{ form.grau_risco }}
+                            <small class="text-muted">{{ form.grau_risco.help_text }}</small>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">{{ form.grau_risco_texto.label }}</label>
+                            {{ form.grau_risco_texto }}
+                            <small class="text-muted">{{ form.grau_risco_texto.help_text }}</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.jornada_trabalho.label }}</label>
+                            {{ form.jornada_trabalho }}
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="form-label">{{ form.atividade_principal.label }}</label>
+                            {{ form.atividade_principal }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">{{ form.numero_empregados.label }}</label>
+                            {{ form.numero_empregados }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Nº Empregados (Texto)</label>
+                            {{ form.numero_empregados_texto }}
+                            <small class="text-muted">{{ form.numero_empregados_texto.help_text }}</small>
+                        </div>
+                    </div>
+
+                    <!-- ════ Endereço ════ -->
+                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+                        <i class="fas fa-map-marker-alt me-1"></i> Endereço
+                    </h6>
+                    <div id="endereco-auto-info" class="alert alert-secondary mb-3 d-none">
+                        <i class="fas fa-magic me-2"></i>
+                        Endereço preenchido a partir do cliente. Ajuste conforme necessário.
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.endereco.label }}</label>
+                            {{ form.endereco }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">{{ form.numero.label }}</label>
+                            {{ form.numero }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.complemento.label }}</label>
+                            {{ form.complemento }}
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">{{ form.bairro.label }}</label>
+                            {{ form.bairro }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.cidade.label }}</label>
+                            {{ form.cidade }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">{{ form.estado.label }}</label>
+                            {{ form.estado }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ form.cep.label }}</label>
+                            {{ form.cep }}
+                        </div>
+                    </div>
+
+                    <!-- ════ Contato ════ -->
+                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+                        <i class="fas fa-phone me-1"></i> Contato
+                    </h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.telefone.label }}</label>
+                            {{ form.telefone }}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'ltcat:empresa_ltcat_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-1"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block ltcat_extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var clienteSelect = document.getElementById('id_cliente');
+    var ajaxUrl = "{% url 'ltcat:ajax_dados_cliente' %}";
+    var enderecoInfo = document.getElementById('endereco-auto-info');
+
+    // Campos que serão auto-preenchidos
+    var camposMap = {
+        'cnpj': 'id_cnpj',
+        'telefone': 'id_telefone',
+        'email': 'id_email',
+        'endereco': 'id_endereco',
+        'numero': 'id_numero',
+        'complemento': 'id_complemento',
+        'bairro': 'id_bairro',
+        'cidade': 'id_cidade',
+        'estado': 'id_estado',
+        'cep': 'id_cep',
+    };
+
+    function preencherCampos(dados) {
+        for (var chave in camposMap) {
+            var el = document.getElementById(camposMap[chave]);
+            if (el && dados[chave] !== undefined) {
+                // Só preenche se o campo estiver vazio
+                if (!el.value || el.value === '') {
+                    el.value = dados[chave];
+                }
+            }
+        }
+        if (enderecoInfo) {
+            enderecoInfo.classList.remove('d-none');
+        }
+    }
+
+    function limparCampos() {
+        for (var chave in camposMap) {
+            var el = document.getElementById(camposMap[chave]);
+            if (el) el.value = '';
+        }
+        if (enderecoInfo) {
+            enderecoInfo.classList.add('d-none');
+        }
+    }
+
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', function() {
+            var clienteId = this.value;
+            if (!clienteId) {
+                limparCampos();
+                return;
+            }
+
+            fetch(ajaxUrl + '?cliente_id=' + clienteId)
+                .then(function(resp) { return resp.json(); })
+                .then(function(dados) {
+                    if (!dados.error) {
+                        // Limpa tudo primeiro para forçar preenchimento
+                        limparCampos();
+                        preencherCampos(dados);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Erro ao buscar dados do cliente:', err);
+                });
+        });
+    }
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,74 @@
+
+{% comment %}
+Componente reutilizável de paginação Bootstrap 5.
+
+Uso:
+  {% include 'cliente/_includes/_pagination.html' %}
+
+Requer no contexto:
+  - is_paginated (bool)
+  - page_obj
+  - paginator
+  - termo_pesquisa (opcional, para manter a busca entre páginas)
+{% endcomment %}
+
+{% if is_paginated %}
+<div class="card-footer bg-white border-top py-3">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+
+        {# ── Contador ── #}
+        <small class="text-muted">
+            Página {{ page_obj.number }} de {{ paginator.num_pages }}
+            <span class="mx-1">·</span>
+            {{ paginator.count }} registro{{ paginator.count|pluralize:"s" }}
+        </small>
+
+        {# ── Navegação ── #}
+        <nav aria-label="Paginação">
+            <ul class="pagination pagination-sm mb-0">
+
+                {# Anterior #}
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.previous_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {# Números #}
+                {% for i in paginator.page_range %}
+                    {% if page_obj.number == i %}
+                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                    {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% elif i == 1 or i == paginator.num_pages %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?page={{ i }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">{{ i }}</a>
+                        </li>
+                    {% elif i == page_obj.number|add:"-3" or i == page_obj.number|add:"3" %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+
+                {# Próximo #}
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.next_page_number }}{% if termo_pesquisa %}&q={{ termo_pesquisa }}{% endif %}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endif %}
+

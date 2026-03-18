@@ -1,0 +1,42 @@
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}Excluir LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
+<li class="breadcrumb-item active">Excluir</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-danger shadow-sm">
+            <div class="card-header bg-danger text-white" style="background: #dc3545 !important;">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão</h5>
+            </div>
+            <div class="card-body text-center">
+                <i class="fas fa-file-excel fa-3x text-danger d-block mb-3"></i>
+                <p>Tem certeza que deseja excluir o LTCAT:</p>
+                <p class="fw-bold fs-5">{{ object.titulo }}</p>
+                <p class="text-muted">{{ object.empresa.razao_social }}</p>
+                <div class="alert alert-warning small">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    Esta ação é irreversível e excluirá todas as funções, riscos, conclusões e anexos vinculados.
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <a href="{% url 'ltcat:ltcat_detail' object.pk %}" class="btn btn-outline-secondary me-2">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> Sim, Excluir
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+

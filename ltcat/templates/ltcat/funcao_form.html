@@ -1,0 +1,374 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Função - LTCAT{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
+<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Função</li>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-xl-9 col-lg-10">
+
+        {# ── Card Principal ── #}
+        <div class="card shadow-sm border-0">
+            <div class="card-header border-0 py-3"
+                 style="background: linear-gradient(135deg, var(--ltcat-primary, #0d9488), var(--ltcat-secondary, #0f766e));">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0"
+                         style="width:44px; height:44px; background: rgba(255,255,255,0.15);">
+                        <i class="fas fa-users-cog text-white fa-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h5 class="mb-0 text-white fw-bold">
+                            {% if form.instance.pk %}Editar Função Analisada{% else %}Nova Função Analisada{% endif %}
+                        </h5>
+                        <small class="text-white-50 text-truncate d-block">
+                            {{ ltcat.codigo_documento }} — {{ ltcat.empresa.razao_social }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body p-lg-4 p-3">
+                {# ── Alerta Contextual ── #}
+                <div class="alert border-0 py-2 mb-4"
+                     style="background: var(--bs-info-bg-subtle, #cff4fc); color: var(--bs-info-text-emphasis, #055160);">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>
+                        Selecione um <strong>Cargo</strong> ou <strong>Função</strong> para preencher automaticamente
+                        o nome e CBO, ou digite manualmente nos campos abaixo.
+                    </small>
+                </div>
+
+                <form method="post" novalidate id="formFuncao">
+                    {% csrf_token %}
+
+                    {# ── Erros Globais ── #}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            <span>{{ error }}</span>{% if not forloop.last %}<br>{% endif %}
+                        {% endfor %}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+
+                    {# ═══════════ SEÇÃO: SELECIONAR CARGO / FUNÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-search me-2"></i>Vincular Cargo / Função Existente
+                        </legend>
+
+                        <div class="row g-3">
+                            {# ── Select Cargo ── #}
+                            <div class="col-md-6">
+                                <label for="{{ form.cargo.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-briefcase me-1 text-primary"></i>
+                                    {{ form.cargo.label }}
+                                </label>
+                                {{ form.cargo }}
+                                <div class="form-text">
+                                    <i class="fas fa-magic me-1"></i>
+                                    Preenche <strong>Nome da Função</strong> e <strong>CBO</strong> automaticamente.
+                                </div>
+                                {% for error in form.cargo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            {# ── Select Função ST ── #}
+                            <div class="col-md-6">
+                                <label for="{{ form.funcao_st.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-hard-hat me-1 text-warning"></i>
+                                    {{ form.funcao_st.label }}
+                                </label>
+                                {{ form.funcao_st }}
+                                <div class="form-text">
+                                    <i class="fas fa-magic me-1"></i>
+                                    Preenche <strong>Nome da Função</strong> automaticamente.
+                                </div>
+                                {% for error in form.funcao_st.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        {# ── Indicador visual de preenchimento automático ── #}
+                        <div id="autoFillAlert" class="alert alert-success border-0 py-2 mt-3 d-none">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <small><strong>Campos preenchidos automaticamente!</strong> Você pode editar os valores abaixo se necessário.</small>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ SEÇÃO: IDENTIFICAÇÃO DA FUNÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-id-card me-2"></i>Identificação da Função
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label for="{{ form.nome_funcao.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.nome_funcao.label }}
+                                    {% if form.nome_funcao.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.nome_funcao }}
+                                    <span class="input-group-text autofill-icon d-none"
+                                          title="Preenchido automaticamente">
+                                        <i class="fas fa-magic text-success"></i>
+                                    </span>
+                                </div>
+                                {% if form.nome_funcao.help_text %}
+                                <div class="form-text">{{ form.nome_funcao.help_text }}</div>
+                                {% endif %}
+                                {% for error in form.nome_funcao.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-5">
+                                <label for="{{ form.cbo.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.cbo.label }}
+                                    {% if form.cbo.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <div class="input-group">
+                                    {{ form.cbo }}
+                                    <span class="input-group-text autofill-icon d-none"
+                                          title="Preenchido automaticamente">
+                                        <i class="fas fa-magic text-success"></i>
+                                    </span>
+                                </div>
+                                <div class="form-text">
+                                    Código Brasileiro de Ocupações. Ex: <code>911205</code>
+                                </div>
+                                {% for error in form.cbo.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ SEÇÃO: CLASSIFICAÇÃO ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-sitemap me-2"></i>Classificação / GHE
+                        </legend>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.ghe.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.ghe.label }}
+                                </label>
+                                {{ form.ghe }}
+                                <div class="form-text">
+                                    Grupo Homogêneo de Exposição. Ex: <em>Coordenador</em>, <em>Técnico Mecânico de Refrigeração</em>
+                                </div>
+                                {% for error in form.ghe.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.departamento.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.departamento.label }}
+                                </label>
+                                {{ form.departamento }}
+                                <div class="form-text">
+                                    Ex: <em>Manutenção</em>
+                                </div>
+                                {% for error in form.departamento.errors %}
+                                <div class="invalid-feedback d-block">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {# ═══════════ SEÇÃO: LOCAL ═══════════ #}
+                    {% if form.local_prestacao %}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-map-marker-alt me-2"></i>Local de Prestação
+                        </legend>
+                        <label for="{{ form.local_prestacao.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.local_prestacao.label }}
+                        </label>
+                        {{ form.local_prestacao }}
+                        {% if form.local_prestacao.help_text %}
+                        <div class="form-text">{{ form.local_prestacao.help_text }}</div>
+                        {% endif %}
+                        {% for error in form.local_prestacao.errors %}
+                        <div class="invalid-feedback d-block">
+                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+                    {% endif %}
+
+                    {# ═══════════ SEÇÃO: ATIVIDADES ═══════════ #}
+                    <fieldset class="mb-4">
+                        <legend class="fs-6 fw-bold text-uppercase text-muted mb-3 pb-2 border-bottom">
+                            <i class="fas fa-clipboard-list me-2"></i>Descrição das Atividades
+                        </legend>
+                        <label for="{{ form.descricao_atividades.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.descricao_atividades.label }}
+                            {% if form.descricao_atividades.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ form.descricao_atividades }}
+                        <div class="form-text">
+                            Descreva detalhadamente as atividades da função conforme a Seção 6 do LTCAT.
+                        </div>
+                        {% for error in form.descricao_atividades.errors %}
+                        <div class="invalid-feedback d-block">
+                            <i class="fas fa-exclamation-triangle me-1"></i>{{ error }}
+                        </div>
+                        {% endfor %}
+                    </fieldset>
+
+                    {# ═══════════ BOTÕES ═══════════ #}
+                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top">
+                        <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}" class="btn btn-outline-secondary order-2 order-sm-1">
+                            <i class="fas fa-arrow-left me-1"></i> Voltar ao Documento
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 order-1 order-sm-2">
+                            <i class="fas fa-save me-1"></i>
+                            {% if form.instance.pk %}Atualizar Função{% else %}Cadastrar Função{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ltcat_extra_js %}
+<script>
+(function() {
+    // ═══════════════════════════════════════════════════════════
+    // Elementos do DOM
+    // ═══════════════════════════════════════════════════════════
+    const selCargo    = document.getElementById('id_cargo');
+    const selFuncaoST = document.getElementById('id_funcao_st');
+    const inpNome     = document.getElementById('id_nome_funcao');
+    const inpCBO      = document.getElementById('id_cbo');
+    const inpDescAtiv = document.getElementById('id_descricao_atividades');
+    const alertAuto   = document.getElementById('autoFillAlert');
+    const autofillIcons = document.querySelectorAll('.autofill-icon');
+
+    // ═══════════════════════════════════════════════════════════
+    // Helpers
+    // ═══════════════════════════════════════════════════════════
+    function showAutoFillFeedback() {
+        if (alertAuto) {
+            alertAuto.classList.remove('d-none');
+            setTimeout(() => alertAuto.classList.add('d-none'), 4000);
+        }
+        autofillIcons.forEach(icon => {
+            icon.classList.remove('d-none');
+            setTimeout(() => icon.classList.add('d-none'), 4000);
+        });
+    }
+
+    function highlightField(el) {
+        if (!el) return;
+        el.style.transition = 'background-color 0.3s';
+        el.style.backgroundColor = '#d1fae5';  // verde claro
+        setTimeout(() => { el.style.backgroundColor = ''; }, 2000);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Ao selecionar CARGO → preenche nome_funcao + cbo
+    // ═══════════════════════════════════════════════════════════
+    if (selCargo) {
+        selCargo.addEventListener('change', function() {
+            const cargoId = this.value;
+            if (!cargoId) return;
+
+            fetch(`{% url 'ltcat:ajax_cargo_info' %}?cargo_id=${cargoId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        console.warn('Cargo info error:', data.error);
+                        return;
+                    }
+
+                    // Preenche Nome da Função
+                    if (inpNome && data.nome) {
+                        inpNome.value = data.nome;
+                        highlightField(inpNome);
+                    }
+
+                    // Preenche CBO
+                    if (inpCBO && data.cbo) {
+                        inpCBO.value = data.cbo;
+                        highlightField(inpCBO);
+                    }
+
+                    // Preenche Descrição (se vazia e cargo tem descrição)
+                    if (inpDescAtiv && !inpDescAtiv.value.trim() && data.descricao) {
+                        inpDescAtiv.value = data.descricao;
+                        highlightField(inpDescAtiv);
+                    }
+
+                    showAutoFillFeedback();
+                })
+                .catch(err => console.error('Erro ao buscar cargo:', err));
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Ao selecionar FUNÇÃO ST → preenche nome_funcao
+    // ═══════════════════════════════════════════════════════════
+    if (selFuncaoST) {
+        selFuncaoST.addEventListener('change', function() {
+            const funcaoId = this.value;
+            if (!funcaoId) return;
+
+            fetch(`{% url 'ltcat:ajax_funcao_st_info' %}?funcao_id=${funcaoId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        console.warn('Função info error:', data.error);
+                        return;
+                    }
+
+                    // Preenche Nome da Função
+                    if (inpNome && data.nome) {
+                        inpNome.value = data.nome;
+                        highlightField(inpNome);
+                    }
+
+                    // Preenche Descrição (se vazia e função tem descrição)
+                    if (inpDescAtiv && !inpDescAtiv.value.trim() && data.descricao) {
+                        inpDescAtiv.value = data.descricao;
+                        highlightField(inpDescAtiv);
+                    }
+
+                    showAutoFillFeedback();
+                })
+                .catch(err => console.error('Erro ao buscar função:', err));
+        });
+    }
+
+})();
+</script>
+{% endblock %}
+
+
+
+

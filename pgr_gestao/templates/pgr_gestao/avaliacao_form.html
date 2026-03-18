@@ -3,18 +3,40 @@
 {% load static %}
 {% load widget_tweaks %}
 
-{% block title %}Nova Avaliação Quantitativa{% endblock %}
+{% block title %}
+    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação Quantitativa
+{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:risco_list' %}">Riscos</a></li>
-<li class="breadcrumb-item"><a href="{{ risco.get_absolute_url }}">{{ risco.codigo_risco }}</a></li>
-<li class="breadcrumb-item active">Nova Avaliação</li>
+<li class="breadcrumb-item"><a href="{% url 'pgr_gestao:avaliacao_list' %}">Riscos</a></li>
+{% if risco %}
+    <li class="breadcrumb-item"><a href="{{ risco.get_absolute_url }}">{{ risco.codigo_risco|default:risco.agente }}</a></li>
+{% endif %}
+<li class="breadcrumb-item active">
+    {% if form.instance.pk %}Editar{% else %}Nova{% endif %} Avaliação
+</li>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1><i class="fas fa-chart-line"></i> Nova Avaliação Quantitativa</h1>
-    <p class="mb-0">Para o risco: <strong>{{ risco.agente }}</strong> ({{ risco.codigo_risco }})</p>
+    <h1>
+        <i class="fas fa-chart-line"></i>
+        {% if form.instance.pk %}
+            Editar Avaliação Quantitativa
+        {% else %}
+            Nova Avaliação Quantitativa
+        {% endif %}
+    </h1>
+    <p class="mb-0">
+        {% if risco %}
+            Para o risco: <strong>{{ risco.tipo_risco.nome }} - {{ risco.agente }}</strong>
+            {% if risco.codigo_risco %}({{ risco.codigo_risco }}){% endif %}
+        {% elif form.instance.pk and form.instance.risco_identificado %}
+            Para o risco: <strong>{{ form.instance.risco_identificado }}</strong>
+        {% else %}
+            Selecione o risco identificado no formulário abaixo
+        {% endif %}
+    </p>
 </div>
 
 <div class="card">
@@ -32,15 +54,33 @@
             {% endif %}
 
             <div class="row">
+                {# ══════ CAMPO RISCO ══════ #}
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label">Risco Identificado</label>
-                        <input type="text" class="form-control" 
-                               value="{{ risco.agente }} - {{ risco.tipo_risco.nome }}" disabled>
-                        <!-- O campo do form que guarda o ID do risco fica escondido -->
-                        {{ form.risco_identificado|attr:"type:hidden" }}
+                        <label for="{{ form.risco_identificado.id_for_label }}" class="form-label required-field">
+                            Risco Identificado
+                        </label>
+
+                        {% if risco %}
+                            {# Risco veio pela URL → mostra readonly + hidden #}
+                            <input type="text" class="form-control" 
+                                   value="{{ risco.tipo_risco.nome }} - {{ risco.agente }}" 
+                                   disabled>
+                            <input type="hidden" 
+                                   name="{{ form.risco_identificado.html_name }}" 
+                                   value="{{ risco.pk }}">
+                        {% else %}
+                            {# Sem risco na URL → mostra o select com todos os riscos da filial #}
+                            {% render_field form.risco_identificado class="form-select" %}
+                        {% endif %}
+
+                        {% if form.risco_identificado.errors %}
+                        <div class="text-danger small mt-1">{{ form.risco_identificado.errors }}</div>
+                        {% endif %}
                     </div>
                 </div>
+
+                {# ══════ DATA ══════ #}
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="{{ form.data_avaliacao.id_for_label }}" class="form-label required-field">
@@ -48,13 +88,14 @@
                         </label>
                         {% render_field form.data_avaliacao class="form-control" type="date" %}
                         {% if form.data_avaliacao.errors %}
-                        <div class="text-danger">{{ form.data_avaliacao.errors }}</div>
+                        <div class="text-danger small mt-1">{{ form.data_avaliacao.errors }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
             <div class="row">
+                {# ══════ TIPO DE AVALIAÇÃO ══════ #}
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="{{ form.tipo_avaliacao.id_for_label }}" class="form-label required-field">
@@ -62,10 +103,12 @@
                         </label>
                         {% render_field form.tipo_avaliacao class="form-select" %}
                         {% if form.tipo_avaliacao.errors %}
-                        <div class="text-danger">{{ form.tipo_avaliacao.errors }}</div>
+                        <div class="text-danger small mt-1">{{ form.tipo_avaliacao.errors }}</div>
                         {% endif %}
                     </div>
                 </div>
+
+                {# ══════ RESULTADO + UNIDADE ══════ #}
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="{{ form.resultado_medido.id_for_label }}" class="form-label required-field">
@@ -76,16 +119,17 @@
                             {% render_field form.unidade_medida class="form-select" style="max-width: 120px;" %}
                         </div>
                         {% if form.resultado_medido.errors %}
-                        <div class="text-danger">{{ form.resultado_medido.errors }}</div>
+                        <div class="text-danger small mt-1">{{ form.resultado_medido.errors }}</div>
                         {% endif %}
                         {% if form.unidade_medida.errors %}
-                        <div class="text-danger">{{ form.unidade_medida.errors }}</div>
+                        <div class="text-danger small mt-1">{{ form.unidade_medida.errors }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
             
             <div class="row">
+                {# ══════ LIMITE TOLERÂNCIA ══════ #}
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="{{ form.limite_tolerancia_nr.id_for_label }}" class="form-label">
@@ -93,10 +137,12 @@
                         </label>
                         {% render_field form.limite_tolerancia_nr class="form-control" placeholder="Ex: 85 dB(A) para 8h" %}
                         {% if form.limite_tolerancia_nr.errors %}
-                        <div class="text-danger">{{ form.limite_tolerancia_nr.errors }}</div>
+                        <div class="text-danger small mt-1">{{ form.limite_tolerancia_nr.errors }}</div>
                         {% endif %}
                     </div>
                 </div>
+
+                {# ══════ CONFORMIDADE ══════ #}
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Conformidade</label>
@@ -107,43 +153,57 @@
                             </label>
                         </div>
                         {% if form.conforme.errors %}
-                        <div class="text-danger">{{ form.conforme.errors }}</div>
+                        <div class="text-danger small mt-1">{{ form.conforme.errors }}</div>
                         {% endif %}
                     </div>
                 </div>
             </div>
 
+            {# ══════ EQUIPAMENTO ══════ #}
             <div class="mb-3">
                 <label for="{{ form.equipamento_utilizado.id_for_label }}" class="form-label">
                     Equipamento Utilizado
                 </label>
                 {% render_field form.equipamento_utilizado class="form-control" placeholder="Ex: Dosímetro de Ruído, marca X, modelo Y, nº de série Z" %}
                 {% if form.equipamento_utilizado.errors %}
-                <div class="text-danger">{{ form.equipamento_utilizado.errors }}</div>
+                <div class="text-danger small mt-1">{{ form.equipamento_utilizado.errors }}</div>
                 {% endif %}
             </div>
 
+            {# ══════ OBSERVAÇÕES ══════ #}
             <div class="mb-3">
                 <label for="{{ form.observacoes.id_for_label }}" class="form-label">
                     Observações
                 </label>
                 {% render_field form.observacoes class="form-control" rows="3" %}
                 {% if form.observacoes.errors %}
-                <div class="text-danger">{{ form.observacoes.errors }}</div>
+                <div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>
                 {% endif %}
             </div>
 
+            {# ══════ BOTÕES ══════ #}
             <div class="d-flex justify-content-between mt-4">
-                <a href="{{ risco.get_absolute_url }}" class="btn btn-secondary">
-                    <i class="fas fa-times"></i> Cancelar
-                </a>
+                {% if risco %}
+                    <a href="{{ risco.get_absolute_url }}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                {% elif form.instance.pk and form.instance.risco_identificado %}
+                    <a href="{% url 'pgr_gestao:risco_detail' pk=form.instance.risco_identificado.pk %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                {% else %}
+                    <a href="{% url 'pgr_gestao:avaliacao_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                {% endif %}
+
                 <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Salvar Avaliação
+                    <i class="fas fa-save"></i> 
+                    {% if form.instance.pk %}Salvar Alterações{% else %}Salvar Avaliação{% endif %}
                 </button>
             </div>
         </form>
     </div>
 </div>
 {% endblock %}
-
 

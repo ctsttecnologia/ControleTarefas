@@ -110,27 +110,115 @@ class FuncionarioForm(forms.ModelForm):
 # --- Formulário de Documentos ---
 
 class DocumentoForm(forms.ModelForm):
+    """
+    Formulário inteligente que mostra/esconde campos conforme o tipo de documento.
+    A lógica de exibição condicional fica no JavaScript do template.
+    """
+
     class Meta:
         model = Documento
-        # Adicionamos 'funcionario' à lista de campos
-        fields = ['funcionario', 'tipo_documento', 'numero', 'anexo']
+        fields = [
+            # Comuns
+            'funcionario', 'tipo_documento', 'numero',
+            'data_emissao', 'data_validade',
+            'orgao_expedidor', 'uf_expedidor',
+            'observacoes', 'anexo',
+            # RG
+            'rg_nome_pai', 'rg_nome_mae', 'rg_naturalidade',
+            # CNH
+            'cnh_categoria', 'cnh_numero_registro',
+            'cnh_primeira_habilitacao', 'cnh_observacoes_detran',
+            # CTPS
+            'ctps_serie', 'ctps_uf', 'ctps_digital',
+            # Título
+            'titulo_zona', 'titulo_secao', 'titulo_municipio',
+            # Reservista
+            'reservista_categoria', 'reservista_regiao_militar',
+            # Registro de Classe
+            'registro_orgao', 'registro_especialidade',
+            # ASO
+            'aso_tipo_exame', 'aso_apto', 'aso_medico_nome',
+            'aso_medico_crm', 'aso_proximo_exame',
+            # NR
+            'nr_numero', 'nr_carga_horaria', 'nr_instituicao',
+            # Certificado
+            'certificado_nivel', 'certificado_curso', 'certificado_instituicao',
+            # Passaporte
+            'passaporte_pais_emissao',
+            # Outro
+            'outro_descricao',
+        ]
+        widgets = {
+            'data_emissao': forms.DateInput(attrs={'type': 'date'}),
+            'data_validade': forms.DateInput(attrs={'type': 'date'}),
+            'cnh_primeira_habilitacao': forms.DateInput(attrs={'type': 'date'}),
+            'aso_proximo_exame': forms.DateInput(attrs={'type': 'date'}),
+            'observacoes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    # ── Mapeamento: tipo_documento → campos específicos ──
+    CAMPOS_POR_TIPO = {
+        'CPF': ['numero'],
+        'RG': ['numero', 'data_emissao', 'orgao_expedidor', 'uf_expedidor',
+                'rg_nome_pai', 'rg_nome_mae', 'rg_naturalidade'],
+        'CNH': ['numero', 'cnh_categoria', 'cnh_numero_registro',
+                 'data_emissao', 'data_validade', 'cnh_primeira_habilitacao',
+                 'orgao_expedidor', 'uf_expedidor', 'cnh_observacoes_detran'],
+        'CTPS': ['numero', 'ctps_serie', 'ctps_uf', 'ctps_digital', 'data_emissao'],
+        'PIS': ['numero'],
+        'TITULO': ['numero', 'titulo_zona', 'titulo_secao', 'titulo_municipio', 'uf_expedidor'],
+        'RESERVISTA': ['numero', 'reservista_categoria', 'reservista_regiao_militar',
+                       'orgao_expedidor', 'uf_expedidor'],
+        'CERTIDAO_NASC': ['numero', 'data_emissao', 'orgao_expedidor', 'uf_expedidor'],
+        'CERTIDAO_CAS': ['numero', 'data_emissao', 'orgao_expedidor', 'uf_expedidor'],
+        'PASSAPORTE': ['numero', 'data_emissao', 'data_validade', 'passaporte_pais_emissao'],
+        'RNE': ['numero', 'data_emissao', 'data_validade', 'orgao_expedidor'],
+        'REGISTRO_CLASSE': ['numero', 'registro_orgao', 'registro_especialidade',
+                            'data_emissao', 'data_validade', 'uf_expedidor'],
+        'CERTIFICADO': ['certificado_nivel', 'certificado_curso',
+                        'certificado_instituicao', 'data_emissao'],
+        'ASO': ['aso_tipo_exame', 'aso_apto', 'aso_medico_nome',
+                'aso_medico_crm', 'data_emissao', 'aso_proximo_exame'],
+        'NR': ['nr_numero', 'nr_carga_horaria', 'nr_instituicao',
+               'data_emissao', 'data_validade'],
+        'COMPROVANTE_END': ['data_emissao'],
+        'COMP_ESCOLAR': ['certificado_nivel', 'certificado_instituicao', 'data_emissao'],
+        'OUTRO': ['numero', 'outro_descricao', 'data_emissao', 'data_validade'],
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Deixa o campo de funcionário mais amigável
+
+        # Funcionário
         self.fields['funcionario'].queryset = Funcionario.objects.order_by('nome_completo')
-        self.fields['funcionario'].empty_label = "Selecione um funcionário"
+        self.fields['funcionario'].empty_label = 'Selecione um funcionário'
 
-        # Aplica classes do bootstrap para um visual consistente
-        self.fields['funcionario'].widget.attrs.update({'class': 'form-select'})
-        self.fields['tipo_documento'].widget.attrs.update({'class': 'form-select'})
-        self.fields['numero'].widget.attrs.update({'class': 'form-control'})
-        self.fields['anexo'].widget.attrs.update({'class': 'form-control'})
+        # Bootstrap classes
+        for name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-check-input')
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs.setdefault('class', 'form-select')
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs.setdefault('class', 'form-control')
+            elif isinstance(field.widget, forms.FileInput):
+                field.widget.attrs.setdefault('class', 'form-control')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
 
-        # Se o formulário for instanciado para um funcionário específico,
-        # podemos esconder e pré-selecionar o campo.
-        if 'initial' in kwargs and 'funcionario' in kwargs['initial']:
+        # Se funcionário pré-selecionado, esconde o campo
+        if 'initial' in kwargs and kwargs['initial'].get('funcionario'):
             self.fields['funcionario'].widget = forms.HiddenInput()
+
+        # Todos os campos específicos não-obrigatórios no form
+        # (a obrigatoriedade é gerenciada no clean() do model)
+        campos_especificos = set()
+        for campos in self.CAMPOS_POR_TIPO.values():
+            campos_especificos.update(campos)
+        for campo in campos_especificos:
+            if campo in self.fields:
+                self.fields[campo].required = False
+
 
 # NOVO FORMULÁRIO PARA O PROCESSO DE ADMISSÃO
 class AdmissaoForm(forms.ModelForm):

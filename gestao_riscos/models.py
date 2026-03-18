@@ -31,10 +31,10 @@ CATEGORIA_RISCO_CHOICES = [
     ('acidente', 'Acidente/Mecânico'),
 ]
 SETORES_CHOICES = [
-        ('OPERAÇAO', 'Operação'),
-        ('LOGISTICA', 'Logística'),
-        ('MANUTENCAO', 'Manutenção'),
-        ('ADMINISTRACAO', 'Administração'),
+    ('OPERAÇAO', 'Operação'),
+    ('LOGISTICA', 'Logística'),
+    ('MANUTENCAO', 'Manutenção'),
+    ('ADMINISTRACAO', 'Administração'),
 ]
 TIPO_INCIDENTE_CHOICES = [
     ('QUASE_ACIDENTE', 'Quase Acidente'),
@@ -43,10 +43,10 @@ TIPO_INCIDENTE_CHOICES = [
 ]
 
 STATUS_CHOICES = [
-        ('PENDENTE_APROVACAO', _('Pendente de Aprovação')),
-        ('PENDENTE', _('Pendente')),
-        ('CONCLUIDA', _('Concluída')),
-        ('CANCELADA', _('Cancelada')),
+    ('PENDENTE_APROVACAO', _('Pendente de Aprovação')),
+    ('PENDENTE', _('Pendente')),
+    ('CONCLUIDA', _('Concluída')),
+    ('CANCELADA', _('Cancelada')),
 
 ]
 

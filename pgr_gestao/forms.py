@@ -366,17 +366,31 @@ class RiscoIdentificadoForm(forms.ModelForm):
             ),
         }
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)  # ← ADICIONAR
         super().__init__(*args, **kwargs)
+
         # Deixar campos calculados como readonly
         self.fields['severidade_s'].widget.attrs['readonly'] = True
         self.fields['classificacao_risco'].widget.attrs['readonly'] = True
         self.fields['prioridade_acao'].widget.attrs['readonly'] = True
-        
+
+        # ══════ NOVO: Filtrar TipoRisco pela filial ══════
+        if self.request and self.request.user.is_authenticated:
+            from gestao_riscos.models import TipoRisco
+            self.fields['tipo_risco'].queryset = (
+                TipoRisco.objects
+                .for_request(self.request)
+                .filter(ativo=True)
+                .order_by('categoria', 'nome')
+            )
+
         # Filtrar GES pelo documento
         if 'pgr_documento' in self.data:
             try:
                 pgr_documento_id = int(self.data.get('pgr_documento'))
-                self.fields['ges'].queryset = GESGrupoExposicao.objects.filter(pgr_documento_id=pgr_documento_id).order_by('nome')
+                self.fields['ges'].queryset = GESGrupoExposicao.objects.filter(
+                    pgr_documento_id=pgr_documento_id
+                ).order_by('nome')
             except (ValueError, TypeError):
                 pass
         elif self.instance.pk and self.instance.pgr_documento:
@@ -384,7 +398,7 @@ class RiscoIdentificadoForm(forms.ModelForm):
 
         # Garante que o valor inicial vem no formato ISO
         if self.instance and self.instance.pk:
-            for field_name in ['data_identificacao']:  # adicione outros campos date aqui
+            for field_name in ['data_identificacao']:
                 if field_name in self.fields:
                     self.fields[field_name].widget.format = '%Y-%m-%d'
 
@@ -541,7 +555,7 @@ class PGRRevisaoForm(forms.ModelForm):
 
 class AvaliacaoQuantitativaForm(forms.ModelForm):
     """Formulário para avaliações quantitativas"""
-    
+
     class Meta:
         model = AvaliacaoQuantitativa
         fields = [
@@ -556,13 +570,37 @@ class AvaliacaoQuantitativaForm(forms.ModelForm):
             'data_avaliacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'resultado_medido': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'limite_tolerancia_nr': forms.TextInput(attrs={'class': 'form-control'}),
+            'limite_tolerancia_nr': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 85 dB(A) para 8h'
+            }),
             'conforme': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'metodologia_utilizada': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'equipamento_utilizado': forms.TextInput(attrs={'class': 'form-control'}),
+            'equipamento_utilizado': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Dosímetro de Ruído, marca X, modelo Y, nº de série Z'
+            }),
             'responsavel_avaliacao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        super().__init__(*args, **kwargs)
+
+        # ══════ Filtrar riscos pela filial do usuário ══════
+        if self.request and self.request.user.is_authenticated:
+            self.fields['risco_identificado'].queryset = (
+                RiscoIdentificado.objects
+                .for_request(self.request)
+                .select_related('tipo_risco', 'ges', 'pgr_documento')
+                .order_by('pgr_documento__codigo_documento', 'codigo_risco')
+            )
+        else:
+            self.fields['risco_identificado'].queryset = (
+                RiscoIdentificado.objects.none()
+            )
+
 
 class AcompanhamentoPlanoAcaoForm(forms.ModelForm):
     """

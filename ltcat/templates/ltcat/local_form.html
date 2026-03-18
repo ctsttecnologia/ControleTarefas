@@ -1,0 +1,871 @@
+
+{% extends "ltcat/base_ltcat.html" %}
+
+{% block ltcat_title %}{% if form.instance.pk %}Editar{% else %}Novo{% endif %} Local de Prestação{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'ltcat:local_list' %}">Locais</a></li>
+<li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Cadastrar{% endif %}</li>
+{% endblock %}
+
+{% block ltcat_extra_css %}
+<!-- TomSelect CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.bootstrap5.min.css">
+<style>
+    /* ══ TomSelect customização para logradouro ══ */
+    .ts-wrapper.logradouro-select .ts-control {
+        min-height: 38px;
+        border-radius: 0.375rem;
+    }
+    .ts-wrapper.logradouro-select .ts-dropdown {
+        max-height: 300px;
+    }
+    .ts-wrapper.logradouro-select .ts-dropdown .option {
+        padding: 8px 12px;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+    .ts-wrapper.logradouro-select .ts-dropdown .option .logradouro-main {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    .ts-wrapper.logradouro-select .ts-dropdown .option .logradouro-detail {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+    .ts-wrapper.logradouro-select .ts-dropdown .option.active {
+        background: #e8f5e9;
+        color: inherit;
+    }
+    .logradouro-preview {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+    }
+    .logradouro-preview.active {
+        background: #e8f5e9;
+        border-color: #4caf50;
+    }
+
+    /* ══ Unidades empilhadas ══ */
+    .unidade-card {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-left: 4px solid var(--ltcat-primary, #2e7d32);
+        border-radius: 0.5rem;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        animation: slideIn 0.3s ease;
+    }
+    .unidade-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .unidade-card .unidade-numero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--ltcat-primary, #2e7d32);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        margin-right: 10px;
+        flex-shrink: 0;
+    }
+    .unidade-card .btn-remover-unidade {
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    .unidade-card .btn-remover-unidade:hover {
+        opacity: 1;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══ Accordion do formulário + unidade ══ */
+    #form-nova-unidade {
+        transition: all 0.4s ease;
+    }
+    #form-nova-unidade.collapsed {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        padding: 0 !important;
+        border: none !important;
+    }
+    #form-nova-unidade.expanded {
+        max-height: 2000px;
+        opacity: 1;
+    }
+
+    /* ══ Contador de unidades ══ */
+    .badge-counter {
+        font-size: 0.85rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+    }
+
+    /* ══ Botão toggle ══ */
+    .btn-toggle-form i.fa-chevron-down {
+        transition: transform 0.3s ease;
+    }
+    .btn-toggle-form.active i.fa-chevron-down {
+        transform: rotate(180deg);
+    }
+
+    /* ══ Empty state ══ */
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #999;
+    }
+    .empty-state i {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        color: #ccc;
+    }
+</style>
+{% endblock %}
+
+{% block ltcat_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if form.instance.pk %}
+
+        {# MODO EDIÇÃO — formulário simples  #}
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-edit me-2"></i> Editar Local de Prestação
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+                    {% include "ltcat/partials/_local_form_fields.html" with modo="edicao" %}
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'ltcat:local_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-1"></i> Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% else %}
+
+        {# MODO CRIAÇÃO — múltiplas unidades em lote            #}
+        <!-- ── Card: Empresa (Cliente) ── -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    Cadastrar Locais de Prestação de Serviço
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+                    <i class="fas fa-building me-1"></i> Selecione a Empresa (Cliente)
+                </h6>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">{{ form.empresa.label }} *</label>
+                        {{ form.empresa }}
+                        {% if form.empresa.errors %}
+                        <div class="invalid-feedback d-block">{{ form.empresa.errors.0 }}</div>
+                        {% endif %}
+                        {% if not form.empresa.field.queryset.exists %}
+                        <div class="form-text text-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            Nenhuma empresa cadastrada para esta filial.
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Todos os locais abaixo serão vinculados a esta empresa.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Card: Lista de Unidades + Formulário ── -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-semibold">
+                    <i class="fas fa-list-ul me-2"></i>
+                    Unidades / Locais
+                    <span id="badge-total" class="badge bg-secondary badge-counter ms-2">0</span>
+                </h6>
+                <button type="button" id="btn-toggle-form" class="btn btn-sm btn-success btn-toggle-form">
+                    <i class="fas fa-plus me-1"></i>
+                    <span id="btn-toggle-text">Adicionar Unidade</span>
+                    <i class="fas fa-chevron-down ms-1"></i>
+                </button>
+            </div>
+
+            <div class="card-body">
+                <!-- ── Lista de unidades adicionadas ── -->
+                <div id="lista-unidades">
+                    <div id="empty-state" class="empty-state">
+                        <i class="fas fa-building d-block"></i>
+                        <p class="mb-1 fw-semibold">Nenhuma unidade adicionada</p>
+                        <p class="small">Clique em <strong>"Adicionar Unidade"</strong> para começar.</p>
+                    </div>
+                </div>
+
+                <!-- ── Formulário colapsável para nova unidade ── -->
+                <div id="form-nova-unidade" class="border rounded p-4 mt-3 collapsed" style="background: #fafffe; border-color: var(--ltcat-primary, #2e7d32) !important;">
+
+                    <h6 class="fw-semibold mb-3" style="color: var(--ltcat-primary);">
+                        <i class="fas fa-plus-circle me-1"></i> Nova Unidade
+                    </h6>
+
+                    <!-- Identificação -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nome / Identificação *</label>
+                            <input type="text" id="inp-nome-local" class="form-control"
+                                   placeholder="Ex: Prédio A - Sede Administrativa">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Razão Social</label>
+                            <input type="text" id="inp-razao-social" class="form-control"
+                                   placeholder="Opcional">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">CNPJ</label>
+                            <input type="text" id="inp-cnpj" class="form-control"
+                                   placeholder="00.000.000/0001-00" data-mask="00.000.000/0000-00">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea id="inp-descricao" class="form-control" rows="2"
+                                  placeholder="Descrição breve do local / prédio"></textarea>
+                    </div>
+
+                    <!-- Endereço via Logradouro -->
+                    <div class="border rounded p-3 mb-3" style="border-color: #4caf50 !important;">
+                        <h6 class="fw-semibold mb-2" style="color: var(--ltcat-primary);">
+                            <i class="fas fa-search-location me-1"></i> Endereço (Logradouro Cadastrado)
+                            <span class="badge bg-success ms-2">Recomendado</span>
+                        </h6>
+                        <p class="text-muted small mb-2">
+                            Digite para buscar. Mínimo 2 caracteres.
+                        </p>
+                        <select id="inp-logradouro" placeholder="🔍 Buscar endereço..."></select>
+
+                        <div id="inline-logradouro-preview" class="logradouro-preview d-none mt-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-map-pin text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong id="inline-preview-endereco"></strong>
+                                    <div class="text-muted" id="inline-preview-bairro-cidade"></div>
+                                    <div class="text-muted" id="inline-preview-cep"></div>
+                                </div>
+                                <button type="button" id="btn-limpar-inline-logradouro"
+                                        class="btn btn-sm btn-outline-danger ms-auto" title="Limpar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endereço Manual -->
+                    <div id="inline-endereco-manual" class="border rounded p-3 mb-3">
+                        <h6 class="fw-semibold mb-2" style="color: var(--ltcat-primary);">
+                            <i class="fas fa-map me-1"></i> Endereço Manual
+                            <small class="text-muted fw-normal">(apenas se NÃO usar logradouro)</small>
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Endereço</label>
+                                <input type="text" id="inp-endereco" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Número</label>
+                                <input type="text" id="inp-numero" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Complemento</label>
+                                <input type="text" id="inp-complemento" class="form-control">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4">
+                                <label class="form-label">Bairro</label>
+                                <input type="text" id="inp-bairro" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cidade</label>
+                                <input type="text" id="inp-cidade" class="form-control">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">UF</label>
+                                <select id="inp-estado" class="form-select">
+                                    <option value="">--</option>
+                                    {% for uf, nome in form.fields.estado.choices %}
+                                    {% if uf %}<option value="{{ uf }}">{{ uf }}</option>{% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">CEP</label>
+                                <input type="text" id="inp-cep" class="form-control" data-mask="00000-000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões do form inline -->
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" id="btn-cancelar-unidade" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-times me-1"></i> Cancelar
+                        </button>
+                        <button type="button" id="btn-adicionar-unidade" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus me-1"></i> Adicionar à Lista
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Botões finais ── -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'ltcat:local_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Cancelar
+            </a>
+            <button type="button" id="btn-salvar-todos" class="btn btn-primary btn-lg" disabled>
+                <i class="fas fa-save me-1"></i>
+                Salvar Todos os Locais
+                <span id="btn-salvar-counter" class="badge bg-light text-primary ms-1">0</span>
+            </button>
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block ltcat_extra_js %}
+<!-- TomSelect JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+
+    // MODO EDIÇÃO — lógica do logradouro 
+
+    {% if form.instance.pk %}
+
+    const AJAX_URL = "{% url 'ltcat:ajax_buscar_logradouros' %}";
+    const selectEl = document.getElementById('id_logradouro');
+    const secaoManual = document.getElementById('endereco-manual-section');
+    const previewBox = document.getElementById('logradouro-preview');
+    const previewEndereco = document.getElementById('preview-endereco');
+    const previewBairroCidade = document.getElementById('preview-bairro-cidade');
+    const previewCep = document.getElementById('preview-cep');
+    const btnLimpar = document.getElementById('btn-limpar-logradouro');
+
+    if (selectEl) {
+        let initialOptions = {};
+        let initialItems = [];
+        Array.from(selectEl.options).forEach(function(opt) {
+            if (opt.value) {
+                initialOptions[opt.value] = { id: opt.value, text: opt.textContent.trim() };
+                if (opt.selected) initialItems.push(opt.value);
+            }
+        });
+
+        const tomSelect = new TomSelect(selectEl, {
+            valueField: 'id', labelField: 'text', searchField: ['text'],
+            placeholder: '🔍 Digite para buscar endereço...', maxItems: 1,
+            maxOptions: 20, openOnFocus: false, closeAfterSelect: true,
+            highlight: true, create: false, preload: false,
+            options: Object.values(initialOptions), items: initialItems,
+            wrapperClass: 'ts-wrapper logradouro-select',
+            load: function (query, callback) {
+                if (query.length < 2) return callback();
+                fetch(`${AJAX_URL}?q=${encodeURIComponent(query)}`)
+                    .then(r => r.json())
+                    .then(data => callback(data.map(item => ({
+                        id: String(item.id), text: item.text,
+                        endereco: item.endereco, numero: item.numero,
+                        bairro: item.bairro, cidade: item.cidade,
+                        estado: item.estado, cep: item.cep,
+                    }))))
+                    .catch(() => callback());
+            },
+            render: {
+                option: function (data, escape) {
+                    const partes = data.text.split(' - ');
+                    return `<div class="option">
+                        <div class="logradouro-main"><i class="fas fa-map-marker-alt text-success me-1"></i>${escape(partes[0])}</div>
+                        <div class="logradouro-detail">${escape(partes.slice(1).join(' - '))}</div>
+                    </div>`;
+                },
+                item: (data, escape) => `<div><i class="fas fa-map-pin text-success me-1"></i>${escape(data.text)}</div>`,
+                no_results: () => '<div class="no-results p-3 text-center text-muted"><i class="fas fa-search me-1"></i> Nenhum logradouro encontrado</div>',
+            },
+            onChange: function (value) {
+                updatePreviewEdit(value);
+                toggleManualEdit(!!value);
+            },
+        });
+
+        function updatePreviewEdit(value) {
+            if (!value) { previewBox.classList.add('d-none'); previewBox.classList.remove('active'); return; }
+            const opt = tomSelect.options[value];
+            if (!opt) { previewBox.classList.add('d-none'); return; }
+            previewEndereco.textContent = `${opt.endereco || ''}, nº ${opt.numero || ''}`;
+            previewBairroCidade.textContent = `${opt.bairro || ''} - ${opt.cidade || ''}/${opt.estado || ''}`;
+            previewCep.textContent = `CEP: ${opt.cep || ''}`;
+            previewBox.classList.remove('d-none');
+            previewBox.classList.add('active');
+        }
+        function toggleManualEdit(has) {
+            secaoManual.style.opacity = has ? '0.4' : '1';
+            secaoManual.style.pointerEvents = has ? 'none' : 'auto';
+            secaoManual.querySelectorAll('input, select, textarea').forEach(el => {
+                has ? el.setAttribute('disabled', '') : el.removeAttribute('disabled');
+            });
+        }
+        btnLimpar.addEventListener('click', () => {
+            tomSelect.clear(); tomSelect.clearOptions();
+            previewBox.classList.add('d-none'); previewBox.classList.remove('active');
+            toggleManualEdit(false);
+        });
+        const vi = tomSelect.getValue();
+        if (vi) { updatePreviewEdit(vi); toggleManualEdit(true); }
+        else { toggleManualEdit(false); }
+    }
+
+    {% else %}
+
+    // MODO CRIAÇÃO — múltiplas unidades em lote
+
+    const AJAX_URL      = "{% url 'ltcat:ajax_buscar_logradouros' %}";
+    const SAVE_URL      = "{% url 'ltcat:local_create_bulk' %}";
+    const LIST_URL      = "{% url 'ltcat:local_list' %}";
+    const CSRF          = "{{ csrf_token }}";
+
+    // ── Elementos ──
+    const empresaSelect     = document.getElementById('id_empresa');
+    const btnToggle         = document.getElementById('btn-toggle-form');
+    const btnToggleText     = document.getElementById('btn-toggle-text');
+    const formContainer     = document.getElementById('form-nova-unidade');
+    const listaContainer    = document.getElementById('lista-unidades');
+    const emptyState        = document.getElementById('empty-state');
+    const badgeTotal        = document.getElementById('badge-total');
+    const btnSalvar         = document.getElementById('btn-salvar-todos');
+    const btnSalvarCounter  = document.getElementById('btn-salvar-counter');
+    const btnAdicionar      = document.getElementById('btn-adicionar-unidade');
+    const btnCancelar       = document.getElementById('btn-cancelar-unidade');
+
+    // Inputs do form inline
+    const inpNome       = document.getElementById('inp-nome-local');
+    const inpRazao      = document.getElementById('inp-razao-social');
+    const inpCnpj       = document.getElementById('inp-cnpj');
+    const inpDescricao  = document.getElementById('inp-descricao');
+    const inpEndereco   = document.getElementById('inp-endereco');
+    const inpNumero     = document.getElementById('inp-numero');
+    const inpCompl      = document.getElementById('inp-complemento');
+    const inpBairro     = document.getElementById('inp-bairro');
+    const inpCidade     = document.getElementById('inp-cidade');
+    const inpEstado     = document.getElementById('inp-estado');
+    const inpCep        = document.getElementById('inp-cep');
+    const inpLogradouro = document.getElementById('inp-logradouro');
+    const inlineManual  = document.getElementById('inline-endereco-manual');
+
+    // Preview inline
+    const inlinePreview     = document.getElementById('inline-logradouro-preview');
+    const inlinePreviewEnd  = document.getElementById('inline-preview-endereco');
+    const inlinePreviewBC   = document.getElementById('inline-preview-bairro-cidade');
+    const inlinePreviewCep  = document.getElementById('inline-preview-cep');
+    const btnLimparInline   = document.getElementById('btn-limpar-inline-logradouro');
+
+    // ── Estado ──
+    let unidades = [];
+    let tomSelectInline = null;
+    let selectedLogradouro = null;
+
+ 
+    // TomSelect inline (logradouro no form)
+
+    function initTomSelect() {
+        if (tomSelectInline) {
+            tomSelectInline.destroy();
+            tomSelectInline = null;
+        }
+
+        tomSelectInline = new TomSelect(inpLogradouro, {
+            valueField: 'id', labelField: 'text', searchField: ['text'],
+            placeholder: '🔍 Buscar endereço (rua, bairro, cidade, CEP)...',
+            maxItems: 1, maxOptions: 20, openOnFocus: false,
+            closeAfterSelect: true, highlight: true, create: false, preload: false,
+            wrapperClass: 'ts-wrapper logradouro-select',
+            load: function (query, callback) {
+                if (query.length < 2) return callback();
+                fetch(`${AJAX_URL}?q=${encodeURIComponent(query)}`)
+                    .then(r => r.json())
+                    .then(data => callback(data.map(item => ({
+                        id: String(item.id), text: item.text,
+                        endereco: item.endereco, numero: item.numero,
+                        bairro: item.bairro, cidade: item.cidade,
+                        estado: item.estado, cep: item.cep,
+                    }))))
+                    .catch(() => callback());
+            },
+            render: {
+                option: function (data, escape) {
+                    const p = data.text.split(' - ');
+                    return `<div class="option">
+                        <div class="logradouro-main"><i class="fas fa-map-marker-alt text-success me-1"></i>${escape(p[0])}</div>
+                        <div class="logradouro-detail">${escape(p.slice(1).join(' - '))}</div>
+                    </div>`;
+                },
+                item: (data, escape) => `<div><i class="fas fa-map-pin text-success me-1"></i>${escape(data.text)}</div>`,
+                no_results: () => '<div class="p-3 text-center text-muted"><i class="fas fa-search me-1"></i> Nenhum logradouro encontrado</div>',
+                loading: () => '<div class="p-3 text-center text-muted"><i class="fas fa-spinner fa-spin me-1"></i> Buscando...</div>',
+            },
+            onChange: function (value) {
+                if (value) {
+                    const opt = tomSelectInline.options[value];
+                    selectedLogradouro = opt ? { id: opt.id, text: opt.text, endereco: opt.endereco, numero: opt.numero, bairro: opt.bairro, cidade: opt.cidade, estado: opt.estado, cep: opt.cep } : null;
+                    updateInlinePreview(selectedLogradouro);
+                    toggleInlineManual(true);
+                } else {
+                    selectedLogradouro = null;
+                    updateInlinePreview(null);
+                    toggleInlineManual(false);
+                }
+            },
+        });
+    }
+
+    function updateInlinePreview(data) {
+        if (!data) {
+            inlinePreview.classList.add('d-none');
+            inlinePreview.classList.remove('active');
+            return;
+        }
+        inlinePreviewEnd.textContent = `${data.endereco || ''}, nº ${data.numero || ''}`;
+        inlinePreviewBC.textContent = `${data.bairro || ''} - ${data.cidade || ''}/${data.estado || ''}`;
+        inlinePreviewCep.textContent = `CEP: ${data.cep || ''}`;
+        inlinePreview.classList.remove('d-none');
+        inlinePreview.classList.add('active');
+    }
+
+    function toggleInlineManual(hasLogradouro) {
+        inlineManual.style.opacity = hasLogradouro ? '0.4' : '1';
+        inlineManual.style.pointerEvents = hasLogradouro ? 'none' : 'auto';
+        inlineManual.querySelectorAll('input, select, textarea').forEach(el => {
+            hasLogradouro ? el.setAttribute('disabled', '') : el.removeAttribute('disabled');
+        });
+    }
+
+    btnLimparInline.addEventListener('click', function () {
+        if (tomSelectInline) { tomSelectInline.clear(); tomSelectInline.clearOptions(); }
+        selectedLogradouro = null;
+        updateInlinePreview(null);
+        toggleInlineManual(false);
+    });
+
+    // Toggle do formulário (accordion)
+
+    let formVisible = false;
+
+    function toggleForm(show) {
+        formVisible = typeof show === 'boolean' ? show : !formVisible;
+        if (formVisible) {
+            formContainer.classList.remove('collapsed');
+            formContainer.classList.add('expanded');
+            btnToggle.classList.add('active');
+            btnToggleText.textContent = 'Fechar Formulário';
+            // Inicializa TomSelect ao abrir
+            if (!tomSelectInline) initTomSelect();
+            setTimeout(() => inpNome.focus(), 300);
+        } else {
+            formContainer.classList.add('collapsed');
+            formContainer.classList.remove('expanded');
+            btnToggle.classList.remove('active');
+            btnToggleText.textContent = 'Adicionar Unidade';
+        }
+    }
+
+    btnToggle.addEventListener('click', () => toggleForm());
+    btnCancelar.addEventListener('click', () => {
+        limparFormInline();
+        toggleForm(false);
+    });
+
+
+    // Limpar formulário inline
+
+    function limparFormInline() {
+        inpNome.value = '';
+        inpRazao.value = '';
+        inpCnpj.value = '';
+        inpDescricao.value = '';
+        inpEndereco.value = '';
+        inpNumero.value = '';
+        inpCompl.value = '';
+        inpBairro.value = '';
+        inpCidade.value = '';
+        inpEstado.value = '';
+        inpCep.value = '';
+        if (tomSelectInline) { tomSelectInline.clear(); tomSelectInline.clearOptions(); }
+        selectedLogradouro = null;
+        updateInlinePreview(null);
+        toggleInlineManual(false);
+        inpNome.classList.remove('is-invalid');
+    }
+
+   
+    // Adicionar unidade à lista
+  
+    btnAdicionar.addEventListener('click', function () {
+        // Validação mínima
+        const nome = inpNome.value.trim();
+        if (!nome) {
+            inpNome.classList.add('is-invalid');
+            inpNome.focus();
+            return;
+        }
+        inpNome.classList.remove('is-invalid');
+
+        if (!empresaSelect.value) {
+            alert('Selecione uma empresa antes de adicionar unidades.');
+            empresaSelect.focus();
+            return;
+        }
+
+        // Montar objeto
+        const unidade = {
+            id: Date.now(),
+            nome_local: nome,
+            razao_social: inpRazao.value.trim(),
+            cnpj: inpCnpj.value.trim(),
+            descricao: inpDescricao.value.trim(),
+            logradouro_id: selectedLogradouro ? selectedLogradouro.id : null,
+            logradouro_text: selectedLogradouro ? selectedLogradouro.text : null,
+            endereco: inpEndereco.value.trim(),
+            numero: inpNumero.value.trim(),
+            complemento: inpCompl.value.trim(),
+            bairro: inpBairro.value.trim(),
+            cidade: inpCidade.value.trim(),
+            estado: inpEstado.value,
+            cep: inpCep.value.trim(),
+        };
+
+        // Determina o texto do endereço para exibir
+        if (unidade.logradouro_text) {
+            unidade._endereco_display = unidade.logradouro_text;
+        } else {
+            const partes = [unidade.endereco, unidade.numero ? `nº ${unidade.numero}` : '', unidade.bairro, unidade.cidade && unidade.estado ? `${unidade.cidade}/${unidade.estado}` : ''].filter(Boolean);
+            unidade._endereco_display = partes.join(', ') || 'Endereço não informado';
+        }
+
+        unidades.push(unidade);
+        renderLista();
+        limparFormInline();
+
+        // Mantém o form aberto para adicionar mais
+        inpNome.focus();
+    });
+
+
+    // Renderizar lista de unidades
+  
+    function renderLista() {
+        // Limpa
+        listaContainer.querySelectorAll('.unidade-card').forEach(el => el.remove());
+
+        if (unidades.length === 0) {
+            emptyState.classList.remove('d-none');
+            btnSalvar.disabled = true;
+        } else {
+            emptyState.classList.add('d-none');
+            btnSalvar.disabled = false;
+        }
+
+        unidades.forEach((u, idx) => {
+            const card = document.createElement('div');
+            card.className = 'unidade-card d-flex align-items-start';
+            card.dataset.id = u.id;
+
+            const cnpjHtml = u.cnpj ? `<span class="text-muted ms-2">CNPJ: ${u.cnpj}</span>` : '';
+
+            card.innerHTML = `
+                <span class="unidade-numero">${idx + 1}</span>
+                <div class="flex-grow-1">
+                    <div class="fw-semibold">${escapeHtml(u.nome_local)}${cnpjHtml}</div>
+                    <div class="small text-muted">
+                        <i class="fas fa-map-marker-alt me-1"></i>${escapeHtml(u._endereco_display)}
+                    </div>
+                    ${u.descricao ? `<div class="small text-muted mt-1"><i class="fas fa-align-left me-1"></i>${escapeHtml(u.descricao)}</div>` : ''}
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger btn-remover-unidade ms-3"
+                        data-id="${u.id}" title="Remover">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+            listaContainer.appendChild(card);
+        });
+
+        // Atualiza contadores
+        badgeTotal.textContent = unidades.length;
+        btnSalvarCounter.textContent = unidades.length;
+        badgeTotal.className = `badge badge-counter ms-2 ${unidades.length > 0 ? 'bg-success' : 'bg-secondary'}`;
+
+        // Event listeners de remoção
+        listaContainer.querySelectorAll('.btn-remover-unidade').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const id = parseInt(this.dataset.id);
+                unidades = unidades.filter(u => u.id !== id);
+                renderLista();
+            });
+        });
+    }
+
+
+    // Salvar todos via AJAX
+
+    btnSalvar.addEventListener('click', function () {
+        if (unidades.length === 0) return;
+        if (!empresaSelect.value) {
+            alert('Selecione uma empresa.');
+            return;
+        }
+
+        const payload = {
+            empresa_id: empresaSelect.value,
+            locais: unidades.map(u => ({
+                nome_local: u.nome_local,
+                razao_social: u.razao_social,
+                cnpj: u.cnpj,
+                descricao: u.descricao,
+                logradouro_id: u.logradouro_id,
+                endereco: u.endereco,
+                numero: u.numero,
+                complemento: u.complemento,
+                bairro: u.bairro,
+                cidade: u.cidade,
+                estado: u.estado,
+                cep: u.cep,
+            })),
+        };
+
+        btnSalvar.disabled = true;
+        btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Salvando...';
+
+        fetch(SAVE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF,
+            },
+            body: JSON.stringify(payload),
+        })
+        .then(resp => {
+            if (!resp.ok) return resp.json().then(d => Promise.reject(d));
+            return resp.json();
+        })
+        .then(data => {
+            // Sucesso — redireciona para lista
+            window.location.href = LIST_URL + '?msg=bulk_created&total=' + data.total;
+        })
+        .catch(err => {
+            btnSalvar.disabled = false;
+            btnSalvar.innerHTML = '<i class="fas fa-save me-1"></i> Salvar Todos os Locais <span class="badge bg-light text-primary ms-1">' + unidades.length + '</span>';
+
+            let msg = 'Erro ao salvar. Tente novamente.';
+            if (err && err.error) msg = err.error;
+            if (err && err.errors) msg = err.errors.join('\n');
+
+            alert(msg);
+        });
+    });
+
+
+    // Bloquear troca de empresa se já tem unidades
+
+    empresaSelect.addEventListener('change', function () {
+        if (unidades.length > 0) {
+            if (!confirm('Trocar a empresa vai limpar todas as unidades adicionadas. Continuar?')) {
+                // Reverter — precisamos do valor anterior
+                // Como não armazenamos, vamos apenas avisar
+                return;
+            }
+            unidades = [];
+            renderLista();
+        }
+    });
+
+    // Helper — escape HTML
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Máscara CNPJ simples
+
+    inpCnpj.addEventListener('input', function () {
+        let v = this.value.replace(/\D/g, '');
+        if (v.length > 14) v = v.substring(0, 14);
+        if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+        else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+        else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+        else if (v.length > 2) v = v.replace(/^(\d{2})(\d{0,3})/, '$1.$2');
+        this.value = v;
+    });
+
+    // Máscara CEP simples
+    inpCep.addEventListener('input', function () {
+        let v = this.value.replace(/\D/g, '');
+        if (v.length > 8) v = v.substring(0, 8);
+        if (v.length > 5) v = v.replace(/^(\d{5})(\d{0,3})/, '$1-$2');
+        this.value = v;
+    });
+
+
+    // Estado inicial
+
+    renderLista();
+
+    {% endif %}
+});
+</script>
+{% endblock %}
+

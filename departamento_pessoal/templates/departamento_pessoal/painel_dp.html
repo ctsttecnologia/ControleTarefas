@@ -61,9 +61,14 @@
                 <i class="bi bi-currency-dollar"></i>
             </div>
             <div>
+
+            {% if request.user.is_staff %}
+            <div>
                 <div class="kpi-value">R$ {{ salario_medio|floatformat:0|default:"0" }}</div>
                 <div class="kpi-label">Salário Médio</div>
             </div>
+            {% endif %}
+
         </div>
     </div>
 </div>
@@ -94,75 +99,75 @@
         </div>
     </div>
 
-    <!-- Últimos Funcionários -->
-    <div class="col-12">
-        <div class="content-card">
-            <div class="content-card-header">
-                <h5><i class="bi bi-clock-history me-2"></i>Últimas Admissões</h5>
-                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-sm btn-outline-primary" style="border-radius: 50px;">
-                    Ver Todos
-                </a>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-modern">
-                    <thead>
-                        <tr>
-                            <th>Funcionário</th>
-                            <th>Cargo</th>
-                            <th>Departamento</th>
-                            <th>Admissão</th>
-                            <th>Status</th>
-                            <th class="text-end">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for func in ultimos_funcionarios %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <img src="https://ui-avatars.com/api/?name={{ func.nome_completo|urlencode }}&background=3b82f6&color=fff&size=36&bold=true" 
-                                         class="rounded-circle" width="36" height="36">
-                                    <div>
-                                        <div class="fw-semibold">{{ func.nome_completo }}</div>
-                                        <small class="text-muted">{{ func.matricula }}</small>
+        <!-- Últimos Funcionários -->
+        <div class="col-12">
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="bi bi-clock-history me-2"></i>Últimas Admissões</h5>
+                    <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-sm btn-outline-primary" style="border-radius: 50px;">
+                        Ver Todos
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-modern">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Cargo</th>
+                                <th>Departamento</th>
+                                <th>Admissão</th>
+                                <th>Status</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for func in ultimos_funcionarios %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="https://ui-avatars.com/api/?name={{ func.nome_completo|urlencode }}&background=3b82f6&color=fff&size=36&bold=true" 
+                                            class="rounded-circle" width="36" height="36">
+                                        <div>
+                                            <div class="fw-semibold">{{ func.nome_completo }}</div>
+                                            <small class="text-muted">{{ func.matricula }}</small>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td>{{ func.cargo.nome|default:"-" }}</td>
-                            <td>{{ func.departamento.nome|default:"-" }}</td>
-                            <td>{{ func.data_admissao|date:"d/m/Y" }}</td>
-                            <td>
-                                {% if func.status == 'ATIVO' %}
-                                    <span class="badge-status bg-success-soft text-success">Ativo</span>
-                                {% elif func.status == 'INATIVO' %}
-                                    <span class="badge-status bg-danger-soft text-danger">Inativo</span>
-                                {% else %}
-                                    <span class="badge-status bg-warning-soft text-warning">{{ func.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <a href="{% url 'departamento_pessoal:detalhe_funcionario' func.pk %}" 
-                                   class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6">
-                                <div class="empty-state py-4">
-                                    <i class="bi bi-inbox display-4 text-muted"></i>
-                                    <p class="text-muted mt-2 mb-0">Nenhuma admissão recente</p>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </td>
+                                <td>{{ func.cargo.nome|default:"-" }}</td>
+                                <td>{{ func.departamento.nome|default:"-" }}</td>
+                                <td>{{ func.data_admissao|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if func.status == 'ATIVO' %}
+                                        <span class="badge-status bg-success-soft text-success">Ativo</span>
+                                    {% elif func.status == 'INATIVO' %}
+                                        <span class="badge-status bg-danger-soft text-danger">Inativo</span>
+                                    {% else %}
+                                        <span class="badge-status bg-warning-soft text-warning">{{ func.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' func.pk %}" 
+                                    class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state py-4">
+                                        <i class="bi bi-inbox display-4 text-muted"></i>
+                                        <p class="text-muted mt-2 mb-0">Nenhuma admissão recente</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}

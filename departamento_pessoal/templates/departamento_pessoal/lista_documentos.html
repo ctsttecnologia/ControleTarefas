@@ -1,7 +1,19 @@
-﻿{% extends "departamento_pessoal/_base_dp.html" %}
+﻿
+{% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
 
 {% block title %}Documentos - Departamento Pessoal{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .doc-badge-vencido { background-color: #dc3545 !important; }
+    .doc-badge-alerta  { background-color: #ffc107 !important; color: #000 !important; }
+    .doc-badge-ok      { background-color: #198754 !important; }
+    .doc-tipo-icon     { width: 32px; height: 32px; display: inline-flex; align-items: center;
+                         justify-content: center; border-radius: 0.5rem; font-size: 1rem; }
+</style>
+{% endblock %}
 
 {% block dp_content %}
 <div class="container-fluid">
@@ -25,23 +37,24 @@
                     <select name="tipo" class="form-select">
                         <option value="">Todos os tipos</option>
                         {% for tipo_val, tipo_display in tipos_documento %}
-                            <option value="{{ tipo_val }}" {% if request.GET.tipo == tipo_val %}selected{% endif %}>
-                                {{ tipo_display }}
-                            </option>
+                        <option value="{{ tipo_val }}" {% if request.GET.tipo == tipo_val %}selected{% endif %}>
+                            {{ tipo_display }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small text-muted">Buscar</label>
-                    <input type="text" name="q" class="form-control" 
-                           placeholder="Nome do funcionário ou número do documento..."
+                    <input type="text" name="q" class="form-control"
+                           placeholder="Nome do funcionário ou número..."
                            value="{{ request.GET.q|default:'' }}">
                 </div>
                 <div class="col-md-2 d-flex gap-2">
                     <button type="submit" class="btn btn-primary flex-grow-1">
                         <i class="bi bi-search"></i>
                     </button>
-                    <a href="{% url 'departamento_pessoal:lista_documentos' %}" class="btn btn-outline-secondary" title="Limpar filtros">
+                    <a href="{% url 'departamento_pessoal:lista_documentos' %}"
+                       class="btn btn-outline-secondary" title="Limpar filtros">
                         <i class="bi bi-x-lg"></i>
                     </a>
                 </div>
@@ -53,30 +66,68 @@
                     <thead class="table-light">
                         <tr>
                             <th>Funcionário</th>
-                            <th>Tipo de Documento</th>
+                            <th>Tipo</th>
                             <th>Número</th>
+                            <th>Emissão</th>
+                            <th>Validade</th>
+                            <th class="text-center">Status</th>
                             <th class="text-center">Anexo</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for documento in object_list %}
+                        {% for doc in object_list %}
                         <tr>
                             <td>
-                                <a href="{% url 'departamento_pessoal:detalhe_funcionario' documento.funcionario.pk %}"
+                                <a href="{% url 'departamento_pessoal:detalhe_funcionario' doc.funcionario.pk %}"
                                    class="text-decoration-none">
-                                    {{ documento.funcionario.nome_completo }}
+                                    {{ doc.funcionario.nome_completo }}
                                 </a>
                             </td>
                             <td>
-                                <i class="bi bi-file-earmark text-primary me-1"></i>
-                                {{ documento.get_tipo_documento_display }}
+                                <span class="doc-tipo-icon bg-primary bg-opacity-10 text-primary me-1">
+                                    <i class="bi {{ doc.icone }}"></i>
+                                </span>
+                                {{ doc.get_tipo_documento_display }}
                             </td>
-                            <td><code>{{ documento.numero|default:"-" }}</code></td>
+                            <td><code>{{ doc.numero|default:"-" }}</code></td>
+                            <td>
+                                {% if doc.data_emissao %}
+                                    {{ doc.data_emissao|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if doc.data_validade %}
+                                    {{ doc.data_validade|date:"d/m/Y" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
                             <td class="text-center">
-                                {% if documento.anexo %}
-                                    {% secure_url documento "anexo" as anexo_url %}
-                                <a href="{{ anexo_url }}" target="_blank" 
+                                {% if doc.data_validade %}
+                                    {% if doc.esta_vencido %}
+                                        <span class="badge doc-badge-vencido">
+                                            <i class="bi bi-exclamation-circle me-1"></i> Vencido
+                                        </span>
+                                    {% elif doc.vence_em_30_dias %}
+                                        <span class="badge doc-badge-alerta">
+                                            <i class="bi bi-exclamation-triangle me-1"></i> Vence em breve
+                                        </span>
+                                    {% else %}
+                                        <span class="badge doc-badge-ok">
+                                            <i class="bi bi-check-circle me-1"></i> Válido
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if doc.anexo %}
+                                    {% secure_url doc "anexo" as anexo_url %}
+                                    <a href="{{ anexo_url }}" target="_blank"
                                        class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-paperclip me-1"></i> Ver
                                     </a>
@@ -85,11 +136,11 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'departamento_pessoal:editar_documentos' pk=documento.pk %}" 
+                                <a href="{% url 'departamento_pessoal:editar_documentos' pk=doc.pk %}"
                                    class="btn btn-sm btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'departamento_pessoal:excluir_documento' pk=documento.pk %}" 
+                                <a href="{% url 'departamento_pessoal:excluir_documento' pk=doc.pk %}"
                                    class="btn btn-sm btn-outline-danger" title="Excluir">
                                     <i class="bi bi-trash3"></i>
                                 </a>
@@ -97,7 +148,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5">
+                            <td colspan="8">
                                 {% include 'departamento_pessoal/partials/_empty_state.html' with icon="bi-file-earmark-x" title="Nenhum documento encontrado" message="Cadastre documentos para os funcionários." btn_url=criar_documento_url btn_text="Adicionar Documento" %}
                             </td>
                         </tr>
@@ -115,7 +166,5 @@
     </div>
 </div>
 {% endblock %}
-
-
 
 
