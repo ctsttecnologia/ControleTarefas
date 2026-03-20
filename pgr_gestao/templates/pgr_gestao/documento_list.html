@@ -15,6 +15,15 @@
             <h1><i class="fas fa-file-alt"></i> Documentos PGR</h1>
             <p class="mb-0">Gerenciamento de Programas de Gerenciamento de Riscos</p>
         </div>
+
+        <!-- Estatísticas Rápidas -->
+             <div class="col-md-3">
+                <div class="card-body">
+                    <h3 class="text-success">{{ documentos|length }}</h3>
+                    <small class="text-muted">Total de Documentos</small>
+                </div>
+            </div>
+
         {% if perms.pgr_gestao.add_pgrdocumento %}
         <a href="{% url 'pgr_gestao:documento_create' %}" class="btn btn-primary btn-lg">
             <i class="fas fa-plus"></i> Novo Documento
@@ -63,17 +72,6 @@
     </div>
 </div>
 
-<!-- Estatísticas Rápidas -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-success">{{ documentos|length }}</h3>
-                <small class="text-muted">Total de Documentos</small>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- Tabela de Documentos -->
 <div class="card">

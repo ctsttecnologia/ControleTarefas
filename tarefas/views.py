@@ -134,7 +134,7 @@ class TarefaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMi
         return self.render_to_response(ctx)
 
 
-class TarefaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, CreateView):
+class TarefaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, CreateView):
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/tarefa_form.html'
@@ -145,16 +145,23 @@ class TarefaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMi
         return kwargs
 
     def form_valid(self, form):
-        form.instance._user = self.request.user
-        response = super().form_valid(form)
+        # Atribuir o usuário logado como criador
+        form.instance.usuario = self.request.user
 
         # Notificar responsável e participantes
         notificar_tarefa_criada(
             tarefa=self.object,
             criador=self.request.user,
         )
-
-        return response
+        
+        # ✅ ADICIONAR: Atribuir a filial da sessão se não foi preenchida
+        if not form.instance.filial_id:
+            filial_id = self.request.session.get('active_filial_id')
+            if filial_id:
+                form.instance.filial_id = filial_id
+        
+        
+        return super().form_valid(form)
 
 
 class TarefaUpdateView(TarefaAccessMixin, UpdateView):
@@ -303,6 +310,17 @@ class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, T
                 Q(participantes=user)
             ).distinct()
 
+        # ═══ FILTRO POR RESPONSÁVEL (NOVO) ═══
+        responsavel_id = self.request.GET.get('responsavel')
+        if responsavel_id:
+            qs = qs.filter(responsavel_id=responsavel_id)
+
+        # Lista de responsáveis disponíveis (só quem tem tarefa)
+        responsaveis = User.objects.filter(
+            pk__in=qs.values_list('responsavel', flat=True).distinct()
+        ).exclude(pk__isnull=True).order_by('first_name', 'username')
+        # ═══ FIM ═══
+
         # Agrupar por status
         ctx['colunas'] = []
         for key, label in Tarefas.STATUS_CHOICES:
@@ -313,7 +331,11 @@ class KanbanView(LoginRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, T
             })
 
         ctx['status_choices'] = Tarefas.STATUS_CHOICES
+        ctx['responsaveis'] = responsaveis              
+        ctx['responsavel_atual'] = responsavel_id or ''  
+        ctx['now'] = timezone.now()
         return ctx
+
 
 
 @login_required
@@ -511,9 +533,17 @@ class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
 
     def get_queryset(self):
         qs = super().get_queryset()
+
         status_filter = self.request.GET.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
+
+        # ═══ FILTRO POR RESPONSÁVEL (NOVO) ═══
+        responsavel_id = self.request.GET.get('responsavel')
+        if responsavel_id:
+            qs = qs.filter(responsavel_id=responsavel_id)
+        # ═══ FIM ═══
+
         return qs.order_by('-data_criacao')
 
     def get_context_data(self, **kwargs):
@@ -532,7 +562,25 @@ class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
             cls=DjangoJSONEncoder
         )
         context['status_choices'] = Tarefas.STATUS_CHOICES
-        context['current_filters'] = self.request.GET
+
+        # ═══ RESPONSÁVEIS PARA O FILTRO (NOVO) ═══
+        # Pega do queryset SEM o filtro de responsável para sempre mostrar todos
+        base_qs = super().get_queryset()
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            base_qs = base_qs.filter(status=status_filter)
+
+        responsaveis = User.objects.filter(
+            pk__in=base_qs.values_list('responsavel', flat=True).distinct()
+        ).exclude(pk__isnull=True).order_by('first_name', 'username')
+
+        context['responsaveis'] = responsaveis
+        # ═══ FIM ═══
+
+        context['current_filters'] = {
+            'status': self.request.GET.get('status', ''),
+            'responsavel': self.request.GET.get('responsavel', ''),
+        }
         return context
 
     def post(self, request, *args, **kwargs):
@@ -557,6 +605,7 @@ class RelatorioTarefasView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
 
         messages.error(request, 'Formato de exportação inválido.')
         return redirect('tarefas:relatorio_tarefas')
+
 
 
 class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
@@ -624,19 +673,46 @@ class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         qs = super().get_queryset()
         status_filter = self.request.GET.get('status')
         prioridade_filter = self.request.GET.get('prioridade')
+        responsavel_id = self.request.GET.get('responsavel') 
+
         if status_filter:
             qs = qs.filter(status=status_filter)
         if prioridade_filter:
             qs = qs.filter(prioridade=prioridade_filter)
+        if responsavel_id:                                  
+            qs = qs.filter(responsavel_id=responsavel_id)      
+
         return qs.order_by('-data_criacao')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
         context.update(preparar_contexto_relatorio(qs))
-        context['current_filters'] = self.request.GET
+
+        # ═══ RESPONSÁVEIS PARA O FILTRO (NOVO) ═══
+        base_qs = super().get_queryset()
+        status_filter = self.request.GET.get('status')
+        prioridade_filter = self.request.GET.get('prioridade')
+        if status_filter:
+            base_qs = base_qs.filter(status=status_filter)
+        if prioridade_filter:
+            base_qs = base_qs.filter(prioridade=prioridade_filter)
+
+        responsaveis = User.objects.filter(
+            pk__in=base_qs.values_list('responsavel', flat=True).distinct()
+        ).exclude(pk__isnull=True).order_by('first_name', 'username')
+
+        context['responsaveis'] = responsaveis
+        # ═══ FIM ═══
+
+        context['current_filters'] = {
+            'status': self.request.GET.get('status', ''),
+            'prioridade': self.request.GET.get('prioridade', ''),
+            'responsavel': self.request.GET.get('responsavel', ''),
+        }
         context['status_choices'] = Tarefas.STATUS_CHOICES
         return context
+
 
 
 class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):

@@ -45,6 +45,8 @@
     display: flex;
     gap: 0.5rem;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
 /* ── Board Layout ── */
@@ -359,6 +361,48 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     border-color: rgba(99, 102, 241, 0.2);
 }
 
+/* ── Filter Select ── */
+.kanban-filter-select {
+    min-width: 180px;
+    font-size: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 0.3rem 0.6rem;
+    background: #fff;
+    color: #374151;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kanban-filter-select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    outline: none;
+}
+
+/* ── Filter Tag ── */
+.kanban-filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366f1;
+    padding: 0.25em 0.65em;
+    border-radius: 6px;
+}
+
+.kanban-filter-tag a {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 800;
+    margin-left: 0.2rem;
+}
+
+.kanban-filter-tag a:hover {
+    color: #ef4444;
+}
+
 /* ── Mobile ── */
 @media (max-width: 767.98px) {
     .kanban-wrapper {
@@ -375,6 +419,9 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
     }
     .kanban-actions .btn {
         padding: 0.3rem 0.5rem;
+    }
+    .kanban-filter-select {
+        min-width: 140px;
     }
 }
 
@@ -402,6 +449,24 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             <p class="kanban-subtitle">Arraste as tarefas entre colunas para atualizar o status</p>
         </div>
         <div class="kanban-actions">
+            <!-- ═══ FILTRO POR RESPONSÁVEL ═══ -->
+            <form method="get" class="d-inline-flex align-items-center gap-2" id="kanbanFilterForm">
+                <select name="responsavel" class="kanban-filter-select" onchange="this.form.submit()">
+                    <option value="">👤 Todos os responsáveis</option>
+                    {% for user in responsaveis %}
+                    <option value="{{ user.pk }}" {% if responsavel_atual == user.pk|stringformat:"d" %}selected{% endif %}>
+                        {{ user.get_full_name|default:user.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if responsavel_atual %}
+                <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-danger" title="Limpar filtro">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </form>
+            <!-- ═══ FIM DO FILTRO ═══ -->
+
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
                 <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
@@ -416,6 +481,22 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             </a>
         </div>
     </div>
+
+    <!-- Active Filter Tag -->
+    {% if responsavel_atual %}
+    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem;">
+        <span class="kanban-filter-tag">
+            <i class="bi bi-person-fill"></i>
+            Responsável:
+            {% for user in responsaveis %}
+                {% if user.pk|stringformat:"d" == responsavel_atual %}
+                    {{ user.get_full_name|default:user.username }}
+                {% endif %}
+            {% endfor %}
+            <a href="{% url 'tarefas:kanban_board' %}" title="Remover filtro">&times;</a>
+        </span>
+    </div>
+    {% endif %}
 
     <!-- Board -->
     <div class="kanban-board" id="kanbanBoard">
@@ -490,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
         new bootstrap.Tooltip(el);
     });
 
-    // CSRF Token — direto do Django (resolve o erro 403)
+    // CSRF Token
     const csrfToken = '{{ csrf_token }}';
 
     // Atualizar contadores e estados vazios
@@ -578,20 +659,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = evt.item;
                 const taskId = card.dataset.taskId;
 
-                // Pega o status pelo data-status da coluna pai
                 const newStatus = evt.to.closest('.kanban-column').dataset.status;
                 const oldStatus = evt.from.closest('.kanban-column').dataset.status;
 
                 evt.to.querySelectorAll('.kanban-empty').forEach(el => el.remove());
                 updateColumnCounts();
 
-                // Se soltou na mesma coluna, não faz nada
                 if (oldStatus === newStatus) return;
 
                 card.style.opacity = '0.6';
                 card.style.pointerEvents = 'none';
 
-                // ── Persistir no servidor ──
                 fetch("{% url 'tarefas:update_task_status' %}", {
                     method: 'POST',
                     headers: {
@@ -663,3 +741,4 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 </style>
 {% endblock %}
+

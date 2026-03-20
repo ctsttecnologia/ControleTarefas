@@ -1,4 +1,3 @@
-
 {# templates/usuario/alterar_senha.html #}
 {% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
@@ -26,8 +25,22 @@
 
                     {% for field in form %}
                     <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
-                        {% render_field field class="form-control" %}
+                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                            {{ field.label }}
+                        </label>
+
+                        <!-- Input group com botão toggle -->
+                        <div class="input-group">
+                            {% render_field field class="form-control" %}
+                            <button class="btn btn-outline-secondary toggle-password"
+                                    type="button"
+                                    data-target="#{{ field.id_for_label }}"
+                                    tabindex="-1"
+                                    title="Mostrar/ocultar senha">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+
                         {% if field.help_text %}
                         <div class="form-text"><small>{{ field.help_text|safe }}</small></div>
                         {% endif %}
@@ -35,6 +48,24 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
+
+                    <!-- Força da senha (só aparece no campo new_password1) -->
+                    {% if field.html_name == 'new_password1' %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Força da senha</small>
+                            <small id="password-strength-text" class="fw-semibold"></small>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div id="password-strength-bar"
+                                 class="progress-bar"
+                                 role="progressbar"
+                                 style="width: 0%; transition: width 0.3s ease;">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% endfor %}
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -49,4 +80,66 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    // ─── Toggle mostrar/ocultar senha ────────────────────────────────────────
+    document.querySelectorAll('.toggle-password').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const input = document.querySelector(this.dataset.target);
+            const icon  = this.querySelector('i');
+
+            if (!input) return;
+
+            const isPassword = input.type === 'password';
+            input.type       = isPassword ? 'text' : 'password';
+            icon.classList.toggle('fa-eye',       !isPassword);
+            icon.classList.toggle('fa-eye-slash',  isPassword);
+        });
+    });
+
+    // ─── Indicador de força da senha ─────────────────────────────────────────
+    const passwordInput = document.getElementById('id_new_password1');
+    const bar           = document.getElementById('password-strength-bar');
+    const label         = document.getElementById('password-strength-text');
+
+    if (passwordInput && bar && label) {
+        passwordInput.addEventListener('input', function () {
+            const strength = calcStrength(this.value);
+
+            const levels = [
+                { pct: 0,   cls: '',           text: ''            },
+                { pct: 25,  cls: 'bg-danger',  text: 'Muito fraca' },
+                { pct: 50,  cls: 'bg-warning', text: 'Fraca'       },
+                { pct: 75,  cls: 'bg-info',    text: 'Média'       },
+                { pct: 100, cls: 'bg-success', text: 'Forte'       },
+            ];
+
+            const level = levels[strength];
+
+            bar.style.width   = level.pct + '%';
+            bar.className     = 'progress-bar ' + level.cls;
+            label.textContent = level.text;
+            label.className   = 'fw-semibold ' + level.cls.replace('bg-', 'text-');
+        });
+    }
+
+    function calcStrength(pwd) {
+        if (!pwd) return 0;
+        let score = 0;
+        if (pwd.length >= 8)                         score++; // comprimento mínimo
+        if (pwd.length >= 12)                        score++; // comprimento ideal
+        if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++; // maiúsc + minúsc
+        if (/[0-9]/.test(pwd))                       score++; // número
+        if (/[^A-Za-z0-9]/.test(pwd))               score++; // caractere especial
+        return Math.min(4, score);
+    }
+
+})();
+</script>
+{% endblock %}
+
 

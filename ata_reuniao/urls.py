@@ -4,7 +4,7 @@ from django.urls import path
 
 from api import views
 from .views import (
-    AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
+    AtaReuniaoKanbanView, AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
     AtaReuniaoDeleteView, AtaReuniaoDashboardView, AtaReuniaoPDFExportView,
     AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, AtaUpdateStatusAPIView, UpdateTaskStatusView, UploadAtaReuniaoView, download_ata_reuniao_template, download_error_report 
 )
@@ -28,8 +28,9 @@ urlpatterns = [
     path('exportar/pdf/', AtaReuniaoPDFExportView.as_view(), name='ata_reuniao_export_pdf'),
     path('exportar/excel/', AtaReuniaoExcelExportView.as_view(), name='ata_reuniao_export_excel'),
     # NOVO ENDPOINT PARA O DRAG AND DROP
+    path('kanban/', AtaReuniaoKanbanView.as_view(), name='ata_reuniao_kanban'),
+    # API para atualizar status via drag & drop
     path('api/update-status/<int:pk>/', UpdateTaskStatusView.as_view(), name='api_update_status'),
-
     path('upload/', UploadAtaReuniaoView.as_view(), name='ata_reuniao_upload'),
     path('download-template/', download_ata_reuniao_template, name='download_template'),
     path('download-error-report/', download_error_report, name='download_error_report'),

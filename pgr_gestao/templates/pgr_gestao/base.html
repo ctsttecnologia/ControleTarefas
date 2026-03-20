@@ -1,4 +1,6 @@
+
 <!-- Base template pgr_gestao -->
+
 {% load static %}
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -172,7 +174,7 @@
         <div class="container-fluid">
 
             <!-- Brand -->
-            <a class="navbar-brand" href="{% url 'pgr_gestao:dashboard' %}">
+            <a class="navbar-brand" href="{% url 'usuario:profile' %}">
                 <img src="{% static 'images/logocetest.png' %}" alt="Logotipo"
                     width="130" height="auto">
                 <span class="d-none d-xl-inline">| Programa de Gerenciamento de Riscos</span>
@@ -244,7 +246,7 @@
                 <!-- ===== LADO DIREITO: Notificações + Usuário ===== -->
                 <ul class="navbar-nav ms-auto align-items-lg-center">
 
-                    <!-- 🔔 Notificações -->
+                <!-- 🔔 Notificações -->
                 {% if user.is_authenticated %}
                 <li class="nav-item dropdown me-2">
                     <a class="nav-link position-relative" href="#"
@@ -413,8 +415,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {% if 'ges' in request.path %}active{% endif %}"
-                               href="{% url 'pgr_gestao:ges_list' %}">
+                            <a class="nav-link {% if 'ges' in request.resolver_match.url_name %}active{% endif %}"
+                            href="{% url 'pgr_gestao:ges_list' %}">
                                 <i class="fas fa-users"></i> GES
                             </a>
                         </li>

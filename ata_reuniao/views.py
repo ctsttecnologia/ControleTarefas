@@ -623,6 +623,53 @@ class AtaUpdateStatusAPIView(LoginRequiredMixin, FilialAtivaMixin, View):
                 'message': str(e)
             }, status=500)
 
+class AtaReuniaoKanbanView(LoginRequiredMixin, AtaQuerysetMixin, TemplateView):
+    template_name = 'ata_reuniao/ata_reuniao_kanban.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        filial_ativa = self.get_filial_ativa()
+        is_superuser = self.request.user.is_superuser
+
+        # QuerySet base
+        base_queryset = self.get_ata_queryset(self.request, model_class=AtaReuniao)
+
+        # Kanban items
+        kanban_items = {}
+        for status_value, status_label in AtaReuniao.Status.choices:
+            kanban_items[status_label] = list(
+                base_queryset.filter(status=status_value)
+                .select_related('responsavel', 'responsavel__usuario', 'contrato', 'coordenador')
+                .order_by('prazo')
+            )
+
+        # Filtros
+        coordenadores_qs = Funcionario.objects.filter(status='ATIVO')
+        coordenadores_qs = self.filter_related_by_filial(coordenadores_qs)
+        context['coordenadores'] = coordenadores_qs.select_related('usuario').order_by('nome_completo')
+        responsaveis_qs = Funcionario.objects.filter(status='ATIVO')
+        responsaveis_qs = self.filter_related_by_filial(responsaveis_qs)
+        context['responsaveis'] = responsaveis_qs.select_related('usuario').order_by('nome_completo')[:50]
+    
+
+        clientes_qs = Cliente.objects.filter(estatus=True)
+        clientes_qs = self.filter_related_by_filial(clientes_qs)
+        context['clientes'] = clientes_qs.order_by('nome')[:100]
+
+        context.update({
+            'titulo_pagina': "Kanban de Atas",
+            'titulo_secao': "Quadro Kanban",
+            'kanban_status_choices': AtaReuniao.Status.choices,
+            'kanban_items': kanban_items,
+            'filial_ativa': filial_ativa,
+            'is_superuser': is_superuser,
+            'show_filters': True,
+            'kanban_id': 'kanban-page',
+        })
+
+        return context
+
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UpdateTaskStatusView(LoginRequiredMixin, FilialAtivaMixin, View):

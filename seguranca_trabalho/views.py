@@ -586,7 +586,6 @@ class AssinarTermoView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin
         messages.success(self.request, "Termo assinado com sucesso!")
         return redirect(self.get_success_url())
     
-
 class DashboardSSTView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, TemplateView):
     template_name = 'seguranca_trabalho/dashboard.html'
     permission_required = 'seguranca_trabalho.view_fichaepi'
@@ -632,6 +631,7 @@ class DashboardSSTView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin
             fichas_da_filial = fichas_da_filial.filter(funcionario__usuario=self.request.user)
             entregas_da_filial = entregas_da_filial.filter(ficha__funcionario__usuario=self.request.user)
 
+        # ---------------- KPIs ----------------
         context['total_equipamentos_ativos'] = equipamentos_da_filial.filter(ativo=True).count()
         context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count()
         context['entregas_pendentes_assinatura'] = entregas_da_filial.filter(
@@ -639,7 +639,7 @@ class DashboardSSTView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin
             data_assinatura__isnull=True
         ).count()
 
-        # EPIs vencendo em 30 dias
+        # ---------------- GRÁFICO 4 E KPI: Status de Vencimento ----------------
         today = timezone.now().date()
         thirty_days = today + timedelta(days=30)
         entregas_ativas = entregas_da_filial.filter(
@@ -647,16 +647,27 @@ class DashboardSSTView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin
             data_entrega__isnull=False
         ).select_related('equipamento')
 
+        epis_vencidos = 0
         epis_vencendo = 0
+        epis_regulares = 0
+
         for entrega in entregas_ativas:
             if entrega.equipamento.vida_util_dias:
                 vencimento = entrega.data_entrega + timedelta(days=entrega.equipamento.vida_util_dias)
-                if today <= vencimento <= thirty_days:
+                if vencimento < today:
+                    epis_vencidos += 1
+                elif today <= vencimento <= thirty_days:
                     epis_vencendo += 1
+                else:
+                    epis_regulares += 1
+            else:
+                epis_regulares += 1 # EPI sem vencimento conta como regular
 
         context['epis_vencendo_em_30_dias'] = epis_vencendo
+        context['chart_vencimento_labels'] = json.dumps(['Regulares', 'Vencendo (30d)', 'Vencidos'])
+        context['chart_vencimento_data'] = json.dumps([epis_regulares, epis_vencendo, epis_vencidos])
 
-        # Dados para gráficos
+        # ---------------- GRÁFICO 1: Matriz de EPI ----------------
         matriz_data = matriz_da_filial.values('funcao__nome').annotate(
             num_epis=Count('equipamento')
         ).order_by('-num_epis')[:10]
@@ -664,6 +675,20 @@ class DashboardSSTView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin
         if matriz_data:
             context['matriz_labels'] = json.dumps([m['funcao__nome'] for m in matriz_data])
             context['matriz_data'] = json.dumps([m['num_epis'] for m in matriz_data])
+
+        # ---------------- GRÁFICO 2: Status das Entregas ----------------
+        entregas_assinadas = entregas_da_filial.filter(data_devolucao__isnull=True, data_assinatura__isnull=False).count()
+        entregas_pendentes = context['entregas_pendentes_assinatura'] # Reutilizando o KPI
+        entregas_devolvidas = entregas_da_filial.filter(data_devolucao__isnull=False).count()
+        
+        context['chart_status_entregas_labels'] = json.dumps(['Assinadas (Ativas)', 'Pendentes', 'Devolvidas'])
+        context['chart_status_entregas_data'] = json.dumps([entregas_assinadas, entregas_pendentes, entregas_devolvidas])
+
+        # ---------------- GRÁFICO 3: Top 5 EPIs Mais Entregues ----------------
+        top_epis = entregas_da_filial.values('equipamento__nome').annotate(total=Count('id')).order_by('-total')[:5]
+        if top_epis:
+            context['chart_top_epis_labels'] = json.dumps([e['equipamento__nome'] for e in top_epis])
+            context['chart_top_epis_data'] = json.dumps([e['total'] for e in top_epis])
 
         context['titulo_pagina'] = "Painel de Segurança do Trabalho"
         return context

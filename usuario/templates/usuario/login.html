@@ -41,7 +41,16 @@
 
                 <div class="mb-3">
                     <label for="{{ form.password.id_for_label }}" class="form-label fw-semibold">Senha</label>
-                    {% render_field form.password class="form-control form-control-lg" placeholder="••••••••" %}
+                    <div class="input-group">
+                        {% render_field form.password class="form-control form-control-lg" placeholder="••••••••" %}
+                        <button class="btn btn-outline-secondary toggle-password"
+                                type="button"
+                                data-target="#{{ form.password.id_for_label }}"
+                                tabindex="-1"
+                                title="Mostrar/ocultar senha">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="d-grid mt-4">
@@ -60,4 +69,24 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+    document.querySelectorAll('.toggle-password').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const input = document.querySelector(this.dataset.target);
+            const icon  = this.querySelector('i');
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            icon.classList.toggle('bi-eye',       !isPassword);
+            icon.classList.toggle('bi-eye-slash',  isPassword);
+        });
+    });
+})();
+</script>
+{% endblock %}
+
 
