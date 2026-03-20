@@ -7,6 +7,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
+from django.views.generic import RedirectView
 
 # Importar as views de erro
 from core.views import (
@@ -38,7 +39,7 @@ urlpatterns = [
     path('', include('core.urls')), 
 
     # Rotas das apps com seus prefixos
-    
+    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.ico', permanent=True)),
     path('contas/', include('usuario.urls', namespace='usuario')), # Onde está o seu CustomLoginView
     path('logradouro/', include('logradouro.urls')),
     path('cliente/', include('cliente.urls')),
