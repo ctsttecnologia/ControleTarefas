@@ -1,25 +1,46 @@
+{# templates/usuario/definir_senha.html #}
 {% extends 'usuario/base_usuario.html' %}
 {% load widget_tweaks %}
 
-{% block title %}Definir Senha — {{ usuario_alvo.username }}{% endblock %}
+{% block title %}Definir Minha Senha{% endblock %}
 
 {% block usuario_content %}
 <div class="row justify-content-center">
     <div class="col-lg-5">
         <div class="card shadow-sm">
-            <div class="card-header bg-warning bg-opacity-10">
+            <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">
-                    <i class="bi bi-key me-2 text-warning"></i>
-                    Definir Senha para <strong>{{ usuario_alvo.get_full_name }}</strong>
+                    <i class="bi bi-shield-lock me-2"></i>Definir Minha Senha
                 </h5>
             </div>
             <div class="card-body">
                 <form method="post" novalidate>
                     {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+
                     {% for field in form %}
                     <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">{{ field.label }}</label>
-                        {% render_field field class="form-control" %}
+                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                            {{ field.label }}
+                        </label>
+
+                        <!-- Input group com botão toggle -->
+                        <div class="input-group">
+                            {% render_field field class="form-control" %}
+                            <button class="btn btn-outline-secondary toggle-password"
+                                    type="button"
+                                    data-target="#{{ field.id_for_label }}"
+                                    tabindex="-1"
+                                    title="Mostrar/ocultar senha">
+                                    <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+
                         {% if field.help_text %}
                         <div class="form-text"><small>{{ field.help_text|safe }}</small></div>
                         {% endif %}
@@ -27,11 +48,32 @@
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
+
+                    <!-- Força da senha:
+                         - definir_senha usa SetPasswordForm → campos: new_password1 / new_password2
+                         - mesmo html_name do alterar_senha, então funciona igual ✅ -->
+                    {% if field.html_name == 'new_password1' %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Força da senha</small>
+                            <small id="password-strength-text" class="fw-semibold"></small>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div id="password-strength-bar"
+                                 class="progress-bar"
+                                 role="progressbar"
+                                 style="width: 0%; transition: width 0.3s ease;">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% endfor %}
+
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="{% url 'usuario:lista_usuarios' %}" class="btn btn-outline-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="bi bi-check-lg me-1"></i>Salvar Senha
+                        <a href="{% url 'usuario:profile' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Definir Senha
                         </button>
                     </div>
                 </form>
@@ -39,5 +81,66 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    // ─── Toggle mostrar/ocultar senha ────────────────────────────────────────
+    document.querySelectorAll('.toggle-password').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const input = document.querySelector(this.dataset.target);
+            const icon  = this.querySelector('i');
+
+            if (!input) return;
+
+            const isPassword = input.type === 'password';
+            input.type       = isPassword ? 'text' : 'password';
+            icon.classList.toggle('bi-eye',       !isPassword);
+            icon.classList.toggle('bi-eye-slash',  isPassword);
+        });
+    });
+
+    // ─── Indicador de força da senha ─────────────────────────────────────────
+    // SetPasswordForm e PasswordChangeForm usam o mesmo id: id_new_password1
+    const passwordInput = document.getElementById('id_new_password1');
+    const bar           = document.getElementById('password-strength-bar');
+    const label         = document.getElementById('password-strength-text');
+
+    if (passwordInput && bar && label) {
+        passwordInput.addEventListener('input', function () {
+            const strength = calcStrength(this.value);
+
+            const levels = [
+                { pct: 0,   cls: '',           text: ''            },
+                { pct: 25,  cls: 'bg-danger',  text: 'Muito fraca' },
+                { pct: 50,  cls: 'bg-warning', text: 'Fraca'       },
+                { pct: 75,  cls: 'bg-info',    text: 'Média'       },
+                { pct: 100, cls: 'bg-success', text: 'Forte'       },
+            ];
+
+            const level       = levels[strength];
+            bar.style.width   = level.pct + '%';
+            bar.className     = 'progress-bar ' + level.cls;
+            label.textContent = level.text;
+            label.className   = 'fw-semibold ' + level.cls.replace('bg-', 'text-');
+        });
+    }
+
+    function calcStrength(pwd) {
+        if (!pwd) return 0;
+        let score = 0;
+        if (pwd.length >= 8)                         score++;
+        if (pwd.length >= 12)                        score++;
+        if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+        if (/[0-9]/.test(pwd))                       score++;
+        if (/[^A-Za-z0-9]/.test(pwd))               score++;
+        return Math.min(4, score);
+    }
+
+})();
+</script>
 {% endblock %}
 

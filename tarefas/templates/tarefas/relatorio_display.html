@@ -85,15 +85,46 @@
 .rd-export-btn--docx:hover { color: #3b82f6; border-color: #3b82f6; }
 .rd-export-btn--csv:hover  { color: #22c55e; border-color: #22c55e; }
 
+/* Filter Tags */
+.rd-filter-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+.rd-filter-tag {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.72rem; font-weight: 600; background: rgba(99,102,241,0.1);
+    color: #6366f1; padding: 0.25em 0.65em; border-radius: 6px;
+}
+.rd-filter-tag a { color: #6366f1; text-decoration: none; font-weight: 800; margin-left: 0.2rem; }
+.rd-filter-tag a:hover { color: #ef4444; }
+
+/* Filter Bar */
+.rd-filter-bar {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    padding: 0.85rem 1.15rem; border-bottom: 1px solid var(--rd-divider);
+    background: var(--rd-table-header-bg);
+}
+.rd-filter-bar label {
+    font-size: 0.72rem; font-weight: 700; color: var(--rd-text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.25rem;
+}
+.rd-filter-select {
+    font-size: 0.8rem; border-radius: 8px; border: 1px solid var(--rd-card-border);
+    padding: 0.3rem 0.6rem; background: var(--rd-card-bg); color: var(--rd-text);
+    min-width: 160px;
+}
+.rd-filter-select:focus {
+    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); outline: none;
+}
+
 .rd-empty { text-align: center; padding: 3rem 1rem; color: var(--rd-text-muted); font-size: 0.85rem; }
 
 @media (max-width: 767.98px) {
     .rd-wrapper { padding: 0.75rem; }
     .rd-title { font-size: 1.15rem; }
+    .rd-filter-bar { flex-direction: column; align-items: stretch; }
+    .rd-filter-select { min-width: 100%; }
 }
 
 @media print {
-    .rd-actions, .rd-export-bar { display: none !important; }
+    .rd-actions, .rd-export-bar, .rd-filter-tags, .rd-filter-bar { display: none !important; }
     .rd-card { box-shadow: none; border: 1px solid #ccc; }
 }
 </style>
@@ -108,7 +139,6 @@
             <h1 class="rd-title"><i class="bi bi-file-earmark-text me-2"></i>Resultado do Relatório</h1>
             <p class="rd-subtitle">
                 {{ total_tarefas|default:0 }} tarefa{{ total_tarefas|pluralize:"s" }} encontrada{{ total_tarefas|pluralize:"s" }}
-                {% if request.GET.status %} · Filtro: {{ request.GET.status }}{% endif %}
             </p>
         </div>
         <div class="rd-actions">
@@ -124,12 +154,74 @@
         </div>
     </div>
 
+    <!-- Active Filter Tags -->
+    {% if current_filters.status or current_filters.prioridade or current_filters.responsavel %}
+    <div class="rd-filter-tags">
+        {% if current_filters.status %}
+        <span class="rd-filter-tag">
+            <i class="bi bi-funnel-fill"></i>
+            Status: {{ current_filters.status }}
+            <a href="?{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}&{% endif %}{% if current_filters.responsavel %}responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover">&times;</a>
+        </span>
+        {% endif %}
+        {% if current_filters.prioridade %}
+        <span class="rd-filter-tag">
+            <i class="bi bi-flag-fill"></i>
+            Prioridade: {{ current_filters.prioridade }}
+            <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.responsavel %}responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover">&times;</a>
+        </span>
+        {% endif %}
+        {% if current_filters.responsavel %}
+        <span class="rd-filter-tag">
+            <i class="bi bi-person-fill"></i>
+            Responsável:
+            {% for user in responsaveis %}
+                {% if user.pk|stringformat:"d" == current_filters.responsavel %}
+                    {{ user.get_full_name|default:user.username }}
+                {% endif %}
+            {% endfor %}
+            <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}" title="Remover">&times;</a>
+        </span>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Card -->
     <div class="rd-card">
         <div class="rd-card-header">
             <h6 class="rd-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
             <span class="rd-count">{{ total_tarefas|default:0 }}</span>
         </div>
+
+        <!-- ═══ BARRA DE FILTRO POR RESPONSÁVEL ═══ -->
+        <form method="get" class="rd-filter-bar">
+            <!-- Preservar filtros existentes -->
+            {% if current_filters.status %}
+            <input type="hidden" name="status" value="{{ current_filters.status }}">
+            {% endif %}
+            {% if current_filters.prioridade %}
+            <input type="hidden" name="prioridade" value="{{ current_filters.prioridade }}">
+            {% endif %}
+
+            <label for="responsavel"><i class="bi bi-person me-1"></i>Responsável:</label>
+            <select name="responsavel" id="responsavel" class="rd-filter-select" onchange="this.form.submit()">
+                <option value="">Todos os responsáveis</option>
+                {% for user in responsaveis %}
+                <option value="{{ user.pk }}" {% if current_filters.responsavel == user.pk|stringformat:"d" %}selected{% endif %}>
+                    {{ user.get_full_name|default:user.username }}
+                </option>
+                {% endfor %}
+            </select>
+
+            {% if current_filters.responsavel %}
+            <a href="?{% if current_filters.status %}status={{ current_filters.status }}&{% endif %}{% if current_filters.prioridade %}prioridade={{ current_filters.prioridade }}{% endif %}"
+               class="btn btn-sm btn-outline-danger" title="Limpar filtro de responsável">
+                <i class="bi bi-x-lg"></i>
+            </a>
+            {% endif %}
+        </form>
+        <!-- ═══ FIM ═══ -->
+
         <div class="table-responsive">
             <table class="rd-table">
                 <thead>
@@ -146,7 +238,7 @@
                     {% for tarefa in tarefas %}
                     <tr>
                         <td><strong>{{ tarefa.titulo }}</strong></td>
-                        <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}-{% endif %}</td>
+                        <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}</td>
                         <td>
                             <span class="rd-badge rd-badge-{{ tarefa.status }}">
                                 {{ tarefa.get_status_display }}
@@ -154,7 +246,7 @@
                         </td>
                         <td>{{ tarefa.get_prioridade_display }}</td>
                         <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
-                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -174,15 +266,15 @@
         {% if tarefas %}
         <div class="rd-export-bar">
             <span class="rd-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.prioridade %}&prioridade={{ request.GET.prioridade }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.prioridade %}&prioridade={{ current_filters.prioridade }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rd-export-btn rd-export-btn--pdf">
                 <i class="bi bi-file-earmark-pdf"></i> PDF
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.prioridade %}&prioridade={{ request.GET.prioridade }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.prioridade %}&prioridade={{ current_filters.prioridade }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rd-export-btn rd-export-btn--docx">
                 <i class="bi bi-file-earmark-word"></i> Word
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.prioridade %}&prioridade={{ request.GET.prioridade }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.prioridade %}&prioridade={{ current_filters.prioridade }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rd-export-btn rd-export-btn--csv">
                 <i class="bi bi-file-earmark-spreadsheet"></i> CSV
             </a>
@@ -191,6 +283,4 @@
     </div>
 </div>
 {% endblock %}
-
-
 

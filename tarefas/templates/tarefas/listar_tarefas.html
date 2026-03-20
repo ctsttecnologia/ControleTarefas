@@ -1,3 +1,4 @@
+
 <!-- templates/tarefas/listar_tarefas.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -447,10 +448,10 @@
                     <tr>
                         <td data-label="Tarefa">
                             <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
-                                {{ tarefa.titulo }}
+                                {{ tarefa.titulo }} 
                             </a>
                             {% if tarefa.descricao %}
-                            <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
+                                <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
                         </td>
                         <td data-label="Responsável">

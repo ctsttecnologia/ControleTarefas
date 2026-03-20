@@ -183,8 +183,68 @@
 }
 
 @media print {
-    .rel-actions, .rel-offcanvas, .rel-quick-export, .rel-filter-tags { display: none !important; }
-    .rel-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    /* Ocultar elementos interativos */
+    .rel-actions,
+    .rel-offcanvas,
+    .rel-quick-export,
+    .rel-filter-tags,
+    .offcanvas-backdrop {
+        display: none !important;
+    }
+
+    /* Cards sem sombra */
+    .rel-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* Grid dos gráficos */
+    .rel-charts-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1rem !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        margin-top: 1rem;
+    }
+
+    /* Container do gráfico */
+    .rel-chart-container {
+        height: auto !important;
+        min-height: 200px;
+        position: relative;
+    }
+
+    /* Esconde canvas original (não imprime) */
+    .rel-chart-container canvas {
+        display: none !important;
+    }
+
+    /* Mostra a imagem gerada pelo JS */
+    .rel-chart-container .print-chart-img {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: 280px;
+        object-fit: contain;
+    }
+
+    /* Ajuste de padding */
+    .rel-card-body {
+        padding: 0.5rem !important;
+    }
+
+    /* Fundo branco forçado */
+    body, .rel-wrapper {
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .rel-card-header, .rel-card-title {
+        color: #000 !important;
+    }
 }
 </style>
 {% endblock %}
@@ -192,7 +252,7 @@
 {% block content %}
 <div class="rel-wrapper">
 
-        <!-- Header -->
+    <!-- Header -->
     <div class="rel-header">
         <div>
             <h1 class="rel-title">
@@ -217,13 +277,27 @@
     </div>
 
     <!-- Active Filters -->
-    {% if request.GET.status %}
+    {% if current_filters.status or current_filters.responsavel %}
     <div class="rel-filter-tags">
+        {% if current_filters.status %}
         <span class="rel-filter-tag">
             <i class="bi bi-funnel-fill"></i>
-            Status: {{ request.GET.status }}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" title="Remover filtro">&times;</a>
+            Status: {{ current_filters.status }}
+            <a href="{% url 'tarefas:relatorio_tarefas' %}{% if current_filters.responsavel %}?responsavel={{ current_filters.responsavel }}{% endif %}" title="Remover filtro">&times;</a>
         </span>
+        {% endif %}
+        {% if current_filters.responsavel %}
+        <span class="rel-filter-tag">
+            <i class="bi bi-person-fill"></i>
+            Responsável:
+            {% for user in responsaveis %}
+                {% if user.pk|stringformat:"d" == current_filters.responsavel %}
+                    {{ user.get_full_name|default:user.username }}
+                {% endif %}
+            {% endfor %}
+            <a href="{% url 'tarefas:relatorio_tarefas' %}{% if current_filters.status %}?status={{ current_filters.status }}{% endif %}" title="Remover filtro">&times;</a>
+        </span>
+        {% endif %}
     </div>
     {% endif %}
 
@@ -283,15 +357,15 @@
         {% if tarefas %}
         <div class="rel-quick-export">
             <span class="rel-quick-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rel-quick-btn rel-quick-btn--pdf">
                 <i class="bi bi-file-earmark-pdf"></i> PDF
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rel-quick-btn rel-quick-btn--docx">
                 <i class="bi bi-file-earmark-word"></i> Word
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rel-quick-btn rel-quick-btn--csv">
                 <i class="bi bi-file-earmark-spreadsheet"></i> CSV
             </a>
@@ -337,6 +411,8 @@
         <!-- Filtros -->
         <form method="get">
             <div class="rel-section-label"><i class="bi bi-funnel me-1"></i> Filtrar</div>
+
+            <!-- Status -->
             <div class="mb-3">
                 <label for="status" class="form-label">Status</label>
                 <select name="status" id="status" class="form-select form-select-sm">
@@ -346,6 +422,21 @@
                     {% endfor %}
                 </select>
             </div>
+
+            <!-- ═══ RESPONSÁVEL (NOVO) ═══ -->
+            <div class="mb-3">
+                <label for="responsavel" class="form-label">Responsável</label>
+                <select name="responsavel" id="responsavel" class="form-select form-select-sm">
+                    <option value="">Todos</option>
+                    {% for user in responsaveis %}
+                    <option value="{{ user.pk }}" {% if current_filters.responsavel == user.pk|stringformat:"d" %}selected{% endif %}>
+                        {{ user.get_full_name|default:user.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- ═══ FIM ═══ -->
+
             <div class="d-grid gap-2 mb-4">
                 <button type="submit" class="btn btn-sm btn-primary">
                     <i class="bi bi-check-lg me-1"></i> Aplicar
@@ -361,15 +452,15 @@
         <!-- Exportação -->
         <div class="rel-section-label"><i class="bi bi-download me-1"></i> Exportar</div>
         <div class="d-grid gap-2">
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rel-export-btn rel-export-pdf">
                 <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rel-export-btn rel-export-docx">
                 <i class="bi bi-file-earmark-word"></i> Exportar Word
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
                class="rel-export-btn rel-export-csv">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
             </a>
@@ -452,6 +543,32 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // PRINT: Converter Canvas → Imagem para impressão
+    // ═══════════════════════════════════════════════════════════
+
+    window.addEventListener('beforeprint', function() {
+        document.querySelectorAll('.rel-chart-container canvas').forEach(function(canvas) {
+            // Só converte se ainda não tiver imagem de print
+            if (canvas.parentNode.querySelector('.print-chart-img')) return;
+
+            try {
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL('image/png');
+                img.className = 'print-chart-img';
+                img.style.cssText = 'width:100%; height:auto; display:none;';
+                canvas.parentNode.appendChild(img);
+            } catch(e) {
+                console.error('Erro ao converter gráfico para imagem:', e);
+            }
+        });
+    });
+
+    window.addEventListener('afterprint', function() {
+        // Limpa as imagens após a impressão (opcional)
+        // As imagens ficam ocultas na tela, então não atrapalham
+    });
 });
 </script>
 {% endblock %}

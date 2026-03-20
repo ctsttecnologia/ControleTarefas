@@ -34,12 +34,12 @@ class Tarefas(models.Model):
     ]
 
     STATUS_CHOICES = [
-        ('pendente', _('Pendente')),
-        ('andamento', _('Andamento')),
-        ('pausada', _('Pausada')),
         ('concluida', _('Concluída')),
-        ('cancelada', _('Cancelada')),
+        ('andamento', _('Andamento')),
+        ('pendente', _('Pendente')),
+        ('pausada', _('Pausada')),
         ('atrasada', _('Atrasada')),
+        ('cancelada', _('Cancelada')),
     ]
 
     FREQUENCIA_CHOICES = [
