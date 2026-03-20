@@ -149,6 +149,7 @@ if _storage_provider == 'GCS':
 # MIDDLEWARE - ADAPTATIVO POR AMBIENTE
 # =============================================================================
 MIDDLEWARE = [
+    'core.middleware.DBConnectionMiddleware',
     'django.middleware.security.SecurityMiddleware',
 ]
 
@@ -214,8 +215,12 @@ DATABASES = {
         'CONN_MAX_AGE': 0 if IS_DEVELOPMENT else 300,
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             'connect_timeout': 10 if IS_DEVELOPMENT else 5,
+            'read_timeout': 30,
+            'write_timeout': 30,
+            'charset': 'utf8mb4',
+            # Reconecta automaticamente (PyMySQL)
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         }
     }
 }

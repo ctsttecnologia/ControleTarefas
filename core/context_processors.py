@@ -2,6 +2,7 @@
 # core/context_processors.py
 
 from usuario.models import Filial
+from django.db import close_old_connections
 
 def filial_context(request):
     """

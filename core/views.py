@@ -3,11 +3,12 @@
 
 import mimetypes
 
+from django.db import close_old_connections
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from django.apps import apps
 
 from usuario.models import Filial
@@ -134,18 +135,30 @@ def error_403_view(request, exception=None):
     return render(request, 'errors/403.html', status=403)
 
 
-def error_404_view(request, exception):
-    if not hasattr(request, 'user'):
-        from django.contrib.auth.models import AnonymousUser
-        request.user = AnonymousUser()
-    return render(request, 'errors/404.html', status=404)
+def error_404_view(request, exception=None):
+    try:
+        close_old_connections()
+        return render(request, 'errors/404.html', status=404)
+    except Exception:
+        return HttpResponse(
+            '<h1>404 - Página não encontrada</h1>',
+            status=404,
+            content_type='text/html',
+        )
 
 
 def error_500_view(request):
-    if not hasattr(request, 'user'):
-        from django.contrib.auth.models import AnonymousUser
-        request.user = AnonymousUser()
-    return render(request, 'errors/500.html', status=500)
+    try:
+        close_old_connections()
+        return render(request, 'errors/500.html', status=500)
+    except Exception:
+        # Fallback absoluto — sem template, sem DB
+        return HttpResponse(
+            '<h1>500 - Erro interno</h1>'
+            '<p>O servidor encontrou um erro. Tente novamente em instantes.</p>',
+            status=500,
+            content_type='text/html',
+        )
 
 
 def error_503_view(request, exception=None):
