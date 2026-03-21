@@ -1,5 +1,5 @@
-
-# Módulos Django e de Terceiros
+﻿
+# MÃ³dulos Django e de Terceiros
 from django.contrib import messages 
 from django.db import models
 from django.db.models import Q
@@ -10,7 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 
 from dashboard.views import get_filial_ativa
-# Módulos Locais
+# MÃ³dulos Locais
 from .models import Cliente
 from .forms import ClienteForm
 # Bibliotecas para Excel
@@ -34,8 +34,8 @@ class ClienteListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     paginate_by = 10
     
     def get_queryset(self):
-        # A filtragem por filial já foi feita pelo FilialScopedMixin.
-        # Agora, aplicamos apenas ordenação, otimizações e a busca do usuário.
+        # A filtragem por filial jÃ¡ foi feita pelo FilialScopedMixin.
+        # Agora, aplicamos apenas ordenaÃ§Ã£o, otimizaÃ§Ãµes e a busca do usuÃ¡rio.
         queryset = super().get_queryset().select_related('logradouro').order_by('nome')
         
         termo_pesquisa = self.request.GET.get('q', '')
@@ -53,12 +53,12 @@ class ClienteListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         context['termo_pesquisa'] = self.request.GET.get('q', '')
 
         # MELHORIA DE PERFORMANCE:
-        # Usa o 'paginator.count' que já foi calculado pelo ListView,
+        # Usa o 'paginator.count' que jÃ¡ foi calculado pelo ListView,
         # em vez de fazer uma nova query com .count().
         if context.get('paginator'):
             context['total_clientes'] = context['paginator'].count
         else:
-            # Fallback para o caso de a paginação estar desativada
+            # Fallback para o caso de a paginaÃ§Ã£o estar desativada
             context['total_clientes'] = self.object_list.count()
             
         return context
@@ -74,7 +74,7 @@ class ClienteCreateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessag
     def get_queryset(self):
         """
         Garante que o mixin de filial receba o request para filtrar o cliente
-        corretamente pela filial do usuário logado.
+        corretamente pela filial do usuÃ¡rio logado.
         """
         return super().get_queryset()
     
@@ -82,13 +82,13 @@ class ClienteCreateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessag
         form.instance.criado_por = self.request.user
         messages.success(self.request, 'Cliente cadastrado com sucesso!')
         """
-        Atribui a filial ativa do usuário à nova empresa antes de salvar.
+        Atribui a filial ativa do usuÃ¡rio Ã  nova empresa antes de salvar.
         """
-        # Pega a filial ativa do usuário logado
+        # Pega a filial ativa do usuÃ¡rio logado
         filial_do_usuario = self.request.user.filial_ativa
-        # Atribui essa filial à instância do objeto que está sendo criado
+        # Atribui essa filial Ã  instÃ¢ncia do objeto que estÃ¡ sendo criado
         form.instance.filial = filial_do_usuario
-        # Chama o comportamento padrão (salvar o objeto
+        # Chama o comportamento padrÃ£o (salvar o objeto
         return super().form_valid(form)
 
 
@@ -102,7 +102,7 @@ class ClienteUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessag
     def get_queryset(self):
         """
         Garante que o mixin de filial receba o request para filtrar o cliente
-        corretamente pela filial do usuário logado.
+        corretamente pela filial do usuÃ¡rio logado.
         """
         return super().get_queryset()  
 
@@ -110,30 +110,30 @@ class ClienteDeleteView(LoginRequiredMixin, ViewFilialScopedMixin, SuccessMessag
     model = Cliente
     template_name = 'cliente/cliente_confirm_delete.html'
     success_url = reverse_lazy('cliente:lista_clientes')
-    success_message = "Cliente excluído com sucesso!"
+    success_message = "Cliente excluÃ­do com sucesso!"
 
     def get_queryset(self):
         """
         Garante que o mixin de filial receba o request para filtrar o cliente
-        corretamente pela filial do usuário logado.
+        corretamente pela filial do usuÃ¡rio logado.
         """
         return super().get_queryset()
 
-# --- VIEW DE EXPORTAÇÃO ---
+# --- VIEW DE EXPORTAÃ‡ÃƒO ---
 
 class ExportarClientesExcelView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     """
     Esta view agora herda de FilialScopedMixin e ListView.
-    Isso garante que a exportação respeitará a filial do usuário,
-    reutilizando a lógica segura do mixin e prevenindo vazamento de dados.
+    Isso garante que a exportaÃ§Ã£o respeitarÃ¡ a filial do usuÃ¡rio,
+    reutilizando a lÃ³gica segura do mixin e prevenindo vazamento de dados.
     """
-    model = Cliente # Necessário para o ListView e o mixin saberem qual queryset base buscar
+    model = Cliente # NecessÃ¡rio para o ListView e o mixin saberem qual queryset base buscar
 
     def get(self, request, *args, **kwargs):
-        # 1. Usa self.get_queryset() para obter a lista de clientes JÁ FILTRADA pelo mixin.
+        # 1. Usa self.get_queryset() para obter a lista de clientes JÃ FILTRADA pelo mixin.
         clientes = self.get_queryset().select_related('logradouro').order_by('nome')
 
-        # 2. O restante do código para gerar o Excel permanece o mesmo.
+        # 2. O restante do cÃ³digo para gerar o Excel permanece o mesmo.
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Clientes"
@@ -141,7 +141,7 @@ class ExportarClientesExcelView(LoginRequiredMixin, ViewFilialScopedMixin, ListV
         header_font = Font(bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="0d6efd", end_color="0d6efd", fill_type="solid")
         
-        headers = ["ID", "Nome Fantasia", "Razão Social", "CNPJ", "Contrato", "Endereço", "Telefone", "Email", "Status"]
+        headers = ["ID", "Nome Fantasia", "RazÃ£o Social", "CNPJ", "Contrato", "EndereÃ§o", "Telefone", "Email", "Status"]
         
         for col_num, header_title in enumerate(headers, 1):
             cell = ws.cell(row=1, column=col_num)
@@ -176,8 +176,8 @@ class ClienteDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Busca os arquivos relacionados a este cliente
-        # O 'prefetch_related' otimiza a consulta para evitar lentidão no banco
-        context['arquivos_cliente'] = self.object.arquivos.all().select_related('filial')
+        # O 'prefetch_related' otimiza a consulta para evitar lentidÃ£o no banco
+        context['arquivos_cliente'] = self.object.documentos_cliente.all()
         return context
 
 # --- NOVA VIEW PARA O AUTOCOMPLETAR ---
@@ -224,3 +224,4 @@ def ajax_buscar_logradouros(request):
 
     return JsonResponse(results, safe=False)
     
+

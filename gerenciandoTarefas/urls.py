@@ -55,7 +55,7 @@ urlpatterns = [
     path('controle_de_telefone/', include('controle_de_telefone.urls')),
     path('select2/', include('django_select2.urls')),
     path('chat/', include('chat.urls')),
-    path('arquivos/', include('arquivos.urls')),
+  
     path('documentos/', include('documentos.urls', namespace='documentos')),
     path('pgr_gestao/', include('pgr_gestao.urls', namespace='pgr_gestao')),
     # Isso permite usar o namespace "dashboard..."

@@ -32,8 +32,9 @@
     .doc-card .doc-label { font-size: 0.78rem; font-weight: 500; line-height: 1.2; }
 
     /* ═══ Campos condicionais ═══ */
-    .campo-condicional { display: none; }
-    .campo-condicional.visible { display: block; }
+    .campo-condicional { display: none !important; }
+    .campo-condicional.visible { display: block !important; }
+    .campo-condicional.visible.row {display: flex !important;}
 
     /* ═══ Seção de tipo ═══ */
     .tipo-section-title {
@@ -295,8 +296,8 @@
                                     <label class="form-label">UF</label>
                                     {% render_field form.ctps_uf %}
                                 </div>
-                                <div class="col-md-4 campo-condicional mb-3 d-flex align-items-end" data-tipos="CTPS">
-                                    <div class="form-check">
+                                <div class="col-md-4 campo-condicional mb-3" data-tipos="CTPS">
+                                    <div class="form-check mt-4 pt-2">
                                         {% render_field form.ctps_digital %}
                                         <label class="form-check-label" for="{{ form.ctps_digital.id_for_label }}">
                                             CTPS Digital (sem número físico)
