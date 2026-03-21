@@ -146,9 +146,17 @@
                 {# ════════════════════════════════════════ #}
                 {# SEÇÃO 3 — Endereço (Logradouro)         #}
                 {# ════════════════════════════════════════ #}
-                <h6 class="fw-bold text-primary mb-3">
-                    <i class="bi bi-geo-alt me-1"></i> Endereço
-                </h6>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="bi bi-geo-alt me-1"></i> Endereço
+                    </h6>
+                    <a href="{% url 'logradouro:cadastrar_logradouro' %}"
+                       class="btn btn-outline-primary btn-sm"
+                       target="_blank"
+                       title="Cadastrar um novo endereço e depois selecionar aqui">
+                        <i class="bi bi-plus-circle me-1"></i>Novo Endereço
+                    </a>
+                </div>
                 <div class="row g-3 mb-4">
                     <div class="col-12">
                         {% include 'cliente/_includes/_field.html' with field=form.logradouro col="" hint="Digite ao menos 2 caracteres para buscar (rua, bairro, cidade ou CEP)" %}
@@ -342,4 +350,5 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 {% endblock %}
+
 

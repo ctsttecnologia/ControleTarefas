@@ -3,29 +3,22 @@
 
 import mimetypes
 
+from django.conf import settings
 from django.db import close_old_connections
 from django.shortcuts import redirect, render, get_object_or_404
 from django.views import View
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.apps import apps
 
 from usuario.models import Filial
 
 
-# ============================================================
-# VIEW GENÉRICA DE DOWNLOAD SEGURO DE ARQUIVOS
-# ============================================================
-
 class SecureFileDownloadView(LoginRequiredMixin, View):
     """
     View genérica para servir qualquer arquivo de mídia de forma segura.
     Compatível com qualquer storage backend (local, GCS, S3, etc.)
-    
-    Uso nas URLs:
-        path('download/<str:app>/<str:model>/<int:pk>/<str:field>/',
-             SecureFileDownloadView.as_view(), name='secure_download'),
     """
 
     def get(self, request, app, model, pk, field):
@@ -47,7 +40,36 @@ class SecureFileDownloadView(LoginRequiredMixin, View):
             raise Http404("Nenhum arquivo associado.")
 
         # 4. Verificar se o arquivo existe no storage
-        if not file_field.storage.exists(file_field.name):
+        try:
+            exists = file_field.storage.exists(file_field.name)
+        except Exception:
+            exists = False
+
+        if not exists:
+            # ══════════════════════════════════════════════
+            # FALLBACK: busca no GCS quando o storage local
+            # não encontra o arquivo (dev apontando para produção)
+            # ══════════════════════════════════════════════
+            if settings.DEBUG:
+                try:
+                    from storages.backends.gcloud import GoogleCloudStorage
+
+                    bucket_name = getattr(settings, 'GS_BUCKET_NAME', None)
+                    credentials = getattr(settings, 'GS_CREDENTIALS', None)
+
+                    if bucket_name:
+                        gcs = GoogleCloudStorage(
+                            bucket_name=bucket_name,
+                            credentials=credentials,  # None = usa ADC
+                        )
+
+                        # Tenta caminho direto, depois com prefixo media/
+                        for name in [file_field.name, f'media/{file_field.name}']:
+                            if gcs.exists(name):
+                                return HttpResponseRedirect(gcs.url(name))
+                except (ImportError, Exception):
+                    pass
+
             raise Http404("Arquivo não encontrado no servidor.")
 
         # 5. Extrair o nome do arquivo
@@ -59,15 +81,21 @@ class SecureFileDownloadView(LoginRequiredMixin, View):
             content_type = 'application/octet-stream'
 
         # 7. Servir o arquivo (compatível com qualquer storage)
+        try:
+            file_obj = file_field.open('rb')
+        except Exception:
+            raise Http404("Erro ao acessar o arquivo.")
+
         response = FileResponse(
-            file_field.open('rb'),
+            file_obj,
             content_type=content_type,
         )
 
         # PDFs e imagens abrem inline; outros fazem download
         inline_types = [
             'application/pdf',
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+            'image/jpeg', 'image/png', 'image/gif',
+            'image/webp', 'image/svg+xml',
         ]
         if content_type in inline_types:
             response['Content-Disposition'] = f'inline; filename="{filename}"'

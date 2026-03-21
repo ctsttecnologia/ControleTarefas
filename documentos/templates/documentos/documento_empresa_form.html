@@ -1,6 +1,8 @@
 
 {% extends 'base.html' %}
 
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
 {% block content %}
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
@@ -9,7 +11,7 @@
             {# ── Breadcrumb ── #}
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb small">
-                    <li class="breadcrumb-item"><a href="{% url 'arquivos:lista_documentos' %}">Arquivos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'documentos:lista' %}">Documentos</a></li>
                     <li class="breadcrumb-item active">
                         {% if form.instance.pk %}Editar{% else %}Novo{% endif %}
                     </li>
@@ -21,9 +23,9 @@
                 <div class="card-header bg-primary text-white py-3">
                     <h4 class="mb-0">
                         {% if form.instance.pk %}
-                            <i class="bi bi-pencil-square me-2"></i>Editar Arquivo
+                            <i class="bi bi-pencil-square me-2"></i>Editar Documento
                         {% else %}
-                            <i class="bi bi-cloud-upload me-2"></i>Novo Arquivo
+                            <i class="bi bi-cloud-upload me-2"></i>Novo Documento
                         {% endif %}
                     </h4>
                 </div>
@@ -33,7 +35,7 @@
                     {% if form.errors %}
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Atenção!</strong> Corrija os erros abaixo para continuar.
+                            <strong>Atenção!</strong> Corrija os erros abaixo.
                             {% if form.non_field_errors %}
                                 <ul class="mb-0 mt-2">
                                     {% for error in form.non_field_errors %}
@@ -71,13 +73,10 @@
                                     Tipo <span class="text-danger">*</span>
                                 </label>
                                 {{ form.tipo }}
-                                {% if form.tipo.errors %}
-                                    <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
-                                {% endif %}
                             </div>
 
                             <div class="col-md-6">
-                                <label for="{{ form.status.id_for_label }}" class="form-label">Status do Arquivo</label>
+                                <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
                                 {{ form.status }}
                             </div>
 
@@ -94,9 +93,13 @@
                                     Cliente Relacionado
                                 </label>
                                 {{ form.cliente }}
-                                {% if form.cliente.errors %}
-                                    <div class="text-danger small mt-1">{{ form.cliente.errors }}</div>
-                                {% endif %}
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.responsavel.id_for_label }}" class="form-label">
+                                    Responsável
+                                </label>
+                                {{ form.responsavel }}
                             </div>
 
                             <div class="col-12">
@@ -117,17 +120,17 @@
                         <div class="bg-light p-3 rounded border">
                             <div class="row g-3">
                                 <div class="col-12">
-                                    <label for="{{ form.doc_arquivo.id_for_label }}" class="form-label fw-bold">
+                                    <label for="{{ form.arquivo.id_for_label }}" class="form-label fw-bold">
                                         Arquivo (PDF, Imagem, Doc)
                                         {% if not form.instance.pk %}<span class="text-danger">*</span>{% endif %}
                                     </label>
-                                    {{ form.doc_arquivo }}
+                                    {{ form.arquivo }}
 
-                                    {% if form.instance.pk and form.instance.documento_vigente and form.instance.documento_vigente.arquivo %}
+                                    {% if form.instance.pk and form.instance.arquivo %}
                                         <div class="mt-2 d-flex align-items-center">
                                             <i class="bi bi-file-earmark-check text-success me-2"></i>
                                             <span class="small text-muted me-2">Arquivo atual:</span>
-                                            <a href="{% url 'documentos:download' form.instance.documento_vigente.pk %}"
+                                            <a href="{% url 'documentos:download' form.instance.pk %}"
                                                target="_blank"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-eye me-1"></i> Visualizar
@@ -135,45 +138,35 @@
                                         </div>
                                     {% endif %}
 
-                                    {% if form.doc_arquivo.errors %}
-                                        <div class="text-danger small mt-1">{{ form.doc_arquivo.errors }}</div>
+                                    {% if form.arquivo.errors %}
+                                        <div class="text-danger small mt-1">{{ form.arquivo.errors }}</div>
                                     {% endif %}
                                 </div>
 
-                                <div class="col-md-4">
-                                    <label for="{{ form.doc_inicio.id_for_label }}" class="form-label">
+                                <div class="col-md-6">
+                                    <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
                                         Data de Emissão
                                     </label>
-                                    {{ form.doc_inicio }}
+                                    {{ form.data_emissao }}
                                 </div>
 
-                                <div class="col-md-4">
-                                    <label for="{{ form.doc_vencimento.id_for_label }}" class="form-label fw-bold text-danger">
-                                        Data de Vencimento <span class="text-danger">*</span>
+                                <div class="col-md-6">
+                                    <label for="{{ form.data_vencimento.id_for_label }}" class="form-label fw-bold">
+                                        Data de Vencimento
                                     </label>
-                                    {{ form.doc_vencimento }}
-                                    {% if form.doc_vencimento.errors %}
-                                        <div class="text-danger small mt-1">{{ form.doc_vencimento.errors }}</div>
-                                    {% endif %}
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label for="{{ form.doc_responsavel.id_for_label }}" class="form-label">
-                                        Responsável
-                                    </label>
-                                    {{ form.doc_responsavel }}
+                                    {{ form.data_vencimento }}
                                 </div>
                             </div>
                         </div>
 
-                        {# ── Botões de Ação ── #}
+                        {# ── Botões ── #}
                         <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                            <a href="{% url 'arquivos:lista_documentos' %}" class="btn btn-outline-secondary px-4">
+                            <a href="{% url 'documentos:lista' %}" class="btn btn-outline-secondary px-4">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
                             <button type="submit" class="btn btn-success px-4">
                                 <i class="bi bi-check-lg me-1"></i>
-                                {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Arquivo{% endif %}
+                                {% if form.instance.pk %}Salvar Alterações{% else %}Cadastrar Documento{% endif %}
                             </button>
                         </div>
                     </form>
@@ -183,6 +176,5 @@
     </div>
 </div>
 {% endblock %}
-
 
 

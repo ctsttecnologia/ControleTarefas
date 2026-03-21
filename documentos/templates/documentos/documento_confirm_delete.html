@@ -1,46 +1,75 @@
-{% extends "base.html" %}
 
-{% block title %}Excluir Documento | Gerenciando Tarefas{% endblock %}
+
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container mt-5 mb-5">
     <div class="row justify-content-center">
-        <div class="col-lg-6">
+        <div class="col-md-6 col-lg-5">
+
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a href="{% url 'documentos:lista' %}">Documentos</a></li>
+                    <li class="breadcrumb-item active">Excluir</li>
+                </ol>
+            </nav>
 
             <div class="card shadow-sm border-danger">
-                <div class="card-header bg-danger text-white d-flex align-items-center">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <strong>Confirmar Exclusão</strong>
+                <div class="card-header bg-danger text-white py-3">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Exclusão
+                    </h5>
                 </div>
-                <div class="card-body p-4">
-                    <div class="text-center mb-4">
-                        <i class="bi bi-file-earmark-x text-danger" style="font-size: 3rem;"></i>
+
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">
+                        <i class="bi bi-trash display-3 text-danger opacity-75"></i>
                     </div>
 
-                    <p class="text-center fs-5">
-                        Deseja realmente excluir o documento:<br>
-                        <strong>"{{ documento.nome }}"</strong>?
-                    </p>
-                    <p class="text-muted text-center small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Esta ação é permanente e o arquivo será removido do servidor.
-                    </p>
+                    <h5 class="card-title mb-1">Tem certeza que deseja excluir?</h5>
+                    <p class="text-muted small mb-3">Esta ação não pode ser desfeita.</p>
 
-                    <form method="post" class="d-flex justify-content-center gap-3 mt-4">
+                    <div class="bg-light rounded p-3 mb-4 text-start">
+                        <div class="row small">
+                            <div class="col-4 text-muted fw-bold">Nome:</div>
+                            <div class="col-8">{{ documento.nome }}</div>
+
+                            <div class="col-4 text-muted fw-bold">Tipo:</div>
+                            <div class="col-8">{{ documento.get_tipo_display }}</div>
+
+                            {% if documento.cliente %}
+                            <div class="col-4 text-muted fw-bold">Cliente:</div>
+                            <div class="col-8">{{ documento.cliente }}</div>
+                            {% endif %}
+
+                            {% if documento.data_vencimento %}
+                            <div class="col-4 text-muted fw-bold">Vencimento:</div>
+                            <div class="col-8">{{ documento.data_vencimento|date:"d/m/Y" }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning text-start small mb-4">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Esta ação apagará o registro e o <strong>arquivo físico (PDF)</strong> permanentemente.
+                    </div>
+
+                    <form method="post">
                         {% csrf_token %}
-                        <a href="{{ request.META.HTTP_REFERER|default:'/' }}"
-                           class="btn btn-secondary px-4">
-                            <i class="bi bi-x-lg me-1"></i>Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-danger px-4">
-                            <i class="bi bi-trash me-1"></i>Sim, excluir
-                        </button>
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'documentos:lista' %}" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4">
+                                <i class="bi bi-trash me-1"></i> Sim, excluir
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 {% endblock %}
+
 

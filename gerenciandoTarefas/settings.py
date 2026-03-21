@@ -125,7 +125,6 @@ INSTALLED_APPS = [
     'ferramentas',
     'controle_de_telefone',
     'chat',
-    'arquivos',
     'documentos',
     'api',
     'pgr_gestao.apps.PgrGestaoConfig',
@@ -352,6 +351,10 @@ SENDFILE_URL = '/private'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# O bucket name é obrigatório para o fallback funcionar
+GS_BUCKET_NAME = 'seu-bucket-da-producao'  # mesmo nome que usa em produção
 
 # =============================================================================
 # E-MAIL

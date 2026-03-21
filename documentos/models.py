@@ -1,158 +1,227 @@
 
+
+import os
 from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
-import os
-from django.conf import settings
-# Importando a infraestrutura de Filial, conforme seus outros apps
+from django.core.files.storage import FileSystemStorage
+
 from usuario.models import Filial
 from core.managers import FilialManager
 
-from django.core.files.storage import FileSystemStorage
-# Storage privado — salva em private_media/ ao invés de midia/
+
+# Storage privado — salva em private_media/ ao invés de media/
 private_storage = FileSystemStorage(
     location=getattr(settings, 'PRIVATE_MEDIA_ROOT', os.path.join(settings.BASE_DIR, 'private_media')),
     base_url='/private/',
 )
 
+
 def private_document_path(instance, filename):
     """
-    Função de upload segura que armazena ficheiros numa pasta privada
-    baseada no "dono" do documento (ex: /private_media/documentos/treinamento/42/certificado.pdf)
+    Upload seguro: /private_media/documentos/<app_label>/<object_id>/<filename>
+    Se não tiver content_type (documento avulso), salva em /private_media/documentos/empresa/<id>/
     """
-    app_label = instance.content_type.app_label
-    object_id = instance.object_id
-    return f'documentos/{app_label}/{object_id}/{filename}'
+    if instance.content_type:
+        app_label = instance.content_type.app_label
+        obj_id = instance.object_id or 0
+    else:
+        app_label = 'empresa'
+        obj_id = instance.pk or 0
+    return f'documentos/{app_label}/{obj_id}/{filename}'
+
 
 class Documento(models.Model):
     """
-    Modelo centralizado para gestão de documentos com data de vencimento.
-    Pode ser anexado a qualquer outro modelo no sistema (Funcionário,
-    Treinamento, Equipamento, etc.) usando GenericForeignKey.
+    Modelo UNIFICADO para gestão de documentos.
+
+    Pode funcionar de 2 formas:
+    1. ANEXADO a outro modelo (Funcionário, Treinamento, etc.) via GenericForeignKey
+    2. INDEPENDENTE (documentos da empresa: contratos, alvarás, certidões)
+       → Nesse caso content_type e object_id ficam NULL
     """
-    
+
+    # ══════════════════════════════════════════════
+    # CHOICES
+    # ══════════════════════════════════════════════
+
     class StatusChoices(models.TextChoices):
         VIGENTE = 'VIGENTE', 'Vigente'
-        A_VENCER = 'A_VENCER', 'A Vencer' # (Status de aviso, controlado pela task Celery)
-        VENCIDO = 'VENCIDO', 'Vencido'     # (Status de vencido, controlado pela task Celery)
-        RENOVADO = 'RENOVADO', 'Renovado/Inativo' # (Arquivado após substituição)
+        A_VENCER = 'A_VENCER', 'A Vencer'
+        VENCIDO = 'VENCIDO', 'Vencido'
+        RENOVADO = 'RENOVADO', 'Renovado/Inativo'
+        ARQUIVADO = 'ARQUIVADO', 'Arquivado'
+
+    class TipoChoices(models.TextChoices):
+        CONTRATO = 'CONTRATO', 'Contrato'
+        ALVARA = 'ALVARA', 'Alvará'
+        CERTIDAO = 'CERTIDAO', 'Certidão'
+        FATURA = 'FATURA', 'Fatura/Nota Fiscal'
+        RELATORIO = 'RELATORIO', 'Relatório'
+        ART = 'ART', 'ART'
+        PGR = 'PGR', 'PGR'
+        LAUDO = 'LAUDO', 'Laudo'
+        CERTIFICADO = 'CERTIFICADO', 'Certificado'
+        OUTROS = 'OUTROS', 'Outros'
+
+    # ══════════════════════════════════════════════
+    # CAMPOS PRINCIPAIS (ex-Documento + ex-Arquivo)
+    # ══════════════════════════════════════════════
 
     nome = models.CharField("Nome do Documento", max_length=255)
-    
+    tipo = models.CharField(
+        "Tipo de Documento",
+        max_length=20,
+        choices=TipoChoices.choices,
+        default=TipoChoices.OUTROS,
+    )
+    descricao = models.TextField("Descrição/Observações", blank=True, default='')
+
     arquivo = models.FileField(
         "Arquivo",
         upload_to=private_document_path,
-        storage=private_storage,  # ← AQUI! Usa storage privado
+        storage=private_storage,
         help_text="O arquivo será armazenado em local seguro.",
     )
 
+    # ══════════════════════════════════════════════
+    # DATAS E VENCIMENTO
+    # ══════════════════════════════════════════════
+
     data_emissao = models.DateField("Data de Emissão", null=True, blank=True)
     data_vencimento = models.DateField(
-        "Data de Vencimento", 
-        null=True, 
+        "Data de Vencimento",
+        null=True,
         blank=True,
-        help_text="Deixe em branco se o documento não tiver vencimento."
+        help_text="Deixe em branco se o documento não tiver vencimento.",
+    )
+    dias_aviso = models.PositiveIntegerField(
+        "Avisar dias antes",
+        default=30,
+        help_text="Dias de antecedência para notificar vencimento.",
     )
 
     status = models.CharField(
         "Status",
-        max_length=10, 
-        choices=StatusChoices.choices, 
-        default=StatusChoices.VIGENTE
+        max_length=10,
+        choices=StatusChoices.choices,
+        default=StatusChoices.VIGENTE,
     )
-    
-    # O responsável por este documento (quem será notificado)
+
+    # ══════════════════════════════════════════════
+    # RELACIONAMENTOS
+    # ══════════════════════════════════════════════
+
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
         verbose_name="Responsável",
-        related_name="documentos_responsaveis"
+        related_name="documentos_responsaveis",
     )
 
-    # --- Integração com Filial (padrão do seu projeto) ---
-    # Este campo é essencial para o FilialManager funcionar.
-    # Na sua CreateView, defina este campo:
-    # form.instance.filial = self.request.user.filial_ativa
-    
+    cliente = models.ForeignKey(
+        'cliente.Cliente',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Cliente Relacionado",
+        related_name="documentos_cliente",
+    )
+
     filial = models.ForeignKey(
-        Filial, 
+        Filial,
         on_delete=models.PROTECT,
         related_name='documentos_filial',
         verbose_name="Filial",
-        null=True # Permite null, mas a view deve preenchê-lo
+        null=True,
     )
 
-    # Manager customizado para segregação de dados
-    objects = FilialManager()
-    # --- Fim da Integração com Filial ---
+    # ══════════════════════════════════════════════
+    # GENERIC FOREIGN KEY (opcional — permite anexar a qualquer modelo)
+    # ══════════════════════════════════════════════
 
-    
-    # --- Campos do GenericForeignKey (GFK) ---
-    # Permite anexar este documento a QUALQUER outro modelo
     content_type = models.ForeignKey(
-        ContentType, 
+        ContentType,
         on_delete=models.CASCADE,
-        verbose_name="Tipo de Objeto"
+        verbose_name="Tipo de Objeto",
+        null=True,
+        blank=True,
     )
-    
-    object_id = models.PositiveIntegerField("ID do Objeto")
-    
-    content_object = GenericForeignKey(
-        'content_type', 
-        'object_id'
+    object_id = models.PositiveIntegerField("ID do Objeto", null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
 
-    )    
-    # --- Rastreamento de Renovação ---
-    # Se este documento for uma renovação, ele aponta para o doc antigo
+    # ══════════════════════════════════════════════
+    # RASTREAMENTO DE RENOVAÇÃO
+    # ══════════════════════════════════════════════
+
     substitui = models.OneToOneField(
-        'self', 
-        on_delete=models.SET_NULL, 
-        null=True, 
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
         related_name="substituto",
-        verbose_name="Substitui o Documento"
+        verbose_name="Substitui o Documento",
     )
-    # --- Fim do Rastreamento ---
+
+    # ══════════════════════════════════════════════
+    # TIMESTAMPS
+    # ══════════════════════════════════════════════
 
     data_cadastro = models.DateTimeField("Data de Cadastro", auto_now_add=True)
     data_atualizacao = models.DateTimeField("Data de Atualização", auto_now=True)
 
+    # ══════════════════════════════════════════════
+    # MANAGER
+    # ══════════════════════════════════════════════
+
+    objects = FilialManager()
+
     class Meta:
         verbose_name = "Documento"
         verbose_name_plural = "Documentos"
-        # Ordena pelos vencidos/a vencer mais próximos primeiro
-        ordering = ['data_vencimento'] 
+        ordering = ['data_vencimento']
         permissions = [
             ("pode_gerenciar_todos_documentos", "Pode gerenciar documentos de todas as filiais"),
             ("pode_validar_documento", "Pode validar um documento enviado"),
         ]
 
     def __str__(self):
+        tipo_display = self.get_tipo_display() if self.tipo != 'OUTROS' else ''
+        if tipo_display:
+            return f"{self.nome} ({tipo_display})"
         return self.nome
 
     def get_absolute_url(self):
-        """
-        Retorna a URL para a ação principal do documento, que é o download.
-        """
         return reverse('documentos:download', kwargs={'pk': self.pk})
 
+    # ══════════════════════════════════════════════
+    # HELPERS / PROPERTIES
+    # ══════════════════════════════════════════════
+
+    @property
+    def is_anexado(self):
+        """True se está vinculado a outro modelo via GenericFK."""
+        return self.content_type_id is not None and self.object_id is not None
+
+    @property
+    def is_avulso(self):
+        """True se é documento independente (empresa/contrato)."""
+        return not self.is_anexado
+
     def is_vencido(self):
-        """
-        Verificação simples se a data de vencimento já passou.
-        (A task Celery é quem muda o STATUS, isto é apenas um helper)
-        """
         if not self.data_vencimento:
             return False
         return self.data_vencimento < timezone.now().date()
 
-    def private_document_path(instance, filename):
-        """
-        Salva arquivos na pasta PRIVATE_MEDIA_ROOT (fora do MEDIA_ROOT público).
-        """
-        app_label = instance.content_type.app_label
-        object_id = instance.object_id
-        return os.path.join('documentos', app_label, str(object_id), filename)
+    @property
+    def dias_para_vencer(self):
+        if not self.data_vencimento:
+            return None
+        delta = (self.data_vencimento - timezone.now().date()).days
+        return max(delta, 0)
+

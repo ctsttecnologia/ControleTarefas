@@ -1,28 +1,54 @@
 
 {% extends "base.html" %}
-{% load humanize %}
 
-{% block title %}{{ titulo_pagina }} | Gerenciando Tarefas{% endblock %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
 
-    <!-- Cabeçalho -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 fw-bold mb-0">
-            <i class="bi bi-file-earmark-text me-2"></i>{{ titulo_pagina|default:"Gestão de Documentos" }}
-        </h1>
-        <a href="{% url 'arquivos:lista_documentos' %}" class="btn btn-primary shadow-sm">
-            <i class="bi bi-folder2-open me-2"></i>Gestão de Arquivos
+    {# ── Cabeçalho ── #}
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-file-earmark-text me-2"></i>{{ titulo_pagina|default:"Gestão de Documentos" }}
+            </h2>
+            <p class="text-muted mb-0">Gerencie todos os documentos da empresa em um só lugar.</p>
+        </div>
+        <a href="{% url 'documentos:criar' %}" class="btn btn-primary shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> Novo Documento
         </a>
     </div>
 
-    <!-- Abas de filtro -->
+    {# ── Busca ── #}
+    <form method="get" class="row g-2 mb-3">
+        <input type="hidden" name="filtro" value="{{ filtro_ativo }}">
+        <div class="col-md-4">
+            <div class="input-group input-group-sm">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por nome..."
+                       value="{{ busca }}">
+                <button class="btn btn-outline-secondary" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="tipo" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="">Todos os tipos</option>
+                {% for value, label in tipos_documento %}
+                    <option value="{{ value }}" {% if tipo_ativo == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    {# ── Abas de Filtro ── #}
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
             <a class="nav-link {% if filtro_ativo == 'pendentes' %}active fw-semibold{% endif %}"
                href="?filtro=pendentes">
-                <i class="bi bi-exclamation-triangle me-1"></i>Pendentes (Vencidos/A Vencer)
+                <i class="bi bi-exclamation-triangle me-1"></i>Pendentes
             </a>
         </li>
         <li class="nav-item">
@@ -32,9 +58,21 @@
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link {% if filtro_ativo == 'avulsos' %}active fw-semibold{% endif %}"
+               href="?filtro=avulsos">
+                <i class="bi bi-folder me-1"></i>Avulsos (Empresa)
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if filtro_ativo == 'anexados' %}active fw-semibold{% endif %}"
+               href="?filtro=anexados">
+                <i class="bi bi-paperclip me-1"></i>Anexados
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link {% if filtro_ativo == 'renovados' %}active fw-semibold{% endif %}"
                href="?filtro=renovados">
-                <i class="bi bi-archive me-1"></i>Renovados/Arquivados
+                <i class="bi bi-archive me-1"></i>Renovados
             </a>
         </li>
         <li class="nav-item">
@@ -45,102 +83,177 @@
         </li>
     </ul>
 
-    <!-- Tabela -->
+    {# ── Tabela ── #}
     <div class="card shadow-sm border-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th><i class="bi bi-file-earmark me-1"></i>Documento</th>
-                        <th><i class="bi bi-link-45deg me-1"></i>Anexado a</th>
-                        <th><i class="bi bi-flag me-1"></i>Status</th>
-                        <th><i class="bi bi-calendar-event me-1"></i>Vencimento</th>
-                        <th class="text-center"><i class="bi bi-gear me-1"></i>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for doc in documentos %}
-                    <tr>
-                        <td>
-                            <a href="{% url 'documentos:download' doc.pk %}"
-                               class="text-decoration-none fw-semibold" title="Baixar documento">
-                                <i class="bi bi-file-earmark-arrow-down me-1 text-primary"></i>{{ doc.nome }}
-                            </a>
-                        </td>
-                        <td>
-                            {% if doc.content_object %}
-                                {% if doc.content_object.get_absolute_url %}
-                                    <a href="{{ doc.content_object.get_absolute_url }}" class="text-decoration-none">
-                                        {{ doc.content_object }}
-                                    </a>
-                                    <br><small class="text-muted">{{ doc.content_type.name|capfirst }}</small>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 250px;">Nome / Descrição</th>
+                            <th>Tipo</th>
+                            <th>Vínculo</th>
+                            <th>Vencimento</th>
+                            <th>Status</th>
+                            <th>Responsável</th>
+                            <th class="text-end" style="min-width: 180px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documentos %}
+                        <tr>
+                            {# ── Nome ── #}
+                            <td>
+                                <div class="fw-bold text-dark">{{ doc.nome }}</div>
+                                {% if doc.descricao %}
+                                    <small class="text-muted">{{ doc.descricao|truncatechars:60 }}</small>
+                                {% endif %}
+                            </td>
+
+                            {# ── Tipo ── #}
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    {{ doc.get_tipo_display }}
+                                </span>
+                            </td>
+
+                            {# ── Vínculo ── #}
+                            <td>
+                                {% if doc.is_anexado %}
+                                    {% if doc.content_object %}
+                                        <small class="text-muted">{{ doc.content_type.name|capfirst }}:</small><br>
+                                        {% if doc.content_object.get_absolute_url %}
+                                            <a href="{{ doc.content_object.get_absolute_url }}" class="text-decoration-none">
+                                                {{ doc.content_object }}
+                                            </a>
+                                        {% else %}
+                                            {{ doc.content_object }}
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Objeto removido</span>
+                                    {% endif %}
+                                {% elif doc.cliente %}
+                                    <small class="text-muted">Cliente:</small><br>
+                                    {{ doc.cliente }}
                                 {% else %}
-                                    {{ doc.content_object }}
-                                    <br><small class="text-muted">{{ doc.content_type.name|capfirst }}</small>
+                                    <span class="badge bg-info bg-opacity-10 text-info border-0">
+                                        <i class="bi bi-building me-1"></i>Empresa
+                                    </span>
                                 {% endif %}
-                            {% else %}
-                                <span class="text-muted fst-italic">Objeto removido</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if doc.status == 'VENCIDO' %}
-                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Vencido</span>
-                            {% elif doc.status == 'A_VENCER' %}
-                                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>A Vencer</span>
-                            {% elif doc.status == 'VIGENTE' %}
-                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Vigente</span>
-                            {% else %}
-                                <span class="badge bg-secondary"><i class="bi bi-archive me-1"></i>Renovado</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if doc.data_vencimento %}
-                                <span>{{ doc.data_vencimento|date:"d/m/Y" }}</span>
-                                <br>
-                                <small class="text-muted">{{ doc.data_vencimento|timesince }} atrás</small>
-                            {% else %}
-                                <span class="text-muted">Sem vencimento</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{% url 'documentos:download' doc.pk %}"
-                                   class="btn btn-outline-primary" title="Baixar">
-                                    <i class="bi bi-download"></i>
-                                </a>
-                                {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
-                                <a href="{% url 'documentos:renovar' doc.pk %}"
-                                   class="btn btn-outline-info" title="Renovar">
-                                    <i class="bi bi-arrow-repeat"></i>
-                                </a>
+                            </td>
+
+                            {# ── Vencimento ── #}
+                            <td>
+                                {% if doc.data_vencimento %}
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-calendar-event me-2 text-muted"></i>
+                                        {{ doc.data_vencimento|date:"d/m/Y" }}
+                                    </div>
+                                    {% if doc.dias_para_vencer is not None and doc.dias_para_vencer <= doc.dias_aviso and not doc.is_vencido %}
+                                        <small class="text-warning fw-bold">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                            Vence em {{ doc.dias_para_vencer }} dia{{ doc.dias_para_vencer|pluralize:"s" }}
+                                        </small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
                                 {% endif %}
-                                <a href="{% url 'documentos:deletar' doc.pk %}"
-                                   class="btn btn-outline-danger" title="Excluir">
-                                    <i class="bi bi-trash"></i>
+                            </td>
+
+                            {# ── Status ── #}
+                            <td>
+                                {% if doc.status == 'VENCIDO' %}
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Vencido</span>
+                                {% elif doc.status == 'A_VENCER' %}
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>A Vencer</span>
+                                {% elif doc.status == 'VIGENTE' %}
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Vigente</span>
+                                {% elif doc.status == 'ARQUIVADO' %}
+                                    <span class="badge bg-secondary"><i class="bi bi-box-seam me-1"></i>Arquivado</span>
+                                {% else %}
+                                    <span class="badge bg-secondary"><i class="bi bi-archive me-1"></i>Renovado</span>
+                                {% endif %}
+                            </td>
+
+                            {# ── Responsável ── #}
+                            <td>
+                                {% if doc.responsavel %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2"
+                                             style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                            {{ doc.responsavel.username|slice:":1"|upper }}
+                                        </div>
+                                        <span class="small">{{ doc.responsavel.get_full_name|default:doc.responsavel.username }}</span>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            {# ── Ações ── #}
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    {% if doc.arquivo %}
+                                        <a href="{% url 'documentos:download' doc.pk %}"
+                                           target="_blank"
+                                           class="btn btn-outline-secondary"
+                                           title="Visualizar">
+                                            <i class="bi bi-file-earmark-pdf"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
+                                        <a href="{% url 'documentos:renovar' doc.pk %}"
+                                           class="btn btn-outline-info"
+                                           title="Renovar">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    {% if doc.is_avulso %}
+                                        <a href="{% url 'documentos:editar' doc.pk %}"
+                                           class="btn btn-outline-primary"
+                                           title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    {% endif %}
+
+                                    <a href="{% url 'documentos:excluir' doc.pk %}"
+                                       class="btn btn-outline-danger"
+                                       title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder2-open display-4 d-block mb-3 opacity-50"></i>
+                                <p class="mb-2">Nenhum documento encontrado.</p>
+                                <a href="{% url 'documentos:criar' %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-plus-lg me-1"></i> Cadastrar primeiro documento
                                 </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <div class="text-muted">
-                                <i class="bi bi-folder-x fs-1 d-block mb-2 opacity-50"></i>
-                                <p class="mb-0">Nenhum documento encontrado para este filtro.</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        {% if documentos %}
+        <div class="card-footer bg-white text-muted small">
+            <i class="bi bi-info-circle me-1"></i>
+            {{ documentos|length }} documento{{ documentos|length|pluralize:"s" }} encontrado{{ documentos|length|pluralize:"s" }}
+        </div>
+        {% endif %}
     </div>
 
-    <!-- Paginação (única) -->
     {% if is_paginated %}
         {% include "partials/pagination.html" %}
     {% endif %}
-
 </div>
 {% endblock %}
+
 
