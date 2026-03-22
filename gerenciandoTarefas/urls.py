@@ -49,6 +49,7 @@ urlpatterns = [
     path('departamento_pessoal/', include('departamento_pessoal.urls', namespace='departamento_pessoal')),
     path('gestao_riscos/', include('gestao_riscos.urls', namespace='gestao_riscos')),  
     path('treinamentos/', include('treinamentos.urls')),
+    path('tributacao/', include('tributacao.urls')),
     path('automovel/', include('automovel.urls')),
     path('atas/', include('ata_reuniao.urls')),
     path('ferramentas/', include('ferramentas.urls', namespace='ferramentas')),

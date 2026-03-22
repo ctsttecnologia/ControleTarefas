@@ -118,6 +118,7 @@ INSTALLED_APPS = [
     'automovel.apps.AutomovelConfig',
     'seguranca_trabalho',
     'suprimentos',
+    'tributacao',
     'tarefas.apps.TarefasConfig',
     'treinamentos.apps.TreinamentosConfig',
     'gestao_riscos',
@@ -354,7 +355,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # O bucket name é obrigatório para o fallback funcionar
-GS_BUCKET_NAME = 'seu-bucket-da-producao'  # mesmo nome que usa em produção
+GS_BUCKET_NAME = 'ctst-project-2026'  # mesmo nome que usa em produção
 
 # =============================================================================
 # E-MAIL

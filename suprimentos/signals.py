@@ -1,6 +1,7 @@
 
 # suprimentos/signals.py
 
+from decimal import Decimal
 import logging
 
 from django.db.models import F
@@ -8,7 +9,7 @@ from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from .models import Pedido, EstoqueConsumo, CategoriaMaterial
+from .models import ItemPedido, Pedido, EstoqueConsumo, CategoriaMaterial
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,20 @@ def pedido_recebido_gerar_entrada_estoque(sender, instance, **kwargs):
             elif classificacao == CategoriaMaterial.FERRAMENTA:
                 _entrada_ferramenta(item, material, filial, instance)
                 entradas_ok += 1
+            # ═══ NOVO: Recalcular tributação ao receber ═══
+            if material.grupo_tributario and item.custo_real == Decimal('0.00'):
+                calc = item.calcular_impostos()
+                ItemPedido.objects.filter(pk=item.pk).update(
+                    custo_real=calc['custo_real'],
+                    total_creditos=calc['total_creditos'],
+                    total_impostos=calc['total_impostos'],
+                )
+                logger.info(
+                    f"  💰 Tributação: {material.descricao} — "
+                    f"Custo real R$ {calc['custo_real']} "
+                    f"(créditos R$ {calc['total_creditos']})"
+                )
+
 
         except Exception as e:
             entradas_erro += 1

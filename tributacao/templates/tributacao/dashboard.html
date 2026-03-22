@@ -1,0 +1,306 @@
+
+<!-- templates/tributacao/dashboard.html -->
+{% extends "tributacao/base_tributacao.html" %}
+
+{% block title %}Tributação — Dashboard{% endblock %}
+
+{% block tributacao_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calculator"></i> Tributação</h2>
+    </div>
+
+    <!-- Cards resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-primary mb-1">{{ total_ncm }}</h3>
+                    <small class="text-muted">NCMs Ativos</small>
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{% url 'tributacao:ncm_list' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-list"></i> Gerenciar
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-success mb-1">{{ total_cfop }}</h3>
+                    <small class="text-muted">CFOPs Ativos</small>
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{% url 'tributacao:cfop_list' %}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-list"></i> Gerenciar
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-info mb-1">{{ total_cst }}</h3>
+                    <small class="text-muted">CSTs Cadastrados</small>
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{% url 'tributacao:cst_list' %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-list"></i> Gerenciar
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <h3 class="text-warning mb-1">{{ total_grupos }}</h3>
+                    <small class="text-muted">Grupos Tributários</small>
+                </div>
+                <div class="card-footer bg-transparent text-center">
+                    <a href="{% url 'tributacao:grupo_list' %}" class="btn btn-sm btn-outline-warning">
+                        <i class="bi bi-list"></i> Gerenciar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atalhos rápidos -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-lightning"></i> Ações Rápidas</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary w-100" title="Novo Grupo Tributário">
+                        <i class="bi bi-plus-circle"></i> Novo Grupo Tributário
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'tributacao:ncm_create' %}" class="btn btn-outline-primary w-100" title="Nomenclatura Comum do Mercosul">
+                        <i class="bi bi-plus"></i> Novo NCM
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'tributacao:cfop_create' %}" class="btn btn-outline-success w-100" title="Código Fiscal de Operações">
+                        <i class="bi bi-plus"></i> Novo CFOP
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{% url 'tributacao:cst_create' %}" class="btn btn-outline-info w-100" title="Código de Situação Tributária">
+                        <i class="bi bi-plus"></i> Novo CST
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Guia: Como funciona -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-info-circle text-primary"></i> Como funciona a Tributação</h5>
+        </div>
+        <div class="card-body">
+
+            <!-- Contexto -->
+            <div class="trib-alerta mb-4">
+                <i class="bi bi-building me-1"></i>
+                <strong>Foco:</strong> Controlar a tributação sobre <strong>compras de materiais e suprimentos</strong>
+                para ter uma visão precisa dos custos reais de aquisição, incluindo impostos recuperáveis e não recuperáveis.
+            </div>
+            <div class="trib-exemplo-bg">
+            <!-- Fluxo visual -->
+            <div class="row text-center mb-4">
+                <div class="col">
+                    <div class="trib-step-circle bg-primary bg-opacity-10 mb-2">
+                        <i class="bi bi-1-circle-fill text-primary fs-4"></i>
+                    </div>
+                    <p class="fw-semibold mb-1">Cadastre os dados base</p>
+                    <small class="trib-text-secondary">NCM, CFOP e CSTs</small>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center">
+                    <i class="bi bi-arrow-right fs-3 trib-text-secondary d-none d-md-block"></i>
+                    <i class="bi bi-arrow-down fs-3 trib-text-secondary d-md-none"></i>
+                </div>
+                <div class="col">
+                    <div class="trib-step-circle bg-success bg-opacity-10 mb-2">
+                        <i class="bi bi-2-circle-fill text-success fs-4"></i>
+                    </div>
+                    <p class="fw-semibold mb-1">Crie Grupos Tributários</p>
+                    <small class="trib-text-secondary">Combine CFOP + CSTs + alíquotas</small>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center">
+                    <i class="bi bi-arrow-right fs-3 trib-text-secondary d-none d-md-block"></i>
+                    <i class="bi bi-arrow-down fs-3 trib-text-secondary d-md-none"></i>
+                </div>
+                <div class="col">
+                    <div class="trib-step-circle bg-warning bg-opacity-10 mb-2">
+                        <i class="bi bi-3-circle-fill text-warning fs-4"></i>
+                    </div>
+                    <p class="fw-semibold mb-1">Vincule ao Material</p>
+                    <small class="trib-text-secondary">No cadastro de Suprimentos</small>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center">
+                    <i class="bi bi-arrow-right fs-3 trib-text-secondary d-none d-md-block"></i>
+                    <i class="bi bi-arrow-down fs-3 trib-text-secondary d-md-none"></i>
+                </div>
+                <div class="col">
+                    <div class="trib-step-circle bg-info bg-opacity-10 mb-2">
+                        <i class="bi bi-4-circle-fill text-info fs-4"></i>
+                    </div>
+                    <p class="fw-semibold mb-1">Custo real apurado</p>
+                    <small class="trib-text-secondary">Impostos separados do custo</small>
+                </div>
+            </div>
+
+            <hr class="trib-divider">
+
+            <!-- Detalhamento -->
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <h6 class="fw-bold"><i class="bi bi-collection text-primary"></i> O que é um Grupo Tributário?</h6>
+                    <p class="trib-text-secondary small mb-2">
+                        É um <strong>perfil fiscal de compra</strong> que reúne as regras tributárias
+                        aplicadas na entrada de materiais e suprimentos:
+                    </p>
+                    <ul class="small trib-text-secondary">
+                        <li><strong>CFOP</strong> — Natureza da entrada (compra, devolução, transferência...)</li>
+                        <li><strong>NCM</strong> — Classificação fiscal do material adquirido</li>
+                        <li><strong>Tributos Federais</strong> — IPI, PIS e COFINS (identifica créditos recuperáveis)</li>
+                        <li><strong>Tributos Estaduais</strong> — ICMS por UF do fornecedor, com ST e FCP quando aplicável</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="fw-bold"><i class="bi bi-piggy-bank text-success"></i> Por que isso importa para custos?</h6>
+                    <p class="trib-text-secondary small mb-2">
+                        Ao comprar um material, o <strong>custo real</strong> não é apenas o valor da NF-e:
+                    </p>
+                    <ul class="small trib-text-secondary">
+                        <li><strong>Impostos recuperáveis</strong> (ICMS, PIS, COFINS com crédito)
+                            → <span class="text-success fw-semibold">reduzem o custo</span></li>
+                        <li><strong>Impostos não recuperáveis</strong> (IPI, ICMS-ST)
+                            → <span class="text-danger fw-semibold">compõem o custo</span></li>
+                        <li><strong>Diferencial de alíquota</strong> (DIFAL interestadual)
+                            → custo adicional em compras de outros estados</li>
+                    </ul>
+                    <p class="trib-text-secondary small mb-0">
+                        Com o grupo tributário vinculado ao material, o sistema separa automaticamente
+                        o que é custo e o que é crédito fiscal.
+                    </p>
+                </div>
+            </div>
+        </div>
+            <hr class="trib-divider">
+
+            <!-- Exemplo prático -->
+            <div class="trib-exemplo-bg">
+                <h6 class="fw-bold mb-2">
+                    <i class="bi bi-lightbulb text-warning"></i> Exemplo Prático — Compra de Material de Escritório
+                </h6>
+                <p class="trib-text-secondary small mb-3">
+                    A Cetest Minas (SP) compra resmas de papel A4 de um fornecedor de <strong>São Paulo</strong>.
+                    Valor da NF-e: <strong>R$ 1.000,00</strong>.
+                </p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="small">
+                            <span class="badge bg-primary mb-1">Grupo: Compra Material SP</span>
+                            <ul class="mb-0 ps-3 trib-text-secondary">
+                                <li>CFOP: <code>1556</code> (Compra mat. uso/consumo)</li>
+                                <li>NCM: <code>4802.56.10</code> (Papel A4)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small">
+                            <span class="badge bg-success mb-1">Federal</span>
+                            <ul class="mb-0 ps-3 trib-text-secondary">
+                                <li>IPI: CST <code>49</code> — 0% <span class="trib-text-secondary">(outras)</span></li>
+                                <li>PIS: CST <code>50</code> — 1,65%
+                                    <span class="text-danger fw-semibold">sem crédito</span></li>
+                                <li>COFINS: CST <code>50</code> — 7,60%
+                                    <span class="text-danger fw-semibold">sem crédito</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="small">
+                            <span class="badge bg-warning text-dark mb-1">Estadual (SP → SP)</span>
+                            <ul class="mb-0 ps-3 trib-text-secondary">
+                                <li>ICMS: CST <code>00</code> — 18%
+                                    <span class="text-danger fw-semibold">sem crédito</span></li>
+                                <li>Red. Base: 0%</li>
+                                <li>ST: Não</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resultado do custo -->
+                <div class="trib-custo-box mt-3">
+                    <div class="row align-items-center text-center">
+                        <div class="col-md-3">
+                            <small class="trib-text-secondary d-block">Valor NF-e</small>
+                            <strong>R$ 1.000,00</strong>
+                        </div>
+                        <div class="col-md-1 d-flex justify-content-center">
+                            <i class="bi bi-dash-lg text-danger fs-5"></i>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="trib-text-secondary d-block">Créditos Recuperáveis</small>
+                            <strong class="text-success">R$ 0,00</strong>
+                            <br><small class="trib-text-secondary">(mat. uso/consumo não gera crédito)</small>
+                        </div>
+                        <div class="col-md-1 d-flex justify-content-center">
+                            <i class="bi bi-arrow-right-circle text-primary fs-5"></i>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="trib-text-secondary d-block">Custo Real de Aquisição</small>
+                            <strong class="text-primary fs-5">R$ 1.000,00</strong>
+                            <br><small class="trib-text-secondary">100% do valor é custo</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparação: se tivesse crédito -->
+                <div class="trib-custo-box-success mt-2">
+                    <p class="small mb-2 fw-semibold text-success">
+                        <i class="bi bi-arrow-repeat"></i> E se fosse matéria-prima (com direito a crédito)?
+                    </p>
+                    <div class="row align-items-center text-center">
+                        <div class="col-md-3">
+                            <small class="trib-text-secondary d-block">Valor NF-e</small>
+                            <strong>R$ 1.000,00</strong>
+                        </div>
+                        <div class="col-md-1 d-flex justify-content-center">
+                            <i class="bi bi-dash-lg text-danger fs-5"></i>
+                        </div>
+                        <div class="col-md-3">
+                            <small class="trib-text-secondary d-block">Créditos Recuperáveis</small>
+                            <strong class="text-success">R$ 272,50</strong>
+                            <br><small class="trib-text-secondary">ICMS R$ 180 + PIS R$ 16,50 + COFINS R$ 76</small>
+                        </div>
+                        <div class="col-md-1 d-flex justify-content-center">
+                            <i class="bi bi-arrow-right-circle text-primary fs-5"></i>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="trib-text-secondary d-block">Custo Real de Aquisição</small>
+                            <strong class="text-primary fs-5">R$ 727,50</strong>
+                            <br><small class="text-success fw-semibold">↓ 27,25% menor que o valor da NF!</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-3 text-center">
+                <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Criar Primeiro Grupo Tributário
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock tributacao_content %}
+

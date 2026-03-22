@@ -47,6 +47,12 @@ class MaterialSerializer(serializers.ModelSerializer):
     unidade_display = serializers.CharField(
         source='get_unidade_display', read_only=True,
     )
+    ncm_codigo = serializers.CharField(
+        source='ncm.codigo', read_only=True, default=None,
+    )
+    grupo_tributario_nome = serializers.CharField(
+        source='grupo_tributario.nome', read_only=True, default=None,
+    )
 
     class Meta:
         model = Material
@@ -56,9 +62,10 @@ class MaterialSerializer(serializers.ModelSerializer):
             'tipo', 'tipo_display',
             'marca', 'unidade', 'unidade_display',
             'valor_unitario', 'ativo',
+            'ncm', 'ncm_codigo',
+            'grupo_tributario', 'grupo_tributario_nome',
         ]
         read_only_fields = ['id', 'codigo']
-
 
 # ═══════════════════════════════════════════════
 # CONTRATO
@@ -144,8 +151,9 @@ class ItemPedidoSerializer(serializers.ModelSerializer):
             'id', 'pedido', 'material',
             'material_descricao', 'material_classificacao', 'material_unidade',
             'quantidade', 'valor_unitario', 'valor_total', 'observacao',
+            'custo_real', 'total_creditos', 'total_impostos',  # ★ NOVO
         ]
-        read_only_fields = ['id', 'valor_total']
+        read_only_fields = ['id', 'valor_total', 'custo_real', 'total_creditos', 'total_impostos']
 
 
 # ═══════════════════════════════════════════════

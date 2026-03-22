@@ -30,7 +30,7 @@
     <!-- Cards Resumo -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card border-start border-primary border-4 shadow-sm h-100">
+            <div class="card border-start border-primary border-1 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Verba Total</small>
                     <h4 class="text-primary mb-0">R$ {{ total_verba|floatformat:2 }}</h4>
@@ -38,7 +38,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-start border-danger border-4 shadow-sm h-100">
+            <div class="card border-start border-danger border-1 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Compras Total</small>
                     <h4 class="text-danger mb-0">R$ {{ total_compra|floatformat:2 }}</h4>
@@ -46,7 +46,7 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-start border-success border-4 shadow-sm h-100">
+            <div class="card border-start border-success border-1 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Saldo Geral</small>
                     <h4 class="{% if saldo_geral >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
@@ -56,40 +56,11 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-start border-warning border-4 shadow-sm h-100">
+            <div class="card border-start border-warning border-1 shadow-sm h-100">
                 <div class="card-body">
                     <small class="text-muted">Pedidos Pendentes</small>
                     <h4 class="text-warning mb-0">{{ pedidos_pendentes|length }}</h4>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Atalhos Rápidos -->
-    <div class="row g-3 mb-4">
-        <div class="col">
-            <div class="d-flex flex-wrap gap-2">
-                <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success">
-                    <i class="bi bi-cart-plus me-1"></i> Novo Pedido
-                </a>
-                <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-cart me-1"></i> Pedidos
-                </a>
-                <a href="{% url 'suprimentos:contrato_lista' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-file-earmark-text me-1"></i> Contratos
-                </a>
-                <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-box-seam me-1"></i> Materiais
-                </a>
-                <a href="{% url 'suprimentos:parceiro_list' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-people me-1"></i> Fornecedores
-                </a>
-                <a href="{% url 'suprimentos:parceiro_upload_massa' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-upload me-1"></i> Importar Parceiros
-                </a>
-                <a href="{% url 'suprimentos:relatorio' %}" class="btn btn-warning">
-                    <i class="bi bi-bar-chart-line me-1"></i> Relatório Gerencial
-                </a>
             </div>
         </div>
     </div>
@@ -172,10 +143,93 @@
         </div>
     </div>
 
+    <!--card de custos -->
+    {% if custos_tributarios.total_impostos > 0 or materiais_sem_grupo > 0 %}
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-piggy-bank text-success"></i> Visão de Custos — Tributação
+                <small class="trib-text-secondary">({{ mes|stringformat:"02d" }}/{{ ano }})</small>
+            </h5>
+            <a href="{% url 'tributacao:dashboard' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-calculator"></i> Módulo Tributação
+            </a>
+        </div>
+        <div class="card-body">
+
+            {% if custos_tributarios.total_impostos > 0 %}
+            <div class="row g-3 mb-3">
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">Valor Compras</small>
+                        <strong class="fs-5">R$ {{ custos_tributarios.valor_produtos|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">Impostos Incidentes</small>
+                        <strong class="fs-5 text-warning">R$ {{ custos_tributarios.total_impostos|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">Créditos Recuperáveis</small>
+                        <strong class="fs-5 text-success">R$ {{ custos_tributarios.total_creditos|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box-success text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">Custo Real</small>
+                        <strong class="fs-4 text-primary">R$ {{ custos_tributarios.custo_real|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Barra comparativa -->
+            {% with pct_credito=custos_tributarios.total_creditos %}
+            {% if custos_tributarios.valor_produtos > 0 %}
+            <div class="mb-2">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="trib-text-secondary">Valor NF-e vs Custo Real</span>
+                    <span class="text-success fw-semibold">
+                        Economia: R$ {{ custos_tributarios.total_creditos|floatformat:2 }}
+                    </span>
+                </div>
+                <div class="progress" style="height: 24px;">
+                    <div class="progress-bar bg-primary"
+                        style="width: {% widthratio custos_tributarios.custo_real custos_tributarios.valor_produtos 100 %}%"
+                        title="Custo Real">
+                        Custo Real
+                    </div>
+                    <div class="progress-bar bg-success bg-opacity-50"
+                        style="width: {% widthratio custos_tributarios.total_creditos custos_tributarios.valor_produtos 100 %}%"
+                        title="Créditos">
+                        Créditos
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% endif %}
+
+            {% if materiais_sem_grupo > 0 %}
+            <div class="alert alert-warning mb-0 {% if custos_tributarios.total_impostos > 0 %}mt-3{% endif %}">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                <strong>{{ materiais_sem_grupo }}</strong> de {{ materiais_total }} materia{{ materiais_sem_grupo|pluralize:"l,is" }}
+                sem grupo tributário configurado.
+                <a href="{% url 'suprimentos:material_lista' %}?sem_grupo=1" class="alert-link">
+                    Configurar agora →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     {# ══════════════════════════════════════════════════════ #}
     {# CARD DESTAQUE — Relatório Gerencial                   #}
     {# ══════════════════════════════════════════════════════ #}
-    <div class="card shadow-sm mb-4 border-start border-4 border-info">
+    <div class="card shadow-sm mb-4 border-start border-1 border-warninginfo">
         <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
                 <h5 class="mb-1">

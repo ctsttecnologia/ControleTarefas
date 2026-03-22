@@ -384,6 +384,19 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             pedido__data_pedido__year=ano,
             pedido__data_pedido__month=mes,
         )
+        itens_trib_qs = ItemPedido.objects.filter(
+            pedido__contrato_id__in=contrato_ids,
+            pedido__status__in=STATUS_COMPRA,
+            pedido__data_pedido__year=ano,
+            pedido__data_pedido__month=mes,
+            material__grupo_tributario__isnull=False,
+        )
+        trib_totais = itens_trib_qs.aggregate(
+            sum_valor=Sum('valor_total'),
+            sum_custo_real=Sum('custo_real'),
+            sum_creditos=Sum('total_creditos'),
+            sum_impostos=Sum('total_impostos'),
+        )
         ctx['total_compra_epi'] = itens_mes.filter(
             material__classificacao='EPI'
         ).aggregate(t=Sum('valor_total'))['t'] or Decimal('0')
@@ -397,6 +410,19 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             ctx['total_compra_epi'] + ctx['total_compra_consumo'] + ctx['total_compra_ferramenta']
         )
         ctx['saldo_geral'] = ctx['total_verba'] - ctx['total_compra']
+        ctx['custos_tributarios'] = {
+            'valor_produtos': trib_totais['sum_valor'] or Decimal('0'),
+            'custo_real': trib_totais['sum_custo_real'] or Decimal('0'),
+            'total_creditos': trib_totais['sum_creditos'] or Decimal('0'),
+            'total_impostos': trib_totais['sum_impostos'] or Decimal('0'),
+        }
+
+        ctx['materiais_sem_grupo'] = Material.objects.filter(
+            ativo=True,
+            grupo_tributario__isnull=True,
+        ).count()
+
+        ctx['materiais_total'] = Material.objects.filter(ativo=True).count()
 
         # Gráfico últimos 6 meses
         grafico_meses = []
@@ -494,6 +520,7 @@ class MaterialListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q', '')
         classificacao = self.request.GET.get('classificacao', '')
         tipo = self.request.GET.get('tipo', '')
+        sem_grupo = self.request.GET.get('sem_grupo', '')
 
         if q:
             qs = qs.filter(
@@ -503,6 +530,8 @@ class MaterialListView(LoginRequiredMixin, ListView):
             qs = qs.filter(classificacao=classificacao)
         if tipo:
             qs = qs.filter(tipo=tipo)
+        if sem_grupo == '1':  # ★ NOVO
+            qs = qs.filter(grupo_tributario__isnull=True, ativo=True)
         return qs
 
     def get_context_data(self, **kwargs):
@@ -513,6 +542,7 @@ class MaterialListView(LoginRequiredMixin, ListView):
         ctx['filtro_q'] = self.request.GET.get('q', '')
         ctx['filtro_classificacao'] = self.request.GET.get('classificacao', '')
         ctx['filtro_tipo'] = self.request.GET.get('tipo', '')
+        ctx['filtro_sem_grupo'] = self.request.GET.get('sem_grupo', '')
         return ctx
 
 
