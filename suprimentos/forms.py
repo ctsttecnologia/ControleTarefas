@@ -6,6 +6,8 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
+from tributacao.models import NCM, GrupoTributario
+
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
     Pedido, ItemPedido, EstoqueConsumo,
@@ -181,13 +183,32 @@ class MaterialForm(forms.ModelForm):
         }),
     )
 
+    # ═══ NOVO: Campos de Tributação ═══
+    ncm = forms.ModelChoiceField(
+        queryset=NCM.objects.filter(ativo=True),
+        required=False,
+        empty_label="— Selecione o NCM —",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Classificação fiscal do material",
+    )
+    grupo_tributario = forms.ModelChoiceField(
+        queryset=GrupoTributario.objects.filter(ativo=True),
+        required=False,
+        empty_label="— Selecione o Grupo Tributário —",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Perfil fiscal para cálculo de impostos na compra",
+    )
+
     class Meta:
         model = Material
         fields = [
             'descricao', 'classificacao', 'tipo', 'marca',
             'unidade', 'valor_unitario',
             'equipamento_epi', 'ferramenta_ref',
-            'ativo',
+            'ativo', 'ncm', 'grupo_tributario', 'criar_equipamento_epi',
+            'epi_fabricante', 'epi_modelo', 'epi_ca', 'epi_vida_util_dias',
+            'criar_ferramenta', 'ferr_codigo', 'ferr_patrimonio',
+            'ferr_localizacao', 'ferr_data_aquisicao', 'ferr_fornecedor',
         ]
         widgets = {
             'descricao': forms.TextInput(attrs={

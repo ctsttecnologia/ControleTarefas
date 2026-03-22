@@ -1,0 +1,293 @@
+
+<!-- templates/tributacao/grupo_form.html -->
+{% extends "tributacao/base_tributacao.html" %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block tributacao_content %}
+<div class="container-fluid py-4">
+    <h3>{{ titulo }}</h3>
+
+    <form method="post" class="mt-3">
+        {% csrf_token %}
+
+        <!-- Erros gerais -->
+        {% if form.errors or federal_form.errors or estadual_formset.errors %}
+        <div class="alert alert-danger">
+            <strong>Corrija os erros abaixo.</strong>
+        </div>
+        {% endif %}
+
+        <!-- ═══ DADOS DO GRUPO ═══ -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-collection"></i> Dados do Grupo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.nome.id_for_label }}" class="form-label">Nome</label>
+                        {{ form.nome }}
+                        {% if form.nome.errors %}
+                        <div class="text-danger small">{{ form.nome.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.natureza.id_for_label }}" class="form-label">Natureza</label>
+                        {{ form.natureza }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.filial.id_for_label }}" class="form-label">Filial</label>
+                        {{ form.filial }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.cfop.id_for_label }}" class="form-label">CFOP</label>
+                        {{ form.cfop }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.ncm.id_for_label }}" class="form-label">NCM Padrão</label>
+                        {{ form.ncm }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.descricao.id_for_label }}" class="form-label">Descrição</label>
+                        {{ form.descricao }}
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check">
+                            {{ form.ativo }}
+                            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
+                                Ativo
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TRIBUTAÇÃO FEDERAL ═══ -->
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-bank"></i> Tributação Federal (IPI / PIS / COFINS)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- IPI -->
+                    <div class="col-12">
+                        <h6 class="text-muted border-bottom pb-1">IPI</h6>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ federal_form.cst_ipi.id_for_label }}" class="form-label">CST IPI</label>
+                        {{ federal_form.cst_ipi }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ federal_form.aliquota_ipi.id_for_label }}" class="form-label">
+                            Alíquota IPI (%)
+                        </label>
+                        {{ federal_form.aliquota_ipi }}
+                    </div>
+
+                    <!-- PIS -->
+                    <div class="col-12">
+                        <h6 class="text-muted border-bottom pb-1 mt-2">PIS</h6>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ federal_form.cst_pis.id_for_label }}" class="form-label">CST PIS</label>
+                        {{ federal_form.cst_pis }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ federal_form.aliquota_pis.id_for_label }}" class="form-label">
+                            Alíquota PIS (%)
+                        </label>
+                        {{ federal_form.aliquota_pis }}
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            {{ federal_form.gera_credito_pis }}
+                            <label class="form-check-label" for="{{ federal_form.gera_credito_pis.id_for_label }}">
+                                Gera crédito de PIS
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- COFINS -->
+                    <div class="col-12">
+                        <h6 class="text-muted border-bottom pb-1 mt-2">COFINS</h6>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ federal_form.cst_cofins.id_for_label }}" class="form-label">
+                            CST COFINS
+                        </label>
+                        {{ federal_form.cst_cofins }}
+                    </div>
+                    <div class="col-md-2">
+                        <label for="{{ federal_form.aliquota_cofins.id_for_label }}" class="form-label">
+                            Alíquota COFINS (%)
+                        </label>
+                        {{ federal_form.aliquota_cofins }}
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check">
+                            {{ federal_form.gera_credito_cofins }}
+                            <label class="form-check-label" for="{{ federal_form.gera_credito_cofins.id_for_label }}">
+                                Gera crédito de COFINS
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Obs -->
+                    <div class="col-12">
+                        <label for="{{ federal_form.observacoes.id_for_label }}" class="form-label">
+                            Observações
+                        </label>
+                        {{ federal_form.observacoes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ TRIBUTAÇÃO ESTADUAL (FORMSET) ═══ -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Tributação Estadual (ICMS por UF)</h5>
+                <button type="button" class="btn btn-sm btn-dark" id="btn-add-estadual">
+                    <i class="bi bi-plus"></i> Adicionar UF
+                </button>
+            </div>
+            <div class="card-body">
+                {{ estadual_formset.management_form }}
+
+                <div id="estadual-forms">
+                    {% for estadual_form in estadual_formset %}
+                    <div class="estadual-form border rounded p-3 mb-3 {% if estadual_form.errors %}border-danger{% endif %}">
+                        {% if estadual_form.errors %}
+                        <div class="alert alert-danger py-1 mb-2">{{ estadual_form.errors }}</div>
+                        {% endif %}
+
+                        <div class="row g-2">
+                            <div class="col-md-2">
+                                <label class="form-label small">UF Origem</label>
+                                {{ estadual_form.uf_origem }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">UF Destino</label>
+                                {{ estadual_form.uf_destino }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">CST ICMS</label>
+                                {{ estadual_form.cst_icms }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">ICMS (%)</label>
+                                {{ estadual_form.aliquota_icms }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">Red. Base (%)</label>
+                                {{ estadual_form.reducao_base_icms }}
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end gap-2">
+                                <div class="form-check">
+                                    {{ estadual_form.permite_credito }}
+                                    <label class="form-check-label small">Crédito</label>
+                                </div>
+                            </div>
+
+                            <!-- Linha 2: ST e controles -->
+                            <div class="col-md-1">
+                                <div class="form-check mt-3">
+                                    {{ estadual_form.tem_st }}
+                                    <label class="form-check-label small">ST</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">MVA (%)</label>
+                                {{ estadual_form.mva }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">ICMS-ST (%)</label>
+                                {{ estadual_form.aliquota_icms_st }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small">FCP (%)</label>
+                                {{ estadual_form.aliquota_fcp }}
+                            </div>
+                            <div class="col-md-1">
+                                <div class="form-check mt-3">
+                                    {{ estadual_form.ativo }}
+                                    <label class="form-check-label small">Ativo</label>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                {% if estadual_form.DELETE %}
+                                <div class="form-check">
+                                    {{ estadual_form.DELETE }}
+                                    <label class="form-check-label small text-danger">Excluir</label>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small">Observações</label>
+                                {{ estadual_form.observacoes }}
+                            </div>
+
+                            <!-- Hidden fields (id, etc.) -->
+                            {% for hidden in estadual_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-lg"></i> Salvar Grupo Tributário
+            </button>
+            <a href="{% url 'tributacao:grupo_list' %}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-x"></i> Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Adicionar novo form estadual (clone do formset)
+document.getElementById("btn-add-estadual").addEventListener("click", function() {
+    const container = document.getElementById("estadual-forms");
+    const totalForms = document.getElementById("id_estadual-TOTAL_FORMS");
+    const currentCount = parseInt(totalForms.value);
+
+    // Pega o primeiro form como template
+    const firstForm = container.querySelector(".estadual-form");
+    if (!firstForm) return;
+
+    const newForm = firstForm.cloneNode(true);
+
+    // Atualiza os ids/names
+    newForm.innerHTML = newForm.innerHTML.replace(
+        /estadual-\d+/g, `estadual-${currentCount}`
+    );
+
+    // Limpa valores
+    newForm.querySelectorAll("input:not([type=hidden]):not([type=checkbox])").forEach(el => {
+        el.value = "";
+    });
+    newForm.querySelectorAll("input[type=checkbox]").forEach(el => {
+        el.checked = false;
+    });
+    newForm.querySelectorAll("select").forEach(el => {
+        el.selectedIndex = 0;
+    });
+
+    // Remove alertas de erro
+    newForm.querySelectorAll(".alert").forEach(el => el.remove());
+    newForm.classList.remove("border-danger");
+
+    container.appendChild(newForm);
+    totalForms.value = currentCount + 1;
+});
+</script>
+{% endblock %}
+

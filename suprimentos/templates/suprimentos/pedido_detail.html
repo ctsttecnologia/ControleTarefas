@@ -158,6 +158,222 @@
         </div>
     </div>
 
+    {% with trib=pedido.resumo_tributario %}
+    {% if trib.itens_com_grupo > 0 %}
+
+    <!-- ═══ Painel de Análise Tributária do Pedido ═══ -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-calculator text-primary"></i> Análise Tributária
+            </h5>
+            <span class="badge bg-info">
+                {{ trib.cobertura_tributaria }} itens com tributação
+            </span>
+        </div>
+        <div class="card-body">
+
+            <!-- Cards de resumo -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">
+                            <i class="bi bi-receipt"></i> Valor Produtos
+                        </small>
+                        <strong class="fs-5">R$ {{ trib.valor_produtos|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">
+                            <i class="bi bi-percent"></i> Total Impostos
+                        </small>
+                        <strong class="fs-5 text-warning">R$ {{ trib.total_impostos|floatformat:2 }}</strong>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">
+                            <i class="bi bi-arrow-down-circle"></i> Créditos Recuperáveis
+                        </small>
+                        <strong class="fs-5 text-success">R$ {{ trib.total_creditos|floatformat:2 }}</strong>
+                        {% if trib.percentual_economia > 0 %}
+                        <br><small class="text-success fw-semibold">
+                            ↓ {{ trib.percentual_economia }}% economia
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="trib-custo-box-success text-center h-100">
+                        <small class="trib-text-secondary d-block mb-1">
+                            <i class="bi bi-piggy-bank"></i> Custo Real
+                        </small>
+                        <strong class="fs-4 text-primary">R$ {{ trib.custo_real|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fluxo visual -->
+            <div class="trib-exemplo-bg mb-4">
+                <div class="row align-items-center text-center">
+                    <div class="col-md-3">
+                        <small class="trib-text-secondary d-block">Valor NF-e</small>
+                        <strong class="fs-5">R$ {{ trib.total_nfe|floatformat:2 }}</strong>
+                    </div>
+                    <div class="col-md-1 d-flex justify-content-center">
+                        <i class="bi bi-dash-lg text-danger fs-4"></i>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="trib-text-secondary d-block">Créditos Fiscais</small>
+                        <strong class="fs-5 text-success">R$ {{ trib.total_creditos|floatformat:2 }}</strong>
+                    </div>
+                    <div class="col-md-1 d-flex justify-content-center">
+                        <i class="bi bi-arrow-right-circle text-primary fs-4"></i>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="trib-text-secondary d-block">Custo Real de Aquisição</small>
+                        <strong class="fs-4 text-primary">R$ {{ trib.custo_real|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela detalhada por item -->
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Grupo Trib.</th>
+                            <th class="text-end">Valor Prod.</th>
+                            <th class="text-end">ICMS</th>
+                            <th class="text-end">IPI</th>
+                            <th class="text-end">PIS</th>
+                            <th class="text-end">COFINS</th>
+                            <th class="text-end text-success">Créditos</th>
+                            <th class="text-end text-primary fw-bold">Custo Real</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pedido.itens.all %}
+                        {% with calc=item.calcular_impostos %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.material.descricao|truncatechars:40 }}</strong>
+                                <br>
+                                <small class="trib-text-secondary">
+                                    {{ item.quantidade }}x R$ {{ item.valor_unitario|floatformat:2 }}
+                                    {% if item.material.ncm %}
+                                    · NCM <code>{{ item.material.ncm.codigo }}</code>
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if item.material.grupo_tributario %}
+                                <span class="badge bg-primary bg-opacity-75">
+                                    {{ item.material.grupo_tributario.nome|truncatechars:25 }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary bg-opacity-50">
+                                    <i class="bi bi-exclamation-triangle"></i> Sem grupo
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">R$ {{ calc.valor_produtos|floatformat:2 }}</td>
+
+                            {# ICMS #}
+                            <td class="text-end">
+                                {% if not calc.sem_grupo %}
+                                R$ {{ calc.icms_valor|floatformat:2 }}
+                                {% if calc.icms_recuperavel %}
+                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                {% endif %}
+                                {% else %}—{% endif %}
+                            </td>
+
+                            {# IPI #}
+                            <td class="text-end">
+                                {% if not calc.sem_grupo %}
+                                R$ {{ calc.ipi_valor|floatformat:2 }}
+                                {% if calc.ipi_recuperavel %}
+                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                {% elif calc.ipi_valor > 0 %}
+                                <br><small class="text-danger"><i class="bi bi-x-circle-fill"></i> custo</small>
+                                {% endif %}
+                                {% else %}—{% endif %}
+                            </td>
+
+                            {# PIS #}
+                            <td class="text-end">
+                                {% if not calc.sem_grupo %}
+                                R$ {{ calc.pis_valor|floatformat:2 }}
+                                {% if calc.pis_recuperavel %}
+                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                {% endif %}
+                                {% else %}—{% endif %}
+                            </td>
+
+                            {# COFINS #}
+                            <td class="text-end">
+                                {% if not calc.sem_grupo %}
+                                R$ {{ calc.cofins_valor|floatformat:2 }}
+                                {% if calc.cofins_recuperavel %}
+                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                {% endif %}
+                                {% else %}—{% endif %}
+                            </td>
+
+                            {# Créditos #}
+                            <td class="text-end">
+                                <strong class="text-success">R$ {{ calc.total_creditos|floatformat:2 }}</strong>
+                            </td>
+
+                            {# Custo Real #}
+                            <td class="text-end">
+                                <strong class="text-primary">R$ {{ calc.custo_real|floatformat:2 }}</strong>
+                                <br>
+                                <small class="trib-text-secondary">
+                                    unit: R$ {{ calc.custo_unitario|floatformat:2 }}
+                                </small>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="fw-bold table-light">
+                            <td colspan="2">TOTAL DO PEDIDO</td>
+                            <td class="text-end">R$ {{ trib.valor_produtos|floatformat:2 }}</td>
+                            <td colspan="4" class="text-end">
+                                Impostos: <span class="text-warning">R$ {{ trib.total_impostos|floatformat:2 }}</span>
+                            </td>
+                            <td class="text-end text-success">R$ {{ trib.total_creditos|floatformat:2 }}</td>
+                            <td class="text-end text-primary fs-5">R$ {{ trib.custo_real|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% elif trib.total_itens > 0 %}
+    <!-- Alerta: nenhum item com tributação -->
+    <div class="alert alert-info mt-4 d-flex align-items-center">
+        <i class="bi bi-info-circle fs-4 me-3"></i>
+        <div>
+            <strong>Tributação não configurada para os materiais deste pedido.</strong>
+            <br>
+            <small class="trib-text-secondary">
+                Vincule NCM e Grupo Tributário nos materiais para ver a análise de custo real.
+            </small>
+            <br>
+            <a href="{% url 'tributacao:dashboard' %}" class="btn btn-sm btn-outline-primary mt-2">
+                <i class="bi bi-calculator"></i> Configurar Tributação
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
     <!-- Totais por classificação -->
     {% if totais %}
     <div class="row g-2 mb-4">

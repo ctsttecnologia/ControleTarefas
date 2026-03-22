@@ -162,6 +162,45 @@ class Material(models.Model):
         help_text="Para ferramentas: vincule para atualizar quantidade ao receber pedido.",
     )
 
+    # ═══ NOVO: Vínculo com Tributação ═══
+    ncm = models.ForeignKey(
+        'tributacao.NCM',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='materiais',
+        verbose_name="NCM",
+        help_text="Classificação fiscal do material (Nomenclatura Comum do Mercosul)",
+    )
+    grupo_tributario = models.ForeignKey(
+        'tributacao.GrupoTributario',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='materiais',
+        verbose_name="Grupo Tributário",
+        help_text="Perfil fiscal para cálculo automático de impostos na compra",
+    )
+
+    def calcular_custo_compra(self, valor_total, quantidade=1):
+        """
+        Calcula custo real de aquisição usando o grupo tributário.
+        Se não houver grupo, retorna valor bruto.
+        """
+        from decimal import Decimal
+        if not self.grupo_tributario:
+            valor = Decimal(str(valor_total))
+            qtd = Decimal(str(quantidade)) if quantidade > 0 else Decimal("1")
+            return {
+                "valor_produtos": valor,
+                "custo_real": valor,
+                "total_creditos": Decimal("0.00"),
+                "total_impostos": Decimal("0.00"),
+                "total_nfe": valor,
+                "custo_unitario": (valor / qtd).quantize(Decimal("0.01")),
+                "percentual_economia": Decimal("0.00"),
+                "sem_grupo": True,
+            }
+        return self.grupo_tributario.calcular_impostos(valor_total, quantidade)
+
     ativo = models.BooleanField("Ativo", default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -463,6 +502,47 @@ class Pedido(models.Model):
                 )
 
         return len(erros) == 0, erros
+    @property
+    def resumo_tributario(self):
+        """Retorna resumo consolidado de impostos de todos os itens."""
+        from django.db.models import Sum
+
+        totais = self.itens.aggregate(
+            valor_produtos=Sum('valor_total'),
+            sum_custo_real=Sum('custo_real'),
+            sum_creditos=Sum('total_creditos'),
+            sum_impostos=Sum('total_impostos'),
+        )
+
+        valor_produtos = totais['valor_produtos'] or Decimal('0.00')
+        custo_real = totais['sum_custo_real'] or Decimal('0.00')
+        total_creditos = totais['sum_creditos'] or Decimal('0.00')
+        total_impostos = totais['sum_impostos'] or Decimal('0.00')
+        total_nfe = valor_produtos + (total_impostos - total_creditos)  # aproximação
+
+        pct = Decimal('0.00')
+        if valor_produtos > 0:
+            pct = ((total_creditos / valor_produtos) * 100).quantize(Decimal('0.01'))
+
+        # Quantos itens têm grupo tributário
+        total_itens = self.itens.count()
+        itens_com_grupo = self.itens.filter(
+            material__grupo_tributario__isnull=False
+        ).count()
+
+        return {
+            'valor_produtos': valor_produtos,
+            'total_impostos': total_impostos,
+            'total_creditos': total_creditos,
+            'total_nfe': total_nfe,
+            'custo_real': custo_real,
+            'percentual_economia': pct,
+            'itens_com_grupo': itens_com_grupo,
+            'total_itens': total_itens,
+            'cobertura_tributaria': (
+                f"{itens_com_grupo}/{total_itens}"
+            ),
+        }
 
 
 # ═════════════════════════════════════════════════
@@ -492,6 +572,36 @@ class ItemPedido(models.Model):
     observacao = models.CharField(
         "Observação", max_length=255, blank=True, default='',
     )
+
+    # ═══ NOVO: Campos calculados de tributação ═══
+    custo_real = models.DecimalField(
+        "Custo Real (R$)", max_digits=14, decimal_places=2,
+        default=Decimal('0.00'), editable=False,
+        help_text="Valor total menos créditos fiscais recuperáveis",
+    )
+    total_creditos = models.DecimalField(
+        "Créditos Fiscais (R$)", max_digits=14, decimal_places=2,
+        default=Decimal('0.00'), editable=False,
+    )
+    total_impostos = models.DecimalField(
+        "Total Impostos (R$)", max_digits=14, decimal_places=2,
+        default=Decimal('0.00'), editable=False,
+    )
+
+    def calcular_impostos(self):
+        """Calcula impostos usando o grupo tributário do material."""
+        valor = self.quantidade * self.valor_unitario
+        return self.material.calcular_custo_compra(valor, self.quantidade)
+
+    # ATUALIZAR o save() existente:
+    def save(self, *args, **kwargs):
+        self.valor_total = self.quantidade * self.valor_unitario
+        # ═══ NOVO: Calcular tributação ao salvar ═══
+        calc = self.calcular_impostos()
+        self.custo_real = calc.get("custo_real", self.valor_total)
+        self.total_creditos = calc.get("total_creditos", Decimal("0.00"))
+        self.total_impostos = calc.get("total_impostos", Decimal("0.00"))
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Item do Pedido"

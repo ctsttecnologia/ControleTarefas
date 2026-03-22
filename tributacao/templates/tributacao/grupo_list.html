@@ -1,0 +1,106 @@
+
+<!-- templates/tributacao/grupo_list.html -->
+{% extends "tributacao/base_tributacao.html" %}
+
+{% block title %}Grupos Tributários{% endblock %}
+
+{% block tributacao_content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3><i class="bi bi-collection"></i> Grupos Tributários</h3>
+        <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Novo Grupo
+        </a>
+    </div>
+
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" 
+                   placeholder="Buscar por nome..." value="{{ q }}">
+            <button type="submit" class="btn btn-outline-secondary">
+                <i class="bi bi-search"></i>
+            </button>
+            {% if q %}
+            <a href="{% url 'tributacao:grupo_list' %}" class="btn btn-outline-danger">
+                <i class="bi bi-x"></i>
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nome</th>
+                    <th>Natureza</th>
+                    <th>CFOP</th>
+                    <th>NCM</th>
+                    <th>Filial</th>
+                    <th class="text-center">Ativo</th>
+                    <th class="text-center">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for grupo in grupos %}
+                <tr>
+                    <td>
+                        <a href="{% url 'tributacao:grupo_detail' grupo.pk %}" class="text-decoration-none fw-bold">
+                            {{ grupo.nome }}
+                        </a>
+                    </td>
+                    <td>
+                        {% if grupo.natureza == "E" %}
+                        <span class="badge bg-info">Entrada</span>
+                        {% else %}
+                        <span class="badge bg-warning">Saída</span>
+                        {% endif %}
+                    </td>
+                    <td><code>{{ grupo.cfop.codigo }}</code></td>
+                    <td>
+                        {% if grupo.ncm %}
+                        <code>{{ grupo.ncm.codigo }}</code>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ grupo.filial }}</td>
+                    <td class="text-center">
+                        {% if grupo.ativo %}
+                        <span class="badge bg-success">Sim</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Não</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'tributacao:grupo_detail' grupo.pk %}" 
+                           class="btn btn-sm btn-outline-info" title="Detalhes">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{% url 'tributacao:grupo_update' grupo.pk %}" 
+                           class="btn btn-sm btn-outline-primary" title="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'tributacao:grupo_delete' grupo.pk %}" 
+                           class="btn btn-sm btn-outline-danger" title="Excluir">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        Nenhum Grupo Tributário cadastrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'tributacao:dashboard' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</div>
+{% endblock %}
+
