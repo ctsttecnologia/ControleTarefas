@@ -7,7 +7,9 @@
 {% block suprimentos_content %}
 <div class="container-fluid mt-4">
 
-    <!-- Cabeçalho + Filtros -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# CABEÇALHO + FILTROS                                    #}
+    {# ══════════════════════════════════════════════════════ #}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard Suprimentos</h2>
         <form method="get" class="d-flex gap-2">
@@ -27,129 +29,194 @@
         </form>
     </div>
 
-    <!-- Cards Resumo -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# CARDS RESUMO — TOPO                                    #}
+    {# ══════════════════════════════════════════════════════ #}
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-start border-primary border-1 shadow-sm h-100">
+        <div class="col-md-3 col-6">
+            <div class="card border-start border-1 border-primary shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">Verba Total</small>
-                    <h4 class="text-primary mb-0">R$ {{ total_verba|floatformat:2 }}</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold">Verba Total</small>
+                            <h4 class="text-primary mb-0">R$ {{ total_verba|floatformat:2 }}</h4>
+                        </div>
+                        <i class="bi bi-wallet2 fs-2 text-primary opacity-25"></i>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-start border-danger border-1 shadow-sm h-100">
+        <div class="col-md-3 col-6">
+            <div class="card border-start border-1 border-danger shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">Compras Total</small>
-                    <h4 class="text-danger mb-0">R$ {{ total_compra|floatformat:2 }}</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold">Compras Total</small>
+                            <h4 class="text-danger mb-0">R$ {{ total_compra|floatformat:2 }}</h4>
+                        </div>
+                        <i class="bi bi-cart-check fs-2 text-danger opacity-25"></i>
+                    </div>
+                    {% if pct_geral > 0 %}
+                    <div class="progress mt-2" style="height:4px">
+                        <div class="progress-bar bg-danger" style="width:{{ pct_geral }}%"></div>
+                    </div>
+                    <small class="text-muted">{{ pct_geral }}% da verba</small>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-start border-success border-1 shadow-sm h-100">
+        <div class="col-md-3 col-6">
+            <div class="card border-start border-1 border-success shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">Saldo Geral</small>
-                    <h4 class="{% if saldo_geral >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
-                        R$ {{ saldo_geral|floatformat:2 }}
-                    </h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold">Saldo Disponível</small>
+                            <h4 class="{% if saldo_geral >= 0 %}text-success{% else %}text-danger{% endif %} mb-0">
+                                R$ {{ saldo_geral|floatformat:2 }}
+                            </h4>
+                        </div>
+                        <i class="bi bi-piggy-bank fs-2 text-success opacity-25"></i>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-start border-warning border-1 shadow-sm h-100">
+        <div class="col-md-3 col-6">
+            <div class="card border-start border-1 border-warning shadow-sm h-100">
                 <div class="card-body">
-                    <small class="text-muted">Pedidos Pendentes</small>
-                    <h4 class="text-warning mb-0">{{ pedidos_pendentes|length }}</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted text-uppercase fw-semibold">Pedidos Pendentes</small>
+                            <h4 class="text-warning mb-0">{{ pedidos_pendentes|length }}</h4>
+                        </div>
+                        <i class="bi bi-clock-history fs-2 text-warning opacity-25"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Detalhamento Verba × Compra -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# DETALHAMENTO: EPI × CONSUMO × FERRAMENTA              #}
+    {# ══════════════════════════════════════════════════════ #}
     <div class="row g-3 mb-4">
+        {# ── EPI ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-light"><i class="bi bi-shield-check me-1"></i> EPI</div>
+                <div class="card-header bg-light d-flex align-items-center">
+                    <i class="bi bi-shield-check me-2 text-info"></i>
+                    <strong>EPI</strong>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-1">
-                        <span>Verba</span><strong>R$ {{ total_verba_epi|floatformat:2 }}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Compra</span><strong class="text-danger">R$ {{ total_compra_epi|floatformat:2 }}</strong>
-                    </div>
-                    {% with saldo=total_verba_epi|add:total_compra_epi %}
-                    <hr class="my-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Saldo</span>
+                        <span class="text-muted">Verba</span>
                         <strong>R$ {{ total_verba_epi|floatformat:2 }}</strong>
                     </div>
-                    {% endwith %}
-                    {% if total_verba_epi > 0 %}
-                        {% widthratio total_compra_epi total_verba_epi 100 as pct_epi %}
-                        <div class="progress mt-2" style="height:8px">
-                            <div class="progress-bar bg-info" style="width:{{ pct_epi }}%"></div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Compra</span>
+                        <strong class="text-danger">R$ {{ total_compra_epi|floatformat:2 }}</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-semibold">Saldo</span>
+                        <strong class="{% if saldo_epi >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ saldo_epi|floatformat:2 }}
+                        </strong>
+                    </div>
+                    {% if pct_epi > 0 %}
+                    <div class="progress mt-2" style="height:8px">
+                        <div class="progress-bar {% if pct_epi > 90 %}bg-danger{% elif pct_epi > 70 %}bg-warning{% else %}bg-info{% endif %}"
+                             style="width:{{ pct_epi }}%"
+                             title="{{ pct_epi }}% utilizado">
                         </div>
+                    </div>
+                    <small class="text-muted">{{ pct_epi }}% utilizado</small>
                     {% endif %}
                 </div>
             </div>
         </div>
+
+        {# ── Consumo ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-light"><i class="bi bi-box-seam me-1"></i> Consumo</div>
+                <div class="card-header bg-light d-flex align-items-center">
+                    <i class="bi bi-box-seam me-2 text-warning"></i>
+                    <strong>Consumo</strong>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-1">
-                        <span>Verba</span><strong>R$ {{ total_verba_consumo|floatformat:2 }}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Compra</span><strong class="text-danger">R$ {{ total_compra_consumo|floatformat:2 }}</strong>
-                    </div>
-                    <hr class="my-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Saldo</span>
+                        <span class="text-muted">Verba</span>
                         <strong>R$ {{ total_verba_consumo|floatformat:2 }}</strong>
                     </div>
-                    {% if total_verba_consumo > 0 %}
-                        {% widthratio total_compra_consumo total_verba_consumo 100 as pct_con %}
-                        <div class="progress mt-2" style="height:8px">
-                            <div class="progress-bar bg-warning" style="width:{{ pct_con }}%"></div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted">Compra</span>
+                        <strong class="text-danger">R$ {{ total_compra_consumo|floatformat:2 }}</strong>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-semibold">Saldo</span>
+                        <strong class="{% if saldo_consumo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ saldo_consumo|floatformat:2 }}
+                        </strong>
+                    </div>
+                    {% if pct_consumo > 0 %}
+                    <div class="progress mt-2" style="height:8px">
+                        <div class="progress-bar {% if pct_consumo > 90 %}bg-danger{% elif pct_consumo > 70 %}bg-warning{% else %}bg-warning bg-opacity-75{% endif %}"
+                             style="width:{{ pct_consumo }}%"
+                             title="{{ pct_consumo }}% utilizado">
                         </div>
+                    </div>
+                    <small class="text-muted">{{ pct_consumo }}% utilizado</small>
                     {% endif %}
                 </div>
             </div>
         </div>
+
+        {# ── Ferramenta ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-light"><i class="bi bi-tools me-1"></i> Ferramenta</div>
+                <div class="card-header bg-light d-flex align-items-center">
+                    <i class="bi bi-tools me-2 text-secondary"></i>
+                    <strong>Ferramenta</strong>
+                </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-1">
-                        <span>Verba</span><strong>R$ {{ total_verba_ferramenta|floatformat:2 }}</strong>
+                        <span class="text-muted">Verba</span>
+                        <strong>R$ {{ total_verba_ferramenta|floatformat:2 }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-1">
-                        <span>Compra</span><strong class="text-danger">R$ {{ total_compra_ferramenta|floatformat:2 }}</strong>
+                        <span class="text-muted">Compra</span>
+                        <strong class="text-danger">R$ {{ total_compra_ferramenta|floatformat:2 }}</strong>
                     </div>
                     <hr class="my-2">
                     <div class="d-flex justify-content-between">
-                        <span>Saldo</span>
-                        <strong>R$ {{ total_verba_ferramenta|floatformat:2 }}</strong>
+                        <span class="fw-semibold">Saldo</span>
+                        <strong class="{% if saldo_ferramenta >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            R$ {{ saldo_ferramenta|floatformat:2 }}
+                        </strong>
                     </div>
-                    {% if total_verba_ferramenta > 0 %}
-                        {% widthratio total_compra_ferramenta total_verba_ferramenta 100 as pct_fer %}
-                        <div class="progress mt-2" style="height:8px">
-                            <div class="progress-bar bg-success" style="width:{{ pct_fer }}%"></div>
+                    {% if pct_ferramenta > 0 %}
+                    <div class="progress mt-2" style="height:8px">
+                        <div class="progress-bar {% if pct_ferramenta > 90 %}bg-danger{% elif pct_ferramenta > 70 %}bg-warning{% else %}bg-success{% endif %}"
+                             style="width:{{ pct_ferramenta }}%"
+                             title="{{ pct_ferramenta }}% utilizado">
                         </div>
+                    </div>
+                    <small class="text-muted">{{ pct_ferramenta }}% utilizado</small>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!--card de custos -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# CARD TRIBUTAÇÃO                                        #}
+    {# ══════════════════════════════════════════════════════ #}
     {% if custos_tributarios.total_impostos > 0 or materiais_sem_grupo > 0 %}
-    <div class="card border-0 shadow-sm mt-4">
+    <div class="card border-0 shadow-sm mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
                 <i class="bi bi-piggy-bank text-success"></i> Visão de Custos — Tributação
-                <small class="trib-text-secondary">({{ mes|stringformat:"02d" }}/{{ ano }})</small>
+                <small class="text-muted">({{ mes|stringformat:"02d" }}/{{ ano }})</small>
             </h5>
             <a href="{% url 'tributacao:dashboard' %}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-calculator"></i> Módulo Tributação
@@ -160,62 +227,62 @@
             {% if custos_tributarios.total_impostos > 0 %}
             <div class="row g-3 mb-3">
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">Valor Compras</small>
+                    <div class="text-center p-3 bg-light rounded h-100">
+                        <small class="text-muted d-block mb-1">Valor Compras</small>
                         <strong class="fs-5">R$ {{ custos_tributarios.valor_produtos|floatformat:2 }}</strong>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">Impostos Incidentes</small>
+                    <div class="text-center p-3 bg-light rounded h-100">
+                        <small class="text-muted d-block mb-1">Impostos Incidentes</small>
                         <strong class="fs-5 text-warning">R$ {{ custos_tributarios.total_impostos|floatformat:2 }}</strong>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">Créditos Recuperáveis</small>
+                    <div class="text-center p-3 bg-light rounded h-100">
+                        <small class="text-muted d-block mb-1">Créditos Recuperáveis</small>
                         <strong class="fs-5 text-success">R$ {{ custos_tributarios.total_creditos|floatformat:2 }}</strong>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box-success text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">Custo Real</small>
+                    <div class="text-center p-3 rounded h-100" style="background: rgba(13,110,253,.08);">
+                        <small class="text-muted d-block mb-1">Custo Real</small>
                         <strong class="fs-4 text-primary">R$ {{ custos_tributarios.custo_real|floatformat:2 }}</strong>
                     </div>
                 </div>
             </div>
 
-            <!-- Barra comparativa -->
-            {% with pct_credito=custos_tributarios.total_creditos %}
-            {% if custos_tributarios.valor_produtos > 0 %}
+            {# Barra NF-e vs Custo Real #}
+            {% if pct_custo_real > 0 %}
             <div class="mb-2">
                 <div class="d-flex justify-content-between small mb-1">
-                    <span class="trib-text-secondary">Valor NF-e vs Custo Real</span>
+                    <span class="text-muted">Valor NF-e → Custo Real</span>
                     <span class="text-success fw-semibold">
+                        <i class="bi bi-arrow-down-circle"></i>
                         Economia: R$ {{ custos_tributarios.total_creditos|floatformat:2 }}
                     </span>
                 </div>
                 <div class="progress" style="height: 24px;">
                     <div class="progress-bar bg-primary"
-                        style="width: {% widthratio custos_tributarios.custo_real custos_tributarios.valor_produtos 100 %}%"
-                        title="Custo Real">
-                        Custo Real
+                         style="width: {{ pct_custo_real }}%"
+                         title="Custo Real: {{ pct_custo_real }}%">
+                        Custo Real {{ pct_custo_real }}%
                     </div>
                     <div class="progress-bar bg-success bg-opacity-50"
-                        style="width: {% widthratio custos_tributarios.total_creditos custos_tributarios.valor_produtos 100 %}%"
-                        title="Créditos">
-                        Créditos
+                         style="width: {{ pct_creditos }}%"
+                         title="Créditos: {{ pct_creditos }}%">
+                        Créditos {{ pct_creditos }}%
                     </div>
                 </div>
             </div>
             {% endif %}
-            {% endwith %}
             {% endif %}
 
             {% if materiais_sem_grupo > 0 %}
             <div class="alert alert-warning mb-0 {% if custos_tributarios.total_impostos > 0 %}mt-3{% endif %}">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                <strong>{{ materiais_sem_grupo }}</strong> de {{ materiais_total }} materia{{ materiais_sem_grupo|pluralize:"l,is" }}
+                <strong>{{ materiais_sem_grupo }}</strong> de {{ materiais_total }}
+                materia{{ materiais_sem_grupo|pluralize:"l,is" }}
                 sem grupo tributário configurado.
                 <a href="{% url 'suprimentos:material_lista' %}?sem_grupo=1" class="alert-link">
                     Configurar agora →
@@ -227,9 +294,9 @@
     {% endif %}
 
     {# ══════════════════════════════════════════════════════ #}
-    {# CARD DESTAQUE — Relatório Gerencial                   #}
+    {# CARD RELATÓRIO GERENCIAL                               #}
     {# ══════════════════════════════════════════════════════ #}
-    <div class="card shadow-sm mb-4 border-start border-1 border-warninginfo">
+    <div class="card shadow-sm mb-4 border-start border-1 border-info">
         <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
                 <h5 class="mb-1">
@@ -255,21 +322,35 @@
         </div>
     </div>
 
-    <!-- Gráfico 6 meses -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# GRÁFICO 6 MESES (com Custo Real)                      #}
+    {# ══════════════════════════════════════════════════════ #}
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-            <i class="bi bi-graph-up me-1"></i> Verba × Compra — Últimos 6 meses
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-graph-up me-1"></i> Verba × Compra × Custo Real — Últimos 6 meses</span>
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-secondary active" data-chart-mode="total">
+                    Total
+                </button>
+                <button type="button" class="btn btn-outline-secondary" data-chart-mode="categoria">
+                    Por Categoria
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <canvas id="chartVerbaCompra" height="100"></canvas>
         </div>
     </div>
 
-    <!-- Pedidos Pendentes -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# PEDIDOS PENDENTES                                      #}
+    {# ══════════════════════════════════════════════════════ #}
     {% if pedidos_pendentes %}
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-warning bg-opacity-25">
-            <i class="bi bi-clock-history me-1"></i> Pedidos Aguardando Aprovação
+        <div class="card-header bg-warning bg-opacity-25 d-flex align-items-center">
+            <i class="bi bi-clock-history me-2"></i>
+            <strong>Pedidos Aguardando Aprovação</strong>
+            <span class="badge bg-warning text-dark ms-2">{{ pedidos_pendentes|length }}</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -280,19 +361,27 @@
                             <th>Contrato</th>
                             <th>Solicitante</th>
                             <th>Data</th>
+                            <th class="text-end">Valor Total</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in pedidos_pendentes %}
                         <tr>
-                            <td><a href="{{ p.get_absolute_url }}">{{ p.numero }}</a></td>
+                            <td>
+                                <a href="{{ p.get_absolute_url }}" class="fw-semibold">
+                                    {{ p.numero }}
+                                </a>
+                            </td>
                             <td>{{ p.contrato }}</td>
                             <td>{{ p.solicitante.get_full_name }}</td>
                             <td>{{ p.data_pedido|date:"d/m/Y H:i" }}</td>
                             <td class="text-end">
+                                <strong>R$ {{ p.valor_total_pedido|floatformat:2 }}</strong>
+                            </td>
+                            <td class="text-end">
                                 <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> Ver
+                                    <i class="bi bi-eye me-1"></i> Ver
                                 </a>
                             </td>
                         </tr>
@@ -304,10 +393,14 @@
     </div>
     {% endif %}
 
-    <!-- Contratos -->
+    {# ══════════════════════════════════════════════════════ #}
+    {# CONTRATOS                                              #}
+    {# ══════════════════════════════════════════════════════ #}
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-light">
-            <i class="bi bi-file-earmark-text me-1"></i> Contratos da Filial
+        <div class="card-header bg-light d-flex align-items-center">
+            <i class="bi bi-file-earmark-text me-2"></i>
+            <strong>Contratos da Filial</strong>
+            <span class="badge bg-secondary ms-2">{{ contratos|length }}</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -324,7 +417,9 @@
                     <tbody>
                         {% for c in contratos %}
                         <tr>
-                            <td><a href="{{ c.get_absolute_url }}">{{ c.cm }}</a></td>
+                            <td>
+                                <a href="{{ c.get_absolute_url }}" class="fw-semibold">{{ c.cm }}</a>
+                            </td>
                             <td>{{ c.cliente }}</td>
                             <td>{{ c.filial }}</td>
                             <td class="text-center">
@@ -353,30 +448,103 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
+(function() {
     const dados = {{ grafico_meses|safe }};
     const labels = dados.map(d => d.label);
+    const ctx = document.getElementById('chartVerbaCompra');
 
-    new Chart(document.getElementById('chartVerbaCompra'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Verba Total',
-                    data: dados.map(d => d.verba_total),
-                    backgroundColor: 'rgba(13,110,253,0.6)',
-                },
-                {
-                    label: 'Compra Total',
-                    data: dados.map(d => d.compra_total),
-                    backgroundColor: 'rgba(220,53,69,0.6)',
-                },
-            ],
+    // Datasets: Total
+    const dsTotal = [
+        {
+            label: 'Verba Total',
+            data: dados.map(d => d.verba_total),
+            backgroundColor: 'rgba(13,110,253,0.6)',
+            borderColor: 'rgba(13,110,253,1)',
+            borderWidth: 1,
+            order: 2,
         },
+        {
+            label: 'Compra (NF-e)',
+            data: dados.map(d => d.compra_total),
+            backgroundColor: 'rgba(220,53,69,0.6)',
+            borderColor: 'rgba(220,53,69,1)',
+            borderWidth: 1,
+            order: 2,
+        },
+        {
+            label: 'Custo Real',
+            data: dados.map(d => d.custo_real),
+            type: 'line',
+            borderColor: 'rgba(25,135,84,1)',
+            backgroundColor: 'rgba(25,135,84,0.1)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: 'rgba(25,135,84,1)',
+            fill: true,
+            tension: 0.3,
+            order: 1,
+        },
+    ];
+
+    // Datasets: Por Categoria
+    const dsCategoria = [
+        {
+            label: 'Verba EPI',
+            data: dados.map(d => d.verba_epi),
+            backgroundColor: 'rgba(13,202,240,0.5)',
+            stack: 'verba',
+        },
+        {
+            label: 'Verba Consumo',
+            data: dados.map(d => d.verba_consumo),
+            backgroundColor: 'rgba(255,193,7,0.5)',
+            stack: 'verba',
+        },
+        {
+            label: 'Verba Ferramenta',
+            data: dados.map(d => d.verba_ferramenta),
+            backgroundColor: 'rgba(108,117,125,0.5)',
+            stack: 'verba',
+        },
+        {
+            label: 'Compra EPI',
+            data: dados.map(d => d.compra_epi),
+            backgroundColor: 'rgba(13,202,240,0.9)',
+            stack: 'compra',
+        },
+        {
+            label: 'Compra Consumo',
+            data: dados.map(d => d.compra_consumo),
+            backgroundColor: 'rgba(255,193,7,0.9)',
+            stack: 'compra',
+        },
+        {
+            label: 'Compra Ferramenta',
+            data: dados.map(d => d.compra_ferramenta),
+            backgroundColor: 'rgba(108,117,125,0.9)',
+            stack: 'compra',
+        },
+    ];
+
+    const chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: dsTotal },
         options: {
             responsive: true,
+            interaction: { intersect: false, mode: 'index' },
             plugins: {
                 legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': R$ ' +
+                                context.parsed.y.toLocaleString('pt-BR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                });
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
@@ -388,7 +556,27 @@
             },
         },
     });
-</script>
-{% endblock %}
 
+    // Toggle Total / Por Categoria
+    document.querySelectorAll('[data-chart-mode]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('[data-chart-mode]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const mode = this.dataset.chartMode;
+            if (mode === 'categoria') {
+                chart.data.datasets = dsCategoria;
+                chart.options.scales.x = { stacked: true };
+                chart.options.scales.y.stacked = true;
+            } else {
+                chart.data.datasets = dsTotal;
+                chart.options.scales.x = { stacked: false };
+                chart.options.scales.y.stacked = false;
+            }
+            chart.update();
+        });
+    });
+})();
+</script>
+{% endblock extra_js %}
 

@@ -234,6 +234,27 @@ class Material(models.Model):
         # CONSUMO sempre tem estoque próprio (EstoqueConsumo)
         return True
 
+    @property
+    def info_tributaria_unitaria(self):
+        """Calcula impostos para 1 unidade do material (para exibição no catálogo)."""
+        if not self.grupo_tributario:
+            return {'sem_grupo': True}
+
+        try:
+            calc = self.calcular_custo_compra(self.valor_unitario, 1)
+            calc['sem_grupo'] = False
+
+            # Percentual de economia
+            pct = Decimal('0.00')
+            if self.valor_unitario > 0:
+                creditos = calc.get('total_creditos', Decimal('0.00'))
+                pct = ((creditos / self.valor_unitario) * 100).quantize(Decimal('0.01'))
+            calc['percentual_economia'] = pct
+
+            return calc
+        except Exception:
+            return {'sem_grupo': True}
+
 
 # ═════════════════════════════════════════════════
 # 2. CONTRATO / CM (vinculado a Filial)
@@ -502,33 +523,41 @@ class Pedido(models.Model):
                 )
 
         return len(erros) == 0, erros
+    
     @property
     def resumo_tributario(self):
         """Retorna resumo consolidado de impostos de todos os itens."""
-        from django.db.models import Sum
+        valor_produtos = Decimal('0.00')
+        total_impostos = Decimal('0.00')
+        total_creditos = Decimal('0.00')
+        custo_real = Decimal('0.00')
+        total_nfe = Decimal('0.00')
+        itens_com_grupo = 0
+        total_itens = 0
 
-        totais = self.itens.aggregate(
-            valor_produtos=Sum('valor_total'),
-            sum_custo_real=Sum('custo_real'),
-            sum_creditos=Sum('total_creditos'),
-            sum_impostos=Sum('total_impostos'),
-        )
+        for item in self.itens.select_related('material__grupo_tributario').all():
+            total_itens += 1
+            valor_item = item.quantidade * item.valor_unitario
+            valor_produtos += valor_item
 
-        valor_produtos = totais['valor_produtos'] or Decimal('0.00')
-        custo_real = totais['sum_custo_real'] or Decimal('0.00')
-        total_creditos = totais['sum_creditos'] or Decimal('0.00')
-        total_impostos = totais['sum_impostos'] or Decimal('0.00')
-        total_nfe = valor_produtos + (total_impostos - total_creditos)  # aproximação
+            if item.material.grupo_tributario:
+                itens_com_grupo += 1
+                try:
+                    calc = item.calcular_impostos()
+                    total_impostos += calc.get('total_impostos', Decimal('0.00'))
+                    total_creditos += calc.get('total_creditos', Decimal('0.00'))
+                    custo_real += calc.get('custo_real', Decimal('0.00'))
+                    total_nfe += calc.get('total_nfe', Decimal('0.00'))
+                except Exception:
+                    custo_real += valor_item
+                    total_nfe += valor_item
+            else:
+                custo_real += valor_item
+                total_nfe += valor_item
 
         pct = Decimal('0.00')
         if valor_produtos > 0:
             pct = ((total_creditos / valor_produtos) * 100).quantize(Decimal('0.01'))
-
-        # Quantos itens têm grupo tributário
-        total_itens = self.itens.count()
-        itens_com_grupo = self.itens.filter(
-            material__grupo_tributario__isnull=False
-        ).count()
 
         return {
             'valor_produtos': valor_produtos,
@@ -539,11 +568,8 @@ class Pedido(models.Model):
             'percentual_economia': pct,
             'itens_com_grupo': itens_com_grupo,
             'total_itens': total_itens,
-            'cobertura_tributaria': (
-                f"{itens_com_grupo}/{total_itens}"
-            ),
+            'cobertura_tributaria': f"{itens_com_grupo}/{total_itens}",
         }
-
 
 # ═════════════════════════════════════════════════
 # 5. ITEM DO PEDIDO
@@ -595,12 +621,21 @@ class ItemPedido(models.Model):
 
     # ATUALIZAR o save() existente:
     def save(self, *args, **kwargs):
+        """Salva o item e atualiza o cache de impostos."""
+        # Calcula valor_total
         self.valor_total = self.quantidade * self.valor_unitario
-        # ═══ NOVO: Calcular tributação ao salvar ═══
-        calc = self.calcular_impostos()
-        self.custo_real = calc.get("custo_real", self.valor_total)
-        self.total_creditos = calc.get("total_creditos", Decimal("0.00"))
-        self.total_impostos = calc.get("total_impostos", Decimal("0.00"))
+
+        # Calcula e cacheia impostos
+        try:
+            calc = self.calcular_impostos()
+            self.total_impostos = calc.get('total_impostos', Decimal('0.00'))
+            self.total_creditos = calc.get('total_creditos', Decimal('0.00'))
+            self.custo_real = calc.get('custo_real', Decimal('0.00'))
+        except Exception:
+            self.total_impostos = Decimal('0.00')
+            self.total_creditos = Decimal('0.00')
+            self.custo_real = Decimal('0.00')
+
         super().save(*args, **kwargs)
 
     class Meta:
@@ -611,10 +646,7 @@ class ItemPedido(models.Model):
     def __str__(self):
         return f"{self.quantidade}x {self.material.descricao}"
 
-    def save(self, *args, **kwargs):
-        self.valor_total = self.quantidade * self.valor_unitario
-        super().save(*args, **kwargs)
-
+    
 
 # ═════════════════════════════════════════════════
 # 6. ESTOQUE DE CONSUMO

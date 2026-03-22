@@ -204,7 +204,7 @@ class MaterialForm(forms.ModelForm):
         fields = [
             'descricao', 'classificacao', 'tipo', 'marca',
             'unidade', 'valor_unitario',
-            'equipamento_epi', 'ferramenta_ref',
+            'equipamento_epi', 'ferramenta_ref', 'ncm', 'grupo_tributario',
             'ativo', 'ncm', 'grupo_tributario', 'criar_equipamento_epi',
             'epi_fabricante', 'epi_modelo', 'epi_ca', 'epi_vida_util_dias',
             'criar_ferramenta', 'ferr_codigo', 'ferr_patrimonio',
@@ -214,6 +214,10 @@ class MaterialForm(forms.ModelForm):
             'descricao': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ex: Fita Isolante 3M Scotch 33+',
+            }),
+            'ncm': forms.Select(attrs={'class': 'form-select'
+            }),
+            'grupo_tributario': forms.Select(attrs={'class': 'form-select'
             }),
             'classificacao': forms.Select(attrs={
                 'class': 'form-select',
@@ -237,10 +241,21 @@ class MaterialForm(forms.ModelForm):
                 'id': 'id_ferramenta_ref',
             }),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Filtrar NCM e Grupo Tributário ativos
+        from tributacao.models import NCM, GrupoTributario
+        self.fields['ncm'].queryset = NCM.objects.filter(ativo=True)
+        self.fields['ncm'].empty_label = '— Selecione o NCM (opcional) —'
+        self.fields['ncm'].required = False
+
+        self.fields['grupo_tributario'].queryset = GrupoTributario.objects.filter(ativo=True)
+        self.fields['grupo_tributario'].empty_label = '— Selecione o Grupo Tributário (opcional) —'
+        self.fields['grupo_tributario'].required = False
 
         # Labels mais claros
         self.fields['equipamento_epi'].label = "🛡️ Vincular ao Equipamento (SST)"

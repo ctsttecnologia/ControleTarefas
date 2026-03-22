@@ -36,5 +36,6 @@ urlpatterns = [
     path("grupo/<int:pk>/excluir/", views.grupo_delete, name="grupo_delete"),
 
     path('api/grupo/<int:pk>/', views.grupo_tributario_api, name='grupo_api'),
+    path('api/grupo/<int:pk>/', views.api_grupo_detail, name='api_grupo_detail'),
 ]
 

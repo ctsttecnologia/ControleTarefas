@@ -203,112 +203,157 @@ class GrupoTributario(models.Model):
             ativo=True,
         ).first()
 
-    def calcular_impostos(self, valor_produtos, quantidade=1):
+    def calcular_impostos(self, valor_produtos, quantidade=1, uf_origem='SP', uf_destino='SP'):
         """
-        Calcula todos os impostos sobre um valor de compra.
-        Retorna dict com valores, créditos e custo real.
+        Calcula todos os impostos com base nas tributações vinculadas.
+        Retorna dict estruturado com valores e flags.
         """
         from decimal import Decimal, ROUND_HALF_UP
-        D = Decimal
 
-        valor = D(str(valor_produtos))
-        zero = D("0.00")
+        valor = Decimal(str(valor_produtos))
+        qtd = Decimal(str(quantidade)) if quantidade > 0 else Decimal('1')
+        ZERO = Decimal('0.00')
 
-        if valor <= 0:
-            return {
-                "valor_produtos": zero,
-                "quantidade": quantidade,
-                "ipi_valor": zero, "ipi_credito": zero, "ipi_custo": zero,
-                "ipi_aliquota": self.ipi_aliquota, "ipi_recuperavel": self.ipi_recuperavel,
-                "pis_valor": zero, "pis_credito": zero,
-                "pis_aliquota": self.pis_aliquota, "pis_recuperavel": self.pis_recuperavel,
-                "cofins_valor": zero, "cofins_credito": zero,
-                "cofins_aliquota": self.cofins_aliquota, "cofins_recuperavel": self.cofins_recuperavel,
-                "icms_valor": zero, "icms_credito": zero,
-                "icms_aliquota": self.icms_aliquota, "icms_reducao_base": self.icms_reducao_base,
-                "icms_recuperavel": self.icms_recuperavel,
-                "icms_st_valor": zero, "icms_st_aliquota": self.icms_st_aliquota,
-                "icms_st_mva": self.icms_st_mva,
-                "total_impostos": zero, "total_creditos": zero,
-                "total_nfe": zero, "custo_real": zero,
-                "custo_unitario": zero, "percentual_economia": zero,
+        resultado = {
+            'valor_produtos': valor,
+            'sem_grupo': False,
+            'icms': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False, 'base': ZERO},
+            'icms_st': {'aliquota': ZERO, 'valor': ZERO, 'mva': ZERO},
+            'fcp': {'aliquota': ZERO, 'valor': ZERO},
+            'ipi': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
+            'pis': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
+            'cofins': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
+            'total_impostos': ZERO,
+            'total_creditos': ZERO,
+            'total_nfe': ZERO,
+            'custo_real': ZERO,
+            'custo_unitario': ZERO,
+            'percentual_economia': ZERO,
+        }
+
+        # ════════════════════════════════════════════
+        # FEDERAL — OneToOneField → acesso direto
+        # ════════════════════════════════════════════
+        try:
+            federal = self.tributacao_federal  # OneToOne: retorna objeto ou raise
+        except TributacaoFederal.DoesNotExist:
+            federal = None
+
+        if federal:
+            # IPI
+            ipi_aliq = federal.aliquota_ipi or ZERO
+            ipi_valor = (valor * ipi_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            # IPI é recuperável se empresa é indústria (simplificação: não recuperável por padrão)
+            resultado['ipi'] = {
+                'aliquota': ipi_aliq,
+                'valor': ipi_valor,
+                'recuperavel': False,
             }
 
-        def q(v):
-            return v.quantize(D("0.01"), ROUND_HALF_UP)
+            # PIS
+            pis_aliq = federal.aliquota_pis or ZERO
+            pis_valor = (valor * pis_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            pis_recuperavel = federal.gera_credito_pis
+            resultado['pis'] = {
+                'aliquota': pis_aliq,
+                'valor': pis_valor,
+                'recuperavel': pis_recuperavel,
+            }
 
-        # ─── IPI (incide sobre valor dos produtos, compõe NF-e) ───
-        ipi_valor = q(valor * self.ipi_aliquota / 100)
-        ipi_credito = ipi_valor if self.ipi_recuperavel else zero
-        ipi_custo = zero if self.ipi_recuperavel else ipi_valor
+            # COFINS
+            cofins_aliq = federal.aliquota_cofins or ZERO
+            cofins_valor = (valor * cofins_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            cofins_recuperavel = federal.gera_credito_cofins
+            resultado['cofins'] = {
+                'aliquota': cofins_aliq,
+                'valor': cofins_valor,
+                'recuperavel': cofins_recuperavel,
+            }
 
-        # ─── PIS (incide sobre valor dos produtos) ───
-        pis_valor = q(valor * self.pis_aliquota / 100)
-        pis_credito = pis_valor if self.pis_recuperavel else zero
+        # ════════════════════════════════════════════
+        # ESTADUAL — ForeignKey → queryset filtrado
+        # ════════════════════════════════════════════
+        estadual = self.tributacoes_estaduais.filter(
+            uf_origem=uf_origem,
+            uf_destino=uf_destino,
+            ativo=True,
+        ).first()
 
-        # ─── COFINS (incide sobre valor dos produtos) ───
-        cofins_valor = q(valor * self.cofins_aliquota / 100)
-        cofins_credito = cofins_valor if self.cofins_recuperavel else zero
+        if estadual:
+            # ICMS
+            icms_aliq = estadual.aliquota_icms or ZERO
+            reducao = estadual.reducao_base_icms or ZERO
+            base_icms = valor * (1 - reducao / 100)
+            icms_valor = (base_icms * icms_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            resultado['icms'] = {
+                'aliquota': icms_aliq,
+                'valor': icms_valor,
+                'recuperavel': estadual.permite_credito,
+                'base': base_icms.quantize(Decimal('0.01')),
+            }
 
-        # ─── ICMS (sobre valor dos produtos com possível redução de base) ───
-        base_icms = valor * (1 - self.icms_reducao_base / 100)
-        icms_valor = q(base_icms * self.icms_aliquota / 100)
-        icms_credito = icms_valor if self.icms_recuperavel else zero
+            # ICMS-ST
+            if estadual.tem_st:
+                mva = estadual.mva or ZERO
+                icms_st_aliq = estadual.aliquota_icms_st or ZERO
+                base_st = valor * (1 + mva / 100)
+                icms_st_valor = (base_st * icms_st_aliq / 100 - icms_valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                if icms_st_valor < ZERO:
+                    icms_st_valor = ZERO
+                resultado['icms_st'] = {
+                    'aliquota': icms_st_aliq,
+                    'valor': icms_st_valor,
+                    'mva': mva,
+                }
 
-        # ─── ICMS-ST (Substituição Tributária) ───
-        icms_st_valor = zero
-        if self.icms_st_aliquota > 0 and self.icms_st_mva > 0:
-            base_st = (valor + ipi_valor) * (1 + self.icms_st_mva / 100)
-            icms_st_bruto = q(base_st * self.icms_st_aliquota / 100)
-            icms_st_valor = max(icms_st_bruto - icms_valor, zero)
+            # FCP
+            fcp_aliq = estadual.aliquota_fcp or ZERO
+            fcp_valor = (valor * fcp_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            resultado['fcp'] = {
+                'aliquota': fcp_aliq,
+                'valor': fcp_valor,
+            }
 
-        # ─── Totais ───
-        total_impostos = ipi_valor + pis_valor + cofins_valor + icms_valor + icms_st_valor
-        total_creditos = ipi_credito + pis_credito + cofins_credito + icms_credito
+        # ════════════════════════════════════════════
+        # TOTAIS
+        # ════════════════════════════════════════════
+        total_impostos = (
+            resultado['ipi']['valor']
+            + resultado['pis']['valor']
+            + resultado['cofins']['valor']
+            + resultado['icms']['valor']
+            + resultado['icms_st']['valor']
+            + resultado['fcp']['valor']
+        )
 
-        # Valor da NF-e = produtos + IPI (se não recuperável) + ICMS-ST
-        total_nfe = valor + ipi_custo + icms_st_valor
-        custo_real = total_nfe - total_creditos
+        total_creditos = ZERO
+        if resultado['icms']['recuperavel']:
+            total_creditos += resultado['icms']['valor']
+        if resultado['ipi']['recuperavel']:
+            total_creditos += resultado['ipi']['valor']
+        if resultado['pis']['recuperavel']:
+            total_creditos += resultado['pis']['valor']
+        if resultado['cofins']['recuperavel']:
+            total_creditos += resultado['cofins']['valor']
 
-        qtd = D(str(quantidade)) if quantidade > 0 else D("1")
+        total_nfe = valor + resultado['ipi']['valor'] + resultado['icms_st']['valor'] + resultado['fcp']['valor']
+        custo_real = (total_nfe - total_creditos).quantize(Decimal('0.01'))
+        custo_unitario = (custo_real / qtd).quantize(Decimal('0.01'))
 
-        return {
-            "valor_produtos": valor,
-            "quantidade": quantidade,
+        percentual_economia = ZERO
+        if total_nfe > 0:
+            percentual_economia = (total_creditos / total_nfe * 100).quantize(Decimal('0.01'))
 
-            "ipi_aliquota": self.ipi_aliquota,
-            "ipi_valor": ipi_valor,
-            "ipi_credito": ipi_credito,
-            "ipi_custo": ipi_custo,
-            "ipi_recuperavel": self.ipi_recuperavel,
+        resultado.update({
+            'total_impostos': total_impostos,
+            'total_creditos': total_creditos,
+            'total_nfe': total_nfe,
+            'custo_real': custo_real,
+            'custo_unitario': custo_unitario,
+            'percentual_economia': percentual_economia,
+        })
 
-            "pis_aliquota": self.pis_aliquota,
-            "pis_valor": pis_valor,
-            "pis_credito": pis_credito,
-            "pis_recuperavel": self.pis_recuperavel,
-
-            "cofins_aliquota": self.cofins_aliquota,
-            "cofins_valor": cofins_valor,
-            "cofins_credito": cofins_credito,
-            "cofins_recuperavel": self.cofins_recuperavel,
-
-            "icms_aliquota": self.icms_aliquota,
-            "icms_reducao_base": self.icms_reducao_base,
-            "icms_valor": icms_valor,
-            "icms_credito": icms_credito,
-            "icms_recuperavel": self.icms_recuperavel,
-
-            "icms_st_aliquota": self.icms_st_aliquota,
-            "icms_st_mva": self.icms_st_mva,
-            "icms_st_valor": icms_st_valor,
-
-            "total_impostos": total_impostos,
-            "total_creditos": total_creditos,
-            "total_nfe": total_nfe,
-            "custo_real": custo_real,
-            "custo_unitario": q(custo_real / qtd),
-            "percentual_economia": q(total_creditos / total_nfe * 100) if total_nfe > 0 else zero,
-        }
+        return resultado
 
 
 # ══════════════════════════════════════════════════════
