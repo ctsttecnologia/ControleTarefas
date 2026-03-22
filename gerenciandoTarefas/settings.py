@@ -354,9 +354,6 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# O bucket name é obrigatório para o fallback funcionar
-GS_BUCKET_NAME = 'ctst-project-2026'  # mesmo nome que usa em produção
-
 # =============================================================================
 # E-MAIL
 # =============================================================================
