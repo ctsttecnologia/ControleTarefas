@@ -15,6 +15,7 @@ from .forms import (
 from django.http import JsonResponse
 
 
+
 # ══════════════════════════════════════════════════════
 # DASHBOARD
 # ══════════════════════════════════════════════════════
@@ -332,4 +333,37 @@ def grupo_tributario_api(request, pk):
         },
     })
 
+def api_grupo_detail(request, pk):
+    """API para preview do grupo tributário no formulário de material."""
+    grupo = get_object_or_404(GrupoTributario, pk=pk)
 
+    # Calcula com valor exemplo de R$ 1000 para mostrar alíquotas
+    calc = grupo.calcular_impostos(valor_produtos=1000, quantidade=1)
+
+    return JsonResponse({
+        "nome": grupo.nome,
+        "cfop": grupo.cfop.codigo if grupo.cfop else "—",
+        "natureza": grupo.get_natureza_display() if hasattr(grupo, 'get_natureza_display') else grupo.natureza,
+        "icms": {
+            "aliquota": str(calc["icms"]["aliquota"]),
+            "recuperavel": calc["icms"]["recuperavel"],
+            "reducao_base": str(calc["icms"]["reducao_base"]),
+            "uf": calc["icms"]["uf"],
+        },
+        "ipi": {
+            "aliquota": str(calc["ipi"]["aliquota"]),
+            "recuperavel": calc["ipi"]["recuperavel"],
+        },
+        "pis": {
+            "aliquota": str(calc["pis"]["aliquota"]),
+            "recuperavel": calc["pis"]["recuperavel"],
+        },
+        "cofins": {
+            "aliquota": str(calc["cofins"]["aliquota"]),
+            "recuperavel": calc["cofins"]["recuperavel"],
+        },
+        "icms_st": {
+            "tem_st": calc["icms_st"]["tem_st"],
+            "mva": str(calc["icms_st"]["mva"]),
+        },
+    })

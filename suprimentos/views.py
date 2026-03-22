@@ -45,7 +45,7 @@ from django import forms
 import pandas as pd
 from django.contrib import messages
 from django.db import transaction, IntegrityError
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F, Value, DecimalField
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -91,6 +91,8 @@ import json
 from weasyprint import HTML
 from django.template.loader import render_to_string
 from .relatorios import gerar_relatorio_completo
+from django.db.models.functions import Coalesce
+import json
 
 
 # ════════════════════════════════════════════
@@ -344,154 +346,275 @@ class ParceiroDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     permission_required = 'suprimentos.delete_parceiro'
 
 
-# ╔════════════════════════════════════════════╗
-# ║          DASHBOARD SUPRIMENTOS             ║
-# ╚════════════════════════════════════════════╝
+# DASHBOARD SUPRIMENTOS             
 
 class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
     template_name = 'suprimentos/dashboard.html'
 
+    # ── helpers ──────────────────────────────────────────────
+    @staticmethod
+    def _dec(val):
+        """Garante Decimal(0) quando None."""
+        return val or Decimal('0')
+
+    @staticmethod
+    def _pct(parte, total):
+        """Percentual inteiro seguro para progress bars."""
+        if not total or total == 0:
+            return 0
+        return min(int((parte / total) * 100), 100)
+
+    def _contrato_ids(self, user):
+        qs = Contrato.objects.filter(ativo=True)
+        if not user.is_superuser:
+            filial = getattr(user, 'filial_ativa', None)
+            if filial:
+                qs = qs.filter(filial=filial)
+        return qs, list(qs.values_list('id', flat=True))
+
+    def _verbas_mes(self, contrato_ids, ano, mes):
+        """Retorna dict com verbas EPI/CONSUMO/FERRAMENTA em uma única query."""
+        agg = VerbaContrato.objects.filter(
+            contrato_id__in=contrato_ids, ano=ano, mes=mes,
+        ).aggregate(
+            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
+            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
+            ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
+        )
+        agg['total'] = agg['epi'] + agg['consumo'] + agg['ferramenta']
+        return agg
+
+    def _compras_mes(self, contrato_ids, ano, mes, status_list):
+        """Retorna dict com compras por classificação + tributação em poucas queries."""
+        base = ItemPedido.objects.filter(
+            pedido__contrato_id__in=contrato_ids,
+            pedido__status__in=status_list,
+            pedido__data_pedido__year=ano,
+            pedido__data_pedido__month=mes,
+        )
+
+        # Compras por classificação (1 query)
+        compras = base.values('material__classificacao').annotate(
+            total=Coalesce(Sum('valor_total'), Decimal('0')),
+        )
+        por_class = {r['material__classificacao']: r['total'] for r in compras}
+        epi = self._dec(por_class.get('EPI'))
+        consumo = self._dec(por_class.get('CONSUMO'))
+        ferramenta = self._dec(por_class.get('FERRAMENTA'))
+
+        # Tributação (1 query)
+        trib = base.filter(
+            material__grupo_tributario__isnull=False
+        ).aggregate(
+            valor_produtos=Coalesce(Sum('valor_total'), Decimal('0')),
+            custo_real=Coalesce(Sum('custo_real'), Decimal('0')),
+            total_creditos=Coalesce(Sum('total_creditos'), Decimal('0')),
+            total_impostos=Coalesce(Sum('total_impostos'), Decimal('0')),
+        )
+
+        return {
+            'epi': epi,
+            'consumo': consumo,
+            'ferramenta': ferramenta,
+            'total': epi + consumo + ferramenta,
+            'trib': trib,
+        }
+
+    # ── context ──────────────────────────────────────────────
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         hoje = timezone.now()
         ano = int(self.request.GET.get('ano', hoje.year))
         mes = int(self.request.GET.get('mes', hoje.month))
         user = self.request.user
-
-        # Filtrar por filial do usuário
-        contratos_qs = Contrato.objects.filter(ativo=True)
-        if not user.is_superuser:
-            filial_ativa = getattr(user, 'filial_ativa', None)
-            if filial_ativa:
-                contratos_qs = contratos_qs.filter(filial=filial_ativa)
-
-        contrato_ids = contratos_qs.values_list('id', flat=True)
-
-        # Verbas do mês selecionado
-        verbas_mes = VerbaContrato.objects.filter(
-            contrato_id__in=contrato_ids, ano=ano, mes=mes,
-        )
-        ctx['total_verba_epi'] = verbas_mes.aggregate(t=Sum('verba_epi'))['t'] or Decimal('0')
-        ctx['total_verba_consumo'] = verbas_mes.aggregate(t=Sum('verba_consumo'))['t'] or Decimal('0')
-        ctx['total_verba_ferramenta'] = verbas_mes.aggregate(t=Sum('verba_ferramenta'))['t'] or Decimal('0')
-        ctx['total_verba'] = ctx['total_verba_epi'] + ctx['total_verba_consumo'] + ctx['total_verba_ferramenta']
-
-        # Compras do mês (aprovado, entregue ou recebido)
         STATUS_COMPRA = ['APROVADO', 'ENTREGUE', 'RECEBIDO']
-        itens_mes = ItemPedido.objects.filter(
-            pedido__contrato_id__in=contrato_ids,
-            pedido__status__in=STATUS_COMPRA,
-            pedido__data_pedido__year=ano,
-            pedido__data_pedido__month=mes,
+
+        contratos_qs, contrato_ids = self._contrato_ids(user)
+
+        # ── Verbas do mês ──
+        verbas = self._verbas_mes(contrato_ids, ano, mes)
+        ctx['total_verba_epi'] = verbas['epi']
+        ctx['total_verba_consumo'] = verbas['consumo']
+        ctx['total_verba_ferramenta'] = verbas['ferramenta']
+        ctx['total_verba'] = verbas['total']
+
+        # ── Compras do mês ──
+        compras = self._compras_mes(contrato_ids, ano, mes, STATUS_COMPRA)
+        ctx['total_compra_epi'] = compras['epi']
+        ctx['total_compra_consumo'] = compras['consumo']
+        ctx['total_compra_ferramenta'] = compras['ferramenta']
+        ctx['total_compra'] = compras['total']
+
+        # ── Saldos por categoria ──
+        ctx['saldo_epi'] = verbas['epi'] - compras['epi']
+        ctx['saldo_consumo'] = verbas['consumo'] - compras['consumo']
+        ctx['saldo_ferramenta'] = verbas['ferramenta'] - compras['ferramenta']
+        ctx['saldo_geral'] = verbas['total'] - compras['total']
+
+        # ── Percentuais para progress bars ──
+        ctx['pct_epi'] = self._pct(compras['epi'], verbas['epi'])
+        ctx['pct_consumo'] = self._pct(compras['consumo'], verbas['consumo'])
+        ctx['pct_ferramenta'] = self._pct(compras['ferramenta'], verbas['ferramenta'])
+        ctx['pct_geral'] = self._pct(compras['total'], verbas['total'])
+
+        # ── Tributação ──
+        ctx['custos_tributarios'] = compras['trib']
+
+        mat_qs = Material.objects.filter(ativo=True)
+        mat_counts = mat_qs.aggregate(
+            total=Coalesce(Sum(Value(1)), 0),
+            sem_grupo=Coalesce(
+                Sum(Value(1), filter=Q(grupo_tributario__isnull=True)), 0
+            ),
         )
-        itens_trib_qs = ItemPedido.objects.filter(
+        ctx['materiais_total'] = mat_qs.count()
+        ctx['materiais_sem_grupo'] = mat_qs.filter(grupo_tributario__isnull=True).count()
+
+        # Economia (custo real vs valor NF)
+        trib = compras['trib']
+        if trib['valor_produtos'] > 0:
+            ctx['pct_custo_real'] = self._pct(trib['custo_real'], trib['valor_produtos'])
+            ctx['pct_creditos'] = self._pct(trib['total_creditos'], trib['valor_produtos'])
+        else:
+            ctx['pct_custo_real'] = 0
+            ctx['pct_creditos'] = 0
+
+        # ── Gráfico últimos 6 meses (otimizado: 2 queries bulk) ──
+        periodos = []
+        for i in range(5, -1, -1):
+            m_ = hoje.month - i
+            a_ = hoje.year
+            while m_ <= 0:
+                m_ += 12
+                a_ -= 1
+            periodos.append((a_, m_))
+
+        # Verbas bulk
+        verbas_bulk = VerbaContrato.objects.filter(
+            contrato_id__in=contrato_ids,
+        ).filter(
+            # Filtra apenas os 6 meses relevantes
+            *[Q(ano=a_, mes=m_) for a_, m_ in periodos],
+            _connector=Q.OR,
+        ).values('ano', 'mes').annotate(
+            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
+            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
+            ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
+        )
+        verbas_map = {(v['ano'], v['mes']): v for v in verbas_bulk}
+
+        # Compras bulk
+        compras_bulk = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=STATUS_COMPRA,
-            pedido__data_pedido__year=ano,
-            pedido__data_pedido__month=mes,
+        ).filter(
+            *[Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos],
+            _connector=Q.OR,
+        ).values(
+            'pedido__data_pedido__year', 'pedido__data_pedido__month',
+            'material__classificacao',
+        ).annotate(
+            total=Coalesce(Sum('valor_total'), Decimal('0')),
+        )
+
+        # Compras com custo real (para gráfico de economia)
+        compras_trib_bulk = ItemPedido.objects.filter(
+            pedido__contrato_id__in=contrato_ids,
+            pedido__status__in=STATUS_COMPRA,
             material__grupo_tributario__isnull=False,
+        ).filter(
+            *[Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos],
+            _connector=Q.OR,
+        ).values(
+            'pedido__data_pedido__year', 'pedido__data_pedido__month',
+        ).annotate(
+            custo_real=Coalesce(Sum('custo_real'), Decimal('0')),
+            creditos=Coalesce(Sum('total_creditos'), Decimal('0')),
         )
-        trib_totais = itens_trib_qs.aggregate(
-            sum_valor=Sum('valor_total'),
-            sum_custo_real=Sum('custo_real'),
-            sum_creditos=Sum('total_creditos'),
-            sum_impostos=Sum('total_impostos'),
-        )
-        ctx['total_compra_epi'] = itens_mes.filter(
-            material__classificacao='EPI'
-        ).aggregate(t=Sum('valor_total'))['t'] or Decimal('0')
-        ctx['total_compra_consumo'] = itens_mes.filter(
-            material__classificacao='CONSUMO'
-        ).aggregate(t=Sum('valor_total'))['t'] or Decimal('0')
-        ctx['total_compra_ferramenta'] = itens_mes.filter(
-            material__classificacao='FERRAMENTA'
-        ).aggregate(t=Sum('valor_total'))['t'] or Decimal('0')
-        ctx['total_compra'] = (
-            ctx['total_compra_epi'] + ctx['total_compra_consumo'] + ctx['total_compra_ferramenta']
-        )
-        ctx['saldo_geral'] = ctx['total_verba'] - ctx['total_compra']
-        ctx['custos_tributarios'] = {
-            'valor_produtos': trib_totais['sum_valor'] or Decimal('0'),
-            'custo_real': trib_totais['sum_custo_real'] or Decimal('0'),
-            'total_creditos': trib_totais['sum_creditos'] or Decimal('0'),
-            'total_impostos': trib_totais['sum_impostos'] or Decimal('0'),
+        trib_map = {
+            (t['pedido__data_pedido__year'], t['pedido__data_pedido__month']): t
+            for t in compras_trib_bulk
         }
 
-        ctx['materiais_sem_grupo'] = Material.objects.filter(
-            ativo=True,
-            grupo_tributario__isnull=True,
-        ).count()
+        compras_map = {}
+        for c in compras_bulk:
+            key = (c['pedido__data_pedido__year'], c['pedido__data_pedido__month'])
+            if key not in compras_map:
+                compras_map[key] = {}
+            compras_map[key][c['material__classificacao']] = float(c['total'])
 
-        ctx['materiais_total'] = Material.objects.filter(ativo=True).count()
-
-        # Gráfico últimos 6 meses
         grafico_meses = []
-        for i in range(5, -1, -1):
-            m = hoje.month - i
-            a = hoje.year
-            while m <= 0:
-                m += 12
-                a -= 1
+        for a_, m_ in periodos:
+            v = verbas_map.get((a_, m_), {})
+            c = compras_map.get((a_, m_), {})
+            t = trib_map.get((a_, m_), {})
 
-            v_qs = VerbaContrato.objects.filter(
-                contrato_id__in=contrato_ids, ano=a, mes=m,
-            )
-            v_epi = v_qs.aggregate(t=Sum('verba_epi'))['t'] or 0
-            v_con = v_qs.aggregate(t=Sum('verba_consumo'))['t'] or 0
-            v_fer = v_qs.aggregate(t=Sum('verba_ferramenta'))['t'] or 0
+            v_epi = float(v.get('epi', 0))
+            v_con = float(v.get('consumo', 0))
+            v_fer = float(v.get('ferramenta', 0))
+            c_epi = c.get('EPI', 0)
+            c_con = c.get('CONSUMO', 0)
+            c_fer = c.get('FERRAMENTA', 0)
 
-            c_qs = ItemPedido.objects.filter(
-                pedido__contrato_id__in=contrato_ids,
-                pedido__status__in=STATUS_COMPRA,
-                pedido__data_pedido__year=a,
-                pedido__data_pedido__month=m,
-            )
-            c_epi = c_qs.filter(material__classificacao='EPI').aggregate(t=Sum('valor_total'))['t'] or 0
-            c_con = c_qs.filter(material__classificacao='CONSUMO').aggregate(t=Sum('valor_total'))['t'] or 0
-            c_fer = c_qs.filter(material__classificacao='FERRAMENTA').aggregate(t=Sum('valor_total'))['t'] or 0
+            compra_total = c_epi + c_con + c_fer
+            custo_real = float(t.get('custo_real', 0))
+            creditos = float(t.get('creditos', 0))
 
             grafico_meses.append({
-                'label': f"{m:02d}/{a}",
-                'verba_epi': float(v_epi), 'verba_consumo': float(v_con),
-                'verba_ferramenta': float(v_fer), 'verba_total': float(v_epi + v_con + v_fer),
-                'compra_epi': float(c_epi), 'compra_consumo': float(c_con),
-                'compra_ferramenta': float(c_fer), 'compra_total': float(c_epi + c_con + c_fer),
+                'label': f"{m_:02d}/{a_}",
+                'verba_total': v_epi + v_con + v_fer,
+                'compra_total': compra_total,
+                'custo_real': custo_real,
+                'creditos': creditos,
+                'verba_epi': v_epi, 'verba_consumo': v_con, 'verba_ferramenta': v_fer,
+                'compra_epi': c_epi, 'compra_consumo': c_con, 'compra_ferramenta': c_fer,
             })
-        ctx['grafico_meses'] = grafico_meses
+        ctx['grafico_meses'] = json.dumps(grafico_meses)
 
-        # Saldo geral anual (12 meses do ano selecionado)
+        # ── Saldo anual (otimizado: 2 queries) ──
+        verbas_ano = VerbaContrato.objects.filter(
+            contrato_id__in=contrato_ids, ano=ano,
+        ).values('mes').annotate(
+            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
+            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
+            ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
+        )
+        verbas_ano_map = {v['mes']: v for v in verbas_ano}
+
+        compras_ano = ItemPedido.objects.filter(
+            pedido__contrato_id__in=contrato_ids,
+            pedido__status__in=STATUS_COMPRA,
+            pedido__data_pedido__year=ano,
+        ).values('pedido__data_pedido__month').annotate(
+            total=Coalesce(Sum('valor_total'), Decimal('0')),
+        )
+        compras_ano_map = {c['pedido__data_pedido__month']: float(c['total']) for c in compras_ano}
+
         saldo_anual = []
-        for m in range(1, 13):
-            v = VerbaContrato.objects.filter(
-                contrato_id__in=contrato_ids, ano=ano, mes=m,
-            ).aggregate(
-                epi=Sum('verba_epi'), con=Sum('verba_consumo'), fer=Sum('verba_ferramenta'),
-            )
-            c = ItemPedido.objects.filter(
-                pedido__contrato_id__in=contrato_ids,
-                pedido__status__in=STATUS_COMPRA,
-                pedido__data_pedido__year=ano,
-                pedido__data_pedido__month=m,
-            ).aggregate(t=Sum('valor_total'))['t'] or 0
-            verba_total_m = (v['epi'] or 0) + (v['con'] or 0) + (v['fer'] or 0)
+        for m_ in range(1, 13):
+            v = verbas_ano_map.get(m_, {})
+            vt = float(v.get('epi', 0)) + float(v.get('consumo', 0)) + float(v.get('ferramenta', 0))
+            ct = compras_ano_map.get(m_, 0)
             saldo_anual.append({
-                'mes': f"{m:02d}/{ano}",
-                'verba': float(verba_total_m),
-                'compra': float(c),
-                'saldo': float(verba_total_m - c),
+                'mes': f"{m_:02d}/{ano}",
+                'verba': vt,
+                'compra': ct,
+                'saldo': vt - ct,
             })
         ctx['saldo_anual'] = saldo_anual
 
-        # Pedidos pendentes (para gerentes)
+        # ── Pedidos pendentes ──
         ctx['pedidos_pendentes'] = Pedido.objects.filter(
             status=Pedido.StatusChoices.PENDENTE,
             contrato_id__in=contrato_ids,
-        ).select_related('contrato', 'solicitante')[:10]
+        ).select_related('contrato', 'solicitante').annotate(
+            valor_total_pedido=Coalesce(Sum('itens__valor_total'), Decimal('0')),
+        )[:10]
 
-        # Contratos da filial
+        # ── Contratos ──
         ctx['contratos'] = contratos_qs
 
-        # Filtros
+        # ── Filtros ──
         ctx['ano'] = ano
         ctx['mes'] = mes
         ctx['anos_disponiveis'] = range(2024, hoje.year + 2)
@@ -516,7 +639,10 @@ class MaterialListView(LoginRequiredMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
-        qs = Material.objects.all()
+        qs = Material.objects.select_related(
+            'ncm', 'grupo_tributario'
+        ).all()
+
         q = self.request.GET.get('q', '')
         classificacao = self.request.GET.get('classificacao', '')
         tipo = self.request.GET.get('tipo', '')
@@ -530,8 +656,11 @@ class MaterialListView(LoginRequiredMixin, ListView):
             qs = qs.filter(classificacao=classificacao)
         if tipo:
             qs = qs.filter(tipo=tipo)
-        if sem_grupo == '1':  # ★ NOVO
+        if sem_grupo == '1':
             qs = qs.filter(grupo_tributario__isnull=True, ativo=True)
+        elif sem_grupo == '0':
+            qs = qs.filter(grupo_tributario__isnull=False, ativo=True)
+
         return qs
 
     def get_context_data(self, **kwargs):
@@ -543,7 +672,14 @@ class MaterialListView(LoginRequiredMixin, ListView):
         ctx['filtro_classificacao'] = self.request.GET.get('classificacao', '')
         ctx['filtro_tipo'] = self.request.GET.get('tipo', '')
         ctx['filtro_sem_grupo'] = self.request.GET.get('sem_grupo', '')
+
+        qs = Material.objects.filter(ativo=True)
+        ctx['total_materiais'] = qs.count()
+        ctx['com_grupo_tributario'] = qs.filter(grupo_tributario__isnull=False).count()
+        ctx['sem_grupo_tributario'] = qs.filter(grupo_tributario__isnull=True).count()
+        ctx['com_ncm'] = qs.filter(ncm__isnull=False).count()
         return ctx
+
 
 
 class MaterialCreateView(LoginRequiredMixin, CreateView):

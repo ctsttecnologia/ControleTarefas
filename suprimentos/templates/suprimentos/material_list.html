@@ -17,39 +17,100 @@
         </div>
     </div>
 
+    {# ── Cards de Resumo do Catálogo ── #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card border-0 bg-light shadow-sm">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted d-block"><i class="bi bi-box-seam"></i> Total Materiais</small>
+                    <strong class="fs-4">{{ total_materiais|default:"0" }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 bg-light shadow-sm">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted d-block"><i class="bi bi-calculator"></i> Com Grupo Tributário</small>
+                    <strong class="fs-4 text-success">{{ com_grupo_tributario|default:"0" }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 bg-light shadow-sm">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted d-block"><i class="bi bi-exclamation-triangle"></i> Sem Grupo Tributário</small>
+                    <strong class="fs-4 text-warning">{{ sem_grupo_tributario|default:"0" }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 bg-light shadow-sm">
+                <div class="card-body text-center py-3">
+                    <small class="text-muted d-block"><i class="bi bi-upc-scan"></i> Com NCM</small>
+                    <strong class="fs-4 text-info">{{ com_ncm|default:"0" }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body">
-            <!-- Filtros -->
+            {# ── Filtros ── #}
             <form method="get" class="row g-2 mb-4">
-                <div class="col-md-4">
-                    <input type="text" name="q" class="form-control" placeholder="Buscar descrição, marca ou código..."
+                <div class="col-md-3">
+                    <input type="text" name="q" class="form-control"
+                           placeholder="Buscar descrição, marca ou código..."
                            value="{{ filtro_q }}">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select name="classificacao" class="form-select">
                         <option value="">Todas Classificações</option>
                         {% for val, label in classificacoes %}
-                            <option value="{{ val }}" {% if filtro_classificacao == val %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="tipo" class="form-select">
-                        <option value="">Todos Tipos</option>
-                        {% for val, label in tipos %}
-                            <option value="{{ val }}" {% if filtro_tipo == val %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ val }}" {% if filtro_classificacao == val %}selected{% endif %}>
+                                {{ label }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos Tipos</option>
+                        {% for val, label in tipos %}
+                            <option value="{{ val }}" {% if filtro_tipo == val %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="sem_grupo" class="form-select">
+                        <option value="">Tributação: Todos</option>
+                        <option value="1" {% if filtro_sem_grupo == '1' %}selected{% endif %}>
+                            ⚠️ Sem Grupo Tributário
+                        </option>
+                        <option value="0" {% if filtro_sem_grupo == '0' %}selected{% endif %}>
+                            ✅ Com Grupo Tributário
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-1">
                     <button class="btn btn-primary w-100" type="submit">
-                        <i class="bi bi-search"></i> Filtrar
+                        <i class="bi bi-search"></i>
                     </button>
                 </div>
+                {% if filtro_q or filtro_classificacao or filtro_tipo or filtro_sem_grupo %}
+                <div class="col-md-1">
+                    <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary w-100"
+                       title="Limpar filtros">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                </div>
+                {% endif %}
             </form>
 
+            {# ── Tabela ── #}
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>Código</th>
@@ -59,15 +120,31 @@
                             <th>Marca</th>
                             <th>Unidade</th>
                             <th class="text-end">Valor Unit.</th>
+                            <th class="text-center">NCM</th>
+                            <th class="text-center">Grupo Trib.</th>
+                            <th class="text-end">ICMS</th>
+                            <th class="text-end">IPI</th>
+                            <th class="text-end">PIS</th>
+                            <th class="text-end">COFINS</th>
+                            <th class="text-end text-success">Créditos</th>
+                            <th class="text-end text-primary">Custo Real Unit.</th>
                             <th class="text-center">Status</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for m in materiais %}
+                        {% with calc=m.info_tributaria_unitaria %}
                         <tr>
                             <td><code>{{ m.codigo }}</code></td>
-                            <td>{{ m.descricao }}</td>
+                            <td>
+                                {{ m.descricao }}
+                                {% if m.classificacao == 'EPI' and m.equipamento_epi %}
+                                    <i class="bi bi-shield-check text-primary ms-1" title="Vinculado ao SST"></i>
+                                {% elif m.classificacao == 'FERRAMENTA' and m.ferramenta_ref %}
+                                    <i class="bi bi-tools text-warning ms-1" title="Vinculado a Ferramenta"></i>
+                                {% endif %}
+                            </td>
                             <td>
                                 <span class="badge
                                     {% if m.classificacao == 'EPI' %}bg-info
@@ -80,6 +157,83 @@
                             <td>{{ m.marca|default:"-" }}</td>
                             <td>{{ m.get_unidade_display }}</td>
                             <td class="text-end">R$ {{ m.valor_unitario|floatformat:2 }}</td>
+
+                            {# NCM #}
+                            <td class="text-center">
+                                {% if m.ncm %}
+                                    <code class="small" title="{{ m.ncm.descricao }}">
+                                        {{ m.ncm.codigo }}
+                                    </code>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+
+                            {# Grupo Tributário #}
+                            <td class="text-center">
+                                {% if m.grupo_tributario %}
+                                    <span class="badge bg-primary bg-opacity-75"
+                                          title="{{ m.grupo_tributario.nome }}">
+                                        <i class="bi bi-calculator"></i>
+                                        {{ m.grupo_tributario.nome|truncatechars:15 }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-light text-warning border"
+                                          title="Sem grupo tributário">
+                                        <i class="bi bi-exclamation-triangle"></i> N/C
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            {# ═══ Colunas Tributárias ═══ #}
+                            {% if calc and not calc.sem_grupo %}
+                                {# ICMS #}
+                                <td class="text-end">
+                                    R$ {{ calc.icms.valor|floatformat:2 }}
+                                    {% if calc.icms.recuperavel %}
+                                        <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% endif %}
+                                </td>
+                                {# IPI #}
+                                <td class="text-end">
+                                    R$ {{ calc.ipi.valor|floatformat:2 }}
+                                    {% if calc.ipi.recuperavel %}
+                                        <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% elif calc.ipi.valor > 0 %}
+                                        <br><small class="text-danger"><i class="bi bi-x-circle-fill"></i> custo</small>
+                                    {% endif %}
+                                </td>
+                                {# PIS #}
+                                <td class="text-end">
+                                    R$ {{ calc.pis.valor|floatformat:2 }}
+                                    {% if calc.pis.recuperavel %}
+                                        <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% endif %}
+                                </td>
+                                {# COFINS #}
+                                <td class="text-end">
+                                    R$ {{ calc.cofins.valor|floatformat:2 }}
+                                    {% if calc.cofins.recuperavel %}
+                                        <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% endif %}
+                                </td>
+                                {# Créditos #}
+                                <td class="text-end">
+                                    <strong class="text-success">R$ {{ calc.total_creditos|floatformat:2 }}</strong>
+                                </td>
+                                {# Custo Real Unitário #}
+                                <td class="text-end">
+                                    <strong class="text-primary">R$ {{ calc.custo_unitario|floatformat:2 }}</strong>
+                                    {% if calc.percentual_economia > 0 %}
+                                        <br><small class="text-success">↓ {{ calc.percentual_economia }}%</small>
+                                    {% endif %}
+                                </td>
+                            {% else %}
+                                <td class="text-center text-muted" colspan="6">
+                                    <small><i class="bi bi-dash-lg"></i> Tributação não configurada</small>
+                                </td>
+                            {% endif %}
+
                             <td class="text-center">
                                 {% if m.ativo %}
                                     <span class="badge bg-success">Ativo</span>
@@ -94,9 +248,12 @@
                                 </a>
                             </td>
                         </tr>
+                        {% endwith %}
                         {% empty %}
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">Nenhum material encontrado.</td>
+                            <td colspan="17" class="text-center text-muted py-4">
+                                Nenhum material encontrado.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -110,4 +267,3 @@
     </div>
 </div>
 {% endblock suprimentos_content %}
-

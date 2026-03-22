@@ -69,7 +69,6 @@
                         {% endif %}
                     </div>
 
-                    {# Card para CRIAR novo equipamento EPI #}
                     <div class="card border-primary mt-3" id="bloco-criar-epi">
                         <div class="card-header bg-primary bg-opacity-10 py-2">
                             <div class="form-check">
@@ -132,7 +131,6 @@
                         {% endif %}
                     </div>
 
-                    {# Card para CRIAR nova ferramenta #}
                     <div class="card border-warning mt-3" id="bloco-criar-ferramenta">
                         <div class="card-header bg-warning bg-opacity-10 py-2">
                             <div class="form-check">
@@ -188,6 +186,82 @@
                     </div>
                 </div>
 
+                {# ═══════════════════════════════════════════════════════ #}
+                {# ── BLOCO TRIBUTAÇÃO (DENTRO do form!) ──               #}
+                {# ═══════════════════════════════════════════════════════ #}
+                <hr>
+                <div class="card border-primary border-opacity-25 mb-3" id="bloco-tributacao">
+                    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-calculator me-1 text-primary"></i> Informações Tributárias
+                            <small class="text-muted">(opcional)</small>
+                        </h6>
+                        <a href="{% url 'tributacao:dashboard' %}" target="_blank"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-arrow-up-right"></i> Módulo Tributação
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="id_ncm" class="form-label fw-semibold">
+                                    <i class="bi bi-upc-scan text-primary"></i> NCM
+                                </label>
+                                {{ form.ncm }}
+                                <div class="form-text">
+                                    Código fiscal do material no Mercosul.
+                                    <a href="{% url 'tributacao:ncm_create' %}" target="_blank">
+                                        <i class="bi bi-plus-circle"></i> Cadastrar NCM
+                                    </a>
+                                </div>
+                                {% if form.ncm.errors %}
+                                    <div class="text-danger small">{{ form.ncm.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id_grupo_tributario" class="form-label fw-semibold">
+                                    <i class="bi bi-collection text-primary"></i> Grupo Tributário
+                                </label>
+                                {{ form.grupo_tributario }}
+                                <div class="form-text">
+                                    Define CFOP, alíquotas e créditos fiscais.
+                                    <a href="{% url 'tributacao:grupo_create' %}" target="_blank">
+                                        <i class="bi bi-plus-circle"></i> Criar grupo
+                                    </a>
+                                </div>
+                                {% if form.grupo_tributario.errors %}
+                                    <div class="text-danger small">{{ form.grupo_tributario.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# Preview do grupo selecionado #}
+                        <div id="grupo-trib-preview" class="bg-light border rounded p-3 mt-3 d-none">
+                            <h6 class="fw-bold small mb-2">
+                                <i class="bi bi-eye text-info"></i> Preview do Grupo Tributário
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">CFOP</small>
+                                    <strong id="preview-cfop">—</strong>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">ICMS</small>
+                                    <span id="preview-icms">—</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">PIS / COFINS</small>
+                                    <span id="preview-pis-cofins">—</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">IPI</small>
+                                    <span id="preview-ipi">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {# ── Ativo ── #}
                 <hr>
                 <div class="form-check mb-3">
@@ -205,78 +279,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-</div>
-
-{# ═══════════ SEÇÃO TRIBUTAÇÃO ═══════════ #}
-<div class="card border-primary border-opacity-25 mb-3" id="bloco-tributacao">
-    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">
-            <i class="bi bi-calculator me-1 text-primary"></i> Informações Tributárias
-            <small class="trib-text-secondary">(opcional)</small>
-        </h6>
-        <a href="{% url 'tributacao:dashboard' %}" target="_blank" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-box-arrow-up-right"></i> Módulo Tributação
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label for="{{ form.ncm.id_for_label }}" class="form-label fw-semibold">
-                    <i class="bi bi-upc-scan text-primary"></i> NCM
-                </label>
-                {{ form.ncm }}
-                <div class="form-text">
-                    Código fiscal do material no Mercosul.
-                    <a href="{% url 'tributacao:ncm_create' %}" target="_blank">
-                        <i class="bi bi-plus-circle"></i> Cadastrar NCM
-                    </a>
-                </div>
-                {% if form.ncm.errors %}
-                <div class="text-danger small">{{ form.ncm.errors }}</div>
-                {% endif %}
-            </div>
-            <div class="col-md-6">
-                <label for="{{ form.grupo_tributario.id_for_label }}" class="form-label fw-semibold">
-                    <i class="bi bi-collection text-primary"></i> Grupo Tributário
-                </label>
-                {{ form.grupo_tributario }}
-                <div class="form-text">
-                    Define CFOP, alíquotas e créditos fiscais.
-                    <a href="{% url 'tributacao:grupo_create' %}" target="_blank">
-                        <i class="bi bi-plus-circle"></i> Criar grupo
-                    </a>
-                </div>
-                {% if form.grupo_tributario.errors %}
-                <div class="text-danger small">{{ form.grupo_tributario.errors }}</div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Preview do grupo selecionado -->
-        <div id="grupo-trib-preview" class="trib-exemplo-bg mt-3 d-none">
-            <h6 class="fw-bold small mb-2">
-                <i class="bi bi-eye text-info"></i> Preview do Grupo Tributário
-            </h6>
-            <div class="row">
-                <div class="col-md-3">
-                    <small class="trib-text-secondary d-block">CFOP</small>
-                    <strong id="preview-cfop">—</strong>
-                </div>
-                <div class="col-md-3">
-                    <small class="trib-text-secondary d-block">ICMS</small>
-                    <span id="preview-icms">—</span>
-                </div>
-                <div class="col-md-3">
-                    <small class="trib-text-secondary d-block">PIS / COFINS</small>
-                    <span id="preview-pis-cofins">—</span>
-                </div>
-                <div class="col-md-3">
-                    <small class="trib-text-secondary d-block">IPI</small>
-                    <span id="preview-ipi">—</span>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -303,23 +305,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectFerramenta = document.getElementById('id_ferramenta_ref');
     const blocoCriarFerr = document.getElementById('bloco-criar-ferramenta');
 
+    // ── Tributação: elementos ──
+    const grupoSelect = document.getElementById('id_grupo_tributario');
+    const preview = document.getElementById('grupo-trib-preview');
+
     // ═══════════════════════════════════════
     // Toggle principal por classificação
     // ═══════════════════════════════════════
     function toggleBlocos() {
         const val = classificacao.value;
 
-        // Mostrar/esconder seções
         blocoEpi.style.display = val === 'EPI' ? 'block' : 'none';
         blocoFerramenta.style.display = val === 'FERRAMENTA' ? 'block' : 'none';
 
-        // Reset EPI se não é EPI
         if (val !== 'EPI') {
             criarEpiCheck.checked = false;
             camposNovoEpi.style.display = 'none';
         }
-
-        // Reset Ferramenta se não é Ferramenta
         if (val !== 'FERRAMENTA') {
             criarFerrCheck.checked = false;
             camposNovaFerr.style.display = 'none';
@@ -333,7 +335,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Toggle criar EPI
     // ═══════════════════════════════════════
     function toggleCriarEpi() {
-        // Se já selecionou equipamento existente, esconder criação
         if (selectEquipamento.value) {
             blocoCriarEpi.style.display = 'none';
             criarEpiCheck.checked = false;
@@ -348,7 +349,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Toggle criar Ferramenta
     // ═══════════════════════════════════════
     function toggleCriarFerr() {
-        // Se já selecionou ferramenta existente, esconder criação
         if (selectFerramenta.value) {
             blocoCriarFerr.style.display = 'none';
             criarFerrCheck.checked = false;
@@ -360,34 +360,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ═══════════════════════════════════════
-    // Event listeners
+    // Preview Grupo Tributário (AJAX)
     // ═══════════════════════════════════════
-    classificacao.addEventListener('change', toggleBlocos);
+    function carregarPreviewGrupo() {
+        if (!grupoSelect || !preview) return;
 
-    criarEpiCheck.addEventListener('change', toggleCriarEpi);
-    selectEquipamento.addEventListener('change', toggleCriarEpi);
-
-    criarFerrCheck.addEventListener('change', toggleCriarFerr);
-    selectFerramenta.addEventListener('change', toggleCriarFerr);
-
-    // Estado inicial
-    toggleBlocos();
-
-document.addEventListener('DOMContentLoaded', function() {
-    const grupoSelect = document.getElementById('{{ form.grupo_tributario.id_for_label }}');
-    const preview = document.getElementById('grupo-trib-preview');
-
-    if (!grupoSelect || !preview) return;
-
-    grupoSelect.addEventListener('change', function() {
-        const grupoId = this.value;
+        const grupoId = grupoSelect.value;
         if (!grupoId) {
             preview.classList.add('d-none');
             return;
         }
 
         fetch(`/tributacao/api/grupo/${grupoId}/`)
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error('Erro na API');
+                return r.json();
+            })
             .then(data => {
                 document.getElementById('preview-cfop').textContent = data.cfop;
 
@@ -414,15 +402,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 preview.classList.remove('d-none');
             })
             .catch(() => preview.classList.add('d-none'));
-    });
-
-    // Trigger se já tem valor selecionado (edição)
-    if (grupoSelect.value) {
-        grupoSelect.dispatchEvent(new Event('change'));
     }
-});
+
+    // ═══════════════════════════════════════
+    // Event listeners
+    // ═══════════════════════════════════════
+    classificacao.addEventListener('change', toggleBlocos);
+
+    criarEpiCheck.addEventListener('change', toggleCriarEpi);
+    selectEquipamento.addEventListener('change', toggleCriarEpi);
+
+    criarFerrCheck.addEventListener('change', toggleCriarFerr);
+    selectFerramenta.addEventListener('change', toggleCriarFerr);
+
+    if (grupoSelect) {
+        grupoSelect.addEventListener('change', carregarPreviewGrupo);
+    }
+
+    // ═══════════════════════════════════════
+    // Estado inicial
+    // ═══════════════════════════════════════
+    toggleBlocos();
+
+    // Trigger preview se já tem grupo selecionado (edição)
+    if (grupoSelect && grupoSelect.value) {
+        carregarPreviewGrupo();
+    }
 });
 </script>
 {% endblock %}
+
 
 

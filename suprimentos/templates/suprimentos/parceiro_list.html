@@ -1,98 +1,147 @@
 {% extends "suprimentos/suprimentos_base.html" %}
 
-{% load static %}
-
-{% block title %}Lista de Fornecedores{% endblock %}
+{% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block suprimentos_content %}
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-users me-2"></i> Fornecedores </h2>
+        <h2><i class="bi bi-cart me-2"></i>{{ titulo_pagina }}</h2>
         <div>
             <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
-            <a href="{% url 'suprimentos:parceiro_create' %}" class="btn btn-success">
-                <i class="fas fa-plus me-1"></i> Novo Fornecedor
+            <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg me-1"></i> Novo Pedido
             </a>
         </div>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-body">
-            
-            <!-- INÍCIO: Formulário de Busca -->
-            <form method="get" class="mb-4">
-                <div class="input-group">
-                    <input type="text" class="form-control" name="q" placeholder="Buscar por Nome Fantasia, Razão Social ou CNPJ..." value="{{ request.GET.q }}">
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bi bi-search"></i> Buscar
+            <!-- Filtros -->
+            <form method="get" class="row g-2 mb-4">
+                <div class="col-md-5">
+                    <input type="text" name="q" class="form-control"
+                           placeholder="Buscar nº pedido ou cliente..."
+                           value="{{ filtro_q }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="status" class="form-select">
+                        <option value="">Todos os Status</option>
+                        {% for val, label in status_choices %}
+                            <option value="{{ val }}" {% if filtro_status == val %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-search"></i> Filtrar
                     </button>
                 </div>
             </form>
-            <!-- FIM: Formulário de Busca -->
-            
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th>Nome Fantasia / Fabricante</th>
-                            <th>CNPJ</th>
-                            <th>Contato</th>
-                            <th>Telefone</th>
-                            <th>Tipo</th>
-                            <th class="text-center">Status</th>
+                            <th>Nº Pedido</th>
+                            <th>Contrato</th>
+                            <th>Solicitante</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                            <th class="text-end">Valor Prod.</th>
+                            <th class="text-end">Impostos</th>
+                            <th class="text-end text-success">Créditos</th>
+                            <th class="text-end">NF-e</th>
+                            <th class="text-end text-primary">Custo Real</th>
                             <th class="text-end">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for parceiro in parceiros %}
+                        {% for p in pedidos %}
+                        {% with trib=p.resumo_tributario %}
                         <tr>
                             <td>
-                                <a href="{{ parceiro.get_absolute_url }}">{{ parceiro.nome_fantasia }}</a>
-                                <small class="d-block text-muted">{{ parceiro.razao_social }}</small>
+                                <a href="{{ p.get_absolute_url }}"><strong>{{ p.numero }}</strong></a>
                             </td>
-                            <td>{{ parceiro.cnpj|default:"-" }}</td>
-                            <td>{{ parceiro.contato|default:"-" }}</td>
-                            <td>{{ parceiro.telefone|default:"-" }}</td>
+                            <td>{{ p.contrato }}</td>
+                            <td>{{ p.solicitante.get_full_name }}</td>
                             <td>
-                                {% if parceiro.eh_fabricante %}<span class="badge bg-info">Fabricante</span>{% endif %}
-                                {% if parceiro.eh_fornecedor %}<span class="badge bg-warning text-dark">Fornecedor</span>{% endif %}
+                                <span class="badge
+                                    {% if p.status == 'APROVADO' %}bg-success
+                                    {% elif p.status == 'PENDENTE' %}bg-warning text-dark
+                                    {% elif p.status == 'REPROVADO' %}bg-danger
+                                    {% elif p.status == 'RECEBIDO' %}bg-primary
+                                    {% elif p.status == 'ENTREGUE' %}bg-info
+                                    {% elif p.status == 'CANCELADO' %}bg-dark
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ p.get_status_display }}
+                                </span>
                             </td>
-                            <td class="text-center">
-                                {% if parceiro.ativo %}
-                                    <span class="badge bg-success">Ativo</span>
+                            <td>{{ p.data_pedido|date:"d/m/Y" }}</td>
+                            <td class="text-end">R$ {{ trib.valor_produtos|floatformat:2 }}</td>
+                            <td class="text-end">
+                                {% if trib.total_impostos > 0 %}
+                                    <span class="text-warning">R$ {{ trib.total_impostos|floatformat:2 }}</span>
                                 {% else %}
-                                    <span class="badge bg-danger">Inativo</span>
+                                    <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{{ parceiro.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Ver Detalhes">
+                                {% if trib.total_creditos > 0 %}
+                                    <span class="text-success">
+                                        R$ {{ trib.total_creditos|floatformat:2 }}
+                                    </span>
+                                    <br>
+                                    <small class="text-success">↓ {{ trib.percentual_economia }}%</small>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if trib.total_nfe != trib.valor_produtos %}
+                                    R$ {{ trib.total_nfe|floatformat:2 }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if trib.itens_com_grupo > 0 %}
+                                    <strong class="text-primary">R$ {{ trib.custo_real|floatformat:2 }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calculator"></i> {{ trib.cobertura_tributaria }}
+                                    </small>
+                                {% else %}
+                                    <span class="text-muted">R$ {{ trib.valor_produtos|floatformat:2 }}</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-exclamation-triangle"></i> s/ trib.
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-info" title="Detalhes">
                                     <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'suprimentos:parceiro_update' pk=parceiro.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
-                                <a href="{% url 'suprimentos:parceiro_delete' pk=parceiro.pk %}" class="btn btn-sm btn-outline-danger" title="Deletar">
-                                    <i class="bi bi-trash"></i>
                                 </a>
                             </td>
                         </tr>
+                        {% endwith %}
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center">Nenhum fornecedor encontrado.</td>
+                            <td colspan="11" class="text-center text-muted py-4">Nenhum pedido encontrado.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            
+
             {% if is_paginated %}
                 {% include 'partials/pagination.html' %}
             {% endif %}
-    
         </div>
     </div>
 </div>
 {% endblock suprimentos_content %}
+
 

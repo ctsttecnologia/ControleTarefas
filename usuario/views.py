@@ -223,8 +223,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
                     {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
                     {'url': 'suprimentos:dashboard', 'text': 'Suprimentos'},
-                    {'url': 'documentos:lista', 'text': 'Documentos'},
                     {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Estoque'},
+                    {'url': 'documentos:lista', 'text': 'Documentos'},
                 ]
             },
             {

@@ -7,7 +7,7 @@
 {% block suprimentos_content %}
 <div class="container-fluid mt-4">
 
-    <!-- Header -->
+    {# ── Header ── #}
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2><i class="bi bi-cart me-2"></i>{{ pedido.numero }}</h2>
@@ -18,7 +18,7 @@
         </a>
     </div>
 
-    <!-- Status + Info -->
+    {# ── Status + Info ── #}
     <div class="row g-3 mb-4">
         <div class="col-md-8">
             <div class="card shadow-sm">
@@ -62,7 +62,7 @@
             </div>
         </div>
 
-        <!-- Saldos da verba -->
+        {# ── Saldos da verba ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light">
@@ -95,7 +95,7 @@
         </div>
     </div>
 
-    <!-- Itens do pedido -->
+    {# ── Itens do pedido ── #}
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <span><i class="bi bi-list-ul me-1"></i> Itens do Pedido</span>
@@ -158,10 +158,12 @@
         </div>
     </div>
 
+    {# ══════════════════════════════════════════════════ #}
+    {# ── ANÁLISE TRIBUTÁRIA DO PEDIDO ──                 #}
+    {# ══════════════════════════════════════════════════ #}
     {% with trib=pedido.resumo_tributario %}
     {% if trib.itens_com_grupo > 0 %}
 
-    <!-- ═══ Painel de Análise Tributária do Pedido ═══ -->
     <div class="card border-0 shadow-sm mt-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
@@ -173,27 +175,27 @@
         </div>
         <div class="card-body">
 
-            <!-- Cards de resumo -->
+            {# Cards de resumo #}
             <div class="row g-3 mb-4">
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">
+                    <div class="bg-light border rounded p-3 text-center h-100">
+                        <small class="text-muted d-block mb-1">
                             <i class="bi bi-receipt"></i> Valor Produtos
                         </small>
                         <strong class="fs-5">R$ {{ trib.valor_produtos|floatformat:2 }}</strong>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">
+                    <div class="bg-light border rounded p-3 text-center h-100">
+                        <small class="text-muted d-block mb-1">
                             <i class="bi bi-percent"></i> Total Impostos
                         </small>
                         <strong class="fs-5 text-warning">R$ {{ trib.total_impostos|floatformat:2 }}</strong>
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">
+                    <div class="bg-light border rounded p-3 text-center h-100">
+                        <small class="text-muted d-block mb-1">
                             <i class="bi bi-arrow-down-circle"></i> Créditos Recuperáveis
                         </small>
                         <strong class="fs-5 text-success">R$ {{ trib.total_creditos|floatformat:2 }}</strong>
@@ -205,8 +207,8 @@
                     </div>
                 </div>
                 <div class="col-md-3 col-6">
-                    <div class="trib-custo-box-success text-center h-100">
-                        <small class="trib-text-secondary d-block mb-1">
+                    <div class="bg-success bg-opacity-10 border border-success rounded p-3 text-center h-100">
+                        <small class="text-muted d-block mb-1">
                             <i class="bi bi-piggy-bank"></i> Custo Real
                         </small>
                         <strong class="fs-4 text-primary">R$ {{ trib.custo_real|floatformat:2 }}</strong>
@@ -214,31 +216,31 @@
                 </div>
             </div>
 
-            <!-- Fluxo visual -->
-            <div class="trib-exemplo-bg mb-4">
+            {# Fluxo visual #}
+            <div class="bg-light border rounded p-3 mb-4">
                 <div class="row align-items-center text-center">
                     <div class="col-md-3">
-                        <small class="trib-text-secondary d-block">Valor NF-e</small>
+                        <small class="text-muted d-block">Valor NF-e</small>
                         <strong class="fs-5">R$ {{ trib.total_nfe|floatformat:2 }}</strong>
                     </div>
                     <div class="col-md-1 d-flex justify-content-center">
                         <i class="bi bi-dash-lg text-danger fs-4"></i>
                     </div>
                     <div class="col-md-3">
-                        <small class="trib-text-secondary d-block">Créditos Fiscais</small>
+                        <small class="text-muted d-block">Créditos Fiscais</small>
                         <strong class="fs-5 text-success">R$ {{ trib.total_creditos|floatformat:2 }}</strong>
                     </div>
                     <div class="col-md-1 d-flex justify-content-center">
                         <i class="bi bi-arrow-right-circle text-primary fs-4"></i>
                     </div>
                     <div class="col-md-4">
-                        <small class="trib-text-secondary d-block">Custo Real de Aquisição</small>
+                        <small class="text-muted d-block">Custo Real de Aquisição</small>
                         <strong class="fs-4 text-primary">R$ {{ trib.custo_real|floatformat:2 }}</strong>
                     </div>
                 </div>
             </div>
 
-            <!-- Tabela detalhada por item -->
+            {# Tabela detalhada por item — usa chaves aninhadas do dict #}
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead>
@@ -261,7 +263,7 @@
                             <td>
                                 <strong>{{ item.material.descricao|truncatechars:40 }}</strong>
                                 <br>
-                                <small class="trib-text-secondary">
+                                <small class="text-muted">
                                     {{ item.quantidade }}x R$ {{ item.valor_unitario|floatformat:2 }}
                                     {% if item.material.ncm %}
                                     · NCM <code>{{ item.material.ncm.codigo }}</code>
@@ -281,45 +283,45 @@
                             </td>
                             <td class="text-end">R$ {{ calc.valor_produtos|floatformat:2 }}</td>
 
-                            {# ICMS #}
+                            {# ICMS — acessa dict aninhado: calc.icms.valor #}
                             <td class="text-end">
                                 {% if not calc.sem_grupo %}
-                                R$ {{ calc.icms_valor|floatformat:2 }}
-                                {% if calc.icms_recuperavel %}
-                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
-                                {% endif %}
+                                    R$ {{ calc.icms.valor|floatformat:2 }}
+                                    {% if calc.icms.recuperavel %}
+                                    <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% endif %}
                                 {% else %}—{% endif %}
                             </td>
 
                             {# IPI #}
                             <td class="text-end">
                                 {% if not calc.sem_grupo %}
-                                R$ {{ calc.ipi_valor|floatformat:2 }}
-                                {% if calc.ipi_recuperavel %}
-                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
-                                {% elif calc.ipi_valor > 0 %}
-                                <br><small class="text-danger"><i class="bi bi-x-circle-fill"></i> custo</small>
-                                {% endif %}
+                                    R$ {{ calc.ipi.valor|floatformat:2 }}
+                                    {% if calc.ipi.recuperavel %}
+                                    <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% elif calc.ipi.valor > 0 %}
+                                    <br><small class="text-danger"><i class="bi bi-x-circle-fill"></i> custo</small>
+                                    {% endif %}
                                 {% else %}—{% endif %}
                             </td>
 
                             {# PIS #}
                             <td class="text-end">
                                 {% if not calc.sem_grupo %}
-                                R$ {{ calc.pis_valor|floatformat:2 }}
-                                {% if calc.pis_recuperavel %}
-                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
-                                {% endif %}
+                                    R$ {{ calc.pis.valor|floatformat:2 }}
+                                    {% if calc.pis.recuperavel %}
+                                    <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% endif %}
                                 {% else %}—{% endif %}
                             </td>
 
                             {# COFINS #}
                             <td class="text-end">
                                 {% if not calc.sem_grupo %}
-                                R$ {{ calc.cofins_valor|floatformat:2 }}
-                                {% if calc.cofins_recuperavel %}
-                                <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
-                                {% endif %}
+                                    R$ {{ calc.cofins.valor|floatformat:2 }}
+                                    {% if calc.cofins.recuperavel %}
+                                    <br><small class="text-success"><i class="bi bi-check-circle-fill"></i></small>
+                                    {% endif %}
                                 {% else %}—{% endif %}
                             </td>
 
@@ -332,7 +334,7 @@
                             <td class="text-end">
                                 <strong class="text-primary">R$ {{ calc.custo_real|floatformat:2 }}</strong>
                                 <br>
-                                <small class="trib-text-secondary">
+                                <small class="text-muted">
                                     unit: R$ {{ calc.custo_unitario|floatformat:2 }}
                                 </small>
                             </td>
@@ -357,13 +359,13 @@
     </div>
 
     {% elif trib.total_itens > 0 %}
-    <!-- Alerta: nenhum item com tributação -->
+    {# Alerta: nenhum item com tributação #}
     <div class="alert alert-info mt-4 d-flex align-items-center">
         <i class="bi bi-info-circle fs-4 me-3"></i>
         <div>
             <strong>Tributação não configurada para os materiais deste pedido.</strong>
             <br>
-            <small class="trib-text-secondary">
+            <small class="text-muted">
                 Vincule NCM e Grupo Tributário nos materiais para ver a análise de custo real.
             </small>
             <br>
@@ -374,7 +376,8 @@
     </div>
     {% endif %}
     {% endwith %}
-    <!-- Totais por classificação -->
+
+    {# ── Totais por classificação ── #}
     {% if totais %}
     <div class="row g-2 mb-4">
         {% for cat, val in totais.items %}
@@ -391,7 +394,7 @@
     </div>
     {% endif %}
 
-    <!-- Form adicionar item (se rascunho) -->
+    {# ── Form adicionar item (se rascunho) ── #}
     {% if pode_editar %}
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-light">
@@ -426,7 +429,7 @@
     </div>
     {% endif %}
 
-    <!-- Ações do workflow -->
+    {# ── Ações do workflow ── #}
     <div class="d-flex flex-wrap gap-2 mb-4">
         {% if pode_enviar %}
         <form method="post" action="{% url 'suprimentos:pedido_enviar' pk=pedido.pk %}"
@@ -446,8 +449,6 @@
                 <i class="bi bi-check-circle me-1"></i> Aprovar
             </button>
         </form>
-
-        <!-- Botão reprovar abre modal -->
         <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalReprovar">
             <i class="bi bi-x-circle me-1"></i> Reprovar
         </button>
@@ -468,17 +469,11 @@
             <i class="bi bi-box-arrow-in-down me-1"></i> Confirmar Recebimento
         </button>
         {% endif %}
-
-        {% if pode_cancelar %}
-        <form method="post" action="{% url 'suprimentos:pedido_enviar' pk=pedido.pk %}"
-              onsubmit="return false;" style="display:none;">
-        </form>
-        {% endif %}
     </div>
 
 </div>
 
-<!-- Modal Reprovar -->
+{# ── Modal Reprovar ── #}
 {% if pode_aprovar %}
 <div class="modal fade" id="modalReprovar" tabindex="-1">
     <div class="modal-dialog">
@@ -503,7 +498,7 @@
 </div>
 {% endif %}
 
-<!-- Modal Receber -->
+{# ── Modal Receber ── #}
 {% if pode_receber %}
 <div class="modal fade" id="modalReceber" tabindex="-1">
     <div class="modal-dialog">
@@ -541,19 +536,23 @@
 {% block extra_js %}
 <script>
     // Auto-preencher valor unitário ao selecionar material
-    document.querySelector('.select2-material')?.addEventListener('change', function() {
-        const materialId = this.value;
-        if (!materialId) return;
+    const materialSelect = document.getElementById('id_material');
+    if (materialSelect) {
+        materialSelect.addEventListener('change', function() {
+            const materialId = this.value;
+            if (!materialId) return;
 
-        fetch(`/suprimentos/api/material/${materialId}/preco/`)
-            .then(r => r.json())
-            .then(data => {
-                const valorInput = document.querySelector('#id_valor_unitario');
-                if (valorInput && data.valor_unitario) {
-                    valorInput.value = data.valor_unitario;
-                }
-            });
-    });
+            fetch(`/suprimentos/api/material/${materialId}/preco/`)
+                .then(r => r.json())
+                .then(data => {
+                    const valorInput = document.getElementById('id_valor_unitario');
+                    if (valorInput && data.valor_unitario) {
+                        valorInput.value = data.valor_unitario;
+                    }
+                });
+        });
+    }
 </script>
 {% endblock %}
+
 
