@@ -31,7 +31,7 @@ urlpatterns = [
 
     # --- ROTAS DO CALENDÁRIO (ESTAVAM FALTANDO) ---
     path('calendario/', views.CalendarioView.as_view(), name='calendario'),
-    path('api/eventos-inspecao/', views.inspecao_events_api, name='api_inspecao_events'),
+    path('api/inspecao-events/', views.InspecaoEventsApiView.as_view(), name='inspecao_events_api'),
 
     # --- URLs para o CRUD de Cartão TAG ---
     path('cartoes/', CartaoTagListView.as_view(), name='cartao_tag_list'),

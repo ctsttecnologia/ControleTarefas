@@ -1,43 +1,54 @@
 # departamento_pessoal/views.py
 
-import json
 import io
-from os import error
+import json
+import logging
+from datetime import timedelta
+
 import pandas as pd
 from docx import Document as PyDocxDocument
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from weasyprint import HTML
-# Módulos Django
-from django.db.models import Q, Count, Avg, Max, Min, F
-from django.http import HttpResponse
-from django.urls import reverse_lazy, reverse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView, DeleteView
-from django.contrib import messages
-from django.template.loader import render_to_string
-from django.utils import timezone
-from django.core.exceptions import PermissionDenied
 
-from seguranca_trabalho.models import Funcao
-from .models import Funcionario, Departamento, Cargo, Documento, Filial, Cliente
-from .forms import AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm, DocumentoForm
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from core.mixins import ViewFilialScopedMixin, FilialCreateMixin
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.utils.dateparse import parse_date
-from .forms import UploadFuncionariosForm
-from io import BytesIO
+from django.db.models import Q, Count, Avg, Max, Min
+from django.db.models.functions import ExtractMonth, ExtractYear
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.views import View
+from django.views.generic import (
+    ListView, CreateView, UpdateView, DetailView, TemplateView, DeleteView,
+)
+
+from io import BytesIO
 from openpyxl.styles import Font, PatternFill, Alignment, NamedStyle
 from openpyxl.worksheet.datavalidation import DataValidation
-from django.db import IntegrityError
-import logging
-from datetime import timedelta
+
+from core.mixins import (
+    AppPermissionMixin, ViewFilialScopedMixin, FilialCreateMixin, SSTPermissionMixin,
+)
+from seguranca_trabalho.models import Funcao
+from .models import Funcionario, Departamento, Cargo, Documento, Filial, Cliente
+from .forms import (
+    AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm,
+    DocumentoForm, UploadFuncionariosForm,
+)
+
+logger = logging.getLogger(__name__)
+
+_APP = 'departamento_pessoal'
 
 
-
-# --- Funções Auxiliares ---
+# =============================================================================
+# HELPER — Importação em Massa
+# =============================================================================
 
 class ImportacaoError(Exception):
     """Exceção customizada para erros durante a importação da planilha."""
@@ -51,21 +62,26 @@ class ImportacaoError(Exception):
             return f"Coluna '{self.column_name}': {self.message}"
         return self.message
 
-# Nomes das colunas que estarão na planilha modelo
+
 COLUNAS_ESPERADAS = [
     'matricula', 'nome_completo', 'data_admissao', 'data_nascimento',
     'email_pessoal', 'telefone', 'salario', 'status', 'sexo',
     'nome_cargo', 'cbo', 'nome_funcao', 'nome_departamento', 'nome_filial', 'nome_cliente'
 ]
 
-
 LIMITE_REGISTROS = 500
 
-class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
+
+# =============================================================================
+# UPLOAD / IMPORTAÇÃO DE FUNCIONÁRIOS
+# =============================================================================
+
+class UploadFuncionariosView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
     """
     View para upload e processamento de planilha de funcionários.
     Suporta .xlsx e .csv. Limite de 500 registros.
     """
+    app_label_required = _APP
     permission_required = 'departamento_pessoal.add_funcionario'
     form_class = UploadFuncionariosForm
     template_name = 'departamento_pessoal/upload_funcionarios.html'
@@ -82,17 +98,14 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         arquivo = request.FILES['arquivo']
         modo_duplicidade = request.POST.get('duplicidade', 'atualizar')
 
-        # 1. Ler e validar estrutura
         try:
             df = self._ler_e_validar_planilha(arquivo)
         except ValueError as e:
             messages.error(request, str(e))
             return render(request, self.template_name, {'form': form})
 
-        # 2. Processar dados
         sucessos_count, linhas_com_erro = self._processar_dataframe(df, modo_duplicidade)
 
-        # 3. Feedback
         if linhas_com_erro:
             request.session['upload_erros'] = linhas_com_erro
             msg = (
@@ -109,26 +122,21 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return redirect(reverse('departamento_pessoal:upload_funcionarios'))
 
     def _ler_e_validar_planilha(self, arquivo):
-        """
-        Lê .xlsx ou .csv para DataFrame e valida estrutura.
-        """
         nome = arquivo.name.lower()
 
         try:
             if nome.endswith('.csv'):
-                # Tenta detectar encoding e separador
                 import csv
                 conteudo = arquivo.read()
                 arquivo.seek(0)
 
-                # Tenta UTF-8 primeiro, depois latin-1
                 for encoding in ('utf-8', 'latin-1', 'cp1252'):
                     try:
                         df = pd.read_csv(
                             io.BytesIO(conteudo),
                             dtype=str,
                             encoding=encoding,
-                            sep=None,       # auto-detect separador
+                            sep=None,
                             engine='python'
                         ).fillna('')
                         break
@@ -151,20 +159,16 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         except Exception as e:
             raise ValueError(f'Erro ao ler o arquivo: {e}')
 
-        # Normaliza nomes das colunas (remove espaços, lowercase)
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
 
-        # Valida colunas
         colunas_faltantes = set(COLUNAS_ESPERADAS) - set(df.columns)
         if colunas_faltantes:
             raise ValueError(
                 f"Colunas obrigatórias não encontradas na planilha: {', '.join(sorted(colunas_faltantes))}"
             )
 
-        # Remove linhas completamente vazias
         df = df.loc[~(df == '').all(axis=1)]
 
-        # Valida limite de registros
         if len(df) == 0:
             raise ValueError('A planilha está vazia. Nenhum registro encontrado para importar.')
 
@@ -177,9 +181,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return df
 
     def _processar_dataframe(self, df, modo_duplicidade='atualizar'):
-        """
-        Itera sobre o DataFrame, processando cada linha.
-        """
         linhas_com_erro = []
         sucessos_count = 0
 
@@ -210,11 +211,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         return sucessos_count, linhas_com_erro
 
     def _processar_linha(self, row, modo_duplicidade='atualizar'):
-        """
-        Valida e salva os dados de uma única linha.
-        Suporta modos 'atualizar' e 'pular' para duplicatas.
-        """
-        # --- Validação de campos obrigatórios simples ---
         matricula = row.get('matricula', '').strip()
         if not matricula:
             raise ImportacaoError("Este campo é obrigatório.", column_name='matricula')
@@ -223,7 +219,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
         if not nome_completo:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_completo')
 
-        # --- Modo duplicidade: PULAR ---
         if modo_duplicidade == 'pular':
             if Funcionario.objects.filter(matricula=matricula).exists():
                 raise ImportacaoError(
@@ -232,7 +227,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     column_name='matricula'
                 )
 
-        # --- Validação de datas ---
         data_admissao_str = row.get('data_admissao', '').strip()
         if not data_admissao_str:
             raise ImportacaoError("Este campo é obrigatório.", column_name='data_admissao')
@@ -253,7 +247,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     column_name='data_nascimento'
                 )
 
-        # --- Filial (deve existir) ---
         nome_filial_excel = row.get('nome_filial', '').strip()
         if not nome_filial_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_filial')
@@ -265,7 +258,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 column_name='nome_filial'
             )
 
-        # --- Cargo (cria se não existir) ---
         nome_cargo_excel = row.get('nome_cargo', '').strip()
         if not nome_cargo_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_cargo')
@@ -281,7 +273,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
             }
         )
 
-        # --- Função SST (cria se não existir, opcional) ---
         funcao = None
         nome_funcao_excel = row.get('nome_funcao', '').strip()
         if nome_funcao_excel:
@@ -291,7 +282,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 defaults={'nome': nome_funcao_excel.title(), 'filial': filial}
             )
 
-        # --- Departamento (cria se não existir) ---
         nome_dpto_excel = row.get('nome_departamento', '').strip()
         if not nome_dpto_excel:
             raise ImportacaoError("Este campo é obrigatório.", column_name='nome_departamento')
@@ -301,7 +291,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
             defaults={'nome': nome_dpto_excel.title(), 'filial': filial}
         )
 
-        # --- Cliente (deve existir, opcional) ---
         cliente = None
         nome_cliente_excel = row.get('nome_cliente', '').strip()
         if nome_cliente_excel:
@@ -313,7 +302,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     column_name='nome_cliente'
                 )
 
-        # --- Validação de choices ---
         status = row.get('status', '').upper().strip()
         if not status:
             raise ImportacaoError("Este campo é obrigatório.", column_name='status')
@@ -332,12 +320,10 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 column_name='sexo'
             )
 
-        # --- Validação de salário ---
         salario_str = row.get('salario', '').strip()
         salario = 0.00
         if salario_str:
             try:
-                # Aceita vírgula como decimal (padrão BR)
                 salario = float(salario_str.replace(',', '.'))
             except ValueError:
                 raise ImportacaoError(
@@ -345,7 +331,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     column_name='salario'
                 )
 
-        # --- Validação de e-mail duplicado ---
         email = row.get('email_pessoal', '').strip() or None
         if email:
             email_existente = Funcionario.objects.filter(email_pessoal__iexact=email).exclude(matricula=matricula)
@@ -355,7 +340,6 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
                     column_name='email_pessoal'
                 )
 
-        # --- Salvar ---
         Funcionario.objects.update_or_create(
             matricula=matricula,
             defaults={
@@ -375,95 +359,77 @@ class UploadFuncionariosView(LoginRequiredMixin, PermissionRequiredMixin, View):
             }
         )
 
-    
+
+# =============================================================================
+# FBVs — Download Template e Erros
+# =============================================================================
+
+@login_required
 def baixar_modelo_funcionarios(request):
-    """
-    Gera e fornece o arquivo .xlsx modelo, agora com formatação profissional,
-    largura de colunas ajustada e validação de dados (dropdowns).
-    """
+    """Gera e fornece o arquivo .xlsx modelo com formatação profissional."""
     df_modelo = pd.DataFrame(columns=COLUNAS_ESPERADAS)
-    
+
     output = BytesIO()
-    
-    # Usar ExcelWriter para ter acesso ao objeto da planilha (workbook/worksheet)
+
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_modelo.to_excel(writer, index=False, sheet_name='Funcionarios')
-        
-        # Obter o worksheet para poder formatá-lo
+
         workbook = writer.book
         worksheet = writer.sheets['Funcionarios']
 
-        # Adicionar um estilo de texto
         text_style = NamedStyle(name='text_style', number_format='@')
         workbook.add_named_style(text_style)
-        
-        # 1. Definir Estilos para o Cabeçalho
+
         header_font = Font(bold=True, color="FFFFFF", name="Calibri")
         header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
         header_alignment = Alignment(horizontal="center", vertical="center")
 
-        # 2. Aplicar Estilos e Ajustar Largura das Colunas
         for col_num, column_title in enumerate(df_modelo.columns, 1):
             cell = worksheet.cell(row=1, column=col_num)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_alignment
 
-            # Se a coluna for de data, aplica o estilo de texto a ela
             if 'data_' in column_title:
-                for r in range(2, 5000): # Aplica para um número grande de linhas
+                for r in range(2, 5000):
                     worksheet.cell(row=r, column=col_num).style = text_style
-            
-            # Ajustar a largura da coluna com base no tamanho do texto do cabeçalho
+
             column_letter = cell.column_letter
             worksheet.column_dimensions[column_letter].width = len(column_title) + 5
 
-        # 3. Adicionar Validação de Dados (Dropdowns) para 'status' e 'sexo'
-        
-        # Dropdown para STATUS (assumindo que a coluna 'status' é a 8ª, ou 'H')
         status_options = f'"{",".join([choice[0] for choice in Funcionario.STATUS_CHOICES])}"'
         dv_status = DataValidation(type="list", formula1=status_options, allow_blank=True)
-        dv_status.add('H2:H1048576') # Aplica a validação para toda a coluna H
+        dv_status.add('H2:H1048576')
         worksheet.add_data_validation(dv_status)
 
-        # Dropdown para SEXO (assumindo que a coluna 'sexo' é a 9ª, ou 'I')
         sexo_options = f'"{",".join([choice[0] for choice in Funcionario.SEXO_CHOICES])}"'
         dv_sexo = DataValidation(type="list", formula1=sexo_options, allow_blank=True)
-        dv_sexo.add('I2:I1048576') # Aplica a validação para toda a coluna I
+        dv_sexo.add('I2:I1048576')
         worksheet.add_data_validation(dv_sexo)
-        
-        # 4. Congelar o Painel do Cabeçalho
+
         worksheet.freeze_panes = 'A2'
 
     output.seek(0)
-    
+
     response = HttpResponse(
         output,
         content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     )
     response['Content-Disposition'] = 'attachment; filename="modelo_importacao_funcionarios.xlsx"'
-    
     return response
 
 
+@login_required
 def baixar_relatorio_erros(request):
-    """
-    Gera um arquivo Excel com as linhas que continham erros durante o upload.
-    """
-    linhas_com_erro = request.session.get('upload_erros', [])
+    """Gera um arquivo Excel com as linhas que continham erros durante o upload."""
+    linhas_com_erro = request.session.pop('upload_erros', [])
 
     if not linhas_com_erro:
         messages.warning(request, "Não há relatório de erros para baixar.")
         return redirect(reverse('departamento_pessoal:upload_funcionarios'))
-    
-    # Limpa a sessão LOGO APÓS usar os dados. Este é o lugar correto.
-    request.session.pop('upload_erros', None)
 
     df_erros = pd.DataFrame(linhas_com_erro)
-    
-    # Limpa os dados da sessão após recuperá-los
-    request.session.pop('upload_erros', None)
-    
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df_erros.to_excel(writer, index=False, sheet_name='Erros')
@@ -477,26 +443,21 @@ def baixar_relatorio_erros(request):
     return response
 
 
-class StaffRequiredMixin(PermissionRequiredMixin):
-    """
-    Mixin que garante que o usuário tem permissão para acessar
-    as views do departamento pessoal.
-    """
-    permission_required = 'usuario.view_usuario' # Exemplo: apenas quem pode ver usuários
-    raise_exception = True # Levanta um erro 403 (Forbidden) se não tiver permissão
+# =============================================================================
+# CRUD — FUNCIONÁRIOS
+# =============================================================================
 
-# --- VIEWS PARA FUNCIONÁRIOS ---
-
-class FuncionarioListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
+class FuncionarioListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_funcionario'
     model = Funcionario
     template_name = 'departamento_pessoal/lista_funcionarios.html'
     context_object_name = 'funcionarios'
     paginate_by = 15
 
     def get_queryset(self):
-        # A chamada super() agora é limpa. O mixin cuida da filtragem por filial.
         queryset = super().get_queryset().select_related('cargo', 'departamento').order_by('nome_completo')
-        
+
         query = self.request.GET.get('q')
         if query:
             queryset = queryset.filter(
@@ -506,34 +467,38 @@ class FuncionarioListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
             )
         return queryset
 
-class FuncionarioCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
+
+class FuncionarioCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.add_funcionario'
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
     extra_context = {'titulo_pagina': "Cadastrar Novo Funcionário"}
-    
+
     def get_success_url(self):
-        # A mensagem de sucesso já é tratada pelo FilialCreateMixin.
         return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
 
 
-class FuncionarioDetailView(ViewFilialScopedMixin, StaffRequiredMixin, DetailView):
+class FuncionarioDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_funcionario'
     model = Funcionario
     template_name = 'departamento_pessoal/detalhe_funcionario.html'
     context_object_name = 'funcionario'
 
     def get_queryset(self):
-        # Adiciona otimização, mantendo a filtragem do mixin.
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
-    
-class FuncionarioUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
+
+class FuncionarioUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.change_funcionario'
     model = Funcionario
     form_class = FuncionarioForm
     template_name = 'departamento_pessoal/funcionario_form.html'
 
     def get_queryset(self):
-        # Otimização da query. A filtragem por filial é herdada do mixin.
         return super().get_queryset().select_related('usuario', 'cargo', 'departamento')
 
     def get_success_url(self):
@@ -545,30 +510,44 @@ class FuncionarioUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateVie
         context['titulo_pagina'] = f"Editar: {self.object.nome_completo}"
         return context
 
-class FuncionarioDeleteView(ViewFilialScopedMixin, StaffRequiredMixin, DetailView):
+
+class FuncionarioDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
+    """
+    View de exclusão/inativação de funcionário.
+    Suporta duas ações via POST: 'inativar' e 'excluir'.
+    """
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.delete_funcionario'
     model = Funcionario
     template_name = 'departamento_pessoal/confirm_delete.html'
     context_object_name = 'funcionario'
-    
-    def post(self, request, *args, **kwargs):
+    success_url = reverse_lazy('departamento_pessoal:lista_funcionarios')
+
+    def form_valid(self, form):
+        """Trata as ações de inativar ou excluir."""
         funcionario = self.get_object()
-        action = request.POST.get('action')
+        action = self.request.POST.get('action')
 
         if action == 'inativar':
             funcionario.status = 'INATIVO'
-            funcionario.save()
-            messages.warning(request, f"O funcionário '{funcionario.nome_completo}' foi INATIVADO.")
-        elif action == 'excluir':
+            funcionario.save(update_fields=['status'])
+            messages.warning(self.request, f"O funcionário '{funcionario.nome_completo}' foi INATIVADO.")
+            return redirect(self.success_url)
+        else:
+            # action == 'excluir' — comportamento padrão do DeleteView
             nome_completo = funcionario.nome_completo
-            funcionario.delete()
-            messages.error(request, f"O funcionário '{nome_completo}' foi EXCLUÍDO PERMANENTEMENTE.")
+            response = super().form_valid(form)
+            messages.error(self.request, f"O funcionário '{nome_completo}' foi EXCLUÍDO PERMANENTEMENTE.")
+            return response
 
-        return redirect(reverse_lazy('departamento_pessoal:lista_funcionarios'))
 
+# =============================================================================
+# ADMISSÃO
+# =============================================================================
 
-# --- VIEWS PARA O PROCESSO DE ADMISSÃO (NOVAS) ---
-
-class FuncionarioAdmissaoView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
+class FuncionarioAdmissaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.change_funcionario'
     model = Funcionario
     form_class = AdmissaoForm
     template_name = 'departamento_pessoal/admissao_form.html'
@@ -585,18 +564,25 @@ class FuncionarioAdmissaoView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateV
             context['titulo_pagina'] = f"Registrar Admissão para {self.object.nome_completo}"
         return context
 
-# --- VIEWS PARA DEPARTAMENTO ---
-class DepartamentoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
+
+# =============================================================================
+# CRUD — DEPARTAMENTOS
+# =============================================================================
+
+class DepartamentoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_departamento'
     model = Departamento
     template_name = 'departamento_pessoal/lista_departamento.html'
     context_object_name = 'departamentos'
 
     def get_queryset(self):
-        # Adiciona filtro extra sobre o queryset já filtrado pelo mixin.
         return super().get_queryset().filter(ativo=True)
 
 
-class DepartamentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
+class DepartamentoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.add_departamento'
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -604,7 +590,9 @@ class DepartamentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
     extra_context = {'titulo_pagina': 'Novo Departamento'}
 
 
-class DepartamentoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
+class DepartamentoUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.change_departamento'
     model = Departamento
     form_class = DepartamentoForm
     template_name = 'departamento_pessoal/departamento_form.html'
@@ -618,10 +606,15 @@ class DepartamentoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateVi
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Departamento: {self.object.nome}"
         return context
-    
-# --- VIEWS PARA CARGOS ---
 
-class CargoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
+
+# =============================================================================
+# CRUD — CARGOS
+# =============================================================================
+
+class CargoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_cargo'
     model = Cargo
     template_name = 'departamento_pessoal/lista_cargo.html'
     context_object_name = 'cargos'
@@ -630,14 +623,20 @@ class CargoListView(ViewFilialScopedMixin, StaffRequiredMixin, ListView):
     def get_queryset(self):
         return super().get_queryset().filter(ativo=True)
 
-class CargoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
+
+class CargoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.add_cargo'
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
     success_url = reverse_lazy('departamento_pessoal:lista_cargo')
     extra_context = {'titulo_pagina': 'Novo Cargo'}
-    
-class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
+
+
+class CargoUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.change_cargo'
     model = Cargo
     form_class = CargoForm
     template_name = 'departamento_pessoal/cargo_form.html'
@@ -651,32 +650,39 @@ class CargoUpdateView(ViewFilialScopedMixin, StaffRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = f"Editar Cargo: {self.object.nome}"
         return context
-   
 
-class DocumentoListView(StaffRequiredMixin, ListView):
+
+# =============================================================================
+# CRUD — DOCUMENTOS
+# =============================================================================
+
+class DocumentoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    """
+    Lista documentos filtrados por filial.
+    O modelo Documento não tem campo 'filial' direto, então usamos
+    ViewFilialScopedMixin que deve ser configurado no manager ou queryset.
+    """
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_documento'
     model = Documento
     template_name = 'departamento_pessoal/lista_documentos.html'
     context_object_name = 'documentos'
     paginate_by = 20
 
     def get_queryset(self):
-        # Começa com o queryset base
-        queryset = super().get_queryset()
-        
-        # Filtro obrigatório por Filial (Segurança)
         filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
             messages.error(self.request, "Por favor, selecione uma filial para ver os documentos.")
             return self.model.objects.none()
-        
-        queryset = queryset.filter(funcionario__filial_id=filial_id).select_related('funcionario', 'funcionario__cargo')
-        
-        # 1. Filtro por Tipo de Documento
+
+        queryset = Documento.objects.filter(
+            funcionario__filial_id=filial_id
+        ).select_related('funcionario', 'funcionario__cargo')
+
         tipo_documento = self.request.GET.get('tipo', '')
         if tipo_documento:
             queryset = queryset.filter(tipo_documento=tipo_documento)
 
-        # 2. Filtro de Pesquisa (Nome do Funcionário OU Número do Documento)
         query_text = self.request.GET.get('q', '')
         if query_text:
             queryset = queryset.filter(
@@ -685,14 +691,16 @@ class DocumentoListView(StaffRequiredMixin, ListView):
             )
 
         return queryset.order_by('funcionario__nome_completo', 'tipo_documento')
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Passamos as opções para preencher o <select> no template
         context['tipos_documento'] = Documento.TIPO_CHOICES
         return context
 
-class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
+
+class DocumentoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.add_documento'
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
@@ -732,9 +740,9 @@ class DocumentoCreateView(FilialCreateMixin, StaffRequiredMixin, CreateView):
             kwargs={'pk': self.object.funcionario.pk}
         )
 
-# A lógica de update de documento precisa garantir que o usuário não edite
-# um documento de outra filial. Podemos criar um mixin simples para isso.
-class DocumentoScopedMixin:
+
+class _DocumentoFilialScopedMixin:
+    """Garante que documentos só sejam acessados dentro da filial ativa."""
     def get_queryset(self):
         qs = super().get_queryset()
         filial_id = self.request.session.get('active_filial_id')
@@ -742,14 +750,16 @@ class DocumentoScopedMixin:
             raise PermissionDenied("Nenhuma filial selecionada.")
         return qs.filter(funcionario__filial_id=filial_id)
 
-class DocumentoUpdateView(DocumentoScopedMixin, StaffRequiredMixin, UpdateView):
+
+class DocumentoUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, _DocumentoFilialScopedMixin, UpdateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.change_documento'
     model = Documento
     form_class = DocumentoForm
     template_name = 'departamento_pessoal/documento_form.html'
 
     def get_success_url(self):
         messages.success(self.request, "Documento atualizado com sucesso.")
-        # Retorna para o detalhe do funcionário é mais intuitivo que a lista geral
         return reverse('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
 
     def form_valid(self, form):
@@ -758,24 +768,27 @@ class DocumentoUpdateView(DocumentoScopedMixin, StaffRequiredMixin, UpdateView):
         except IntegrityError:
             form.add_error('tipo_documento', 'Já existe outro registro deste tipo de documento para este funcionário.')
             return self.form_invalid(form)
-    
 
-    
-# Adicione a view de exclusão de documento
-class DocumentoDeleteView(DocumentoScopedMixin, StaffRequiredMixin, DeleteView):
+
+class DocumentoDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, _DocumentoFilialScopedMixin, DeleteView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.delete_documento'
     model = Documento
-    template_name = 'departamento_pessoal/documento_confirm_delete.html' # Crie este template
+    template_name = 'departamento_pessoal/documento_confirm_delete.html'
     context_object_name = 'documento'
 
     def get_success_url(self):
         messages.success(self.request, "Documento excluído com sucesso.")
-        # self.object é o documento que foi excluído
         return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.funcionario.pk})
 
-    
-# --- VIEW DO PAINEL ---
 
-class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
+# =============================================================================
+# PAINEL DP — Dashboard
+# =============================================================================
+
+class PainelDPView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TemplateView):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_funcionario'
     template_name = 'departamento_pessoal/painel_dp.html'
 
     def get_context_data(self, **kwargs):
@@ -786,34 +799,30 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
             messages.error(self.request, "Selecione uma filial para visualizar o painel.")
             return context
 
-        # Querysets base
         funcionarios_qs = Funcionario.objects.filter(filial_id=filial_id)
         departamentos_qs = Departamento.objects.filter(filial_id=filial_id)
-        
+
         context['ultimos_funcionarios'] = funcionarios_qs.select_related(
             'cargo', 'departamento'
         ).order_by('-data_admissao')[:5]
 
-        
-        # KPIs básicos
+        # KPIs
         context['total_funcionarios_ativos'] = funcionarios_qs.filter(status='ATIVO').count()
         context['total_departamentos'] = departamentos_qs.filter(ativo=True).count()
         context['total_cargos'] = Cargo.objects.filter(filial_id=filial_id, ativo=True).count()
 
-        # --- DADOS PARA OS NOVOS GRÁFICOS ---
-
-        # 1. Gráfico de Pizza - Funcionários por Departamento
+        # 1. Funcionários por Departamento
         func_por_depto = departamentos_qs.filter(ativo=True).annotate(
             num_funcionarios=Count('funcionarios', filter=Q(funcionarios__status='ATIVO'))
         ).values('nome', 'num_funcionarios').order_by('-num_funcionarios')
-                
+
         context['depto_labels'] = [d['nome'] for d in func_por_depto]
         context['depto_data'] = [d['num_funcionarios'] for d in func_por_depto]
 
-        # 2. Gráfico de Status
+        # 2. Status
         dist_status = funcionarios_qs.values('status').annotate(total=Count('status')).order_by('status')
         status_display_map = dict(Funcionario.STATUS_CHOICES)
-        
+
         status_labels = []
         status_data = []
         for s in dist_status:
@@ -824,9 +833,9 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         context['status_labels'] = status_labels
         context['status_data'] = status_data
 
-        # 3. Gráfico de Barras - Distribuição Salarial por Cargo (TOP 10)
+        # 3. Distribuição Salarial por Cargo (TOP 10)
         salarios_por_cargo = funcionarios_qs.filter(
-            status='ATIVO', 
+            status='ATIVO',
             salario__gt=0
         ).values(
             'cargo__nome'
@@ -838,12 +847,13 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         context['cargo_salario_labels'] = [item['cargo__nome'] for item in salarios_por_cargo]
         context['cargo_salario_data'] = [float(item['salario_medio']) for item in salarios_por_cargo]
 
-        # 4. Gráfico de Linha - Admissões por Mês (Últimos 12 meses)
+        # 4. Admissões por Mês (Últimos 12 meses) — ✅ Sem .extra()
         doze_meses_atras = timezone.now().date() - timedelta(days=365)
         admissoes_por_mes = funcionarios_qs.filter(
             data_admissao__gte=doze_meses_atras
-        ).extra(
-            {'mes': "EXTRACT(month FROM data_admissao)", 'ano': "EXTRACT(year FROM data_admissao)"}
+        ).annotate(
+            mes=ExtractMonth('data_admissao'),
+            ano=ExtractYear('data_admissao'),
         ).values('ano', 'mes').annotate(
             total=Count('id')
         ).order_by('ano', 'mes')
@@ -851,24 +861,25 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         meses = []
         totais = []
         for adm in admissoes_por_mes:
-            mes_ano = f"{int(adm['mes'])}/{int(adm['ano'])}"
+            mes_ano = f"{adm['mes']}/{adm['ano']}"
             meses.append(mes_ano)
             totais.append(adm['total'])
 
         context['admissoes_meses_labels'] = meses
         context['admissoes_meses_data'] = totais
 
-        # 5. Gráfico de Dispersão - Idade vs Salário
+        # 5. Dispersão Idade vs Salário
         funcionarios_com_idade_salario = funcionarios_qs.filter(
             status='ATIVO',
             data_nascimento__isnull=False,
             salario__gt=0
-        ).values('data_nascimento', 'salario', 'sexo')[:50]  # Limitar para performance
+        ).values('data_nascimento', 'salario', 'sexo')[:50]
 
         dispersao_data = []
+        hoje = timezone.now().date()
         for func in funcionarios_com_idade_salario:
             if func['data_nascimento']:
-                idade = (timezone.now().date() - func['data_nascimento']).days // 365
+                idade = (hoje - func['data_nascimento']).days // 365
                 dispersao_data.append({
                     'x': idade,
                     'y': float(func['salario']),
@@ -879,22 +890,19 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
 
         # 6. Estatísticas Detalhadas
         salarios_ativos = funcionarios_qs.filter(status='ATIVO', salario__gt=0)
-        
+
         if salarios_ativos.exists():
             context['salario_medio'] = salarios_ativos.aggregate(Avg('salario'))['salario__avg']
             context['salario_maximo'] = salarios_ativos.aggregate(Max('salario'))['salario__max']
             context['salario_minimo'] = salarios_ativos.aggregate(Min('salario'))['salario__min']
-            
-            # Cálculo da idade média
-            from datetime import date
-            hoje = date.today()
+
             idades = []
             for func in funcionarios_qs.filter(status='ATIVO', data_nascimento__isnull=False):
                 idade = hoje.year - func.data_nascimento.year - (
                     (hoje.month, hoje.day) < (func.data_nascimento.month, func.data_nascimento.day)
                 )
                 idades.append(idade)
-            
+
             context['idade_media'] = sum(idades) / len(idades) if idades else 0
         else:
             context['salario_medio'] = 0
@@ -906,11 +914,11 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
         dist_genero = funcionarios_qs.filter(status='ATIVO').values('sexo').annotate(
             total=Count('id')
         )
-        
+
         genero_labels = []
         genero_data = []
         genero_display_map = dict(Funcionario.SEXO_CHOICES)
-        
+
         for g in dist_genero:
             label = genero_display_map.get(g['sexo'], g['sexo'] or 'Não informado')
             genero_labels.append(label)
@@ -921,9 +929,16 @@ class PainelDPView(LoginRequiredMixin, StaffRequiredMixin, TemplateView):
 
         context['titulo_pagina'] = "Painel de Controle DP - Analytics"
         return context
-    
-        
-class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):
+
+
+# =============================================================================
+# EXPORTAÇÕES
+# =============================================================================
+
+class _BaseExportView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+    app_label_required = _APP
+    permission_required = 'departamento_pessoal.view_funcionario'
+
     def get_scoped_queryset(self):
         filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
@@ -931,14 +946,15 @@ class BaseExportView(LoginRequiredMixin, StaffRequiredMixin, View):
         return Funcionario.objects.filter(filial_id=filial_id).select_related('cargo', 'departamento')
 
 
-# Relatório Excel #    
-class ExportarFuncionariosExcelView(BaseExportView):
+class ExportarFuncionariosExcelView(_BaseExportView):
     def get(self, request, *args, **kwargs):
         funcionarios = self.get_scoped_queryset().all()
-        
+
         data = [
             {
-                'Matrícula': f.matricula, 'Nome Completo': f.nome_completo, 'Cargo': f.cargo.nome if f.cargo else '-',
+                'Matrícula': f.matricula,
+                'Nome Completo': f.nome_completo,
+                'Cargo': f.cargo.nome if f.cargo else '-',
                 'Departamento': f.departamento.nome if f.departamento else '-',
                 'Data de Admissão': f.data_admissao.strftime('%d/%m/%Y') if f.data_admissao else '-',
                 'Status': f.get_status_display()
@@ -951,9 +967,9 @@ class ExportarFuncionariosExcelView(BaseExportView):
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.xlsx"'
         df.to_excel(response, index=False)
         return response
-    
-# Unificando as views de PDF e fazendo herdar da BaseExportView
-class ExportarFuncionariosPDFView(BaseExportView):
+
+
+class ExportarFuncionariosPDFView(_BaseExportView):
     def get(self, request, *args, **kwargs):
         funcionarios = self.get_scoped_queryset().filter(status='ATIVO')
         context = {
@@ -967,49 +983,35 @@ class ExportarFuncionariosPDFView(BaseExportView):
         response['Content-Disposition'] = 'attachment; filename="relatorio_funcionarios.pdf"'
         return response
 
-class ExportarFuncionariosWordView(BaseExportView):
+
+class ExportarFuncionariosWordView(_BaseExportView):
     def get(self, request, *args, **kwargs):
-        # 1. Obter os dados já filtrados pela filial ativa e com status 'ATIVO'
         funcionarios = self.get_scoped_queryset().filter(status='ATIVO')
 
-        # 2. Criar um documento Word em branco na memória
         document = PyDocxDocument()
 
-        # --- Início da Construção do Documento ---
-
-        # Adicionar um título principal ao documento
         document.add_heading('Relatório de Colaboradores Ativos', level=1)
 
-        # Adicionar metadados do relatório (data de emissão e filial)
         data_emissao = timezone.now().strftime('%d/%m/%Y às %H:%M')
-        # Pega o nome da filial a partir do primeiro funcionário (se existir)
         nome_filial = funcionarios.first().filial.nome if funcionarios.exists() else "N/A"
-        
+
         document.add_paragraph(f"Filial: {nome_filial}")
         document.add_paragraph(f"Data de Emissão: {data_emissao}")
         document.add_paragraph(f"Total de Colaboradores Listados: {len(funcionarios)}")
-
-        # Adicionar um espaço antes da tabela
         document.add_paragraph()
 
-        # 3. Criar a tabela de dados
-        # Definir os cabeçalhos das colunas
         colunas = ['Matrícula', 'Nome Completo', 'Cargo', 'Departamento', 'Data de Admissão']
-        
-        tabela = document.add_table(rows=1, cols=len(colunas))
-        tabela.style = 'Table Grid' # Estilo de tabela com bordas
 
-        # Preencher a linha de cabeçalho
+        tabela = document.add_table(rows=1, cols=len(colunas))
+        tabela.style = 'Table Grid'
+
         hdr_cells = tabela.rows[0].cells
         for i, nome_coluna in enumerate(colunas):
             cell = hdr_cells[i]
             cell.text = nome_coluna
-            # Deixar o texto do cabeçalho em negrito
             cell.paragraphs[0].runs[0].font.bold = True
-            # Centralizar o texto do cabeçalho
             cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-        # 4. Preencher a tabela com os dados dos funcionários
         for f in funcionarios:
             row_cells = tabela.add_row().cells
             row_cells[0].text = f.matricula or '-'
@@ -1018,20 +1020,15 @@ class ExportarFuncionariosWordView(BaseExportView):
             row_cells[3].text = f.departamento.nome if f.departamento else '-'
             row_cells[4].text = f.data_admissao.strftime('%d/%m/%Y') if f.data_admissao else '-'
 
-        # --- Fim da Construção do Documento ---
-
-        # 5. Salvar o documento em um buffer de memória
         buffer = io.BytesIO()
         document.save(buffer)
-        # É crucial "rebobinar" o buffer para o início antes de lê-lo.
-        buffer.seek(0) 
+        buffer.seek(0)
 
-        # 6. Criar a HttpResponse com o conteúdo do buffer
         response = HttpResponse(
             buffer.getvalue(),
             content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
         response['Content-Disposition'] = 'attachment; filename="relatorio_colaboradores_ativos.docx"'
-        
         return response
+
     

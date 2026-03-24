@@ -1,19 +1,24 @@
 
-import json
-from urllib.request import urlopen
-from urllib.error import URLError, HTTPError
-from django.http import HttpResponse, Http404, JsonResponse
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
-from django.http import HttpResponse, Http404
-from django.utils.translation import gettext_lazy as _
-from django.db import transaction
+# logradouro/views.py
 
 import io
+import json
 import base64
+import logging
+from urllib.request import urlopen
+from urllib.error import URLError, HTTPError
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
+from django.http import HttpResponse, Http404, JsonResponse
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+
 import openpyxl
 import pandas as pd
 from openpyxl import load_workbook
@@ -21,39 +26,37 @@ from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
+from core.mixins import (
+    SSTPermissionMixin,
+    ViewFilialScopedMixin,
+    FilialCreateMixin,
+    AppPermissionMixin,
+)
 from .models import Logradouro, Filial
 from .forms import LogradouroForm, UploadFileForm
 from .constant import ESTADOS_BRASIL
-from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin, FilialCreateMixin
-import requests as http_requests
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
 # CRUD — Logradouro
 # =============================================================================
 
-class LogradouroListView(
-    LoginRequiredMixin,
-    SSTPermissionMixin,
-    ViewFilialScopedMixin,
-    ListView,
-):
-    """Lista logradouros com escopo de filial, busca e paginação."""
-
+class LogradouroListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = 'logradouro'
+    permission_required = 'logradouro.view_logradouro'
     model = Logradouro
     template_name = 'logradouro/listar_logradouros.html'
     context_object_name = 'logradouros'
     paginate_by = 15
-    permission_required = 'logradouro.view_logradouro'
 
     def get_queryset(self):
-        # ViewFilialScopedMixin já filtra pela filial
         queryset = super().get_queryset()
 
         # Total ANTES da busca (para o cabeçalho)
         self.total_logradouros_na_filial = queryset.count()
 
-        # Filtros de busca
         q_endereco = self.request.GET.get('q_endereco', '').strip()
         q_cep = self.request.GET.get('q_cep', '').strip()
 
@@ -67,11 +70,8 @@ class LogradouroListView(
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['total_logradouros'] = getattr(self, 'total_logradouros_na_filial', 0)
-
-        # ── Contagem dos resultados filtrados (sem query extra) ──
         context['total_filtrados'] = context['paginator'].count if context.get('paginator') else 0
 
-        # ── Preservar filtros na paginação ──
         query_params = self.request.GET.copy()
         query_params.pop('page', None)
         context['query_string'] = query_params.urlencode()
@@ -79,14 +79,8 @@ class LogradouroListView(
         return context
 
 
-class LogradouroCreateView(
-    LoginRequiredMixin,
-    SSTPermissionMixin,
-    FilialCreateMixin,
-    CreateView,
-):
-    """Cria logradouro associando à filial do usuário automaticamente."""
-
+class LogradouroCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = 'logradouro'
     model = Logradouro
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
@@ -108,14 +102,8 @@ class LogradouroCreateView(
         return super().form_invalid(form)
 
 
-class LogradouroUpdateView(
-    LoginRequiredMixin,
-    SSTPermissionMixin,
-    ViewFilialScopedMixin,
-    UpdateView,
-):
-    """Edita logradouro (somente da filial do usuário)."""
-
+class LogradouroUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = 'logradouro'
     model = Logradouro
     form_class = LogradouroForm
     template_name = 'logradouro/form_logradouro.html'
@@ -127,14 +115,8 @@ class LogradouroUpdateView(
         return super().form_valid(form)
 
 
-class LogradouroDeleteView(
-    LoginRequiredMixin,
-    SSTPermissionMixin,
-    ViewFilialScopedMixin,
-    DeleteView,
-):
-    """Exclui logradouro (somente da filial do usuário)."""
-
+class LogradouroDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
+    app_label_required = 'logradouro'
     model = Logradouro
     template_name = 'logradouro/confirmar_exclusao.html'
     success_url = reverse_lazy('logradouro:listar_logradouros')
@@ -150,9 +132,8 @@ class LogradouroDeleteView(
 # EXPORTAÇÃO — Excel
 # =============================================================================
 
-class LogradouroExportExcelView(LoginRequiredMixin, SSTPermissionMixin, View):
-    """Exporta logradouros da filial do usuário para Excel."""
-
+class LogradouroExportExcelView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+    app_label_required = 'logradouro'
     permission_required = 'logradouro.view_logradouro'
 
     def get(self, request, *args, **kwargs):
@@ -210,9 +191,8 @@ class LogradouroExportExcelView(LoginRequiredMixin, SSTPermissionMixin, View):
 # IMPORTAÇÃO — Upload em massa
 # =============================================================================
 
-class UploadLogradourosView(LoginRequiredMixin, SSTPermissionMixin, View):
-    """Upload de planilha para importação em massa de logradouros."""
-
+class UploadLogradourosView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+    app_label_required = 'logradouro'
     permission_required = 'logradouro.add_logradouro'
     form_class = UploadFileForm
     template_name = 'logradouro/upload_logradouros.html'
@@ -244,7 +224,7 @@ class UploadLogradourosView(LoginRequiredMixin, SSTPermissionMixin, View):
             return render(request, self.template_name, context)
 
         # ── Etapa 2: Validação estrutural ──
-        required_cols = ['filial_id', 'endereco', 'numero', 'bairro', 'cep', 'cidade', 'estado']
+        required_cols = ['endereco', 'numero', 'bairro', 'cep', 'cidade', 'estado']
         cols_faltando = [col for col in required_cols if col not in df.columns]
         if cols_faltando:
             messages.error(
@@ -254,53 +234,64 @@ class UploadLogradourosView(LoginRequiredMixin, SSTPermissionMixin, View):
             )
             return render(request, self.template_name, context)
 
-        # ── Etapa 3: Validação dos dados (linha a linha) ──
+        # ── Etapa 3: Resolve filial do usuário ──
+        filial_ativa = request.user.filial_ativa
+        if not filial_ativa:
+            messages.error(request, "Nenhuma filial ativa selecionada. Impossível importar.")
+            return render(request, self.template_name, context)
+
+        # ── Etapa 4: Validação + Criação atômica ──
         linhas_com_erro = []
         enderecos_para_criar = []
 
-        try:
-            with transaction.atomic():
-                for index, row in df.iterrows():
-                    try:
-                        if row[required_cols].isnull().any():
-                            raise ValueError("Contém valores vazios em colunas obrigatórias.")
+        for index, row in df.iterrows():
+            try:
+                # Valida campos obrigatórios
+                if row[required_cols].isnull().any():
+                    raise ValueError("Contém valores vazios em colunas obrigatórias.")
 
-                        filial = Filial.objects.get(pk=int(row['filial_id']))
-                        cep_limpo = str(row['cep']).split('.')[0]
-                        lat = row.get('latitude')
-                        lon = row.get('longitude')
-
-                        logradouro_obj = Logradouro(
-                            filial=filial,
-                            endereco=row['endereco'],
-                            numero=int(row['numero']),
-                            complemento=row.get('complemento'),
-                            bairro=row['bairro'],
-                            cep=cep_limpo.zfill(8),
-                            cidade=row['cidade'],
-                            estado=row['estado'],
-                            pais=row.get('pais', 'Brasil') or 'Brasil',
-                            ponto_referencia=row.get('ponto_referencia'),
-                            latitude=None if pd.isna(lat) else lat,
-                            longitude=None if pd.isna(lon) else lon,
+                # ✅ Usa filial do usuário se não vier na planilha, ou valida a informada
+                filial_id_planilha = row.get('filial_id')
+                if pd.notna(filial_id_planilha):
+                    filial_id_int = int(filial_id_planilha)
+                    # Só permite importar para a própria filial (ou se superuser)
+                    if not request.user.is_superuser and filial_id_int != filial_ativa.pk:
+                        raise ValueError(
+                            f"Filial {filial_id_int} diferente da sua filial ativa ({filial_ativa.pk}). "
+                            f"Você só pode importar para sua própria filial."
                         )
-                        logradouro_obj.full_clean()
-                        enderecos_para_criar.append(logradouro_obj)
+                    filial = Filial.objects.get(pk=filial_id_int)
+                else:
+                    filial = filial_ativa
 
-                    except Exception as e:
-                        linha_original = row.to_dict()
-                        linha_original['Erro_Detectado'] = f"Linha {index + 2}: {e}"
-                        linhas_com_erro.append(linha_original)
+                cep_limpo = str(row['cep']).split('.')[0]
+                lat = row.get('latitude')
+                lon = row.get('longitude')
 
-                if linhas_com_erro:
-                    raise ValueError("Importação cancelada devido a erros.")
+                logradouro_obj = Logradouro(
+                    filial=filial,
+                    endereco=row['endereco'],
+                    numero=int(row['numero']),
+                    complemento=row.get('complemento'),
+                    bairro=row['bairro'],
+                    cep=cep_limpo.zfill(8),
+                    cidade=row['cidade'],
+                    estado=row['estado'],
+                    pais=row.get('pais', 'Brasil') or 'Brasil',
+                    ponto_referencia=row.get('ponto_referencia'),
+                    latitude=None if pd.isna(lat) else lat,
+                    longitude=None if pd.isna(lon) else lon,
+                )
+                logradouro_obj.full_clean()
+                enderecos_para_criar.append(logradouro_obj)
 
-            # Sem erros — salvar
-            Logradouro.objects.bulk_create(enderecos_para_criar)
-            messages.success(request, f"{len(enderecos_para_criar)} endereços importados com sucesso!")
-            return redirect('logradouro:listar_logradouros')
+            except Exception as e:
+                linha_original = row.to_dict()
+                linha_original['Erro_Detectado'] = f"Linha {index + 2}: {e}"
+                linhas_com_erro.append(linha_original)
 
-        except ValueError:
+        # ── Etapa 5: Salva ou gera relatório de erros ──
+        if linhas_com_erro:
             messages.error(
                 request,
                 "A importação falhou. Verifique os erros no relatório abaixo.",
@@ -317,12 +308,19 @@ class UploadLogradourosView(LoginRequiredMixin, SSTPermissionMixin, View):
             }
             context['relatorio_disponivel'] = True
             context['total_erros'] = len(linhas_com_erro)
+            return render(request, self.template_name, context)
 
-        return render(request, self.template_name, context)
+        # ✅ Salva tudo atomicamente
+        with transaction.atomic():
+            Logradouro.objects.bulk_create(enderecos_para_criar)
+
+        messages.success(request, f"{len(enderecos_para_criar)} endereços importados com sucesso!")
+        return redirect('logradouro:listar_logradouros')
 
 
-class DownloadErroRelatorioView(LoginRequiredMixin, View):
+class DownloadErroRelatorioView(LoginRequiredMixin, AppPermissionMixin, View):
     """Download do relatório de erros da importação."""
+    app_label_required = 'logradouro'
 
     def get(self, request, *args, **kwargs):
         relatorio_data = request.session.get('relatorio_erros')
@@ -341,8 +339,9 @@ class DownloadErroRelatorioView(LoginRequiredMixin, View):
         return response
 
 
-class DownloadTemplateView(LoginRequiredMixin, View):
-    """Gera modelo .xlsx formatado para download."""
+class DownloadTemplateView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = 'logradouro'
+    permission_required = 'logradouro.add_logradouro'
 
     def get(self, request, *args, **kwargs):
         headers = [
@@ -403,7 +402,7 @@ class DownloadTemplateView(LoginRequiredMixin, View):
             cell.fill = header_fill
 
         instructions = [
-            ['filial_id', 'ID numérico da Filial (deve existir no sistema)', 'Sim', '1'],
+            ['filial_id', 'ID numérico da Filial (opcional — usa filial ativa se vazio)', 'Não', '1'],
             ['endereco', 'Nome da rua, avenida (Máx: 150)', 'Sim', 'Avenida Paulista'],
             ['numero', 'Número do imóvel (inteiro positivo)', 'Sim', '1578'],
             ['complemento', 'Andar, sala, bloco (Máx: 50)', 'Não', 'Andar 10'],
@@ -435,6 +434,11 @@ class DownloadTemplateView(LoginRequiredMixin, View):
         return response
 
 
+# =============================================================================
+# API — Consulta CEP
+# =============================================================================
+
+@login_required
 def consulta_cep(request):
     """
     Consulta o CEP na API ViaCEP e retorna JSON.
@@ -470,4 +474,7 @@ def consulta_cep(request):
     except URLError:
         return JsonResponse({"erro": "Não foi possível conectar ao serviço de CEP."}, status=504)
     except Exception as e:
+        logger.exception("Erro na consulta de CEP: %s", cep)
         return JsonResponse({"erro": f"Erro inesperado: {e}"}, status=500)
+
+

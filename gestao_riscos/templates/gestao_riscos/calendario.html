@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
             week: 'Semana',
             list: 'Lista'
         },
-        events: '{% url "gestao_riscos:api_inspecao_events" %}',
+        events: '{% url "gestao_riscos:inspecao_events_api" %}',
         dateClick: function(info) {
             var agendarUrl = `{% url 'gestao_riscos:agendar_inspecao' %}?data=${info.dateStr}`;
             window.location.href = agendarUrl;

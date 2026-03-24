@@ -98,24 +98,26 @@ class GroupCardPermissionsAdmin(admin.ModelAdmin):
     list_display = ('group',)
     search_fields = ('group__name',)
 
-    # Para usar o campo JSONField, vamos sobrescrever o formulário de administração
-    # e criar um widget de seleção múltipla com os IDs dos cards
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
 
-        # Adicione aqui todos os IDs dos seus cards.
-        # Isso deve ser mantido em sincronia com o seu views.py.
         ALL_CARD_CHOICES = [
             ('tarefas', 'Tarefas'),
             ('clientes', 'Clientes'),
             ('dp', 'Departamento Pessoal'),
             ('sst', 'Segurança do Trabalho'),
             ('endereco', 'Logradouro'),
-            ('ga', 'Gestão Administrativa'),
             ('veiculos', 'Veículos'),
             ('operacao', 'Operação'),
+            ('main_dashboard', 'Dashboard Integrado'),
+            # ═══ Novos cards ═══
+            ('ata_reuniao', 'Atas de Reunião'),
+            ('suprimentos', 'Suprimentos'),
+            ('documentos', 'Documentos'),
+            ('telefones', 'Controle de Telefones'),
+            ('estoque', 'Estoque'),
         ]
-        
+
         form.base_fields['cards_visiveis'].widget = CheckboxSelectMultiple(
             choices=ALL_CARD_CHOICES
         )

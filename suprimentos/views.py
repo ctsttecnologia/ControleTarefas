@@ -1,74 +1,48 @@
-#┌─────────────────────────────────────────────────────────┐
-#│            Cadastro de Material (Suprimentos)           │
-#│                                                         │
-#│  Classificação: [FERRAMENTA ▼]                          │
-#│                                                         │
-#│  ┌─ 🔧 Vínculo com Ferramentas ───────────────────┐     │
-#│  │                                                 │    │
-#│  │  Vincular existente: [-------------- ▼]         │    │
-#│  │           ─── OU ───                            │    │
-#│  │  [✓] Criar Ferramenta automaticamente           │    │
-#│  │                                                 │    │
-#│  │  Código:       [FERR-A1B2C3D4       ] (auto)   │    │
-#│  │  Patrimônio:   [PAT-00452           ]           │    │
-#│  │  Localização:  [Almoxarifado, Arm.A ] *         │    │
-#│  │  Data Aquis.:  [2026-03-06          ] *         │    │
-#│  │  Fornecedor:   [Gedore ▼            ]           │    │
-#│  │  Qtd Inicial:  [0                   ]           │    │
-#│  └─────────────────────────────────────────────────┘    │
-#│                                                         │
-#│                                    [Salvar]             │
-#└─────────────────────────────────────────────────────────┘
-#                        │
-#                        ▼
-#  ✅ Material criado em Suprimentos
-#  ✅ Ferramenta criada no módulo de Ferramentas (com QR Code!)
-#  ✅ FK ferramenta_ref vinculada automaticamente
-#                        │
-#         ┌──────────────┴──────────────┐
-#         │  PEDIDO → RECEBIDO (signal) │
-#         └──────────────┬──────────────┘
-#                        │
-#    ┌───────────────────┼───────────────────┐
-#    │                   │                   │
-#    ▼                   ▼                   ▼
-#  EPI               CONSUMO           FERRAMENTA
-#  +qty estoque      +qty estoque      +qty Ferramenta
-#  SST               consumo           (já funciona!)
 
 # suprimentos/views.py
 
+import json
+import logging
+import uuid
+from datetime import date
 from decimal import Decimal
 from io import BytesIO
 
 from django import forms
-import pandas as pd
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction, IntegrityError
-from django.db.models import Q, Sum, F, Value, DecimalField
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.db.models import Q, Sum, Value
+from django.db.models.functions import Coalesce
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.views import View
 from django.views.generic import (
     ListView, CreateView, UpdateView, DetailView,
-    DeleteView, FormView, TemplateView, View,
+    DeleteView, FormView, TemplateView,
 )
+
+import pandas as pd
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
+from weasyprint import HTML
 
 from core.mixins import (
     ViewFilialScopedMixin, FilialCreateMixin, SSTPermissionMixin,
+    AppPermissionMixin,
 )
 from usuario.models import Filial
-from usuario.views import LoginRequiredMixin
 from logradouro.models import Logradouro
 from seguranca_trabalho.models import Equipamento
-import uuid
-from datetime import date
 from ferramentas.models import Ferramenta as FerramentaModel
+
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
     Pedido, ItemPedido, CategoriaMaterial, TipoMaterial,
@@ -79,6 +53,7 @@ from .forms import (
     PedidoForm, ItemPedidoForm,
     ReprovarPedidoForm, ConfirmarRecebimentoForm,
 )
+from .relatorios import gerar_relatorio_completo
 from notifications.services import (
     notificar_pedido_pendente,
     notificar_pedido_aprovado,
@@ -87,16 +62,32 @@ from notifications.services import (
     notificar_pedido_recebido,
     notificar_pedido_verba_excedida,
 )
-import json
-from weasyprint import HTML
-from django.template.loader import render_to_string
-from .relatorios import gerar_relatorio_completo
-from django.db.models.functions import Coalesce
-import json
+
+logger = logging.getLogger(__name__)
+
+_APP = 'suprimentos'
 
 
 # ════════════════════════════════════════════
-#   PARCEIRO (código existente — preservado)  
+#   HELPER — Queryset de Pedido filtrado
+# ════════════════════════════════════════════
+
+def _pedido_qs_for_user(user):
+    """Retorna queryset de Pedido já filtrado por filial ativa."""
+    qs = Pedido.objects.select_related('contrato', 'solicitante', 'aprovador')
+    filial_ativa = getattr(user, 'filial_ativa', None)
+    if filial_ativa:
+        qs = qs.filter(contrato__filial=filial_ativa)
+    return qs
+
+
+def _get_pedido_seguro(user, pk):
+    """Busca pedido garantindo escopo de filial."""
+    return get_object_or_404(_pedido_qs_for_user(user), pk=pk)
+
+
+# ════════════════════════════════════════════
+#   PARCEIRO — Importação em massa
 # ════════════════════════════════════════════
 
 class ImportacaoParceiroError(Exception):
@@ -111,6 +102,7 @@ class ImportacaoParceiroError(Exception):
         return self.message
 
 
+@login_required
 def parceiro_download_template(request):
     columns = [
         'Nome da Filial*', 'Nome Fantasia*', 'Razão Social', 'CNPJ',
@@ -147,7 +139,8 @@ def parceiro_download_template(request):
     return response
 
 
-class ParceiroBulkUploadView(SSTPermissionMixin, View):
+class ParceiroBulkUploadView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+    app_label_required = _APP
     permission_required = 'suprimentos.add_parceiro'
     template_name = 'suprimentos/upload_parceiros.html'
     form_class = UploadFileForm
@@ -268,6 +261,7 @@ class ParceiroBulkUploadView(SSTPermissionMixin, View):
             raise ImportacaoParceiroError(f"Erro ao salvar: {str(e)}")
 
 
+@login_required
 def parceiro_download_erros(request):
     linhas_com_erro = request.session.pop('parceiros_upload_erros', [])
     if not linhas_com_erro:
@@ -286,7 +280,12 @@ def parceiro_download_erros(request):
     return response
 
 
-class ParceiroListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
+# ════════════════════════════════════════════
+#   PARCEIRO — CRUD
+# ════════════════════════════════════════════
+
+class ParceiroListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
     model = Parceiro
     template_name = 'suprimentos/parceiro_list.html'
     context_object_name = 'parceiros'
@@ -305,14 +304,16 @@ class ParceiroListView(ViewFilialScopedMixin, SSTPermissionMixin, ListView):
         return qs
 
 
-class ParceiroDetailView(ViewFilialScopedMixin, SSTPermissionMixin, DetailView):
+class ParceiroDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
     model = Parceiro
     template_name = 'suprimentos/parceiro_detail.html'
     context_object_name = 'parceiro'
     permission_required = 'suprimentos.view_parceiro'
 
 
-class ParceiroCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
+class ParceiroCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = _APP
     model = Parceiro
     form_class = ParceiroForm
     template_name = 'suprimentos/parceiro_form.html'
@@ -325,7 +326,8 @@ class ParceiroCreateView(FilialCreateMixin, SSTPermissionMixin, CreateView):
         return ctx
 
 
-class ParceiroUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
+class ParceiroUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = _APP
     model = Parceiro
     form_class = ParceiroForm
     template_name = 'suprimentos/parceiro_form.html'
@@ -338,7 +340,8 @@ class ParceiroUpdateView(ViewFilialScopedMixin, SSTPermissionMixin, UpdateView):
         return ctx
 
 
-class ParceiroDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
+class ParceiroDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
+    app_label_required = _APP
     model = Parceiro
     template_name = 'suprimentos/parceiro_confirm_delete.html'
     success_url = reverse_lazy('suprimentos:parceiro_list')
@@ -346,20 +349,20 @@ class ParceiroDeleteView(ViewFilialScopedMixin, SSTPermissionMixin, DeleteView):
     permission_required = 'suprimentos.delete_parceiro'
 
 
-# DASHBOARD SUPRIMENTOS             
+# ════════════════════════════════════════════
+#   DASHBOARD SUPRIMENTOS
+# ════════════════════════════════════════════
 
-class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
+class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateView):
+    app_label_required = _APP
     template_name = 'suprimentos/dashboard.html'
 
-    # ── helpers ──────────────────────────────────────────────
     @staticmethod
     def _dec(val):
-        """Garante Decimal(0) quando None."""
         return val or Decimal('0')
 
     @staticmethod
     def _pct(parte, total):
-        """Percentual inteiro seguro para progress bars."""
         if not total or total == 0:
             return 0
         return min(int((parte / total) * 100), 100)
@@ -373,7 +376,6 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
         return qs, list(qs.values_list('id', flat=True))
 
     def _verbas_mes(self, contrato_ids, ano, mes):
-        """Retorna dict com verbas EPI/CONSUMO/FERRAMENTA em uma única query."""
         agg = VerbaContrato.objects.filter(
             contrato_id__in=contrato_ids, ano=ano, mes=mes,
         ).aggregate(
@@ -385,15 +387,12 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
         return agg
 
     def _compras_mes(self, contrato_ids, ano, mes, status_list):
-        """Retorna dict com compras por classificação + tributação em poucas queries."""
         base = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=status_list,
             pedido__data_pedido__year=ano,
             pedido__data_pedido__month=mes,
         )
-
-        # Compras por classificação (1 query)
         compras = base.values('material__classificacao').annotate(
             total=Coalesce(Sum('valor_total'), Decimal('0')),
         )
@@ -402,7 +401,6 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
         consumo = self._dec(por_class.get('CONSUMO'))
         ferramenta = self._dec(por_class.get('FERRAMENTA'))
 
-        # Tributação (1 query)
         trib = base.filter(
             material__grupo_tributario__isnull=False
         ).aggregate(
@@ -420,7 +418,6 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             'trib': trib,
         }
 
-    # ── context ──────────────────────────────────────────────
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         hoje = timezone.now()
@@ -461,16 +458,9 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
         ctx['custos_tributarios'] = compras['trib']
 
         mat_qs = Material.objects.filter(ativo=True)
-        mat_counts = mat_qs.aggregate(
-            total=Coalesce(Sum(Value(1)), 0),
-            sem_grupo=Coalesce(
-                Sum(Value(1), filter=Q(grupo_tributario__isnull=True)), 0
-            ),
-        )
         ctx['materiais_total'] = mat_qs.count()
         ctx['materiais_sem_grupo'] = mat_qs.filter(grupo_tributario__isnull=True).count()
 
-        # Economia (custo real vs valor NF)
         trib = compras['trib']
         if trib['valor_produtos'] > 0:
             ctx['pct_custo_real'] = self._pct(trib['custo_real'], trib['valor_produtos'])
@@ -479,7 +469,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             ctx['pct_custo_real'] = 0
             ctx['pct_creditos'] = 0
 
-        # ── Gráfico últimos 6 meses (otimizado: 2 queries bulk) ──
+        # ── Gráfico últimos 6 meses ──
         periodos = []
         for i in range(5, -1, -1):
             m_ = hoje.month - i
@@ -489,11 +479,9 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
                 a_ -= 1
             periodos.append((a_, m_))
 
-        # Verbas bulk
         verbas_bulk = VerbaContrato.objects.filter(
             contrato_id__in=contrato_ids,
         ).filter(
-            # Filtra apenas os 6 meses relevantes
             *[Q(ano=a_, mes=m_) for a_, m_ in periodos],
             _connector=Q.OR,
         ).values('ano', 'mes').annotate(
@@ -503,7 +491,6 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
         )
         verbas_map = {(v['ano'], v['mes']): v for v in verbas_bulk}
 
-        # Compras bulk
         compras_bulk = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=STATUS_COMPRA,
@@ -517,7 +504,6 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             total=Coalesce(Sum('valor_total'), Decimal('0')),
         )
 
-        # Compras com custo real (para gráfico de economia)
         compras_trib_bulk = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=STATUS_COMPRA,
@@ -571,7 +557,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             })
         ctx['grafico_meses'] = json.dumps(grafico_meses)
 
-        # ── Saldo anual (otimizado: 2 queries) ──
+        # ── Saldo anual ──
         verbas_ano = VerbaContrato.objects.filter(
             contrato_id__in=contrato_ids, ano=ano,
         ).values('mes').annotate(
@@ -611,10 +597,8 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
             valor_total_pedido=Coalesce(Sum('itens__valor_total'), Decimal('0')),
         )[:10]
 
-        # ── Contratos ──
         ctx['contratos'] = contratos_qs
 
-        # ── Filtros ──
         ctx['ano'] = ano
         ctx['mes'] = mes
         ctx['anos_disponiveis'] = range(2024, hoje.year + 2)
@@ -629,10 +613,12 @@ class DashboardSuprimentosView(LoginRequiredMixin, TemplateView):
 
 
 # ════════════════════════════════════════════
-#           MATERIAL (CRUD)                   
+#   MATERIAL — CRUD
 # ════════════════════════════════════════════
 
-class MaterialListView(LoginRequiredMixin, ListView):
+class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
+    """Materiais são globais (catálogo compartilhado entre filiais)."""
+    app_label_required = _APP
     model = Material
     template_name = 'suprimentos/material_list.html'
     context_object_name = 'materiais'
@@ -681,21 +667,23 @@ class MaterialListView(LoginRequiredMixin, ListView):
         return ctx
 
 
-
-class MaterialCreateView(LoginRequiredMixin, CreateView):
+class MaterialCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
+    app_label_required = _APP
     model = Material
     form_class = MaterialForm
     template_name = 'suprimentos/material_form.html'
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['titulo_pagina'] = 'Novo Material'
         return ctx
+
     def form_valid(self, form):
         response = super().form_valid(form)
         material = self.object
         filial_ativa = getattr(self.request.user, 'filial_ativa', None)
         msgs = []
-        # ── Criar Equipamento EPI automaticamente ──
+
         if form.cleaned_data.get('criar_equipamento_epi'):
             equipamento = Equipamento.objects.create(
                 nome=material.descricao,
@@ -707,10 +695,8 @@ class MaterialCreateView(LoginRequiredMixin, CreateView):
             )
             material.equipamento_epi = equipamento
             material.save(update_fields=['equipamento_epi'])
-            msgs.append(
-                f'Equipamento EPI (CA: {equipamento.certificado_aprovacao}) criado no SST'
-            )
-        # ── Criar Ferramenta automaticamente ──
+            msgs.append(f'Equipamento EPI (CA: {equipamento.certificado_aprovacao}) criado no SST')
+
         if form.cleaned_data.get('criar_ferramenta'):
             codigo = form.cleaned_data.get('ferr_codigo', '').strip()
             if not codigo:
@@ -729,35 +715,36 @@ class MaterialCreateView(LoginRequiredMixin, CreateView):
             )
             material.ferramenta_ref = ferramenta
             material.save(update_fields=['ferramenta_ref'])
-            msgs.append(
-                f'Ferramenta "{ferramenta.nome}" ({codigo}) criada no módulo de Ferramentas'
-            )
-        # ── Mensagem de sucesso ──
+            msgs.append(f'Ferramenta "{ferramenta.nome}" ({codigo}) criada no módulo de Ferramentas')
+
         if msgs:
             detalhes = ' | '.join(msgs)
-            messages.success(
-                self.request,
-                f'Material "{material.descricao}" criado! ✅ {detalhes}'
-            )
+            messages.success(self.request, f'Material "{material.descricao}" criado! ✅ {detalhes}')
         else:
             messages.success(self.request, f'Material "{material.descricao}" criado!')
         return response
+
     def get_success_url(self):
         return reverse('suprimentos:material_lista')
-class MaterialUpdateView(LoginRequiredMixin, UpdateView):
+
+
+class MaterialUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
+    app_label_required = _APP
     model = Material
     form_class = MaterialForm
     template_name = 'suprimentos/material_form.html'
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['titulo_pagina'] = f'Editar: {self.object.descricao}'
         return ctx
+
     def form_valid(self, form):
         response = super().form_valid(form)
         material = self.object
         filial_ativa = getattr(self.request.user, 'filial_ativa', None)
         msgs = []
-        # ── Criar Equipamento EPI automaticamente ──
+
         if form.cleaned_data.get('criar_equipamento_epi') and not material.equipamento_epi:
             equipamento = Equipamento.objects.create(
                 nome=material.descricao,
@@ -769,10 +756,8 @@ class MaterialUpdateView(LoginRequiredMixin, UpdateView):
             )
             material.equipamento_epi = equipamento
             material.save(update_fields=['equipamento_epi'])
-            msgs.append(
-                f'Equipamento EPI (CA: {equipamento.certificado_aprovacao}) criado no SST'
-            )
-        # ── Criar Ferramenta automaticamente ──
+            msgs.append(f'Equipamento EPI (CA: {equipamento.certificado_aprovacao}) criado no SST')
+
         if form.cleaned_data.get('criar_ferramenta') and not material.ferramenta_ref:
             codigo = form.cleaned_data.get('ferr_codigo', '').strip()
             if not codigo:
@@ -791,24 +776,25 @@ class MaterialUpdateView(LoginRequiredMixin, UpdateView):
             )
             material.ferramenta_ref = ferramenta
             material.save(update_fields=['ferramenta_ref'])
-            msgs.append(
-                f'Ferramenta "{ferramenta.nome}" ({codigo}) criada no módulo de Ferramentas'
-            )
-        # ── Mensagem de sucesso ──
+            msgs.append(f'Ferramenta "{ferramenta.nome}" ({codigo}) criada no módulo de Ferramentas')
+
         if msgs:
             detalhes = ' | '.join(msgs)
             messages.success(self.request, f'Material atualizado! ✅ {detalhes}')
         else:
             messages.success(self.request, 'Material atualizado!')
         return response
+
     def get_success_url(self):
         return reverse('suprimentos:material_lista')
 
+
 # ════════════════════════════════════════════
-#           CONTRATO (CRUD + Verbas)          
+#   CONTRATO — CRUD + Verbas
 # ════════════════════════════════════════════
 
-class ContratoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class ContratoListView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
     model = Contrato
     template_name = 'suprimentos/contrato_list.html'
     context_object_name = 'contratos'
@@ -827,7 +813,8 @@ class ContratoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return ctx
 
 
-class ContratoCreateView(LoginRequiredMixin, FilialCreateMixin, CreateView):
+class ContratoCreateView(LoginRequiredMixin, AppPermissionMixin, FilialCreateMixin, CreateView):
+    app_label_required = _APP
     model = Contrato
     form_class = ContratoForm
     template_name = 'suprimentos/contrato_form.html'
@@ -838,7 +825,8 @@ class ContratoCreateView(LoginRequiredMixin, FilialCreateMixin, CreateView):
         return ctx
 
 
-class ContratoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, UpdateView):
+class ContratoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = _APP
     model = Contrato
     form_class = ContratoForm
     template_name = 'suprimentos/contrato_form.html'
@@ -853,7 +841,8 @@ class ContratoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, UpdateView):
         return super().form_valid(form)
 
 
-class ContratoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+class ContratoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
     model = Contrato
     template_name = 'suprimentos/contrato_detail.html'
     context_object_name = 'contrato'
@@ -862,7 +851,6 @@ class ContratoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
         try:
             return super().get_object(queryset)
         except self.model.DoesNotExist:
-            # Verifica se o contrato existe mas está em outra filial
             if Contrato.objects.filter(pk=self.kwargs['pk']).exists():
                 messages.warning(
                     self.request,
@@ -871,8 +859,7 @@ class ContratoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
                 )
             else:
                 messages.error(self.request, 'Contrato não encontrado.')
-            from django.shortcuts import redirect
-            raise  # deixa o Django tratar o 404
+            raise
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -939,23 +926,19 @@ class ContratoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
 
 
 # ════════════════════════════════════════════
-#           PEDIDO (Workflow completo)         
+#   PEDIDO — Workflow completo
 # ════════════════════════════════════════════
 
-class PedidoListView(LoginRequiredMixin, ListView):
+class PedidoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
+    app_label_required = _APP
     model = Pedido
     template_name = 'suprimentos/pedido_list.html'
     context_object_name = 'pedidos'
     paginate_by = 20
 
     def get_queryset(self):
-        qs = Pedido.objects.select_related('contrato', 'solicitante', 'aprovador')
         user = self.request.user
-
-        # Filtra por filial ativa (inclusive superusu?rio)
-        filial_ativa = getattr(user, 'filial_ativa', None)
-        if filial_ativa:
-            qs = qs.filter(contrato__filial=filial_ativa)
+        qs = _pedido_qs_for_user(user)
 
         # Técnicos só veem seus pedidos
         if not (user.is_gerente or user.is_coordenador or user.is_administrador):
@@ -980,7 +963,8 @@ class PedidoListView(LoginRequiredMixin, ListView):
         return ctx
 
 
-class PedidoCreateView(LoginRequiredMixin, CreateView):
+class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
+    app_label_required = _APP
     model = Pedido
     form_class = PedidoForm
     template_name = 'suprimentos/pedido_form.html'
@@ -1004,10 +988,15 @@ class PedidoCreateView(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class PedidoDetailView(LoginRequiredMixin, DetailView):
+class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
+    app_label_required = _APP
     model = Pedido
     template_name = 'suprimentos/pedido_detail.html'
     context_object_name = 'pedido'
+
+    def get_queryset(self):
+        """✅ Filtra pedidos pela filial do usuário."""
+        return _pedido_qs_for_user(self.request.user)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -1020,13 +1009,11 @@ class PedidoDetailView(LoginRequiredMixin, DetailView):
         ctx['reprovar_form'] = ReprovarPedidoForm()
         ctx['receber_form'] = ConfirmarRecebimentoForm()
 
-        # Saldos da verba
         verba = pedido.contrato.verba_do_mes(
             pedido.data_pedido.year, pedido.data_pedido.month,
         )
         ctx['verba'] = verba
 
-        # Permissões baseadas em role
         is_gerente = user.is_gerente or user.is_superuser
 
         ctx['pode_editar'] = (
@@ -1056,11 +1043,12 @@ class PedidoDetailView(LoginRequiredMixin, DetailView):
         return ctx
 
 
-class ItemPedidoCreateView(LoginRequiredMixin, View):
+class ItemPedidoCreateView(LoginRequiredMixin, AppPermissionMixin, View):
     """Adiciona item ao pedido (POST)."""
+    app_label_required = _APP
 
     def post(self, request, pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
 
         if pedido.status != Pedido.StatusChoices.RASCUNHO:
             messages.error(request, 'Só é possível alterar pedidos em rascunho.')
@@ -1080,11 +1068,12 @@ class ItemPedidoCreateView(LoginRequiredMixin, View):
         return redirect(pedido.get_absolute_url())
 
 
-class ItemPedidoDeleteView(LoginRequiredMixin, View):
+class ItemPedidoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
     """Remove item do pedido."""
+    app_label_required = _APP
 
     def post(self, request, pk, item_pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
         item = get_object_or_404(ItemPedido, pk=item_pk, pedido=pedido)
 
         if pedido.status != Pedido.StatusChoices.RASCUNHO:
@@ -1097,35 +1086,38 @@ class ItemPedidoDeleteView(LoginRequiredMixin, View):
         return redirect(pedido.get_absolute_url())
 
 
-class PedidoEnviarView(LoginRequiredMixin, View):
+class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
     """RASCUNHO → PENDENTE."""
+    app_label_required = _APP
+
     def post(self, request, pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
         if pedido.status != Pedido.StatusChoices.RASCUNHO:
             messages.error(request, 'Pedido não está em rascunho.')
             return redirect(pedido.get_absolute_url())
         if not pedido.itens.exists():
             messages.error(request, 'Adicione pelo menos um item antes de enviar.')
             return redirect(pedido.get_absolute_url())
-        # Verificar verba (alerta, não bloqueia)
+
         ok, erros = pedido.verificar_verba()
         if not ok:
             for erro in erros:
                 messages.warning(request, f'⚠️ {erro}')
-            # Notifica gerentes sobre estouro de verba
             notificar_pedido_verba_excedida(pedido, erros)
+
         pedido.status = Pedido.StatusChoices.PENDENTE
         pedido.save(update_fields=['status'])
-        # 🔔 Notificar gerentes que há pedido para aprovar
         notificar_pedido_pendente(pedido)
         messages.success(request, f'Pedido {pedido.numero} enviado para aprovação!')
         return redirect(pedido.get_absolute_url())
 
 
-class PedidoAprovarView(LoginRequiredMixin, View):
+class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
     """PENDENTE → APROVADO (só Gerente)."""
+    app_label_required = _APP
+
     def post(self, request, pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
         user = request.user
         if not (user.is_gerente or user.is_superuser):
             messages.error(request, 'Apenas Gerentes podem aprovar pedidos.')
@@ -1133,24 +1125,27 @@ class PedidoAprovarView(LoginRequiredMixin, View):
         if pedido.status != Pedido.StatusChoices.PENDENTE:
             messages.error(request, 'Pedido não está pendente.')
             return redirect(pedido.get_absolute_url())
-        # Verificar verba
+
         ok, erros = pedido.verificar_verba()
         if not ok:
             for erro in erros:
                 messages.warning(request, f'⚠️ {erro}')
+
         pedido.status = Pedido.StatusChoices.APROVADO
         pedido.aprovador = user
         pedido.data_aprovacao = timezone.now()
         pedido.save(update_fields=['status', 'aprovador', 'data_aprovacao'])
-        # 🔔 Notificar solicitante
         notificar_pedido_aprovado(pedido)
         messages.success(request, f'Pedido {pedido.numero} aprovado! ✅')
         return redirect(pedido.get_absolute_url())
 
-class PedidoReprovarView(LoginRequiredMixin, View):
+
+class PedidoReprovarView(LoginRequiredMixin, AppPermissionMixin, View):
     """PENDENTE → REPROVADO (só Gerente)."""
+    app_label_required = _APP
+
     def post(self, request, pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
         user = request.user
         if not (user.is_gerente or user.is_superuser):
             messages.error(request, 'Apenas Gerentes podem reprovar pedidos.')
@@ -1158,6 +1153,7 @@ class PedidoReprovarView(LoginRequiredMixin, View):
         if pedido.status != Pedido.StatusChoices.PENDENTE:
             messages.error(request, 'Pedido não está pendente.')
             return redirect(pedido.get_absolute_url())
+
         form = ReprovarPedidoForm(request.POST)
         if form.is_valid():
             pedido.status = Pedido.StatusChoices.REPROVADO
@@ -1165,17 +1161,19 @@ class PedidoReprovarView(LoginRequiredMixin, View):
             pedido.motivo_reprovacao = form.cleaned_data['motivo']
             pedido.data_aprovacao = timezone.now()
             pedido.save(update_fields=['status', 'aprovador', 'motivo_reprovacao', 'data_aprovacao'])
-            # 🔔 Notificar solicitante
             notificar_pedido_reprovado(pedido)
             messages.info(request, f'Pedido {pedido.numero} reprovado.')
         else:
             messages.error(request, 'Informe o motivo da reprovação.')
         return redirect(pedido.get_absolute_url())
 
-class PedidoEntregarView(LoginRequiredMixin, View):
+
+class PedidoEntregarView(LoginRequiredMixin, AppPermissionMixin, View):
     """APROVADO → ENTREGUE (só Gerente)."""
+    app_label_required = _APP
+
     def post(self, request, pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
         user = request.user
         if not (user.is_gerente or user.is_superuser):
             messages.error(request, 'Apenas Gerentes podem marcar entrega.')
@@ -1183,20 +1181,21 @@ class PedidoEntregarView(LoginRequiredMixin, View):
         if pedido.status != Pedido.StatusChoices.APROVADO:
             messages.error(request, 'Pedido não está aprovado.')
             return redirect(pedido.get_absolute_url())
+
         pedido.status = Pedido.StatusChoices.ENTREGUE
         pedido.data_entrega = timezone.now().date()
         pedido.save(update_fields=['status', 'data_entrega'])
-        # 🔔 Notificar solicitante para confirmar recebimento
         notificar_pedido_entregue(pedido)
         messages.success(request, f'Pedido {pedido.numero} marcado como entregue! 📦')
         return redirect(pedido.get_absolute_url())
 
 
-class PedidoReceberView(LoginRequiredMixin, View):
+class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
     """ENTREGUE → RECEBIDO (confirmação do solicitante ou qualquer logado)."""
+    app_label_required = _APP
 
     def post(self, request, pk):
-        pedido = get_object_or_404(Pedido, pk=pk)
+        pedido = _get_pedido_seguro(request.user, pk)
         if pedido.status != Pedido.StatusChoices.ENTREGUE:
             messages.error(request, 'Pedido não está marcado como entregue.')
             return redirect(pedido.get_absolute_url())
@@ -1210,11 +1209,8 @@ class PedidoReceberView(LoginRequiredMixin, View):
             pedido.recebedor = request.user
             pedido.data_recebimento = timezone.now()
             pedido.status = Pedido.StatusChoices.RECEBIDO
-            # ⚠ NÃO usar update_fields! O signal pre_save precisa
-            # ver a mudança de status E setar estoque_processado.
             pedido.save()
 
-            # 🔔 Notificar gerentes sobre recebimento confirmado
             notificar_pedido_recebido(pedido)
 
             messages.success(request, f'Pedido {pedido.numero} — recebimento confirmado! ✅')
@@ -1226,13 +1222,14 @@ class PedidoReceberView(LoginRequiredMixin, View):
         else:
             messages.error(request, 'Confirme o recebimento marcando a caixa.')
 
-        return redirect(pedido.get_absolute_url()) 
+        return redirect(pedido.get_absolute_url())
 
 
 # ════════════════════════════════════════════
-#           APIs INTERNAS (AJAX)              
+#   APIs INTERNAS (AJAX)
 # ════════════════════════════════════════════
 
+@login_required
 def material_preco_api(request, pk):
     """Retorna preço unitário do material."""
     material = get_object_or_404(Material, pk=pk)
@@ -1244,9 +1241,17 @@ def material_preco_api(request, pk):
     })
 
 
+@login_required
 def contrato_saldos_api(request, pk):
     """Retorna saldos do contrato no mês atual."""
-    contrato = get_object_or_404(Contrato, pk=pk)
+    contrato = get_object_or_404(
+        Contrato.objects.for_request(request) if hasattr(Contrato.objects, 'for_request')
+        else Contrato.objects.filter(
+            filial=request.user.filial_ativa
+        ) if getattr(request.user, 'filial_ativa', None)
+        else Contrato.objects.all(),
+        pk=pk
+    )
     verba = contrato.verba_do_mes()
     return JsonResponse({
         'verba_epi': str(verba.verba_epi),
@@ -1261,9 +1266,10 @@ def contrato_saldos_api(request, pk):
         'saldo_total': str(verba.saldo_total),
     })
 
-# ═══════════════════════════════════════════════════════
-# RELATÓRIOS GERENCIAIS
-# ═══════════════════════════════════════════════════════
+
+# ════════════════════════════════════════════
+#   RELATÓRIOS GERENCIAIS
+# ════════════════════════════════════════════
 
 class RelatorioForm(forms.Form):
     """Formulário de filtros do relatório."""
@@ -1301,36 +1307,42 @@ class RelatorioForm(forms.Form):
         return cleaned
 
 
-class RelatorioSuprimentosView(LoginRequiredMixin, TemplateView):
-    """Relatório gerencial completo de Suprimentos."""
-    template_name = 'suprimentos/relatorio.html'
+class _RelatorioFiltraMixin:
+    """Mixin reutilizável para filtrar contratos por filial nos relatórios."""
 
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        hoje = timezone.now()
+    def _get_contrato_ids(self):
         user = self.request.user
-
-        # Contratos do usuário
         contratos_qs = Contrato.objects.filter(ativo=True)
         if not user.is_superuser:
             filial_ativa = getattr(user, 'filial_ativa', None)
             if filial_ativa:
                 contratos_qs = contratos_qs.filter(filial=filial_ativa)
 
-        # Filtros
+        contrato_ids_param = self.request.GET.getlist('contrato')
+        if contrato_ids_param:
+            return contratos_qs, list(
+                contratos_qs.filter(id__in=contrato_ids_param).values_list('id', flat=True)
+            )
+        return contratos_qs, list(contratos_qs.values_list('id', flat=True))
+
+    def _get_periodo(self):
+        hoje = timezone.now()
         ano = int(self.request.GET.get('ano', hoje.year))
         mes_ini = int(self.request.GET.get('mes_ini', 1))
         mes_fim = int(self.request.GET.get('mes_fim', hoje.month))
-        contrato_ids_param = self.request.GET.getlist('contrato')
+        return ano, mes_ini, mes_fim
 
-        if contrato_ids_param:
-            contrato_ids = list(
-                contratos_qs.filter(id__in=contrato_ids_param).values_list('id', flat=True)
-            )
-        else:
-            contrato_ids = list(contratos_qs.values_list('id', flat=True))
 
-        # Gerar relatório
+class RelatorioSuprimentosView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltraMixin, TemplateView):
+    """Relatório gerencial completo de Suprimentos."""
+    app_label_required = _APP
+    template_name = 'suprimentos/relatorio.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        contratos_qs, contrato_ids = self._get_contrato_ids()
+        ano, mes_ini, mes_fim = self._get_periodo()
+
         relatorio = gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim)
 
         ctx.update({
@@ -1338,11 +1350,10 @@ class RelatorioSuprimentosView(LoginRequiredMixin, TemplateView):
             'filtro_ano': ano,
             'filtro_mes_ini': mes_ini,
             'filtro_mes_fim': mes_fim,
-            'filtro_contratos': contrato_ids_param,
+            'filtro_contratos': self.request.GET.getlist('contrato'),
             'contratos_disponiveis': contratos_qs,
             'meses_choices': [(i, f'{i:02d}') for i in range(1, 13)],
             'titulo_pagina': 'Relatório Gerencial de Suprimentos',
-            # JSON para gráficos Chart.js
             'json_quantitativo_meses': json.dumps(
                 relatorio['quantitativo']['por_mes'], default=str
             ),
@@ -1359,30 +1370,14 @@ class RelatorioSuprimentosView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-class RelatorioPDFView(LoginRequiredMixin, View):
+class RelatorioPDFView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltraMixin, View):
     """Exporta o relatório completo em PDF via WeasyPrint."""
+    app_label_required = _APP
 
     def get(self, request):
         hoje = timezone.now()
-        user = request.user
-
-        contratos_qs = Contrato.objects.filter(ativo=True)
-        if not user.is_superuser:
-            filial_ativa = getattr(user, 'filial_ativa', None)
-            if filial_ativa:
-                contratos_qs = contratos_qs.filter(filial=filial_ativa)
-
-        ano = int(request.GET.get('ano', hoje.year))
-        mes_ini = int(request.GET.get('mes_ini', 1))
-        mes_fim = int(request.GET.get('mes_fim', hoje.month))
-        contrato_ids_param = request.GET.getlist('contrato')
-
-        if contrato_ids_param:
-            contrato_ids = list(
-                contratos_qs.filter(id__in=contrato_ids_param).values_list('id', flat=True)
-            )
-        else:
-            contrato_ids = list(contratos_qs.values_list('id', flat=True))
+        _, contrato_ids = self._get_contrato_ids()
+        ano, mes_ini, mes_fim = self._get_periodo()
 
         relatorio = gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim)
 
@@ -1390,7 +1385,7 @@ class RelatorioPDFView(LoginRequiredMixin, View):
             'suprimentos/relatorio_pdf.html',
             {
                 'relatorio': relatorio,
-                'usuario': user.get_full_name() or user.username,
+                'usuario': request.user.get_full_name() or request.user.username,
                 'gerado_em': hoje,
             },
         )
@@ -1404,34 +1399,13 @@ class RelatorioPDFView(LoginRequiredMixin, View):
         return response
 
 
-class RelatorioExcelView(LoginRequiredMixin, View):
+class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltraMixin, View):
     """Exporta o relatório em Excel via openpyxl."""
+    app_label_required = _APP
 
     def get(self, request):
-        from openpyxl import Workbook
-        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-        from openpyxl.utils import get_column_letter
-
-        hoje = timezone.now()
-        user = request.user
-
-        contratos_qs = Contrato.objects.filter(ativo=True)
-        if not user.is_superuser:
-            filial_ativa = getattr(user, 'filial_ativa', None)
-            if filial_ativa:
-                contratos_qs = contratos_qs.filter(filial=filial_ativa)
-
-        ano = int(request.GET.get('ano', hoje.year))
-        mes_ini = int(request.GET.get('mes_ini', 1))
-        mes_fim = int(request.GET.get('mes_fim', hoje.month))
-        contrato_ids_param = request.GET.getlist('contrato')
-
-        if contrato_ids_param:
-            contrato_ids = list(
-                contratos_qs.filter(id__in=contrato_ids_param).values_list('id', flat=True)
-            )
-        else:
-            contrato_ids = list(contratos_qs.values_list('id', flat=True))
+        _, contrato_ids = self._get_contrato_ids()
+        ano, mes_ini, mes_fim = self._get_periodo()
 
         relatorio = gerar_relatorio_completo(contrato_ids, ano, mes_ini, mes_fim)
 
@@ -1530,7 +1504,6 @@ class RelatorioExcelView(LoginRequiredMixin, View):
                 status_cell.fill = success_fill
             row += 1
 
-        # Totais
         row += 1
         ws2.cell(row=row, column=1, value="TOTAL GERAL").font = Font(bold=True)
         c = ws2.cell(row=row, column=2, value=float(relatorio['qualitativo']['total_verba_geral']))
@@ -1543,7 +1516,6 @@ class RelatorioExcelView(LoginRequiredMixin, View):
         c.number_format = money_fmt
         c.font = Font(bold=True)
 
-        # Evolução mensal
         row += 3
         ws2.cell(row=row, column=1, value="EVOLUÇÃO MENSAL").font = Font(bold=True, size=12)
         row += 1
@@ -1661,7 +1633,6 @@ class RelatorioExcelView(LoginRequiredMixin, View):
                 c.fill = danger_fill
             row += 1
 
-        # Tendências
         row += 2
         ws5.cell(row=row, column=1, value="TENDÊNCIAS (Últimos 6 meses)").font = Font(bold=True, size=12)
         row += 1
@@ -1690,8 +1661,6 @@ class RelatorioExcelView(LoginRequiredMixin, View):
         for col in range(1, 9):
             ws5.column_dimensions[get_column_letter(col)].width = 20
 
-        # Gravar resposta
-        from io import BytesIO
         buffer = BytesIO()
         wb.save(buffer)
         buffer.seek(0)
@@ -1704,3 +1673,4 @@ class RelatorioExcelView(LoginRequiredMixin, View):
             f'attachment; filename="relatorio_suprimentos_{ano}_{mes_ini:02d}-{mes_fim:02d}.xlsx"'
         )
         return response
+

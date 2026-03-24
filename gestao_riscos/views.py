@@ -1,92 +1,90 @@
 
 # gestao_riscos/views.py
 
-from time import timezone
-from django.urls import reverse_lazy
-from django.views.generic import (
-    ListView, CreateView, DeleteView, UpdateView, DetailView, TemplateView, View
-)
-from django.contrib.messages.views import SuccessMessageMixin
-from django.contrib.auth.mixins import LoginRequiredMixin
+import datetime
+import json
+import logging
+
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
+from django.db.models import Q, Count
 from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect
-import datetime
-from automovel.views import SuccessMessageMixin
-from django.contrib.auth.decorators import login_required
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.views import View
+from django.views.generic import (
+    ListView, CreateView, DeleteView, UpdateView, DetailView, TemplateView
+)
 
-# --- Imports de Mixins ---
 from core.mixins import (
-    SSTPermissionMixin, 
-    ViewFilialScopedMixin, 
+    SSTPermissionMixin,
+    ViewFilialScopedMixin,
     FilialCreateMixin,
-    TecnicoScopeMixin
+    TecnicoScopeMixin,
+    AppPermissionMixin,
 )
 from seguranca_trabalho.models import EntregaEPI
-from .forms import IncidenteForm, InspecaoForm, CartaoTagForm
-from .models import CartaoTag, Incidente, Inspecao, TipoRisco, CATEGORIA_RISCO_CHOICES
-from django.db.models import Q, Count
-from .forms import TipoRiscoForm
 
+from .forms import IncidenteForm, InspecaoForm, CartaoTagForm, TipoRiscoForm
+from .models import CartaoTag, Incidente, Inspecao, TipoRisco, CATEGORIA_RISCO_CHOICES
+
+logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# DASHBOARD
+# =============================================================================
 
 class GestaoRiscosDashboardView(
-    LoginRequiredMixin, 
-    SSTPermissionMixin,      # Nível 1: Permissão da Página
-    TecnicoScopeMixin,       # Nível 3: Escopo de Dados (Técnico)
-    ViewFilialScopedMixin,   # Nível 2: Escopo de Filial
+    LoginRequiredMixin,
+    SSTPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
     ListView
 ):
     """
-    Dashboard que exibe dados de Gestão de Riscos, aplicando a 
+    Dashboard que exibe dados de Gestão de Riscos, aplicando a
     arquitetura de segurança em 3 níveis.
     """
-    model = Incidente  # Modelo principal da view
+    model = Incidente
     template_name = 'gestao_riscos/lista_riscos.html'
     context_object_name = 'incidentes'
 
-    # --- Configuração dos Mixins de Segurança ---
-    permission_required = 'gestao_riscos.view_incidente' # Permissão para ver a página
-    tecnico_scope_lookup = 'registrado_por' # Campo no modelo Incidente que liga ao User
+    permission_required = 'gestao_riscos.view_incidente'
+    tecnico_scope_lookup = 'registrado_por'
 
     def get_queryset(self):
-        """
-        O queryset principal (incidentes) é filtrado automaticamente
-        pelos mixins TecnicoScopeMixin e ViewFilialScopedMixin.
-        """
         return super().get_queryset().order_by('-data_ocorrencia')[:10]
 
     def get_context_data(self, **kwargs):
-        """
-        Adiciona querysets secundários (inspeções) ao contexto, aplicando
-        manualmente a mesma lógica de escopo para consistência.
-        """
         context = super().get_context_data(**kwargs)
-        
-        # 1. Busca a base de inspeções já filtrada pela filial usando o manager
+
+        # Inspeções filtradas por filial via manager
         qs_inspecoes_base = Inspecao.objects.for_request(self.request)
 
-        # 2. Reutiliza a lógica do TecnicoScopeMixin para filtrar o queryset secundário
-        #    de inspeções. 
-        
-        # O campo em 'Inspecao' que liga ao User agora é 'responsavel'
+        # Reutiliza lógica do TecnicoScopeMixin para queryset secundário
         inspecao_scoper = TecnicoScopeMixin()
         inspecao_scoper.request = self.request
-        inspecao_scoper.tecnico_scope_lookup = 'responsavel' # Campo no modelo Inspecao
-        
+        inspecao_scoper.tecnico_scope_lookup = 'responsavel'
         qs_inspecoes_scoped = inspecao_scoper.scope_tecnico_queryset(qs_inspecoes_base)
-            
-        # Adiciona inspeções pendentes
+
         context['inspecoes_pendentes'] = qs_inspecoes_scoped.filter(
             status='PENDENTE'
         ).order_by('data_agendada')
-        
-        # NOVO: Adiciona inspeções propostas que o usuário pode ver
+
         context['inspecoes_propostas'] = qs_inspecoes_scoped.filter(
             status='PENDENTE_APROVACAO'
         ).order_by('data_agendada')
-        
+
         context['titulo_pagina'] = 'Dashboard de Gestão de Riscos'
         return context
+
+
+# =============================================================================
+# INCIDENTES
+# =============================================================================
 
 class RegistrarIncidenteView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMixin, SuccessMessageMixin, CreateView):
     model = Incidente
@@ -106,11 +104,15 @@ class RegistrarIncidenteView(LoginRequiredMixin, SSTPermissionMixin, FilialCreat
         return context
 
 
+# =============================================================================
+# INSPEÇÕES
+# =============================================================================
+
 class AgendarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMixin, SuccessMessageMixin, CreateView):
     model = Inspecao
     form_class = InspecaoForm
     template_name = 'gestao_riscos/formulario_inspecao.html'
-    success_url = reverse_lazy('gestao_riscos:calendario') # Mudar para o calendário
+    success_url = reverse_lazy('gestao_riscos:calendario')
     success_message = "Inspeção agendada com sucesso!"
     permission_required = 'gestao_riscos.add_inspecao'
 
@@ -119,19 +121,14 @@ class AgendarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMi
         kwargs['request'] = self.request
         return kwargs
 
-    # NOVO: Adicionado para pré-preencher a data vinda do calendário
     def get_initial(self):
         initial = super().get_initial()
-        # Pega a data da URL (ex: ?data=2025-10-25)
         data_selecionada = self.request.GET.get('data')
         if data_selecionada:
             try:
-                # Converte para o formato que o DateField espera
                 initial['data_agendada'] = datetime.date.fromisoformat(data_selecionada)
             except ValueError:
-                pass # Ignora data inválida
-        
-        # Define o responsável padrão como o usuário logado
+                pass
         initial['responsavel'] = self.request.user
         return initial
 
@@ -139,11 +136,14 @@ class AgendarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, FilialCreateMi
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = 'Agendar Nova Inspeção'
         return context
-    
-# NOVAS VIEWS - CALENDÁRIO E APROVAÇÃO
+
+
+# =============================================================================
+# CALENDÁRIO E API
+# =============================================================================
 
 class CalendarioView(LoginRequiredMixin, SSTPermissionMixin, TemplateView):
-    """ Renderiza a página principal do calendário."""
+    """Renderiza a página principal do calendário."""
     template_name = 'gestao_riscos/calendario.html'
     permission_required = 'gestao_riscos.view_inspecao'
 
@@ -152,77 +152,71 @@ class CalendarioView(LoginRequiredMixin, SSTPermissionMixin, TemplateView):
         context['titulo_pagina'] = 'Calendário de Inspeções'
         return context
 
-# Esta é uma view de API, não uma página HTML
-@login_required
-def inspecao_events_api(request):
+
+class InspecaoEventsApiView(LoginRequiredMixin, SSTPermissionMixin, View):
     """
     Fornece os eventos de inspeção em formato JSON para o FullCalendar.
     Aplica os mesmos filtros de escopo que o dashboard.
     """
-    # 1. Filtra pela Filial do usuário
-    qs_base = Inspecao.objects.for_request(request)
-    
-    # 2. Filtra pelo escopo do Técnico (se aplicável)
-    scoper = TecnicoScopeMixin()
-    scoper.request = request
-    scoper.tecnico_scope_lookup = 'responsavel'
-    qs_scoped = scoper.scope_tecnico_queryset(qs_base)
-    
-    # 3. Filtra por status visíveis no calendário
-    qs_final = qs_scoped.filter(
-        status__in=['PENDENTE', 'PENDENTE_APROVACAO', 'CONCLUIDA']
-    ).select_related('equipamento', 'responsavel')
+    permission_required = 'gestao_riscos.view_inspecao'
 
-    eventos = []
-    for inspecao in qs_final:
-        # Define cor baseada no status
-        if inspecao.status == 'CONCLUIDA':
-            color = '#28a745' # Verde
-        elif inspecao.status == 'PENDENTE_APROVACAO':
-            color = '#ffc107' # Amarelo
-        else: # PENDENTE
-            color = '#007bff' # Azul
-        
-        # Título do evento
-        titulo = f"{inspecao.equipamento.nome if inspecao.equipamento else 'Inspeção'}"
-        if inspecao.responsavel:
-            titulo += f" ({inspecao.responsavel.get_short_name()})"
-            
-        eventos.append({
-            'id': inspecao.id,
-            'title': titulo,
-            'start': inspecao.data_agendada.isoformat(),
-            'url': inspecao.get_absolute_url(), # Link para o detalhe
-            'color': color,
-            'allDay': True
-        })
+    def get(self, request, *args, **kwargs):
+        # 1. Filtra pela Filial do usuário
+        qs_base = Inspecao.objects.for_request(request)
 
-    return JsonResponse(eventos, safe=False)
+        # 2. Filtra pelo escopo do Técnico (se aplicável)
+        scoper = TecnicoScopeMixin()
+        scoper.request = request
+        scoper.tecnico_scope_lookup = 'responsavel'
+        qs_scoped = scoper.scope_tecnico_queryset(qs_base)
+
+        # 3. Filtra por status visíveis no calendário
+        qs_final = qs_scoped.filter(
+            status__in=['PENDENTE', 'PENDENTE_APROVACAO', 'CONCLUIDA']
+        ).select_related('equipamento', 'responsavel')
+
+        eventos = []
+        for inspecao in qs_final:
+            if inspecao.status == 'CONCLUIDA':
+                color = '#28a745'
+            elif inspecao.status == 'PENDENTE_APROVACAO':
+                color = '#ffc107'
+            else:
+                color = '#007bff'
+
+            titulo = f"{inspecao.equipamento.nome if inspecao.equipamento else 'Inspeção'}"
+            if inspecao.responsavel:
+                titulo += f" ({inspecao.responsavel.get_short_name()})"
+
+            eventos.append({
+                'id': inspecao.id,
+                'title': titulo,
+                'start': inspecao.data_agendada.isoformat(),
+                'url': inspecao.get_absolute_url(),
+                'color': color,
+                'allDay': True,
+            })
+
+        return JsonResponse(eventos, safe=False)
+
 
 class ListaInspecoesPropostasView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
     """
-    Exibe uma lista de inspeções que foram propostas automaticamente
-    e aguardam confirmação do usuário.
+    Exibe inspeções propostas automaticamente que aguardam confirmação.
     """
     model = Inspecao
     template_name = 'gestao_riscos/inspecoes_propostas_list.html'
     context_object_name = 'inspecoes_propostas'
-    permission_required = 'gestao_riscos.change_inspecao' # Permissão para 'confirmar'
-    
-    # Configuração dos Mixins de Segurança
-    tecnico_scope_lookup = 'responsavel' # Permite ver se for o responsável
-    
+    permission_required = 'gestao_riscos.change_inspecao'
+    tecnico_scope_lookup = 'responsavel'
+
     def get_queryset(self):
-        # Chama o queryset filtrado pelos Mixins (Filial e Técnico)
         qs = super().get_queryset()
-        
-        # Se o usuário não for técnico, ele não verá nada (pois 'responsavel' está nulo)
-        # Queremos que o técnico veja todas as propostas da sua filial
-        if self.request.user.is_tecnico:
-            # Reseta o filtro do TecnicoScopeMixin e aplica só o de filial
+
+        # Técnico vê todas as propostas da sua filial
+        if getattr(self.request.user, 'is_tecnico', False):
             qs = Inspecao.objects.for_request(self.request)
-        
-        # Filtra apenas as pendentes de aprovação
+
         return qs.filter(status='PENDENTE_APROVACAO').order_by('data_agendada')
 
     def get_context_data(self, **kwargs):
@@ -231,67 +225,55 @@ class ListaInspecoesPropostasView(LoginRequiredMixin, SSTPermissionMixin, Tecnic
         return context
 
 
-class ConfirmarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin, View):
-    """
-    View baseada em POST para confirmar uma inspeção proposta.
-    """
+class ConfirmarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, View):
+    """View baseada em POST para confirmar uma inspeção proposta."""
     http_method_names = ['post']
     permission_required = 'gestao_riscos.change_inspecao'
-    tecnico_scope_lookup = 'responsavel' # O Scoper não vai funcionar aqui (POST)
-    
+
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        # Garante que o usuário só pode confirmar inspeções da sua filial
         inspecao = get_object_or_404(
-            Inspecao.objects.for_request(request), 
-            pk=pk, 
+            Inspecao.objects.for_request(request),
+            pk=pk,
             status='PENDENTE_APROVACAO'
         )
-        
-        # Confirma a inspeção
+
         inspecao.status = 'PENDENTE'
-        inspecao.responsavel = request.user # Define o usuário logado como responsável
+        inspecao.responsavel = request.user
         inspecao.save()
-        
+
         messages.success(request, f"Inspeção para '{inspecao.equipamento}' confirmada e atribuída a você.")
-        
-        # Redireciona de volta para a lista de propostas ou para o calendário
+
         if 'next' in request.POST:
             return HttpResponseRedirect(request.POST.get('next'))
         return redirect('gestao_riscos:lista_inspecoes_propostas')
 
 
 class InspecaoDetailView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, DetailView):
-    """
-    View de detalhe para a inspeção (linkada do calendário).
-    """
+    """View de detalhe para a inspeção."""
     model = Inspecao
-    template_name = 'gestao_riscos/inspecao_detail.html' # Você precisará criar este template
+    template_name = 'gestao_riscos/inspecao_detail.html'
     context_object_name = 'inspecao'
     permission_required = 'gestao_riscos.view_inspecao'
     tecnico_scope_lookup = 'responsavel'
 
 
 class CompletarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
-    """
-    View para marcar uma inspeção como 'CONCLUÍDA'.
-    """
+    """View para marcar uma inspeção como 'CONCLUÍDA'."""
     model = Inspecao
-    template_name = 'gestao_riscos/inspecao_completar_form.html' # Você precisará criar este template
-    form_class = InspecaoForm # Reutiliza o formulário principal
+    template_name = 'gestao_riscos/inspecao_completar_form.html'
+    form_class = InspecaoForm
     success_url = reverse_lazy('gestao_riscos:calendario')
     success_message = "Inspeção marcada como Concluída!"
     permission_required = 'gestao_riscos.change_inspecao'
     tecnico_scope_lookup = 'responsavel'
 
     def get_form_kwargs(self):
-        # Passa o request para o form (se o form precisar)
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
         return kwargs
 
     def form_valid(self, form):
-        # Define o status e a data de realização
         form.instance.status = 'CONCLUIDA'
         if not form.instance.data_realizacao:
             form.instance.data_realizacao = timezone.now().date()
@@ -302,7 +284,10 @@ class CompletarInspecaoView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScope
         context['titulo_pagina'] = f"Concluir Inspeção: {self.object}"
         return context
 
-# CRUD DE CARTÃO DE BLOQUEIO (TAG) - AGORA COM SEGURANÇA EM 3 NÍVEIS
+
+# =============================================================================
+# CARTÃO DE BLOQUEIO (TAG) — CRUD
+# =============================================================================
 
 class CartaoTagListView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
     model = CartaoTag
@@ -310,7 +295,6 @@ class CartaoTagListView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMixi
     context_object_name = 'cartoes'
     paginate_by = 10
     permission_required = 'gestao_riscos.view_cartaotag'
-    # Supondo que o campo em CartaoTag que liga ao User seja 'responsavel'
     tecnico_scope_lookup = 'responsavel'
 
 
@@ -359,33 +343,33 @@ class CartaoTagDeleteView(LoginRequiredMixin, SSTPermissionMixin, TecnicoScopeMi
     permission_required = 'gestao_riscos.delete_cartaotag'
     tecnico_scope_lookup = 'responsavel'
 
-# ===========================================
-# TIPO DE RISCO — CRUD
-# ===========================================
 
-class TipoRiscoListView(LoginRequiredMixin, ListView, SSTPermissionMixin, ViewFilialScopedMixin):
-    """Lista de Tipos de Riscos"""
+# =============================================================================
+# TIPO DE RISCO — CRUD
+# =============================================================================
+
+class TipoRiscoListView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+    """Lista de Tipos de Riscos — filtrada por filial."""
     model = TipoRisco
     template_name = 'gestao_riscos/tipo_risco_list.html'
     context_object_name = 'tipos_risco'
     paginate_by = 20
+    permission_required = 'gestao_riscos.view_tiporisco'
 
     def get_queryset(self):
-        qs = TipoRisco.objects.all()
+        # ✅ Usa super() que já vem filtrado por filial via ViewFilialScopedMixin
+        qs = super().get_queryset()
 
-        # Filtro por categoria
         categoria = self.request.GET.get('categoria')
         if categoria:
             qs = qs.filter(categoria=categoria)
 
-        # Filtro apenas ativos
         ativo = self.request.GET.get('ativo')
         if ativo == 'true':
             qs = qs.filter(ativo=True)
         elif ativo == 'false':
             qs = qs.filter(ativo=False)
 
-        # Busca por nome ou NR
         search = self.request.GET.get('search', '').strip()
         if search:
             qs = qs.filter(
@@ -399,11 +383,11 @@ class TipoRiscoListView(LoginRequiredMixin, ListView, SSTPermissionMixin, ViewFi
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        todos = TipoRisco.objects.all()
+        # ✅ Usa queryset filtrado por filial para contagens
+        todos = TipoRisco.objects.for_request(self.request)
         context['total_tipos'] = todos.count()
         context['total_ativos'] = todos.filter(ativo=True).count()
 
-        # Contagem por categoria com cor
         contagem = dict(
             todos.values('categoria').annotate(total=Count('id')).values_list('categoria', 'total')
         )
@@ -420,16 +404,16 @@ class TipoRiscoListView(LoginRequiredMixin, ListView, SSTPermissionMixin, ViewFi
 
         context['categorias_info'] = categorias_info
         context['categorias'] = CATEGORIA_RISCO_CHOICES
-
         return context
 
 
-class TipoRiscoCreateView(LoginRequiredMixin, CreateView, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin):
-    """Cadastrar novo Tipo de Risco"""
+class TipoRiscoCreateView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin, CreateView):
+    """Cadastrar novo Tipo de Risco."""
     model = TipoRisco
     form_class = TipoRiscoForm
     template_name = 'gestao_riscos/tipo_risco_form.html'
     success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
+    permission_required = 'gestao_riscos.add_tiporisco'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -449,12 +433,13 @@ class TipoRiscoCreateView(LoginRequiredMixin, CreateView, SSTPermissionMixin, Vi
         return context
 
 
-class TipoRiscoUpdateView(LoginRequiredMixin, UpdateView, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin):
-    """Editar Tipo de Risco"""
+class TipoRiscoUpdateView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
+    """Editar Tipo de Risco."""
     model = TipoRisco
     form_class = TipoRiscoForm
     template_name = 'gestao_riscos/tipo_risco_form.html'
     success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
+    permission_required = 'gestao_riscos.change_tiporisco'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -473,44 +458,51 @@ class TipoRiscoUpdateView(LoginRequiredMixin, UpdateView, SSTPermissionMixin, Vi
         return context
 
 
-class TipoRiscoDeleteView(LoginRequiredMixin, DeleteView, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin):
-    """Excluir Tipo de Risco"""
+class TipoRiscoDeleteView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin, DeleteView):
+    """Excluir Tipo de Risco."""
     model = TipoRisco
     template_name = 'gestao_riscos/tipo_risco_confirm_delete.html'
     success_url = reverse_lazy('gestao_riscos:tipo_risco_list')
+    success_message = "Tipo de Risco excluído com sucesso!"
+    permission_required = 'gestao_riscos.delete_tiporisco'
 
-    def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        messages.success(request, f'Tipo de Risco "{obj.nome}" excluído com sucesso!')
-        return super().delete(request, *args, **kwargs)
+    def form_valid(self, form):
+        messages.success(self.request, f'Tipo de Risco "{self.object.nome}" excluído com sucesso!')
+        return super().form_valid(form)
 
 
-class TipoRiscoToggleAtivoView(LoginRequiredMixin, View, SSTPermissionMixin, ViewFilialScopedMixin):
-    """Toggle ativo/inativo via AJAX"""
+class TipoRiscoToggleAtivoView(LoginRequiredMixin, SSTPermissionMixin, View):
+    """Toggle ativo/inativo via AJAX — filtrado por filial."""
+    permission_required = 'gestao_riscos.change_tiporisco'
 
     def post(self, request, pk):
-        try:
-            tipo = TipoRisco.objects.get(pk=pk)
-            tipo.ativo = not tipo.ativo
-            tipo.save(update_fields=['ativo'])
+        # ✅ Filtra por filial antes de buscar
+        tipo = get_object_or_404(
+            TipoRisco.objects.for_request(request),
+            pk=pk
+        )
+        tipo.ativo = not tipo.ativo
+        tipo.save(update_fields=['ativo'])
 
-            return JsonResponse({
-                'success': True,
-                'ativo': tipo.ativo,
-                'message': f'"{tipo.nome}" {"ativado" if tipo.ativo else "inativado"} com sucesso!'
-            })
-        except TipoRisco.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'error': 'Tipo de Risco não encontrado.'
-            }, status=404)
+        return JsonResponse({
+            'success': True,
+            'ativo': tipo.ativo,
+            'message': f'"{tipo.nome}" {"ativado" if tipo.ativo else "inativado"} com sucesso!'
+        })
 
 
-class TipoRiscoPopularView(LoginRequiredMixin, View, SSTPermissionMixin, ViewFilialScopedMixin):
-    """Popular tipos de risco padrão para a filial (dados iniciais)"""
+class TipoRiscoPopularView(LoginRequiredMixin, SSTPermissionMixin, View):
+    """Popular tipos de risco padrão para a filial (dados iniciais)."""
+    permission_required = 'gestao_riscos.add_tiporisco'
 
     def post(self, request):
         filial = request.user.filial_ativa
+
+        if not filial:
+            return JsonResponse({
+                'success': False,
+                'error': 'Nenhuma filial ativa selecionada.'
+            }, status=400)
 
         RISCOS_PADRAO = {
             'fisico': {
@@ -608,6 +600,11 @@ class TipoRiscoPopularView(LoginRequiredMixin, View, SSTPermissionMixin, ViewFil
             'message': f'{criados} tipo(s) de risco criado(s). {existentes} já existiam.'
         })
 
+
+# =============================================================================
+# API — ENTREGAS POR EQUIPAMENTO
+# =============================================================================
+
 class EntregasPorEquipamentoView(LoginRequiredMixin, View):
     """Retorna entregas ativas (não devolvidas) de um equipamento."""
 
@@ -615,13 +612,13 @@ class EntregasPorEquipamentoView(LoginRequiredMixin, View):
         equipamento_id = request.GET.get('equipamento_id')
         filial = request.user.filial_ativa
 
-        if not equipamento_id:
+        if not equipamento_id or not filial:
             return JsonResponse({'entregas': []})
 
         entregas = EntregaEPI.objects.filter(
             filial=filial,
             equipamento_id=equipamento_id,
-            data_devolucao__isnull=True  # ← "ativo" = não devolvido
+            data_devolucao__isnull=True,
         ).select_related('ficha__funcionario', 'equipamento')
 
         data = [
@@ -637,4 +634,5 @@ class EntregasPorEquipamentoView(LoginRequiredMixin, View):
         ]
 
         return JsonResponse({'entregas': data})
+
 
