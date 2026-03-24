@@ -8,6 +8,8 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
 from django.views.generic import RedirectView
+from django.views.static import serve
+from django.urls import re_path
 
 # Importar as views de erro
 from core.views import (
@@ -27,7 +29,8 @@ def home_redirect(request):
 
 
 # Adicione esta importação para a sua ProfileView
-from usuario.views import ProfileView 
+from usuario.views import ProfileView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -56,7 +59,6 @@ urlpatterns = [
     path('controle_de_telefone/', include('controle_de_telefone.urls')),
     path('select2/', include('django_select2.urls')),
     path('chat/', include('chat.urls')),
-  
     path('documentos/', include('documentos.urls', namespace='documentos')),
     path('pgr_gestao/', include('pgr_gestao.urls', namespace='pgr_gestao')),
     # Isso permite usar o namespace "dashboard..."
@@ -91,3 +93,9 @@ if settings.DEBUG:
     # ✅ Serve arquivos privados em desenvolvimento
     urlpatterns += static(settings.SENDFILE_URL, document_root=settings.PRIVATE_MEDIA_ROOT)
 
+#if settings.STORAGE_PROVIDER != 'GCS':
+#    urlpatterns += [
+#        re_path(r'^midia/(?P<path>.*)$', serve, {
+#            'document_root': settings.MEDIA_ROOT,
+#        }),
+#    ]
