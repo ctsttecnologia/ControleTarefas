@@ -31,7 +31,10 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from core.mixins import SSTPermissionMixin, ViewFilialScopedMixin, AtividadeLogMixin
+from core.mixins import (
+    SSTPermissionMixin, ViewFilialScopedMixin,
+    AtividadeLogMixin, AppPermissionMixin
+)
 from usuario.models import Filial
 
 from .forms import (
@@ -45,6 +48,8 @@ from .models import (
 
 logger = logging.getLogger(__name__)
 
+# Definir uma constante para evitar repetição:
+_APP = 'ferramentas'
 
 # =============================================================================
 # MIXINS ESPECÍFICOS DO APP
@@ -80,8 +85,8 @@ class ItemRetrievalMixin:
 # DASHBOARD
 # =============================================================================
 
-class DashboardView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
-    """Dashboard com estatísticas otimizadas (mínimo de queries)."""
+class DashboardView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, TemplateView):
+    app_label_required = _APP
     template_name = 'ferramentas/dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -188,7 +193,8 @@ class DashboardView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
 # FERRAMENTAS — CRUD
 # =============================================================================
 
-class FerramentaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class FerramentaListView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
     model = Ferramenta
     template_name = 'ferramentas/ferramenta_list.html'
     context_object_name = 'ferramentas'
@@ -228,7 +234,8 @@ class FerramentaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-class FerramentaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+class FerramentaDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
     model = Ferramenta
     template_name = 'ferramentas/ferramenta_detail.html'
     context_object_name = 'ferramenta'
@@ -269,14 +276,15 @@ class FerramentaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView
         return context
 
 
-class FerramentaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, FilialAtribuicaoMixin, AtividadeLogMixin, CreateView):
+class FerramentaCreateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, FilialAtribuicaoMixin, AtividadeLogMixin, CreateView):
+    app_label_required = _APP
     model = Ferramenta
     form_class = FerramentaForm
     template_name = 'ferramentas/ferramenta_form.html'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request  # ← NOVO
+        kwargs['request'] = self.request
         return kwargs
 
     def form_valid(self, form):
@@ -300,39 +308,16 @@ class FerramentaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, FilialAtri
         return context
 
 
-class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+class FerramentaUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+    app_label_required = _APP
     model = Ferramenta
     form_class = FerramentaForm
     template_name = 'ferramentas/ferramenta_form.html'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request  # ← NOVO
+        kwargs['request'] = self.request
         return kwargs
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        self._log_atividade(
-            ferramenta=self.object,
-            tipo=Atividade.TipoAtividade.ALTERACAO,
-            descricao="Dados da ferramenta foram atualizados."
-        )
-        messages.success(self.request, f"'{self.object.nome}' atualizada com sucesso.")
-        return response
-
-    def get_success_url(self):
-        return self.object.get_absolute_url()
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['titulo_pagina'] = f"Editar: {self.object.nome}"
-        context['is_create'] = False
-        return context
-
-class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
-    model = Ferramenta
-    form_class = FerramentaForm
-    template_name = 'ferramentas/ferramenta_form.html'
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -358,7 +343,8 @@ class FerramentaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeL
 # MALAS DE FERRAMENTAS — CRUD
 # =============================================================================
 
-class MalaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class MalaListView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
     model = MalaFerramentas
     template_name = 'ferramentas/mala_list.html'
     context_object_name = 'malas'
@@ -380,7 +366,8 @@ class MalaListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-class MalaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+class MalaDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
     model = MalaFerramentas
     template_name = 'ferramentas/mala_detail.html'
     context_object_name = 'mala'
@@ -404,14 +391,15 @@ class MalaDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
         return context
 
 
-class MalaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, FilialAtribuicaoMixin, AtividadeLogMixin, CreateView):
+class MalaCreateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, FilialAtribuicaoMixin, AtividadeLogMixin, CreateView):
+    app_label_required = _APP
     model = MalaFerramentas
     form_class = MalaFerramentasForm
     template_name = 'ferramentas/mala_form.html'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request  # ← NOVO
+        kwargs['request'] = self.request
         return kwargs
 
     def form_valid(self, form):
@@ -433,14 +421,16 @@ class MalaCreateView(LoginRequiredMixin, ViewFilialScopedMixin, FilialAtribuicao
         context['titulo_pagina'] = "Nova Mala de Ferramentas"
         return context
 
-class MalaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+
+class MalaUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+    app_label_required = _APP
     model = MalaFerramentas
     form_class = MalaFerramentasForm
     template_name = 'ferramentas/mala_form.html'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request  # ← NOVO
+        kwargs['request'] = self.request
         return kwargs
 
     def form_valid(self, form):
@@ -466,8 +456,9 @@ class MalaUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixi
 # AÇÕES DE FERRAMENTA (Manutenção, Inativação)
 # =============================================================================
 
-class AcaoFerramentaBaseView(LoginRequiredMixin, ItemRetrievalMixin, AtividadeLogMixin, View):
-    """Base para ações POST sobre ferramentas."""
+class AcaoFerramentaBaseView(LoginRequiredMixin, AppPermissionMixin, ItemRetrievalMixin, AtividadeLogMixin, View):
+    """Base para ações rápidas (POST) sobre ferramentas."""
+    app_label_required = _APP
 
     def get_ferramenta(self):
         return self._get_item_seguro(Ferramenta, self.kwargs['pk'])
@@ -524,8 +515,9 @@ class InativarFerramentaView(AcaoFerramentaBaseView):
 # MOVIMENTAÇÃO (Retirada / Devolução)
 # =============================================================================
 
-class MovimentacaoCreateView(LoginRequiredMixin, ItemRetrievalMixin, AtividadeLogMixin, CreateView):
+class MovimentacaoCreateView(LoginRequiredMixin, AppPermissionMixin, ItemRetrievalMixin, AtividadeLogMixin, CreateView):
     """Retirada de ferramenta ou mala."""
+    app_label_required = _APP
     model = Movimentacao
     form_class = MovimentacaoForm
     template_name = 'ferramentas/retirada_form.html'
@@ -543,7 +535,7 @@ class MovimentacaoCreateView(LoginRequiredMixin, ItemRetrievalMixin, AtividadeLo
         kwargs = super().get_form_kwargs()
         kwargs['ferramenta'] = self.ferramenta
         kwargs['mala'] = self.mala
-        kwargs['request'] = self.request  # ← NOVO
+        kwargs['request'] = self.request
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -588,8 +580,9 @@ class MovimentacaoCreateView(LoginRequiredMixin, ItemRetrievalMixin, AtividadeLo
         return redirect(item.get_absolute_url())
 
 
-class DevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+class DevolucaoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
     """Devolução de ferramenta individual."""
+    app_label_required = _APP
     model = Movimentacao
     form_class = DevolucaoForm
     template_name = 'ferramentas/devolucao_form.html'
@@ -624,8 +617,9 @@ class DevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLo
         return self.object.ferramenta.get_absolute_url()
 
 
-class MalaDevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
+class MalaDevolucaoUpdateView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, AtividadeLogMixin, UpdateView):
     """Devolução de mala de ferramentas."""
+    app_label_required = _APP
     model = Movimentacao
     form_class = DevolucaoForm
     template_name = 'ferramentas/mala_devolucao_form.html'
@@ -669,8 +663,8 @@ class MalaDevolucaoUpdateView(LoginRequiredMixin, ViewFilialScopedMixin, Ativida
 # IMPORTAÇÃO E UTILITÁRIOS
 # =============================================================================
 
-class DownloadTemplateView(LoginRequiredMixin, View):
-    """Gera planilha modelo para importação."""
+class DownloadTemplateView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
 
     HEADERS = [
         "Nome da Ferramenta*", "Código de Identificação*",
@@ -709,8 +703,9 @@ class DownloadTemplateView(LoginRequiredMixin, View):
         return response
 
 
-class ImportarFerramentasView(LoginRequiredMixin, FormView):
+class ImportarFerramentasView(LoginRequiredMixin, AppPermissionMixin, FormView):
     """Importa ferramentas via planilha Excel."""
+    app_label_required = _APP
     template_name = 'ferramentas/importar_ferramentas.html'
     form_class = UploadFileForm
     success_url = reverse_lazy('ferramentas:ferramenta_list')
@@ -831,7 +826,8 @@ class ImportarFerramentasView(LoginRequiredMixin, FormView):
         return None
 
 
-class ImprimirQRCodesView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class ImprimirQRCodesView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
     model = Ferramenta
     template_name = 'ferramentas/imprimir_qrcodes.html'
     context_object_name = 'ferramentas'
@@ -840,7 +836,8 @@ class ImprimirQRCodesView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return super().get_queryset().ativas().com_qr_code().order_by('nome')
 
 
-class ResultadoScanView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+class ResultadoScanView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
     model = Ferramenta
     template_name = 'ferramentas/resultado_scan.html'
     context_object_name = 'ferramenta'
@@ -855,8 +852,8 @@ class ResultadoScanView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
         return context
 
 
-class GerarQRCodesView(LoginRequiredMixin, SSTPermissionMixin, View):
-    """Aciona geração de QR Codes em background."""
+class GerarQRCodesView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+    app_label_required = _APP
     permission_required = 'ferramentas.change_ferramenta'
 
     def post(self, request, *args, **kwargs):
@@ -873,7 +870,8 @@ class GerarQRCodesView(LoginRequiredMixin, SSTPermissionMixin, View):
 # TERMOS DE RESPONSABILIDADE
 # =============================================================================
 
-class TermoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class TermoListView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = _APP
     model = TermoDeResponsabilidade
     template_name = 'ferramentas/termo_list.html'
     context_object_name = 'termos'
@@ -905,7 +903,8 @@ class TermoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-class TermoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
+class TermoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = _APP
     model = TermoDeResponsabilidade
     template_name = 'ferramentas/termo_detail.html'
     context_object_name = 'termo'
@@ -924,13 +923,14 @@ class TermoDetailView(LoginRequiredMixin, ViewFilialScopedMixin, DetailView):
         return context
 
 
-class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, FormView):
+class CriarTermoResponsabilidadeView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, FormView):
+    app_label_required = _APP
     template_name = 'ferramentas/termo_responsabilidade_form.html'
     form_class = TermoResponsabilidadeForm
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['request'] = self.request 
+        kwargs['request'] = self.request
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -969,7 +969,7 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, 
 
         data_devolucao = timezone.now() + timedelta(days=7)
 
-        # Processa cada item
+        # Processa cada item — ✅ agora com filtro de filial
         for item_data in itens_json:
             item_pk = item_data.get('pk')
             if not item_pk:
@@ -978,10 +978,16 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, 
             ferramenta_obj, mala_obj, item_obj = None, None, None
 
             if termo.tipo_uso == TermoDeResponsabilidade.TipoUso.FERRAMENTAL:
-                ferramenta_obj = get_object_or_404(Ferramenta, pk=item_pk)
+                ferramenta_obj = get_object_or_404(
+                    Ferramenta.objects.for_request(self.request),
+                    pk=item_pk
+                )
                 item_obj = ferramenta_obj
             elif termo.tipo_uso == TermoDeResponsabilidade.TipoUso.MALA:
-                mala_obj = get_object_or_404(MalaFerramentas, pk=item_pk)
+                mala_obj = get_object_or_404(
+                    MalaFerramentas.objects.for_request(self.request),
+                    pk=item_pk
+                )
                 item_obj = mala_obj
 
             if not item_obj or item_obj.status != 'disponivel':
@@ -1031,8 +1037,8 @@ class CriarTermoResponsabilidadeView(LoginRequiredMixin, ViewFilialScopedMixin, 
         return reverse('ferramentas:termo_detail', kwargs={'pk': self.termo_criado.pk})
 
 
-class ReverterTermoView(LoginRequiredMixin, ViewFilialScopedMixin, View):
-    """Reverte/estorna um Termo de Responsabilidade."""
+class ReverterTermoView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, View):
+    app_label_required = _APP
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -1073,12 +1079,8 @@ class ReverterTermoView(LoginRequiredMixin, ViewFilialScopedMixin, View):
         return redirect('ferramentas:termo_detail', pk=termo.pk)
 
 
-class DownloadTermoPDFView(LoginRequiredMixin, ViewFilialScopedMixin, View):
-    """
-    Gera o PDF do Termo de Responsabilidade.
-    Usa WeasyPrint como biblioteca Python (sem subprocess).
-    Fallback para xhtml2pdf se WeasyPrint não estiver disponível.
-    """
+class DownloadTermoPDFView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScopedMixin, View):
+    app_label_required = _APP
 
     def get(self, request, *args, **kwargs):
         termo = get_object_or_404(
@@ -1129,8 +1131,12 @@ class DownloadTermoPDFView(LoginRequiredMixin, ViewFilialScopedMixin, View):
                 "Nenhum gerador de PDF disponível. "
                 "Instale com: pip install xhtml2pdf"
             )
-        
-class DownloadTermosLoteView(LoginRequiredMixin, View):
+
+
+class DownloadTermosLoteView(LoginRequiredMixin, AppPermissionMixin, View):
+    """Download em lote de termos de responsabilidade como ZIP."""
+    app_label_required = _APP
+
     def post(self, request, *args, **kwargs):
         termos_ids = request.POST.getlist('termo_ids')
         if not termos_ids:
@@ -1142,18 +1148,40 @@ class DownloadTermosLoteView(LoginRequiredMixin, View):
         zip_buffer = BytesIO()
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
             for termo in qs:
-                html = render_to_string('ferramentas/termo_pdf_template.html', {'termo': termo})
-                with tempfile.NamedTemporaryFile(delete=True, suffix='.html') as tmp_h:
-                    tmp_h.write(html.encode('UTF-8'))
-                    tmp_h.flush()
-                    with tempfile.NamedTemporaryFile(delete=True, suffix='.pdf') as tmp_p:
-                        subprocess.run(['weasyprint', tmp_h.name, tmp_p.name], check=True)
-                        tmp_p.seek(0)
-                        zf.writestr(f'termo_{termo.pk}.pdf', tmp_p.read())
+                html = render_to_string(
+                    'ferramentas/termo_pdf_template.html',
+                    {'termo': termo},
+                    request=request,
+                )
+                pdf_bytes = self._gerar_pdf(html, request)
+                zf.writestr(f'termo_{termo.pk}.pdf', pdf_bytes)
 
         zip_buffer.seek(0)
         response = HttpResponse(zip_buffer, content_type='application/zip')
         response['Content-Disposition'] = 'attachment; filename="termos_responsabilidade.zip"'
         return response
+
+    def _gerar_pdf(self, html_string, request):
+        """Reutiliza a mesma lógica com fallback do DownloadTermoPDFView."""
+        try:
+            from weasyprint import HTML
+            return HTML(
+                string=html_string,
+                base_url=request.build_absolute_uri('/')
+            ).write_pdf()
+        except (ImportError, OSError) as e:
+            logger.warning("WeasyPrint indisponível (%s). Tentando xhtml2pdf...", e)
+
+        try:
+            from xhtml2pdf import pisa
+            buffer = BytesIO()
+            pisa_status = pisa.CreatePDF(html_string, dest=buffer)
+            if pisa_status.err:
+                raise RuntimeError(f"xhtml2pdf retornou {pisa_status.err} erro(s).")
+            return buffer.getvalue()
+        except ImportError:
+            raise RuntimeError(
+                "Nenhum gerador de PDF disponível. Instale com: pip install xhtml2pdf"
+            )
 
     

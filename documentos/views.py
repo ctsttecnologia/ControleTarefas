@@ -1,4 +1,6 @@
 
+# documentos/views.py
+
 import os
 import mimetypes
 
@@ -12,25 +14,62 @@ from django.contrib import messages
 from django.conf import settings
 from django.db.models import Q
 
+from core.mixins import AppPermissionMixin
 from .models import Documento
 from .forms import DocumentoAnexoForm, DocumentoEmpresaForm
+
+
+# ══════════════════════════════════════════════════════════
+# MIXIN BASE — DRY para views de documento empresa
+# ══════════════════════════════════════════════════════════
+
+class DocumentoEmpresaBaseMixin:
+    """Lógica compartilhada entre Create e Update de documentos avulsos."""
+    model = Documento
+    form_class = DocumentoEmpresaForm
+    template_name = 'documentos/documento_empresa_form.html'
+    success_url = reverse_lazy('documentos:lista')
+    app_label_required = 'documentos'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        form.save(user=self.request.user)
+        acao = 'cadastrado' if not form.instance.pk or self._is_create else 'atualizado'
+        messages.success(self.request, f'Documento "{form.instance.nome}" {acao} com sucesso!')
+        return redirect(self.success_url)
+
+
+# ══════════════════════════════════════════════════════════
+# QUERYSET SEGURO — filtra por filial via manager
+# ══════════════════════════════════════════════════════════
+
+class DocumentoScopedQuerysetMixin:
+    """Garante que qualquer queryset passe pelo filtro de filial do manager."""
+
+    def get_queryset(self):
+        return Documento.objects.for_request(self.request).select_related(
+            'responsavel', 'content_type', 'filial', 'cliente'
+        )
 
 
 # ══════════════════════════════════════════════════════════
 # LISTA UNIFICADA
 # ══════════════════════════════════════════════════════════
 
-class DocumentoListView(LoginRequiredMixin, ListView):
+class DocumentoListView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, ListView):
     model = Documento
     template_name = 'documentos/documento_list.html'
     context_object_name = 'documentos'
     paginate_by = 20
+    app_label_required = 'documentos'
 
     def get_queryset(self):
         user = self.request.user
-        qs = Documento.objects.for_request(self.request).select_related(
-            'responsavel', 'content_type', 'filial', 'cliente'
-        )
+        qs = super().get_queryset()
 
         if not user.is_staff and not user.is_superuser:
             qs = qs.filter(Q(responsavel=user) | Q(responsavel__isnull=True))
@@ -74,22 +113,9 @@ class DocumentoListView(LoginRequiredMixin, ListView):
 # DOCUMENTOS AVULSOS DA EMPRESA (ex-Arquivos)
 # ══════════════════════════════════════════════════════════
 
-class DocumentoEmpresaCreateView(LoginRequiredMixin, CreateView):
+class DocumentoEmpresaCreateView(LoginRequiredMixin, AppPermissionMixin, DocumentoEmpresaBaseMixin, CreateView):
     """Cria documento avulso (contratos, alvarás, etc.) — sem GenericFK."""
-    model = Documento
-    form_class = DocumentoEmpresaForm
-    template_name = 'documentos/documento_empresa_form.html'
-    success_url = reverse_lazy('documentos:lista')
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def form_valid(self, form):
-        form.save(user=self.request.user)
-        messages.success(self.request, f'Documento "{form.instance.nome}" cadastrado com sucesso!')
-        return redirect(self.success_url)
+    _is_create = True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -97,22 +123,9 @@ class DocumentoEmpresaCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class DocumentoEmpresaUpdateView(LoginRequiredMixin, UpdateView):
+class DocumentoEmpresaUpdateView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, DocumentoEmpresaBaseMixin, UpdateView):
     """Edita documento avulso da empresa."""
-    model = Documento
-    form_class = DocumentoEmpresaForm
-    template_name = 'documentos/documento_empresa_form.html'
-    success_url = reverse_lazy('documentos:lista')
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def form_valid(self, form):
-        form.save(user=self.request.user)
-        messages.success(self.request, f'Documento "{form.instance.nome}" atualizado com sucesso!')
-        return redirect(self.success_url)
+    _is_create = False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -124,11 +137,12 @@ class DocumentoEmpresaUpdateView(LoginRequiredMixin, UpdateView):
 # DOCUMENTOS ANEXADOS (a Funcionário, Treinamento, etc.)
 # ══════════════════════════════════════════════════════════
 
-class DocumentoAnexoCreateView(LoginRequiredMixin, CreateView):
+class DocumentoAnexoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
     """Cria documento anexado a outro objeto via GenericFK."""
     model = Documento
     form_class = DocumentoAnexoForm
     template_name = 'documentos/documento_form.html'
+    app_label_required = 'documentos'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -151,6 +165,7 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, CreateView):
             form.instance.object_id = obj_id
             form.instance.responsavel = self.request.user
 
+            # Filial via atributo do user ou sessão
             filial_ativa = getattr(self.request.user, 'filial_ativa', None)
             if filial_ativa:
                 form.instance.filial = filial_ativa
@@ -176,13 +191,18 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, CreateView):
 # DOWNLOAD SEGURO
 # ══════════════════════════════════════════════════════════
 
-class DocumentoDownloadView(LoginRequiredMixin, View):
-    """Serve arquivo privado com segurança."""
+class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, View):
+    """Serve arquivo privado com segurança + filtro de filial."""
+    app_label_required = 'documentos'
 
     def get(self, request, *args, **kwargs):
-        documento = get_object_or_404(Documento, pk=self.kwargs['pk'])
+        # ✅ Usa queryset filtrado por filial (via manager)
+        documento = get_object_or_404(
+            self.get_queryset(),
+            pk=self.kwargs['pk']
+        )
 
-        # Verificação de permissão
+        # Verificação adicional de permissão por responsável
         if not (
             request.user == documento.responsavel
             or request.user.is_staff
@@ -232,14 +252,20 @@ class DocumentoDownloadView(LoginRequiredMixin, View):
 # RENOVAÇÃO
 # ══════════════════════════════════════════════════════════
 
-class DocumentoRenewView(LoginRequiredMixin, CreateView):
+class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, CreateView):
+    """Renova um documento existente criando uma nova versão."""
     model = Documento
     form_class = DocumentoAnexoForm
     template_name = 'documentos/documento_form.html'
+    app_label_required = 'documentos'
 
     def get_old_doc(self):
         if not hasattr(self, '_old_doc'):
-            self._old_doc = get_object_or_404(Documento, pk=self.kwargs['pk'])
+            # ✅ Usa queryset filtrado por filial
+            self._old_doc = get_object_or_404(
+                self.get_queryset(),
+                pk=self.kwargs['pk']
+            )
         return self._old_doc
 
     def get_context_data(self, **kwargs):
@@ -287,12 +313,15 @@ class DocumentoRenewView(LoginRequiredMixin, CreateView):
 # EXCLUSÃO
 # ══════════════════════════════════════════════════════════
 
-class DocumentoDeleteView(LoginRequiredMixin, DeleteView):
+class DocumentoDeleteView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, DeleteView):
+    """Exclui documento — sempre filtrado por filial via manager."""
     model = Documento
     template_name = 'documentos/documento_confirm_delete.html'
     context_object_name = 'documento'
+    app_label_required = 'documentos'
 
     def get_queryset(self):
+        # ✅ Parte do queryset já filtrado por filial
         qs = super().get_queryset()
         if self.request.user.is_superuser or self.request.user.is_staff:
             return qs
@@ -306,5 +335,6 @@ class DocumentoDeleteView(LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         return reverse('documentos:lista')
+
 
     

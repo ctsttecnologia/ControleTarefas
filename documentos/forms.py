@@ -36,7 +36,6 @@ class DocumentoEmpresaForm(forms.ModelForm):
     Formulário COMPLETO — usado para documentos avulsos da empresa
     (contratos, alvarás, certidões, etc.) — substitui o antigo ArquivoForm.
     """
-
     class Meta:
         model = Documento
         fields = [
@@ -63,7 +62,7 @@ class DocumentoEmpresaForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
         }
 
-    def __init__(self, user=None, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Filtra responsáveis ativos

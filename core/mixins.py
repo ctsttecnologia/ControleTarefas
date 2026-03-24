@@ -9,6 +9,14 @@ from ferramentas.models import Atividade
 from django.http import HttpResponse
 
 
+
+
+# AppPermissionMixin, # 1º — Verifica acesso ao módulo
+# SSTPermissionMixin, # 2º — Verifica permissão específica
+# ViewFilialScopedMixin, # 3º — Filtra queryset por filial
+# AtividadeLogMixin, # 4º — Funcionalidade auxiliar
+# ListView, # Último — View genérica do Django
+
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (A SUA ARQUITETURA DE 3 NÍVEIS)
 # =============================================================================
@@ -308,3 +316,64 @@ class TarefaAccessMixin:
         if tarefa.responsavel_id == user.pk:
             return True
         return False
+
+# =============================================================================
+# == MIXIN DE PERMISSÃO POR APP (Controle de acesso por módulo)
+# =============================================================================
+
+class AppPermissionMixin(PermissionRequiredMixin):
+    """
+    Mixin que verifica se o usuário tem pelo menos UMA permissão
+    do app especificado. Superusers passam direto.
+
+    Uso nas views:
+        class MinhaView(LoginRequiredMixin, AppPermissionMixin, ListView):
+            app_label_required = 'ata_reuniao'
+
+    Também aceita o padrão do Django:
+        class MinhaView(LoginRequiredMixin, AppPermissionMixin, ListView):
+            permission_required = 'ata_reuniao.view_atareuniao'
+    """
+    app_label_required = None
+    permission_required = None
+    raise_exception = True
+
+    def get_permission_required(self):
+        if self.permission_required:
+            if isinstance(self.permission_required, str):
+                return (self.permission_required,)
+            return self.permission_required
+        return ()
+
+    def has_permission(self):
+        user = self.request.user
+
+        # Superuser sempre passa
+        if user.is_superuser:
+            return True
+
+        # Se definiu permission_required explícito, usa o padrão do Django
+        if self.permission_required:
+            return super().has_permission()
+
+        # Se definiu app_label_required, verifica se tem QUALQUER permissão do app
+        if self.app_label_required:
+            all_perms = user.get_all_permissions()
+            return any(
+                perm.startswith(f'{self.app_label_required}.')
+                for perm in all_perms
+            )
+
+        # Sem nada definido, bloqueia por segurança
+        return False
+
+    def handle_no_permission(self):
+        if self.request.user.is_authenticated:
+            return render(self.request, 'core/acesso_negado.html', {
+                'titulo': 'Acesso Negado',
+                'mensagem': (
+                    'Você não possui permissão para acessar este módulo. '
+                    'Solicite acesso ao administrador do sistema.'
+                ),
+            }, status=403)
+        return super().handle_no_permission()

@@ -117,7 +117,7 @@
             <div class="row mb-4">
                 {% for r in relatorio.quantitativo.resumo_geral %}
                 <div class="col-md-4">
-                    <div class="card shadow-sm border-start border-4 {% if r.categoria == 'EPI' %}border-primary{% elif r.categoria == 'CONSUMO' %}border-info{% else %}border-warning{% endif %}">
+                    <div class="card shadow-sm border-start border-1 {% if r.categoria == 'EPI' %}border-primary{% elif r.categoria == 'CONSUMO' %}border-info{% else %}border-warning{% endif %}">
                         <div class="card-body">
                             <h6 class="text-muted">{{ r.categoria_label }}</h6>
                             <h3 class="mb-1">R$ {{ r.valor_total|floatformat:2 }}</h3>
@@ -231,7 +231,7 @@
             </div>
 
             {# Card resumo geral #}
-            <div class="card shadow-sm border-start border-4 {% if relatorio.qualitativo.saldo_geral < 0 %}border-danger{% else %}border-success{% endif %} mb-4">
+            <div class="card shadow-sm border-start border-1 {% if relatorio.qualitativo.saldo_geral < 0 %}border-danger{% else %}border-success{% endif %} mb-4">
                 <div class="card-body text-center">
                     <div class="row">
                         <div class="col-md-3">

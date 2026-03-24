@@ -471,7 +471,7 @@
     const toast    = document.getElementById('kanbanToast');
     const toastMsg = document.getElementById('toastMessage');
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-    const apiBase  = '{% url "ata_reuniao:api_update_status" 0 %}'.replace('/0/', '/');
+    const apiBase = '{% url "ata_reuniao:api_update_status" 0 %}'.replace('/0/', '/{id}/');
 
     let draggedCard = null;
     let placeholder = null;
@@ -540,7 +540,7 @@
     /* ══════ API ══════ */
     async function updateStatus(taskId, newStatusId) {
         try {
-            const res = await fetch(apiBase + taskId + '/', {
+            const res = await fetch(apiBase.replace('{id}', taskId), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
                 body: JSON.stringify({ new_status: newStatusId })

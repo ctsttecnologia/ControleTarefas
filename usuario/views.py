@@ -169,6 +169,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 ids.extend(cards_list)
         return ids
 
+
     def _get_all_cards(self):
         """Definição centralizada de todos os cards do sistema."""
         return [
@@ -214,19 +215,58 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'logradouro:cadastrar_logradouro', 'text': 'Cadastrar Logradouro'},
                 ]
             },
+            # ══════════════════════════════════════════════════════════
+            # ANTIGO "ga" DIVIDIDO EM CARDS INDIVIDUAIS
+            # ══════════════════════════════════════════════════════════
             {
-                'id': 'ga',
-                'title': 'Gestão Administrativa',
-                'permission': 'ata_reuniao.ata_reuniao',
+                'id': 'ata_reuniao',
+                'title': 'Atas de Reunião',
+                'permission': 'ata_reuniao.view_atareuniao',
                 'icon': 'images/reuniao.png',
                 'links': [
-                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Ata de Reunião'},
-                    {'url': 'controle_de_telefone:dashboard', 'text': 'Controle de Telefones'},
-                    {'url': 'suprimentos:dashboard', 'text': 'Suprimentos'},
-                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Estoque'},
-                    {'url': 'documentos:lista', 'text': 'Documentos'},
+                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas'},
+                    {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Dashboard'},
                 ]
             },
+            {
+                'id': 'suprimentos',
+                'title': 'Suprimentos',
+                'permission': 'suprimentos.view_pedido',
+                'icon': 'images/suprimentos.gif', 
+                'links': [
+                    {'url': 'suprimentos:dashboard', 'text': 'Dashboard Suprimentos'},
+                ]
+            },
+            {
+                'id': 'documentos',
+                'title': 'Documentos',
+                'permission': 'documentos.view_documento',
+                'icon': 'images/documentos.gif',  
+                'links': [
+                    {'url': 'documentos:lista', 'text': 'Gestão de Documentos'},
+                ]
+            },
+            {
+                'id': 'telefones',
+                'title': 'Controle de Telefones',
+                'permission': 'controle_de_telefone.view_linhatelefonica',
+                'icon': 'images/telefones.gif',  
+                'links': [
+                    {'url': 'controle_de_telefone:dashboard', 'text': 'Telefones'},
+                ]
+            },
+            {
+                'id': 'estoque',
+                'title': 'Estoque',
+                'permission': 'seguranca_trabalho.view_equipamento',
+                'icon': 'images/estoque.gif',  
+                'links': [
+                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Lista de Equipamentos'},
+                ]
+            },
+            # ══════════════════════════════════════════════════════════
+            # OUTROS CARDS (mantém igual)
+            # ══════════════════════════════════════════════════════════
             {
                 'id': 'veiculos',
                 'title': 'Veículos',
@@ -246,7 +286,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'icon': 'images/serviço.gif',
                 'links': [
                     {'url': 'tarefas:dashboard', 'text': 'Tarefas'},
-                    {'url': 'ferramentas:dashboard', 'text': 'Controle de Ferramentas'},
+                    {'url': 'ferramentas:dashboard', 'text': 'Ferramentas'},
                 ]
             },
             {
@@ -259,6 +299,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 ]
             },
         ]
+
 
 
 class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
@@ -534,10 +575,14 @@ class ManageCardPermissionsView(LoginRequiredMixin, SuperuserRequiredMixin, View
         {'id': 'dp', 'title': 'Departamento Pessoal'},
         {'id': 'sst', 'title': 'Segurança do Trabalho'},
         {'id': 'endereco', 'title': 'Logradouro'},
-        {'id': 'ga', 'title': 'Gestão Administrativa'},
         {'id': 'veiculos', 'title': 'Veículos'},
         {'id': 'operacao', 'title': 'Operação'},
         {'id': 'main_dashboard', 'title': 'Dashboard Integrado'},
+        {'id': 'ata_reuniao', 'title': 'Atas de Reunião'},
+        {'id': 'suprimentos', 'title': 'Suprimentos'},
+        {'id': 'documentos', 'title': 'Documentos'},
+        {'id': 'telefones', 'title': 'Controle de Telefones'},
+        {'id': 'estoque', 'title': 'Estoque'},
     ]
 
     def get(self, request, *args, **kwargs):

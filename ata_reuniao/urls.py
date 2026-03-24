@@ -6,7 +6,7 @@ from api import views
 from .views import (
     AtaReuniaoKanbanView, AtaReuniaoListView, AtaReuniaoCreateView, AtaReuniaoUpdateView,
     AtaReuniaoDeleteView, AtaReuniaoDashboardView, AtaReuniaoPDFExportView,
-    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, AtaUpdateStatusAPIView, UpdateTaskStatusView, UploadAtaReuniaoView, download_ata_reuniao_template, download_error_report 
+    AtaReuniaoExcelExportView, AtaReuniaoDetailView, AtaReuniaoAddCommentView, AtaUpdateStatusAPIView, UploadAtaReuniaoView, download_ata_reuniao_template, download_error_report 
 )
 
 app_name = 'ata_reuniao'
@@ -30,7 +30,6 @@ urlpatterns = [
     # NOVO ENDPOINT PARA O DRAG AND DROP
     path('kanban/', AtaReuniaoKanbanView.as_view(), name='ata_reuniao_kanban'),
     # API para atualizar status via drag & drop
-    path('api/update-status/<int:pk>/', UpdateTaskStatusView.as_view(), name='api_update_status'),
     path('upload/', UploadAtaReuniaoView.as_view(), name='ata_reuniao_upload'),
     path('download-template/', download_ata_reuniao_template, name='download_template'),
     path('download-error-report/', download_error_report, name='download_error_report'),
