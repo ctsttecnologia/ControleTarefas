@@ -1,0 +1,314 @@
+
+<!-- gestao_riscos/templates/gestao_riscos/incidente_form.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ titulo_pagina|default:"Registrar Ocorrência" }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{% url 'gestao_riscos:lista_riscos' %}">Gestão de Riscos</a></li>
+<li class="breadcrumb-item active">{{ titulo_pagina }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="card bg-danger text-white shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>{{ titulo_pagina }}
+                    </h4>
+                    <small class="opacity-75">Registre incidentes e acidentes de trabalho</small>
+                </div>
+                <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                    <p class="mb-0"><i class="bi bi-exclamation-circle me-1"></i>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- ═══════════════════════════════════════════════
+                     SEÇÃO 1: CLASSIFICAÇÃO
+                ═══════════════════════════════════════════════ -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-tags text-primary me-2"></i>Classificação da Ocorrência
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Tipo -->
+                            <div class="col-md-6">
+                                <label for="id_tipo_ocorrencia" class="form-label fw-semibold">
+                                    {{ form.tipo_ocorrencia.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tipo_ocorrencia }}
+                                {% if form.tipo_ocorrencia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo_ocorrencia.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Gravidade -->
+                            <div class="col-md-3">
+                                <label for="id_gravidade" class="form-label fw-semibold">
+                                    {{ form.gravidade.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.gravidade }}
+                                {% if form.gravidade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.gravidade.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Indicador visual -->
+                            <div class="col-md-3 d-flex align-items-end">
+                                <div id="tipoIndicador" class="w-100 text-center py-2 rounded d-none">
+                                    <i id="tipoIcone" class="bi fs-4"></i>
+                                    <div id="tipoTexto" class="fw-semibold small mt-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════
+                     SEÇÃO 2: DESCRIÇÃO
+                ═══════════════════════════════════════════════ -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-pencil-square text-info me-2"></i>Descrição
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <!-- Título -->
+                        <div class="mb-3">
+                            <label for="id_descricao" class="form-label fw-semibold">
+                                {{ form.descricao.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.descricao }}
+                            {% if form.descricao.errors %}
+                            <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Detalhes -->
+                        <div class="mb-3">
+                            <label for="id_detalhes" class="form-label fw-semibold">
+                                {{ form.detalhes.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.detalhes }}
+                            {% if form.detalhes.errors %}
+                            <div class="invalid-feedback d-block">{{ form.detalhes.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Setor -->
+                            <div class="col-md-4">
+                                <label for="id_setor" class="form-label fw-semibold">
+                                    {{ form.setor.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.setor }}
+                                {% if form.setor.errors %}
+                                <div class="invalid-feedback d-block">{{ form.setor.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Local Específico -->
+                            <div class="col-md-4">
+                                <label for="id_local_especifico" class="form-label fw-semibold">
+                                    {{ form.local_especifico.label }}
+                                </label>
+                                {{ form.local_especifico }}
+                            </div>
+
+                            <!-- Data/Hora -->
+                            <div class="col-md-4">
+                                <label for="id_data_ocorrencia" class="form-label fw-semibold">
+                                    {{ form.data_ocorrencia.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.data_ocorrencia }}
+                                {% if form.data_ocorrencia.errors %}
+                                <div class="invalid-feedback d-block">{{ form.data_ocorrencia.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════
+                     SEÇÃO 3: DADOS DO ACIDENTE (condicional)
+                ═══════════════════════════════════════════════ -->
+                <div class="card shadow-sm mb-4" id="secaoAcidente" style="display: none;">
+                    <div class="card-header bg-danger bg-opacity-10">
+                        <h6 class="mb-0 text-danger">
+                            <i class="bi bi-person-exclamation me-2"></i>Dados do Acidente
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Funcionário -->
+                            <div class="col-md-6">
+                                <label for="id_funcionario_envolvido" class="form-label fw-semibold">
+                                    {{ form.funcionario_envolvido.label }}
+                                    <span class="text-danger campo-obrig-acidente">*</span>
+                                </label>
+                                {{ form.funcionario_envolvido }}
+                                {% if form.funcionario_envolvido.errors %}
+                                <div class="invalid-feedback d-block">{{ form.funcionario_envolvido.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Parte do corpo -->
+                            <div class="col-md-6">
+                                <label for="id_parte_corpo_atingida" class="form-label fw-semibold">
+                                    {{ form.parte_corpo_atingida.label }}
+                                </label>
+                                {{ form.parte_corpo_atingida }}
+                            </div>
+
+                            <!-- Dias afastamento -->
+                            <div class="col-md-4" id="campoDiasAfastamento" style="display: none;">
+                                <label for="id_dias_afastamento" class="form-label fw-semibold">
+                                    {{ form.dias_afastamento.label }}
+                                    <span class="text-danger">*</span>
+                                </label>
+                                {{ form.dias_afastamento }}
+                                {% if form.dias_afastamento.errors %}
+                                <div class="invalid-feedback d-block">{{ form.dias_afastamento.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- CAT -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">{{ form.cat_emitida.label }}</label>
+                                <div class="form-check form-switch mt-2">
+                                    {{ form.cat_emitida }}
+                                    <label class="form-check-label" for="id_cat_emitida">
+                                        Sim, a CAT foi emitida
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Nº CAT -->
+                            <div class="col-md-4" id="campoNumeroCat" style="display: none;">
+                                <label for="id_numero_cat" class="form-label fw-semibold">
+                                    {{ form.numero_cat.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.numero_cat }}
+                                {% if form.numero_cat.errors %}
+                                <div class="invalid-feedback d-block">{{ form.numero_cat.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════
+                     SEÇÃO 4: AÇÃO IMEDIATA
+                ═══════════════════════════════════════════════ -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-lightning text-warning me-2"></i>Ação Imediata
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <label for="id_acao_imediata" class="form-label fw-semibold">
+                            {{ form.acao_imediata.label }}
+                        </label>
+                        {{ form.acao_imediata }}
+                        <div class="form-text">{{ form.acao_imediata.help_text }}</div>
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-x-lg me-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger btn-lg">
+                        <i class="bi bi-check-lg me-1"></i> Registrar Ocorrência
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const tipoSelect    = document.getElementById('id_tipo_ocorrencia');
+    const secaoAcidente = document.getElementById('secaoAcidente');
+    const campoDias     = document.getElementById('campoDiasAfastamento');
+    const catCheck      = document.getElementById('id_cat_emitida');
+    const campoCat      = document.getElementById('campoNumeroCat');
+    const indicador     = document.getElementById('tipoIndicador');
+    const tipoIcone     = document.getElementById('tipoIcone');
+    const tipoTexto     = document.getElementById('tipoTexto');
+
+    function atualizarFormulario() {
+        const val = tipoSelect.value;
+        const isAcidente = val.startsWith('ACIDENTE');
+        const comAfastamento = val === 'ACIDENTE_COM_AFASTAMENTO';
+
+        // Mostra/esconde seção de acidente
+        secaoAcidente.style.display = isAcidente ? 'block' : 'none';
+
+        // Mostra/esconde dias de afastamento
+        campoDias.style.display = comAfastamento ? 'block' : 'none';
+
+        // Indicador visual
+        if (val) {
+            indicador.classList.remove('d-none');
+            if (isAcidente) {
+                indicador.className = 'w-100 text-center py-2 rounded bg-danger bg-opacity-10 border border-danger';
+                tipoIcone.className = 'bi bi-exclamation-triangle-fill fs-4 text-danger';
+                tipoTexto.textContent = 'ACIDENTE';
+                tipoTexto.className = 'fw-semibold small mt-1 text-danger';
+            } else {
+                indicador.className = 'w-100 text-center py-2 rounded bg-warning bg-opacity-10 border border-warning';
+                tipoIcone.className = 'bi bi-exclamation-circle-fill fs-4 text-warning';
+                tipoTexto.textContent = 'INCIDENTE';
+                tipoTexto.className = 'fw-semibold small mt-1 text-warning';
+            }
+        } else {
+            indicador.classList.add('d-none');
+        }
+    }
+
+    function atualizarCat() {
+        campoCat.style.display = catCheck.checked ? 'block' : 'none';
+    }
+
+    tipoSelect.addEventListener('change', atualizarFormulario);
+    catCheck.addEventListener('change', atualizarCat);
+
+    // Inicializa (importante para edição)
+    atualizarFormulario();
+    atualizarCat();
+});
+</script>
+{% endblock %}
+

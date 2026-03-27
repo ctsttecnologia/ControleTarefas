@@ -5,29 +5,114 @@ from .models import Incidente, Inspecao, CartaoTag
 from departamento_pessoal.models import Funcionario
 from seguranca_trabalho.models import Equipamento, EntregaEPI
 from .models import TipoRisco
+from .models import Incidente, TIPO_OCORRENCIA_CHOICES
 
 
 User = get_user_model()
 
 class IncidenteForm(forms.ModelForm):
-    """Formulário para criar e editar um Incidente."""
+    """Formulário inteligente que mostra/esconde campos de acidente."""
+
+    tipo_ocorrencia = forms.ChoiceField(
+        choices=TIPO_OCORRENCIA_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_ocorrencia'}),
+        label="Tipo de Ocorrência",
+    )
+
     class Meta:
         model = Incidente
-        fields = ['descricao', 'detalhes', 'setor', 'tipo_incidente', 'data_ocorrencia']
+        fields = [
+            'tipo_ocorrencia',
+            'gravidade',
+            'descricao',
+            'detalhes',
+            'setor',
+            'local_especifico',
+            'data_ocorrencia',
+            'funcionario_envolvido',
+            'parte_corpo_atingida',
+            'dias_afastamento',
+            'cat_emitida',
+            'numero_cat',
+            'acao_imediata',
+        ]
         widgets = {
-            'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Quase queda de material da prateleira'}),
-            'detalhes': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Descreva em detalhes o que aconteceu...'}),
+            'gravidade': forms.Select(attrs={'class': 'form-select'}),
+            'descricao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Queda de material no setor de produção',
+            }),
+            'detalhes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Descreva o que aconteceu, como e por quê...',
+            }),
             'setor': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_incidente': forms.Select(attrs={'class': 'form-select'}),
-            'data_ocorrencia': forms.DateTimeInput(
-                attrs={'class': 'form-control', 'type': 'datetime-local'},
-                format='%Y-%m-%dT%H:%M'
-            ),
+            'local_especifico': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Galpão 2, próximo à empilhadeira',
+            }),
+            'data_ocorrencia': forms.DateTimeInput(attrs={
+                'class': 'form-control',
+                'type': 'datetime-local',
+            }),
+            'funcionario_envolvido': forms.Select(attrs={'class': 'form-select'}),
+            'parte_corpo_atingida': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: Mão direita, Coluna lombar',
+            }),
+            'dias_afastamento': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+            }),
+            'cat_emitida': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'numero_cat': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Nº da CAT',
+            }),
+            'acao_imediata': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Primeiros socorros, isolamento da área, etc.',
+            }),
         }
-        labels = {
-            'descricao': 'Título do Incidente', 'detalhes': 'Descrição Detalhada',
-            'data_ocorrencia': 'Data e Hora da Ocorrência',
-        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if user and hasattr(user, 'filial_ativa'):
+            qs = Funcionario.objects.filter(
+                filial=user.filial_ativa,
+                status='ATIVO'
+            ).order_by('nome_completo')
+            self.fields['funcionario_envolvido'].queryset = qs
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get('tipo_ocorrencia', '')
+
+        # Se é acidente, funcionário envolvido é obrigatório
+        if tipo.startswith('ACIDENTE') and not cleaned_data.get('funcionario_envolvido'):
+            self.add_error(
+                'funcionario_envolvido',
+                'Funcionário envolvido é obrigatório para acidentes.'
+            )
+
+        # Se CAT emitida, número é obrigatório
+        if cleaned_data.get('cat_emitida') and not cleaned_data.get('numero_cat'):
+            self.add_error('numero_cat', 'Informe o número da CAT.')
+
+        # Se COM afastamento, dias > 0
+        if tipo == 'ACIDENTE_COM_AFASTAMENTO':
+            dias = cleaned_data.get('dias_afastamento', 0)
+            if not dias or dias == 0:
+                self.add_error(
+                    'dias_afastamento',
+                    'Informe os dias de afastamento para este tipo de acidente.'
+                )
+
+        return cleaned_data
 
 class InspecaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

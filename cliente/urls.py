@@ -7,9 +7,9 @@ from .views import (
     ClienteUpdateView,
     ClienteDeleteView,
     ExportarClientesExcelView,
-    cliente_autocomplete_view,
+    cliente_autocomplete_view, download_modelo_view, importacao_massa_view, ajax_buscar_logradouros
 )
-from cliente.views import ajax_buscar_logradouros
+
 
 app_name = 'cliente'
 
@@ -25,4 +25,7 @@ urlpatterns = [
     path('api/autocomplete/', cliente_autocomplete_view, name='cliente-autocomplete'),
 
     path('ajax/logradouros/', ajax_buscar_logradouros, name='ajax_buscar_logradouros'),
+    path("importacao/modelo/", download_modelo_view, name='download_modelo_importacao'),
+    path("importacao/", importacao_massa_view, name='importacao_massa'),
 ]
+

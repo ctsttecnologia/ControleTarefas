@@ -1,0 +1,135 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Importação em Massa — Funcionários{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    {# ══════════════════════════════════════════════ #}
+    {# CABEÇALHO                                      #}
+    {# ══════════════════════════════════════════════ #}
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-upload text-success me-2"></i>
+                Importação em Massa — Funcionários
+            </h2>
+            <small class="text-muted">
+                Cadastre múltiplos funcionários de uma vez através de planilha Excel.
+            </small>
+        </div>
+        <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </header>
+
+    <div class="row g-4">
+
+        {# ══════════════════════════════════════════════ #}
+        {# CARD — DOWNLOAD DO MODELO                     #}
+        {# ══════════════════════════════════════════════ #}
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width: 64px; height: 64px;">
+                            <i class="bi bi-file-earmark-spreadsheet text-success" style="font-size: 1.8rem;"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-center mb-3">1. Baixe o Modelo</h5>
+                    <p class="text-muted text-center mb-4">
+                        Baixe a planilha modelo com os cabeçalhos corretos, validações e lista
+                        de <strong>Departamentos</strong>, <strong>Cargos</strong> e <strong>Clientes</strong>
+                        da sua filial na aba de referência.
+                    </p>
+
+                    <ul class="list-unstyled small text-muted mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Cabeçalhos pré-definidos com dicas</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Dropdowns para Sexo, Status e UF</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Aba de referência com dados cadastrados</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Campos de CPF, RG, CTPS e PIS</li>
+                        <li><i class="bi bi-check-circle text-success me-2"></i>Instruções detalhadas de preenchimento</li>
+                    </ul>
+
+                    <div class="mt-auto text-center">
+                        <a href="{% url 'departamento_pessoal:download_modelo_importacao_funcionarios' %}"
+                           class="btn btn-success px-4">
+                            <i class="bi bi-download me-2"></i>Baixar Modelo .xlsx
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════ #}
+        {# CARD — UPLOAD                                 #}
+        {# ══════════════════════════════════════════════ #}
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="text-center mb-4">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center"
+                             style="width: 64px; height: 64px;">
+                            <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 1.8rem;"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-center mb-3">2. Envie a Planilha Preenchida</h5>
+                    <p class="text-muted text-center mb-4">
+                        Após preencher o modelo, faça o upload para processamento automático.
+                    </p>
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label for="{{ form.arquivo.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.arquivo.label }}
+                            </label>
+                            {{ form.arquivo }}
+                            {% if form.arquivo.help_text %}
+                            <div class="form-text">{{ form.arquivo.help_text }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
+                            <i class="bi bi-info-circle-fill mt-1"></i>
+                            <div class="small">
+                                <strong>Importante:</strong>
+                                <ul class="mb-0 mt-1 ps-3">
+                                    <li>Departamentos e Cargos devem estar previamente cadastrados.</li>
+                                    <li>Matrícula e e-mail devem ser únicos por funcionário.</li>
+                                    <li>Documentos (CPF, RG, CTPS, PIS) são opcionais.</li>
+                                    <li>Erros em uma linha não impedem as demais.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-auto">
+                            <button type="submit" class="btn btn-primary px-5">
+                                <i class="bi bi-gear me-2"></i>Processar Planilha
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -30,3 +30,25 @@ ESTADOS_BRASIL = [
     ('SE', 'SE'),
     ('TO', 'TO'),
 ]
+
+TIPOS_LOGRADOURO = [
+    ('RUA', 'RUA'),
+    ('AV', 'AVENIDA'),
+    ('AL', 'ALAMEDA'),
+    ('BC', 'BECO'),
+    ('EST', 'ESTRADA'),
+    ('LAR', 'LARGO'),
+    ('PRA', 'PRAÇA'),
+    ('ROD', 'RODOVIA'), 
+    ('TRV', 'TRAVESSA'),
+    ('VL', 'VILA'),
+    ('VD', 'VIADUTO'),
+    ('LIN', 'LINHA'),
+    ('ACE', 'ACESSO'),
+    ('CND', 'CONDOMÍNIO'),
+    ('LOT', 'LOTEAMENTO'),
+    ('SIT', 'SÍTIO'),
+    ('FAZ', 'FAZENDA'),
+    ('CHA', 'CHÁCARA'),
+    ('OUT', 'OUTROS'),
+]

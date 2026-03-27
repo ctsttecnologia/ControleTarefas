@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 
 from seguranca_trabalho.models import Funcao
 from .models import Funcionario, Documento, Cargo, Departamento
+from django.utils.translation import gettext_lazy as _
 
 
 User = get_user_model()
@@ -265,4 +266,32 @@ class UploadFuncionariosForm(forms.Form):
         # Limite de 10MB
         if arquivo.size > 10 * 1024 * 1024:
             raise forms.ValidationError('O arquivo excede o limite de 10MB.')
+        return arquivo
+
+
+class ImportacaoMassaFuncionarioForm(forms.Form):
+    """Form para upload de planilha de importação em massa de funcionários."""
+
+    arquivo = forms.FileField(
+        label=_("Planilha Excel (.xlsx)"),
+        help_text=_("Envie o arquivo .xlsx preenchido com base no modelo."),
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": ".xlsx",
+                "class": "form-control",
+            }
+        ),
+    )
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get("arquivo")
+        if arquivo:
+            if not arquivo.name.endswith(".xlsx"):
+                raise forms.ValidationError(
+                    _("Apenas arquivos .xlsx são aceitos.")
+                )
+            if arquivo.size > 5 * 1024 * 1024:
+                raise forms.ValidationError(
+                    _("Arquivo muito grande. Tamanho máximo: 5MB.")
+                )
         return arquivo

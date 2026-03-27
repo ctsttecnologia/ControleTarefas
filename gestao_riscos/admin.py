@@ -7,8 +7,8 @@ from .models import TipoRisco
 @admin.register(Incidente)
 class IncidenteAdmin(AdminFilialScopedMixin, ChangeFilialAdminMixin, admin.ModelAdmin):
   
-    list_display = ('descricao', 'setor', 'tipo_incidente', 'data_ocorrencia', 'registrado_por', 'filial')
-    list_filter = ('setor', 'tipo_incidente', 'data_ocorrencia', 'filial')
+    list_display = ('descricao', 'setor', 'data_ocorrencia', 'registrado_por', 'filial')
+    list_filter = ('setor', 'data_ocorrencia', 'filial')
     search_fields = ('descricao', 'detalhes', 'setor')
     date_hierarchy = 'data_ocorrencia'
     readonly_fields = ('filial',) # Impede a edição da filial após a criação.
