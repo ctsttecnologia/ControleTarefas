@@ -62,7 +62,7 @@
                             </div>
                         </div>
 
-                        <!-- CEP + Busca Automática -->
+                        <!-- CEP + Busca Automática + Tipo de Logradouro -->
                         <div class="row mb-4">
                             <div class="col-md-4">
                                 <label for="id_cep" class="form-label fw-semibold">
@@ -76,6 +76,15 @@
                                 </div>
                                 <div class="form-text">{% trans "Digite o CEP para busca automática" %}</div>
                                 {% for error in form.cep.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="col-md-4">
+                                <label for="id_tipo_logradouro" class="form-label fw-semibold">
+                                    {% trans "Tipo de Logradouro" %} <span class="text-danger">*</span>
+                                </label>
+                                {% render_field form.tipo_logradouro class="form-select" %}
+                                {% for error in form.tipo_logradouro.errors %}
                                 <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>

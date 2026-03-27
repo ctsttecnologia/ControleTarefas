@@ -4,93 +4,104 @@
 from django.db import models
 from django.core.validators import MinValueValidator, RegexValidator
 from django.utils.translation import gettext_lazy as _
-from .constant import ESTADOS_BRASIL
+
+from .constant import ESTADOS_BRASIL, TIPOS_LOGRADOURO
 from core.managers import FilialManager
 from usuario.models import Filial
 
 
 class Logradouro(models.Model):
     """Modelo para armazenar endereços/logradouros."""
-    
+
     # Validadores
     cep_validator = RegexValidator(
         regex=r'^\d{8}$',
         message=_('CEP deve conter exatamente 8 dígitos')
     )
-    
+
     numero_validator = MinValueValidator(
         1,
         message=_('Número não pode ser menor que 1')
     )
-    
-    # Campos
+
+    # =========================================================================
+    # CAMPOS
+    # =========================================================================
+
+    tipo_logradouro = models.CharField(
+        max_length=3,
+        choices=TIPOS_LOGRADOURO,
+        default='RUA',
+        verbose_name=_('Tipo de Logradouro'),
+        help_text=_('Rua, Avenida, Praça, etc.'),
+    )
     endereco = models.CharField(
         max_length=150,
         verbose_name=_('Endereço'),
-        help_text=_('Nome da rua, avenida, etc.')
+        help_text=_('Nome do logradouro (sem o tipo). Ex: das Flores, Paulista'),
     )
     numero = models.IntegerField(
         validators=[numero_validator],
-        verbose_name=_('Número')
+        verbose_name=_('Número'),
     )
     cep = models.CharField(
         max_length=8,
         validators=[cep_validator],
         verbose_name=_('CEP'),
-        help_text=_('Apenas números (8 dígitos)')
+        help_text=_('Apenas números (8 dígitos)'),
     )
     complemento = models.CharField(
         max_length=150,
         blank=True,
         null=True,
-        verbose_name=_('Complemento')
+        verbose_name=_('Complemento'),
     )
     bairro = models.CharField(
         max_length=60,
-        verbose_name=_('Bairro')
+        verbose_name=_('Bairro'),
     )
     cidade = models.CharField(
         max_length=60,
-        verbose_name=_('Cidade')
+        verbose_name=_('Cidade'),
     )
     estado = models.CharField(
         max_length=2,
         choices=ESTADOS_BRASIL,
         default='SP',
-        verbose_name=_('Estado')
+        verbose_name=_('Estado'),
     )
     pais = models.CharField(
         max_length=30,
         default='Brasil',
-        verbose_name=_('País')
+        verbose_name=_('País'),
     )
     ponto_referencia = models.CharField(
         max_length=100,
         blank=True,
         null=True,
-        verbose_name=_('Ponto de Referência')
+        verbose_name=_('Ponto de Referência'),
     )
     latitude = models.DecimalField(
         max_digits=9,
         decimal_places=6,
         null=True,
         blank=True,
-        verbose_name=_('Latitude')
+        verbose_name=_('Latitude'),
     )
     longitude = models.DecimalField(
         max_digits=9,
         decimal_places=6,
         null=True,
         blank=True,
-        verbose_name=_('Longitude')
+        verbose_name=_('Longitude'),
     )
     data_cadastro = models.DateTimeField(
         auto_now_add=True,
-        verbose_name=_('Data de Cadastro')
+        verbose_name=_('Data de Cadastro'),
     )
     data_atualizacao = models.DateTimeField(
         auto_now=True,
-        verbose_name=_('Última Atualização')
+        verbose_name=_('Última Atualização'),
     )
     filial = models.ForeignKey(
         Filial,
@@ -98,11 +109,18 @@ class Logradouro(models.Model):
         related_name='logradouros',
         verbose_name=_("Filial"),
         null=True,
-        blank=False
+        blank=False,
     )
 
-    # CORREÇÃO: Manager único (não sobrescrever com models.Manager())
+    # =========================================================================
+    # MANAGER
+    # =========================================================================
+
     objects = FilialManager()
+
+    # =========================================================================
+    # META
+    # =========================================================================
 
     class Meta:
         db_table = 'logradouro'
@@ -115,10 +133,14 @@ class Logradouro(models.Model):
         ]
         constraints = [
             models.UniqueConstraint(
-                fields=['endereco', 'numero', 'complemento', 'cep'],
-                name='unique_endereco_completo'
+                fields=['tipo_logradouro', 'endereco', 'numero', 'complemento', 'cep'],
+                name='unique_endereco_completo',
             ),
         ]
+
+    # =========================================================================
+    # MÉTODOS
+    # =========================================================================
 
     def clean(self):
         super().clean()
@@ -126,6 +148,11 @@ class Logradouro(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+    @property
+    def tipo_logradouro_display(self):
+        """Retorna o nome completo do tipo de logradouro."""
+        return dict(TIPOS_LOGRADOURO).get(self.tipo_logradouro, self.tipo_logradouro)
 
     @property
     def cep_formatado(self):
@@ -142,10 +169,11 @@ class Logradouro(models.Model):
         return _("Não informado")
 
     def get_endereco_completo(self):
-        """Retorna o endereço completo formatado."""
+        """Retorna o endereço completo formatado com tipo de logradouro."""
+        tipo = self.tipo_logradouro_display
         complemento = f", {self.complemento}" if self.complemento else ""
         return (
-            f"{self.endereco}, {self.numero}{complemento} - "
+            f"{tipo} {self.endereco}, {self.numero}{complemento} - "
             f"{self.bairro}, {self.cidade}/{self.estado} - "
             f"{self.cep_formatado}"
         )

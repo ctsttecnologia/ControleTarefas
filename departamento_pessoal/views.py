@@ -40,6 +40,8 @@ from .forms import (
     AdmissaoForm, FuncionarioForm, DepartamentoForm, CargoForm,
     DocumentoForm, UploadFuncionariosForm,
 )
+from departamento_pessoal.forms import ImportacaoMassaFuncionarioForm
+from departamento_pessoal.services.importacao_massa import (gerar_planilha_modelo, processar_planilha)
 
 logger = logging.getLogger(__name__)
 
@@ -1031,4 +1033,45 @@ class ExportarFuncionariosWordView(_BaseExportView):
         response['Content-Disposition'] = 'attachment; filename="relatorio_colaboradores_ativos.docx"'
         return response
 
+
+@login_required
+def download_modelo_funcionarios_view(request):
+    """Gera e retorna planilha modelo para download."""
+    filial = request.user.filial_ativa
+    buffer = gerar_planilha_modelo(filial)
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = (
+        'attachment; filename="modelo_importacao_funcionarios.xlsx"'
+    )
+    return response
+
+
+@login_required
+def importacao_massa_funcionarios_view(request):
+    """View para upload e processamento da planilha de funcionários."""
+    if request.method == "POST":
+        form = ImportacaoMassaFuncionarioForm(request.POST, request.FILES)
+        if form.is_valid():
+            arquivo = form.cleaned_data["arquivo"]
+            filial = request.user.filial_ativa
+
+
+            resultado = processar_planilha(arquivo, filial)
+
+            return render(
+                request,
+                "departamento_pessoal/importacao_massa_resultado.html",
+                {"resultado": resultado, "form": ImportacaoMassaFuncionarioForm()},
+            )
+    else:
+        form = ImportacaoMassaFuncionarioForm()
+
+    return render(
+        request,
+        "departamento_pessoal/importacao_massa.html",
+        {"form": form},
+    )
     

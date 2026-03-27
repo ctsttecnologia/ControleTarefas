@@ -23,6 +23,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db import models as db_models
 from logradouro.models import Logradouro
+from django.shortcuts import redirect, render
+from django.utils.translation import gettext_lazy as _
+from cliente.forms import ImportacaoMassaForm
+from cliente.services.importacao_massa import gerar_planilha_modelo, processar_planilha
+
  
 
 # --- VIEWS DE CLIENTE (CRUD) ---
@@ -224,4 +229,40 @@ def ajax_buscar_logradouros(request):
 
     return JsonResponse(results, safe=False)
     
+
+@login_required
+def download_modelo_view(request):
+    """Gera e retorna planilha modelo para download."""
+    buffer = gerar_planilha_modelo()
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = (
+        'attachment; filename="modelo_importacao_clientes.xlsx"'
+    )
+    return response
+
+
+@login_required
+def importacao_massa_view(request):
+    """View para upload e processamento da planilha."""
+    if request.method == "POST":
+        form = ImportacaoMassaForm(request.POST, request.FILES)
+        if form.is_valid():
+            arquivo = form.cleaned_data["arquivo"]
+            filial = request.user.filial_ativa
+
+            resultado = processar_planilha(arquivo, filial)
+
+            return render(
+                request,
+                "cliente/importacao_massa_resultado.html",
+                {"resultado": resultado, "form": ImportacaoMassaForm()},
+            )
+    else:
+        form = ImportacaoMassaForm()
+
+    return render(request, "cliente/importacao_massa.html", {"form": form})
+
 

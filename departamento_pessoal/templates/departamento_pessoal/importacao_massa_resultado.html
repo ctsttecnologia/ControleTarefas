@@ -1,0 +1,192 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Resultado da Importação — Funcionários{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    {# ══════════════════════════════════════════════ #}
+    {# CABEÇALHO                                      #}
+    {# ══════════════════════════════════════════════ #}
+    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h2 class="h4 fw-bold mb-1">
+                <i class="bi bi-clipboard-check text-success me-2"></i>
+                Resultado da Importação
+            </h2>
+            <small class="text-muted">Relatório do processamento da planilha de funcionários.</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}"
+               class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-arrow-repeat me-1"></i>Nova Importação
+            </a>
+            <a href="{% url 'departamento_pessoal:lista_funcionarios' %}"
+               class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-list-ul me-1"></i>Lista de Funcionários
+            </a>
+        </div>
+    </header>
+
+    {# ══════════════════════════════════════════════ #}
+    {# RESUMO NUMÉRICO                                #}
+    {# ══════════════════════════════════════════════ #}
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    <h3 class="fw-bold text-primary mb-1">{{ resultado.total }}</h3>
+                    <small class="text-muted">Total Processadas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    <h3 class="fw-bold text-success mb-1">{{ resultado.sucessos }}</h3>
+                    <small class="text-muted">Importados com Sucesso</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center py-3">
+                <div class="card-body">
+                    <h3 class="fw-bold text-danger mb-1">{{ resultado.erros }}</h3>
+                    <small class="text-muted">Linhas com Erro</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════ #}
+    {# BARRA DE PROGRESSO                             #}
+    {# ══════════════════════════════════════════════ #}
+    {% if resultado.total > 0 %}
+    {% widthratio resultado.sucessos resultado.total 100 as pct_sucesso %}
+    {% widthratio resultado.erros resultado.total 100 as pct_erro %}
+    <div class="progress mb-4" style="height: 24px;">
+        <div class="progress-bar bg-success" role="progressbar"
+             style="width: {{ pct_sucesso }}%"
+             aria-valuenow="{{ pct_sucesso }}" aria-valuemin="0" aria-valuemax="100">
+            {{ pct_sucesso }}% OK
+        </div>
+        <div class="progress-bar bg-danger" role="progressbar"
+             style="width: {{ pct_erro }}%"
+             aria-valuenow="{{ pct_erro }}" aria-valuemin="0" aria-valuemax="100">
+            {{ pct_erro }}% Erros
+        </div>
+    </div>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════ #}
+    {# SUCESSOS                                        #}
+    {# ══════════════════════════════════════════════ #}
+    {% if resultado.detalhes_sucesso %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-success bg-opacity-10 border-0 py-3">
+            <h6 class="fw-bold text-success mb-0">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                Funcionários Importados ({{ resultado.sucessos }})
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <tbody>
+                        {% for detalhe in resultado.detalhes_sucesso %}
+                        <tr>
+                            <td class="ps-4 py-2">
+                                <i class="bi bi-check-lg text-success me-2"></i>
+                                {{ detalhe }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════ #}
+    {# ERROS                                           #}
+    {# ══════════════════════════════════════════════ #}
+    {% if resultado.detalhes_erro %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-danger bg-opacity-10 border-0 py-3">
+            <h6 class="fw-bold text-danger mb-0">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Linhas com Erro ({{ resultado.erros }})
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4" style="width: 100px;">Linha</th>
+                            <th>Erros Encontrados</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for detalhe in resultado.detalhes_erro %}
+                        <tr>
+                            <td class="ps-4 fw-semibold text-danger">
+                                {% if detalhe.linha == 0 %}
+                                    Geral
+                                {% else %}
+                                    Linha {{ detalhe.linha }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <ul class="mb-0 ps-3 small">
+                                    {% for erro in detalhe.erros %}
+                                    <li class="text-danger">{{ erro }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════ #}
+    {# NOVA IMPORTAÇÃO                                 #}
+    {# ══════════════════════════════════════════════ #}
+    {% if resultado.erros > 0 %}
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-4">
+            <h6 class="fw-bold mb-3">
+                <i class="bi bi-arrow-repeat text-primary me-2"></i>
+                Corrigir e Reenviar
+            </h6>
+            <p class="text-muted small mb-3">
+                Corrija os erros na planilha e envie novamente.
+                Funcionários já importados com sucesso <strong>não serão duplicados</strong>
+                (a matrícula será rejeitada por já existir).
+            </p>
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                <div class="row align-items-end g-3">
+                    <div class="col-md-8">
+                        {{ form.arquivo }}
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-gear me-2"></i>Reprocessar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+

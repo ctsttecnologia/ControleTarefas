@@ -1,6 +1,8 @@
 from django import forms
 from .models import Cliente
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
 
 class ClienteForm(forms.ModelForm):
     class Meta:
@@ -46,8 +48,9 @@ class ClienteForm(forms.ModelForm):
             self.fields['data_de_inicio'].initial = timezone.now().date()
 
         if self.instance and self.instance.pk:
-            self.fields['cnpj'].disabled = True
-            self.fields['cnpj'].widget.attrs['title'] = 'O CNPJ não pode ser alterado.'
+            self.fields["cnpj"].widget.attrs.pop("readonly", None)
+            self.fields["cnpj"].widget.attrs.pop("disabled", None)
+            self.fields["cnpj"].disabled = False
 
             self.fields['data_de_inicio'].disabled = True
             self.fields['data_de_inicio'].widget.attrs['title'] = 'A data de início não pode ser alterada.'
@@ -65,4 +68,32 @@ class ClienteForm(forms.ModelForm):
             cleaned_data['data_de_inicio'] = self.instance.data_de_inicio
 
         return cleaned_data
+
+
+class ImportacaoMassaForm(forms.Form):
+    """Form para upload de planilha de importação em massa."""
+
+    arquivo = forms.FileField(
+        label=_("Planilha Excel (.xlsx)"),
+        help_text=_("Envie o arquivo .xlsx preenchido com base no modelo."),
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": ".xlsx",
+                "class": "form-control",
+            }
+        ),
+    )
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get("arquivo")
+        if arquivo:
+            if not arquivo.name.endswith(".xlsx"):
+                raise forms.ValidationError(
+                    _("Apenas arquivos .xlsx são aceitos.")
+                )
+            if arquivo.size > 5 * 1024 * 1024:
+                raise forms.ValidationError(
+                    _("Arquivo muito grande. Tamanho máximo: 5MB.")
+                )
+        return arquivo
 

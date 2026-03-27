@@ -6,7 +6,8 @@ from .views import (
     FuncionarioAdmissaoView, FuncionarioListView, FuncionarioDetailView, 
     FuncionarioCreateView, FuncionarioUpdateView, FuncionarioDeleteView,
     DepartamentoListView, DepartamentoCreateView, DepartamentoUpdateView,
-    CargoListView, CargoCreateView, CargoUpdateView, PainelDPView, UploadFuncionariosView, baixar_modelo_funcionarios, baixar_relatorio_erros
+    CargoListView, CargoCreateView, CargoUpdateView, PainelDPView, UploadFuncionariosView, download_modelo_funcionarios_view,
+    importacao_massa_funcionarios_view, baixar_modelo_funcionarios, baixar_relatorio_erros
     
 )
 
@@ -57,6 +58,10 @@ urlpatterns = [
     path('funcionarios/upload/', UploadFuncionariosView.as_view(), name='upload_funcionarios'),
     path('funcionarios/upload/modelo/', baixar_modelo_funcionarios, name='baixar_modelo_funcionarios'),
     path('funcionarios/upload/relatorio-erros/', baixar_relatorio_erros, name='baixar_relatorio_erros'),
+
+    # Importação em Massa
+    path("importacao/modelo/", download_modelo_funcionarios_view, name="download_modelo_importacao_funcionarios",),
+    path( "importacao/", importacao_massa_funcionarios_view, name="importacao_massa_funcionarios"),
 ]
 
 

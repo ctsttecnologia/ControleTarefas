@@ -179,8 +179,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'cliente.view_cliente',
                 'icon': 'images/cliente.gif',
                 'links': [
+                    {'url': 'cliente:cliente_create', 'text': 'Cadastrar'},
                     {'url': 'cliente:lista_clientes', 'text': 'Lista de Clientes'},
-                    {'url': 'cliente:cliente_create', 'text': 'Cadastrar Cliente'},
                 ]
             },
             {
@@ -211,8 +211,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'logradouro.view_logradouro',
                 'icon': 'images/cadastro.gif',
                 'links': [
+                    {'url': 'logradouro:cadastrar_logradouro', 'text': 'Cadastrar'},
                     {'url': 'logradouro:listar_logradouros', 'text': 'Lista de Logradouros'},
-                    {'url': 'logradouro:cadastrar_logradouro', 'text': 'Cadastrar Logradouro'},
                 ]
             },
             # ══════════════════════════════════════════════════════════
@@ -234,7 +234,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'suprimentos.view_pedido',
                 'icon': 'images/suprimentos.gif', 
                 'links': [
-                    {'url': 'suprimentos:dashboard', 'text': 'Dashboard Suprimentos'},
+                    {'url': 'suprimentos:dashboard', 'text': 'Suprimentos'},
                 ]
             },
             {
@@ -252,7 +252,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'controle_de_telefone.view_linhatelefonica',
                 'icon': 'images/telefones.gif',  
                 'links': [
-                    {'url': 'controle_de_telefone:dashboard', 'text': 'Telefones'},
+                    {'url': 'controle_de_telefone:dashboard', 'text': 'Gestão de Telefones'},
                 ]
             },
             {
@@ -261,7 +261,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'seguranca_trabalho.view_equipamento',
                 'icon': 'images/estoque.gif',  
                 'links': [
-                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Lista de Equipamentos'},
+                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Equipamentos e Material'},
                 ]
             },
             # ══════════════════════════════════════════════════════════
@@ -276,7 +276,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
                     {'url': 'automovel:carro_list', 'text': 'Frota'},
                     {'url': 'automovel:agendamento_list', 'text': 'Agendamentos'},
                     {'url': 'automovel:dashboard', 'text': 'Relatórios'},
-                    {'url': 'automovel:calendario', 'text': 'Calendário'},
                 ]
             },
             {

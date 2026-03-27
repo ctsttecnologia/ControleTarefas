@@ -189,7 +189,8 @@ TEMPLATES = [
                 'usuario.context_processors.filial_context',
                 'chat.context_processors.chat_global_data',
                 'pgr_gestao.context_processors.pgr_stats',
-                'notifications.context_processors.notification_processor', 
+                'notifications.context_processors.notification_processor',
+                'gestao_riscos.context_processors.dias_sem_acidentes', 
             ],
         },
     },
@@ -562,4 +563,6 @@ for _name in _QUIET_LOGGERS:
     _logging.getLogger('django').setLevel(_logging.INFO)
     _logging.getLogger('django.server').setLevel(_logging.WARNING)
     _logging.getLogger('suprimentos').setLevel(_logging.DEBUG)
+
+
 

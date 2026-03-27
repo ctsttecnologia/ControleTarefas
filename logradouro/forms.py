@@ -7,7 +7,8 @@ class LogradouroForm(forms.ModelForm):
     class Meta:
         model = Logradouro
         fields = [
-            'filial', 'endereco', 'numero', 'cep', 'complemento',
+            'filial', 'endereco', 'numero', 'cep', 'complemento', 'tipo_logradouro',
+            
             'bairro', 'cidade', 'estado', 'pais',
             'ponto_referencia', 'latitude', 'longitude',
         ]

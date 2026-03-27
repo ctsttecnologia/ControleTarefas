@@ -30,6 +30,7 @@ from seguranca_trabalho.models import EntregaEPI
 from .forms import IncidenteForm, InspecaoForm, CartaoTagForm, TipoRiscoForm
 from .models import CartaoTag, Incidente, Inspecao, TipoRisco, CATEGORIA_RISCO_CHOICES
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,6 +95,11 @@ class RegistrarIncidenteView(LoginRequiredMixin, SSTPermissionMixin, FilialCreat
     success_message = "Incidente registrado com sucesso!"
     permission_required = 'gestao_riscos.add_incidente'
 
+    def get_form_kwargs(self):                 
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.registrado_por = self.request.user
         return super().form_valid(form)
@@ -102,6 +108,7 @@ class RegistrarIncidenteView(LoginRequiredMixin, SSTPermissionMixin, FilialCreat
         context = super().get_context_data(**kwargs)
         context['titulo_pagina'] = 'Registrar Novo Incidente'
         return context
+
 
 
 # =============================================================================
@@ -383,7 +390,6 @@ class TipoRiscoListView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScoped
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # ✅ Usa queryset filtrado por filial para contagens
         todos = TipoRisco.objects.for_request(self.request)
         context['total_tipos'] = todos.count()
         context['total_ativos'] = todos.filter(ativo=True).count()
@@ -404,6 +410,8 @@ class TipoRiscoListView(LoginRequiredMixin, SSTPermissionMixin, ViewFilialScoped
 
         context['categorias_info'] = categorias_info
         context['categorias'] = CATEGORIA_RISCO_CHOICES
+
+        
         return context
 
 
