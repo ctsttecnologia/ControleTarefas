@@ -1,123 +1,1307 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}SST - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ═══════════════════════════════════════════════════════
+       SST BASE — VARIÁVEIS TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
+    :root,
+    [data-bs-theme="light"] {
+        /* ── Nav ── */
+        --sst-nav-bg:           #ffffff;
+        --sst-nav-border:       #e2e8f0;
+        --sst-nav-shadow:       0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+        --sst-brand-color:      #1e293b;
+        --sst-brand-icon-bg:    linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        --sst-link-color:       #64748b;
+        --sst-link-hover:       #1e293b;
+        --sst-link-active-bg:   #eff6ff;
+        --sst-link-active-color:#2563eb;
+        --sst-link-active-border:#3b82f6;
+        --sst-badge-bg:         #fef3c7;
+        --sst-badge-text:       #92400e;
+        --sst-dropdown-bg:      #ffffff;
+        --sst-dropdown-border:  #e2e8f0;
+        --sst-dropdown-hover:   #f8fafc;
+        --sst-dropdown-shadow:  0 10px 25px rgba(0,0,0,.1), 0 4px 10px rgba(0,0,0,.05);
+        --sst-divider:          #f1f5f9;
+        --sst-indicator-glow:   rgba(59,130,246,.3);
+
+        /* ── Compartilhado (Páginas) ── */
+        --sst-bg:              #ffffff;
+        --sst-bg-alt:          #f8f9fc;
+        --sst-text:            #1e293b;
+        --sst-text-muted:      #64748b;
+        --sst-border:          #e2e8f0;
+        --sst-card-shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+        --sst-accent:          #3b82f6;
+        --sst-accent-soft:     rgba(59,130,246,.06);
+        --sst-header-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        --sst-success:         #10b981;
+        --sst-success-bg:      #ecfdf5;
+        --sst-success-border:  #a7f3d0;
+        --sst-success-grad:    linear-gradient(135deg, #10b981 0%, #059669 100%);
+        --sst-warning:         #f59e0b;
+        --sst-warning-bg:      #fffbeb;
+        --sst-warning-border:  #fde68a;
+        --sst-danger:          #ef4444;
+        --sst-danger-bg:       #fef2f2;
+        --sst-danger-border:   #fecaca;
+        --sst-danger-grad:     linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        --sst-info-bg:         rgba(59,130,246,.06);
+        --sst-info-border:     rgba(59,130,246,.15);
+        --sst-info-text:       #1e40af;
+        --sst-input-bg:        #ffffff;
+        --sst-input-border:    #cbd5e1;
+        --sst-input-focus:     #3b82f6;
+        --sst-photo-bg:        #f1f5f9;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       SST BASE — VARIÁVEIS TEMA ESCURO
+       ═══════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] {
+        /* ── Nav ── */
+        --sst-nav-bg:           #1a1d23;
+        --sst-nav-border:       #2d3748;
+        --sst-nav-shadow:       0 1px 3px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.15);
+        --sst-brand-color:      #f1f5f9;
+        --sst-brand-icon-bg:    linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        --sst-link-color:       #94a3b8;
+        --sst-link-hover:       #e2e8f0;
+        --sst-link-active-bg:   rgba(59,130,246,.12);
+        --sst-link-active-color:#60a5fa;
+        --sst-link-active-border:#60a5fa;
+        --sst-badge-bg:         rgba(251,191,36,.15);
+        --sst-badge-text:       #fbbf24;
+        --sst-dropdown-bg:      #1e2128;
+        --sst-dropdown-border:  #2d3748;
+        --sst-dropdown-hover:   #262a33;
+        --sst-dropdown-shadow:  0 10px 25px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.2);
+        --sst-divider:          #2d3748;
+        --sst-indicator-glow:   rgba(96,165,250,.3);
+
+        /* ── Compartilhado (Páginas) ── */
+        --sst-bg:              #1a1d23;
+        --sst-bg-alt:          #1e2128;
+        --sst-text:            #e2e8f0;
+        --sst-text-muted:      #94a3b8;
+        --sst-border:          #2d3748;
+        --sst-card-shadow:     0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+        --sst-accent:          #60a5fa;
+        --sst-accent-soft:     rgba(96,165,250,.08);
+        --sst-header-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --sst-success:         #34d399;
+        --sst-success-bg:      rgba(16,185,129,.1);
+        --sst-success-border:  rgba(16,185,129,.25);
+        --sst-success-grad:    linear-gradient(135deg, #059669 0%, #047857 100%);
+        --sst-warning:         #fbbf24;
+        --sst-warning-bg:      rgba(245,158,11,.1);
+        --sst-warning-border:  rgba(245,158,11,.25);
+        --sst-danger:          #f87171;
+        --sst-danger-bg:       rgba(239,68,68,.1);
+        --sst-danger-border:   rgba(239,68,68,.25);
+        --sst-danger-grad:     linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        --sst-info-bg:         rgba(96,165,250,.08);
+        --sst-info-border:     rgba(96,165,250,.2);
+        --sst-info-text:       #93bbfc;
+        --sst-input-bg:        #262a33;
+        --sst-input-border:    #3d4555;
+        --sst-input-focus:     #60a5fa;
+        --sst-photo-bg:        #262a33;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       COMPONENTES BASE REUTILIZÁVEIS
+       ═══════════════════════════════════════════════════════ */
+
+    /* ── Page Header ── */
+    .sst-page-header {
+        background: var(--sst-header-gradient);
+        border-radius: 0.75rem;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.75rem;
+        color: #f8fafc;
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-bs-theme="dark"] .sst-page-header {
+        border: 1px solid var(--sst-border);
+    }
+
+    .sst-page-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(59,130,246,.1) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .sst-page-header h4 {
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .sst-page-header .sst-page-subtitle {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+
+    /* ── Header Buttons ── */
+    .sst-btn-header {
+        background: rgba(255,255,255,.1);
+        border: 1px solid rgba(255,255,255,.2);
+        color: #f1f5f9;
+        padding: 0.45rem 1rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .sst-btn-header:hover {
+        background: rgba(255,255,255,.2);
+        color: #fff;
+    }
+
+    .sst-btn-header--primary {
+        background: rgba(255,255,255,.95);
+        color: #1e293b;
+        border-color: transparent;
+    }
+
+    .sst-btn-header--primary:hover {
+        background: #fff;
+        color: #1e293b;
+    }
+
+    .sst-btn-header--warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-color: transparent;
+        color: #fff;
+    }
+
+    .sst-btn-header--warning:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        color: #fff;
+    }
+
+    .sst-btn-header--success-badge {
+        background: rgba(16,185,129,.15);
+        border: 1px solid rgba(16,185,129,.3);
+        color: #34d399;
+        font-size: 0.78rem;
+        cursor: default;
+    }
+
+    /* ── Cards ── */
+    .sst-card {
+        background: var(--sst-bg);
+        border: 1px solid var(--sst-border);
+        border-radius: 0.75rem;
+        box-shadow: var(--sst-card-shadow);
+        overflow: hidden;
+    }
+
+    .sst-card + .sst-card {
+        margin-top: 1.25rem;
+    }
+
+    .sst-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--sst-border);
+        background: var(--sst-bg-alt);
+    }
+
+    .sst-card-header h6 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--sst-text);
+    }
+
+    .sst-card-header i {
+        color: var(--sst-accent);
+    }
+
+    .sst-card-header--success {
+        background: var(--sst-success-grad);
+    }
+
+    .sst-card-header--success h6,
+    .sst-card-header--success i {
+        color: #fff;
+    }
+
+    .sst-card-header--danger {
+        background: var(--sst-danger-grad);
+    }
+
+    .sst-card-header--danger h6,
+    .sst-card-header--danger i {
+        color: #fff;
+    }
+
+    .sst-card-body {
+        padding: 1.5rem;
+    }
+
+    .sst-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--sst-border);
+        background: var(--sst-bg-alt);
+    }
+
+    /* ── Section Headers (Form) ── */
+    .sst-section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--sst-text);
+        padding-bottom: 0.6rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid var(--sst-accent-soft);
+        position: relative;
+    }
+
+    .sst-section-title::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 40px;
+        height: 2px;
+        background: var(--sst-accent);
+        border-radius: 2px;
+    }
+
+    .sst-section-title i {
+        color: var(--sst-accent);
+        font-size: 1rem;
+    }
+
+    /* ── Form Controls ── */
+    .sst-form-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--sst-text);
+        margin-bottom: 0.4rem;
+    }
+
+    .sst-form-label .required {
+        color: var(--sst-danger);
+        margin-left: 0.15rem;
+    }
+
+    .sst-card .form-control,
+    .sst-card .form-select {
+        background: var(--sst-input-bg);
+        border: 1.5px solid var(--sst-input-border);
+        border-radius: 0.45rem;
+        color: var(--sst-text);
+        font-size: 0.9rem;
+        padding: 0.55rem 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+    .sst-card .form-control:focus,
+    .sst-card .form-select:focus {
+        border-color: var(--sst-input-focus);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+        background: var(--sst-input-bg);
+    }
+
+    [data-bs-theme="dark"] .sst-card .form-control:focus,
+    [data-bs-theme="dark"] .sst-card .form-select:focus {
+        box-shadow: 0 0 0 3px rgba(96,165,250,.15);
+    }
+
+    .sst-card .form-control::placeholder {
+        color: var(--sst-text-muted);
+    }
+
+    .sst-card .form-text {
+        color: var(--sst-text-muted);
+        font-size: 0.78rem;
+    }
+
+    .sst-card .form-check-label {
+        color: var(--sst-text);
+        font-size: 0.88rem;
+    }
+
+    /* ── Buttons ── */
+    .sst-btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3);
+        text-decoration: none;
+    }
+
+    .sst-btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 12px rgba(37,99,235,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    [data-bs-theme="dark"] .sst-btn-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    }
+
+    .sst-btn-success {
+        background: var(--sst-success-grad);
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(16,185,129,.3);
+        text-decoration: none;
+    }
+
+    .sst-btn-success:hover {
+        box-shadow: 0 4px 12px rgba(16,185,129,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    .sst-btn-danger {
+        background: var(--sst-danger-grad);
+        color: #fff;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 0.45rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(239,68,68,.3);
+        text-decoration: none;
+    }
+
+    .sst-btn-danger:hover {
+        box-shadow: 0 4px 12px rgba(239,68,68,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    .sst-btn-cancel {
+        background: transparent;
+        border: 1.5px solid var(--sst-border);
+        color: var(--sst-text-muted);
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .sst-btn-cancel:hover {
+        border-color: var(--sst-text-muted);
+        color: var(--sst-text);
+        background: var(--sst-bg-alt);
+    }
+
+    .sst-btn-outline {
+        background: var(--sst-accent-soft);
+        border: 1px solid var(--sst-info-border);
+        color: var(--sst-accent);
+        padding: 0.45rem 1rem;
+        border-radius: 0.45rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .sst-btn-outline:hover {
+        background: var(--sst-accent);
+        color: #fff;
+        border-color: var(--sst-accent);
+    }
+
+    /* ── Badges ── */
+    .sst-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 2rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .sst-badge--success {
+        background: var(--sst-success-bg);
+        color: var(--sst-success);
+        border: 1px solid var(--sst-success-border);
+    }
+
+    .sst-badge--warning {
+        background: var(--sst-warning-bg);
+        color: var(--sst-warning);
+        border: 1px solid var(--sst-warning-border);
+    }
+
+    .sst-badge--danger {
+        background: var(--sst-danger-bg);
+        color: var(--sst-danger);
+        border: 1px solid var(--sst-danger-border);
+    }
+
+    .sst-badge--info {
+        background: var(--sst-info-bg);
+        color: var(--sst-accent);
+        border: 1px solid var(--sst-info-border);
+    }
+
+    .sst-badge--muted {
+        background: var(--sst-bg-alt);
+        color: var(--sst-text-muted);
+        border: 1px solid var(--sst-border);
+    }
+
+    .sst-badge--count {
+        background: var(--sst-accent-soft);
+        color: var(--sst-accent);
+        border: 1px solid var(--sst-info-border);
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+    }
+
+    /* ── Info Grid (Detail Pages) ── */
+    .sst-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+
+    .sst-info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .sst-info-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--sst-text-muted);
+    }
+
+    .sst-info-value {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: var(--sst-text);
+    }
+
+    .sst-info-value code {
+        background: var(--sst-accent-soft);
+        color: var(--sst-accent);
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.3rem;
+        font-size: 0.85rem;
+    }
+
+    .sst-info-divider {
+        grid-column: 1 / -1;
+        height: 1px;
+        background: var(--sst-divider);
+        margin: 0.25rem 0;
+    }
+
+    /* ── Alert ── */
+    .sst-alert {
+        border-radius: 0.5rem;
+        padding: 0.85rem 1.25rem;
+        font-size: 0.88rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .sst-alert--info {
+        background: var(--sst-info-bg);
+        border: 1px solid var(--sst-info-border);
+        border-left: 4px solid var(--sst-accent);
+        color: var(--sst-info-text);
+    }
+
+    .sst-alert--warning {
+        background: var(--sst-warning-bg);
+        border: 1px solid var(--sst-warning-border);
+        border-left: 4px solid var(--sst-warning);
+        color: var(--sst-warning);
+    }
+
+    .sst-alert--danger {
+        background: var(--sst-danger-bg);
+        border: 1px solid var(--sst-danger-border);
+        border-left: 4px solid var(--sst-danger);
+        color: var(--sst-danger);
+    }
+
+    .sst-alert--success {
+        background: var(--sst-success-bg);
+        border: 1px solid var(--sst-success-border);
+        border-left: 4px solid var(--sst-success);
+        color: var(--sst-success);
+    }
+
+    /* ── Table ── */
+    .sst-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .sst-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.875rem;
+    }
+
+    .sst-table th,
+    .sst-table td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--sst-border);
+        color: var(--sst-text);
+    }
+
+    .sst-table thead th {
+        background: var(--sst-bg-alt);
+        color: var(--sst-text-muted);
+        font-weight: 700;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+        border-bottom: 2px solid var(--sst-border);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .sst-table tbody tr {
+        background: var(--sst-bg);
+        transition: background 0.15s ease;
+    }
+
+    .sst-table tbody tr:hover {
+        background: var(--sst-accent-soft);
+    }
+
+    .sst-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .sst-table a {
+        color: var(--sst-accent);
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .sst-table a:hover {
+        text-decoration: underline;
+    }
+
+    .sst-table code {
+        background: var(--sst-accent-soft);
+        color: var(--sst-accent);
+        padding: 0.1rem 0.4rem;
+        border-radius: 0.25rem;
+        font-size: 0.82rem;
+    }
+
+    .sst-table .text-muted-custom {
+        color: var(--sst-text-muted);
+    }
+
+    /* ── Action Buttons in Table ── */
+    .sst-action-group {
+        display: inline-flex;
+        gap: 0.3rem;
+    }
+
+    .sst-action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 0.4rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid var(--sst-border);
+        background: var(--sst-bg);
+        color: var(--sst-text-muted);
+        font-size: 0.85rem;
+        transition: all 0.15s ease;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .sst-action-btn:hover {
+        border-color: var(--sst-accent);
+        color: var(--sst-accent);
+        background: var(--sst-accent-soft);
+    }
+
+    .sst-action-btn--view:hover {
+        border-color: var(--sst-accent);
+        color: var(--sst-accent);
+        background: var(--sst-info-bg);
+    }
+
+    .sst-action-btn--edit:hover {
+        border-color: var(--sst-warning);
+        color: var(--sst-warning);
+        background: var(--sst-warning-bg);
+    }
+
+    .sst-action-btn--delete:hover {
+        border-color: var(--sst-danger);
+        color: var(--sst-danger);
+        background: var(--sst-danger-bg);
+    }
+
+    .sst-action-btn--sign:hover {
+        border-color: var(--sst-accent);
+        color: var(--sst-accent);
+        background: var(--sst-info-bg);
+    }
+
+    .sst-action-btn--return:hover {
+        border-color: var(--sst-text-muted);
+        color: var(--sst-text);
+        background: var(--sst-bg-alt);
+    }
+
+    /* ── Empty State ── */
+    .sst-empty {
+        text-align: center;
+        padding: 3rem 1.5rem;
+    }
+
+    .sst-empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--sst-bg-alt);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--sst-text-muted);
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .sst-empty h6 {
+        color: var(--sst-text-muted);
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .sst-empty p {
+        color: var(--sst-text-muted);
+        font-size: 0.85rem;
+    }
+
+    /* ── Avatar ── */
+    .sst-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--sst-border);
+        flex-shrink: 0;
+    }
+
+    .sst-avatar--lg {
+        width: 56px;
+        height: 56px;
+        border: 2px solid rgba(255,255,255,.3);
+    }
+
+    .sst-avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--sst-bg-alt);
+        border: 2px solid var(--sst-border);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--sst-text-muted);
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .sst-avatar-placeholder--lg {
+        width: 56px;
+        height: 56px;
+        background: rgba(255,255,255,.1);
+        border-color: rgba(255,255,255,.2);
+        color: #f1f5f9;
+        font-size: 1.3rem;
+    }
+
+    /* ── Filter Card ── */
+    .sst-filter {
+        background: var(--sst-bg);
+        border: 1px solid var(--sst-border);
+        border-radius: 0.65rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: var(--sst-card-shadow);
+    }
+
+    .sst-filter-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--sst-text-muted);
+        margin-bottom: 0.35rem;
+        display: block;
+    }
+
+    .sst-filter .form-control,
+    .sst-filter .form-select {
+        background: var(--sst-input-bg);
+        border: 1.5px solid var(--sst-input-border);
+        border-radius: 0.45rem;
+        color: var(--sst-text);
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
+    }
+
+    .sst-filter .form-control:focus,
+    .sst-filter .form-select:focus {
+        border-color: var(--sst-input-focus);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    .sst-filter .input-group-text {
+        background: var(--sst-bg-alt);
+        border: 1.5px solid var(--sst-input-border);
+        color: var(--sst-text-muted);
+    }
+
+    /* ── Stat Cards ── */
+    .sst-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .sst-stat {
+        background: var(--sst-bg);
+        border: 1px solid var(--sst-border);
+        border-radius: 0.65rem;
+        padding: 1rem 1.25rem;
+        text-align: center;
+        box-shadow: var(--sst-card-shadow);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .sst-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+
+    .sst-stat--success { border-bottom: 3px solid var(--sst-success); }
+    .sst-stat--warning { border-bottom: 3px solid var(--sst-warning); }
+    .sst-stat--danger  { border-bottom: 3px solid var(--sst-danger); }
+
+    .sst-stat-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--sst-text-muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .sst-stat-value {
+        font-size: 1.85rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .sst-stat-value--success { color: var(--sst-success); }
+    .sst-stat-value--warning { color: var(--sst-warning); }
+    .sst-stat-value--danger  { color: var(--sst-danger); }
+    .sst-stat-value--muted   { color: var(--sst-text-muted); }
+
+    /* ── Pagination ── */
+    .sst-pagination {
+        padding: 0.75rem 1.5rem;
+        border-top: 1px solid var(--sst-border);
+        background: var(--sst-bg-alt);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .sst-page-header {
+            padding: 1rem 1.25rem;
+        }
+        .sst-page-header h4 {
+            font-size: 1.1rem;
+        }
+        .sst-info-grid {
+            grid-template-columns: 1fr;
+        }
+        .sst-card-body {
+            padding: 1.25rem;
+        }
+        .sst-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       NAVEGAÇÃO SECUNDÁRIA SST
+       ═══════════════════════════════════════════════════════ */
+    .sst-subnav {
+        background: var(--sst-nav-bg);
+        border: 1px solid var(--sst-nav-border);
+        border-radius: 0.75rem;
+        box-shadow: var(--sst-nav-shadow);
+        padding: 0;
+        margin-bottom: 1.75rem;
+        position: sticky;
+        top: 60px;
+        z-index: 1020;
+        overflow: visible;
+    }
+
+    .sst-subnav .container-fluid {
+        padding: 0.5rem 1rem;
+    }
+
+    .sst-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        text-decoration: none;
+        padding: 0.25rem 0;
+        margin-right: 1rem;
+    }
+
+    .sst-brand-icon {
+        background: var(--sst-brand-icon-bg);
+        width: 34px;
+        height: 34px;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,.15);
+    }
+
+    .sst-brand-text {
+        font-weight: 800;
+        font-size: 1.05rem;
+        color: var(--sst-brand-color);
+        letter-spacing: -0.02em;
+    }
+
+    .sst-brand-text small {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: var(--sst-link-color);
+        letter-spacing: 0.03em;
+        line-height: 1;
+        margin-top: 1px;
+    }
+
+    .sst-subnav .sst-nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.55rem 0.85rem;
+        border-radius: 0.45rem;
+        font-size: 0.84rem;
+        font-weight: 500;
+        color: var(--sst-link-color);
+        text-decoration: none;
+        transition: all 0.2s ease;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .sst-subnav .sst-nav-link:hover {
+        color: var(--sst-link-hover);
+        background: var(--sst-link-active-bg);
+    }
+
+    .sst-subnav .sst-nav-link.active {
+        color: var(--sst-link-active-color);
+        background: var(--sst-link-active-bg);
+        font-weight: 600;
+    }
+
+    .sst-subnav .sst-nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -0.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 3px;
+        background: var(--sst-link-active-border);
+        border-radius: 3px 3px 0 0;
+        box-shadow: 0 0 8px var(--sst-indicator-glow);
+    }
+
+    .sst-subnav .sst-nav-link i {
+        font-size: 0.95rem;
+        opacity: 0.75;
+    }
+
+    .sst-subnav .sst-nav-link.active i {
+        opacity: 1;
+    }
+
+    .sst-nav-separator {
+        width: 1px;
+        height: 24px;
+        background: var(--sst-divider);
+        margin: 0 0.35rem;
+        align-self: center;
+    }
+
+    .sst-subnav .dropdown-menu {
+        background: var(--sst-dropdown-bg);
+        border: 1px solid var(--sst-dropdown-border);
+        border-radius: 0.6rem;
+        box-shadow: var(--sst-dropdown-shadow);
+        padding: 0.5rem;
+        min-width: 220px;
+        margin-top: 0.5rem;
+    }
+
+    .sst-subnav .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 0.85rem;
+        border-radius: 0.4rem;
+        font-size: 0.84rem;
+        font-weight: 500;
+        color: var(--sst-link-color);
+        transition: all 0.15s ease;
+    }
+
+    .sst-subnav .dropdown-item:hover,
+    .sst-subnav .dropdown-item:focus {
+        background: var(--sst-dropdown-hover);
+        color: var(--sst-link-hover);
+    }
+
+    .sst-subnav .dropdown-item.active {
+        background: var(--sst-link-active-bg);
+        color: var(--sst-link-active-color);
+    }
+
+    .sst-subnav .dropdown-item i {
+        font-size: 1rem;
+        width: 20px;
+        text-align: center;
+        opacity: 0.7;
+    }
+
+    .sst-subnav .dropdown-item:hover i {
+        opacity: 1;
+    }
+
+    .sst-dropdown-label {
+        display: block;
+        padding: 0.35rem 0.85rem 0.25rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--sst-link-color);
+        opacity: 0.6;
+    }
+
+    .sst-subnav .dropdown-divider {
+        border-color: var(--sst-divider);
+        margin: 0.35rem 0;
+    }
+
+    .sst-more-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.45rem 0.65rem;
+        border-radius: 0.45rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: var(--sst-link-color);
+        background: none;
+        border: 1.5px dashed var(--sst-nav-border);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .sst-more-trigger:hover {
+        color: var(--sst-link-hover);
+        border-color: var(--sst-link-active-border);
+        background: var(--sst-link-active-bg);
+    }
+
+    .sst-more-trigger::after {
+        display: none;
+    }
+
+    .sst-more-chevron {
+        font-size: 0.7rem;
+        transition: transform 0.2s ease;
+    }
+
+    .sst-more-trigger[aria-expanded="true"] .sst-more-chevron {
+        transform: rotate(180deg);
+    }
+
+    .sst-toggler {
+        border: 1.5px solid var(--sst-nav-border);
+        border-radius: 0.4rem;
+        padding: 0.35rem 0.5rem;
+        background: transparent;
+        color: var(--sst-link-color);
+        transition: all 0.2s ease;
+    }
+
+    .sst-toggler:hover,
+    .sst-toggler:focus {
+        border-color: var(--sst-link-active-border);
+        color: var(--sst-link-active-color);
+        box-shadow: 0 0 0 3px var(--sst-indicator-glow);
+    }
+
+    .sst-toggler .bi {
+        font-size: 1.2rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .sst-subnav {
+            border-radius: 0.5rem;
+        }
+        .sst-subnav .container-fluid {
+            padding: 0.5rem 0.75rem;
+        }
+        .sst-subnav .navbar-collapse {
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--sst-divider);
+            margin-top: 0.5rem;
+        }
+        .sst-subnav .sst-nav-link {
+            padding: 0.65rem 0.85rem;
+            border-radius: 0.4rem;
+            width: 100%;
+        }
+        .sst-subnav .sst-nav-link.active::after {
+            display: none;
+        }
+        .sst-subnav .sst-nav-link.active {
+            border-left: 3px solid var(--sst-link-active-border);
+            border-radius: 0 0.4rem 0.4rem 0;
+        }
+        .sst-nav-separator {
+            width: 100%;
+            height: 1px;
+            margin: 0.35rem 0;
+        }
+        .sst-more-trigger {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
-    
-    <!-- ═══════════════════════════════════════════════════════════════════════
-         NAVEGAÇÃO SECUNDÁRIA (SUBNAV)
-    ═══════════════════════════════════════════════════════════════════════ -->
-    <nav class="navbar navbar-expand-lg bg-body-tertiary rounded-3 shadow-sm mb-4 sticky-top" style="top: 60px; z-index: 1020;">
+
+    <nav class="sst-subnav navbar navbar-expand-lg">
         <div class="container-fluid">
-            <span class="navbar-brand fw-bold text-primary">
-                <i class="bi bi-shield-check me-1"></i> SST
-            </span>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sstNavbar">
-                <span class="navbar-toggler-icon"></span>
+            <a class="sst-brand" href="{% url 'seguranca_trabalho:dashboard' %}">
+                <span class="sst-brand-icon">
+                    <i class="bi bi-shield-check"></i>
+                </span>
+                <span class="sst-brand-text">
+                    SST
+                    <small>Segurança do Trabalho</small>
+                </span>
+            </a>
+
+            <button class="sst-toggler d-lg-none" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#sstNavbar"
+                    aria-controls="sstNavbar" aria-expanded="false"
+                    aria-label="{% trans 'Alternar navegação' %}">
+                <i class="bi bi-list"></i>
             </button>
-            
+
             <div class="collapse navbar-collapse" id="sstNavbar">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 align-items-lg-center">
+
                     {% if perms.seguranca_trabalho.view_fichaepi %}
                     <li class="nav-item">
-                        <a href="{% url 'seguranca_trabalho:dashboard' %}" 
-                           class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active fw-bold{% endif %}">
-                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        <a href="{% url 'seguranca_trabalho:dashboard' %}"
+                           class="sst-nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% if perms.seguranca_trabalho.view_fichaepi %}
                     <li class="nav-item">
-                        <a href="{% url 'seguranca_trabalho:ficha_list' %}" 
-                           class="nav-link {% if 'ficha_' in request.resolver_match.url_name %}active fw-bold{% endif %}">
-                            <i class="bi bi-file-person me-1"></i> Fichas de EPI
+                        <a href="{% url 'seguranca_trabalho:ficha_list' %}"
+                           class="sst-nav-link {% if 'ficha_' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bi bi-file-person"></i> Fichas de EPI
                         </a>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}" 
-                           class="nav-link {% if 'minha_ficha' in request.resolver_match.url_name %}active fw-bold{% endif %}">
-                            <i class="bi bi-file-person me-1"></i> Minha Ficha
+                        <a href="{% url 'seguranca_trabalho:minha_ficha_redirect' %}"
+                           class="sst-nav-link {% if 'minha_ficha' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bi bi-file-person"></i> Minha Ficha
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% if perms.seguranca_trabalho.view_equipamento %}
                     <li class="nav-item">
-                        <a href="{% url 'seguranca_trabalho:equipamento_list' %}" 
-                           class="nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active fw-bold{% endif %}">
-                            <i class="bi bi-hdd-stack me-1"></i> Equipamentos
+                        <a href="{% url 'seguranca_trabalho:equipamento_list' %}"
+                           class="sst-nav-link {% if 'equipamento_' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bi bi-hdd-stack"></i> EPI - Equipamentos
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% if perms.seguranca_trabalho.view_funcao %}
                     <li class="nav-item">
-                        <a href="{% url 'seguranca_trabalho:funcao_list' %}" 
-                           class="nav-link {% if 'funcao_' in request.resolver_match.url_name %}active fw-bold{% endif %}">
-                            <i class="bi bi-briefcase me-1"></i> Funções
+                        <a href="{% url 'seguranca_trabalho:funcao_list' %}"
+                           class="sst-nav-link {% if 'funcao_' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bi bi-briefcase"></i> Funções
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% if perms.seguranca_trabalho.change_matrizepi %}
                     <li class="nav-item">
-                        <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}" 
-                           class="nav-link {% if 'controle_epi' in request.resolver_match.url_name %}active fw-bold{% endif %}">
-                            <i class="bi bi-grid-3x3 me-1"></i> Matriz EPI
+                        <a href="{% url 'seguranca_trabalho:controle_epi_por_funcao' %}"
+                           class="sst-nav-link {% if 'controle_epi' in request.resolver_match.url_name %}active{% endif %}">
+                            <i class="bi bi-grid-3x3"></i> Matriz EPI
                         </a>
                     </li>
                     {% endif %}
-                    
-                    <!-- Dropdown para módulos relacionados -->
+
+                    <li class="sst-nav-separator d-none d-lg-block"></li>
+
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="bi bi-three-dots me-1"></i> Mais
+                        <a class="sst-more-trigger dropdown-toggle" href="#"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-grid-1x2"></i> Mais
+                            <i class="bi bi-chevron-down sst-more-chevron"></i>
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><span class="sst-dropdown-label">Módulos Relacionados</span></li>
+
                             {% if perms.gestao_riscos.view_inspecao %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'gestao_riscos:lista_riscos' %}">
-                                    <i class="bi bi-exclamation-triangle me-2"></i> Gestão de Riscos
+                                    <i class="bi bi-exclamation-triangle text-warning"></i> Gestão de Riscos
                                 </a>
                             </li>
                             {% endif %}
+
                             {% if perms.pgr_gestao.view_pgrdocumento %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'pgr_gestao:dashboard' %}">
-                                    <i class="bi bi-shield-check me-2"></i> PGR
+                                    <i class="bi bi-shield-exclamation text-primary"></i> PGR
                                 </a>
                             </li>
                             {% endif %}
+
                             {% if perms.gestao_riscos.view_inspecao %}
                             <li>
                                 <a class="dropdown-item" href="{% url 'ltcat:ltcat_list' %}">
-                                    <i class="bi bi-exclamation-triangle me-2"></i> LTCAT
+                                    <i class="bi bi-file-earmark-medical text-info"></i> LTCAT
                                 </a>
                             </li>
                             {% endif %}
+
                             {% if perms.seguranca_trabalho.view_cargofuncao %}
                             <li><hr class="dropdown-divider"></li>
+                            <li><span class="sst-dropdown-label">Configurações</span></li>
                             <li>
-                                <a class="dropdown-item" href="{% url 'seguranca_trabalho:lista_associacoes' %}">
-                                    <i class="bi bi-diagram-3 me-2"></i> Cargo × Função
+                                <a class="dropdown-item {% if 'associac' in request.resolver_match.url_name %}active{% endif %}"
+                                   href="{% url 'seguranca_trabalho:lista_associacoes' %}">
+                                    <i class="bi bi-diagram-3 text-secondary"></i> Cargo × Função
                                 </a>
                             </li>
                             {% endif %}
                         </ul>
                     </li>
-                    
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Conteúdo específico de cada página SST -->
     {% block sst_content %}{% endblock sst_content %}
 
 </div>

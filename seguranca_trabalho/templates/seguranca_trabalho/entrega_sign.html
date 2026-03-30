@@ -4,133 +4,527 @@
 
 {% block title %}Assinar Entrega de EPI{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ═══════════════════════════════════════════════════════
+       ASSINATURA — TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
+    :root,
+    [data-bs-theme="light"] {
+        --as-bg:              #ffffff;
+        --as-bg-alt:          #f8f9fc;
+        --as-text:            #1e293b;
+        --as-text-muted:      #64748b;
+        --as-border:          #e2e8f0;
+        --as-card-shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+        --as-accent:          #3b82f6;
+        --as-accent-soft:     rgba(59,130,246,.06);
+        --as-success:         #10b981;
+        --as-success-grad:    linear-gradient(135deg, #10b981 0%, #059669 100%);
+        --as-success-soft:    rgba(16,185,129,.06);
+        --as-success-border:  rgba(16,185,129,.2);
+        --as-header-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        --as-info-bg:         rgba(59,130,246,.06);
+        --as-info-border:     rgba(59,130,246,.15);
+        --as-info-text:       #1e40af;
+        --as-canvas-bg:       #ffffff;
+        --as-canvas-border:   #cbd5e1;
+        --as-tab-active-bg:   #ffffff;
+        --as-tab-border:      #e2e8f0;
+        --as-detail-icon-bg:  rgba(59,130,246,.08);
+    }
+
+    [data-bs-theme="dark"] {
+        --as-bg:              #1a1d23;
+        --as-bg-alt:          #1e2128;
+        --as-text:            #e2e8f0;
+        --as-text-muted:      #94a3b8;
+        --as-border:          #2d3748;
+        --as-card-shadow:     0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+        --as-accent:          #60a5fa;
+        --as-accent-soft:     rgba(96,165,250,.08);
+        --as-success:         #34d399;
+        --as-success-grad:    linear-gradient(135deg, #059669 0%, #047857 100%);
+        --as-success-soft:    rgba(16,185,129,.08);
+        --as-success-border:  rgba(16,185,129,.25);
+        --as-header-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --as-info-bg:         rgba(96,165,250,.08);
+        --as-info-border:     rgba(96,165,250,.2);
+        --as-info-text:       #93bbfc;
+        --as-canvas-bg:       #ffffff;
+        --as-canvas-border:   #3d4555;
+        --as-tab-active-bg:   #1a1d23;
+        --as-tab-border:      #2d3748;
+        --as-detail-icon-bg:  rgba(96,165,250,.1);
+    }
+
+    /* ── Page Header ── */
+    .as-header {
+        background: var(--as-header-gradient);
+        border-radius: 0.75rem;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.75rem;
+        color: #f8fafc;
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-bs-theme="dark"] .as-header {
+        border: 1px solid var(--as-border);
+    }
+
+    .as-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(16,185,129,.12) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .as-header h4 {
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .as-header .as-subtitle {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+
+    .as-btn-back {
+        background: rgba(255,255,255,.1);
+        border: 1px solid rgba(255,255,255,.2);
+        color: #f1f5f9;
+        padding: 0.45rem 1rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .as-btn-back:hover {
+        background: rgba(255,255,255,.2);
+        color: #fff;
+    }
+
+    /* ── Cards ── */
+    .as-card {
+        background: var(--as-bg);
+        border: 1px solid var(--as-border);
+        border-radius: 0.75rem;
+        box-shadow: var(--as-card-shadow);
+        overflow: hidden;
+    }
+
+    .as-card + .as-card {
+        margin-top: 1.25rem;
+    }
+
+    .as-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--as-border);
+        background: var(--as-bg-alt);
+    }
+
+    .as-card-header h6 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--as-text);
+    }
+
+    .as-card-header i {
+        color: var(--as-accent);
+    }
+
+    .as-card-header--success {
+        background: var(--as-success-grad);
+    }
+
+    .as-card-header--success h6,
+    .as-card-header--success i {
+        color: #fff;
+    }
+
+    .as-card-body {
+        padding: 1.5rem;
+    }
+
+    /* ── Detail Grid ── */
+    .as-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .as-detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .as-detail-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--as-text-muted);
+    }
+
+    .as-detail-value {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: var(--as-text);
+    }
+
+    .as-detail-value code {
+        background: var(--as-accent-soft);
+        color: var(--as-accent);
+        padding: 0.15rem 0.45rem;
+        border-radius: 0.3rem;
+        font-size: 0.85rem;
+    }
+
+    /* ── Declaração ── */
+    .as-declaration {
+        background: var(--as-info-bg);
+        border: 1px solid var(--as-info-border);
+        border-left: 4px solid var(--as-accent);
+        border-radius: 0.5rem;
+        padding: 0.85rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.88rem;
+        color: var(--as-info-text);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    /* ── Tabs ── */
+    .as-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid var(--as-border);
+    }
+
+    .as-tab {
+        padding: 0.6rem 1.25rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--as-text-muted);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .as-tab:hover {
+        color: var(--as-text);
+    }
+
+    .as-tab.active {
+        color: var(--as-accent);
+    }
+
+    .as-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--as-accent);
+        border-radius: 2px 2px 0 0;
+    }
+
+    /* ── Canvas ── */
+    .as-canvas-wrapper {
+        border: 2px dashed var(--as-canvas-border);
+        border-radius: 0.5rem;
+        background: var(--as-canvas-bg);
+        height: 200px;
+        position: relative;
+        margin-top: 1rem;
+        overflow: hidden;
+        transition: border-color 0.2s ease;
+    }
+
+    .as-canvas-wrapper:hover {
+        border-color: var(--as-accent);
+    }
+
+    .as-canvas-wrapper canvas {
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+    }
+
+    .as-canvas-hint {
+        font-size: 0.78rem;
+        color: var(--as-text-muted);
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    /* ── Tab Content ── */
+    .as-tab-pane {
+        padding: 1.25rem 0 0;
+    }
+
+    .as-upload-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--as-text);
+        margin-bottom: 0.4rem;
+    }
+
+    .as-card .form-control {
+        background: var(--as-bg-alt);
+        border: 1.5px solid var(--as-border);
+        border-radius: 0.45rem;
+        color: var(--as-text);
+        transition: all 0.2s ease;
+    }
+
+    .as-card .form-control:focus {
+        border-color: var(--as-accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    /* ── Footer ── */
+    .as-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--as-border);
+        background: var(--as-bg-alt);
+    }
+
+    .as-btn-clear {
+        background: transparent;
+        border: 1.5px solid var(--as-border);
+        color: var(--as-text-muted);
+        padding: 0.45rem 1rem;
+        border-radius: 0.45rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .as-btn-clear:hover {
+        border-color: var(--as-text-muted);
+        color: var(--as-text);
+    }
+
+    .as-btn-cancel {
+        background: transparent;
+        border: 1.5px solid var(--as-border);
+        color: var(--as-text-muted);
+        padding: 0.45rem 1rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .as-btn-cancel:hover {
+        border-color: var(--as-text-muted);
+        color: var(--as-text);
+    }
+
+    .as-btn-confirm {
+        background: var(--as-success-grad);
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(16,185,129,.3);
+    }
+
+    .as-btn-confirm:hover {
+        box-shadow: 0 4px 12px rgba(16,185,129,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .as-header {
+            padding: 1rem 1.25rem;
+        }
+        .as-detail-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block sst_content %}
 
-<!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-pen me-2"></i>Assinatura de Recebimento
-                </h4>
-                <small class="opacity-75">{{ entrega.ficha.funcionario.nome_completo }}</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE HEADER                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="as-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-pen-fill me-2"></i>Assinatura de Recebimento
+            </h4>
+            <span class="as-subtitle">{{ entrega.ficha.funcionario.nome_completo }}</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="as-btn-back">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        
-        <!-- Info do EPI -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-box-seam me-2"></i>Detalhes da Entrega
-                </h6>
+
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- DETALHES DA ENTREGA                                     -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="as-card">
+            <div class="as-card-header">
+                <i class="bi bi-box-seam"></i>
+                <h6>Detalhes da Entrega</h6>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small">Equipamento</label>
-                        <p class="fw-semibold mb-0">{{ entrega.equipamento.nome }}</p>
+            <div class="as-card-body">
+                <div class="as-detail-grid">
+                    <div class="as-detail-item">
+                        <span class="as-detail-label">Equipamento</span>
+                        <span class="as-detail-value">{{ entrega.equipamento.nome }}</span>
                     </div>
-                    
-                    <div class="col-md-3">
-                        <label class="form-label text-muted small">Quantidade</label>
-                        <p class="fw-semibold mb-0">{{ entrega.quantidade }}</p>
+                    <div class="as-detail-item">
+                        <span class="as-detail-label">Quantidade</span>
+                        <span class="as-detail-value">{{ entrega.quantidade }}</span>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-muted small">Data de Entrega</label>
-                        <p class="fw-semibold mb-0">{{ entrega.data_entrega|date:"d/m/Y" }}</p>
+                    <div class="as-detail-item">
+                        <span class="as-detail-label">Data de Entrega</span>
+                        <span class="as-detail-value">{{ entrega.data_entrega|date:"d/m/Y" }}</span>
                     </div>
                     {% if entrega.numero_serie %}
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small">Número de Série</label>
-                        <p class="fw-semibold mb-0"><code>{{ entrega.numero_serie }}</code></p>
+                    <div class="as-detail-item">
+                        <span class="as-detail-label">Número de Série</span>
+                        <span class="as-detail-value"><code>{{ entrega.numero_serie }}</code></span>
                     </div>
                     {% endif %}
                     {% if entrega.lote %}
-                    <div class="col-md-6">
-                        <label class="form-label text-muted small">Lote</label>
-                        <p class="fw-semibold mb-0">{{ entrega.lote }}</p>
+                    <div class="as-detail-item">
+                        <span class="as-detail-label">Lote</span>
+                        <span class="as-detail-value">{{ entrega.lote }}</span>
                     </div>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Formulário de Assinatura -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-pen me-2"></i>Campo de Assinatura
-                </h6>
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- FORMULÁRIO DE ASSINATURA                                -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="as-card">
+            <div class="as-card-header as-card-header--success">
+                <i class="bi bi-pen"></i>
+                <h6>Campo de Assinatura</h6>
             </div>
-            <div class="card-body p-4">
+            <div class="as-card-body">
                 <form method="post" id="formAssinatura" enctype="multipart/form-data">
                     {% csrf_token %}
                     {{ form }}
-                    <!-- ... signature_pad canvas, botões, etc. ... -->
+
                     <input type="hidden" name="assinatura_base64" id="assinatura_base64">
-                    <div class="alert alert-info mb-4">
-                        <i class="bi bi-person-check me-2"></i>
-                        Eu, <strong>{{ entrega.ficha.funcionario.nome_completo }}</strong>, confirmo o recebimento do EPI acima descrito.
+
+                    <!-- Declaração -->
+                    <div class="as-declaration">
+                        <i class="bi bi-person-check-fill"></i>
+                        <span>
+                            Eu, <strong>{{ entrega.ficha.funcionario.nome_completo }}</strong>,
+                            confirmo o recebimento do EPI acima descrito.
+                        </span>
                     </div>
 
                     <!-- Tabs -->
-                    <ul class="nav nav-tabs" role="tablist">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#draw-pane" type="button">
-                                <i class="bi bi-pencil me-1"></i> Desenhar
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button">
-                                <i class="bi bi-upload me-1"></i> Upload
-                            </button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content border border-top-0 rounded-bottom p-3">
-                        <!-- Tab: Desenhar -->
-                        <div class="tab-pane fade show active" id="draw-pane">
-                            <label class="form-label fw-semibold">Assine no campo abaixo:</label>
-                            <div class="border rounded bg-white" style="height: 200px;">
-                                <canvas id="signature-canvas" style="width: 100%; height: 100%; cursor: crosshair;"></canvas>
-                            </div>
-                            <input type="hidden" name="assinatura_base64" id="assinatura_base64">
-                            <small class="text-muted">Use o mouse ou toque para assinar</small>
-                        </div>
-                        
-                        <!-- Tab: Upload -->
-                        <div class="tab-pane fade" id="upload-pane">
-                            <label for="assinatura_imagem" class="form-label fw-semibold">Upload de imagem:</label>
-                            <input type="file" class="form-control" name="assinatura_imagem" accept="image/png, image/jpeg">
-                            <small class="text-muted">Formatos aceitos: PNG, JPEG</small>
-                        </div>
+                    <div class="as-tabs" role="tablist">
+                        <button class="as-tab active" data-bs-toggle="tab" data-bs-target="#draw-pane" type="button" role="tab">
+                            <i class="bi bi-pencil"></i> Desenhar
+                        </button>
+                        <button class="as-tab" data-bs-toggle="tab" data-bs-target="#upload-pane" type="button" role="tab">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
                     </div>
 
-                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
-                        <div>
-                            <button type="button" class="btn btn-outline-secondary" id="clear-signature">
-                                <i class="bi bi-eraser me-1"></i> Limpar
-                            </button>
+                    <div class="tab-content">
+                        <!-- Tab: Desenhar -->
+                        <div class="tab-pane fade show active as-tab-pane" id="draw-pane">
+                            <label class="as-upload-label">Assine no campo abaixo:</label>
+                            <div class="as-canvas-wrapper">
+                                <canvas id="signature-canvas"></canvas>
+                            </div>
+                            <div class="as-canvas-hint">
+                                <i class="bi bi-hand-index-thumb"></i>
+                                Use o mouse ou toque para assinar
+                            </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="btn btn-outline-secondary">
-                                Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-check-lg me-1"></i> Confirmar Assinatura
-                            </button>
+
+                        <!-- Tab: Upload -->
+                        <div class="tab-pane fade as-tab-pane" id="upload-pane">
+                            <label for="assinatura_imagem" class="as-upload-label">Upload de imagem:</label>
+                            <input type="file" class="form-control" name="assinatura_imagem" accept="image/png, image/jpeg">
+                            <div class="as-canvas-hint">
+                                <i class="bi bi-file-earmark-image"></i>
+                                Formatos aceitos: PNG, JPEG
+                            </div>
                         </div>
                     </div>
                 </form>
+            </div>
+
+            <div class="as-card-footer">
+                <button type="button" class="as-btn-clear" id="clear-signature">
+                    <i class="bi bi-eraser"></i> Limpar
+                </button>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="as-btn-cancel">
+                        Cancelar
+                    </a>
+                    <button type="submit" form="formAssinatura" class="as-btn-confirm">
+                        <i class="bi bi-check-lg"></i> Confirmar Assinatura
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -140,6 +534,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -147,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearBtn = document.getElementById('clear-signature');
     const hiddenInput = document.getElementById('assinatura_base64');
     const form = document.getElementById('formAssinatura');
-    
+
     let signaturePad;
 
     function resizeCanvas() {
@@ -163,7 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
         backgroundColor: 'rgb(255, 255, 255)',
         penColor: 'rgb(0, 0, 0)'
     });
-    
+
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
@@ -179,4 +574,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
 

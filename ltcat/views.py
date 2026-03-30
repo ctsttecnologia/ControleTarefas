@@ -222,6 +222,8 @@ class LTCATCreateView(SSTPermissionMixin, FilialCreateMixin, CreateView):
                 kwargs["filial"] = None
         return kwargs
 
+    # REMOVIDO: get_context_data com ltcat_pk (não faz sentido aqui)
+
     def form_valid(self, form):
         form.instance.criado_por = self.request.user
         messages.success(self.request, "LTCAT criado com sucesso!")
@@ -517,22 +519,39 @@ class FuncaoDeleteView(LTCATChildMixin, DeleteView):
 # ── Reconhecimento de Riscos ──
 
 class RiscoCreateView(LTCATChildMixin, CreateView):
+    """Cria um risco vinculado a um LTCAT (e opcionalmente a uma função)."""
     model = ReconhecimentoRisco
     form_class = ReconhecimentoRiscoForm
     template_name = "ltcat/risco_form.html"
     permission_required = "ltcat.add_reconhecimentorisco"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["ltcat"] = self.get_ltcat()
+        return kwargs
+
     def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["funcao"] = get_object_or_404(
-            FuncaoAnalisada, pk=self.kwargs["funcao_pk"]
-        )
-        return ctx
+        context = super().get_context_data(**kwargs)
+        # Se veio de uma função específica, pré-seleciona
+        funcao_pk = self.request.GET.get("funcao") or self.kwargs.get("funcao_pk")
+        if funcao_pk:
+            try:
+                context["funcao"] = FuncaoAnalisada.objects.get(pk=funcao_pk)
+            except FuncaoAnalisada.DoesNotExist:
+                context["funcao"] = None
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        # Pré-seleciona função se veio na URL
+        funcao_pk = self.request.GET.get("funcao") or self.kwargs.get("funcao_pk")
+        if funcao_pk:
+            initial["funcao"] = funcao_pk
+        return initial
 
     def form_valid(self, form):
-        funcao = get_object_or_404(FuncaoAnalisada, pk=self.kwargs["funcao_pk"])
-        form.instance.funcao = funcao
-        messages.success(self.request, "Risco adicionado com sucesso!")
+        form.instance.ltcat_documento = self.get_ltcat()
+        messages.success(self.request, "Risco cadastrado com sucesso!")
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -544,6 +563,24 @@ class RiscoUpdateView(LTCATChildMixin, UpdateView):
     form_class = ReconhecimentoRiscoForm
     template_name = "ltcat/risco_form.html"
     permission_required = "ltcat.change_reconhecimentorisco"
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["ltcat"] = self.get_ltcat()
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, "Risco atualizado com sucesso!")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("ltcat:ltcat_detail", kwargs={"pk": self.kwargs["ltcat_pk"]})
+
+
+class RiscoDeleteView(LTCATChildMixin, DeleteView):
+    model = ReconhecimentoRisco
+    template_name = "ltcat/confirm_delete_generic.html"
+    permission_required = "ltcat.delete_reconhecimentorisco"
 
     def get_success_url(self):
         return reverse("ltcat:ltcat_detail", kwargs={"pk": self.kwargs["ltcat_pk"]})
@@ -1318,3 +1355,37 @@ def ajax_buscar_profissional_por_funcionario(request):
         })
 
     return JsonResponse({"found": False})
+
+
+@login_required
+def ajax_cargo_info(request):
+    """Retorna nome e CBO de um Cargo."""
+    cargo_id = request.GET.get('cargo_id')
+    if not cargo_id:
+        return JsonResponse({'error': 'cargo_id obrigatório'}, status=400)
+    try:
+        cargo = Cargo.objects.get(pk=cargo_id, ativo=True)
+        return JsonResponse({
+            'nome': cargo.nome,
+            'cbo': cargo.cbo or '',
+            'descricao': cargo.descricao or '',
+        })
+    except Cargo.DoesNotExist:
+        return JsonResponse({'error': 'Cargo não encontrado'}, status=404)
+
+
+@login_required
+def ajax_funcao_st_info(request):
+    """Retorna nome e descrição de uma Função (Seg. Trabalho)."""
+    funcao_id = request.GET.get('funcao_id')
+    if not funcao_id:
+        return JsonResponse({'error': 'funcao_id obrigatório'}, status=400)
+    try:
+        funcao = Funcao.objects.get(pk=funcao_id, ativo=True)
+        return JsonResponse({
+            'nome': funcao.nome,
+            'registro': funcao.registro or '',
+            'descricao': funcao.descricao or '',
+        })
+    except Funcao.DoesNotExist:
+        return JsonResponse({'error': 'Função não encontrada'}, status=404)

@@ -7,42 +7,44 @@
 {% block sst_content %}
 
 <!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
-                    {% if object %}Editar Equipamento{% else %}Novo Equipamento{% endif %}
-                </h4>
-                <small class="opacity-75">Cadastro de EPIs e equipamentos de segurança</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
+                {% if object %}Editar Equipamento{% else %}Novo Equipamento{% endif %}
+            </h4>
+            <span class="sst-page-subtitle">Cadastro de EPIs e equipamentos de segurança</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="sst-btn-header">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-10">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <form method="post" enctype="multipart/form-data" novalidate>
-                    {% csrf_token %}
+        <div class="sst-card">
+            <form method="post" enctype="multipart/form-data" novalidate id="equipForm">
+                {% csrf_token %}
+                <div class="sst-card-body">
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    <div class="sst-alert sst-alert--danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ form.non_field_errors }}
+                    </div>
                     {% endif %}
 
                     <!-- Informações Principais -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-info-circle me-2"></i>Informações Principais
-                    </h6>
+                    <div class="sst-section-title">
+                        <i class="bi bi-info-circle"></i>
+                        Informações Principais
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.nome.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.nome.id_for_label }}" class="sst-form-label">
+                                {{ form.nome.label }} <span class="required">*</span>
                             </label>
                             {% render_field form.nome class+="form-control" %}
                             {% for error in form.nome.errors %}
@@ -50,7 +52,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.modelo.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.modelo.id_for_label }}" class="sst-form-label">
                                 {{ form.modelo.label }}
                             </label>
                             {% render_field form.modelo class+="form-control" %}
@@ -59,8 +61,8 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.fabricante.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.fabricante.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.fabricante.id_for_label }}" class="sst-form-label">
+                                {{ form.fabricante.label }} <span class="required">*</span>
                             </label>
                             {{ form.fabricante }}
                             {% for error in form.fabricante.errors %}
@@ -70,22 +72,23 @@
                     </div>
 
                     <!-- Certificação e Vida Útil -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-award me-2"></i>Certificação e Vida Útil
-                    </h6>
+                    <div class="sst-section-title">
+                        <i class="bi bi-award"></i>
+                        Certificação e Vida Útil
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <label for="{{ form.certificado_aprovacao.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.certificado_aprovacao.id_for_label }}" class="sst-form-label">
                                 {{ form.certificado_aprovacao.label }}
                             </label>
                             {% render_field form.certificado_aprovacao class+="form-control" %}
-                            <small class="form-text text-muted">{{ form.certificado_aprovacao.help_text }}</small>
+                            <small class="form-text">{{ form.certificado_aprovacao.help_text }}</small>
                             {% for error in form.certificado_aprovacao.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.data_validade_ca.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.data_validade_ca.id_for_label }}" class="sst-form-label">
                                 {{ form.data_validade_ca.label }}
                             </label>
                             {{ form.data_validade_ca }}
@@ -94,11 +97,11 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.vida_util_dias.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.vida_util_dias.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.vida_util_dias.id_for_label }}" class="sst-form-label">
+                                {{ form.vida_util_dias.label }} <span class="required">*</span>
                             </label>
                             {% render_field form.vida_util_dias class+="form-control" %}
-                            <small class="form-text text-muted">{{ form.vida_util_dias.help_text }}</small>
+                            <small class="form-text">{{ form.vida_util_dias.help_text }}</small>
                             {% for error in form.vida_util_dias.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
@@ -106,41 +109,41 @@
                     </div>
 
                     <!-- Estoque -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-box-seam me-2"></i>Estoque
-                    </h6>
+                    <div class="sst-section-title">
+                        <i class="bi bi-box-seam"></i>
+                        Estoque
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
-                            <label for="{{ form.estoque_inicial.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.estoque_inicial.id_for_label }}" class="sst-form-label">
                                 {{ form.estoque_inicial.label }}
                             </label>
                             {% render_field form.estoque_inicial %}
-                            <small class="form-text text-muted">{{ form.estoque_inicial.help_text }}</small>
+                            <small class="form-text">{{ form.estoque_inicial.help_text }}</small>
                             {% for error in form.estoque_inicial.errors %}
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
 
                             {% if object %}
-                            <!-- Badge de status do estoque na edição -->
                             <div class="mt-2">
                                 {% if object.estoque_status == 'sem_estoque' %}
-                                <span class="badge bg-danger fs-6">
-                                    <i class="bi bi-exclamation-triangle me-1"></i> Sem Estoque
+                                <span class="sst-badge sst-badge--danger">
+                                    <i class="bi bi-x-circle-fill"></i> Sem Estoque
                                 </span>
                                 {% elif object.estoque_status == 'critico' %}
-                                <span class="badge bg-warning text-dark fs-6">
-                                    <i class="bi bi-exclamation-circle me-1"></i> Estoque Crítico
+                                <span class="sst-badge sst-badge--warning">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Estoque Crítico
                                 </span>
                                 {% else %}
-                                <span class="badge bg-success fs-6">
-                                    <i class="bi bi-check-circle me-1"></i> Estoque OK
+                                <span class="sst-badge sst-badge--success">
+                                    <i class="bi bi-check-circle-fill"></i> Estoque OK
                                 </span>
                                 {% endif %}
                             </div>
                             {% endif %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.estoque_minimo.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.estoque_minimo.id_for_label }}" class="sst-form-label">
                                 {{ form.estoque_minimo.label }}
                             </label>
                             {% render_field form.estoque_minimo class+="form-control" %}
@@ -148,24 +151,23 @@
                             <div class="invalid-feedback d-block">{{ error }}</div>
                             {% endfor %}
                         </div>
-
                         {% if object %}
                         <div class="col-md-4 d-flex align-items-end">
-                            <a href="{% url 'seguranca_trabalho:ajuste_estoque' object.pk %}"
-                               class="btn btn-outline-primary w-100">
-                                <i class="bi bi-arrow-left-right me-1"></i> Ajuste de Estoque
+                            <a href="{% url 'seguranca_trabalho:ajuste_estoque' object.pk %}" class="sst-btn-outline w-100 justify-content-center">
+                                <i class="bi bi-arrow-left-right"></i> Ajuste de Estoque
                             </a>
                         </div>
                         {% endif %}
                     </div>
 
                     <!-- Detalhes Adicionais -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-gear me-2"></i>Detalhes Adicionais
-                    </h6>
+                    <div class="sst-section-title">
+                        <i class="bi bi-gear"></i>
+                        Detalhes Adicionais
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label for="{{ form.foto.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.foto.id_for_label }}" class="sst-form-label">
                                 {{ form.foto.label }}
                             </label>
                             {% render_field form.foto class+="form-control" %}
@@ -180,7 +182,7 @@
                                     {{ form.requer_numero_serie.label }}
                                 </label>
                             </div>
-                            <small class="text-muted">{{ form.requer_numero_serie.help_text }}</small>
+                            <small class="form-text">{{ form.requer_numero_serie.help_text }}</small>
 
                             <div class="form-check form-switch mt-3">
                                 {% render_field form.ativo class+="form-check-input" %}
@@ -190,7 +192,7 @@
                             </div>
                         </div>
                         <div class="col-12">
-                            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.observacoes.id_for_label }}" class="sst-form-label">
                                 {{ form.observacoes.label }}
                             </label>
                             {% render_field form.observacoes class+="form-control" rows="3" %}
@@ -199,21 +201,21 @@
                             {% endfor %}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Botões -->
-                    <div class="border-top pt-4 d-flex justify-content-between">
-                        <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-lg me-1"></i> Salvar
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="sst-card-footer">
+                    <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="sst-btn-cancel">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </a>
+                    <button type="submit" class="sst-btn-primary">
+                        <i class="bi bi-check-lg"></i> Salvar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 {% endblock %}
+
 

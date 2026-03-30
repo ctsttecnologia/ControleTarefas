@@ -510,32 +510,49 @@
         <!-- Subnav / Tabs -->
         <div class="mb-4">
             <nav class="module-subnav">
+                {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
+                <!-- Dashboard: visível para todos que acessam o módulo DP -->
                 <a class="nav-link {% if 'painel' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'departamento_pessoal:painel_dp' %}">
+                href="{% url 'departamento_pessoal:painel_dp' %}">
                     <i class="bi bi-speedometer2 me-1"></i> Dashboard
                 </a>
+                {% endif %}
+                <!-- Funcionários: exige permissão de visualizar funcionário -->
+                {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
                 <a class="nav-link {% if 'funcionario' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'departamento_pessoal:lista_funcionarios' %}">
+                href="{% url 'departamento_pessoal:lista_funcionarios' %}">
                     <i class="bi bi-people me-1"></i> Funcionários
                 </a>
+                {% endif %}
+
+                <!-- Departamentos: exige permissão de visualizar departamento -->
+                {% if perms.departamento_pessoal.view_departamento or user.is_superuser %}
                 <a class="nav-link {% if 'departamento' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'departamento_pessoal:lista_departamento' %}">
+                href="{% url 'departamento_pessoal:lista_departamento' %}">
                     <i class="bi bi-diagram-3 me-1"></i> Departamentos
                 </a>
+                {% endif %}
+
+                <!-- Cargos: exige permissão de visualizar cargo -->
+                {% if perms.departamento_pessoal.view_cargo or user.is_superuser %}
                 <a class="nav-link {% if 'cargo' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'departamento_pessoal:lista_cargo' %}">
+                href="{% url 'departamento_pessoal:lista_cargo' %}">
                     <i class="bi bi-briefcase me-1"></i> Cargos
                 </a>
+                {% endif %}
+
+                <!-- Documentos: exige permissão de visualizar documento -->
+                {% if perms.departamento_pessoal.view_documentofuncionario or user.is_superuser %}
                 <a class="nav-link {% if 'documento' in request.resolver_match.url_name %}active{% endif %}" 
-                   href="{% url 'departamento_pessoal:lista_documentos' %}">
+                href="{% url 'departamento_pessoal:lista_documentos' %}">
                     <i class="bi bi-file-earmark-text me-1"></i> Documentos
                 </a>
+                {% endif %}
+
             </nav>
         </div>
-
         <!-- Toast Messages -->
         <!--{% include 'departamento_pessoal/partials/_toast_messages.html' %}-->
-
         <!-- Conteúdo do Módulo -->
         {% block dp_content %}{% endblock %}
     </div>

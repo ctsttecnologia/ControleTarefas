@@ -5,148 +5,137 @@
 
 {% block sst_content %}
 
-<!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-briefcase me-2"></i>Funções
-                </h4>
-                <small class="opacity-75">Gerenciamento de funções para associação de EPIs</small>
-            </div>
-            {% if perms.seguranca_trabalho.add_funcao %}
-            <button type="button" class="btn btn-light"
-                    hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
-                    hx-target="#modal-content"
-                    data-bs-toggle="modal"
-                    data-bs-target="#genericModal">
-                <i class="bi bi-plus-circle me-1"></i> Nova Função
-            </button>
-            {% endif %}
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4><i class="bi bi-briefcase me-2"></i>Funções</h4>
+            <span class="sst-page-subtitle">Gerenciamento de funções para associação de EPIs</span>
         </div>
+        {% if perms.seguranca_trabalho.add_funcao %}
+        <button type="button" class="sst-btn-header sst-btn-header--secundary"
+                title="Nova Função"
+                hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
+                hx-target="#modal-content"
+                data-bs-toggle="modal"
+                data-bs-target="#genericModal">
+            <i class="bi bi-plus-circle"></i> Nova Função
+        </button>
+        {% endif %}
     </div>
 </div>
 
 <!-- Filtros -->
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-white py-2">
-        <i class="bi bi-funnel me-1"></i> <strong>Filtros</strong>
-    </div>
-    <div class="card-body">
-        <form method="get">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-8">
-                    <label for="q" class="form-label small fw-semibold">Buscar</label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" id="q" name="q" 
-                               value="{{ request.GET.q }}" placeholder="Nome da função ou cargo...">
-                    </div>
-                </div>
-                <div class="col-md-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-fill">
-                        <i class="bi bi-search me-1"></i> Filtrar
-                    </button>
-                    <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-outline-secondary" title="Limpar">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
+<div class="sst-filter">
+    <form method="get">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label for="q" class="sst-filter-label">Buscar</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="q" name="q"
+                           value="{{ request.GET.q }}" placeholder="Nome da função ou cargo...">
                 </div>
             </div>
-        </form>
-    </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="sst-btn-primary flex-fill" style="justify-content:center;">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+                <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="sst-btn-cancel" title="Limpar">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </div>
+    </form>
 </div>
 
 <!-- Tabela -->
-<div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h6 class="mb-0">
-            <i class="bi bi-table me-2"></i>Lista de Funções
-        </h6>
+<div class="sst-card">
+    <div class="sst-card-header">
+        <i class="bi bi-table"></i>
+        <h6>Lista de Funções</h6>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th title="Registro da Função" class="text-center">Nº</th>
-                        <th>Nome da Função</th>
-                        <th>Descrição</th>
-                        <th>Cargos Associados</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center" style="width: 120px;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for funcao in funcoes %}
-                    <tr>
-                        <td>
-                            <i class="bi bi-briefcase me-1 text-muted"></i>
-                            <strong>{{ funcao.registro }}</strong>
-                        </td>
-                        <td>
-                            <strong>{{ funcao.nome }}</strong>
-                        </td>
-                        <td>
-                            <span class="text-muted">{{ funcao.descricao|truncatechars:50|default:"—" }}</span>
-                        </td>
-                        <td>
-                            {% for cf in funcao.funcoes_cargo.all %}
-                            <span class="badge bg-secondary me-1">{{ cf.cargo.nome }}</span>
-                            {% empty %}
-                            <span class="text-muted small">Nenhum cargo</span>
-                            {% endfor %}
-                        </td>
-                        <td class="text-center">
-                            {% if funcao.ativo %}
-                            <span class="badge bg-success">Ativo</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
+    <div class="sst-table-wrapper">
+        <table class="sst-table">
+            <thead>
+                <tr>
+                    <th title="Registro da Função" class="text-center">Nº</th>
+                    <th>Nome da Função</th>
+                    <th>Descrição</th>
+                    <th>Cargos Associados</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center" style="width: 120px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for funcao in funcoes %}
+                <tr>
+                    <td class="text-center">
+                        <i class="bi bi-briefcase me-1" style="opacity:.5;"></i>
+                        <strong>{{ funcao.registro }}</strong>
+                    </td>
+                    <td>
+                        <strong style="color:var(--sst-text);">{{ funcao.nome }}</strong>
+                    </td>
+                    <td>
+                        <span class="text-muted-custom">{{ funcao.descricao|truncatechars:50|default:"—" }}</span>
+                    </td>
+                    <td>
+                        {% for cf in funcao.funcoes_cargo.all %}
+                        <span class="sst-badge sst-badge--muted me-1">{{ cf.cargo.nome }}</span>
+                        {% empty %}
+                        <span class="text-muted-custom" style="font-size:.82rem;">Nenhum cargo</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-center">
+                        {% if funcao.ativo %}
+                        <span class="sst-badge sst-badge--success">Ativo</span>
+                        {% else %}
+                        <span class="sst-badge sst-badge--muted">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="sst-action-group">
+                            {% if perms.seguranca_trabalho.change_funcao %}
+                            <button type="button" class="sst-action-btn sst-action-btn--edit" title="Editar"
+                                    hx-get="{% url 'seguranca_trabalho:funcao_update' funcao.pk %}"
+                                    hx-target="#modal-content"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#genericModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
                             {% endif %}
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                {% if perms.seguranca_trabalho.change_funcao %}
-                                <button type="button" class="btn btn-outline-warning" title="Editar"
-                                        hx-get="{% url 'seguranca_trabalho:funcao_update' funcao.pk %}"
-                                        hx-target="#modal-content"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#genericModal">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                {% endif %}
-                                {% if perms.seguranca_trabalho.delete_funcao %}
-                                <a href="{% url 'seguranca_trabalho:funcao_delete' funcao.pk %}" class="btn btn-outline-danger" title="Excluir">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <i class="bi bi-inbox text-muted fs-1"></i>
-                            <h6 class="mt-3 text-muted">Nenhuma função cadastrada</h6>
+                            {% if perms.seguranca_trabalho.delete_funcao %}
+                            <a href="{% url 'seguranca_trabalho:funcao_delete' funcao.pk %}" class="sst-action-btn sst-action-btn--delete" title="Excluir">
+                                <i class="bi bi-trash3"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="sst-empty">
+                            <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
+                            <h6>Nenhuma função cadastrada</h6>
                             {% if perms.seguranca_trabalho.add_funcao %}
-                            <button type="button" class="btn btn-primary btn-sm mt-2"
+                            <button type="button" class="sst-btn-primary mt-2" style="font-size:.82rem; padding:.4rem 1rem;"
                                     hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
                                     hx-target="#modal-content"
                                     data-bs-toggle="modal"
                                     data-bs-target="#genericModal">
-                                <i class="bi bi-plus-circle me-1"></i> Cadastrar primeira
+                                <i class="bi bi-plus-circle"></i> Cadastrar primeira
                             </button>
                             {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    
     {% if is_paginated %}
-    <div class="card-footer bg-white">
+    <div class="sst-pagination">
         {% include 'partials/pagination.html' %}
     </div>
     {% endif %}
@@ -160,3 +149,4 @@
 </div>
 
 {% endblock %}
+

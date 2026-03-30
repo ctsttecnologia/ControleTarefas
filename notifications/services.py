@@ -262,153 +262,532 @@ def _obter_gerentes_da_filial(filial):
 
 
 
+# ═════════════════════════════════════════════════════════════════
+# NOTIFICAÇÕES — PEDIDO DE MATERIAL (Workflow Revisão)
+# ═════════════════════════════════════════════════════════════════
+
 def notificar_pedido_pendente(pedido):
-    """
-    RASCUNHO → PENDENTE: Notifica gerentes da filial do contrato.
-    """
-    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
-    filial = pedido.contrato.filial
-    gerentes = _obter_gerentes_da_filial(filial)
+    """Notifica gerentes que há um pedido aguardando aprovação."""
+    from accounts.models import User
+    gerentes = User.objects.filter(
+        Q(groups__name='Gerente') | Q(is_superuser=True),
+        is_active=True,
+    ).distinct()
 
-    valor_str = f'R$ {pedido.valor_total:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    if pedido.filial:
+        gerentes = gerentes.filter(
+            Q(filial_ativa=pedido.filial) | Q(is_superuser=True)
+        )
 
-    return criar_notificacao_para_grupo(
-        usuarios=gerentes,
-        titulo=f'Pedido {pedido.numero} aguarda aprovação',
-        tipo='pedido_pendente',
-        categoria='suprimentos',
-        prioridade='alta',
+    solicitante = pedido.solicitante.get_full_name() or pedido.solicitante.username
+    contrato_info = f"{pedido.contrato.cm} — {pedido.contrato.cliente}"
+    valor_total = f"R$ {pedido.valor_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+
+    for gerente in gerentes:
+        # Notificação interna
+        criar_notificacao(
+            destinatario=gerente,
+            tipo='PEDIDO',
+            titulo=f'📋 Pedido {pedido.numero} aguardando aprovação',
+            mensagem=(
+                f'{solicitante} criou um pedido para {contrato_info}.\n'
+                f'Tipo: {pedido.get_tipo_obra_display()}\n'
+                f'Valor: {valor_total}\n'
+                f'Data necessária: {pedido.data_necessaria.strftime("%d/%m/%Y") if pedido.data_necessaria else "Não informada"}'
+            ),
+            url=pedido.get_absolute_url(),
+            prioridade='ALTA',
+        )
+
+        # Email
+        enviar_email_notificacao(
+            destinatario=gerente,
+            assunto=f'[Suprimentos] Pedido {pedido.numero} — Aprovação Pendente',
+            template='notifications/emails/pedido_pendente.html',
+            contexto={
+                'pedido': pedido,
+                'solicitante': solicitante,
+                'contrato': contrato_info,
+                'valor_total': valor_total,
+                'gerente': gerente,
+                'url': pedido.get_absolute_url(),
+            },
+        )
+
+
+def notificar_pedido_revisao(pedido):
+    """Notifica solicitante que o pedido foi devolvido para revisão."""
+    aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
+
+    criar_notificacao(
+        destinatario=pedido.solicitante,
+        tipo='PEDIDO',
+        titulo=f'🔄 Pedido {pedido.numero} devolvido para revisão',
         mensagem=(
-            f'Solicitante: {pedido.solicitante.get_full_name() or pedido.solicitante.username}\n'
-            f'Contrato: {pedido.contrato.cm} — {pedido.contrato.cliente}\n'
-            f'Valor total: {valor_str}'
+            f'{aprovador} devolveu seu pedido para correção.\n'
+            f'Motivo: {pedido.motivo_revisao}\n\n'
+            f'Corrija os pontos indicados e reenvie para aprovação.'
         ),
-        url_destino=url,
-        icone='bi-cart-check',
+        url=pedido.get_absolute_url(),
+        prioridade='ALTA',
+    )
+
+    enviar_email_notificacao(
+        destinatario=pedido.solicitante,
+        assunto=f'[Suprimentos] Pedido {pedido.numero} — Devolvido para Revisão',
+        template='notifications/emails/pedido_revisao.html',
+        contexto={
+            'pedido': pedido,
+            'aprovador': aprovador,
+            'motivo': pedido.motivo_revisao,
+            'url': pedido.get_absolute_url(),
+        },
     )
 
 
 def notificar_pedido_aprovado(pedido):
-    """
-    PENDENTE → APROVADO: Notifica o solicitante.
-    """
-    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+    """Notifica solicitante que o pedido foi aprovado."""
+    aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
 
-    return criar_notificacao(
-        usuario=pedido.solicitante,
-        titulo=f'Pedido {pedido.numero} aprovado ✅',
-        tipo='pedido_aprovado',
-        categoria='suprimentos',
-        prioridade='media',
+    criar_notificacao(
+        destinatario=pedido.solicitante,
+        tipo='PEDIDO',
+        titulo=f'✅ Pedido {pedido.numero} APROVADO!',
         mensagem=(
-            f'Aprovado por: {pedido.aprovador.get_full_name() or pedido.aprovador.username}\n'
-            f'Contrato: {pedido.contrato.cm}'
+            f'Seu pedido foi aprovado por {aprovador}.\n'
+            f'Uma Solicitação de Compra foi gerada automaticamente '
+            f'e encaminhada para a equipe de Suprimentos.'
         ),
-        url_destino=url,
-        icone='bi-check-circle-fill',
-        duplicar=True,
+        url=pedido.get_absolute_url(),
+        prioridade='NORMAL',
+    )
+
+    enviar_email_notificacao(
+        destinatario=pedido.solicitante,
+        assunto=f'[Suprimentos] Pedido {pedido.numero} — APROVADO ✅',
+        template='notifications/emails/pedido_aprovado.html',
+        contexto={
+            'pedido': pedido,
+            'aprovador': aprovador,
+            'url': pedido.get_absolute_url(),
+        },
     )
 
 
 def notificar_pedido_reprovado(pedido):
-    """
-    PENDENTE → REPROVADO: Notifica o solicitante (prioridade alta).
-    """
-    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
+    """Notifica solicitante que o pedido foi reprovado."""
+    aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
 
-    motivo = pedido.motivo_reprovacao[:100] if pedido.motivo_reprovacao else 'Sem motivo informado'
-
-    return criar_notificacao(
-        usuario=pedido.solicitante,
-        titulo=f'Pedido {pedido.numero} reprovado ❌',
-        tipo='pedido_reprovado',
-        categoria='suprimentos',
-        prioridade='alta',
+    criar_notificacao(
+        destinatario=pedido.solicitante,
+        tipo='PEDIDO',
+        titulo=f'❌ Pedido {pedido.numero} REPROVADO',
         mensagem=(
-            f'Reprovado por: {pedido.aprovador.get_full_name() or pedido.aprovador.username}\n'
-            f'Motivo: {motivo}'
+            f'Seu pedido foi reprovado por {aprovador}.\n'
+            f'Motivo: {pedido.motivo_reprovacao}'
         ),
-        url_destino=url,
-        icone='bi-x-circle-fill',
-        duplicar=True,
+        url=pedido.get_absolute_url(),
+        prioridade='ALTA',
+    )
+
+    enviar_email_notificacao(
+        destinatario=pedido.solicitante,
+        assunto=f'[Suprimentos] Pedido {pedido.numero} — Reprovado',
+        template='notifications/emails/pedido_reprovado.html',
+        contexto={
+            'pedido': pedido,
+            'aprovador': aprovador,
+            'motivo': pedido.motivo_reprovacao,
+            'url': pedido.get_absolute_url(),
+        },
     )
 
 
 def notificar_pedido_entregue(pedido):
-    """
-    APROVADO → ENTREGUE: Notifica o solicitante para confirmar recebimento.
-    """
-    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
-
-    return criar_notificacao(
-        usuario=pedido.solicitante,
-        titulo=f'Pedido {pedido.numero} entregue 📦',
-        tipo='pedido_entregue',
-        categoria='suprimentos',
-        prioridade='media',
+    """Notifica solicitante que o pedido foi marcado como entregue."""
+    criar_notificacao(
+        destinatario=pedido.solicitante,
+        tipo='PEDIDO',
+        titulo=f'📦 Pedido {pedido.numero} — ENTREGUE',
         mensagem=(
-            f'Contrato: {pedido.contrato.cm}\n'
-            f'Confirme o recebimento dos materiais.'
+            f'Seu pedido foi marcado como entregue.\n'
+            f'Data: {pedido.data_entrega.strftime("%d/%m/%Y") if pedido.data_entrega else "Hoje"}\n'
+            f'Confirme o recebimento quando possível.'
         ),
-        url_destino=url,
-        icone='bi-box-seam-fill',
-        duplicar=True,
+        url=pedido.get_absolute_url(),
+        prioridade='NORMAL',
     )
 
 
 def notificar_pedido_recebido(pedido):
-    """
-    ENTREGUE → RECEBIDO: Notifica gerentes que o recebimento foi confirmado.
-    """
-    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
-    filial = pedido.contrato.filial
-    gerentes = _obter_gerentes_da_filial(filial)
+    """Notifica gerente que o pedido foi recebido pelo solicitante."""
+    if pedido.aprovador:
+        recebedor = pedido.recebedor.get_full_name() if pedido.recebedor else 'Solicitante'
+        criar_notificacao(
+            destinatario=pedido.aprovador,
+            tipo='PEDIDO',
+            titulo=f'✅ Pedido {pedido.numero} — Recebimento confirmado',
+            mensagem=f'Recebido por {recebedor} em {pedido.data_recebimento.strftime("%d/%m/%Y %H:%M") if pedido.data_recebimento else "agora"}.',
+            url=pedido.get_absolute_url(),
+            prioridade='BAIXA',
+        )
 
-    recebedor_nome = ''
-    if pedido.recebedor:
-        recebedor_nome = pedido.recebedor.get_full_name() or pedido.recebedor.username
 
-    return criar_notificacao_para_grupo(
-        usuarios=gerentes,
-        titulo=f'Pedido {pedido.numero} recebido ✅',
-        tipo='pedido_recebido',
-        categoria='suprimentos',
-        prioridade='baixa',
+def notificar_pedido_verba_excedida(pedido, erros):
+    """Notifica gerentes sobre estouro de verba."""
+    from accounts.models import User
+    gerentes = User.objects.filter(
+        Q(groups__name='Gerente') | Q(is_superuser=True),
+        is_active=True,
+    ).distinct()
+
+    erros_txt = '\n'.join(erros)
+
+    for gerente in gerentes:
+        criar_notificacao(
+            destinatario=gerente,
+            tipo='ALERTA',
+            titulo=f'⚠️ Pedido {pedido.numero} — Verba Excedida',
+            mensagem=(
+                f'O pedido de {pedido.solicitante.get_full_name()} '
+                f'excede o limite de verba:\n{erros_txt}'
+            ),
+            url=pedido.get_absolute_url(),
+            prioridade='URGENTE',
+        )
+
+
+# ═════════════════════════════════════════════════════════════════
+# NOTIFICAÇÕES — SOLICITAÇÃO DE COMPRA (Workflow Suprimentos)
+# ═════════════════════════════════════════════════════════════════
+
+def _get_compradores(filial=None):
+    """Retorna usuários do grupo Comprador."""
+    from accounts.models import User
+    qs = User.objects.filter(
+        Q(groups__name='Comprador') | Q(groups__name='Administrador') | Q(is_superuser=True),
+        is_active=True,
+    ).distinct()
+    if filial:
+        qs = qs.filter(Q(filial_ativa=filial) | Q(is_superuser=True))
+    return qs
+
+
+def _get_gerentes(filial=None):
+    """Retorna gerentes da filial."""
+    from accounts.models import User
+    qs = User.objects.filter(
+        Q(groups__name='Gerente') | Q(is_superuser=True),
+        is_active=True,
+    ).distinct()
+    if filial:
+        qs = qs.filter(Q(filial_ativa=filial) | Q(is_superuser=True))
+    return qs
+
+
+def notificar_solicitacao_criada(solicitacao):
+    """
+    Notifica compradores que uma nova solicitação foi gerada.
+    Chamada quando o Pedido é aprovado e gera a Solicitação.
+    """
+    compradores = _get_compradores(solicitacao.filial)
+    contrato = f"{solicitacao.contrato.cm} — {solicitacao.contrato.cliente}"
+    solicitante = solicitacao.solicitante.get_full_name() or solicitacao.solicitante.username
+
+    for comprador in compradores:
+        criar_notificacao(
+            destinatario=comprador,
+            tipo='SOLICITACAO',
+            titulo=f'🆕 Nova Solicitação {solicitacao.numero} — Fazer Cotação',
+            mensagem=(
+                f'Solicitante: {solicitante}\n'
+                f'Contrato: {contrato}\n'
+                f'Material: {solicitacao.descricao_material[:100]}...\n'
+                f'Qtd: {solicitacao.quantidade} {solicitacao.get_unidade_medida_display()}\n'
+                f'Data necessária: {solicitacao.data_necessaria.strftime("%d/%m/%Y") if solicitacao.data_necessaria else "Não informada"}'
+            ),
+            url=solicitacao.get_absolute_url(),
+            prioridade='ALTA',
+        )
+
+        enviar_email_notificacao(
+            destinatario=comprador,
+            assunto=f'[Suprimentos] Nova Solicitação {solicitacao.numero} — Cotação Necessária',
+            template='notifications/emails/solicitacao_criada.html',
+            contexto={
+                'solicitacao': solicitacao,
+                'solicitante': solicitante,
+                'contrato': contrato,
+                'comprador': comprador,
+                'url': solicitacao.get_absolute_url(),
+            },
+        )
+
+
+def notificar_cotacao_enviada(solicitacao):
+    """Notifica gerentes que a cotação foi feita e precisa ser validada."""
+    gerentes = _get_gerentes(solicitacao.filial)
+    comprador = solicitacao.comprador.get_full_name() if solicitacao.comprador else 'Comprador'
+
+    for gerente in gerentes:
+        criar_notificacao(
+            destinatario=gerente,
+            tipo='SOLICITACAO',
+            titulo=f'📊 Cotação enviada — {solicitacao.numero}',
+            mensagem=(
+                f'{comprador} registrou cotação Nº {solicitacao.numero_cotacao}.\n'
+                f'CNPJ: {solicitacao.cnpj_compra}\n'
+                f'Tipo NF: {solicitacao.get_tipo_nota_fiscal_display()}\n\n'
+                f'Valide a cotação para prosseguir.'
+            ),
+            url=solicitacao.get_absolute_url(),
+            prioridade='ALTA',
+        )
+
+        enviar_email_notificacao(
+            destinatario=gerente,
+            assunto=f'[Suprimentos] Cotação {solicitacao.numero} — Validação Necessária',
+            template='notifications/emails/cotacao_enviada.html',
+            contexto={
+                'solicitacao': solicitacao,
+                'comprador': comprador,
+                'gerente': gerente,
+                'url': solicitacao.get_absolute_url(),
+            },
+        )
+
+
+def notificar_cotacao_validada(solicitacao):
+    """Notifica comprador que a cotação foi validada — pode criar pedido."""
+    if solicitacao.comprador:
+        validador = (
+            solicitacao.aprovador_cotacao.get_full_name()
+            if solicitacao.aprovador_cotacao else 'Gerente'
+        )
+
+        criar_notificacao(
+            destinatario=solicitacao.comprador,
+            tipo='SOLICITACAO',
+            titulo=f'✅ Cotação validada — {solicitacao.numero}',
+            mensagem=(
+                f'Cotação validada por {validador}.\n'
+                f'Prossiga criando o Pedido no Sienge.'
+            ),
+            url=solicitacao.get_absolute_url(),
+            prioridade='NORMAL',
+        )
+
+        enviar_email_notificacao(
+            destinatario=solicitacao.comprador,
+            assunto=f'[Suprimentos] {solicitacao.numero} — Cotação Validada ✅',
+            template='notifications/emails/cotacao_validada.html',
+            contexto={
+                'solicitacao': solicitacao,
+                'validador': validador,
+                'url': solicitacao.get_absolute_url(),
+            },
+        )
+
+
+def notificar_pedido_sienge_criado(solicitacao):
+    """Notifica gerentes que o pedido Sienge foi criado — precisa aprovação."""
+    gerentes = _get_gerentes(solicitacao.filial)
+    comprador = solicitacao.comprador.get_full_name() if solicitacao.comprador else 'Comprador'
+    valor = f"R$ {solicitacao.valor_pedido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if solicitacao.valor_pedido else 'N/D'
+
+    for gerente in gerentes:
+        criar_notificacao(
+            destinatario=gerente,
+            tipo='SOLICITACAO',
+            titulo=f'📦 Pedido Sienge criado — {solicitacao.numero}',
+            mensagem=(
+                f'{comprador} criou o pedido Nº {solicitacao.numero_pedido_sienge}.\n'
+                f'Fornecedor: {solicitacao.fornecedor}\n'
+                f'Valor: {valor}\n\n'
+                f'Aprove o pedido para prosseguir.'
+            ),
+            url=solicitacao.get_absolute_url(),
+            prioridade='ALTA',
+        )
+
+        enviar_email_notificacao(
+            destinatario=gerente,
+            assunto=f'[Suprimentos] Pedido Sienge {solicitacao.numero_pedido_sienge} — Aprovação Necessária',
+            template='notifications/emails/pedido_sienge_criado.html',
+            contexto={
+                'solicitacao': solicitacao,
+                'comprador': comprador,
+                'valor': valor,
+                'gerente': gerente,
+                'url': solicitacao.get_absolute_url(),
+            },
+        )
+
+
+def notificar_pedido_sienge_aprovado(solicitacao):
+    """Notifica comprador que o pedido Sienge foi aprovado — pode enviar."""
+    if solicitacao.comprador:
+        aprovador = (
+            solicitacao.aprovador_pedido.get_full_name()
+            if solicitacao.aprovador_pedido else 'Gerente'
+        )
+
+        criar_notificacao(
+            destinatario=solicitacao.comprador,
+            tipo='SOLICITACAO',
+            titulo=f'✅ Pedido aprovado — {solicitacao.numero}',
+            mensagem=(
+                f'Pedido Sienge Nº {solicitacao.numero_pedido_sienge} aprovado por {aprovador}.\n'
+                f'Envie o pedido ao fornecedor.'
+            ),
+            url=solicitacao.get_absolute_url(),
+            prioridade='NORMAL',
+        )
+
+        enviar_email_notificacao(
+            destinatario=solicitacao.comprador,
+            assunto=f'[Suprimentos] {solicitacao.numero} — Pedido Aprovado, Enviar ao Fornecedor',
+            template='notifications/emails/pedido_sienge_aprovado.html',
+            contexto={
+                'solicitacao': solicitacao,
+                'aprovador': aprovador,
+                'url': solicitacao.get_absolute_url(),
+            },
+        )
+
+
+def notificar_pedido_enviado_fornecedor(solicitacao):
+    """Notifica solicitante + gerente que o pedido foi enviado ao fornecedor."""
+    comprador = solicitacao.comprador.get_full_name() if solicitacao.comprador else 'Comprador'
+    previsao = (
+        solicitacao.data_prevista_entrega.strftime("%d/%m/%Y")
+        if solicitacao.data_prevista_entrega else 'Não definida'
+    )
+
+    # Notifica solicitante
+    criar_notificacao(
+        destinatario=solicitacao.solicitante,
+        tipo='SOLICITACAO',
+        titulo=f'🚚 Pedido enviado — {solicitacao.numero}',
         mensagem=(
-            f'Recebido por: {recebedor_nome}\n'
-            f'Contrato: {pedido.contrato.cm}\n'
-            f'Entrada no estoque processada automaticamente.'
+            f'Seu material foi pedido ao fornecedor {solicitacao.fornecedor}.\n'
+            f'Previsão de entrega: {previsao}'
         ),
-        url_destino=url,
-        icone='bi-clipboard-check-fill',
+        url=solicitacao.get_absolute_url(),
+        prioridade='NORMAL',
+    )
+
+    enviar_email_notificacao(
+        destinatario=solicitacao.solicitante,
+        assunto=f'[Suprimentos] {solicitacao.numero} — Pedido Enviado ao Fornecedor 🚚',
+        template='notifications/emails/pedido_enviado_fornecedor.html',
+        contexto={
+            'solicitacao': solicitacao,
+            'comprador': comprador,
+            'previsao': previsao,
+            'url': solicitacao.get_absolute_url(),
+        },
+    )
+
+    # Notifica gerente aprovador
+    if solicitacao.aprovador_inicial:
+        criar_notificacao(
+            destinatario=solicitacao.aprovador_inicial,
+            tipo='SOLICITACAO',
+            titulo=f'🚚 Pedido enviado — {solicitacao.numero}',
+            mensagem=f'Enviado por {comprador}. Previsão: {previsao}.',
+            url=solicitacao.get_absolute_url(),
+            prioridade='BAIXA',
+        )
+
+
+def notificar_entrega_registrada(solicitacao):
+    """Notifica solicitante + gerente que a entrega foi realizada."""
+    data_entrega = (
+        solicitacao.data_entrega_efetiva.strftime("%d/%m/%Y")
+        if solicitacao.data_entrega_efetiva else 'Hoje'
+    )
+
+    criar_notificacao(
+        destinatario=solicitacao.solicitante,
+        tipo='SOLICITACAO',
+        titulo=f'📦 Material entregue — {solicitacao.numero}',
+        mensagem=(
+            f'Seu material foi entregue em {data_entrega}.\n'
+            f'Fornecedor: {solicitacao.fornecedor}'
+        ),
+        url=solicitacao.get_absolute_url(),
+        prioridade='NORMAL',
+    )
+
+    enviar_email_notificacao(
+        destinatario=solicitacao.solicitante,
+        assunto=f'[Suprimentos] {solicitacao.numero} — Material Entregue 📦',
+        template='notifications/emails/entrega_registrada.html',
+        contexto={
+            'solicitacao': solicitacao,
+            'data_entrega': data_entrega,
+            'url': solicitacao.get_absolute_url(),
+        },
     )
 
 
-def notificar_pedido_verba_excedida(pedido, erros_verba):
-    """
-    Notifica gerentes quando um pedido é enviado excedendo a verba.
-    Chamada como alerta (não bloqueia o envio).
-    """
-    url = reverse('suprimentos:pedido_detalhe', kwargs={'pk': pedido.pk})
-    filial = pedido.contrato.filial
-    gerentes = _obter_gerentes_da_filial(filial)
+def notificar_solicitacao_concluida(solicitacao):
+    """Notifica todos os envolvidos que a solicitação foi concluída."""
+    envolvidos = set()
+    envolvidos.add(solicitacao.solicitante)
+    if solicitacao.aprovador_inicial:
+        envolvidos.add(solicitacao.aprovador_inicial)
+    if solicitacao.comprador:
+        envolvidos.add(solicitacao.comprador)
 
-    detalhes = '\n'.join(f'⚠ {erro}' for erro in erros_verba)
+    for user in envolvidos:
+        criar_notificacao(
+            destinatario=user,
+            tipo='SOLICITACAO',
+            titulo=f'🎉 Solicitação {solicitacao.numero} CONCLUÍDA!',
+            mensagem=(
+                f'NF: {solicitacao.numero_nota_fiscal}\n'
+                f'Material: {solicitacao.descricao_material[:80]}...\n'
+                f'Fornecedor: {solicitacao.fornecedor}\n'
+                f'Valor: R$ {solicitacao.valor_pedido:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+                if solicitacao.valor_pedido else
+                f'NF: {solicitacao.numero_nota_fiscal}\n'
+                f'Material: {solicitacao.descricao_material[:80]}...'
+            ),
+            url=solicitacao.get_absolute_url(),
+            prioridade='NORMAL',
+        )
 
-    return criar_notificacao_para_grupo(
-        usuarios=gerentes,
-        titulo=f'Pedido {pedido.numero} excede verba!',
-        tipo='pedido_verba_excedida',
-        categoria='suprimentos',
-        prioridade='critica',
-        mensagem=(
-            f'Solicitante: {pedido.solicitante.get_full_name() or pedido.solicitante.username}\n'
-            f'Contrato: {pedido.contrato.cm}\n'
-            f'{detalhes}'
-        ),
-        url_destino=url,
-        icone='bi-exclamation-diamond-fill',
+    enviar_email_notificacao(
+        destinatario=solicitacao.solicitante,
+        assunto=f'[Suprimentos] {solicitacao.numero} — CONCLUÍDA ✅🎉',
+        template='notifications/emails/solicitacao_concluida.html',
+        contexto={
+            'solicitacao': solicitacao,
+            'url': solicitacao.get_absolute_url(),
+        },
     )
+
+
+def notificar_solicitacao_cancelada(solicitacao):
+    """Notifica envolvidos sobre cancelamento."""
+    envolvidos = set()
+    envolvidos.add(solicitacao.solicitante)
+    if solicitacao.aprovador_inicial:
+        envolvidos.add(solicitacao.aprovador_inicial)
+    if solicitacao.comprador:
+        envolvidos.add(solicitacao.comprador)
+
+    for user in envolvidos:
+        criar_notificacao(
+            destinatario=user,
+            tipo='ALERTA',
+            titulo=f'🚫 Solicitação {solicitacao.numero} CANCELADA',
+            mensagem=f'Motivo: {solicitacao.motivo_cancelamento}',
+            url=solicitacao.get_absolute_url(),
+            prioridade='ALTA',
+        )
 
 
 # =============================================================================

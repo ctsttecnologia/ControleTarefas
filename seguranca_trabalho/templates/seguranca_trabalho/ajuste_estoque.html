@@ -4,85 +4,453 @@
 
 {% block title %}Ajuste de Estoque - {{ equipamento.nome }}{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ═══════════════════════════════════════════════════════
+       AJUSTE ESTOQUE — TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
+    :root,
+    [data-bs-theme="light"] {
+        --ae-bg:              #ffffff;
+        --ae-bg-alt:          #f8f9fc;
+        --ae-text:            #1e293b;
+        --ae-text-muted:      #64748b;
+        --ae-border:          #e2e8f0;
+        --ae-card-shadow:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+        --ae-accent:          #3b82f6;
+        --ae-input-bg:        #ffffff;
+        --ae-input-border:    #cbd5e1;
+        --ae-input-focus:     #3b82f6;
+        --ae-header-gradient: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        --ae-stat-bg:         #f8fafc;
+        --ae-stat-border:     #e2e8f0;
+        --ae-success:         #10b981;
+        --ae-success-bg:      #ecfdf5;
+        --ae-success-border:  #a7f3d0;
+        --ae-warning:         #f59e0b;
+        --ae-warning-bg:      #fffbeb;
+        --ae-warning-border:  #fde68a;
+        --ae-danger:          #ef4444;
+        --ae-danger-bg:       #fef2f2;
+        --ae-danger-border:   #fecaca;
+        --ae-info-bg:         rgba(59,130,246,.06);
+        --ae-info-border:     rgba(59,130,246,.15);
+        --ae-info-text:       #1e40af;
+        --ae-preview-bg:      #f0f9ff;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       AJUSTE ESTOQUE — TEMA ESCURO
+       ═══════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] {
+        --ae-bg:              #1a1d23;
+        --ae-bg-alt:          #1e2128;
+        --ae-text:            #e2e8f0;
+        --ae-text-muted:      #94a3b8;
+        --ae-border:          #2d3748;
+        --ae-card-shadow:     0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+        --ae-accent:          #60a5fa;
+        --ae-input-bg:        #262a33;
+        --ae-input-border:    #3d4555;
+        --ae-input-focus:     #60a5fa;
+        --ae-header-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        --ae-stat-bg:         #1e2128;
+        --ae-stat-border:     #2d3748;
+        --ae-success:         #34d399;
+        --ae-success-bg:      rgba(16,185,129,.1);
+        --ae-success-border:  rgba(16,185,129,.25);
+        --ae-warning:         #fbbf24;
+        --ae-warning-bg:      rgba(245,158,11,.1);
+        --ae-warning-border:  rgba(245,158,11,.25);
+        --ae-danger:          #f87171;
+        --ae-danger-bg:       rgba(239,68,68,.1);
+        --ae-danger-border:   rgba(239,68,68,.25);
+        --ae-info-bg:         rgba(96,165,250,.08);
+        --ae-info-border:     rgba(96,165,250,.2);
+        --ae-info-text:       #93bbfc;
+        --ae-preview-bg:      rgba(59,130,246,.1);
+    }
+
+    /* ── Page Header ── */
+    .ae-header {
+        background: var(--ae-header-gradient);
+        border-radius: 0.75rem;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.75rem;
+        color: #f8fafc;
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-bs-theme="dark"] .ae-header {
+        border: 1px solid var(--ae-border);
+    }
+
+    .ae-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(59,130,246,.1) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .ae-header h4 {
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .ae-header .ae-subtitle {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+
+    .ae-btn-back {
+        background: rgba(255,255,255,.1);
+        border: 1px solid rgba(255,255,255,.2);
+        color: #f1f5f9;
+        padding: 0.45rem 1rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .ae-btn-back:hover {
+        background: rgba(255,255,255,.2);
+        color: #fff;
+    }
+
+    /* ── Stat Cards ── */
+    .ae-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .ae-stat {
+        background: var(--ae-bg);
+        border: 1px solid var(--ae-stat-border);
+        border-radius: 0.65rem;
+        padding: 1rem 1.25rem;
+        text-align: center;
+        box-shadow: var(--ae-card-shadow);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .ae-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    }
+
+    .ae-stat-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ae-text-muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .ae-stat-value {
+        font-size: 1.85rem;
+        font-weight: 800;
+        line-height: 1.1;
+    }
+
+    .ae-stat-value.success { color: var(--ae-success); }
+    .ae-stat-value.warning { color: var(--ae-warning); }
+    .ae-stat-value.danger  { color: var(--ae-danger); }
+    .ae-stat-value.muted   { color: var(--ae-text-muted); }
+
+    .ae-stat--success { border-bottom: 3px solid var(--ae-success); }
+    .ae-stat--warning { border-bottom: 3px solid var(--ae-warning); }
+    .ae-stat--danger  { border-bottom: 3px solid var(--ae-danger); }
+
+    .ae-stat-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-top: 0.5rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 2rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .ae-stat-badge.success {
+        background: var(--ae-success-bg);
+        color: var(--ae-success);
+        border: 1px solid var(--ae-success-border);
+    }
+
+    .ae-stat-badge.warning {
+        background: var(--ae-warning-bg);
+        color: var(--ae-warning);
+        border: 1px solid var(--ae-warning-border);
+    }
+
+    .ae-stat-badge.danger {
+        background: var(--ae-danger-bg);
+        color: var(--ae-danger);
+        border: 1px solid var(--ae-danger-border);
+    }
+
+    /* ── Form Card ── */
+    .ae-card {
+        background: var(--ae-bg);
+        border: 1px solid var(--ae-border);
+        border-radius: 0.75rem;
+        box-shadow: var(--ae-card-shadow);
+        overflow: hidden;
+    }
+
+    .ae-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--ae-border);
+        background: var(--ae-bg-alt);
+    }
+
+    .ae-card-header h6 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--ae-text);
+    }
+
+    .ae-card-header i {
+        color: var(--ae-accent);
+    }
+
+    .ae-card-body {
+        padding: 1.75rem;
+    }
+
+    /* ── Form Controls ── */
+    .ae-form-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--ae-text);
+        margin-bottom: 0.4rem;
+    }
+
+    .ae-form-label .required {
+        color: var(--ae-danger);
+        margin-left: 0.15rem;
+    }
+
+    .ae-card .form-control,
+    .ae-card .form-select {
+        background: var(--ae-input-bg);
+        border: 1.5px solid var(--ae-input-border);
+        border-radius: 0.45rem;
+        color: var(--ae-text);
+        font-size: 0.9rem;
+        padding: 0.55rem 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+    .ae-card .form-control:focus,
+    .ae-card .form-select:focus {
+        border-color: var(--ae-input-focus);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+        background: var(--ae-input-bg);
+    }
+
+    [data-bs-theme="dark"] .ae-card .form-control:focus,
+    [data-bs-theme="dark"] .ae-card .form-select:focus {
+        box-shadow: 0 0 0 3px rgba(96,165,250,.15);
+    }
+
+    .ae-card .form-control::placeholder {
+        color: var(--ae-text-muted);
+    }
+
+    /* ── Preview ── */
+    .ae-preview {
+        background: var(--ae-preview-bg);
+        border: 1px solid var(--ae-info-border);
+        border-left: 4px solid var(--ae-accent);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        margin-top: 1.25rem;
+        font-size: 0.9rem;
+        color: var(--ae-info-text);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ae-preview.ae-preview--danger {
+        border-left-color: var(--ae-danger);
+        background: var(--ae-danger-bg);
+        color: var(--ae-danger);
+    }
+
+    /* ── Footer ── */
+    .ae-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.75rem;
+        border-top: 1px solid var(--ae-border);
+        background: var(--ae-bg-alt);
+    }
+
+    .ae-btn-cancel {
+        background: transparent;
+        border: 1.5px solid var(--ae-border);
+        color: var(--ae-text-muted);
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .ae-btn-cancel:hover {
+        border-color: var(--ae-text-muted);
+        color: var(--ae-text);
+        background: var(--ae-bg-alt);
+    }
+
+    .ae-btn-submit {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #fff;
+        border: none;
+        padding: 0.6rem 1.75rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3);
+    }
+
+    .ae-btn-submit:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 12px rgba(37,99,235,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    [data-bs-theme="dark"] .ae-btn-submit {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .ae-stats {
+            grid-template-columns: 1fr;
+        }
+        .ae-header {
+            padding: 1rem 1.25rem;
+        }
+        .ae-card-body {
+            padding: 1.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block sst_content %}
 
-<!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-arrow-left-right me-2"></i>Ajuste de Estoque
-                </h4>
-                <small class="opacity-75">{{ equipamento.nome }} {{ equipamento.modelo|default:"" }}</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE HEADER                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="ae-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-arrow-left-right me-2"></i>Ajuste de Estoque
+            </h4>
+            <span class="ae-subtitle">{{ equipamento.nome }} {{ equipamento.modelo|default:"" }}</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="ae-btn-back">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
 
-        <!-- Resumo do Estoque Atual -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card text-center {% if equipamento.estoque_status == 'sem_estoque' %}border-danger{% elif equipamento.estoque_status == 'critico' %}border-warning{% else %}border-success{% endif %}">
-                    <div class="card-body py-3">
-                        <small class="text-muted">Estoque Atual</small>
-                        <h2 class="mb-0 {% if equipamento.estoque_status == 'sem_estoque' %}text-danger{% elif equipamento.estoque_status == 'critico' %}text-warning{% else %}text-success{% endif %}">
-                            {{ equipamento.estoque_atual }}
-                        </h2>
-                    </div>
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- STATS DO ESTOQUE                                        -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="ae-stats">
+            <div class="ae-stat {% if equipamento.estoque_status == 'sem_estoque' %}ae-stat--danger{% elif equipamento.estoque_status == 'critico' %}ae-stat--warning{% else %}ae-stat--success{% endif %}">
+                <div class="ae-stat-label">Estoque Atual</div>
+                <div class="ae-stat-value {% if equipamento.estoque_status == 'sem_estoque' %}danger{% elif equipamento.estoque_status == 'critico' %}warning{% else %}success{% endif %}">
+                    {{ equipamento.estoque_atual }}
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body py-3">
-                        <small class="text-muted">Estoque Mínimo</small>
-                        <h2 class="mb-0 text-muted">{{ equipamento.estoque_minimo }}</h2>
-                    </div>
-                </div>
+            <div class="ae-stat">
+                <div class="ae-stat-label">Estoque Mínimo</div>
+                <div class="ae-stat-value muted">{{ equipamento.estoque_minimo }}</div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body py-3">
-                        <small class="text-muted">Status</small>
-                        <div class="mt-1">
-                            {% if equipamento.estoque_status == 'sem_estoque' %}
-                            <span class="badge bg-danger fs-6">Sem Estoque</span>
-                            {% elif equipamento.estoque_status == 'critico' %}
-                            <span class="badge bg-warning text-dark fs-6">Crítico</span>
-                            {% else %}
-                            <span class="badge bg-success fs-6">OK</span>
-                            {% endif %}
-                        </div>
-                    </div>
+            <div class="ae-stat">
+                <div class="ae-stat-label">Status</div>
+                <div>
+                    {% if equipamento.estoque_status == 'sem_estoque' %}
+                    <span class="ae-stat-badge danger">
+                        <i class="bi bi-x-circle-fill"></i> Sem Estoque
+                    </span>
+                    {% elif equipamento.estoque_status == 'critico' %}
+                    <span class="ae-stat-badge warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Crítico
+                    </span>
+                    {% else %}
+                    <span class="ae-stat-badge success">
+                        <i class="bi bi-check-circle-fill"></i> OK
+                    </span>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Formulário de Ajuste -->
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-pencil-square me-2"></i>Registrar Movimentação
-                </h6>
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <!-- FORMULÁRIO DE AJUSTE                                    -->
+        <!-- ═══════════════════════════════════════════════════════ -->
+        <div class="ae-card">
+            <div class="ae-card-header">
+                <i class="bi bi-pencil-square"></i>
+                <h6>Registrar Movimentação</h6>
             </div>
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+            <form method="post" novalidate id="ajusteForm">
+                {% csrf_token %}
+                <div class="ae-card-body">
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    <div class="alert alert-danger border-0" style="background: var(--ae-danger-bg); color: var(--ae-danger);">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        {{ form.non_field_errors }}
+                    </div>
                     {% endif %}
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="{{ form.tipo.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.tipo.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.tipo.id_for_label }}" class="ae-form-label">
+                                {{ form.tipo.label }} <span class="required">*</span>
                             </label>
                             {{ form.tipo }}
                             {% for error in form.tipo.errors %}
@@ -90,8 +458,8 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.quantidade.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.quantidade.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.quantidade.id_for_label }}" class="ae-form-label">
+                                {{ form.quantidade.label }} <span class="required">*</span>
                             </label>
                             {{ form.quantidade }}
                             {% for error in form.quantidade.errors %}
@@ -99,8 +467,8 @@
                             {% endfor %}
                         </div>
                         <div class="col-12">
-                            <label for="{{ form.justificativa.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.justificativa.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.justificativa.id_for_label }}" class="ae-form-label">
+                                {{ form.justificativa.label }} <span class="required">*</span>
                             </label>
                             {{ form.justificativa }}
                             {% for error in form.justificativa.errors %}
@@ -110,25 +478,29 @@
                     </div>
 
                     <!-- Preview do resultado -->
-                    <div class="alert alert-info mt-3 d-none" id="preview-resultado">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Estoque após ajuste: <strong id="preview-valor">-</strong>
+                    <div class="ae-preview d-none" id="preview-resultado">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <span>Estoque após ajuste: <strong id="preview-valor">-</strong></span>
                     </div>
+                </div>
 
-                    <div class="border-top pt-4 mt-4 d-flex justify-content-between">
-                        <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-lg me-1"></i> Confirmar Ajuste
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="ae-card-footer">
+                    <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="ae-btn-cancel">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </a>
+                    <button type="submit" class="ae-btn-submit">
+                        <i class="bi bi-check-lg"></i> Confirmar Ajuste
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const estoqueAtual = {{ equipamento.estoque_atual }};
@@ -147,21 +519,23 @@ document.addEventListener('DOMContentLoaded', function() {
             preview.classList.remove('d-none');
 
             if (resultado < 0) {
-                preview.className = 'alert alert-danger mt-3';
-                previewValor.parentElement.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Estoque após ajuste: <strong class="text-danger">' + resultado + ' (NEGATIVO!)</strong>';
+                preview.className = 'ae-preview ae-preview--danger';
+                preview.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> <span>Estoque após ajuste: <strong>' + resultado + ' (NEGATIVO!)</strong></span>';
             } else {
-                preview.className = 'alert alert-info mt-3';
-                previewValor.parentElement.innerHTML = '<i class="bi bi-info-circle me-1"></i> Estoque após ajuste: <strong>' + resultado + '</strong>';
+                preview.className = 'ae-preview';
+                preview.innerHTML = '<i class="bi bi-info-circle-fill"></i> <span>Estoque após ajuste: <strong>' + resultado + '</strong></span>';
             }
         } else {
             preview.classList.add('d-none');
         }
     }
 
-    tipoField.addEventListener('change', atualizarPreview);
-    qtdField.addEventListener('input', atualizarPreview);
+    if (tipoField && qtdField) {
+        tipoField.addEventListener('change', atualizarPreview);
+        qtdField.addEventListener('input', atualizarPreview);
+    }
 });
 </script>
-
 {% endblock %}
+
 

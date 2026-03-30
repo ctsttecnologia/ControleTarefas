@@ -4,52 +4,79 @@
 
 {% block title %}Excluir Função{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .cd-wrapper { max-width: 480px; margin: 2rem auto; }
+
+    .cd-icon-circle {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: var(--sst-danger-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--sst-danger);
+        font-size: 2rem;
+        margin: 0 auto 1.25rem;
+    }
+
+    .cd-target-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--sst-text);
+        background: var(--sst-warning-bg);
+        border: 1px solid var(--sst-warning-border);
+    }
+</style>
+{% endblock %}
+
 {% block sst_content %}
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            
-            <div class="card shadow-sm border-danger">
-                <div class="card-header bg-danger text-white text-center py-3">
-                    <i class="bi bi-exclamation-triangle-fill fs-4 me-2"></i>
-                    <span class="fw-semibold">Confirmar Exclusão</span>
-                </div>
-                <div class="card-body text-center p-4">
-                    
-                    <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-4"
-                         style="width: 80px; height: 80px;">
-                        <i class="bi bi-briefcase text-danger fs-1"></i>
-                    </div>
-                    
-                    <h5 class="mb-3">Deseja excluir esta função?</h5>
+<div class="cd-wrapper">
+    <div class="sst-card">
+        <div class="sst-card-header sst-card-header--danger" style="justify-content:center;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <h6>Confirmar Exclusão</h6>
+        </div>
+        <div class="sst-card-body" style="text-align:center;">
 
-                    <div class="alert alert-warning py-3">
-                        <i class="bi bi-briefcase me-2"></i>
-                        <strong>{{ object.nome }}</strong>
-                    </div>
-
-                    <p class="text-muted small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Esta ação não poderá ser desfeita. Se existirem associações com cargos ou matriz de EPI, a exclusão será impedida.
-                    </p>
-
-                </div>
-                <div class="card-footer bg-light py-3">
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="d-flex justify-content-center gap-3">
-                            <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left me-1"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-trash me-1"></i> Sim, Excluir
-                            </button>
-                        </div>
-                    </form>
-                </div>
+            <div class="cd-icon-circle">
+                <i class="bi bi-briefcase"></i>
             </div>
 
+            <h5 style="color:var(--sst-text); margin-bottom:1rem;">Deseja excluir esta função?</h5>
+
+            <div class="cd-target-badge">
+                <i class="bi bi-briefcase"></i>
+                {{ object.nome }}
+            </div>
+
+            <p style="color:var(--sst-text-muted); font-size:.82rem; margin-top:1rem;">
+                <i class="bi bi-info-circle me-1"></i>
+                Esta ação não poderá ser desfeita. Se existirem associações com cargos ou matriz de EPI, a exclusão será impedida.
+            </p>
+        </div>
+
+        <div class="sst-card-footer" style="justify-content:center;">
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-3">
+                    <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="sst-btn-cancel">
+                        <i class="bi bi-arrow-left"></i> Cancelar
+                    </a>
+                    <button type="submit" class="sst-btn-danger">
+                        <i class="bi bi-trash3"></i> Sim, Excluir
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 {% endblock %}
+

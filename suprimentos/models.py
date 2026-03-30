@@ -396,44 +396,54 @@ class VerbaContrato(models.Model):
 
 
 # ═════════════════════════════════════════════════
-# 4. PEDIDO DE MATERIAL
+# CHOICES ADICIONAIS
 # ═════════════════════════════════════════════════
+
+class TipoObra(models.TextChoices):
+    CM = 'CM', 'CM - Contrato de Manutenção'
+    CR = 'CR', 'CR - Contrato de Reforma'
+    VE = 'VE', 'VE - Venda'
+
+
+class TipoNotaFiscal(models.TextChoices):
+    MATERIAL = 'MATERIAL', 'Material'
+    SERVICO = 'SERVICO', 'Serviço'
+    MATERIAL_SERVICO = 'MATERIAL_SERVICO', 'Material/Serviço'
+
+
+# ═════════════════════════════════════════════════
+# 4. PEDIDO DE MATERIAL (REFATORADO)
+# ═════════════════════════════════════════════════
+
+def pedido_upload_path(instance, filename):
+    return f"suprimentos/pedidos/{instance.pedido.numero}/{filename}"
+
+
 class Pedido(models.Model):
     """
-    Pedido de materiais vinculado a um contrato.
-    Workflow: Rascunho → Pendente → Aprovado/Reprovado → Entregue → Recebido
-    Aprovação exclusiva do grupo Gerente.
+    Pedido de material — Solicitante cria, Gerente aprova/reprova/devolve.
+    Quando APROVADO, gera automaticamente uma SolicitacaoCompra.
+    Workflow: Rascunho → Pendente ⇄ Revisão → Aprovado → (gera Solicitação)
+              ou → Reprovado / Cancelado
     """
 
     class StatusChoices(models.TextChoices):
         RASCUNHO = 'RASCUNHO', 'Rascunho'
         PENDENTE = 'PENDENTE', 'Pendente de Aprovação'
+        REVISAO = 'REVISAO', 'Em Revisão pelo Solicitante'
         APROVADO = 'APROVADO', 'Aprovado'
         REPROVADO = 'REPROVADO', 'Reprovado'
         ENTREGUE = 'ENTREGUE', 'Entregue'
         RECEBIDO = 'RECEBIDO', 'Recebido'
         CANCELADO = 'CANCELADO', 'Cancelado'
 
+    # ───── Identificação ─────
     numero = models.CharField(
         "Nº Pedido", max_length=30, unique=True, editable=False,
     )
     contrato = models.ForeignKey(
         Contrato, on_delete=models.PROTECT,
         related_name='pedidos', verbose_name="Contrato",
-    )
-    solicitante = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
-        related_name='pedidos_solicitados', verbose_name="Solicitante",
-    )
-    aprovador = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        related_name='pedidos_aprovados', verbose_name="Aprovador",
-        null=True, blank=True,
-    )
-    recebedor = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        related_name='pedidos_recebidos', verbose_name="Recebido por",
-        null=True, blank=True,
     )
     filial = models.ForeignKey(
         Filial, on_delete=models.PROTECT,
@@ -444,19 +454,92 @@ class Pedido(models.Model):
         choices=StatusChoices.choices,
         default=StatusChoices.RASCUNHO,
     )
+
+    # ───── NOVO: Tipo de Obra ─────
+    tipo_obra = models.CharField(
+        "Tipo de Obra", max_length=2,
+        choices=TipoObra.choices,
+        default=TipoObra.CM,
+    )
+
+    # ───── NOVO: Descrição detalhada (1 material por solicitação) ─────
+    descricao_material = models.TextField(
+        "Descrição do Material",
+        blank=True, default='',
+        help_text=(
+            "Informe uma descrição DETALHADA e PRECISA do material. "
+            "Isso garante maior agilidade, assertividade e redução de "
+            "retrabalhos no processo de cotação e compra."
+        ),
+    )
+    quantidade = models.DecimalField(
+        "Quantidade", max_digits=12, decimal_places=2,
+        null=True, blank=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+    )
+    unidade_medida = models.CharField(
+        "Unidade de Medida", max_length=20,
+        choices=UnidadeMedida.choices,
+        default=UnidadeMedida.UNID,
+    )
+    tipo_insumo = models.CharField(
+        "Tipo de Insumo", max_length=30,
+        choices=TipoMaterial.choices,
+        blank=True, default='',
+    )
+    data_necessaria = models.DateField(
+        "Data Necessária para Entrega",
+        null=True, blank=True,
+        help_text="Data em que o material deve estar disponível no contrato.",
+    )
+
+    # ───── Responsáveis (todos são funcionários/usuarios) ─────
+    solicitante = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='pedidos_solicitados', verbose_name="Solicitante",
+    )
+    aprovador = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='pedidos_aprovados', verbose_name="Aprovador",
+        null=True, blank=True,
+        help_text="Gerente responsável pela aprovação.",
+    )
+    recebedor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='pedidos_recebidos', verbose_name="Recebido por",
+        null=True, blank=True,
+    )
+
+    # ───── Datas do Workflow ─────
     data_pedido = models.DateTimeField("Data do Pedido", auto_now_add=True)
     data_aprovacao = models.DateTimeField("Data Aprovação", null=True, blank=True)
     data_entrega = models.DateField("Data Entrega", null=True, blank=True)
     data_recebimento = models.DateTimeField("Data Recebimento", null=True, blank=True)
-    observacao = models.TextField("Observação", blank=True, default='')
-    motivo_reprovacao = models.TextField("Motivo Reprovação", blank=True, default='')
 
-    # ═══ NOVO: flag para evitar dupla entrada no estoque ═══
+    # ───── Revisão (loop Gerente ↔ Solicitante) ─────
+    motivo_revisao = models.TextField(
+        "Motivo da Revisão/Devolução", blank=True, default='',
+        help_text="Preenchido pelo Gerente ao devolver para revisão.",
+    )
+    motivo_reprovacao = models.TextField(
+        "Motivo Reprovação", blank=True, default='',
+    )
+
+    # ───── Observações e Controle ─────
+    observacao = models.TextField("Observação", blank=True, default='')
+
+    # ═══ Flag estoque (mantido) ═══
     estoque_processado = models.BooleanField(
-        "Estoque Processado",
-        default=False,
-        editable=False,
-        help_text="Indica se a entrada no estoque já foi gerada para este pedido.",
+        "Estoque Processado", default=False, editable=False,
+        help_text="Indica se a entrada no estoque já foi gerada.",
+    )
+
+    # ═══ NOVO: Vínculo com SolicitacaoCompra ═══
+    solicitacao_gerada = models.OneToOneField(
+        'SolicitacaoCompra', on_delete=models.SET_NULL,
+        null=True, blank=True, editable=False,
+        related_name='pedido_origem',
+        verbose_name="Solicitação de Compra Gerada",
     )
 
     objects = FilialManager()
@@ -492,7 +575,6 @@ class Pedido(models.Model):
         return self.itens.aggregate(t=Sum('valor_total'))['t'] or Decimal('0.00')
 
     def totais_por_classificacao(self):
-        """Retorna dict {CONSUMO: x, EPI: y, FERRAMENTA: z}."""
         from django.db.models import Sum
         qs = self.itens.values(
             'material__classificacao'
@@ -503,13 +585,11 @@ class Pedido(models.Model):
         }
 
     def verificar_verba(self):
-        """Verifica se o pedido cabe na verba mensal do contrato."""
         verba = self.contrato.verba_do_mes(
             self.data_pedido.year, self.data_pedido.month
         )
         totais = self.totais_por_classificacao()
         erros = []
-
         checks = [
             ('EPI', verba.saldo_epi),
             ('CONSUMO', verba.saldo_consumo),
@@ -521,12 +601,73 @@ class Pedido(models.Model):
                 erros.append(
                     f"{cat}: pedido R$ {pedido_val:.2f} > saldo R$ {saldo:.2f}"
                 )
-
         return len(erros) == 0, erros
-    
+
+    def gerar_solicitacao_compra(self):
+        """
+        Gera uma SolicitacaoCompra a partir deste pedido aprovado.
+        Chamado automaticamente ao aprovar.
+        """
+        if self.solicitacao_gerada:
+            return self.solicitacao_gerada
+
+        sol = SolicitacaoCompra(
+            filial=self.filial,
+            status=SolicitacaoCompra.StatusChoices.FAZER_COTACAO,
+            tipo_obra=self.tipo_obra,
+            contrato=self.contrato,
+            solicitante=self.solicitante,
+            aprovador_inicial=self.aprovador,
+            descricao_material=self.descricao_material,
+            quantidade=self.quantidade,
+            unidade_medida=self.unidade_medida,
+            tipo_insumo=self.tipo_insumo,
+            data_necessaria=self.data_necessaria,
+            data_aprovacao_inicial=self.data_aprovacao,
+        )
+        sol.save()
+
+        # Copiar anexos do pedido para a solicitação
+        for anexo_pedido in self.anexos.all():
+            AnexoSolicitacao.objects.create(
+                solicitacao=sol,
+                arquivo=anexo_pedido.arquivo,
+                descricao=anexo_pedido.descricao,
+                enviado_por=anexo_pedido.enviado_por,
+            )
+
+        # Copiar itens como referência na observação
+        itens_txt = []
+        for item in self.itens.select_related('material').all():
+            itens_txt.append(
+                f"- {item.quantidade}x {item.material.descricao} "
+                f"(R$ {item.valor_unitario} un. = R$ {item.valor_total})"
+            )
+        if itens_txt:
+            sol.observacoes = (
+                f"Itens do Pedido {self.numero}:\n" + "\n".join(itens_txt)
+            )
+            sol.save(update_fields=['observacoes'])
+
+        # Registrar histórico
+        HistoricoSolicitacao.registrar(
+            solicitacao=sol,
+            descricao=(
+                f"Solicitação gerada automaticamente a partir do "
+                f"Pedido {self.numero} aprovado por "
+                f"{self.aprovador.get_full_name() if self.aprovador else 'N/A'}."
+            ),
+            responsavel=self.aprovador,
+            status_novo='FAZER_COTACAO',
+        )
+
+        self.solicitacao_gerada = sol
+        self.save(update_fields=['solicitacao_gerada'])
+
+        return sol
+
     @property
     def resumo_tributario(self):
-        """Retorna resumo consolidado de impostos de todos os itens."""
         valor_produtos = Decimal('0.00')
         total_impostos = Decimal('0.00')
         total_creditos = Decimal('0.00')
@@ -571,8 +712,112 @@ class Pedido(models.Model):
             'cobertura_tributaria': f"{itens_com_grupo}/{total_itens}",
         }
 
+
 # ═════════════════════════════════════════════════
-# 5. ITEM DO PEDIDO
+# 4b. ANEXOS DO PEDIDO (NOVO)
+# ═════════════════════════════════════════════════
+
+def anexo_pedido_upload_path(instance, filename):
+    return f"suprimentos/pedidos/{instance.pedido.numero}/{filename}"
+
+
+class AnexoPedido(models.Model):
+    """Arquivo anexo ao pedido (PDF, foto, catálogo, etc.)."""
+
+    pedido = models.ForeignKey(
+        Pedido, on_delete=models.CASCADE,
+        related_name='anexos', verbose_name="Pedido",
+    )
+    arquivo = models.FileField(
+        "Arquivo", upload_to=anexo_pedido_upload_path,
+    )
+    descricao = models.CharField(
+        "Descrição", max_length=255, blank=True, default='',
+    )
+    enviado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, verbose_name="Enviado por",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Anexo do Pedido"
+        verbose_name_plural = "Anexos do Pedido"
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"Anexo: {self.descricao or self.arquivo.name}"
+
+    @property
+    def nome_arquivo(self):
+        return self.arquivo.name.split('/')[-1] if self.arquivo else ''
+
+    @property
+    def extensao(self):
+        nome = self.nome_arquivo
+        return nome.rsplit('.', 1)[-1].lower() if '.' in nome else ''
+
+    @property
+    def is_imagem(self):
+        return self.extensao in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp')
+
+    @property
+    def is_pdf(self):
+        return self.extensao == 'pdf'
+
+
+# ═════════════════════════════════════════════════
+# 4c. HISTÓRICO DO PEDIDO (NOVO)
+# ═════════════════════════════════════════════════
+
+class HistoricoPedido(models.Model):
+    """Registro de cada alteração no pedido (versionamento)."""
+
+    pedido = models.ForeignKey(
+        Pedido, on_delete=models.CASCADE,
+        related_name='historico', verbose_name="Pedido",
+    )
+    versao = models.PositiveIntegerField("Versão")
+    descricao = models.TextField("Descrição das Alterações")
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, verbose_name="Responsável",
+    )
+    status_anterior = models.CharField(
+        "Status Anterior", max_length=25, blank=True, default='',
+    )
+    status_novo = models.CharField(
+        "Status Novo", max_length=25, blank=True, default='',
+    )
+    criado_em = models.DateTimeField("Data", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Histórico do Pedido"
+        verbose_name_plural = "Histórico dos Pedidos"
+        ordering = ['-versao']
+
+    def __str__(self):
+        return f"v{self.versao} — {self.descricao[:60]}"
+
+    @classmethod
+    def registrar(cls, pedido, descricao, responsavel,
+                  status_anterior='', status_novo=''):
+        ultima_versao = cls.objects.filter(
+            pedido=pedido
+        ).order_by('-versao').values_list('versao', flat=True).first() or 0
+
+        return cls.objects.create(
+            pedido=pedido,
+            versao=ultima_versao + 1,
+            descricao=descricao,
+            responsavel=responsavel,
+            status_anterior=status_anterior,
+            status_novo=status_novo,
+        )
+
+
+# ═════════════════════════════════════════════════
+# 5. ITEM DO PEDIDO (MANTIDO)
 # ═════════════════════════════════════════════════
 class ItemPedido(models.Model):
     """Linha do pedido: material + quantidade + valor."""
@@ -599,11 +844,10 @@ class ItemPedido(models.Model):
         "Observação", max_length=255, blank=True, default='',
     )
 
-    # ═══ NOVO: Campos calculados de tributação ═══
+    # Campos tributação
     custo_real = models.DecimalField(
         "Custo Real (R$)", max_digits=14, decimal_places=2,
         default=Decimal('0.00'), editable=False,
-        help_text="Valor total menos créditos fiscais recuperáveis",
     )
     total_creditos = models.DecimalField(
         "Créditos Fiscais (R$)", max_digits=14, decimal_places=2,
@@ -615,17 +859,11 @@ class ItemPedido(models.Model):
     )
 
     def calcular_impostos(self):
-        """Calcula impostos usando o grupo tributário do material."""
         valor = self.quantidade * self.valor_unitario
         return self.material.calcular_custo_compra(valor, self.quantidade)
 
-    # ATUALIZAR o save() existente:
     def save(self, *args, **kwargs):
-        """Salva o item e atualiza o cache de impostos."""
-        # Calcula valor_total
         self.valor_total = self.quantidade * self.valor_unitario
-
-        # Calcula e cacheia impostos
         try:
             calc = self.calcular_impostos()
             self.total_impostos = calc.get('total_impostos', Decimal('0.00'))
@@ -635,7 +873,6 @@ class ItemPedido(models.Model):
             self.total_impostos = Decimal('0.00')
             self.total_creditos = Decimal('0.00')
             self.custo_real = Decimal('0.00')
-
         super().save(*args, **kwargs)
 
     class Meta:
@@ -646,18 +883,374 @@ class ItemPedido(models.Model):
     def __str__(self):
         return f"{self.quantidade}x {self.material.descricao}"
 
-    
+
+# ═════════════════════════════════════════════════════════════════════
+# 6. SOLICITAÇÃO DE COMPRA — WORKFLOW PÓS-APROVAÇÃO
+# ═════════════════════════════════════════════════════════════════════
+
+def solicitacao_upload_path(instance, filename):
+    return f"suprimentos/solicitacoes/{instance.solicitacao.numero}/{filename}"
+
+
+class SolicitacaoCompra(models.Model):
+    """
+    Solicitação de compra — gerada automaticamente quando um Pedido é APROVADO.
+    Workflow: Fazer Cotação → Cotação Enviada → Criar Pedido/CT →
+              Em Aprovação → Enviar Pedido → Entrega Pendente → Concluído
+    """
+
+    class StatusChoices(models.TextChoices):
+        FAZER_COTACAO = 'FAZER_COTACAO', 'Fazer Cotação'
+        COTACAO_ENVIADA = 'COTACAO_ENVIADA', 'Cotação Enviada'
+        CRIAR_PEDIDO_CT = 'CRIAR_PEDIDO_CT', 'Criar Pedido/CT'
+        EM_APROVACAO = 'EM_APROVACAO', 'Em Aprovação'
+        ENVIAR_PEDIDO = 'ENVIAR_PEDIDO', 'Enviar Pedido'
+        ENTREGA_PENDENTE = 'ENTREGA_PENDENTE', 'Entrega Pendente'
+        CONCLUIDO = 'CONCLUIDO', 'Concluído'
+        CANCELADO = 'CANCELADO', 'Cancelado'
+
+    # ───── Identificação ─────
+    numero = models.CharField(
+        "Nº Solicitação", max_length=30, unique=True, editable=False,
+    )
+    filial = models.ForeignKey(
+        Filial, on_delete=models.PROTECT,
+        verbose_name="Filial", null=True, blank=True,
+    )
+    status = models.CharField(
+        "Status", max_length=25,
+        choices=StatusChoices.choices,
+        default=StatusChoices.FAZER_COTACAO,
+    )
+
+    # ───── Dados herdados do Pedido ─────
+    tipo_obra = models.CharField(
+        "Tipo de Obra", max_length=2,
+        choices=TipoObra.choices,
+    )
+    contrato = models.ForeignKey(
+        Contrato, on_delete=models.PROTECT,
+        related_name='solicitacoes_compra',
+        verbose_name="Obra (CM / CR / VE)",
+    )
+    descricao_material = models.TextField("Descrição do Material")
+    quantidade = models.DecimalField(
+        "Quantidade", max_digits=12, decimal_places=2,
+        null=True, blank=True,
+    )
+    unidade_medida = models.CharField(
+        "Unidade de Medida", max_length=20,
+        choices=UnidadeMedida.choices,
+        default=UnidadeMedida.UNID,
+    )
+    tipo_insumo = models.CharField(
+        "Tipo de Insumo", max_length=30,
+        choices=TipoMaterial.choices,
+        blank=True, default='',
+    )
+    data_necessaria = models.DateField(
+        "Data Necessária para Entrega", null=True, blank=True,
+    )
+
+    # ───── Responsáveis (TODOS selecionáveis — são funcionários) ─────
+    solicitante = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='solicitacoes_compra',
+        verbose_name="Solicitante",
+    )
+    aprovador_inicial = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='solicitacoes_aprovador_inicial',
+        verbose_name="Aprovador (Gerente)",
+        null=True, blank=True,
+        help_text="Gerente que aprovou o pedido original.",
+    )
+    comprador = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='solicitacoes_comprador',
+        verbose_name="Comprador Responsável",
+        null=True, blank=True,
+        help_text="Profissional de Suprimentos responsável pela cotação e compra.",
+    )
+    aprovador_cotacao = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='solicitacoes_aprovador_cotacao',
+        verbose_name="Aprovador da Cotação",
+        null=True, blank=True,
+    )
+    aprovador_pedido = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        related_name='solicitacoes_aprovador_pedido',
+        verbose_name="Aprovador do Pedido",
+        null=True, blank=True,
+    )
+
+    # ───── Etapa 1 — Aprovação Inicial ─────
+    data_aprovacao_inicial = models.DateTimeField(
+        "Data Aprovação Inicial", null=True, blank=True,
+    )
+
+    # ───── Etapa 2 — Cotação (Comprador) ─────
+    data_cotacao = models.DateField("Data da Cotação", null=True, blank=True)
+    numero_cotacao = models.CharField(
+        "Nº da Cotação", max_length=50, blank=True, default='',
+    )
+    cnpj_compra = models.CharField(
+        "CNPJ para Compra", max_length=18, blank=True, default='',
+    )
+    tipo_nota_fiscal = models.CharField(
+        "Tipo de Nota Fiscal", max_length=20,
+        choices=TipoNotaFiscal.choices,
+        blank=True, default='',
+    )
+
+    # ───── Etapa 3 — Validação da Cotação ─────
+    data_validacao_cotacao = models.DateField(
+        "Data da Validação", null=True, blank=True,
+    )
+
+    # ───── Etapa 4 — Pedido no Sienge ─────
+    data_criacao_pedido = models.DateField(
+        "Data Criação do Pedido", null=True, blank=True,
+    )
+    numero_pedido_sienge = models.CharField(
+        "Nº do Pedido (Sienge)", max_length=50, blank=True, default='',
+    )
+    fornecedor = models.ForeignKey(
+        Parceiro, on_delete=models.SET_NULL,
+        related_name='solicitacoes_fornecidas',
+        verbose_name="Fornecedor", null=True, blank=True,
+    )
+    valor_pedido = models.DecimalField(
+        "Valor do Pedido (R$)", max_digits=14, decimal_places=2,
+        null=True, blank=True,
+    )
+
+    # ───── Etapa 5 — Aprovação do Pedido ─────
+    data_aprovacao_pedido = models.DateField(
+        "Data Aprovação do Pedido", null=True, blank=True,
+    )
+
+    # ───── Etapa 6 — Envio ao Fornecedor ─────
+    data_envio_fornecedor = models.DateField(
+        "Data Envio ao Fornecedor", null=True, blank=True,
+    )
+
+    # ───── Etapa 7 — Entrega ─────
+    data_prevista_entrega = models.DateField(
+        "Data Prevista de Entrega", null=True, blank=True,
+    )
+    data_entrega_efetiva = models.DateField(
+        "Data de Entrega Efetiva", null=True, blank=True,
+        help_text="Obtida via planilha de rotas do motorista.",
+    )
+
+    # ───── Etapa 8 — Encerramento ─────
+    numero_nota_fiscal = models.CharField(
+        "Nº da Nota Fiscal", max_length=50, blank=True, default='',
+    )
+
+    # ───── Observações e Cancelamento ─────
+    observacoes = models.TextField(
+        "Observações", blank=True, default='',
+        help_text="Registro de informações relevantes sobre o processo.",
+    )
+    motivo_cancelamento = models.TextField(
+        "Motivo do Cancelamento", blank=True, default='',
+    )
+
+    # ───── Timestamps ─────
+    criado_em = models.DateTimeField("Criado em", auto_now_add=True)
+    atualizado_em = models.DateTimeField("Atualizado em", auto_now=True)
+
+    objects = FilialManager()
+
+    class Meta:
+        verbose_name = "Solicitação de Compra"
+        verbose_name_plural = "Solicitações de Compra"
+        ordering = ['-criado_em']
+        permissions = [
+            ("pode_executar_cotacao", "Pode executar cotações (Comprador)"),
+        ]
+
+    def __str__(self):
+        return f"SOL-{self.numero} — {self.descricao_material[:50]}"
+
+    def get_absolute_url(self):
+        return reverse('suprimentos:solicitacao_detalhe', kwargs={'pk': self.pk})
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            hoje = timezone.now()
+            prefix = f"SOL-{hoje.strftime('%Y%m')}"
+            ultimo = SolicitacaoCompra.objects.filter(
+                numero__startswith=prefix
+            ).order_by('-numero').first()
+            seq = int(ultimo.numero.split('-')[-1]) + 1 if ultimo else 1
+            self.numero = f"{prefix}-{seq:04d}"
+        super().save(*args, **kwargs)
+
+    # ───── Verificação de Verba ─────
+    def verificar_verba(self):
+        if not self.valor_pedido:
+            return True, "Valor do pedido ainda não definido."
+
+        ano = self.data_necessaria.year if self.data_necessaria else timezone.now().year
+        mes = self.data_necessaria.month if self.data_necessaria else timezone.now().month
+        verba = self.contrato.verba_do_mes(ano, mes)
+
+        campo_saldo = 'saldo_consumo'
+        cat_label = 'Consumo'
+        campo_verba = 'verba_consumo'
+
+        if self.tipo_insumo in ('EPI', 'CREME'):
+            campo_saldo = 'saldo_epi'
+            campo_verba = 'verba_epi'
+            cat_label = 'EPI'
+
+        saldo = getattr(verba, campo_saldo, Decimal('0.00'))
+        if self.valor_pedido > saldo:
+            return False, (
+                f"⚠️ Valor R$ {self.valor_pedido:.2f} excede o saldo de "
+                f"{cat_label}: R$ {saldo:.2f} "
+                f"(Verba: R$ {getattr(verba, campo_verba):.2f})"
+            )
+        return True, "Dentro da verba."
+
+    # ───── Helpers de status ─────
+    @property
+    def status_badge_class(self):
+        mapa = {
+            'FAZER_COTACAO': 'info',
+            'COTACAO_ENVIADA': 'primary',
+            'CRIAR_PEDIDO_CT': 'info',
+            'EM_APROVACAO': 'warning',
+            'ENVIAR_PEDIDO': 'primary',
+            'ENTREGA_PENDENTE': 'secondary',
+            'CONCLUIDO': 'success',
+            'CANCELADO': 'dark',
+        }
+        return mapa.get(self.status, 'secondary')
+
+    @property
+    def etapa_atual(self):
+        mapa = {
+            'FAZER_COTACAO': 1,
+            'COTACAO_ENVIADA': 2,
+            'CRIAR_PEDIDO_CT': 3,
+            'EM_APROVACAO': 4,
+            'ENVIAR_PEDIDO': 5,
+            'ENTREGA_PENDENTE': 6,
+            'CONCLUIDO': 8,
+            'CANCELADO': 0,
+        }
+        return mapa.get(self.status, 0)
+
+    @property
+    def pode_cancelar(self):
+        return self.status not in ('CONCLUIDO', 'CANCELADO')
+
+    @property
+    def dias_em_aberto(self):
+        if self.status == 'CONCLUIDO' and self.data_entrega_efetiva:
+            return (self.data_entrega_efetiva - self.criado_em.date()).days
+        return (timezone.now().date() - self.criado_em.date()).days
+
 
 # ═════════════════════════════════════════════════
-# 6. ESTOQUE DE CONSUMO
+# 6b. ANEXOS DA SOLICITAÇÃO
+# ═════════════════════════════════════════════════
+
+class AnexoSolicitacao(models.Model):
+    solicitacao = models.ForeignKey(
+        SolicitacaoCompra, on_delete=models.CASCADE,
+        related_name='anexos', verbose_name="Solicitação",
+    )
+    arquivo = models.FileField("Arquivo", upload_to=solicitacao_upload_path)
+    descricao = models.CharField("Descrição", max_length=255, blank=True, default='')
+    enviado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, verbose_name="Enviado por",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Anexo da Solicitação"
+        verbose_name_plural = "Anexos da Solicitação"
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"Anexo: {self.descricao or self.arquivo.name}"
+
+    @property
+    def nome_arquivo(self):
+        return self.arquivo.name.split('/')[-1] if self.arquivo else ''
+
+    @property
+    def extensao(self):
+        nome = self.nome_arquivo
+        return nome.rsplit('.', 1)[-1].lower() if '.' in nome else ''
+
+    @property
+    def is_imagem(self):
+        return self.extensao in ('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp')
+
+    @property
+    def is_pdf(self):
+        return self.extensao == 'pdf'
+
+
+# ═════════════════════════════════════════════════
+# 6c. HISTÓRICO DA SOLICITAÇÃO
+# ═════════════════════════════════════════════════
+
+class HistoricoSolicitacao(models.Model):
+    solicitacao = models.ForeignKey(
+        SolicitacaoCompra, on_delete=models.CASCADE,
+        related_name='historico', verbose_name="Solicitação",
+    )
+    versao = models.PositiveIntegerField("Versão")
+    descricao = models.TextField("Descrição das Alterações")
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, verbose_name="Responsável",
+    )
+    status_anterior = models.CharField(
+        "Status Anterior", max_length=25, blank=True, default='',
+    )
+    status_novo = models.CharField(
+        "Status Novo", max_length=25, blank=True, default='',
+    )
+    criado_em = models.DateTimeField("Data", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Histórico da Solicitação"
+        verbose_name_plural = "Histórico das Solicitações"
+        ordering = ['-versao']
+
+    def __str__(self):
+        return f"v{self.versao} — {self.descricao[:60]}"
+
+    @classmethod
+    def registrar(cls, solicitacao, descricao, responsavel,
+                  status_anterior='', status_novo=''):
+        ultima_versao = cls.objects.filter(
+            solicitacao=solicitacao
+        ).order_by('-versao').values_list('versao', flat=True).first() or 0
+        return cls.objects.create(
+            solicitacao=solicitacao,
+            versao=ultima_versao + 1,
+            descricao=descricao,
+            responsavel=responsavel,
+            status_anterior=status_anterior,
+            status_novo=status_novo,
+        )
+
+
+# ═════════════════════════════════════════════════
+# 7. ESTOQUE DE CONSUMO (MANTIDO)
 # ═════════════════════════════════════════════════
 class EstoqueConsumo(models.Model):
-    """
-    Controle de estoque para materiais de CONSUMO por contrato/filial.
-    EPIs usam o estoque de SST (MovimentacaoEstoque).
-    Ferramentas usam o módulo ferramentas (Ferramenta.quantidade).
-    """
-
     class TipoMovimento(models.TextChoices):
         ENTRADA = 'ENTRADA', 'Entrada'
         SAIDA = 'SAIDA', 'Saída'
@@ -665,24 +1258,18 @@ class EstoqueConsumo(models.Model):
 
     material = models.ForeignKey(
         Material, on_delete=models.PROTECT,
-        related_name='movimentacoes_consumo',
-        verbose_name="Material",
+        related_name='movimentacoes_consumo', verbose_name="Material",
     )
     contrato = models.ForeignKey(
         Contrato, on_delete=models.PROTECT,
-        related_name='estoque_consumo',
-        verbose_name="Contrato",
+        related_name='estoque_consumo', verbose_name="Contrato",
     )
-    tipo = models.CharField(
-        "Tipo", max_length=10,
-        choices=TipoMovimento.choices,
-    )
+    tipo = models.CharField("Tipo", max_length=10, choices=TipoMovimento.choices)
     quantidade = models.IntegerField("Quantidade")
     pedido = models.ForeignKey(
         Pedido, on_delete=models.SET_NULL,
         null=True, blank=True,
-        related_name='movimentacoes_estoque',
-        verbose_name="Pedido Origem",
+        related_name='movimentacoes_estoque', verbose_name="Pedido Origem",
     )
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
@@ -692,8 +1279,7 @@ class EstoqueConsumo(models.Model):
         "Justificativa", max_length=255, blank=True, default='',
     )
     filial = models.ForeignKey(
-        Filial, on_delete=models.PROTECT,
-        verbose_name="Filial",
+        Filial, on_delete=models.PROTECT, verbose_name="Filial",
     )
     criado_em = models.DateTimeField(auto_now_add=True)
 
@@ -709,7 +1295,6 @@ class EstoqueConsumo(models.Model):
 
     @classmethod
     def saldo_material(cls, material_id, contrato_id, filial_id):
-        """Calcula saldo atual de um material de consumo."""
         from django.db.models import Sum, Q
         resultado = cls.objects.filter(
             material_id=material_id,
@@ -723,7 +1308,6 @@ class EstoqueConsumo(models.Model):
 
     @classmethod
     def saldo_por_contrato(cls, contrato_id, filial_id):
-        """Retorna saldo de todos os materiais de consumo de um contrato."""
         from django.db.models import Sum, Q
         return cls.objects.filter(
             contrato_id=contrato_id,

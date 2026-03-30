@@ -410,6 +410,7 @@ class ReconhecimentoRiscoForm(BaseFormMixin, forms.ModelForm):
     class Meta:
         model = ReconhecimentoRisco
         fields = [
+            'funcao',  # ← ADICIONADO
             'tipo_risco', 'agente', 'fonte_geradora',
             'exposicao', 'tipo_avaliacao',
             'limite_tolerancia', 'resultado_avaliacao', 'unidade_medida',
@@ -418,6 +419,7 @@ class ReconhecimentoRiscoForm(BaseFormMixin, forms.ModelForm):
             'fonte_geradora': forms.Textarea(attrs={'rows': 3}),
         }
         labels = {
+            'funcao': 'Função / GHE',
             'tipo_risco': 'Tipo de Risco',
             'agente': 'Agente Nocivo',
             'fonte_geradora': 'Fonte Geradora',
@@ -428,6 +430,18 @@ class ReconhecimentoRiscoForm(BaseFormMixin, forms.ModelForm):
             'unidade_medida': 'Unidade de Medida',
         }
 
+    def __init__(self, *args, ltcat=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.ltcat = ltcat
+
+        # Filtra funções do LTCAT
+        if ltcat and 'funcao' in self.fields:
+            self.fields['funcao'].queryset = FuncaoAnalisada.objects.filter(
+                ltcat_documento=ltcat, ativo=True
+            ).order_by('nome_funcao')
+            self.fields['funcao'].empty_label = '— Selecione a Função/GHE —'
+        elif 'funcao' in self.fields:
+            self.fields['funcao'].queryset = FuncaoAnalisada.objects.none()
 
 
 # ═══════════════════════════════════════════════════════

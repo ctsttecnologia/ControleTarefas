@@ -2,13 +2,13 @@
 # usuario/urls.py
 
 from django.urls import path
-from .views import (
+from usuario.views import (
     # ... todos os seus imports ...
     CustomLoginView, CustomLogoutView, ProfileView, CustomPasswordChangeView, SelecionarFilialView,
     UserListView, UserCreateView, UserUpdateView, UserSetPasswordView, UserToggleActiveView,
     GerenciarGruposUsuarioView, GroupListView, GroupCreateView, GroupUpdateView, GroupDeleteView,
     CustomPasswordResetView, CustomPasswordResetDoneView, CustomPasswordResetConfirmView, 
-    CustomPasswordResetCompleteView,
+    CustomPasswordResetCompleteView, ExportarUsuariosExcelView,
     FilialListView, FilialCreateView, FilialUpdateView, FilialDeleteView, ManageCardPermissionsView
 )
 
@@ -52,5 +52,8 @@ urlpatterns = [
     path('filiais/adicionar/', FilialCreateView.as_view(), name='filial_create'),
     path('filiais/<int:pk>/editar/', FilialUpdateView.as_view(), name='filial_update'),
     path('filiais/<int:pk>/excluir/', FilialDeleteView.as_view(), name='filial_delete'),
+
+    path('usuarios/exportar-excel/', ExportarUsuariosExcelView.as_view(), name='exportar_usuarios_excel'),
+
     
 ]

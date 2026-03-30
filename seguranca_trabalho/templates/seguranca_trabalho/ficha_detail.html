@@ -5,57 +5,81 @@
 
 {% block title %}Ficha de {{ ficha.funcionario.nome_completo }}{% endblock %}
 
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .fd-employee-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .fd-employee-row {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+
+    .fd-employee-row small {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--sst-text-muted);
+    }
+
+    .fd-employee-row p {
+        margin: 0;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--sst-text);
+    }
+</style>
+{% endblock %}
+
 {% block sst_content %}
 
 <!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div class="d-flex align-items-center">
-                {% if ficha.funcionario.foto_3x4 %}
-                {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
-                <img src="{{ foto_url }}" alt="" 
-                     class="rounded-circle me-3 border border-2 border-white" 
-                     style="width: 60px; height: 60px; object-fit: cover;"
-                     onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="rounded-circle bg-white bg-opacity-20 me-3 align-items-center justify-content-center" 
-                     style="width: 60px; height: 60px; display:none;">
-                    <i class="bi bi-person fs-3"></i>
-                </div>
-                {% else %}
-                <div class="rounded-circle bg-white bg-opacity-20 me-3 d-flex align-items-center justify-content-center" 
-                     style="width: 60px; height: 60px;">
-                    <i class="bi bi-person fs-3"></i>
-                </div>
-                {% endif %}
-
-                <div>
-                    <h4 class="mb-0">{{ ficha.funcionario.nome_completo }}</h4>
-                    <small class="opacity-75">
-                        {{ ficha.funcionario.cargo.nome|default:"Sem cargo" }} • 
-                        Matrícula: {{ ficha.funcionario.matricula|default:"N/A" }}
-                    </small>
-                </div>
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex align-items-center">
+            {% if ficha.funcionario.foto_3x4 %}
+            {% secure_url ficha.funcionario "foto_3x4" as foto_url %}
+            <img src="{{ foto_url }}" alt=""
+                 class="sst-avatar sst-avatar--lg me-3"
+                 onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3" style="display:none;">
+                <i class="bi bi-person"></i>
             </div>
-            <div class="d-flex gap-2">
-                <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
-                </a>
-                <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="btn btn-light">
-                    <i class="bi bi-file-pdf me-1"></i> PDF
-                </a>
-                <!-- Assinatura do Termo -->
-                {% if not ficha.assinatura_funcionario %}
-                    <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}"
-                    class="btn btn-warning btn-sm text-white">
-                        <i class="bi bi-pen"></i> Assinar Termo
-                    </a>
-                {% else %}
-                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
-                        <i class="bi bi-check-circle"></i> Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
-                    </span>
-                {% endif %}
+            {% else %}
+            <div class="sst-avatar-placeholder sst-avatar-placeholder--lg me-3 d-flex">
+                <i class="bi bi-person"></i>
             </div>
+            {% endif %}
+            <div>
+                <h4>{{ ficha.funcionario.nome_completo }}</h4>
+                <span class="sst-page-subtitle">
+                    {{ ficha.funcionario.cargo.nome|default:"Sem cargo" }} •
+                    Matrícula: {{ ficha.funcionario.matricula|default:"N/A" }}
+                </span>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="sst-btn-header">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+            <a href="{% url 'seguranca_trabalho:ficha_pdf_template' ficha.pk %}" class="sst-btn-header sst-btn-header--primary">
+                <i class="bi bi-file-pdf"></i> PDF
+            </a>
+            {% if not ficha.assinatura_funcionario %}
+            <a href="{% url 'seguranca_trabalho:assinar_termo' ficha.pk %}" class="sst-btn-header sst-btn-header--warning">
+                <i class="bi bi-pen"></i> Assinar Termo
+            </a>
+            {% else %}
+            <span class="sst-btn-header--success-badge">
+                <i class="bi bi-check-circle"></i> Termo Assinado em {{ ficha.data_assinatura_termo|date:"d/m/Y" }}
+            </span>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -63,175 +87,167 @@
 <div class="row g-4">
     <!-- Coluna Principal: Entregas -->
     <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">
-                    <i class="bi bi-box-seam me-2"></i>Entregas de EPI
-                </h6>
-                <span class="badge bg-primary">{{ entregas.count }} registros</span>
+        <div class="sst-card">
+            <div class="sst-card-header" style="justify-content:space-between;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-box-seam"></i>
+                    <h6>Entregas de EPI</h6>
+                </div>
+                <span class="sst-badge sst-badge--count">{{ entregas.count }} registros</span>
             </div>
-            <div class="card-body p-0">
-                {% if entregas %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Equipamento</th>
-                                <th>CA</th>
-                                <th class="text-center">Qtd</th>
-                                <th>Data Entrega</th>
-                                <th>Vencimento</th>
-                                <th class="text-center">Status</th>
-                                <th class="text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for entrega in entregas %}
-                            <tr>
-                                <td>
-                                    <strong>{{ entrega.equipamento.nome }}</strong>
-                                    {% if entrega.numero_serie %}
-                                    <br><small class="text-muted">N/S: {{ entrega.numero_serie }}</small>
+            {% if entregas %}
+            <div class="sst-table-wrapper">
+                <table class="sst-table">
+                    <thead>
+                        <tr>
+                            <th>Equipamento</th>
+                            <th>CA</th>
+                            <th class="text-center">Qtd</th>
+                            <th>Data Entrega</th>
+                            <th>Vencimento</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entrega in entregas %}
+                        <tr>
+                            <td>
+                                <strong style="color:var(--sst-text);">{{ entrega.equipamento.nome }}</strong>
+                                {% if entrega.numero_serie %}
+                                <br><small class="text-muted-custom">N/S: {{ entrega.numero_serie }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if entrega.equipamento.certificado_aprovacao %}
+                                <code>{{ entrega.equipamento.certificado_aprovacao }}</code>
+                                {% else %}
+                                <span class="text-muted-custom">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">{{ entrega.quantidade }}</td>
+                            <td>{{ entrega.data_entrega|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if entrega.data_vencimento_uso %}
+                                {{ entrega.data_vencimento_uso|date:"d/m/Y" }}
+                                {% else %}
+                                <span class="text-muted-custom">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if entrega.status == "Devolvido" %}
+                                <span class="sst-badge sst-badge--muted">Devolvido</span>
+                                {% elif entrega.status == "Pendente Assinatura" %}
+                                <span class="sst-badge sst-badge--warning">Pendente</span>
+                                {% elif entrega.status == "Vencido" %}
+                                <span class="sst-badge sst-badge--danger">Vencido</span>
+                                {% else %}
+                                <span class="sst-badge sst-badge--success">Ativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="sst-action-group">
+                                    {% if not entrega.data_assinatura and not entrega.data_devolucao %}
+                                    <button type="button" class="sst-action-btn sst-action-btn--sign"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#assinaturaModal"
+                                            data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"
+                                            data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
+                                            title="Assinar">
+                                        <i class="bi bi-pen"></i>
+                                    </button>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    {% if entrega.equipamento.certificado_aprovacao %}
-                                    <span class="badge bg-light text-dark border">{{ entrega.equipamento.certificado_aprovacao }}</span>
-                                    {% else %}
-                                    <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">{{ entrega.quantidade }}</td>
-                                <td>{{ entrega.data_entrega|date:"d/m/Y" }}</td>
-                                <td>
-                                    {% if entrega.data_vencimento_uso %}
-                                    {{ entrega.data_vencimento_uso|date:"d/m/Y" }}
-                                    {% else %}
-                                    <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    {% if entrega.status == "Devolvido" %}
-                                    <span class="badge bg-secondary">Devolvido</span>
-                                    {% elif entrega.status == "Pendente Assinatura" %}
-                                    <span class="badge bg-warning text-dark">Pendente</span>
-                                    {% elif entrega.status == "Vencido" %}
-                                    <span class="badge bg-danger">Vencido</span>
-                                    {% else %}
-                                    <span class="badge bg-success">Ativo</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
-                                        {% if not entrega.data_assinatura and not entrega.data_devolucao %}
-                                        <button type="button" class="btn btn-outline-primary" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#assinaturaModal"
-                                                data-form-url="{% url 'seguranca_trabalho:entrega_sign' entrega.pk %}"
-                                                data-funcionario-nome="{{ ficha.funcionario.nome_completo }}"
-                                                title="Assinar">
-                                            <i class="bi bi-pen"></i>
+                                    {% if not entrega.data_devolucao %}
+                                    <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="sst-action-btn sst-action-btn--return" title="Registrar Devolução"
+                                                onclick="return confirm('Confirma a devolução deste EPI?')">
+                                            <i class="bi bi-box-arrow-in-left"></i>
                                         </button>
-                                        {% endif %}
-                                        
-                                        {% if not entrega.data_devolucao %}
-                                        <form method="post" action="{% url 'seguranca_trabalho:entrega_return' entrega.pk %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Registrar Devolução"
-                                                    onclick="return confirm('Confirma a devolução deste EPI?')">
-                                                <i class="bi bi-box-arrow-in-left"></i>
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox text-muted fs-1"></i>
-                    <p class="text-muted mt-2">Nenhuma entrega registrada.</p>
-                </div>
-                {% endif %}
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <div class="sst-empty">
+                <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
+                <p>Nenhuma entrega registrada.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Coluna Lateral: Nova Entrega -->
+    <!-- Coluna Lateral -->
     <div class="col-lg-4">
         <!-- Dados do Funcionário -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-person me-2"></i>Dados do Funcionário
-                </h6>
+        <div class="sst-card mb-4">
+            <div class="sst-card-header">
+                <i class="bi bi-person"></i>
+                <h6>Dados do Funcionário</h6>
             </div>
-            <div class="card-body">
-                <div class="mb-2">
-                    <small class="text-muted">Admissão</small>
-                    <p class="mb-0 fw-semibold">{{ ficha.funcionario.data_admissao|date:"d/m/Y"|default:"—" }}</p>
-                </div>
-                <div class="mb-2">
-                    <small class="text-muted">Departamento</small>
-                    <p class="mb-0 fw-semibold">{{ ficha.funcionario.departamento.nome|default:"—" }}</p>
-                </div>
-                <div>
-                    <small class="text-muted">Filial</small>
-                    <p class="mb-0 fw-semibold">{{ ficha.filial.nome|default:"—" }}</p>
+            <div class="sst-card-body">
+                <div class="fd-employee-info">
+                    <div class="fd-employee-row">
+                        <small>Admissão</small>
+                        <p>{{ ficha.funcionario.data_admissao|date:"d/m/Y"|default:"—" }}</p>
+                    </div>
+                    <div class="fd-employee-row">
+                        <small>Departamento</small>
+                        <p>{{ ficha.funcionario.departamento.nome|default:"—" }}</p>
+                    </div>
+                    <div class="fd-employee-row">
+                        <small>Filial</small>
+                        <p>{{ ficha.filial.nome|default:"—" }}</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Nova Entrega -->
         {% if perms.seguranca_trabalho.add_entregaepi %}
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-plus-circle me-2"></i>Nova Entrega
-                </h6>
+        <div class="sst-card">
+            <div class="sst-card-header sst-card-header--success">
+                <i class="bi bi-plus-circle"></i>
+                <h6>Nova Entrega</h6>
             </div>
-            <div class="card-body">
+            <div class="sst-card-body">
                 <form method="post">
                     {% csrf_token %}
-                    
+
                     <div class="mb-3">
-                        <label for="{{ form.equipamento.id_for_label }}" class="form-label fw-semibold">
-                            Equipamento <span class="text-danger">*</span>
+                        <label for="{{ form.equipamento.id_for_label }}" class="sst-form-label">
+                            Equipamento <span class="required">*</span>
                         </label>
                         {% render_field form.equipamento class+="form-select" %}
                         {% for error in form.equipamento.errors %}
                         <div class="invalid-feedback d-block">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    
+
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label for="{{ form.quantidade.id_for_label }}" class="form-label fw-semibold">
-                                Quantidade
-                            </label>
+                            <label for="{{ form.quantidade.id_for_label }}" class="sst-form-label">Quantidade</label>
                             {% render_field form.quantidade class+="form-control" %}
                         </div>
                         <div class="col-6">
-                            <label for="{{ form.lote.id_for_label }}" class="form-label fw-semibold">
-                                Lote
-                            </label>
+                            <label for="{{ form.lote.id_for_label }}" class="sst-form-label">Lote</label>
                             {% render_field form.lote class+="form-control" %}
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label for="{{ form.numero_serie.id_for_label }}" class="form-label fw-semibold">
-                            Número de Série
-                        </label>
+                        <label for="{{ form.numero_serie.id_for_label }}" class="sst-form-label">Número de Série</label>
                         {% render_field form.numero_serie class+="form-control" %}
                     </div>
-                    
+
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-lg me-1"></i> Registrar Entrega
+                        <button type="submit" class="sst-btn-success" style="justify-content:center;">
+                            <i class="bi bi-check-lg"></i> Registrar Entrega
                         </button>
                     </div>
                 </form>

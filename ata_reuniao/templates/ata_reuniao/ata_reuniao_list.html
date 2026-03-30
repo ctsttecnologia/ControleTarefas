@@ -174,15 +174,21 @@
                 <p>Gerencie todas as atas, ações e responsáveis</p>
             </div>
             <div class="d-flex gap-2 no-print">
+                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_kanban' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-bar-chart-line me-1"></i> Kamban
                 </a>
+                {% endif %}
+                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-bar-chart-line me-1"></i> Dashboard
                 </a>
+                {% endif %}
+                {% if perms.ata_reuniao.add_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_create' %}" class="btn btn-sm btn-light fw-semibold">
                     <i class="bi bi-plus-circle me-1"></i> Nova Ata
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -348,9 +354,11 @@
                                             <i class="bi bi-arrow-counterclockwise me-1"></i> Limpar Filtros
                                         </a>
                                         {% endif %}
+                                        {% if perms.ata_reuniao.add_atareuniao or user.is_superuser %}
                                         <a href="{% url 'ata_reuniao:ata_reuniao_create' %}" class="btn btn-primary">
                                             <i class="bi bi-plus-circle me-1"></i> Nova Ata
                                         </a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </td>

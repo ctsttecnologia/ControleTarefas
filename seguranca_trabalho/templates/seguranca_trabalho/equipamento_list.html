@@ -6,162 +6,135 @@
 {% block sst_content %}
 
 <!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-hdd-stack me-2"></i>Catálogo de Equipamentos (EPIs)
-                </h4>
-                <small class="opacity-75">Gerencie os tipos de equipamentos disponíveis</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="btn btn-light">
-                <i class="bi bi-plus-circle me-1"></i> Novo Equipamento
-            </a>
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-hdd-stack me-2"></i>Catálogo de Equipamentos (EPIs)
+            </h4>
+            <span class="sst-page-subtitle">Gerencie os tipos de equipamentos disponíveis</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="sst-btn-header sst-btn-header--secundary">
+            <i class="bi bi-plus-circle"></i> Novo Equipamento
+        </a>
     </div>
 </div>
 
 <!-- Tabela -->
-<div class="card shadow-sm">
-    <div class="card-header bg-white">
-        <h6 class="mb-0">
-            <i class="bi bi-table me-2"></i>Lista de Equipamentos
-        </h6>
+<div class="sst-card">
+    <div class="sst-card-header">
+        <i class="bi bi-table"></i>
+        <h6>Lista de Equipamentos</h6>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nome / Modelo</th>
-                        <th class="text-center">Em Estoque</th>
-                        <th class="text-center">Saídas</th>
-                        <th class="text-center">Mínimo</th>
-                        <th>Fabricante</th>
-                        <th>CA</th>
-                        <th>Validade CA</th>
-                        <th class="text-center">Status</th>
-                        <th class="text-center" style="width: 120px;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for equipamento in equipamentos %}
-                    <tr>
-                        <!-- Nome / Modelo -->
-                        <td>
-                            <a href="{{ equipamento.get_absolute_url }}" class="fw-semibold text-decoration-none">
-                                {{ equipamento.nome }}
+    <div class="sst-table-wrapper">
+        <table class="sst-table">
+            <thead>
+                <tr>
+                    <th>Nome / Modelo</th>
+                    <th class="text-center">Em Estoque</th>
+                    <th class="text-center">Saídas</th>
+                    <th class="text-center">Mínimo</th>
+                    <th>Fabricante</th>
+                    <th>CA</th>
+                    <th>Validade CA</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center" style="width: 120px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for equipamento in equipamentos %}
+                <tr>
+                    <td>
+                        <a href="{{ equipamento.get_absolute_url }}">{{ equipamento.nome }}</a>
+                        {% if equipamento.modelo %}
+                        <br><small class="text-muted-custom">{{ equipamento.modelo }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if equipamento.estoque_atual <= equipamento.estoque_minimo %}
+                        <span class="sst-badge sst-badge--danger" title="Mín: {{ equipamento.estoque_minimo }}">
+                            <i class="bi bi-exclamation-triangle-fill"></i> {{ equipamento.estoque_atual }}
+                        </span>
+                        {% elif equipamento.estoque_atual <= equipamento.estoque_minimo|add:"10" %}
+                        <span class="sst-badge sst-badge--warning" title="Mín: {{ equipamento.estoque_minimo }}">
+                            <i class="bi bi-exclamation-circle-fill"></i> {{ equipamento.estoque_atual }}
+                        </span>
+                        {% else %}
+                        <span class="sst-badge sst-badge--success">{{ equipamento.estoque_atual }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if equipamento.total_saidas > 0 %}
+                        <span style="color: var(--sst-danger); font-weight: 600;">
+                            <i class="bi bi-box-arrow-up me-1"></i>{{ equipamento.total_saidas }}
+                        </span>
+                        {% else %}
+                        <span class="text-muted-custom">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <small class="text-muted-custom">{{ equipamento.estoque_minimo }}</small>
+                    </td>
+                    <td>{{ equipamento.fabricante.nome_fantasia|default:equipamento.fabricante.razao_social|default:"—" }}</td>
+                    <td>
+                        {% if equipamento.certificado_aprovacao %}
+                        <code>{{ equipamento.certificado_aprovacao }}</code>
+                        {% else %}
+                        <span class="text-muted-custom">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if equipamento.data_validade_ca %}
+                        {{ equipamento.data_validade_ca|date:"d/m/Y" }}
+                        {% else %}
+                        <span class="text-muted-custom">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if equipamento.ativo %}
+                        <span class="sst-badge sst-badge--success">Ativo</span>
+                        {% else %}
+                        <span class="sst-badge sst-badge--muted">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="sst-action-group">
+                            <a href="{{ equipamento.get_absolute_url }}" class="sst-action-btn sst-action-btn--view" title="Ver">
+                                <i class="bi bi-eye"></i>
                             </a>
-                            {% if equipamento.modelo %}
-                            <br><small class="text-muted">{{ equipamento.modelo }}</small>
-                            {% endif %}
-                        </td>
-
-                        <!-- Estoque Atual -->
-                        <td class="text-center">
-                            {% if equipamento.estoque_atual <= equipamento.estoque_minimo %}
-                                <span class="badge bg-danger fs-6" title="Estoque crítico! Mín: {{ equipamento.estoque_minimo }}">
-                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ equipamento.estoque_atual }}
-                                </span>
-                            {% elif equipamento.estoque_atual <= equipamento.estoque_minimo|add:"10" %}
-                                <span class="badge bg-warning text-dark fs-6" title="Estoque baixo. Mín: {{ equipamento.estoque_minimo }}">
-                                    <i class="bi bi-exclamation-circle me-1"></i>{{ equipamento.estoque_atual }}
-                                </span>
-                            {% else %}
-                                <span class="badge bg-success fs-6" title="Estoque OK. Mín: {{ equipamento.estoque_minimo }}">
-                                    {{ equipamento.estoque_atual }}
-                                </span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Total Saídas -->
-                        <td class="text-center">
-                            {% if equipamento.total_saidas > 0 %}
-                                <span class="text-danger fw-semibold">
-                                    <i class="bi bi-box-arrow-up me-1"></i>{{ equipamento.total_saidas }}
-                                </span>
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Estoque Mínimo -->
-                        <td class="text-center">
-                            <small class="text-muted">{{ equipamento.estoque_minimo }}</small>
-                        </td>
-
-                        <!-- Fabricante -->
-                        <td>
-                            {{ equipamento.fabricante.nome_fantasia|default:equipamento.fabricante.razao_social|default:"—" }}
-                        </td>
-
-                        <!-- CA -->
-                        <td>
-                            {% if equipamento.certificado_aprovacao %}
-                            <code>{{ equipamento.certificado_aprovacao }}</code>
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Validade CA -->
-                        <td>
-                            {% if equipamento.data_validade_ca %}
-                            {{ equipamento.data_validade_ca|date:"d/m/Y" }}
-                            {% else %}
-                            <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Status -->
-                        <td class="text-center">
-                            {% if equipamento.ativo %}
-                            <span class="badge bg-success">Ativo</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Inativo</span>
-                            {% endif %}
-                        </td>
-
-                        <!-- Ações -->
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ equipamento.get_absolute_url }}" class="btn btn-outline-info" title="Ver">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'seguranca_trabalho:equipamento_update' equipamento.pk %}" class="btn btn-outline-warning" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <a href="{% url 'seguranca_trabalho:equipamento_delete' equipamento.pk %}" class="btn btn-outline-danger" title="Excluir">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9" class="text-center py-5">
-                            <i class="bi bi-inbox text-muted fs-1"></i>
-                            <h6 class="mt-3 text-muted">Nenhum equipamento cadastrado</h6>
-                            <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="btn btn-primary btn-sm mt-2">
-                                <i class="bi bi-plus-circle me-1"></i> Cadastrar primeiro
+                            <a href="{% url 'seguranca_trabalho:equipamento_update' equipamento.pk %}" class="sst-action-btn sst-action-btn--edit" title="Editar">
+                                <i class="bi bi-pencil"></i>
                             </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <a href="{% url 'seguranca_trabalho:equipamento_delete' equipamento.pk %}" class="sst-action-btn sst-action-btn--delete" title="Excluir">
+                                <i class="bi bi-trash3"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="sst-empty">
+                            <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
+                            <h6>Nenhum equipamento cadastrado</h6>
+                            <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="sst-btn-primary mt-2" style="font-size:0.82rem; padding:0.4rem 1rem;">
+                                <i class="bi bi-plus-circle"></i> Cadastrar primeiro
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</div>
-
     {% if is_paginated %}
-    <div class="card-footer bg-white">
+    <div class="sst-pagination">
         {% include 'partials/pagination.html' %}
     </div>
     {% endif %}
 </div>
 
 {% endblock %}
+
 
 

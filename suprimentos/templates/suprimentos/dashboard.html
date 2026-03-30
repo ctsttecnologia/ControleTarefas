@@ -1,4 +1,5 @@
 
+
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
@@ -10,24 +11,130 @@
     {# ══════════════════════════════════════════════════════ #}
     {# CABEÇALHO + FILTROS                                    #}
     {# ══════════════════════════════════════════════════════ #}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard Suprimentos</h2>
-        <form method="get" class="d-flex gap-2">
-            <select name="mes" class="form-select form-select-sm" style="width:auto">
+    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-3">
+        <h2 class="mb-0">
+            <i class="bi bi-speedometer2 me-2"></i>Dashboard Suprimentos
+        </h2>
+
+        <form method="get" class="d-flex flex-wrap gap-2 align-items-center">
+
+            {# ── Mês ── #}
+            <select name="mes" class="form-select form-select-sm" style="width: auto;">
                 {% for num, nome in meses %}
                     <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
                 {% endfor %}
             </select>
-            <select name="ano" class="form-select form-select-sm" style="width:auto">
+
+            {# ── Ano ── #}
+            <select name="ano" class="form-select form-select-sm" style="width: 100px;">
                 {% for a in anos_disponiveis %}
                     <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
                 {% endfor %}
             </select>
-            <button class="btn btn-sm btn-primary" type="submit">
+
+            <div class="vr opacity-25 d-none d-lg-block"></div>
+
+            {# ── Filtro Funcionário ── #}
+            <div class="input-group input-group-sm" style="width: auto; min-width: 190px;">
+                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                <select name="funcionario" class="form-select form-select-sm">
+                    <option value="">Todos os Funcionários</option>
+                    {% for f in funcionarios_filter %}
+                        <option value="{{ f.id }}"
+                            {% if f.id|stringformat:"s" == funcionario_selecionado %}selected{% endif %}>
+                            {{ f.get_full_name|default:f.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# ── Filtro Cliente ── #}
+            <div class="input-group input-group-sm" style="width: auto; min-width: 190px;">
+                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                <select name="cliente" class="form-select form-select-sm">
+                    <option value="">Todos os Clientes</option>
+                    {% for c in clientes_filter %}
+                        <option value="{{ c.id }}"
+                            {% if c.id|stringformat:"s" == cliente_selecionado %}selected{% endif %}>
+                            {{ c.nome }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# ── Botão Filtrar ── #}
+            <button type="submit" class="btn btn-sm btn-primary">
                 <i class="bi bi-funnel"></i> Filtrar
             </button>
+
+            {# ── Botão Limpar ── #}
+            {% if funcionario_selecionado or cliente_selecionado %}
+            <a href="?mes={{ mes }}&ano={{ ano }}"
+               class="btn btn-sm btn-outline-secondary"
+               title="Limpar filtros de funcionário e cliente">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+            {% endif %}
+
         </form>
     </div>
+
+    {# ── Badges de filtros ativos ── #}
+    {% if funcionario_selecionado or cliente_selecionado %}
+    <div class="d-flex flex-wrap gap-2 mb-3">
+
+        {% if funcionario_selecionado %}
+        <span class="badge rounded-pill border border-primary text-primary fw-normal px-3 py-2"
+              style="background: rgba(13,110,253,.08); font-size: .8rem;">
+            <i class="bi bi-person-check me-1"></i>
+            Funcionário:
+            {% for f in funcionarios_filter %}
+                {% if f.id|stringformat:"s" == funcionario_selecionado %}
+                    <strong>{{ f.get_full_name|default:f.username }}</strong>
+                {% endif %}
+            {% endfor %}
+            <a href="?mes={{ mes }}&ano={{ ano }}{% if cliente_selecionado %}&cliente={{ cliente_selecionado }}{% endif %}"
+               class="ms-2 text-primary text-decoration-none" title="Remover este filtro">×</a>
+        </span>
+        {% endif %}
+
+        {% if cliente_selecionado %}
+        <span class="badge rounded-pill border border-info text-info fw-normal px-3 py-2"
+              style="background: rgba(13,202,240,.08); font-size: .8rem;">
+            <i class="bi bi-building-check me-1"></i>
+            Cliente:
+            {% for c in clientes_filter %}
+                {% if c.id|stringformat:"s" == cliente_selecionado %}
+                    <strong>{{ c.nome }}</strong>
+                {% endif %}
+            {% endfor %}
+            <a href="?mes={{ mes }}&ano={{ ano }}{% if funcionario_selecionado %}&funcionario={{ funcionario_selecionado }}{% endif %}"
+               class="ms-2 text-info text-decoration-none" title="Remover este filtro">×</a>
+        </span>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════ #}
+    {# ✅ ALERTA — SEM DADOS (posição correta, fora de tags) #}
+    {# ══════════════════════════════════════════════════════ #}
+    {% if sem_dados %}
+    <div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-3 flex-shrink-0"></i>
+        <div class="flex-grow-1">
+            <strong>Nenhum dado encontrado para os filtros selecionados.</strong><br>
+            <small class="text-muted">
+                Tente selecionar outro funcionário, cliente ou período.
+                Verifique também se há contratos cadastrados para esta filial.
+            </small>
+        </div>
+        <a href="{% url 'suprimentos:dashboard' %}"
+           class="btn btn-sm btn-outline-warning flex-shrink-0">
+            <i class="bi bi-x-circle me-1"></i> Limpar filtros
+        </a>
+    </div>
+    {% endif %}
 
     {# ══════════════════════════════════════════════════════ #}
     {# CARDS RESUMO — TOPO                                    #}
@@ -96,15 +203,169 @@
     </div>
 
     {# ══════════════════════════════════════════════════════ #}
+    {# PIPELINE SOLICITAÇÕES DE COMPRA                        #}
+    {# ══════════════════════════════════════════════════════ #}
+    {% if user.is_gerente or user.is_administrador or user.is_superuser or is_comprador %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-kanban me-2 text-info"></i>
+                <strong>Pipeline — Solicitações de Compra</strong>
+            </div>
+            <a href="{% url 'suprimentos:solicitacao_lista' %}" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-list-ul me-1"></i>Ver Todas
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 mb-4">
+                <div class="col">
+                    <div class="text-center p-3 rounded-3 position-relative"
+                         style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);">
+                        <i class="bi bi-search fs-4 text-primary d-block mb-1"></i>
+                        <h3 class="mb-0 text-primary">{{ sol_fazer_cotacao|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Fazer Cotação</small>
+                        {% if sol_fazer_cotacao > 0 %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style="font-size: 0.6rem;">AÇÃO</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center" style="max-width: 30px;">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="text-center p-3 rounded-3"
+                         style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);">
+                        <i class="bi bi-check2-square fs-4 text-warning d-block mb-1"></i>
+                        <h3 class="mb-0 text-warning">{{ sol_validar_cotacao|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Validar Cotação</small>
+                    </div>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center" style="max-width: 30px;">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="text-center p-3 rounded-3"
+                         style="background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);">
+                        <i class="bi bi-file-earmark-plus fs-4 d-block mb-1" style="color:#3f51b5"></i>
+                        <h3 class="mb-0" style="color: #3f51b5;">{{ sol_criar_pedido|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Criar Pedido/CT</small>
+                    </div>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center" style="max-width: 30px;">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="text-center p-3 rounded-3"
+                         style="background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);">
+                        <i class="bi bi-check-circle fs-4 text-danger d-block mb-1"></i>
+                        <h3 class="mb-0 text-danger">{{ sol_aprovar_pedido|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Aprovar Pedido</small>
+                    </div>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center" style="max-width: 30px;">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="text-center p-3 rounded-3"
+                         style="background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);">
+                        <i class="bi bi-send fs-4 d-block mb-1" style="color:#009688"></i>
+                        <h3 class="mb-0" style="color: #009688;">{{ sol_enviar_pedido|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Enviar Fornec.</small>
+                    </div>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center" style="max-width: 30px;">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="text-center p-3 rounded-3"
+                         style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);">
+                        <i class="bi bi-truck fs-4 text-warning d-block mb-1"></i>
+                        <h3 class="mb-0 text-warning">{{ sol_entrega_pendente|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Entrega Pend.</small>
+                    </div>
+                </div>
+                <div class="col d-flex align-items-center justify-content-center" style="max-width: 30px;">
+                    <i class="bi bi-chevron-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="text-center p-3 rounded-3"
+                         style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);">
+                        <i class="bi bi-flag-fill fs-4 text-success d-block mb-1"></i>
+                        <h3 class="mb-0 text-success">{{ sol_concluidas_mes|default:0 }}</h3>
+                        <small class="text-muted fw-semibold">Concluídas</small>
+                    </div>
+                </div>
+            </div>
+
+            {% if solicitacoes_urgentes %}
+            <div class="mt-2">
+                <h6 class="text-danger fw-bold mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                    Ações Urgentes ({{ solicitacoes_urgentes|length }})
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nº</th>
+                                <th>Material</th>
+                                <th>Contrato</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Dias</th>
+                                <th>Próxima Ação</th>
+                                <th class="text-end">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sol in solicitacoes_urgentes %}
+                            <tr>
+                                <td>
+                                    <a href="{{ sol.get_absolute_url }}" class="fw-bold text-decoration-none">
+                                        {{ sol.numero }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="d-inline-block text-truncate" style="max-width: 200px;">
+                                        {{ sol.descricao_material }}
+                                    </span>
+                                </td>
+                                <td>{{ sol.contrato.cm }}</td>
+                                <td class="text-center">
+                                    <span class="badge bg-{{ sol.status_badge_class }}">
+                                        {{ sol.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if sol.dias_em_aberto > 15 %}bg-danger{% elif sol.dias_em_aberto > 7 %}bg-warning text-dark{% else %}bg-light text-dark{% endif %}">
+                                        {{ sol.dias_em_aberto }}d
+                                    </span>
+                                </td>
+                                <td><small class="text-muted">{{ sol.proxima_acao }}</small></td>
+                                <td class="text-end">
+                                    <a href="{{ sol.get_absolute_url }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-arrow-right"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════ #}
     {# DETALHAMENTO: EPI × CONSUMO × FERRAMENTA              #}
     {# ══════════════════════════════════════════════════════ #}
     <div class="row g-3 mb-4">
-        {# ── EPI ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light d-flex align-items-center">
-                    <i class="bi bi-shield-check me-2 text-info"></i>
-                    <strong>EPI</strong>
+                    <i class="bi bi-shield-check me-2 text-info"></i><strong>EPI</strong>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-1">
@@ -125,22 +386,17 @@
                     {% if pct_epi > 0 %}
                     <div class="progress mt-2" style="height:8px">
                         <div class="progress-bar {% if pct_epi > 90 %}bg-danger{% elif pct_epi > 70 %}bg-warning{% else %}bg-info{% endif %}"
-                             style="width:{{ pct_epi }}%"
-                             title="{{ pct_epi }}% utilizado">
-                        </div>
+                             style="width:{{ pct_epi }}%"></div>
                     </div>
                     <small class="text-muted">{{ pct_epi }}% utilizado</small>
                     {% endif %}
                 </div>
             </div>
         </div>
-
-        {# ── Consumo ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light d-flex align-items-center">
-                    <i class="bi bi-box-seam me-2 text-warning"></i>
-                    <strong>Consumo</strong>
+                    <i class="bi bi-box-seam me-2 text-warning"></i><strong>Consumo</strong>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-1">
@@ -161,22 +417,17 @@
                     {% if pct_consumo > 0 %}
                     <div class="progress mt-2" style="height:8px">
                         <div class="progress-bar {% if pct_consumo > 90 %}bg-danger{% elif pct_consumo > 70 %}bg-warning{% else %}bg-warning bg-opacity-75{% endif %}"
-                             style="width:{{ pct_consumo }}%"
-                             title="{{ pct_consumo }}% utilizado">
-                        </div>
+                             style="width:{{ pct_consumo }}%"></div>
                     </div>
                     <small class="text-muted">{{ pct_consumo }}% utilizado</small>
                     {% endif %}
                 </div>
             </div>
         </div>
-
-        {# ── Ferramenta ── #}
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-light d-flex align-items-center">
-                    <i class="bi bi-tools me-2 text-secondary"></i>
-                    <strong>Ferramenta</strong>
+                    <i class="bi bi-tools me-2 text-secondary"></i><strong>Ferramenta</strong>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-1">
@@ -197,9 +448,7 @@
                     {% if pct_ferramenta > 0 %}
                     <div class="progress mt-2" style="height:8px">
                         <div class="progress-bar {% if pct_ferramenta > 90 %}bg-danger{% elif pct_ferramenta > 70 %}bg-warning{% else %}bg-success{% endif %}"
-                             style="width:{{ pct_ferramenta }}%"
-                             title="{{ pct_ferramenta }}% utilizado">
-                        </div>
+                             style="width:{{ pct_ferramenta }}%"></div>
                     </div>
                     <small class="text-muted">{{ pct_ferramenta }}% utilizado</small>
                     {% endif %}
@@ -223,7 +472,6 @@
             </a>
         </div>
         <div class="card-body">
-
             {% if custos_tributarios.total_impostos > 0 %}
             <div class="row g-3 mb-3">
                 <div class="col-md-3 col-6">
@@ -251,8 +499,6 @@
                     </div>
                 </div>
             </div>
-
-            {# Barra NF-e vs Custo Real #}
             {% if pct_custo_real > 0 %}
             <div class="mb-2">
                 <div class="d-flex justify-content-between small mb-1">
@@ -263,27 +509,21 @@
                     </span>
                 </div>
                 <div class="progress" style="height: 24px;">
-                    <div class="progress-bar bg-primary"
-                         style="width: {{ pct_custo_real }}%"
-                         title="Custo Real: {{ pct_custo_real }}%">
+                    <div class="progress-bar bg-primary" style="width: {{ pct_custo_real }}%">
                         Custo Real {{ pct_custo_real }}%
                     </div>
-                    <div class="progress-bar bg-success bg-opacity-50"
-                         style="width: {{ pct_creditos }}%"
-                         title="Créditos: {{ pct_creditos }}%">
+                    <div class="progress-bar bg-success bg-opacity-50" style="width: {{ pct_creditos }}%">
                         Créditos {{ pct_creditos }}%
                     </div>
                 </div>
             </div>
             {% endif %}
             {% endif %}
-
             {% if materiais_sem_grupo > 0 %}
             <div class="alert alert-warning mb-0 {% if custos_tributarios.total_impostos > 0 %}mt-3{% endif %}">
                 <i class="bi bi-exclamation-triangle me-1"></i>
                 <strong>{{ materiais_sem_grupo }}</strong> de {{ materiais_total }}
-                materia{{ materiais_sem_grupo|pluralize:"l,is" }}
-                sem grupo tributário configurado.
+                materia{{ materiais_sem_grupo|pluralize:"l,is" }} sem grupo tributário configurado.
                 <a href="{% url 'suprimentos:material_lista' %}?sem_grupo=1" class="alert-link">
                     Configurar agora →
                 </a>
@@ -300,8 +540,7 @@
         <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-3">
             <div>
                 <h5 class="mb-1">
-                    <i class="bi bi-bar-chart-line me-2 text-info"></i>
-                    Relatório Gerencial Completo
+                    <i class="bi bi-bar-chart-line me-2 text-info"></i>Relatório Gerencial Completo
                 </h5>
                 <p class="text-muted mb-0">
                     Quantitativo, qualitativo, alertas de gastos acima da meta,
@@ -323,18 +562,14 @@
     </div>
 
     {# ══════════════════════════════════════════════════════ #}
-    {# GRÁFICO 6 MESES (com Custo Real)                      #}
+    {# GRÁFICO 6 MESES                                        #}
     {# ══════════════════════════════════════════════════════ #}
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <span><i class="bi bi-graph-up me-1"></i> Verba × Compra × Custo Real — Últimos 6 meses</span>
             <div class="btn-group btn-group-sm" role="group">
-                <button type="button" class="btn btn-outline-secondary active" data-chart-mode="total">
-                    Total
-                </button>
-                <button type="button" class="btn btn-outline-secondary" data-chart-mode="categoria">
-                    Por Categoria
-                </button>
+                <button type="button" class="btn btn-outline-secondary active" data-chart-mode="total">Total</button>
+                <button type="button" class="btn btn-outline-secondary" data-chart-mode="categoria">Por Categoria</button>
             </div>
         </div>
         <div class="card-body">
@@ -357,10 +592,8 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Nº</th>
-                            <th>Contrato</th>
-                            <th>Solicitante</th>
-                            <th>Data</th>
+                            <th>Nº</th><th>Contrato</th><th>Solicitante</th>
+                            <th>Material</th><th>Data</th>
                             <th class="text-end">Valor Total</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -368,17 +601,16 @@
                     <tbody>
                         {% for p in pedidos_pendentes %}
                         <tr>
-                            <td>
-                                <a href="{{ p.get_absolute_url }}" class="fw-semibold">
-                                    {{ p.numero }}
-                                </a>
-                            </td>
+                            <td><a href="{{ p.get_absolute_url }}" class="fw-semibold">{{ p.numero }}</a></td>
                             <td>{{ p.contrato }}</td>
                             <td>{{ p.solicitante.get_full_name }}</td>
-                            <td>{{ p.data_pedido|date:"d/m/Y H:i" }}</td>
-                            <td class="text-end">
-                                <strong>R$ {{ p.valor_total_pedido|floatformat:2 }}</strong>
+                            <td>
+                                <span class="d-inline-block text-truncate" style="max-width: 200px;">
+                                    {{ p.descricao_material }}
+                                </span>
                             </td>
+                            <td>{{ p.data_pedido|date:"d/m/Y H:i" }}</td>
+                            <td class="text-end"><strong>R$ {{ p.valor_total_pedido|floatformat:2 }}</strong></td>
                             <td class="text-end">
                                 <a href="{{ p.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye me-1"></i> Ver
@@ -407,9 +639,7 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>CM</th>
-                            <th>Cliente</th>
-                            <th>Filial</th>
+                            <th>CM</th><th>Cliente</th><th>Filial</th>
                             <th class="text-center">Status</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -417,9 +647,7 @@
                     <tbody>
                         {% for c in contratos %}
                         <tr>
-                            <td>
-                                <a href="{{ c.get_absolute_url }}" class="fw-semibold">{{ c.cm }}</a>
-                            </td>
+                            <td><a href="{{ c.get_absolute_url }}" class="fw-semibold">{{ c.cm }}</a></td>
                             <td>{{ c.cliente }}</td>
                             <td>{{ c.filial }}</td>
                             <td class="text-center">
@@ -453,23 +681,20 @@
     const labels = dados.map(d => d.label);
     const ctx = document.getElementById('chartVerbaCompra');
 
-    // Datasets: Total
     const dsTotal = [
         {
             label: 'Verba Total',
             data: dados.map(d => d.verba_total),
             backgroundColor: 'rgba(13,110,253,0.6)',
             borderColor: 'rgba(13,110,253,1)',
-            borderWidth: 1,
-            order: 2,
+            borderWidth: 1, order: 2,
         },
         {
             label: 'Compra (NF-e)',
             data: dados.map(d => d.compra_total),
             backgroundColor: 'rgba(220,53,69,0.6)',
             borderColor: 'rgba(220,53,69,1)',
-            borderWidth: 1,
-            order: 2,
+            borderWidth: 1, order: 2,
         },
         {
             label: 'Custo Real',
@@ -477,58 +702,24 @@
             type: 'line',
             borderColor: 'rgba(25,135,84,1)',
             backgroundColor: 'rgba(25,135,84,0.1)',
-            borderWidth: 2,
-            pointRadius: 4,
+            borderWidth: 2, pointRadius: 4,
             pointBackgroundColor: 'rgba(25,135,84,1)',
-            fill: true,
-            tension: 0.3,
-            order: 1,
+            fill: true, tension: 0.3, order: 1,
         },
     ];
 
-    // Datasets: Por Categoria
     const dsCategoria = [
-        {
-            label: 'Verba EPI',
-            data: dados.map(d => d.verba_epi),
-            backgroundColor: 'rgba(13,202,240,0.5)',
-            stack: 'verba',
-        },
-        {
-            label: 'Verba Consumo',
-            data: dados.map(d => d.verba_consumo),
-            backgroundColor: 'rgba(255,193,7,0.5)',
-            stack: 'verba',
-        },
-        {
-            label: 'Verba Ferramenta',
-            data: dados.map(d => d.verba_ferramenta),
-            backgroundColor: 'rgba(108,117,125,0.5)',
-            stack: 'verba',
-        },
-        {
-            label: 'Compra EPI',
-            data: dados.map(d => d.compra_epi),
-            backgroundColor: 'rgba(13,202,240,0.9)',
-            stack: 'compra',
-        },
-        {
-            label: 'Compra Consumo',
-            data: dados.map(d => d.compra_consumo),
-            backgroundColor: 'rgba(255,193,7,0.9)',
-            stack: 'compra',
-        },
-        {
-            label: 'Compra Ferramenta',
-            data: dados.map(d => d.compra_ferramenta),
-            backgroundColor: 'rgba(108,117,125,0.9)',
-            stack: 'compra',
-        },
+        { label: 'Verba EPI',        data: dados.map(d => d.verba_epi),       backgroundColor: 'rgba(13,202,240,0.5)',  stack: 'verba' },
+        { label: 'Verba Consumo',    data: dados.map(d => d.verba_consumo),    backgroundColor: 'rgba(255,193,7,0.5)',   stack: 'verba' },
+        { label: 'Verba Ferramenta', data: dados.map(d => d.verba_ferramenta), backgroundColor: 'rgba(108,117,125,0.5)', stack: 'verba' },
+        { label: 'Compra EPI',       data: dados.map(d => d.compra_epi),       backgroundColor: 'rgba(13,202,240,0.9)',  stack: 'compra' },
+        { label: 'Compra Consumo',   data: dados.map(d => d.compra_consumo),   backgroundColor: 'rgba(255,193,7,0.9)',   stack: 'compra' },
+        { label: 'Compra Ferramenta',data: dados.map(d => d.compra_ferramenta),backgroundColor: 'rgba(108,117,125,0.9)',stack: 'compra' },
     ];
 
     const chart = new Chart(ctx, {
         type: 'bar',
-        data: { labels: labels, datasets: dsTotal },
+        data: { labels, datasets: dsTotal },
         options: {
             responsive: true,
             interaction: { intersect: false, mode: 'index' },
@@ -536,35 +727,25 @@
                 legend: { position: 'top' },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': R$ ' +
-                                context.parsed.y.toLocaleString('pt-BR', {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2
-                                });
-                        }
+                        label: ctx => ctx.dataset.label + ': R$ ' +
+                            ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                     }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: {
-                        callback: v => 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits: 2}),
-                    },
+                    ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) },
                 },
             },
         },
     });
 
-    // Toggle Total / Por Categoria
     document.querySelectorAll('[data-chart-mode]').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             document.querySelectorAll('[data-chart-mode]').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-
-            const mode = this.dataset.chartMode;
-            if (mode === 'categoria') {
+            if (this.dataset.chartMode === 'categoria') {
                 chart.data.datasets = dsCategoria;
                 chart.options.scales.x = { stacked: true };
                 chart.options.scales.y.stacked = true;

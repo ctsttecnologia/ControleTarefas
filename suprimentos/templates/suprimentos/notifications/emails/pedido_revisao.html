@@ -1,0 +1,35 @@
+
+{% extends 'notifications/emails/base_email.html' %}
+
+{% block content %}
+<h2 style="color: #f0ad4e;">🔄 Pedido Devolvido para Revisão</h2>
+
+<p>Olá {{ pedido.solicitante.first_name|default:pedido.solicitante.username }},</p>
+
+<p>Seu pedido <strong>{{ pedido.numero }}</strong> foi devolvido para revisão pelo gerente <strong>{{ aprovador }}</strong>.</p>
+
+<div style="background: #fff3cd; border-left: 4px solid #f0ad4e; padding: 15px; margin: 20px 0; border-radius: 4px;">
+    <strong>Motivo da devolução:</strong>
+    <p style="margin: 10px 0 0;">{{ motivo }}</p>
+</div>
+
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Contrato</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ pedido.contrato.cm }} — {{ pedido.contrato.cliente }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo Obra</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ pedido.get_tipo_obra_display }}</td>
+    </tr>
+</table>
+
+<p>Corrija os pontos indicados e <strong>reenvie para aprovação</strong>.</p>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ url }}" style="background: #f0ad4e; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        📝 Revisar Pedido
+    </a>
+</div>
+{% endblock %}
+

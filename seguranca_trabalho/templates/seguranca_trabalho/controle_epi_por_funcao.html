@@ -7,185 +7,684 @@
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block extra_css %}
+{{ block.super }}
 <style>
-    :root {
-        --cor-primaria: #0d6efd;
-        --cor-cabecalho: #4678b4;
-        --cor-coluna-fixa: #f0f5fa;
-        --cor-borda: #dee2e6;
-        --cor-hover: #e2eefd;
+    /* ═══════════════════════════════════════════════════════
+       VARIÁVEIS — TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
+    :root,
+    [data-bs-theme="light"] {
+        --mz-bg:             #ffffff;
+        --mz-bg-alt:         #f8f9fc;
+        --mz-bg-header:      #1e293b;
+        --mz-text-header:    #f1f5f9;
+        --mz-bg-col-fixa:    #f1f5f9;
+        --mz-text:           #1e293b;
+        --mz-text-muted:     #64748b;
+        --mz-border:         #e2e8f0;
+        --mz-hover:          #eff6ff;
+        --mz-hover-col:      #e0ecff;
+        --mz-input-bg:       #ffffff;
+        --mz-input-border:   #cbd5e1;
+        --mz-input-focus:    #3b82f6;
+        --mz-input-focus-bg: #eff6ff;
+        --mz-badge-bg:       #f1f5f9;
+        --mz-badge-text:     #475569;
+        --mz-card-shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+        --mz-accent:         #3b82f6;
+        --mz-accent-soft:    rgba(59,130,246,.08);
+        --mz-qn-bg:          #f8fafc;
+        --mz-qn-text:        #94a3b8;
+        --mz-val-bg:         #eff6ff;
+        --mz-val-text:       #1e40af;
+        --mz-scrollbar-track: #f1f5f9;
+        --mz-scrollbar-thumb: #cbd5e1;
     }
 
-    .matriz-wrapper {
+    /* ═══════════════════════════════════════════════════════
+       VARIÁVEIS — TEMA ESCURO
+       ═══════════════════════════════════════════════════════ */
+    [data-bs-theme="dark"] {
+        --mz-bg:             #1a1d23;
+        --mz-bg-alt:         #1e2128;
+        --mz-bg-header:      #0f172a;
+        --mz-text-header:    #e2e8f0;
+        --mz-bg-col-fixa:    #1e2128;
+        --mz-text:           #e2e8f0;
+        --mz-text-muted:     #94a3b8;
+        --mz-border:         #2d3748;
+        --mz-hover:          rgba(59,130,246,.1);
+        --mz-hover-col:      rgba(59,130,246,.15);
+        --mz-input-bg:       #262a33;
+        --mz-input-border:   #3d4555;
+        --mz-input-focus:    #60a5fa;
+        --mz-input-focus-bg: rgba(59,130,246,.12);
+        --mz-badge-bg:       #262a33;
+        --mz-badge-text:     #94a3b8;
+        --mz-card-shadow:    0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.2);
+        --mz-accent:         #60a5fa;
+        --mz-accent-soft:    rgba(96,165,250,.1);
+        --mz-qn-bg:          #262a33;
+        --mz-qn-text:        #64748b;
+        --mz-val-bg:         rgba(59,130,246,.15);
+        --mz-val-text:       #93bbfc;
+        --mz-scrollbar-track: #1e2128;
+        --mz-scrollbar-thumb: #3d4555;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       PAGE HEADER
+       ═══════════════════════════════════════════════════════ */
+    .mz-page-header {
+        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+        border-radius: 0.75rem;
+        padding: 1.5rem 2rem;
+        margin-bottom: 1.5rem;
+        color: #f8fafc;
+        position: relative;
+        overflow: hidden;
+    }
+
+    [data-bs-theme="dark"] .mz-page-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        border: 1px solid var(--mz-border);
+    }
+
+    .mz-page-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .mz-page-header h4 {
+        font-weight: 700;
+        font-size: 1.35rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .mz-page-header .mz-subtitle {
+        color: #94a3b8;
+        font-size: 0.85rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       LEGENDA
+       ═══════════════════════════════════════════════════════ */
+    .mz-legend {
+        background: var(--mz-accent-soft);
+        border: 1px solid var(--mz-border);
+        border-left: 4px solid var(--mz-accent);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.85rem;
+        color: var(--mz-text);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .mz-legend i {
+        color: var(--mz-accent);
+        font-size: 1.1rem;
+    }
+
+    .mz-legend-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+    }
+
+    .mz-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .mz-legend-swatch {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       CARD PRINCIPAL
+       ═══════════════════════════════════════════════════════ */
+    .mz-card {
+        background: var(--mz-bg);
+        border: 1px solid var(--mz-border);
+        border-radius: 0.75rem;
+        box-shadow: var(--mz-card-shadow);
+        overflow: hidden;
+    }
+
+    .mz-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--mz-border);
+        background: var(--mz-bg-alt);
+    }
+
+    .mz-card-header h6 {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--mz-text);
+    }
+
+    .mz-card-header .mz-badge {
+        background: var(--mz-badge-bg);
+        color: var(--mz-badge-text);
+        border: 1px solid var(--mz-border);
+        padding: 0.3rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       WRAPPER SCROLL
+       ═══════════════════════════════════════════════════════ */
+    .mz-wrapper {
         overflow: auto;
-        max-height: 70vh;
-        border: 1px solid var(--cor-borda);
-        border-radius: 0.375rem;
+        max-height: 65vh;
     }
 
-    .matriz-table {
+    .mz-wrapper::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    .mz-wrapper::-webkit-scrollbar-track {
+        background: var(--mz-scrollbar-track);
+    }
+
+    .mz-wrapper::-webkit-scrollbar-thumb {
+        background: var(--mz-scrollbar-thumb);
+        border-radius: 4px;
+    }
+
+    .mz-wrapper::-webkit-scrollbar-thumb:hover {
+        background: var(--mz-accent);
+    }
+
+    .mz-wrapper::-webkit-scrollbar-corner {
+        background: var(--mz-scrollbar-track);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       TABELA MATRIZ
+       ═══════════════════════════════════════════════════════ */
+    .mz-table {
+        width: 100%;
         border-collapse: separate;
         border-spacing: 0;
         margin: 0;
+        font-size: 0.85rem;
     }
 
-    .matriz-table th,
-    .matriz-table td {
-        border: 1px solid var(--cor-borda);
-        padding: 0.5rem;
-        text-align: center;
+    .mz-table th,
+    .mz-table td {
+        border-right: 1px solid var(--mz-border);
+        border-bottom: 1px solid var(--mz-border);
+        padding: 0;
         vertical-align: middle;
         white-space: nowrap;
-        background-color: #fff;
-        font-size: 0.875rem;
     }
 
-    .matriz-table thead th {
+    /* ── Header ── */
+    .mz-table thead th {
         position: sticky;
         top: 0;
-        background-color: var(--cor-cabecalho);
-        color: #fff;
-        z-index: 2;
+        background: var(--mz-bg-header);
+        color: var(--mz-text-header);
+        z-index: 10;
         font-weight: 600;
-    }
-
-    .matriz-table tbody th {
-        position: sticky;
-        left: 0;
-        background-color: var(--cor-coluna-fixa);
-        z-index: 1;
-        text-align: left;
-        min-width: 200px;
-        font-weight: 600;
-    }
-
-    .matriz-table thead th:first-child {
-        left: 0;
-        z-index: 3;
-    }
-
-    .matriz-table tbody tr:hover th,
-    .matriz-table tbody tr:hover td {
-        background-color: var(--cor-hover);
-    }
-
-    .matriz-table input[type="number"] {
-        width: 70px;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0.85rem 1rem;
         text-align: center;
     }
 
-    .matriz-table input[type="number"]:focus {
-        border-color: var(--cor-primaria);
-        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    .mz-table thead th:first-child {
+        left: 0;
+        z-index: 12;
+        text-align: left;
+        min-width: 240px;
+        border-right: 2px solid rgba(255,255,255,.15);
+    }
+
+    .mz-table thead th:not(:first-child) {
+        min-width: 130px;
+    }
+
+    /* ── Coluna Fixa (Função) ── */
+    .mz-table tbody th {
+        position: sticky;
+        left: 0;
+        background: var(--mz-bg-col-fixa);
+        z-index: 5;
+        text-align: left;
+        min-width: 240px;
+        font-weight: 600;
+        font-size: 0.84rem;
+        color: var(--mz-text);
+        padding: 0.65rem 1rem;
+        border-right: 2px solid var(--mz-border);
+    }
+
+    .mz-table tbody th .mz-funcao-icon {
+        color: var(--mz-accent);
+        margin-right: 0.5rem;
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    /* ── Células ── */
+    .mz-table tbody td {
+        text-align: center;
+        padding: 0.35rem;
+        background: var(--mz-bg);
+        transition: background-color 0.15s ease;
+    }
+
+    /* ── Hover na linha ── */
+    .mz-table tbody tr:hover th {
+        background: var(--mz-hover-col) !important;
+    }
+
+    .mz-table tbody tr:hover td {
+        background: var(--mz-hover) !important;
+    }
+
+    /* ── Linhas zebradas ── */
+    .mz-table tbody tr:nth-child(even) th {
+        background: var(--mz-bg);
+    }
+
+    .mz-table tbody tr:nth-child(even) td {
+        background: var(--mz-bg-alt);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       INPUT DA MATRIZ
+       ═══════════════════════════════════════════════════════ */
+    .mz-input {
+        width: 100%;
+        max-width: 80px;
+        margin: 0 auto;
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1.5px solid var(--mz-input-border);
+        border-radius: 0.4rem;
+        padding: 0.4rem 0.25rem;
+        background: var(--mz-input-bg);
+        color: var(--mz-text);
+        transition: all 0.2s ease;
+        -moz-appearance: textfield;
+    }
+
+    .mz-input::-webkit-inner-spin-button,
+    .mz-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Placeholder (QN) */
+    .mz-input::placeholder {
+        color: var(--mz-qn-text);
+        font-weight: 500;
+        font-size: 0.8rem;
+    }
+
+    /* Sem valor (QN) */
+    .mz-input:placeholder-shown,
+    .mz-input[data-state="qn"] {
+        background: var(--mz-qn-bg);
+        border-color: transparent;
+        color: var(--mz-qn-text);
+    }
+
+    /* Com valor */
+    .mz-input[data-state="set"] {
+        background: var(--mz-val-bg);
+        border-color: var(--mz-accent);
+        color: var(--mz-val-text);
+    }
+
+    /* Focus */
+    .mz-input:focus {
+        outline: none;
+        border-color: var(--mz-input-focus);
+        background: var(--mz-input-focus-bg);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+        color: var(--mz-text);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════ */
+    .mz-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--mz-border);
+        background: var(--mz-bg-alt);
+    }
+
+    .mz-footer-info {
+        font-size: 0.8rem;
+        color: var(--mz-text-muted);
+    }
+
+    .mz-btn-save {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: #fff;
+        border: none;
+        padding: 0.65rem 2rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(37,99,235,.3);
+    }
+
+    .mz-btn-save:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 12px rgba(37,99,235,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    .mz-btn-save:active {
+        transform: translateY(0);
+    }
+
+    [data-bs-theme="dark"] .mz-btn-save {
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        box-shadow: 0 2px 6px rgba(37,99,235,.2);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       EMPTY STATE
+       ═══════════════════════════════════════════════════════ */
+    .mz-empty {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: var(--mz-text-muted);
+    }
+
+    .mz-empty-icon {
+        font-size: 3rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    .mz-empty h6 {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--mz-text);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       TOOLBAR (BUSCA + STATS)
+       ═══════════════════════════════════════════════════════ */
+    .mz-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid var(--mz-border);
+        background: var(--mz-bg);
+    }
+
+    .mz-search {
+        position: relative;
+        max-width: 280px;
+    }
+
+    .mz-search input {
+        width: 100%;
+        padding: 0.45rem 0.75rem 0.45rem 2.2rem;
+        border: 1.5px solid var(--mz-input-border);
+        border-radius: 0.4rem;
+        background: var(--mz-input-bg);
+        color: var(--mz-text);
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+    }
+
+    .mz-search input:focus {
+        outline: none;
+        border-color: var(--mz-input-focus);
+        box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    .mz-search input::placeholder {
+        color: var(--mz-text-muted);
+    }
+
+    .mz-search i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--mz-text-muted);
+        font-size: 0.85rem;
+    }
+
+    .mz-stats {
+        display: flex;
+        gap: 1.25rem;
+        font-size: 0.8rem;
+        color: var(--mz-text-muted);
+    }
+
+    .mz-stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .mz-stat-value {
+        font-weight: 700;
+        color: var(--mz-text);
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       RESPONSIVO
+       ═══════════════════════════════════════════════════════ */
+    @media (max-width: 768px) {
+        .mz-page-header {
+            padding: 1rem 1.25rem;
+        }
+        .mz-page-header h4 {
+            font-size: 1.1rem;
+        }
+        .mz-table thead th:first-child,
+        .mz-table tbody th {
+            min-width: 160px;
+        }
+        .mz-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .mz-search {
+            max-width: 100%;
+        }
+        .mz-legend {
+            flex-direction: column;
+            align-items: flex-start;
+        }
     }
 </style>
 {% endblock %}
 
 {% block sst_content %}
 
-<!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-grid-3x3 me-2"></i>{{ titulo_pagina }}
-                </h4>
-                <small class="opacity-75">
-                    {% trans "Defina a frequência de troca (em meses) para cada EPI por função" %}
-                </small>
-            </div>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-light"
-                        hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
-                        hx-target="#modal-content"
-                        data-bs-toggle="modal"
-                        data-bs-target="#genericModal">
-                    <i class="bi bi-plus-circle me-1"></i> Nova Função
-                </button>
-            </div>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE HEADER                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="mz-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-grid-3x3-gap-fill me-2"></i>{{ titulo_pagina }}
+            </h4>
+            <span class="mz-subtitle">
+                {% trans "Defina a frequência de troca (em meses) para cada EPI por função" %}
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-light"
+                    hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
+                    hx-target="#modal-content"
+                    data-bs-toggle="modal"
+                    data-bs-target="#genericModal">
+                <i class="bi bi-plus-lg me-1"></i> Nova Função
+            </button>
         </div>
     </div>
 </div>
 
-<!-- Legenda -->
-<div class="alert alert-info d-flex align-items-center mb-4">
-    <i class="bi bi-info-circle-fill me-2"></i>
-    <small>
-        <strong>QN</strong> = Quando Necessário (deixe em branco ou 0). 
-        Valores numéricos indicam a frequência de troca em <strong>meses</strong>.
-    </small>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- LEGENDA                                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="mz-legend">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        <div class="mz-legend-items">
+            <span class="mz-legend-item">
+                <span class="mz-legend-swatch" style="background: var(--mz-qn-bg); border: 1.5px solid var(--mz-input-border);"></span>
+                <strong>QN</strong> = Quando Necessário (vazio ou 0)
+            </span>
+            <span class="mz-legend-item">
+                <span class="mz-legend-swatch" style="background: var(--mz-val-bg); border: 1.5px solid var(--mz-accent);"></span>
+                <strong>Nº</strong> = Frequência de troca em <strong>meses</strong>
+            </span>
+        </div>
+    </div>
 </div>
 
-<!-- Card Principal -->
-<div class="card shadow-sm">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- CARD MATRIZ                                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="mz-card">
+    <div class="mz-card-header">
+        <h6>
             <i class="bi bi-table me-2"></i>Matriz de EPIs por Função
         </h6>
-        <span class="badge bg-secondary">
+        <span class="mz-badge">
             {{ funcoes|length }} funções × {{ equipamentos|length }} equipamentos
         </span>
     </div>
-    <div class="card-body p-0">
-        <form method="post" id="matrizForm">
-            {% csrf_token %}
-            
-            {% if funcoes and equipamentos %}
-            <div class="matriz-wrapper">
-                <table class="table matriz-table">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 200px;">
-                                <i class="bi bi-briefcase me-1"></i> {% trans "Função" %}
-                            </th>
-                            {% for equipamento in equipamentos %}
-                            <th title="{{ equipamento.nome }}">
-                                {{ equipamento.nome|truncatechars:20 }}
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for funcao in funcoes %}
-                        <tr>
-                            <th>{{ funcao.nome }}</th>
-                            {% for equipamento in equipamentos %}
-                            <td>
-                                <input type="number" 
-                                       name="freq_{{ funcao.id }}_{{ equipamento.id }}" 
-                                       class="form-control form-control-sm"
-                                       value="{{ matriz_data|get_item:funcao.id|get_item:equipamento.id|default:'' }}"
-                                       min="0"
-                                       max="120"
-                                       placeholder="QN">
-                            </td>
-                            {% endfor %}
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-grid text-muted fs-1"></i>
-                <h6 class="mt-3 text-muted">Nenhum dado para exibir</h6>
-                <p class="text-muted small">
-                    {% if not funcoes %}Cadastre funções primeiro.{% endif %}
-                    {% if not equipamentos %}Cadastre equipamentos primeiro.{% endif %}
-                </p>
-            </div>
-            {% endif %}
-        </form>
-    </div>
-    
+
     {% if funcoes and equipamentos %}
-    <div class="card-footer bg-light">
-        <div class="d-flex justify-content-end">
-            <button type="submit" form="matrizForm" class="btn btn-primary btn-lg">
-                <i class="bi bi-check-lg me-1"></i> {% trans "Salvar Matriz" %}
-            </button>
+    <!-- Toolbar com busca -->
+    <div class="mz-toolbar">
+        <div class="mz-search">
+            <i class="bi bi-search"></i>
+            <input type="text"
+                   id="mzSearchFuncao"
+                   placeholder="Buscar função..."
+                   autocomplete="off">
         </div>
+        <div class="mz-stats">
+            <span class="mz-stat-item">
+                <i class="bi bi-briefcase"></i>
+                <span class="mz-stat-value">{{ funcoes|length }}</span> funções
+            </span>
+            <span class="mz-stat-item">
+                <i class="bi bi-shield-check"></i>
+                <span class="mz-stat-value">{{ equipamentos|length }}</span> EPIs
+            </span>
+            <span class="mz-stat-item" id="mzStatPreenchidos">
+                <i class="bi bi-check2-circle"></i>
+                <span class="mz-stat-value">0</span> preenchidos
+            </span>
+        </div>
+    </div>
+
+    <form method="post" id="matrizForm">
+        {% csrf_token %}
+        <div class="mz-wrapper">
+            <table class="mz-table">
+                <thead>
+                    <tr>
+                        <th>
+                            <i class="bi bi-briefcase me-1"></i> {% trans "Função" %}
+                        </th>
+                        {% for equipamento in equipamentos %}
+                        <th title="{{ equipamento.nome }}">
+                            {{ equipamento.nome|truncatechars:22 }}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody id="mzTableBody">
+                    {% for funcao in funcoes %}
+                    <tr data-funcao="{{ funcao.nome|lower }}">
+                        <th>
+                            <i class="bi bi-person-badge mz-funcao-icon"></i>
+                            {{ funcao.nome }}
+                        </th>
+                        {% for equipamento in equipamentos %}
+                        <td>
+                            <input type="number"
+                                   class="mz-input"
+                                   name="freq_{{ funcao.id }}_{{ equipamento.id }}"
+                                   value="{{ matriz_data|get_item:funcao.id|get_item:equipamento.id|default:'' }}"
+                                   min="0"
+                                   max="120"
+                                   placeholder="QN"
+                                   data-state="{% if matriz_data|get_item:funcao.id|get_item:equipamento.id %}set{% else %}qn{% endif %}">
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <div class="mz-footer">
+        <div class="mz-footer-info">
+            <i class="bi bi-keyboard me-1"></i>
+            Use <kbd>Tab</kbd> para navegar entre campos · <kbd>0</kbd> ou vazio = QN
+        </div>
+        <button type="submit" form="matrizForm" class="mz-btn-save">
+            <i class="bi bi-check-lg"></i>
+            {% trans "Salvar Matriz" %}
+        </button>
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div class="mz-empty">
+        <div class="mz-empty-icon">
+            <i class="bi bi-grid"></i>
+        </div>
+        <h6>Nenhum dado para exibir</h6>
+        <p>
+            {% if not funcoes %}Cadastre funções primeiro.{% endif %}
+            {% if not equipamentos %}Cadastre equipamentos primeiro.{% endif %}
+        </p>
     </div>
     {% endif %}
 </div>
@@ -198,4 +697,80 @@
 </div>
 
 {% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    // ── Atualizar data-state dos inputs ──
+    function atualizarEstado(input) {
+        const val = input.value.trim();
+        if (val === '' || val === '0') {
+            input.dataset.state = 'qn';
+            if (val === '0') input.value = '';
+        } else {
+            input.dataset.state = 'set';
+        }
+    }
+
+    // ── Contar preenchidos ──
+    function contarPreenchidos() {
+        const inputs = document.querySelectorAll('.mz-input');
+        let count = 0;
+        inputs.forEach(inp => {
+            if (inp.value.trim() !== '' && inp.value.trim() !== '0') count++;
+        });
+        const statEl = document.querySelector('#mzStatPreenchidos .mz-stat-value');
+        if (statEl) statEl.textContent = count;
+    }
+
+    // ── Init: aplicar estado e contar ──
+    document.querySelectorAll('.mz-input').forEach(input => {
+        atualizarEstado(input);
+
+        input.addEventListener('input', function () {
+            atualizarEstado(this);
+            contarPreenchidos();
+        });
+
+        input.addEventListener('blur', function () {
+            atualizarEstado(this);
+        });
+
+        // Selecionar tudo ao focar
+        input.addEventListener('focus', function () {
+            this.select();
+        });
+    });
+
+    contarPreenchidos();
+
+    // ── Busca de funções ──
+    const searchInput = document.getElementById('mzSearchFuncao');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const termo = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#mzTableBody tr');
+
+            rows.forEach(row => {
+                const funcaoNome = row.dataset.funcao || '';
+                row.style.display = funcaoNome.includes(termo) ? '' : 'none';
+            });
+        });
+    }
+
+    // ── Atalho Ctrl+S para salvar ──
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            const form = document.getElementById('matrizForm');
+            if (form) form.submit();
+        }
+    });
+
+})();
+</script>
+{% endblock %}
+
 

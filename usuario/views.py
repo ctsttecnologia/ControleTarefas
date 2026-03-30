@@ -23,7 +23,15 @@ from usuario.forms import (
     CustomUserCreationForm, CustomUserChangeForm,
     GrupoForm, CustomPasswordChangeForm, FilialForm
 )
-
+import io
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import (
+    Font, Alignment, Border, Side, PatternFill, NamedStyle
+)
+from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.page import PageMargins
+from django.utils import timezone
 
 # =============================================================================
 # MIXINS DE PERMISSÃO
@@ -634,3 +642,285 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
 
 class CustomPasswordResetCompleteView(PasswordResetCompleteView):
     template_name = 'usuario/password_reset/complete.html'
+
+# =============================================================================
+# EXPORTAÇÃO EXCEL — PLANILHA DE USUÁRIOS CADASTRADOS
+# =============================================================================
+
+class ExportarUsuariosExcelView(LoginRequiredMixin, StaffRequiredMixin, View):
+    """
+    Exporta a lista de usuários cadastrados em formato Excel (.xlsx),
+    formatado e otimizado para impressão em papel A4 paisagem.
+    """
+
+    def get(self, request, *args, **kwargs):
+        # ─── Buscar dados (respeitando filtros de filial e busca) ───
+        qs = Usuario.objects.select_related('filial_ativa').prefetch_related(
+            'filiais_permitidas', 'groups'
+        ).order_by('first_name', 'last_name')
+
+        active_filial_id = request.session.get('active_filial_id')
+        if not request.user.is_superuser and active_filial_id:
+            qs = qs.filter(filiais_permitidas__id=active_filial_id).distinct()
+
+        search = request.GET.get('q', '').strip()
+        if search:
+            qs = qs.filter(
+                Q(username__icontains=search) |
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search)
+            )
+
+        # ─── Criar Workbook ───
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Usuários Cadastrados"
+
+        # ─── Configuração de página para impressão (A4 Paisagem) ───
+        ws.page_setup.paperSize = ws.PAPERSIZE_A4
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 0  # quantas páginas forem necessárias
+        ws.sheet_properties.pageSetUpPr.fitToPage = True
+        ws.page_margins = PageMargins(
+            left=0.4, right=0.4, top=0.6, bottom=0.6,
+            header=0.3, footer=0.3
+        )
+        ws.print_options.horizontalCentered = True
+
+        # Cabeçalho e rodapé de impressão
+        ws.oddHeader.center.text = "&B&14Relatório de Usuários Cadastrados"
+        ws.oddFooter.left.text = "Emitido em: &D às &T"
+        ws.oddFooter.center.text = "Página &P de &N"
+        ws.oddFooter.right.text = "Confidencial"
+
+        # ─── Definição de estilos ───
+        AZUL_ESCURO = "1F3864"
+        AZUL_CLARO = "D6E4F0"
+        CINZA_CLARO = "F2F2F2"
+        VERDE = "548235"
+        VERMELHO = "C00000"
+        BORDA_COR = "B4C6E7"
+
+        borda_fina = Border(
+            left=Side(style='thin', color=BORDA_COR),
+            right=Side(style='thin', color=BORDA_COR),
+            top=Side(style='thin', color=BORDA_COR),
+            bottom=Side(style='thin', color=BORDA_COR),
+        )
+
+        borda_cabecalho = Border(
+            left=Side(style='thin', color="FFFFFF"),
+            right=Side(style='thin', color="FFFFFF"),
+            top=Side(style='medium', color=AZUL_ESCURO),
+            bottom=Side(style='medium', color=AZUL_ESCURO),
+        )
+
+        font_titulo = Font(name='Calibri', bold=True, size=16, color="FFFFFF")
+        font_subtitulo = Font(name='Calibri', size=10, color="666666", italic=True)
+        font_cabecalho = Font(name='Calibri', bold=True, size=10, color="FFFFFF")
+        font_dados = Font(name='Calibri', size=9, color="333333")
+        font_status_ativo = Font(name='Calibri', size=9, bold=True, color=VERDE)
+        font_status_inativo = Font(name='Calibri', size=9, bold=True, color=VERMELHO)
+        font_rodape = Font(name='Calibri', size=8, color="999999", italic=True)
+
+        fill_titulo = PatternFill(start_color=AZUL_ESCURO, end_color=AZUL_ESCURO, fill_type='solid')
+        fill_cabecalho = PatternFill(start_color=AZUL_ESCURO, end_color=AZUL_ESCURO, fill_type='solid')
+        fill_zebra = PatternFill(start_color=CINZA_CLARO, end_color=CINZA_CLARO, fill_type='solid')
+        fill_branco = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type='solid')
+
+        align_centro = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        align_esquerda = Alignment(horizontal='left', vertical='center', wrap_text=True)
+
+        # ─── Colunas e larguras ───
+        colunas = [
+            {"header": "Nº",              "width": 5,   "field": "numero"},
+            {"header": "Nome Completo",    "width": 28,  "field": "nome"},
+            {"header": "Usuário",          "width": 16,  "field": "username"},
+            {"header": "E-mail",           "width": 30,  "field": "email"},
+            {"header": "Grupos",           "width": 22,  "field": "grupos"},
+            {"header": "Filial Ativa",     "width": 18,  "field": "filial_ativa"},
+            {"header": "Filiais Permitidas", "width": 26, "field": "filiais_permitidas"},
+            {"header": "Status",           "width": 10,  "field": "status"},
+            {"header": "Staff",            "width": 8,   "field": "is_staff"},
+            {"header": "Último Acesso",    "width": 18,  "field": "last_login"},
+        ]
+
+        total_colunas = len(colunas)
+
+        # Definir larguras das colunas
+        for idx, col in enumerate(colunas, start=1):
+            ws.column_dimensions[get_column_letter(idx)].width = col["width"]
+
+        # ─── LINHA 1: Título (mesclada) ───
+        row_titulo = 1
+        ws.merge_cells(
+            start_row=row_titulo, start_column=1,
+            end_row=row_titulo, end_column=total_colunas
+        )
+        celula_titulo = ws.cell(row=row_titulo, column=1)
+        celula_titulo.value = "📋 RELATÓRIO DE USUÁRIOS CADASTRADOS"
+        celula_titulo.font = font_titulo
+        celula_titulo.fill = fill_titulo
+        celula_titulo.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[row_titulo].height = 36
+
+        # Preencher fundo das células mescladas
+        for col_idx in range(2, total_colunas + 1):
+            c = ws.cell(row=row_titulo, column=col_idx)
+            c.fill = fill_titulo
+
+        # ─── LINHA 2: Subtítulo / Informações do relatório ───
+        row_sub = 2
+        ws.merge_cells(
+            start_row=row_sub, start_column=1,
+            end_row=row_sub, end_column=total_colunas
+        )
+        agora = timezone.localtime(timezone.now())
+        filial_filtro = "Todas"
+        if active_filial_id:
+            try:
+                filial_filtro = Filial.objects.get(pk=active_filial_id).nome
+            except Filial.DoesNotExist:
+                filial_filtro = "N/D"
+
+        info_texto = (
+            f"Emitido por: {request.user.get_full_name() or request.user.username}  |  "
+            f"Data: {agora.strftime('%d/%m/%Y %H:%M')}  |  "
+            f"Filial filtro: {filial_filtro}  |  "
+            f"Total de registros: {qs.count()}"
+        )
+        if search:
+            info_texto += f"  |  Busca: \"{search}\""
+
+        celula_sub = ws.cell(row=row_sub, column=1)
+        celula_sub.value = info_texto
+        celula_sub.font = font_subtitulo
+        celula_sub.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[row_sub].height = 20
+
+        # ─── LINHA 3: Espaçamento ───
+        ws.row_dimensions[3].height = 6
+
+        # ─── LINHA 4: Cabeçalho da tabela ───
+        row_header = 4
+        ws.row_dimensions[row_header].height = 26
+
+        for col_idx, col_def in enumerate(colunas, start=1):
+            cell = ws.cell(row=row_header, column=col_idx)
+            cell.value = col_def["header"]
+            cell.font = font_cabecalho
+            cell.fill = fill_cabecalho
+            cell.alignment = align_centro
+            cell.border = borda_cabecalho
+
+        # ─── Congelar painel (fixar cabeçalho ao rolar) ───
+        ws.freeze_panes = ws.cell(row=row_header + 1, column=1).coordinate
+
+        # ─── LINHAS DE DADOS ───
+        row_start = row_header + 1
+
+        for idx, usuario in enumerate(qs, start=1):
+            row_num = row_start + idx - 1
+            is_zebra = idx % 2 == 0
+            fill_row = fill_zebra if is_zebra else fill_branco
+
+            # Preparar dados
+            nome_completo = usuario.get_full_name() or usuario.username
+            grupos = ", ".join(
+                usuario.groups.values_list('name', flat=True)
+            ) or "—"
+            filial_ativa_nome = str(usuario.filial_ativa) if usuario.filial_ativa else "—"
+            filiais_perm = ", ".join(
+                usuario.filiais_permitidas.values_list('nome', flat=True)
+            ) or "—"
+            status_texto = "Ativo" if usuario.is_active else "Inativo"
+            staff_texto = "Sim" if usuario.is_staff else "Não"
+
+            if usuario.last_login:
+                last_login_local = timezone.localtime(usuario.last_login)
+                last_login_texto = last_login_local.strftime('%d/%m/%Y %H:%M')
+            else:
+                last_login_texto = "Nunca"
+
+            dados_linha = [
+                idx,                          # Nº
+                nome_completo,                # Nome Completo
+                usuario.username,             # Usuário
+                usuario.email,                # E-mail
+                grupos,                       # Grupos
+                filial_ativa_nome,            # Filial Ativa
+                filiais_perm,                 # Filiais Permitidas
+                status_texto,                 # Status
+                staff_texto,                  # Staff
+                last_login_texto,             # Último Acesso
+            ]
+
+            ws.row_dimensions[row_num].height = 22
+
+            for col_idx, valor in enumerate(dados_linha, start=1):
+                cell = ws.cell(row=row_num, column=col_idx)
+                cell.value = valor
+                cell.font = font_dados
+                cell.fill = fill_row
+                cell.border = borda_fina
+
+                # Alinhamento por coluna
+                campo = colunas[col_idx - 1]["field"]
+                if campo in ("numero", "status", "is_staff", "last_login"):
+                    cell.alignment = align_centro
+                else:
+                    cell.alignment = align_esquerda
+
+                # Estilo especial para Status
+                if campo == "status":
+                    if valor == "Ativo":
+                        cell.font = font_status_ativo
+                    else:
+                        cell.font = font_status_inativo
+
+        # ─── LINHA DE RODAPÉ / RESUMO ───
+        total_usuarios = qs.count()
+        total_ativos = qs.filter(is_active=True).count()
+        total_inativos = total_usuarios - total_ativos
+
+        row_rodape = row_start + total_usuarios + 1
+        ws.row_dimensions[row_rodape].height = 6  # Espaçamento
+
+        row_resumo = row_rodape + 1
+        ws.merge_cells(
+            start_row=row_resumo, start_column=1,
+            end_row=row_resumo, end_column=total_colunas
+        )
+        celula_resumo = ws.cell(row=row_resumo, column=1)
+        celula_resumo.value = (
+            f"Total: {total_usuarios} usuário(s)  |  "
+            f"Ativos: {total_ativos}  |  "
+            f"Inativos: {total_inativos}"
+        )
+        celula_resumo.font = font_rodape
+        celula_resumo.alignment = Alignment(horizontal='right', vertical='center')
+
+        # ─── Área de impressão ───
+        ultima_col_letter = get_column_letter(total_colunas)
+        ws.print_area = f"A1:{ultima_col_letter}{row_resumo}"
+
+        # Repetir cabeçalho em cada página impressa
+        ws.print_title_rows = f'{row_titulo}:{row_header}'
+
+        # ─── Gerar resposta HTTP ───
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        data_arquivo = agora.strftime('%Y%m%d_%H%M')
+        filename = f"usuarios_cadastrados_{data_arquivo}.xlsx"
+
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        return response

@@ -1,0 +1,235 @@
+
+{% extends "suprimentos/suprimentos_base.html" %}
+{% load static %}
+
+{% block title %}Solicitações de Compra — Suprimentos{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Solicitações de Compra</h2>
+            <small class="text-muted">Geradas automaticamente a partir de Pedidos aprovados</small>
+        </div>
+    </div>
+
+    <!-- Contadores -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-start border-info border-4 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-0">Fazer Cotação</p>
+                            <h3 class="mb-0">{{ count_cotacao }}</h3>
+                        </div>
+                        <i class="fas fa-search-dollar fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-warning border-4 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-0">Em Aprovação</p>
+                            <h3 class="mb-0">{{ count_aprovacao }}</h3>
+                        </div>
+                        <i class="fas fa-clock fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-primary border-4 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-0">Total Pendentes</p>
+                            <h3 class="mb-0">{{ count_pendentes }}</h3>
+                        </div>
+                        <i class="fas fa-tasks fa-2x text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-start border-success border-4 h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted small mb-0">Meu Perfil</p>
+                            <h3 class="mb-0 small">
+                                {% if is_aprovador %}Aprovador{% endif %}
+                                {% if is_comprador %}Comprador{% endif %}
+                                {% if not is_aprovador and not is_comprador %}Solicitante{% endif %}
+                            </h3>
+                        </div>
+                        <i class="fas fa-user-tag fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Buscar</label>
+                    <input type="text" name="q" class="form-control" value="{{ filtro_q }}"
+                           placeholder="Nº, material, contrato...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if filtro_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold">Tipo de Obra</label>
+                    <select name="tipo_obra" class="form-select">
+                        <option value="">Todos</option>
+                        {% for value, label in tipo_obra_choices %}
+                        <option value="{{ value }}" {% if filtro_tipo_obra == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                    <a href="{% url 'suprimentos:solicitacao_lista' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tabela -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if solicitacoes %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nº Solicitação</th>
+                            <th>Tipo</th>
+                            <th>Contrato / Cliente</th>
+                            <th>Material</th>
+                            <th class="text-center">Status</th>
+                            <th>Comprador</th>
+                            <th class="text-center">Dias</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sol in solicitacoes %}
+                        <tr class="{% if sol.status == 'CANCELADO' %}table-secondary{% endif %}"
+                            style="cursor: pointer;"
+                            onclick="window.location='{{ sol.get_absolute_url }}'">
+                            <td>
+                                <a href="{{ sol.get_absolute_url }}" class="fw-bold text-decoration-none">
+                                    {{ sol.numero }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ sol.get_tipo_obra_display }}</span>
+                            </td>
+                            <td>
+                                {{ sol.contrato.cm }}
+                                <br><small class="text-muted">{{ sol.contrato.cliente }}</small>
+                            </td>
+                            <td>
+                                <span class="d-inline-block text-truncate" style="max-width: 250px;">
+                                    {{ sol.descricao_material }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-{{ sol.status_badge_class }}">
+                                    {{ sol.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if sol.comprador %}
+                                    {{ sol.comprador.get_full_name|default:sol.comprador.username }}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge {% if sol.dias_em_aberto > 15 %}bg-danger{% elif sol.dias_em_aberto > 7 %}bg-warning{% else %}bg-light text-dark{% endif %}">
+                                    {{ sol.dias_em_aberto }}d
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                {% if sol.valor_pedido %}
+                                    R$ {{ sol.valor_pedido|floatformat:2 }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if is_paginated %}
+            <div class="card-footer d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ filtro_status }}&q={{ filtro_q }}&tipo_obra={{ filtro_tipo_obra }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}&status={{ filtro_status }}&q={{ filtro_q }}&tipo_obra={{ filtro_tipo_obra }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ filtro_status }}&q={{ filtro_q }}&tipo_obra={{ filtro_tipo_obra }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p class="mb-0">Nenhuma solicitação encontrada.</p>
+                <small>Solicitações são geradas automaticamente quando pedidos são aprovados.</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

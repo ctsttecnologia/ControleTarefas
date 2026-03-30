@@ -232,12 +232,16 @@
                 <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-arrow-left me-1"></i> Voltar
                 </a>
+                {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-sm btn-light fw-semibold">
                     <i class="bi bi-pencil-square me-1"></i> Editar
                 </a>
+                {% endif %}
+                {% if perms.ata_reuniao.delete_atareuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-trash3 me-1"></i> Excluir
                 </a>
+                {% endif %}
                 <button onclick="window.print()" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-printer"></i>
                 </button>
@@ -270,9 +274,11 @@
                         <textarea class="form-control mb-3" name="comentario" rows="3"
                                   placeholder="Escreva um comentário ou atualização..."></textarea>
                         <div class="text-end">
+                            {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
                             <button type="submit" class="btn btn-primary" style="border-radius: 0.625rem;">
                                 <i class="bi bi-send me-1"></i> Enviar Comentário
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>
@@ -386,15 +392,27 @@
                     </h5>
                 </div>
                 <div class="card-body d-grid gap-2">
+                    {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil-square me-2"></i> Editar Ata
                     </a>
+                    {% endif %}
+                    {% if perms.ata_reuniao.delete_atareuniao or user.is_superuser %}
+                    <a href="{% url 'ata_reuniao:ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-trash me-2"></i> Excluir Ata
+                    </a>
+                    {% endif %}
+                    {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-list-check me-2"></i> Todas as Atas
                     </a>
+                    {% endif %}
+                    {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-speedometer2 me-2"></i> Dashboard
                     </a>
+                    {% endif %}
+                    
                     <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
                         <i class="bi bi-printer me-2"></i> Imprimir
                     </button>

@@ -3,6 +3,9 @@
 
 <div class="row g-3">
     <div class="col-md-8">
+        <label for="{{ form.nome.id_for_label }}" class="sst-form-label">
+            Nome <span class="required">*</span>
+        </label>
         {{ form.nome|as_crispy_field }}
     </div>
 
@@ -18,12 +21,14 @@
     <div class="col-12">
         {{ form.descricao|as_crispy_field }}
     </div>
-    
+
     {% if form.cargos %}
     <div class="col-12">
-        <label class="form-label fw-bold">Vincular aos Cargos (Opcional)</label>
+        <label class="sst-form-label">Vincular aos Cargos (Opcional)</label>
         {{ form.cargos|as_crispy_field }}
-        <div class="form-text">Selecione os cargos que exercem esta função.</div>
+        <small class="form-text" style="color:var(--sst-text-muted);">
+            Selecione os cargos que exercem esta função.
+        </small>
     </div>
     {% endif %}
 </div>
