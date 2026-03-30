@@ -8,42 +8,44 @@
 {% block sst_content %}
 
 <!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
-                    {% if object %}Editar Fabricante{% else %}Novo Fabricante{% endif %}
-                </h4>
-                <small class="opacity-75">Cadastro de fabricantes de EPIs e equipamentos</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
+                {% if object %}Editar Fabricante{% else %}Novo Fabricante{% endif %}
+            </h4>
+            <span class="sst-page-subtitle">Cadastro de fabricantes de EPIs e equipamentos</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="sst-btn-header">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-10">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+        <div class="sst-card">
+            <form method="post" novalidate id="fabricanteForm">
+                {% csrf_token %}
+                <div class="sst-card-body">
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    <div class="sst-alert sst-alert--danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ form.non_field_errors }}
+                    </div>
                     {% endif %}
 
                     <!-- Informações Principais -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-building me-2"></i>Informações Principais
-                    </h6>
+                    <div class="sst-section-title">
+                        <i class="bi bi-building"></i>
+                        Informações Principais
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-8">
-                            <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.nome.label }} <span class="text-danger">*</span>
+                            <label for="{{ form.nome.id_for_label }}" class="sst-form-label">
+                                {{ form.nome.label }} <span class="required">*</span>
                             </label>
                             {% render_field form.nome class+="form-control" %}
                             {% for error in form.nome.errors %}
@@ -51,7 +53,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.cnpj.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.cnpj.id_for_label }}" class="sst-form-label">
                                 {{ form.cnpj.label }}
                             </label>
                             {% render_field form.cnpj class+="form-control" %}
@@ -60,12 +62,12 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-8">
-                            <label for="{{ form.endereco.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.endereco.id_for_label }}" class="sst-form-label">
                                 {{ form.endereco.label }}
                             </label>
                             <div class="input-group">
                                 {% render_field form.endereco class+="form-select" %}
-                                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar novo endereço">
+                                <a href="{% url 'logradouro:cadastrar_logradouro' %}" class="sst-btn-outline" target="_blank" title="Cadastrar novo endereço" style="border-radius: 0 0.45rem 0.45rem 0;">
                                     <i class="bi bi-plus-lg"></i>
                                 </a>
                             </div>
@@ -84,12 +86,13 @@
                     </div>
 
                     <!-- Contato -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-telephone me-2"></i>Informações de Contato
-                    </h6>
+                    <div class="sst-section-title">
+                        <i class="bi bi-telephone"></i>
+                        Informações de Contato
+                    </div>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label for="{{ form.contato.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.contato.id_for_label }}" class="sst-form-label">
                                 {{ form.contato.label }}
                             </label>
                             {% render_field form.contato class+="form-control" placeholder="Nome do contato" %}
@@ -98,7 +101,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.email.id_for_label }}" class="sst-form-label">
                                 {{ form.email.label }}
                             </label>
                             {% render_field form.email class+="form-control" type="email" %}
@@ -107,7 +110,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.telefone.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.telefone.id_for_label }}" class="sst-form-label">
                                 {{ form.telefone.label }}
                             </label>
                             {% render_field form.telefone class+="form-control" %}
@@ -116,7 +119,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.celular.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.celular.id_for_label }}" class="sst-form-label">
                                 {{ form.celular.label }}
                             </label>
                             {% render_field form.celular class+="form-control" %}
@@ -125,7 +128,7 @@
                             {% endfor %}
                         </div>
                         <div class="col-md-4">
-                            <label for="{{ form.site.id_for_label }}" class="form-label fw-semibold">
+                            <label for="{{ form.site.id_for_label }}" class="sst-form-label">
                                 {{ form.site.label }}
                             </label>
                             {% render_field form.site class+="form-control" placeholder="https://" %}
@@ -136,10 +139,11 @@
                     </div>
 
                     <!-- Observações -->
-                    <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                        <i class="bi bi-chat-left-text me-2"></i>Observações
-                    </h6>
-                    <div class="row g-3 mb-4">
+                    <div class="sst-section-title">
+                        <i class="bi bi-chat-left-text"></i>
+                        Observações
+                    </div>
+                    <div class="row g-3 mb-2">
                         <div class="col-12">
                             {% render_field form.observacoes class+="form-control" rows="3" %}
                             {% for error in form.observacoes.errors %}
@@ -147,21 +151,21 @@
                             {% endfor %}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Botões -->
-                    <div class="border-top pt-4 d-flex justify-content-between">
-                        <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-lg me-1"></i> Salvar
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="sst-card-footer">
+                    <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="sst-btn-cancel">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </a>
+                    <button type="submit" class="sst-btn-primary">
+                        <i class="bi bi-check-lg"></i> Salvar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 {% endblock %}
+
 

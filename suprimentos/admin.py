@@ -1,16 +1,12 @@
 
-# suprimentos/admin.py
-
 from django.contrib import admin
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
-    Pedido, ItemPedido,
+    Pedido, ItemPedido, AnexoPedido, HistoricoPedido,
+    SolicitacaoCompra, AnexoSolicitacao, HistoricoSolicitacao,
 )
 
 
-# ══════════════════════════════════════════════
-# PARCEIRO (preservado)
-# ══════════════════════════════════════════════
 @admin.register(Parceiro)
 class ParceiroAdmin(admin.ModelAdmin):
     list_display = (
@@ -23,9 +19,6 @@ class ParceiroAdmin(admin.ModelAdmin):
     readonly_fields = ('filial',)
 
 
-# ══════════════════════════════════════════════
-# MATERIAL
-# ══════════════════════════════════════════════
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = [
@@ -38,9 +31,6 @@ class MaterialAdmin(admin.ModelAdmin):
     list_per_page = 50
 
 
-# ══════════════════════════════════════════════
-# CONTRATO + VERBAS
-# ══════════════════════════════════════════════
 class VerbaInline(admin.TabularInline):
     model = VerbaContrato
     extra = 1
@@ -55,9 +45,8 @@ class ContratoAdmin(admin.ModelAdmin):
     inlines = [VerbaInline]
 
 
-# ══════════════════════════════════════════════
-# PEDIDO + ITENS
-# ══════════════════════════════════════════════
+# ── Pedido ──
+
 class ItemPedidoInline(admin.TabularInline):
     model = ItemPedido
     extra = 0
@@ -65,13 +54,109 @@ class ItemPedidoInline(admin.TabularInline):
     autocomplete_fields = ['material']
 
 
+class AnexoPedidoInline(admin.TabularInline):
+    model = AnexoPedido
+    extra = 0
+    readonly_fields = ['enviado_por', 'criado_em']
+
+
+class HistoricoPedidoInline(admin.TabularInline):
+    model = HistoricoPedido
+    extra = 0
+    readonly_fields = ['versao', 'descricao', 'responsavel',
+                       'status_anterior', 'status_novo', 'criado_em']
+    ordering = ['-versao']
+
+
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
     list_display = [
-        'numero', 'contrato', 'solicitante', 'status',
-        'data_pedido', 'aprovador', 'recebedor',
+        'numero', 'tipo_obra', 'contrato', 'solicitante',
+        'status', 'data_pedido', 'aprovador', 'solicitacao_gerada',
     ]
-    list_filter = ['status', 'data_pedido', 'contrato__filial']
-    search_fields = ['numero', 'contrato__cliente', 'contrato__cm']
-    readonly_fields = ['numero', 'data_pedido']
-    inlines = [ItemPedidoInline]
+    list_filter = ['status', 'tipo_obra', 'data_pedido', 'contrato__filial']
+    search_fields = ['numero', 'contrato__cliente', 'contrato__cm', 'descricao_material']
+    readonly_fields = ['numero', 'data_pedido', 'solicitacao_gerada']
+    inlines = [ItemPedidoInline, AnexoPedidoInline, HistoricoPedidoInline]
+    date_hierarchy = 'data_pedido'
+
+
+# ── Solicitação de Compra ──
+
+class AnexoSolicitacaoInline(admin.TabularInline):
+    model = AnexoSolicitacao
+    extra = 0
+    readonly_fields = ['enviado_por', 'criado_em']
+
+
+class HistoricoSolicitacaoInline(admin.TabularInline):
+    model = HistoricoSolicitacao
+    extra = 0
+    readonly_fields = ['versao', 'descricao', 'responsavel',
+                       'status_anterior', 'status_novo', 'criado_em']
+    ordering = ['-versao']
+
+
+@admin.register(SolicitacaoCompra)
+class SolicitacaoCompraAdmin(admin.ModelAdmin):
+    list_display = [
+        'numero', 'tipo_obra', 'contrato', 'solicitante',
+        'comprador', 'status', 'criado_em',
+    ]
+    list_filter = ['status', 'tipo_obra', 'filial', 'tipo_insumo']
+    search_fields = [
+        'numero', 'descricao_material',
+        'contrato__cm', 'contrato__cliente',
+        'numero_pedido_sienge', 'numero_nota_fiscal',
+    ]
+    readonly_fields = ['numero', 'criado_em', 'atualizado_em']
+    inlines = [AnexoSolicitacaoInline, HistoricoSolicitacaoInline]
+    date_hierarchy = 'criado_em'
+    list_per_page = 30
+
+    fieldsets = (
+        ('Identificação', {
+            'fields': ('numero', 'filial', 'status', 'tipo_obra', 'contrato'),
+        }),
+        ('Material Solicitado', {
+            'fields': ('descricao_material', 'quantidade', 'unidade_medida',
+                       'tipo_insumo', 'data_necessaria'),
+        }),
+        ('Responsáveis', {
+            'fields': ('solicitante', 'aprovador_inicial', 'comprador',
+                       'aprovador_cotacao', 'aprovador_pedido'),
+        }),
+        ('Cotação', {
+            'fields': ('data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal'),
+            'classes': ('collapse',),
+        }),
+        ('Validação', {
+            'fields': ('data_validacao_cotacao',),
+            'classes': ('collapse',),
+        }),
+        ('Pedido Sienge', {
+            'fields': ('data_criacao_pedido', 'numero_pedido_sienge',
+                       'fornecedor', 'valor_pedido', 'data_aprovacao_pedido'),
+            'classes': ('collapse',),
+        }),
+        ('Entrega', {
+            'fields': ('data_envio_fornecedor', 'data_prevista_entrega',
+                       'data_entrega_efetiva', 'numero_nota_fiscal'),
+            'classes': ('collapse',),
+        }),
+        ('Observações', {
+            'fields': ('observacoes', 'motivo_cancelamento'),
+        }),
+        ('Datas do Sistema', {
+            'fields': ('criado_em', 'atualizado_em'),
+        }),
+    )
+
+
+@admin.register(HistoricoSolicitacao)
+class HistoricoSolicitacaoAdmin(admin.ModelAdmin):
+    list_display = ['solicitacao', 'versao', 'descricao', 'responsavel', 'criado_em']
+    list_filter = ['solicitacao__status']
+    readonly_fields = ['solicitacao', 'versao', 'descricao', 'responsavel',
+                       'status_anterior', 'status_novo', 'criado_em']
+

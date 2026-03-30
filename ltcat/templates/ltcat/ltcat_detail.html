@@ -442,8 +442,8 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'ltcat:risco_create' ltcat.pk funcao.pk %}"
-                                       class="btn btn-outline-success" title="Adicionar Risco">
+                                    <a href="{% url 'ltcat:risco_create' ltcat.pk %}?funcao={{ funcao.pk }}"
+                                    class="btn btn-outline-success" title="Adicionar Risco">
                                         <i class="fas fa-plus"></i>
                                     </a>
                                     <a href="{% url 'ltcat:funcao_update' ltcat.pk funcao.pk %}"

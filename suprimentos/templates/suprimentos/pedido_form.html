@@ -1,30 +1,155 @@
 
 
 {% extends "suprimentos/suprimentos_base.html" %}
-{% load crispy_forms_tags %}
+{% load static %}
 
-{% block title %}{{ titulo_pagina }}{% endblock %}
+{% block title %}{{ titulo_pagina }} — Suprimentos{% endblock %}
 
-{% block suprimentos_content %}
-<div class="container mt-4" style="max-width: 600px;">
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h4 class="mb-0"><i class="bi bi-cart-plus me-2"></i>{{ titulo_pagina }}</h4>
-        </div>
-        <div class="card-body">
-            <form method="post" novalidate>
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <h2 class="mb-0">{{ titulo_pagina }}</h2>
+                    <small class="text-muted">Preencha os dados do material. Seja detalhado para evitar retrabalho.</small>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary me-3">
+                            <i class="fas fa-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                </div>    
+            </div>
+
+            <!-- Form -->
+            <form method="post" enctype="multipart/form-data" novalidate>
                 {% csrf_token %}
-                {{ form|crispy }}
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i> Voltar
+
+                <!-- Card Dados Principais -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-2"></i>Dados do Pedido</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Corrija os erros abaixo:</strong>
+                            <ul class="mb-0 mt-2">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                    <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Tipo de Obra <span class="text-danger">*</span></label>
+                                {{ form.tipo_obra }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Obra (Contrato) <span class="text-danger">*</span></label>
+                                {{ form.contrato }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                Descrição do Material <span class="text-danger">*</span>
+                            </label>
+                            {{ form.descricao_material }}
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Mínimo 20 caracteres. Informe: nome, marca/modelo, dimensões, cor, especificações técnicas.
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Quantidade <span class="text-danger">*</span></label>
+                                {{ form.quantidade }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Unidade <span class="text-danger">*</span></label>
+                                {{ form.unidade_medida }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Tipo de Insumo <span class="text-danger">*</span></label>
+                                {{ form.tipo_insumo }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Data Necessária <span class="text-danger">*</span></label>
+                                {{ form.data_necessaria }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Observações</label>
+                            {{ form.observacao }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Anexos -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-paperclip me-2"></i>Anexos (opcional)</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small mb-3">
+                            Adicione PDFs, fotos, catálogos ou especificações técnicas. Máximo 10MB por arquivo.
+                        </p>
+                        <div id="anexos-container">
+                            <div class="input-group mb-2">
+                                <input type="file" name="anexos" class="form-control"
+                                       accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
+                            </div>
+                        </div>
+                        <button type="button" id="btn-add-anexo" class="btn btn-sm btn-outline-secondary mt-2">
+                            <i class="fas fa-plus me-1"></i>Mais um arquivo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-light">
+                        <i class="fas fa-times me-1"></i>Cancelar
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg me-1"></i> Criar Pedido
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>Criar Pedido (Rascunho)
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-{% endblock suprimentos_content %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-add-anexo').addEventListener('click', function() {
+    const container = document.getElementById('anexos-container');
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = `
+        <input type="file" name="anexos" class="form-control"
+               accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx">
+        <button type="button" class="btn btn-outline-danger btn-remove-anexo">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    container.appendChild(div);
+    div.querySelector('.btn-remove-anexo').addEventListener('click', function() {
+        div.remove();
+    });
+});
+</script>
+{% endblock %}

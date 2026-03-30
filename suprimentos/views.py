@@ -46,22 +46,47 @@ from ferramentas.models import Ferramenta as FerramentaModel
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
     Pedido, ItemPedido, CategoriaMaterial, TipoMaterial,
+    AnexoPedido, HistoricoPedido,
+    SolicitacaoCompra, AnexoSolicitacao, HistoricoSolicitacao,
+    TipoObra, TipoNotaFiscal,
 )
 from .forms import (
     ParceiroForm, UploadFileForm,
     MaterialForm, ContratoForm, VerbaContratoForm,
     PedidoForm, ItemPedidoForm,
     ReprovarPedidoForm, ConfirmarRecebimentoForm,
+    DevolverPedidoForm, RevisaoPedidoForm, AnexoPedidoForm,
+    CotacaoForm, ValidarCotacaoForm,
+    CriarPedidoSiengeForm, AprovarPedidoSiengeForm,
+    EnviarPedidoFornecedorForm, RegistrarEntregaForm,
+    EncerrarSolicitacaoForm, CancelarSolicitacaoForm,
+    AnexoSolicitacaoForm, ObservacaoSolicitacaoForm, 
 )
 from .relatorios import gerar_relatorio_completo
 from notifications.services import (
     notificar_pedido_pendente,
+    notificar_pedido_revisao,
     notificar_pedido_aprovado,
     notificar_pedido_reprovado,
     notificar_pedido_entregue,
     notificar_pedido_recebido,
     notificar_pedido_verba_excedida,
+    notificar_solicitacao_criada,
+    notificar_cotacao_enviada,
+    notificar_cotacao_validada,
+    notificar_pedido_sienge_criado,
+    notificar_pedido_sienge_aprovado,
+    notificar_pedido_enviado_fornecedor,
+    notificar_entrega_registrada,
+    notificar_solicitacao_concluida,
+    notificar_solicitacao_cancelada,
 )
+# views.py — dashboard_suprimentos()
+
+from django.contrib.auth import get_user_model
+from cliente.models import Cliente
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -84,6 +109,15 @@ def _pedido_qs_for_user(user):
 def _get_pedido_seguro(user, pk):
     """Busca pedido garantindo escopo de filial."""
     return get_object_or_404(_pedido_qs_for_user(user), pk=pk)
+
+def _registrar_hist_pedido(pedido, descricao, user, status_ant='', status_novo=''):
+    HistoricoPedido.registrar(
+        pedido=pedido,
+        descricao=descricao,
+        responsavel=user,
+        status_anterior=status_ant,
+        status_novo=status_novo,
+    )
 
 
 # ════════════════════════════════════════════
@@ -367,13 +401,21 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
             return 0
         return min(int((parte / total) * 100), 100)
 
-    def _contrato_ids(self, user):
+    def _contrato_ids(self, user, cliente_id=None):
         qs = Contrato.objects.filter(ativo=True)
+
+        # Filtra por filial (superusuário vê todos)
         if not user.is_superuser:
-            filial = getattr(user, 'filial_ativa', None)
-            if filial:
-                qs = qs.filter(filial=filial)
-        return qs, list(qs.values_list('id', flat=True))
+            filial_ativa = getattr(user, 'filial_ativa', None)
+            if filial_ativa:
+                qs = qs.filter(filial=filial_ativa)
+
+        # usar 'cliente' (FK direta) ou 'cliente__id' (traversal)
+        if cliente_id:
+            qs = qs.filter(cliente=cliente_id)   # ← era cliente_id=, agora cliente=
+
+        contrato_ids = list(qs.values_list('id', flat=True))
+        return qs, contrato_ids
 
     def _verbas_mes(self, contrato_ids, ano, mes):
         agg = VerbaContrato.objects.filter(
@@ -386,88 +428,172 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         agg['total'] = agg['epi'] + agg['consumo'] + agg['ferramenta']
         return agg
 
-    def _compras_mes(self, contrato_ids, ano, mes, status_list):
+    def _compras_mes(self, contrato_ids, ano, mes, status_list, funcionario_id=None):
         base = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=status_list,
             pedido__data_pedido__year=ano,
             pedido__data_pedido__month=mes,
         )
+
+        # ── NOVO: filtro por funcionário ──
+        if funcionario_id:
+            base = base.filter(pedido__solicitante_id=funcionario_id)
+
         compras = base.values('material__classificacao').annotate(
             total=Coalesce(Sum('valor_total'), Decimal('0')),
         )
         por_class = {r['material__classificacao']: r['total'] for r in compras}
-        epi = self._dec(por_class.get('EPI'))
-        consumo = self._dec(por_class.get('CONSUMO'))
+        epi        = self._dec(por_class.get('EPI'))
+        consumo    = self._dec(por_class.get('CONSUMO'))
         ferramenta = self._dec(por_class.get('FERRAMENTA'))
 
         trib = base.filter(
             material__grupo_tributario__isnull=False
         ).aggregate(
-            valor_produtos=Coalesce(Sum('valor_total'), Decimal('0')),
-            custo_real=Coalesce(Sum('custo_real'), Decimal('0')),
+            valor_produtos=Coalesce(Sum('valor_total'),    Decimal('0')),
+            custo_real    =Coalesce(Sum('custo_real'),     Decimal('0')),
             total_creditos=Coalesce(Sum('total_creditos'), Decimal('0')),
             total_impostos=Coalesce(Sum('total_impostos'), Decimal('0')),
         )
 
         return {
-            'epi': epi,
-            'consumo': consumo,
-            'ferramenta': ferramenta,
+            'epi': epi, 'consumo': consumo, 'ferramenta': ferramenta,
             'total': epi + consumo + ferramenta,
             'trib': trib,
         }
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        hoje = timezone.now()
-        ano = int(self.request.GET.get('ano', hoje.year))
-        mes = int(self.request.GET.get('mes', hoje.month))
-        user = self.request.user
+        hoje    = timezone.now()
+        ano     = int(self.request.GET.get('ano', hoje.year))
+        mes     = int(self.request.GET.get('mes', hoje.month))
+        user    = self.request.user
         STATUS_COMPRA = ['APROVADO', 'ENTREGUE', 'RECEBIDO']
 
-        contratos_qs, contrato_ids = self._contrato_ids(user)
+        # ══════════════════════════════════════════
+        # FILTROS — funcionário e cliente
+        # ══════════════════════════════════════════
+        funcionario_id = self.request.GET.get('funcionario', '').strip()
+        cliente_id     = self.request.GET.get('cliente', '').strip()
+
+        # ── Filial ativa do usuário ──
+        filial_ativa = getattr(user, 'filial_ativa', None)
+
+        # ══════════════════════════════════════════
+        # LISTAS DOS SELECTS — filtradas por filial
+        # ══════════════════════════════════════════
+
+        # Funcionários: superusuário vê todos, demais só da filial ativa
+        funcionarios_qs = User.objects.filter(is_active=True)
+        if not user.is_superuser and filial_ativa:
+            funcionarios_qs = funcionarios_qs.filter(filial=filial_ativa)
+        ctx['funcionarios_filter'] = funcionarios_qs.order_by('first_name', 'last_name')
+
+        # Clientes: superusuário vê todos, demais só da filial ativa
+        clientes_qs = Cliente.objects.filter(estatus=True)
+        if not user.is_superuser and filial_ativa:
+            clientes_qs = clientes_qs.filter(filial=filial_ativa)
+        ctx['clientes_filter'] = clientes_qs.order_by('nome')
+
+        ctx['funcionario_selecionado'] = funcionario_id
+        ctx['cliente_selecionado']     = cliente_id
+
+        # ══════════════════════════════════════════
+        # CONTRATOS — filtrados por filial e cliente
+        # ══════════════════════════════════════════
+        contratos_qs, contrato_ids = self._contrato_ids(
+            user, cliente_id=cliente_id or None
+        )
+
+        # ══════════════════════════════════════════
+        # GUARD — sem dados, retorna contexto mínimo
+        # ══════════════════════════════════════════
+        ctx['sem_dados'] = len(contrato_ids) == 0
+        if ctx['sem_dados']:
+            # Preenche zeros para não quebrar o template
+            zero = Decimal('0')
+            for key in [
+                'total_verba_epi', 'total_verba_consumo', 'total_verba_ferramenta', 'total_verba',
+                'total_compra_epi', 'total_compra_consumo', 'total_compra_ferramenta', 'total_compra',
+                'saldo_epi', 'saldo_consumo', 'saldo_ferramenta', 'saldo_geral',
+                'pct_epi', 'pct_consumo', 'pct_ferramenta', 'pct_geral',
+                'pct_custo_real', 'pct_creditos',
+            ]:
+                ctx[key] = zero
+            ctx['custos_tributarios'] = {
+                'valor_produtos': zero, 'custo_real': zero,
+                'total_creditos': zero, 'total_impostos': zero,
+            }
+            ctx['pedidos_pendentes']     = []
+            ctx['grafico_meses']         = json.dumps([])
+            ctx['saldo_anual']           = []
+            ctx['contratos']             = contratos_qs
+            ctx['materiais_total']       = 0
+            ctx['materiais_sem_grupo']   = 0
+            ctx['sol_fazer_cotacao']     = 0
+            ctx['sol_validar_cotacao']   = 0
+            ctx['sol_criar_pedido']      = 0
+            ctx['sol_aprovar_pedido']    = 0
+            ctx['sol_enviar_pedido']     = 0
+            ctx['sol_entrega_pendente']  = 0
+            ctx['sol_concluidas_mes']    = 0
+            ctx['solicitacoes_urgentes'] = []
+            ctx['is_comprador']          = _user_is_comprador(user)
+            ctx['ano']                   = ano
+            ctx['mes']                   = mes
+            ctx['anos_disponiveis']      = range(2024, hoje.year + 2)
+            ctx['meses'] = [
+                (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),
+                (4,'Abril'),(5,'Maio'),(6,'Junho'),
+                (7,'Julho'),(8,'Agosto'),(9,'Setembro'),
+                (10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
+            ]
+            return ctx  # ← sai cedo, sem queries desnecessárias
+
+        # ══════════════════════════════════════════
+        # DADOS NORMAIS (tem contratos)
+        # ══════════════════════════════════════════
 
         # ── Verbas do mês ──
         verbas = self._verbas_mes(contrato_ids, ano, mes)
-        ctx['total_verba_epi'] = verbas['epi']
-        ctx['total_verba_consumo'] = verbas['consumo']
+        ctx['total_verba_epi']        = verbas['epi']
+        ctx['total_verba_consumo']    = verbas['consumo']
         ctx['total_verba_ferramenta'] = verbas['ferramenta']
-        ctx['total_verba'] = verbas['total']
+        ctx['total_verba']            = verbas['total']
 
         # ── Compras do mês ──
-        compras = self._compras_mes(contrato_ids, ano, mes, STATUS_COMPRA)
-        ctx['total_compra_epi'] = compras['epi']
-        ctx['total_compra_consumo'] = compras['consumo']
+        compras = self._compras_mes(
+            contrato_ids, ano, mes, STATUS_COMPRA,
+            funcionario_id=funcionario_id or None,
+        )
+        ctx['total_compra_epi']        = compras['epi']
+        ctx['total_compra_consumo']    = compras['consumo']
         ctx['total_compra_ferramenta'] = compras['ferramenta']
-        ctx['total_compra'] = compras['total']
+        ctx['total_compra']            = compras['total']
 
-        # ── Saldos por categoria ──
-        ctx['saldo_epi'] = verbas['epi'] - compras['epi']
-        ctx['saldo_consumo'] = verbas['consumo'] - compras['consumo']
+        # ── Saldos ──
+        ctx['saldo_epi']        = verbas['epi']        - compras['epi']
+        ctx['saldo_consumo']    = verbas['consumo']    - compras['consumo']
         ctx['saldo_ferramenta'] = verbas['ferramenta'] - compras['ferramenta']
-        ctx['saldo_geral'] = verbas['total'] - compras['total']
+        ctx['saldo_geral']      = verbas['total']      - compras['total']
 
-        # ── Percentuais para progress bars ──
-        ctx['pct_epi'] = self._pct(compras['epi'], verbas['epi'])
-        ctx['pct_consumo'] = self._pct(compras['consumo'], verbas['consumo'])
+        # ── Percentuais ──
+        ctx['pct_epi']        = self._pct(compras['epi'],        verbas['epi'])
+        ctx['pct_consumo']    = self._pct(compras['consumo'],    verbas['consumo'])
         ctx['pct_ferramenta'] = self._pct(compras['ferramenta'], verbas['ferramenta'])
-        ctx['pct_geral'] = self._pct(compras['total'], verbas['total'])
+        ctx['pct_geral']      = self._pct(compras['total'],      verbas['total'])
 
         # ── Tributação ──
         ctx['custos_tributarios'] = compras['trib']
 
         mat_qs = Material.objects.filter(ativo=True)
-        ctx['materiais_total'] = mat_qs.count()
+        ctx['materiais_total']     = mat_qs.count()
         ctx['materiais_sem_grupo'] = mat_qs.filter(grupo_tributario__isnull=True).count()
 
         trib = compras['trib']
-        if trib['valor_produtos'] > 0:
-            ctx['pct_custo_real'] = self._pct(trib['custo_real'], trib['valor_produtos'])
-            ctx['pct_creditos'] = self._pct(trib['total_creditos'], trib['valor_produtos'])
-        else:
-            ctx['pct_custo_real'] = 0
-            ctx['pct_creditos'] = 0
+        ctx['pct_custo_real'] = self._pct(trib['custo_real'],     trib['valor_produtos']) if trib['valor_produtos'] > 0 else 0
+        ctx['pct_creditos']   = self._pct(trib['total_creditos'], trib['valor_produtos']) if trib['valor_produtos'] > 0 else 0
 
         # ── Gráfico últimos 6 meses ──
         periodos = []
@@ -485,128 +611,111 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
             *[Q(ano=a_, mes=m_) for a_, m_ in periodos],
             _connector=Q.OR,
         ).values('ano', 'mes').annotate(
-            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
-            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
+            epi       =Coalesce(Sum('verba_epi'),        Decimal('0')),
+            consumo   =Coalesce(Sum('verba_consumo'),    Decimal('0')),
             ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
         )
         verbas_map = {(v['ano'], v['mes']): v for v in verbas_bulk}
 
-        compras_bulk = ItemPedido.objects.filter(
+        compras_bulk_qs = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=STATUS_COMPRA,
         ).filter(
             *[Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos],
             _connector=Q.OR,
-        ).values(
-            'pedido__data_pedido__year', 'pedido__data_pedido__month',
-            'material__classificacao',
-        ).annotate(
-            total=Coalesce(Sum('valor_total'), Decimal('0')),
         )
+        if funcionario_id:
+            compras_bulk_qs = compras_bulk_qs.filter(pedido__solicitante_id=funcionario_id)
 
-        compras_trib_bulk = ItemPedido.objects.filter(
-            pedido__contrato_id__in=contrato_ids,
-            pedido__status__in=STATUS_COMPRA,
+        compras_bulk = compras_bulk_qs.values(
+            'pedido__data_pedido__year',
+            'pedido__data_pedido__month',
+            'material__classificacao',
+        ).annotate(total=Coalesce(Sum('valor_total'), Decimal('0')))
+
+        compras_trib_bulk_qs = compras_bulk_qs.filter(
             material__grupo_tributario__isnull=False,
-        ).filter(
-            *[Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos],
-            _connector=Q.OR,
         ).values(
-            'pedido__data_pedido__year', 'pedido__data_pedido__month',
+            'pedido__data_pedido__year',
+            'pedido__data_pedido__month',
         ).annotate(
-            custo_real=Coalesce(Sum('custo_real'), Decimal('0')),
-            creditos=Coalesce(Sum('total_creditos'), Decimal('0')),
+            custo_real=Coalesce(Sum('custo_real'),     Decimal('0')),
+            creditos  =Coalesce(Sum('total_creditos'), Decimal('0')),
         )
         trib_map = {
             (t['pedido__data_pedido__year'], t['pedido__data_pedido__month']): t
-            for t in compras_trib_bulk
+            for t in compras_trib_bulk_qs
         }
 
         compras_map = {}
         for c in compras_bulk:
             key = (c['pedido__data_pedido__year'], c['pedido__data_pedido__month'])
-            if key not in compras_map:
-                compras_map[key] = {}
-            compras_map[key][c['material__classificacao']] = float(c['total'])
+            compras_map.setdefault(key, {})[c['material__classificacao']] = float(c['total'])
 
         grafico_meses = []
         for a_, m_ in periodos:
             v = verbas_map.get((a_, m_), {})
             c = compras_map.get((a_, m_), {})
             t = trib_map.get((a_, m_), {})
-
             v_epi = float(v.get('epi', 0))
             v_con = float(v.get('consumo', 0))
             v_fer = float(v.get('ferramenta', 0))
             c_epi = c.get('EPI', 0)
             c_con = c.get('CONSUMO', 0)
             c_fer = c.get('FERRAMENTA', 0)
-
-            compra_total = c_epi + c_con + c_fer
-            custo_real = float(t.get('custo_real', 0))
-            creditos = float(t.get('creditos', 0))
-
             grafico_meses.append({
-                'label': f"{m_:02d}/{a_}",
-                'verba_total': v_epi + v_con + v_fer,
-                'compra_total': compra_total,
-                'custo_real': custo_real,
-                'creditos': creditos,
-                'verba_epi': v_epi, 'verba_consumo': v_con, 'verba_ferramenta': v_fer,
-                'compra_epi': c_epi, 'compra_consumo': c_con, 'compra_ferramenta': c_fer,
+                'label'           : f"{m_:02d}/{a_}",
+                'verba_total'     : v_epi + v_con + v_fer,
+                'compra_total'    : c_epi + c_con + c_fer,
+                'custo_real'      : float(t.get('custo_real', 0)),
+                'creditos'        : float(t.get('creditos', 0)),
+                'verba_epi'       : v_epi, 'verba_consumo': v_con, 'verba_ferramenta': v_fer,
+                'compra_epi'      : c_epi, 'compra_consumo': c_con, 'compra_ferramenta': c_fer,
             })
         ctx['grafico_meses'] = json.dumps(grafico_meses)
 
-        # ── Saldo anual ──
-        verbas_ano = VerbaContrato.objects.filter(
-            contrato_id__in=contrato_ids, ano=ano,
-        ).values('mes').annotate(
-            epi=Coalesce(Sum('verba_epi'), Decimal('0')),
-            consumo=Coalesce(Sum('verba_consumo'), Decimal('0')),
-            ferramenta=Coalesce(Sum('verba_ferramenta'), Decimal('0')),
-        )
-        verbas_ano_map = {v['mes']: v for v in verbas_ano}
-
-        compras_ano = ItemPedido.objects.filter(
-            pedido__contrato_id__in=contrato_ids,
-            pedido__status__in=STATUS_COMPRA,
-            pedido__data_pedido__year=ano,
-        ).values('pedido__data_pedido__month').annotate(
-            total=Coalesce(Sum('valor_total'), Decimal('0')),
-        )
-        compras_ano_map = {c['pedido__data_pedido__month']: float(c['total']) for c in compras_ano}
-
-        saldo_anual = []
-        for m_ in range(1, 13):
-            v = verbas_ano_map.get(m_, {})
-            vt = float(v.get('epi', 0)) + float(v.get('consumo', 0)) + float(v.get('ferramenta', 0))
-            ct = compras_ano_map.get(m_, 0)
-            saldo_anual.append({
-                'mes': f"{m_:02d}/{ano}",
-                'verba': vt,
-                'compra': ct,
-                'saldo': vt - ct,
-            })
-        ctx['saldo_anual'] = saldo_anual
-
         # ── Pedidos pendentes ──
-        ctx['pedidos_pendentes'] = Pedido.objects.filter(
+        pedidos_qs = Pedido.objects.filter(
             status=Pedido.StatusChoices.PENDENTE,
             contrato_id__in=contrato_ids,
         ).select_related('contrato', 'solicitante').annotate(
             valor_total_pedido=Coalesce(Sum('itens__valor_total'), Decimal('0')),
-        )[:10]
+        )
+        if funcionario_id:
+            pedidos_qs = pedidos_qs.filter(solicitante_id=funcionario_id)
+        ctx['pedidos_pendentes'] = pedidos_qs[:10]
 
-        ctx['contratos'] = contratos_qs
+        # ── Pipeline — Solicitações ──
+        sol_qs = SolicitacaoCompra.objects.filter(contrato_id__in=contrato_ids)
+        if funcionario_id:
+            sol_qs = sol_qs.filter(solicitante_id=funcionario_id)
 
-        ctx['ano'] = ano
-        ctx['mes'] = mes
+        ctx['sol_fazer_cotacao']    = sol_qs.filter(status='FAZER_COTACAO').count()
+        ctx['sol_validar_cotacao']  = sol_qs.filter(status='COTACAO_ENVIADA').count()
+        ctx['sol_criar_pedido']     = sol_qs.filter(status='CRIAR_PEDIDO_CT').count()
+        ctx['sol_aprovar_pedido']   = sol_qs.filter(status='EM_APROVACAO').count()
+        ctx['sol_enviar_pedido']    = sol_qs.filter(status='ENVIAR_PEDIDO').count()
+        ctx['sol_entrega_pendente'] = sol_qs.filter(status='ENTREGA_PENDENTE').count()
+        ctx['sol_concluidas_mes']   = sol_qs.filter(
+            status='CONCLUIDO',
+            atualizado_em__year=ano,
+            atualizado_em__month=mes,
+        ).count()
+        ctx['solicitacoes_urgentes'] = sol_qs.exclude(
+            status__in=['CONCLUIDO', 'CANCELADO']
+        ).order_by('criado_em')[:10]
+
+        ctx['is_comprador'] = _user_is_comprador(user)
+        ctx['contratos']    = contratos_qs
+
+        ctx['ano']              = ano
+        ctx['mes']              = mes
         ctx['anos_disponiveis'] = range(2024, hoje.year + 2)
         ctx['meses'] = [
-            (1, 'Janeiro'), (2, 'Fevereiro'), (3, 'Março'),
-            (4, 'Abril'), (5, 'Maio'), (6, 'Junho'),
-            (7, 'Julho'), (8, 'Agosto'), (9, 'Setembro'),
-            (10, 'Outubro'), (11, 'Novembro'), (12, 'Dezembro'),
+            (1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),
+            (4,'Abril'),(5,'Maio'),(6,'Junho'),
+            (7,'Julho'),(8,'Agosto'),(9,'Setembro'),
+            (10,'Outubro'),(11,'Novembro'),(12,'Dezembro'),
         ]
 
         return ctx
@@ -925,8 +1034,130 @@ class ContratoDetailView(LoginRequiredMixin, AppPermissionMixin, ViewFilialScope
         )
 
 
+
 # ════════════════════════════════════════════
-#   PEDIDO — Workflow completo
+#   PEDIDO — Workflow (REFATORADO)
+# ════════════════════════════════════════════
+
+class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
+    app_label_required = _APP
+    model = Pedido
+    form_class = PedidoForm
+    template_name = 'suprimentos/pedido_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo_pagina'] = 'Novo Pedido de Material'
+        ctx['anexo_form'] = AnexoPedidoForm()
+        return ctx
+
+    def form_valid(self, form):
+        user = self.request.user
+        form.instance.solicitante = user
+        form.instance.filial = getattr(user, 'filial_ativa', None)
+        response = super().form_valid(form)
+        pedido = self.object
+
+        # Upload de anexos
+        arquivos = self.request.FILES.getlist('anexos')
+        for arq in arquivos:
+            AnexoPedido.objects.create(
+                pedido=pedido, arquivo=arq, enviado_por=user,
+            )
+
+        _registrar_hist_pedido(
+            pedido,
+            f"Pedido criado por {user.get_full_name() or user.username}.",
+            user, status_novo='RASCUNHO',
+        )
+        messages.success(self.request, f'Pedido {pedido.numero} criado! Adicione os itens.')
+        return response
+
+
+class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
+    app_label_required = _APP
+    model = Pedido
+    template_name = 'suprimentos/pedido_detail.html'
+    context_object_name = 'pedido'
+
+    def get_queryset(self):
+        return _pedido_qs_for_user(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        pedido = self.object
+        user = self.request.user
+
+        ctx['itens'] = pedido.itens.select_related('material').all()
+        ctx['totais'] = pedido.totais_por_classificacao()
+        ctx['item_form'] = ItemPedidoForm()
+        ctx['reprovar_form'] = ReprovarPedidoForm()
+        ctx['receber_form'] = ConfirmarRecebimentoForm()
+        ctx['devolver_form'] = DevolverPedidoForm()
+        ctx['anexo_form'] = AnexoPedidoForm()
+        ctx['anexos'] = pedido.anexos.all()
+        ctx['historico'] = pedido.historico.all()
+
+        verba = pedido.contrato.verba_do_mes(
+            pedido.data_pedido.year, pedido.data_pedido.month,
+        )
+        ctx['verba'] = verba
+
+        is_gerente = user.is_gerente or user.is_superuser
+
+        ctx['pode_editar'] = (
+            pedido.status in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]
+            and (user == pedido.solicitante or is_gerente)
+        )
+        ctx['pode_enviar'] = (
+            pedido.status in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]
+            and (user == pedido.solicitante or is_gerente)
+        )
+        ctx['pode_aprovar'] = (
+            pedido.status == Pedido.StatusChoices.PENDENTE
+            and is_gerente
+        )
+        ctx['pode_devolver'] = (
+            pedido.status == Pedido.StatusChoices.PENDENTE
+            and is_gerente
+        )
+        ctx['pode_revisar'] = (
+            pedido.status == Pedido.StatusChoices.REVISAO
+            and user == pedido.solicitante
+        )
+        ctx['pode_entregar'] = (
+            pedido.status == Pedido.StatusChoices.APROVADO
+            and is_gerente
+        )
+        ctx['pode_receber'] = (
+            pedido.status == Pedido.StatusChoices.ENTREGUE
+        )
+        ctx['pode_cancelar'] = (
+            pedido.status in [
+                Pedido.StatusChoices.RASCUNHO,
+                Pedido.StatusChoices.PENDENTE,
+                Pedido.StatusChoices.REVISAO,
+            ]
+            and (user == pedido.solicitante or is_gerente)
+        )
+
+        # Form de revisão se estiver nesse status
+        if pedido.status == Pedido.StatusChoices.REVISAO and user == pedido.solicitante:
+            ctx['revisao_form'] = RevisaoPedidoForm(instance=pedido)
+
+        # Link para solicitação gerada
+        if pedido.solicitacao_gerada:
+            ctx['solicitacao'] = pedido.solicitacao_gerada
+
+        return ctx
+
+# ════════════════════════════════════════════
+#   PEDIDO — ListView (MANTIDA)
 # ════════════════════════════════════════════
 
 class PedidoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
@@ -963,85 +1194,9 @@ class PedidoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
         return ctx
 
 
-class PedidoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
-    app_label_required = _APP
-    model = Pedido
-    form_class = PedidoForm
-    template_name = 'suprimentos/pedido_form.html'
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Novo Pedido de Material'
-        return ctx
-
-    def form_valid(self, form):
-        form.instance.solicitante = self.request.user
-        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
-        if filial_ativa:
-            form.instance.filial = filial_ativa
-        messages.success(self.request, 'Pedido criado! Adicione os itens.')
-        return super().form_valid(form)
-
-
-class PedidoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
-    app_label_required = _APP
-    model = Pedido
-    template_name = 'suprimentos/pedido_detail.html'
-    context_object_name = 'pedido'
-
-    def get_queryset(self):
-        """✅ Filtra pedidos pela filial do usuário."""
-        return _pedido_qs_for_user(self.request.user)
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        pedido = self.object
-        user = self.request.user
-
-        ctx['itens'] = pedido.itens.select_related('material').all()
-        ctx['totais'] = pedido.totais_por_classificacao()
-        ctx['item_form'] = ItemPedidoForm()
-        ctx['reprovar_form'] = ReprovarPedidoForm()
-        ctx['receber_form'] = ConfirmarRecebimentoForm()
-
-        verba = pedido.contrato.verba_do_mes(
-            pedido.data_pedido.year, pedido.data_pedido.month,
-        )
-        ctx['verba'] = verba
-
-        is_gerente = user.is_gerente or user.is_superuser
-
-        ctx['pode_editar'] = (
-            pedido.status == Pedido.StatusChoices.RASCUNHO
-            and (user == pedido.solicitante or is_gerente)
-        )
-        ctx['pode_enviar'] = (
-            pedido.status == Pedido.StatusChoices.RASCUNHO
-            and (user == pedido.solicitante or is_gerente)
-        )
-        ctx['pode_aprovar'] = (
-            pedido.status == Pedido.StatusChoices.PENDENTE
-            and is_gerente
-        )
-        ctx['pode_entregar'] = (
-            pedido.status == Pedido.StatusChoices.APROVADO
-            and is_gerente
-        )
-        ctx['pode_receber'] = (
-            pedido.status == Pedido.StatusChoices.ENTREGUE
-        )
-        ctx['pode_cancelar'] = (
-            pedido.status in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.PENDENTE]
-            and (user == pedido.solicitante or is_gerente)
-        )
-
-        return ctx
-
+# ════════════════════════════════════════════
+#   PEDIDO — Views que já existiam (MANTIDAS)
+# ════════════════════════════════════════════
 
 class ItemPedidoCreateView(LoginRequiredMixin, AppPermissionMixin, View):
     """Adiciona item ao pedido (POST)."""
@@ -1050,8 +1205,8 @@ class ItemPedidoCreateView(LoginRequiredMixin, AppPermissionMixin, View):
     def post(self, request, pk):
         pedido = _get_pedido_seguro(request.user, pk)
 
-        if pedido.status != Pedido.StatusChoices.RASCUNHO:
-            messages.error(request, 'Só é possível alterar pedidos em rascunho.')
+        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
+            messages.error(request, 'Só é possível alterar pedidos em rascunho ou revisão.')
             return redirect(pedido.get_absolute_url())
 
         form = ItemPedidoForm(request.POST)
@@ -1076,67 +1231,13 @@ class ItemPedidoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
         pedido = _get_pedido_seguro(request.user, pk)
         item = get_object_or_404(ItemPedido, pk=item_pk, pedido=pedido)
 
-        if pedido.status != Pedido.StatusChoices.RASCUNHO:
-            messages.error(request, 'Só é possível alterar pedidos em rascunho.')
+        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
+            messages.error(request, 'Só é possível alterar pedidos em rascunho ou revisão.')
             return redirect(pedido.get_absolute_url())
 
         nome = str(item.material)
         item.delete()
         messages.success(request, f'Item "{nome}" removido.')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """RASCUNHO → PENDENTE."""
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        if pedido.status != Pedido.StatusChoices.RASCUNHO:
-            messages.error(request, 'Pedido não está em rascunho.')
-            return redirect(pedido.get_absolute_url())
-        if not pedido.itens.exists():
-            messages.error(request, 'Adicione pelo menos um item antes de enviar.')
-            return redirect(pedido.get_absolute_url())
-
-        ok, erros = pedido.verificar_verba()
-        if not ok:
-            for erro in erros:
-                messages.warning(request, f'⚠️ {erro}')
-            notificar_pedido_verba_excedida(pedido, erros)
-
-        pedido.status = Pedido.StatusChoices.PENDENTE
-        pedido.save(update_fields=['status'])
-        notificar_pedido_pendente(pedido)
-        messages.success(request, f'Pedido {pedido.numero} enviado para aprovação!')
-        return redirect(pedido.get_absolute_url())
-
-
-class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
-    """PENDENTE → APROVADO (só Gerente)."""
-    app_label_required = _APP
-
-    def post(self, request, pk):
-        pedido = _get_pedido_seguro(request.user, pk)
-        user = request.user
-        if not (user.is_gerente or user.is_superuser):
-            messages.error(request, 'Apenas Gerentes podem aprovar pedidos.')
-            return redirect(pedido.get_absolute_url())
-        if pedido.status != Pedido.StatusChoices.PENDENTE:
-            messages.error(request, 'Pedido não está pendente.')
-            return redirect(pedido.get_absolute_url())
-
-        ok, erros = pedido.verificar_verba()
-        if not ok:
-            for erro in erros:
-                messages.warning(request, f'⚠️ {erro}')
-
-        pedido.status = Pedido.StatusChoices.APROVADO
-        pedido.aprovador = user
-        pedido.data_aprovacao = timezone.now()
-        pedido.save(update_fields=['status', 'aprovador', 'data_aprovacao'])
-        notificar_pedido_aprovado(pedido)
-        messages.success(request, f'Pedido {pedido.numero} aprovado! ✅')
         return redirect(pedido.get_absolute_url())
 
 
@@ -1156,11 +1257,19 @@ class PedidoReprovarView(LoginRequiredMixin, AppPermissionMixin, View):
 
         form = ReprovarPedidoForm(request.POST)
         if form.is_valid():
+            status_ant = pedido.status
             pedido.status = Pedido.StatusChoices.REPROVADO
             pedido.aprovador = user
             pedido.motivo_reprovacao = form.cleaned_data['motivo']
             pedido.data_aprovacao = timezone.now()
             pedido.save(update_fields=['status', 'aprovador', 'motivo_reprovacao', 'data_aprovacao'])
+
+            _registrar_hist_pedido(
+                pedido,
+                f"Reprovado por {user.get_full_name() or user.username}. "
+                f"Motivo: {pedido.motivo_reprovacao}",
+                user, status_ant, 'REPROVADO',
+            )
             notificar_pedido_reprovado(pedido)
             messages.info(request, f'Pedido {pedido.numero} reprovado.')
         else:
@@ -1182,16 +1291,23 @@ class PedidoEntregarView(LoginRequiredMixin, AppPermissionMixin, View):
             messages.error(request, 'Pedido não está aprovado.')
             return redirect(pedido.get_absolute_url())
 
+        status_ant = pedido.status
         pedido.status = Pedido.StatusChoices.ENTREGUE
         pedido.data_entrega = timezone.now().date()
         pedido.save(update_fields=['status', 'data_entrega'])
+
+        _registrar_hist_pedido(
+            pedido,
+            f"Marcado como entregue por {user.get_full_name() or user.username}.",
+            user, status_ant, 'ENTREGUE',
+        )
         notificar_pedido_entregue(pedido)
         messages.success(request, f'Pedido {pedido.numero} marcado como entregue! 📦')
         return redirect(pedido.get_absolute_url())
 
 
 class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
-    """ENTREGUE → RECEBIDO (confirmação do solicitante ou qualquer logado)."""
+    """ENTREGUE → RECEBIDO."""
     app_label_required = _APP
 
     def post(self, request, pk):
@@ -1206,24 +1322,245 @@ class PedidoReceberView(LoginRequiredMixin, AppPermissionMixin, View):
             if obs:
                 pedido.observacao = f"{pedido.observacao}\n[Recebimento] {obs}".strip()
 
+            status_ant = pedido.status
             pedido.recebedor = request.user
             pedido.data_recebimento = timezone.now()
             pedido.status = Pedido.StatusChoices.RECEBIDO
             pedido.save()
 
+            _registrar_hist_pedido(
+                pedido,
+                f"Recebimento confirmado por {request.user.get_full_name() or request.user.username}.",
+                request.user, status_ant, 'RECEBIDO',
+            )
             notificar_pedido_recebido(pedido)
 
             messages.success(request, f'Pedido {pedido.numero} — recebimento confirmado! ✅')
             if pedido.estoque_processado:
                 messages.info(
                     request,
-                    '📦 Entrada no estoque gerada automaticamente para os itens vinculados.'
+                    '📦 Entrada no estoque gerada automaticamente.'
                 )
         else:
             messages.error(request, 'Confirme o recebimento marcando a caixa.')
 
         return redirect(pedido.get_absolute_url())
 
+
+class PedidoEnviarView(LoginRequiredMixin, AppPermissionMixin, View):
+    """RASCUNHO/REVISAO → PENDENTE."""
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        pedido = _get_pedido_seguro(request.user, pk)
+        if pedido.status not in [Pedido.StatusChoices.RASCUNHO, Pedido.StatusChoices.REVISAO]:
+            messages.error(request, 'Pedido não pode ser enviado neste status.')
+            return redirect(pedido.get_absolute_url())
+        if not pedido.itens.exists():
+            messages.error(request, 'Adicione pelo menos um item antes de enviar.')
+            return redirect(pedido.get_absolute_url())
+
+        ok, erros = pedido.verificar_verba()
+        if not ok:
+            for erro in erros:
+                messages.warning(request, f'⚠️ {erro}')
+            notificar_pedido_verba_excedida(pedido, erros)
+
+        status_ant = pedido.status
+        pedido.status = Pedido.StatusChoices.PENDENTE
+        pedido.motivo_revisao = ''
+        pedido.save(update_fields=['status', 'motivo_revisao'])
+
+        _registrar_hist_pedido(
+            pedido,
+            f"Enviado para aprovação por {request.user.get_full_name() or request.user.username}.",
+            request.user, status_ant, 'PENDENTE',
+        )
+        notificar_pedido_pendente(pedido)
+        messages.success(request, f'Pedido {pedido.numero} enviado para aprovação!')
+        return redirect(pedido.get_absolute_url())
+
+
+class PedidoDevolverView(LoginRequiredMixin, AppPermissionMixin, View):
+    """PENDENTE → REVISAO (Gerente devolve para correção)."""
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        pedido = _get_pedido_seguro(request.user, pk)
+        user = request.user
+
+        if not (user.is_gerente or user.is_superuser):
+            messages.error(request, 'Apenas Gerentes podem devolver pedidos.')
+            return redirect(pedido.get_absolute_url())
+        if pedido.status != Pedido.StatusChoices.PENDENTE:
+            messages.error(request, 'Pedido não está pendente.')
+            return redirect(pedido.get_absolute_url())
+
+        form = DevolverPedidoForm(request.POST)
+        if form.is_valid():
+            status_ant = pedido.status
+            pedido.status = Pedido.StatusChoices.REVISAO
+            pedido.motivo_revisao = form.cleaned_data['motivo']
+            pedido.save(update_fields=['status', 'motivo_revisao'])
+
+            _registrar_hist_pedido(
+                pedido,
+                f"Devolvido para revisão por {user.get_full_name() or user.username}. "
+                f"Motivo: {pedido.motivo_revisao}",
+                user, status_ant, 'REVISAO',
+            )
+            try:
+                from notifications.services import notificar_pedido_revisao
+                notificar_pedido_revisao(pedido)
+            except (ImportError, Exception):
+                pass
+            messages.info(request, f'Pedido {pedido.numero} devolvido para revisão.')
+        else:
+            messages.error(request, 'Informe o motivo da devolução.')
+
+        return redirect(pedido.get_absolute_url())
+
+
+class PedidoRevisarView(LoginRequiredMixin, AppPermissionMixin, View):
+    """Solicitante corrige e reenvia (REVISAO → PENDENTE)."""
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        pedido = _get_pedido_seguro(request.user, pk)
+        user = request.user
+
+        if user != pedido.solicitante and not user.is_superuser:
+            messages.error(request, 'Apenas o solicitante pode revisar.')
+            return redirect(pedido.get_absolute_url())
+        if pedido.status != Pedido.StatusChoices.REVISAO:
+            messages.error(request, 'Pedido não está em revisão.')
+            return redirect(pedido.get_absolute_url())
+
+        form = RevisaoPedidoForm(request.POST, instance=pedido)
+        if form.is_valid():
+            status_ant = pedido.status
+            pedido = form.save(commit=False)
+            pedido.status = Pedido.StatusChoices.PENDENTE
+            pedido.motivo_revisao = ''
+            pedido.save()
+
+            # Novos anexos
+            arquivos = request.FILES.getlist('anexos')
+            for arq in arquivos:
+                AnexoPedido.objects.create(
+                    pedido=pedido, arquivo=arq, enviado_por=user,
+                )
+
+            _registrar_hist_pedido(
+                pedido,
+                f"Revisado e reenviado por {user.get_full_name() or user.username}.",
+                user, status_ant, 'PENDENTE',
+            )
+            notificar_pedido_pendente(pedido)
+            messages.success(request, f'Pedido {pedido.numero} reenviado para aprovação! 📋')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+
+        return redirect(pedido.get_absolute_url())
+
+
+class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
+    """PENDENTE → APROVADO + gera SolicitacaoCompra automaticamente."""
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        pedido = _get_pedido_seguro(request.user, pk)
+        user = request.user
+
+        if not (user.is_gerente or user.is_superuser):
+            messages.error(request, 'Apenas Gerentes podem aprovar pedidos.')
+            return redirect(pedido.get_absolute_url())
+        if pedido.status != Pedido.StatusChoices.PENDENTE:
+            messages.error(request, 'Pedido não está pendente.')
+            return redirect(pedido.get_absolute_url())
+
+        ok, erros = pedido.verificar_verba()
+        if not ok:
+            for erro in erros:
+                messages.warning(request, f'⚠️ {erro}')
+
+        status_ant = pedido.status
+        pedido.status = Pedido.StatusChoices.APROVADO
+        pedido.aprovador = user
+        pedido.data_aprovacao = timezone.now()
+        pedido.save(update_fields=['status', 'aprovador', 'data_aprovacao'])
+
+        _registrar_hist_pedido(
+            pedido,
+            f"Aprovado por {user.get_full_name() or user.username}.",
+            user, status_ant, 'APROVADO',
+        )
+        notificar_pedido_aprovado(pedido)
+
+        # ════════════════════════════════════════
+        # GERAR SOLICITAÇÃO DE COMPRA AUTOMATICAMENTE
+        # ════════════════════════════════════════
+
+        try:
+            sol = pedido.gerar_solicitacao_compra()
+            # ── NOTIFICAR COMPRADORES ──
+            try:
+                notificar_solicitacao_criada(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação solicitação criada: {e}")
+
+            messages.success(
+                request,
+                f'Pedido {pedido.numero} aprovado! ✅ '
+                f'Solicitação de Compra {sol.numero} gerada automaticamente. 📋'
+            )
+        except Exception as e:
+            logger.error(f"Erro ao gerar solicitação: {e}")
+            messages.success(request, f'Pedido {pedido.numero} aprovado! ✅')
+            messages.error(request, f'Erro ao gerar solicitação: {e}')
+
+
+# ── Anexo do Pedido ──
+
+class PedidoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):
+    """Upload de anexo no pedido."""
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        pedido = _get_pedido_seguro(request.user, pk)
+        form = AnexoPedidoForm(request.POST, request.FILES)
+        if form.is_valid():
+            anexo = form.save(commit=False)
+            anexo.pedido = pedido
+            anexo.enviado_por = request.user
+            anexo.save()
+            _registrar_hist_pedido(
+                pedido,
+                f"Anexo adicionado: {anexo.nome_arquivo}",
+                request.user,
+            )
+            messages.success(request, f'Anexo "{anexo.nome_arquivo}" enviado! 📎')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+        return redirect(pedido.get_absolute_url())
+
+
+class PedidoAnexoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
+    """Remove anexo do pedido."""
+    app_label_required = _APP
+
+    def post(self, request, pk, anexo_pk):
+        pedido = _get_pedido_seguro(request.user, pk)
+        anexo = get_object_or_404(AnexoPedido, pk=anexo_pk, pedido=pedido)
+        nome = anexo.nome_arquivo
+        anexo.arquivo.delete(save=False)
+        anexo.delete()
+        _registrar_hist_pedido(pedido, f"Anexo removido: {nome}", request.user)
+        messages.success(request, f'Anexo "{nome}" removido.')
+        return redirect(pedido.get_absolute_url())
 
 # ════════════════════════════════════════════
 #   APIs INTERNAS (AJAX)
@@ -1674,3 +2011,522 @@ class RelatorioExcelView(LoginRequiredMixin, AppPermissionMixin, _RelatorioFiltr
         )
         return response
 
+# ════════════════════════════════════════════════════════════════════
+# ══  SOLICITAÇÃO DE COMPRA — WORKFLOW PÓS-APROVAÇÃO               ══
+# ════════════════════════════════════════════════════════════════════
+
+def _sol_qs_for_user(user):
+    qs = SolicitacaoCompra.objects.select_related(
+        'contrato', 'solicitante', 'aprovador_inicial',
+        'comprador', 'fornecedor',
+    )
+    filial_ativa = getattr(user, 'filial_ativa', None)
+    if filial_ativa:
+        qs = qs.filter(filial=filial_ativa)
+    return qs
+
+
+def _get_sol_seguro(user, pk):
+    return get_object_or_404(_sol_qs_for_user(user), pk=pk)
+
+
+def _user_is_comprador(user):
+    return (
+        user.is_superuser
+        or user.groups.filter(name='Comprador').exists()
+        or user.groups.filter(name='Administrador').exists()
+    )
+
+
+def _user_is_aprovador(user):
+    return user.is_gerente or user.is_superuser or user.is_administrador
+
+
+def _registrar_hist_sol(sol, descricao, user, status_ant='', status_novo=''):
+    HistoricoSolicitacao.registrar(
+        solicitacao=sol, descricao=descricao,
+        responsavel=user, status_anterior=status_ant,
+        status_novo=status_novo,
+    )
+
+
+class SolicitacaoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
+    app_label_required = _APP
+    model = SolicitacaoCompra
+    template_name = 'suprimentos/solicitacao/solicitacao_list.html'
+    context_object_name = 'solicitacoes'
+    paginate_by = 20
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = _sol_qs_for_user(user)
+
+        if not (_user_is_aprovador(user) or _user_is_comprador(user)):
+            qs = qs.filter(solicitante=user)
+
+        status = self.request.GET.get('status', '')
+        q = self.request.GET.get('q', '')
+        tipo_obra = self.request.GET.get('tipo_obra', '')
+
+        if status:
+            qs = qs.filter(status=status)
+        if q:
+            qs = qs.filter(
+                Q(numero__icontains=q)
+                | Q(descricao_material__icontains=q)
+                | Q(contrato__cm__icontains=q)
+                | Q(contrato__cliente__icontains=q)
+            )
+        if tipo_obra:
+            qs = qs.filter(tipo_obra=tipo_obra)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['titulo_pagina'] = 'Solicitações de Compra'
+        ctx['status_choices'] = SolicitacaoCompra.StatusChoices.choices
+        ctx['tipo_obra_choices'] = TipoObra.choices
+        ctx['filtro_status'] = self.request.GET.get('status', '')
+        ctx['filtro_q'] = self.request.GET.get('q', '')
+        ctx['filtro_tipo_obra'] = self.request.GET.get('tipo_obra', '')
+        ctx['is_aprovador'] = _user_is_aprovador(self.request.user)
+        ctx['is_comprador'] = _user_is_comprador(self.request.user)
+
+        user = self.request.user
+        base_qs = _sol_qs_for_user(user)
+        if not (_user_is_aprovador(user) or _user_is_comprador(user)):
+            base_qs = base_qs.filter(solicitante=user)
+
+        ctx['count_cotacao'] = base_qs.filter(status='FAZER_COTACAO').count()
+        ctx['count_aprovacao'] = base_qs.filter(status='EM_APROVACAO').count()
+        ctx['count_pendentes'] = base_qs.exclude(
+            status__in=['CONCLUIDO', 'CANCELADO']
+        ).count()
+
+        return ctx
+
+
+class SolicitacaoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
+    app_label_required = _APP
+    model = SolicitacaoCompra
+    template_name = 'suprimentos/solicitacao/solicitacao_detail.html'
+    context_object_name = 'sol'
+
+    def get_queryset(self):
+        return _sol_qs_for_user(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        sol = self.object
+        user = self.request.user
+
+        ctx['anexos'] = sol.anexos.all()
+        ctx['historico'] = sol.historico.all()
+        ctx['is_aprovador'] = _user_is_aprovador(user)
+        ctx['is_comprador'] = _user_is_comprador(user)
+
+        # Pedido de origem
+        if hasattr(sol, 'pedido_origem'):
+            ctx['pedido_origem'] = sol.pedido_origem
+
+        # Forms contextuais
+        status = sol.status
+        if status == 'FAZER_COTACAO' and _user_is_comprador(user):
+            ctx['form_cotacao'] = CotacaoForm(instance=sol)
+        if status == 'COTACAO_ENVIADA' and _user_is_aprovador(user):
+            ctx['form_validar_cotacao'] = ValidarCotacaoForm()
+        if status == 'CRIAR_PEDIDO_CT' and _user_is_comprador(user):
+            ctx['form_criar_pedido'] = CriarPedidoSiengeForm(instance=sol)
+        if status == 'EM_APROVACAO' and _user_is_aprovador(user):
+            ctx['form_aprovar_pedido'] = AprovarPedidoSiengeForm()
+        if status == 'ENVIAR_PEDIDO' and _user_is_comprador(user):
+            ctx['form_enviar_fornecedor'] = EnviarPedidoFornecedorForm()
+        if status == 'ENTREGA_PENDENTE' and _user_is_comprador(user):
+            ctx['form_entrega'] = RegistrarEntregaForm()
+            if sol.data_entrega_efetiva:
+                ctx['form_encerrar'] = EncerrarSolicitacaoForm()
+
+        if sol.pode_cancelar:
+            ctx['form_cancelar'] = CancelarSolicitacaoForm()
+        ctx['form_anexo'] = AnexoSolicitacaoForm()
+        ctx['form_observacao'] = ObservacaoSolicitacaoForm()
+
+        if sol.valor_pedido:
+            ok, msg = sol.verificar_verba()
+            ctx['verba_ok'] = ok
+            ctx['verba_msg'] = msg
+
+        ctx['etapas'] = [
+            {'num': 1, 'titulo': 'Cotação', 'desc': 'Fazer Cotação'},
+            {'num': 2, 'titulo': 'Validação', 'desc': 'Cotação Enviada'},
+            {'num': 3, 'titulo': 'Pedido', 'desc': 'Criar Pedido/CT'},
+            {'num': 4, 'titulo': 'Aprovação', 'desc': 'Em Aprovação'},
+            {'num': 5, 'titulo': 'Envio', 'desc': 'Enviar Pedido'},
+            {'num': 6, 'titulo': 'Entrega', 'desc': 'Entrega Pendente'},
+            {'num': 7, 'titulo': 'Recebimento', 'desc': 'Entrega Efetiva'},
+            {'num': 8, 'titulo': 'NF', 'desc': 'Nota Fiscal'},
+        ]
+        ctx['etapa_atual'] = sol.etapa_atual
+
+        return ctx
+
+
+class SolicitacaoCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_comprador(user):
+            messages.error(request, 'Apenas compradores podem registrar cotações.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'FAZER_COTACAO':
+            messages.error(request, 'Status inválido para registrar cotação.')
+            return redirect(sol.get_absolute_url())
+
+        form = CotacaoForm(request.POST, instance=sol)
+        if form.is_valid():
+            status_ant = sol.status
+            sol = form.save(commit=False)
+            sol.status = 'COTACAO_ENVIADA'
+            sol.comprador = user
+            sol.save()
+
+            _registrar_hist_sol(
+                sol,
+                f"Cotação registrada por {user.get_full_name() or user.username}. "
+                f"Nº: {sol.numero_cotacao}. CNPJ: {sol.cnpj_compra}.",
+                user, status_ant, 'COTACAO_ENVIADA',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_cotacao_enviada(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação cotação enviada: {e}")
+
+            messages.success(request, 'Cotação registrada! Aguardando validação. 📊')
+
+
+class SolicitacaoValidarCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_aprovador(user):
+            messages.error(request, 'Sem permissão para validar cotação.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'COTACAO_ENVIADA':
+            messages.error(request, 'Cotação não está aguardando validação.')
+            return redirect(sol.get_absolute_url())
+
+        form = ValidarCotacaoForm(request.POST)
+        if form.is_valid():
+            status_ant = sol.status
+            sol.data_validacao_cotacao = form.cleaned_data['data_validacao']
+            sol.aprovador_cotacao = user
+            sol.status = 'CRIAR_PEDIDO_CT'
+            sol.save(update_fields=[
+                'status', 'data_validacao_cotacao',
+                'aprovador_cotacao', 'atualizado_em',
+            ])
+            _registrar_hist_sol(
+                sol,
+                f"Cotação validada por {user.get_full_name() or user.username}.",
+                user, status_ant, 'CRIAR_PEDIDO_CT',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_cotacao_validada(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação cotação validada: {e}")
+
+            messages.success(request, 'Cotação validada! Comprador pode criar o pedido. ✅')
+
+
+class SolicitacaoCriarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_comprador(user):
+            messages.error(request, 'Apenas compradores podem criar pedidos.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'CRIAR_PEDIDO_CT':
+            messages.error(request, 'Status inválido para criar pedido.')
+            return redirect(sol.get_absolute_url())
+
+        form = CriarPedidoSiengeForm(request.POST, instance=sol)
+        if form.is_valid():
+            status_ant = sol.status
+            sol = form.save(commit=False)
+            sol.status = 'EM_APROVACAO'
+            sol.save()
+
+            ok, msg_verba = sol.verificar_verba()
+            if not ok:
+                messages.warning(request, msg_verba)
+
+            _registrar_hist_sol(
+                sol,
+                f"Pedido Sienge criado por {user.get_full_name() or user.username}. "
+                f"Nº: {sol.numero_pedido_sienge}. "
+                f"Fornecedor: {sol.fornecedor}. Valor: R$ {sol.valor_pedido:.2f}.",
+                user, status_ant, 'EM_APROVACAO',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_pedido_sienge_criado(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação pedido sienge criado: {e}")
+
+            messages.success(request, 'Pedido criado! Aguardando aprovação. 📦')
+
+
+class SolicitacaoAprovarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_aprovador(user):
+            messages.error(request, 'Sem permissão para aprovar pedido.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'EM_APROVACAO':
+            messages.error(request, 'Pedido não está em aprovação.')
+            return redirect(sol.get_absolute_url())
+
+        form = AprovarPedidoSiengeForm(request.POST)
+        if form.is_valid():
+            status_ant = sol.status
+            sol.data_aprovacao_pedido = form.cleaned_data['data_aprovacao_pedido']
+            sol.aprovador_pedido = user
+            sol.status = 'ENVIAR_PEDIDO'
+            sol.save(update_fields=[
+                'status', 'data_aprovacao_pedido',
+                'aprovador_pedido', 'atualizado_em',
+            ])
+            _registrar_hist_sol(
+                sol,
+                f"Pedido aprovado por {user.get_full_name() or user.username}.",
+                user, status_ant, 'ENVIAR_PEDIDO',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_pedido_sienge_aprovado(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação pedido aprovado: {e}")
+
+            messages.success(request, 'Pedido aprovado! Enviar ao fornecedor. ✅')
+
+class SolicitacaoEnviarFornecedorView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_comprador(user):
+            messages.error(request, 'Apenas compradores podem enviar pedidos.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'ENVIAR_PEDIDO':
+            messages.error(request, 'Status inválido.')
+            return redirect(sol.get_absolute_url())
+
+        form = EnviarPedidoFornecedorForm(request.POST)
+        if form.is_valid():
+            status_ant = sol.status
+            sol.data_envio_fornecedor = form.cleaned_data['data_envio']
+            sol.data_prevista_entrega = form.cleaned_data['data_prevista']
+            sol.status = 'ENTREGA_PENDENTE'
+            sol.save(update_fields=[
+                'status', 'data_envio_fornecedor',
+                'data_prevista_entrega', 'atualizado_em',
+            ])
+            _registrar_hist_sol(
+                sol,
+                f"Enviado ao fornecedor por {user.get_full_name() or user.username}. "
+                f"Previsão: {sol.data_prevista_entrega}.",
+                user, status_ant, 'ENTREGA_PENDENTE',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_pedido_enviado_fornecedor(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação envio fornecedor: {e}")
+
+            messages.success(request, f'Pedido enviado! Previsão: {sol.data_prevista_entrega}. 🚚')
+
+class SolicitacaoRegistrarEntregaView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_comprador(user):
+            messages.error(request, 'Apenas compradores.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'ENTREGA_PENDENTE':
+            messages.error(request, 'Status inválido.')
+            return redirect(sol.get_absolute_url())
+
+        form = RegistrarEntregaForm(request.POST)
+        if form.is_valid():
+            sol.data_entrega_efetiva = form.cleaned_data['data_entrega']
+            sol.save(update_fields=['data_entrega_efetiva', 'atualizado_em'])
+            _registrar_hist_sol(
+                sol,
+                f"Entrega efetiva em {sol.data_entrega_efetiva} "
+                f"por {user.get_full_name() or user.username}.",
+                user,
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_entrega_registrada(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação entrega: {e}")
+
+            messages.success(request, f'Entrega registrada! Agora informe o Nº da NF para encerrar. 📦')
+
+class SolicitacaoEncerrarView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not _user_is_comprador(user):
+            messages.error(request, 'Apenas compradores.')
+            return redirect(sol.get_absolute_url())
+        if sol.status != 'ENTREGA_PENDENTE' or not sol.data_entrega_efetiva:
+            messages.error(request, 'Registre a entrega antes de encerrar.')
+            return redirect(sol.get_absolute_url())
+
+        form = EncerrarSolicitacaoForm(request.POST)
+        if form.is_valid():
+            status_ant = sol.status
+            sol.numero_nota_fiscal = form.cleaned_data['numero_nota_fiscal']
+            sol.status = 'CONCLUIDO'
+            sol.save(update_fields=['status', 'numero_nota_fiscal', 'atualizado_em'])
+            _registrar_hist_sol(
+                sol,
+                f"ENCERRADA por {user.get_full_name() or user.username}. NF: {sol.numero_nota_fiscal}.",
+                user, status_ant, 'CONCLUIDO',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_solicitacao_concluida(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação conclusão: {e}")
+
+            messages.success(request, f'Solicitação {sol.numero} CONCLUÍDA! ✅🎉')
+
+
+class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+
+        if not sol.pode_cancelar:
+            messages.error(request, 'Não pode ser cancelada.')
+            return redirect(sol.get_absolute_url())
+
+        pode = (
+            user == sol.solicitante
+            or _user_is_aprovador(user)
+            or _user_is_comprador(user)
+        )
+        if not pode:
+            messages.error(request, 'Sem permissão.')
+            return redirect(sol.get_absolute_url())
+
+        form = CancelarSolicitacaoForm(request.POST)
+        if form.is_valid():
+            status_ant = sol.status
+            sol.status = 'CANCELADO'
+            sol.motivo_cancelamento = form.cleaned_data['motivo']
+            timestamp = timezone.now().strftime('%d/%m/%Y %H:%M')
+            sol.observacoes = (
+                f"{sol.observacoes}\n"
+                f"[CANCELADO em {timestamp}] Motivo: {sol.motivo_cancelamento}"
+            ).strip()
+            sol.save(update_fields=[
+                'status', 'motivo_cancelamento', 'observacoes', 'atualizado_em',
+            ])
+            _registrar_hist_sol(
+                sol,
+                f"CANCELADA por {user.get_full_name() or user.username}. "
+                f"Motivo: {sol.motivo_cancelamento}",
+                user, status_ant, 'CANCELADO',
+            )
+            # ── NOTIFICAÇÃO ──
+            try:
+                notificar_solicitacao_cancelada(sol)
+            except Exception as e:
+                logger.error(f"Erro notificação cancelamento: {e}")
+
+            messages.warning(request, f'Solicitação {sol.numero} cancelada.')
+
+
+class SolicitacaoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        form = AnexoSolicitacaoForm(request.POST, request.FILES)
+        if form.is_valid():
+            anexo = form.save(commit=False)
+            anexo.solicitacao = sol
+            anexo.enviado_por = request.user
+            anexo.save()
+            _registrar_hist_sol(sol, f"Anexo: {anexo.nome_arquivo}", request.user)
+            messages.success(request, f'Anexo enviado! 📎')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+        return redirect(sol.get_absolute_url())
+
+
+class SolicitacaoAnexoDeleteView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk, anexo_pk):
+        sol = _get_sol_seguro(request.user, pk)
+        anexo = get_object_or_404(AnexoSolicitacao, pk=anexo_pk, solicitacao=sol)
+        nome = anexo.nome_arquivo
+        anexo.arquivo.delete(save=False)
+        anexo.delete()
+        _registrar_hist_sol(sol, f"Anexo removido: {nome}", request.user)
+        messages.success(request, f'Anexo "{nome}" removido.')
+        return redirect(sol.get_absolute_url())
+
+
+class SolicitacaoObservacaoView(LoginRequiredMixin, AppPermissionMixin, View):
+    app_label_required = _APP
+
+    def post(self, request, pk):
+        sol = _get_sol_seguro(request.user, pk)
+        user = request.user
+        form = ObservacaoSolicitacaoForm(request.POST)
+        if form.is_valid():
+            texto = form.cleaned_data['texto']
+            timestamp = timezone.now().strftime('%d/%m/%Y %H:%M')
+            nome = user.get_full_name() or user.username
+            sol.observacoes = (
+                f"{sol.observacoes}\n[{timestamp} — {nome}] {texto}"
+            ).strip()
+            sol.save(update_fields=['observacoes', 'atualizado_em'])
+            _registrar_hist_sol(sol, f"Observação: {texto[:100]}", user)
+            messages.success(request, 'Observação registrada! 📝')
+        else:
+            messages.error(request, 'Texto obrigatório.')
+        return redirect(sol.get_absolute_url())

@@ -6,49 +6,50 @@
 
 {% block sst_content %}
 
-<!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
-                    {% if object %}Editar Função{% else %}Nova Função{% endif %}
-                </h4>
-                <small class="opacity-75">Cadastro de funções para associação de EPIs</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4>
+                <i class="bi bi-{% if object %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
+                {% if object %}Editar Função{% else %}Nova Função{% endif %}
+            </h4>
+            <span class="sst-page-subtitle">Cadastro de funções para associação de EPIs</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="sst-btn-header">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+        <div class="sst-card">
+            <form method="post" novalidate id="funcaoForm">
+                {% csrf_token %}
+                <div class="sst-card-body">
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    <div class="sst-alert sst-alert--danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ form.non_field_errors }}
+                    </div>
                     {% endif %}
 
                     {% include "seguranca_trabalho/partials/funcao_form_fields.html" %}
+                </div>
 
-                    <div class="border-top pt-4 mt-4 d-flex justify-content-between">
-                        <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-lg me-1"></i> Salvar
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="sst-card-footer">
+                    <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="sst-btn-cancel">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </a>
+                    <button type="submit" class="sst-btn-primary">
+                        <i class="bi bi-check-lg"></i> Salvar
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 {% endblock %}
+

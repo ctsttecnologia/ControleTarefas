@@ -49,22 +49,28 @@
     <nav class="module-nav no-print">
         <ul class="nav nav-pills">
             <li class="nav-item">
+                {% if perms.automovel.view_automovel or user.is_superuser %}
                 <a href="{% url 'automovel:dashboard' %}"
                    class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
+                {% endif %}
             </li>
             <li class="nav-item">
+                {% if perms.automovel.view_carro or user.is_superuser %}
                 <a href="{% url 'automovel:carro_list' %}"
                    class="nav-link {% if 'carro_' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-car-front-fill"></i> Veículos
                 </a>
+                {% endif %}
             </li>
             <li class="nav-item">
+                {% if perms.automovel.view_agendamento or user.is_superuser %}
                 <a href="{% url 'automovel:agendamento_list' %}"
                    class="nav-link {% if 'agendamento_' in request.resolver_match.url_name %}active{% endif %}">
                     <i class="bi bi-calendar3"></i> Agendamentos
                 </a>
+                {% endif %}
             </li>
         </ul>
     </nav>

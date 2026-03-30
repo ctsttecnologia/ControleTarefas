@@ -1,6 +1,4 @@
 
-# suprimentos/urls.py
-
 from django.urls import path
 from . import views
 
@@ -31,7 +29,7 @@ urlpatterns = [
     path('contratos/<int:pk>/', views.ContratoDetailView.as_view(), name='contrato_detalhe'),
     path('contratos/<int:pk>/editar/', views.ContratoUpdateView.as_view(), name='contrato_editar'),
 
-    # ── Pedidos ────────────────────────────
+    # ── Pedidos (Solicitante → Gerente) ────
     path('pedidos/', views.PedidoListView.as_view(), name='pedido_lista'),
     path('pedidos/novo/', views.PedidoCreateView.as_view(), name='pedido_criar'),
     path('pedidos/<int:pk>/', views.PedidoDetailView.as_view(), name='pedido_detalhe'),
@@ -40,8 +38,27 @@ urlpatterns = [
     path('pedidos/<int:pk>/enviar/', views.PedidoEnviarView.as_view(), name='pedido_enviar'),
     path('pedidos/<int:pk>/aprovar/', views.PedidoAprovarView.as_view(), name='pedido_aprovar'),
     path('pedidos/<int:pk>/reprovar/', views.PedidoReprovarView.as_view(), name='pedido_reprovar'),
+    path('pedidos/<int:pk>/devolver/', views.PedidoDevolverView.as_view(), name='pedido_devolver'),
+    path('pedidos/<int:pk>/revisar/', views.PedidoRevisarView.as_view(), name='pedido_revisar'),
     path('pedidos/<int:pk>/entregar/', views.PedidoEntregarView.as_view(), name='pedido_entregar'),
     path('pedidos/<int:pk>/receber/', views.PedidoReceberView.as_view(), name='pedido_receber'),
+    path('pedidos/<int:pk>/anexo/', views.PedidoAnexoView.as_view(), name='pedido_anexo'),
+    path('pedidos/<int:pk>/anexo/<int:anexo_pk>/remover/', views.PedidoAnexoDeleteView.as_view(), name='pedido_anexo_remover'),
+
+    # ── Solicitações de Compra (pós-aprovação) ──
+    path('solicitacoes/', views.SolicitacaoListView.as_view(), name='solicitacao_lista'),
+    path('solicitacoes/<int:pk>/', views.SolicitacaoDetailView.as_view(), name='solicitacao_detalhe'),
+    path('solicitacoes/<int:pk>/cotacao/', views.SolicitacaoCotacaoView.as_view(), name='solicitacao_cotacao'),
+    path('solicitacoes/<int:pk>/validar-cotacao/', views.SolicitacaoValidarCotacaoView.as_view(), name='solicitacao_validar_cotacao'),
+    path('solicitacoes/<int:pk>/criar-pedido/', views.SolicitacaoCriarPedidoView.as_view(), name='solicitacao_criar_pedido'),
+    path('solicitacoes/<int:pk>/aprovar-pedido/', views.SolicitacaoAprovarPedidoView.as_view(), name='solicitacao_aprovar_pedido'),
+    path('solicitacoes/<int:pk>/enviar-fornecedor/', views.SolicitacaoEnviarFornecedorView.as_view(), name='solicitacao_enviar_fornecedor'),
+    path('solicitacoes/<int:pk>/registrar-entrega/', views.SolicitacaoRegistrarEntregaView.as_view(), name='solicitacao_registrar_entrega'),
+    path('solicitacoes/<int:pk>/encerrar/', views.SolicitacaoEncerrarView.as_view(), name='solicitacao_encerrar'),
+    path('solicitacoes/<int:pk>/cancelar/', views.SolicitacaoCancelarView.as_view(), name='solicitacao_cancelar'),
+    path('solicitacoes/<int:pk>/anexo/', views.SolicitacaoAnexoView.as_view(), name='solicitacao_anexo'),
+    path('solicitacoes/<int:pk>/anexo/<int:anexo_pk>/remover/', views.SolicitacaoAnexoDeleteView.as_view(), name='solicitacao_anexo_remover'),
+    path('solicitacoes/<int:pk>/observacao/', views.SolicitacaoObservacaoView.as_view(), name='solicitacao_observacao'),
 
     # ── Relatórios Gerenciais ──────────────
     path('relatorios/', views.RelatorioSuprimentosView.as_view(), name='relatorio'),
@@ -52,4 +69,5 @@ urlpatterns = [
     path('api/material/<int:pk>/preco/', views.material_preco_api, name='material_preco'),
     path('api/contrato/<int:pk>/saldos/', views.contrato_saldos_api, name='contrato_saldos'),
 ]
+
 

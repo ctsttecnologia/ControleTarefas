@@ -1,96 +1,149 @@
 {% extends "seguranca_trabalho/_base_sst.html" %}
+{% load static %}
 
 {% block title %}Detalhes: {{ fornecedor.razao_social }}{% endblock %}
 
-{% block content %}
-<div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+{% block sst_content %}
+
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
-            <h1 class="h2">Detalhes do Fornecedor</h1>
-            <p class="text-muted">{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</p>
+            <h4><i class="bi bi-truck me-2"></i>{{ fornecedor.nome_fantasia|default:fornecedor.razao_social }}</h4>
+            <span class="sst-page-subtitle">Detalhes do Fornecedor</span>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
+            <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="sst-btn-header">
+                <i class="bi bi-arrow-left"></i> Voltar
             </a>
-            <a href="{% url 'seguranca_trabalho:fornecedor_update' fornecedor.pk %}" class="btn btn-primary">
-                <i class="bi bi-pencil-fill me-1"></i> Editar
+            <a href="{% url 'seguranca_trabalho:fornecedor_update' fornecedor.pk %}" class="sst-btn-header--primary">
+                <i class="bi bi-pencil"></i> Editar
             </a>
-        </div>
-    </div>
-    <h4 class="h6 mb-3">Cadastro</h4>
-    <div class="card shadow-sm">
-        <div class="card-body p-4">
-            <dl class="row mb-0">
-                <dt class="col-sm-3">Razão Social</dt>
-                <dd class="col-sm-9">{{ fornecedor.razao_social }}</dd>
-
-                <dt class="col-sm-3">Nome Fantasia</dt>
-                <dd class="col-sm-9">{{ fornecedor.nome_fantasia|default:"-" }}</dd>
-
-                <dt class="col-sm-3">CNPJ</dt>
-                <dd class="col-sm-9">{{ fornecedor.cnpj }}</dd>
-
-                <dt class="col-sm-3">E-mail</dt>
-                <dd class="col-sm-9">{{ fornecedor.email|default:"-" }}</dd>
-                
-                <dt class="col-sm-3">Telefone</dt>
-                <dd class="col-sm-9">{{ fornecedor.telefone|default:"-" }}</dd>
-                
-                <dt class="col-sm-3">Endereço</dt>
-                <dd class="col-sm-9">
-                    {% if fornecedor.endereco %}
-                        {{ fornecedor.endereco.logradouro }}, {{ fornecedor.endereco.numero }} - {{ fornecedor.endereco.cep }}
-                    {% else %}
-                        <span class="text-muted">Endereço não cadastrado</span>
-                    {% endif %}
-                </dd>
-
-                <dt class="col-sm-3">Status</dt>
-                <dd class="col-sm-9">
-                    {% if fornecedor.ativo %}
-                        <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Ativo</span>
-                    {% else %}
-                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">Inativo</span>
-                    {% endif %}
-                </dd>
-            </dl>
-        </div>
-    </div>
-
-    <h4 class="h6 my-4">Equipamentos onde este é o Fornecedor Padrão</h4>
-    
-    <div class="card shadow-sm">
-        <div class="card-body">
-            {% with equipamentos=fornecedor.equipamentos_fornecidos.all %}
-                {% if equipamentos %}
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover mb-0">
-                             <thead>
-                                 <tr>
-                                     <th>Equipamento</th>
-                                     <th>Fabricante</th>
-                                     <th>Certificado de Aprovação</th>
-                                 </tr>
-                            </thead>
-                            <tbody>
-                                {% for epi in equipamentos %}
-                                    <tr>
-                                        <td><a href="{{ epi.get_absolute_url }}">{{ epi.nome }}</a></td>
-                                        <td>{{ epi.fabricante.nome|default:"-" }}</td>
-                                        <td>{{ epi.certificado_aprovacao|default:"-" }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <p class="text-muted text-center mb-0">Nenhum equipamento tem este como fornecedor padrão.</p>
-                {% endif %}
-            {% endwith %}
         </div>
     </div>
 </div>
+
+<div class="row g-4">
+    <!-- Cadastro -->
+    <div class="col-lg-6">
+        <div class="sst-card" style="height:100%;">
+            <div class="sst-card-header">
+                <i class="bi bi-info-circle"></i>
+                <h6>Cadastro</h6>
+            </div>
+            <div class="sst-card-body">
+                <div class="sst-info-grid">
+                    <div class="sst-info-item" style="grid-column: 1 / -1;">
+                        <span class="sst-info-label">Razão Social</span>
+                        <span class="sst-info-value">{{ fornecedor.razao_social }}</span>
+                    </div>
+                    <div class="sst-info-item">
+                        <span class="sst-info-label">Nome Fantasia</span>
+                        <span class="sst-info-value">{{ fornecedor.nome_fantasia|default:"—" }}</span>
+                    </div>
+                    <div class="sst-info-item">
+                        <span class="sst-info-label">CNPJ</span>
+                        <span class="sst-info-value"><code>{{ fornecedor.cnpj }}</code></span>
+                    </div>
+                    <div class="sst-info-item">
+                        <span class="sst-info-label">Status</span>
+                        <span class="sst-info-value">
+                            {% if fornecedor.ativo %}
+                            <span class="sst-badge sst-badge--success"><i class="bi bi-check-circle-fill"></i> Ativo</span>
+                            {% else %}
+                            <span class="sst-badge sst-badge--muted"><i class="bi bi-x-circle-fill"></i> Inativo</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contato -->
+    <div class="col-lg-6">
+        <div class="sst-card" style="height:100%;">
+            <div class="sst-card-header">
+                <i class="bi bi-telephone"></i>
+                <h6>Contato</h6>
+            </div>
+            <div class="sst-card-body">
+                <div class="sst-info-grid">
+                    <div class="sst-info-item">
+                        <span class="sst-info-label">E-mail</span>
+                        <span class="sst-info-value">
+                            {% if fornecedor.email %}
+                            <a href="mailto:{{ fornecedor.email }}" style="color:var(--sst-accent);">{{ fornecedor.email }}</a>
+                            {% else %}—{% endif %}
+                        </span>
+                    </div>
+                    <div class="sst-info-item">
+                        <span class="sst-info-label">Telefone</span>
+                        <span class="sst-info-value">
+                            {% if fornecedor.telefone %}
+                            <i class="bi bi-telephone me-1" style="font-size:.85rem; opacity:.6;"></i>{{ fornecedor.telefone }}
+                            {% else %}—{% endif %}
+                        </span>
+                    </div>
+                    <div class="sst-info-item" style="grid-column: 1 / -1;">
+                        <span class="sst-info-label">Endereço</span>
+                        <span class="sst-info-value">
+                            {% if fornecedor.endereco %}
+                            <i class="bi bi-geo-alt me-1" style="font-size:.85rem; opacity:.6;"></i>
+                            {{ fornecedor.endereco.logradouro }}, {{ fornecedor.endereco.numero }} - {{ fornecedor.endereco.cep }}
+                            {% else %}
+                            <span style="color:var(--sst-text-muted);">Endereço não cadastrado</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipamentos -->
+    <div class="col-12">
+        <div class="sst-card">
+            <div class="sst-card-header" style="justify-content:space-between;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-hdd-stack"></i>
+                    <h6>Equipamentos deste Fornecedor</h6>
+                </div>
+                <span class="sst-badge sst-badge--count">{{ fornecedor.equipamentos_fornecidos.count }}</span>
+            </div>
+            <div class="sst-table-wrapper">
+                {% with equipamentos=fornecedor.equipamentos_fornecidos.all %}
+                {% if equipamentos %}
+                <table class="sst-table">
+                    <thead>
+                        <tr>
+                            <th>Equipamento</th>
+                            <th>Fabricante</th>
+                            <th>Certificado de Aprovação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for epi in equipamentos %}
+                        <tr>
+                            <td><a href="{{ epi.get_absolute_url }}">{{ epi.nome }}</a></td>
+                            <td>{{ epi.fabricante.nome|default:"—" }}</td>
+                            <td><code>{{ epi.certificado_aprovacao|default:"—" }}</code></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="sst-empty">
+                    <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
+                    <p>Nenhum equipamento tem este como fornecedor padrão.</p>
+                </div>
+                {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
+
 
 

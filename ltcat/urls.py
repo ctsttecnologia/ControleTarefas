@@ -39,7 +39,7 @@ urlpatterns = [
     path("laudos/<int:ltcat_pk>/funcoes/<int:pk>/excluir/", views.FuncaoDeleteView.as_view(), name="funcao_delete"),
 
     # Riscos
-    path("laudos/<int:ltcat_pk>/funcoes/<int:funcao_pk>/riscos/novo/", views.RiscoCreateView.as_view(), name="risco_create"),
+    path("laudos/<int:ltcat_pk>/riscos/novo/", views.RiscoCreateView.as_view(), name="risco_create"),
     path("laudos/<int:ltcat_pk>/riscos/<int:pk>/editar/", views.RiscoUpdateView.as_view(), name="risco_update"),
     path("laudos/<int:ltcat_pk>/riscos/<int:pk>/excluir/", views.RiscoDeleteView.as_view(), name="risco_delete"),
 

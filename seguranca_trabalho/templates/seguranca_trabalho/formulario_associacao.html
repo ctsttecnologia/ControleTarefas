@@ -1,5 +1,3 @@
-
-
 {% extends "seguranca_trabalho/_base_sst.html" %}
 {% load widget_tweaks %}
 
@@ -7,42 +5,39 @@
 
 {% block sst_content %}
 
-<!-- Header -->
-<div class="card bg-primary text-white shadow-sm mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h4 class="mb-1">
-                    <i class="bi bi-link-45deg me-2"></i>Nova Associação
-                </h4>
-                <small class="opacity-75">Vincule um cargo a uma função</small>
-            </div>
-            <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-outline-light">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
+<div class="sst-page-header">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <h4><i class="bi bi-link-45deg me-2"></i>Nova Associação</h4>
+            <span class="sst-page-subtitle">Vincule um cargo a uma função</span>
         </div>
+        <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="sst-btn-header">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
     </div>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-diagram-3 me-2"></i>Dados da Associação
-                </h6>
+        <div class="sst-card">
+            <div class="sst-card-header">
+                <i class="bi bi-diagram-3"></i>
+                <h6>Dados da Associação</h6>
             </div>
-            <div class="card-body p-4">
-                <form method="post" novalidate>
-                    {% csrf_token %}
+            <form method="post" novalidate id="assocForm">
+                {% csrf_token %}
+                <div class="sst-card-body">
 
                     {% if form.non_field_errors %}
-                    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    <div class="sst-alert sst-alert--danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        {{ form.non_field_errors }}
+                    </div>
                     {% endif %}
 
                     <div class="mb-4">
-                        <label for="{{ form.cargo.id_for_label }}" class="form-label fw-semibold">
-                            Cargo <span class="text-danger">*</span>
+                        <label for="{{ form.cargo.id_for_label }}" class="sst-form-label">
+                            Cargo <span class="required">*</span>
                         </label>
                         {% render_field form.cargo class+="form-select" %}
                         {% for error in form.cargo.errors %}
@@ -51,8 +46,8 @@
                     </div>
 
                     <div class="mb-4">
-                        <label for="{{ form.funcao.id_for_label }}" class="form-label fw-semibold">
-                            Função <span class="text-danger">*</span>
+                        <label for="{{ form.funcao.id_for_label }}" class="sst-form-label">
+                            Função <span class="required">*</span>
                         </label>
                         {% render_field form.funcao class+="form-select" %}
                         {% for error in form.funcao.errors %}
@@ -60,26 +55,27 @@
                         {% endfor %}
                     </div>
 
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
+                    <div class="sst-alert sst-alert--info">
+                        <i class="bi bi-info-circle-fill"></i>
                         <small>
-                            Ao associar um cargo a uma função, os EPIs definidos na Matriz 
+                            Ao associar um cargo a uma função, os EPIs definidos na Matriz
                             para essa função serão aplicados aos funcionários com esse cargo.
                         </small>
                     </div>
+                </div>
 
-                    <div class="d-flex justify-content-between pt-3 border-top">
-                        <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i> Cancelar
-                        </a>
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-check-lg me-1"></i> Criar Associação
-                        </button>
-                    </div>
-                </form>
-            </div>
+                <div class="sst-card-footer">
+                    <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="sst-btn-cancel">
+                        <i class="bi bi-x-lg"></i> Cancelar
+                    </a>
+                    <button type="submit" class="sst-btn-primary">
+                        <i class="bi bi-check-lg"></i> Criar Associação
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 {% endblock %}
+

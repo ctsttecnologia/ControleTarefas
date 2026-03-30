@@ -1,0 +1,36 @@
+
+{% extends 'notifications/emails/base_email.html' %}
+
+{% block content %}
+<h2 style="color: #0d6efd;">📊 Cotação Aguardando Validação</h2>
+
+<p>Olá {{ gerente.first_name|default:gerente.username }},</p>
+
+<p><strong>{{ comprador }}</strong> registrou a cotação da solicitação <strong>{{ solicitacao.numero }}</strong>.</p>
+
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Nº Cotação</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.numero_cotacao }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">CNPJ Compra</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.cnpj_compra }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo NF</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.get_tipo_nota_fiscal_display }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Material</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.descricao_material|truncatewords:20 }}</td>
+    </tr>
+</table>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ url }}" style="background: #198754; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        ✅ Validar Cotação
+    </a>
+</div>
+{% endblock %}
+

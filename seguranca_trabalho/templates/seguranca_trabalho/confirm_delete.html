@@ -1,65 +1,295 @@
 
 
-<!-- seguranca_trabalho/templates/seguranca_trabalho/confirm_delete.html -->
-
 {% extends "seguranca_trabalho/_base_sst.html" %}
 
+{% block title %}Confirmar Exclusão{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    /* ═══════════════════════════════════════════════════════
+       CONFIRM DELETE — TEMA CLARO
+       ═══════════════════════════════════════════════════════ */
+    :root,
+    [data-bs-theme="light"] {
+        --cd-bg:            #ffffff;
+        --cd-bg-alt:        #f8f9fc;
+        --cd-text:          #1e293b;
+        --cd-text-muted:    #64748b;
+        --cd-border:        #e2e8f0;
+        --cd-card-shadow:   0 4px 20px rgba(0,0,0,.08);
+        --cd-danger:        #ef4444;
+        --cd-danger-soft:   rgba(239,68,68,.06);
+        --cd-danger-border: rgba(239,68,68,.15);
+        --cd-danger-grad:   linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        --cd-warning-bg:    #fffbeb;
+        --cd-warning-border:#fde68a;
+        --cd-warning-text:  #92400e;
+        --cd-warning-icon:  #f59e0b;
+    }
+
+    [data-bs-theme="dark"] {
+        --cd-bg:            #1a1d23;
+        --cd-bg-alt:        #1e2128;
+        --cd-text:          #e2e8f0;
+        --cd-text-muted:    #94a3b8;
+        --cd-border:        #2d3748;
+        --cd-card-shadow:   0 4px 20px rgba(0,0,0,.3);
+        --cd-danger:        #f87171;
+        --cd-danger-soft:   rgba(239,68,68,.08);
+        --cd-danger-border: rgba(239,68,68,.2);
+        --cd-danger-grad:   linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        --cd-warning-bg:    rgba(245,158,11,.1);
+        --cd-warning-border:rgba(245,158,11,.25);
+        --cd-warning-text:  #fbbf24;
+        --cd-warning-icon:  #fbbf24;
+    }
+
+    .cd-wrapper {
+        max-width: 560px;
+        margin: 2rem auto;
+    }
+
+    .cd-card {
+        background: var(--cd-bg);
+        border: 1px solid var(--cd-danger-border);
+        border-radius: 0.75rem;
+        box-shadow: var(--cd-card-shadow);
+        overflow: hidden;
+    }
+
+    .cd-card-header {
+        background: var(--cd-danger-grad);
+        padding: 1.25rem 1.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+    }
+
+    .cd-card-header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 0.5rem;
+        background: rgba(255,255,255,.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .cd-card-header h5 {
+        margin: 0;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+    }
+
+    .cd-card-header small {
+        color: rgba(255,255,255,.7);
+        font-size: 0.78rem;
+    }
+
+    .cd-card-body {
+        padding: 1.75rem;
+    }
+
+    /* ── Alerta de bloqueio ── */
+    .cd-blocked {
+        background: var(--cd-warning-bg);
+        border: 1px solid var(--cd-warning-border);
+        border-radius: 0.6rem;
+        padding: 1.25rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .cd-blocked-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: var(--cd-warning-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--cd-warning-icon);
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .cd-blocked h6 {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--cd-warning-text);
+        margin-bottom: 0.3rem;
+    }
+
+    .cd-blocked p {
+        font-size: 0.85rem;
+        color: var(--cd-warning-text);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    /* ── Confirmação permitida ── */
+    .cd-confirm-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--cd-danger-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--cd-danger);
+        font-size: 1.8rem;
+        margin: 0 auto 1.25rem;
+    }
+
+    .cd-confirm-text {
+        text-align: center;
+        font-size: 1rem;
+        color: var(--cd-text);
+        margin-bottom: 0.3rem;
+    }
+
+    .cd-confirm-name {
+        text-align: center;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--cd-text);
+        padding: 0.5rem 1rem;
+        background: var(--cd-danger-soft);
+        border: 1px dashed var(--cd-danger-border);
+        border-radius: 0.4rem;
+        display: inline-block;
+        margin: 0.5rem 0;
+    }
+
+    .cd-confirm-warning {
+        text-align: center;
+        font-size: 0.82rem;
+        color: var(--cd-text-muted);
+        margin-top: 0.5rem;
+    }
+
+    /* ── Footer / Actions ── */
+    .cd-card-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        padding: 1rem 1.75rem;
+        border-top: 1px solid var(--cd-border);
+        background: var(--cd-bg-alt);
+    }
+
+    .cd-btn-back {
+        background: transparent;
+        border: 1.5px solid var(--cd-border);
+        color: var(--cd-text-muted);
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .cd-btn-back:hover {
+        border-color: var(--cd-text-muted);
+        color: var(--cd-text);
+    }
+
+    .cd-btn-delete {
+        background: var(--cd-danger-grad);
+        color: #fff;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 0.45rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(239,68,68,.3);
+    }
+
+    .cd-btn-delete:hover {
+        box-shadow: 0 4px 12px rgba(239,68,68,.4);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
 {% block sst_content %}
-<div class="container py-4">
-    <div class="card border-danger shadow-sm">
-        <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Confirmar Exclusão
-            </h5>
+<div class="cd-wrapper">
+    <div class="cd-card">
+        <div class="cd-card-header">
+            <span class="cd-card-header-icon">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </span>
+            <div>
+                <h5>Confirmar Exclusão</h5>
+                <small>Esta ação é irreversível</small>
+            </div>
         </div>
-        <div class="card-body">
 
+        <div class="cd-card-body">
             {% if has_entregas %}
-                <!-- ══════════ BLOQUEIO: tem entregas vinculadas ══════════ -->
-                <div class="alert alert-warning d-flex align-items-start">
-                    <i class="bi bi-shield-exclamation fs-3 me-3 text-warning"></i>
-                    <div>
-                        <h6 class="alert-heading mb-1">Exclusão bloqueada</h6>
-                        <p class="mb-0">
-                            Esta ficha possui <strong>{{ entregas_count }} entrega(s) de EPI</strong> vinculada(s).
-                            <br>
-                            Remova ou registre a devolução de todas as entregas antes de excluir a ficha.
-                        </p>
-                    </div>
+            <!-- ══════════ BLOQUEIO ══════════ -->
+            <div class="cd-blocked">
+                <span class="cd-blocked-icon">
+                    <i class="bi bi-shield-exclamation"></i>
+                </span>
+                <div>
+                    <h6>Exclusão bloqueada</h6>
+                    <p>
+                        Esta ficha possui <strong>{{ entregas_count }} entrega(s) de EPI</strong> vinculada(s).
+                        Remova ou registre a devolução de todas as entregas antes de excluir a ficha.
+                    </p>
                 </div>
-
-                <div class="text-end">
-                    <a href="{% url 'seguranca_trabalho:ficha_detail' object.pk %}" 
-                       class="btn btn-secondary">
-                        <i class="bi bi-arrow-left me-1"></i> Voltar para a Ficha
-                    </a>
-                </div>
-
+            </div>
             {% else %}
-                <!-- ══════════ PERMITIDO: sem dependências ══════════ -->
-                <p class="fs-5">
-                    Tem certeza que deseja excluir 
-                    <strong>"{{ object }}"</strong>?
-                </p>
-                <p class="text-muted">Esta ação não poderá ser desfeita.</p>
-
-                <div class="d-flex justify-content-end gap-2">
-                    <a href="{{ request.META.HTTP_REFERER|default:'/' }}" 
-                       class="btn btn-secondary">
-                        <i class="bi bi-x-lg me-1"></i> Cancelar
-                    </a>
-                    <form method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-1"></i> Sim, Excluir
-                        </button>
-                    </form>
-                </div>
+            <!-- ══════════ PERMITIDO ══════════ -->
+            <div class="cd-confirm-icon">
+                <i class="bi bi-trash3"></i>
+            </div>
+            <p class="cd-confirm-text">Tem certeza que deseja excluir?</p>
+            <div class="text-center">
+                <span class="cd-confirm-name">{{ object }}</span>
+            </div>
+            <p class="cd-confirm-warning">
+                <i class="bi bi-info-circle me-1"></i>
+                Esta ação não poderá ser desfeita.
+            </p>
             {% endif %}
+        </div>
 
+        <div class="cd-card-footer">
+            {% if has_entregas %}
+            <a href="{% url 'seguranca_trabalho:ficha_detail' object.pk %}" class="cd-btn-back">
+                <i class="bi bi-arrow-left"></i> Voltar para a Ficha
+            </a>
+            {% else %}
+            <a href="{{ request.META.HTTP_REFERER|default:'/' }}" class="cd-btn-back">
+                <i class="bi bi-x-lg"></i> Cancelar
+            </a>
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="cd-btn-delete">
+                    <i class="bi bi-trash3"></i> Sim, Excluir
+                </button>
+            </form>
+            {% endif %}
         </div>
     </div>
 </div>
 {% endblock sst_content %}
+
 

@@ -5,9 +5,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
-
+from datetime import date
 from tributacao.models import NCM, GrupoTributario
-
 from .models import (
     Parceiro, Material, Contrato, VerbaContrato,
     Pedido, ItemPedido, EstoqueConsumo,
@@ -399,33 +398,6 @@ class VerbaContratoForm(forms.ModelForm):
         }
 
 
-# ═══════════════════════════════════════════════════
-# PEDIDO
-# ═══════════════════════════════════════════════════
-class PedidoForm(forms.ModelForm):
-    class Meta:
-        model = Pedido
-        fields = ['contrato', 'observacao']
-        widgets = {
-            'contrato': forms.Select(attrs={'class': 'form-select'}),
-            'observacao': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-                'placeholder': 'Observações gerais do pedido...',
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        # Filtra contratos: ativo + da filial do usuário
-        qs = Contrato.objects.filter(ativo=True)
-        if self.user and not self.user.is_superuser:
-            filial_ativa = getattr(self.user, 'filial_ativa', None)
-            if filial_ativa:
-                qs = qs.filter(filial=filial_ativa)
-        self.fields['contrato'].queryset = qs
-
-
 class ItemPedidoForm(forms.ModelForm):
     class Meta:
         model = ItemPedido
@@ -504,3 +476,302 @@ class SaidaConsumoForm(forms.Form):
         label="Justificativa",
     )
 
+# ═══════════════════════════════════════════════════
+# PEDIDO — FORMS NOVOS/ATUALIZADOS
+# ═══════════════════════════════════════════════════
+
+from .models import (
+    AnexoPedido, HistoricoPedido,
+    SolicitacaoCompra, AnexoSolicitacao, HistoricoSolicitacao,
+    TipoObra, TipoNotaFiscal,
+)
+
+
+class PedidoForm(forms.ModelForm):
+    """Form atualizado com campos novos (tipo_obra, descrição, upload)."""
+
+    class Meta:
+        model = Pedido
+        fields = [
+            'contrato', 'tipo_obra', 'descricao_material',
+            'quantidade', 'unidade_medida', 'tipo_insumo',
+            'data_necessaria', 'observacao',
+        ]
+        widgets = {
+            'contrato': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_obra': forms.Select(attrs={'class': 'form-select'}),
+            'descricao_material': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 5,
+                'placeholder': (
+                    'Informe descrição DETALHADA: nome do material, '
+                    'marca/modelo preferencial, dimensões, cor, '
+                    'especificações técnicas, norma, etc.'
+                ),
+            }),
+            'quantidade': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.01',
+                'min': '0.01', 'placeholder': 'Ex: 10',
+            }),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_insumo': forms.Select(attrs={'class': 'form-select'}),
+            'data_necessaria': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'observacao': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Observações gerais do pedido (opcional)...',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        qs = Contrato.objects.filter(ativo=True)
+        if self.user and not self.user.is_superuser:
+            filial_ativa = getattr(self.user, 'filial_ativa', None)
+            if filial_ativa:
+                qs = qs.filter(filial=filial_ativa)
+        self.fields['contrato'].queryset = qs
+
+    def clean_descricao_material(self):
+        desc = self.cleaned_data.get('descricao_material', '').strip()
+        if desc and len(desc) < 20:
+            raise ValidationError(
+                "A descrição deve ter pelo menos 20 caracteres. "
+                "Seja detalhado para evitar retrabalho na cotação."
+            )
+        return desc
+
+    def clean_data_necessaria(self):
+        data = self.cleaned_data.get('data_necessaria')
+        if data and data < date.today():
+            raise ValidationError("A data necessária não pode ser no passado.")
+        return data
+
+
+class DevolverPedidoForm(forms.Form):
+    """Gerente devolve para revisão."""
+    motivo = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'Informe o que precisa ser corrigido...',
+        }),
+        label="Motivo da Devolução",
+    )
+
+
+class RevisaoPedidoForm(forms.ModelForm):
+    """Solicitante corrige o pedido devolvido."""
+
+    class Meta:
+        model = Pedido
+        fields = [
+            'descricao_material', 'quantidade', 'unidade_medida',
+            'tipo_insumo', 'data_necessaria', 'observacao',
+        ]
+        widgets = {
+            'descricao_material': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 5,
+            }),
+            'quantidade': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.01', 'min': '0.01',
+            }),
+            'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
+            'tipo_insumo': forms.Select(attrs={'class': 'form-select'}),
+            'data_necessaria': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'observacao': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+            }),
+        }
+
+
+class AnexoPedidoForm(forms.ModelForm):
+    """Upload de anexo no pedido."""
+
+    class Meta:
+        model = AnexoPedido
+        fields = ['arquivo', 'descricao']
+        widgets = {
+            'arquivo': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx',
+            }),
+            'descricao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Descrição do arquivo (opcional)',
+            }),
+        }
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo:
+            if arquivo.size > 10 * 1024 * 1024:
+                raise ValidationError("Arquivo muito grande. Máximo: 10MB.")
+            ext = arquivo.name.rsplit('.', 1)[-1].lower()
+            permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp',
+                          'doc', 'docx', 'xls', 'xlsx', 'bmp']
+            if ext not in permitidas:
+                raise ValidationError(f"Extensão .{ext} não permitida.")
+        return arquivo
+
+
+# ═══════════════════════════════════════════════════
+# SOLICITAÇÃO DE COMPRA — FORMS
+# ═══════════════════════════════════════════════════
+
+class CotacaoForm(forms.ModelForm):
+    """Comprador preenche dados da cotação."""
+
+    class Meta:
+        model = SolicitacaoCompra
+        fields = [
+            'data_cotacao', 'numero_cotacao',
+            'cnpj_compra', 'tipo_nota_fiscal',
+        ]
+        widgets = {
+            'data_cotacao': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'numero_cotacao': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': 'Nº da cotação no Sienge',
+            }),
+            'cnpj_compra': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': '00.000.000/0000-00',
+            }),
+            'tipo_nota_fiscal': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean(self):
+        cleaned = super().clean()
+        for campo in ['data_cotacao', 'numero_cotacao', 'cnpj_compra', 'tipo_nota_fiscal']:
+            if not cleaned.get(campo):
+                self.add_error(campo, 'Campo obrigatório para registrar a cotação.')
+        return cleaned
+
+
+class ValidarCotacaoForm(forms.Form):
+    """Gerente valida cotação."""
+    data_validacao = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Data da Validação",
+    )
+
+
+class CriarPedidoSiengeForm(forms.ModelForm):
+    """Comprador cria pedido no Sienge."""
+
+    class Meta:
+        model = SolicitacaoCompra
+        fields = [
+            'data_criacao_pedido', 'numero_pedido_sienge',
+            'fornecedor', 'valor_pedido',
+        ]
+        widgets = {
+            'data_criacao_pedido': forms.DateInput(attrs={
+                'class': 'form-control', 'type': 'date',
+            }),
+            'numero_pedido_sienge': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': 'Nº do pedido no Sienge',
+            }),
+            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'valor_pedido': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.01', 'min': '0',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['fornecedor'].queryset = Parceiro.objects.filter(
+            eh_fornecedor=True, ativo=True
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        for campo in ['data_criacao_pedido', 'numero_pedido_sienge', 'fornecedor', 'valor_pedido']:
+            if not cleaned.get(campo):
+                self.add_error(campo, 'Campo obrigatório.')
+        return cleaned
+
+
+class AprovarPedidoSiengeForm(forms.Form):
+    data_aprovacao_pedido = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Data da Aprovação do Pedido",
+    )
+
+
+class EnviarPedidoFornecedorForm(forms.Form):
+    data_envio = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Data de Envio ao Fornecedor",
+    )
+    data_prevista = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Data Prevista para Entrega",
+    )
+
+
+class RegistrarEntregaForm(forms.Form):
+    data_entrega = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        label="Data de Entrega Efetiva",
+    )
+
+
+class EncerrarSolicitacaoForm(forms.Form):
+    numero_nota_fiscal = forms.CharField(
+        max_length=50,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 'placeholder': 'Nº da Nota Fiscal',
+        }),
+        label="Nº da Nota Fiscal",
+    )
+
+
+class CancelarSolicitacaoForm(forms.Form):
+    motivo = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'Justifique o motivo do cancelamento...',
+        }),
+        label="Motivo do Cancelamento",
+    )
+
+
+class AnexoSolicitacaoForm(forms.ModelForm):
+    class Meta:
+        model = AnexoSolicitacao
+        fields = ['arquivo', 'descricao']
+        widgets = {
+            'arquivo': forms.ClearableFileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx',
+            }),
+            'descricao': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': 'Descrição (opcional)',
+            }),
+        }
+
+    def clean_arquivo(self):
+        arquivo = self.cleaned_data.get('arquivo')
+        if arquivo:
+            if arquivo.size > 10 * 1024 * 1024:
+                raise ValidationError("Máximo: 10MB.")
+            ext = arquivo.name.rsplit('.', 1)[-1].lower()
+            permitidas = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp',
+                          'doc', 'docx', 'xls', 'xlsx', 'bmp']
+            if ext not in permitidas:
+                raise ValidationError(f"Extensão .{ext} não permitida.")
+        return arquivo
+
+
+class ObservacaoSolicitacaoForm(forms.Form):
+    texto = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 'rows': 3,
+            'placeholder': 'Registre informações relevantes...',
+        }),
+        label="Observação",
+    )

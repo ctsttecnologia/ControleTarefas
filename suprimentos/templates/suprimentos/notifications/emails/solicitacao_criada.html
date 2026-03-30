@@ -1,0 +1,50 @@
+
+{% extends 'notifications/emails/base_email.html' %}
+
+{% block content %}
+<h2 style="color: #17a2b8;">🆕 Nova Solicitação de Compra</h2>
+
+<p>Olá {{ comprador.first_name|default:comprador.username }},</p>
+
+<p>Uma nova solicitação de compra foi gerada e precisa de <strong>cotação</strong>.</p>
+
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Nº Solicitação</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.numero }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Solicitante</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitante }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Contrato</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ contrato }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Material</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.descricao_material|truncatewords:30 }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Quantidade</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.quantidade }} {{ solicitacao.get_unidade_medida_display }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Data Necessária</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">
+            {% if solicitacao.data_necessaria %}{{ solicitacao.data_necessaria|date:"d/m/Y" }}{% else %}Não informada{% endif %}
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Tipo de Obra</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ solicitacao.get_tipo_obra_display }}</td>
+    </tr>
+</table>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ url }}" style="background: #17a2b8; color: #fff; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+        🔍 Fazer Cotação
+    </a>
+</div>
+{% endblock %}
+

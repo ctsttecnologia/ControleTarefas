@@ -20,34 +20,72 @@
         </button>
         <div class="collapse navbar-collapse" id="navSuprimentos">
             <ul class="navbar-nav me-auto">
+
+                {# Dashboard #}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'suprimentos:dashboard' %}">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-semibold{% endif %}"
+                       href="{% url 'suprimentos:dashboard' %}">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard
                     </a>
                 </li>
+
+                {# Pedidos #}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'suprimentos:pedido_lista' %}">
+                    <a class="nav-link position-relative {% if 'pedido' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                       href="{% url 'suprimentos:pedido_lista' %}">
                         <i class="bi bi-cart me-1"></i> Pedidos
+                        {% if count_pedidos_pendentes %}
+                        <span class="badge rounded-pill bg-warning text-dark ms-1"
+                              title="{{ count_pedidos_pendentes }} pedido{{ count_pedidos_pendentes|pluralize }} aguardando aprovação">
+                            {{ count_pedidos_pendentes }}
+                        </span>
+                        {% endif %}
                     </a>
                 </li>
+
+                {# ── NOVO: Solicitações de Compra ── #}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'suprimentos:contrato_lista' %}">
+                    <a class="nav-link position-relative {% if 'solicitacao' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                       href="{% url 'suprimentos:solicitacao_lista' %}">
+                        <i class="bi bi-bag-check me-1"></i> Solicitações
+                        {% if count_sol_pendentes %}
+                        <span class="badge rounded-pill bg-info ms-1"
+                              title="{{ count_sol_pendentes }} solicitaç{{ count_sol_pendentes|pluralize:"ão,ões" }} em andamento">
+                            {{ count_sol_pendentes }}
+                        </span>
+                        {% endif %}
+                    </a>
+                </li>
+
+                {# Contratos #}
+                <li class="nav-item">
+                    <a class="nav-link {% if 'contrato' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                       href="{% url 'suprimentos:contrato_lista' %}">
                         <i class="bi bi-file-earmark-text me-1"></i> Contratos
                     </a>
                 </li>
+
+                {# Materiais #}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'suprimentos:material_lista' %}">
+                    <a class="nav-link {% if 'material' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                       href="{% url 'suprimentos:material_lista' %}">
                         <i class="bi bi-box-seam me-1"></i> Materiais
                     </a>
                 </li>
+
+                {# Parceiros #}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'suprimentos:parceiro_list' %}">
+                    <a class="nav-link {% if 'parceiro' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                       href="{% url 'suprimentos:parceiro_list' %}">
                         <i class="bi bi-people me-1"></i> Parceiros
                     </a>
                 </li>
+
+                {# Relatórios (dropdown) #}
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle fw-semibold" href="#"
-                       data-bs-toggle="dropdown" style="color: #0dcaf0;">
+                    <a class="nav-link dropdown-toggle fw-semibold
+                       {% if 'relatorio' in request.resolver_match.url_name or request.resolver_match.app_name == 'tributacao' %}active{% endif %}"
+                       href="#" data-bs-toggle="dropdown" style="color: #0dcaf0;">
                         <i class="bi bi-bar-chart-line me-1"></i> Relatórios
                     </a>
                     <ul class="dropdown-menu shadow">
@@ -67,15 +105,18 @@
                                 <i class="bi bi-file-earmark-pdf me-2 text-danger"></i> Exportar PDF
                             </a>
                         </li>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item {% if request.resolver_match.app_name == 'tributacao' %}active{% endif %}"
-                                href="{% url 'tributacao:dashboard' %}">
-                                <i class="bi bi-calculator me-1"></i> Tributação
+                               href="{% url 'tributacao:dashboard' %}">
+                                <i class="bi bi-calculator me-2 text-primary"></i> Tributação
                             </a>
                         </li>
                     </ul>
                 </li>
             </ul>
+
+            {# Botão Novo Pedido #}
             <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success btn-sm">
                 <i class="bi bi-cart-plus me-1"></i> Novo Pedido
             </a>
@@ -86,5 +127,6 @@
 {% block suprimentos_content %}{% endblock %}
 
 {% endblock content %}
+
 
 

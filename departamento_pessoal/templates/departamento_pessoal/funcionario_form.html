@@ -14,16 +14,18 @@
         </h1>
         <p>{% if object %}Atualize os dados do colaborador{% else %}Preencha os dados do novo colaborador{% endif %}</p>
     </div>
-    <div class="d-flex gap-2 mt-3 mt-md-0">
-        <a href="{% if object %}{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}{% else %}{% url 'departamento_pessoal:lista_funcionarios' %}{% endif %}" 
-           class="btn btn-header">
-            <i class="bi bi-arrow-left me-1"></i> Voltar
-        </a>
-    </div>
-    <div class="d-flex gap-2 mt-3 mt-md-0">
-        <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" class="btn btn-header">
-            <i class="bi bi-arrow-left me-1"></i> Importação em Massa
-        </a>
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <a href="{% if object %}{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}{% else %}{% url 'departamento_pessoal:lista_funcionarios' %}{% endif %}" 
+            class="btn btn-header">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+        <div class="d-flex gap-2 mt-3 mt-md-0">
+            <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" class="btn btn-header">
+                <i class="bi bi-plus me-1"></i> Importação em Massa
+            </a>
+        </div>
     </div>
 </div>
 
