@@ -91,14 +91,13 @@
         padding-bottom: 0.75rem;
         gap: 1rem;
         scrollbar-width: thin;
-        justify-content: center;  /* ← centraliza as colunas */
-        flex-wrap: wrap;           /* ← quebra linha em telas menores */
     }
 
     /* ═══ COLUNAS ═══ */
     .kanban-column {
-        flex: 0 0 290px;
-        min-width: 290px;
+        flex: 1 1 0;
+        min-width: 240px;
+        max-width: 100%;
         background: var(--bs-body-bg, #fff);
         border-radius: 0.75rem;
         border-top: 4px solid;
@@ -106,17 +105,82 @@
         display: flex;
         flex-direction: column;
     }
-    .kanban-column[data-status="Pendente"]       { border-top-color: #f6c23e; }
-    .kanban-column[data-status="Em Andamento"]   { border-top-color: #36b9cc; }
-    .kanban-column[data-status="Concluído"]      { border-top-color: #1cc88a; }
-    .kanban-column[data-status="Cancelado"]      { border-top-color: #858796; }
 
-    .kanban-column-header {
-        padding: 0.875rem 1rem;
-        border-bottom: 1px solid var(--bs-border-color, #e9ecef);
+    /* ═══ RESPONSIVIDADE KANBAN ═══ */
+
+    /* Desktop grande (≥1400px) — 4 colunas lado a lado */
+    @media (min-width: 1400px) {
+        .kanban-board {
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+        .kanban-column {
+            flex: 1 1 0;
+            min-width: 280px;
+            max-width: 340px;
+        }
     }
-    .kanban-column-header .fw-bold { font-size: 0.9rem; }
-    .kanban-column-header .badge { min-width: 28px; font-size: 0.78rem; }
+
+    /* Desktop médio (1200px–1399px) — 4 colunas mais compactas */
+    @media (min-width: 1200px) and (max-width: 1399.98px) {
+        .kanban-board {
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+        .kanban-column {
+            flex: 1 1 0;
+            min-width: 220px;
+            max-width: 300px;
+        }
+    }
+
+    /* Tablet / laptop pequeno (992px–1199px) — 2x2 grid */
+    @media (min-width: 992px) and (max-width: 1199.98px) {
+        .kanban-board {
+            flex-wrap: wrap;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+        .kanban-column {
+            flex: 1 1 calc(50% - 0.5rem);
+            min-width: calc(50% - 0.5rem);
+            max-width: calc(50% - 0.5rem);
+        }
+    }
+
+    /* Tablet retrato (768px–991px) — 2x2 grid menor */
+    @media (min-width: 768px) and (max-width: 991.98px) {
+        .kanban-board {
+            flex-wrap: wrap;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+        .kanban-column {
+            flex: 1 1 calc(50% - 0.5rem);
+            min-width: calc(50% - 0.5rem);
+            max-width: calc(50% - 0.5rem);
+        }
+    }
+
+    /* Mobile (< 768px) — empilhado, 1 coluna por linha */
+    @media (max-width: 767.98px) {
+        .kanban-board-container {
+            padding: 0.75rem;
+        }
+        .kanban-board {
+            flex-direction: column;
+            overflow-x: hidden;
+            gap: 0.75rem;
+        }
+        .kanban-column {
+            flex: 1 1 100%;
+            min-width: 100%;
+            max-width: 100%;
+        }
+        .kanban-cards {
+            min-height: 80px;
+        }
+    }
 
     /* ═══ DROP ZONE ═══ */
     .kanban-cards {

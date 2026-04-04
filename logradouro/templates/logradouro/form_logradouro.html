@@ -1,55 +1,68 @@
 {# templates/logradouro/form_logradouro.html #}
-{% extends 'base.html' %}
+{% extends 'logradouro/base_logradouro.html' %}
 {% load i18n %}
 {% load widget_tweaks %}
 
-{% block title %}
+{% block logradouro_title %}
     {% if form.instance.pk %}{% trans "Editar Endereço" %}{% else %}{% trans "Novo Endereço" %}{% endif %}
-{% endblock %}
+{% endblock logradouro_title %}
 
-{% block content %}
-<div class="container-fluid py-4">
+{% block logradouro_content %}
 
-    <!-- Header -->
-    <div class="card bg-primary text-white shadow-sm mb-4">
-        <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="mb-1">
-                        {% if form.instance.pk %}
-                        <i class="bi bi-pencil-square me-2"></i>{% trans "Editar Endereço" %}
-                        {% else %}
-                        <i class="bi bi-plus-circle me-2"></i>{% trans "Novo Endereço" %}
-                        {% endif %}
-                    </h4>
-                    <small class="opacity-75">{% trans "Preencha os dados do endereço" %}</small>
-                </div>
-                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> {% trans "Voltar" %}
+    <!-- Breadcrumb -->
+    <nav class="log-breadcrumb" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'logradouro:listar_logradouros' %}">
+                    <i class="bi bi-geo-alt-fill me-1"></i>{% trans "Logradouros" %}
                 </a>
+            </li>
+            <li class="breadcrumb-item active">
+                {% if form.instance.pk %}{% trans "Editar" %}{% else %}{% trans "Novo" %}{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Hero -->
+    <div class="log-hero">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1>
+                    {% if form.instance.pk %}
+                        <i class="bi bi-pencil-square me-2"></i>{% trans "Editar Endereço" %}
+                    {% else %}
+                        <i class="bi bi-plus-circle me-2"></i>{% trans "Novo Endereço" %}
+                    {% endif %}
+                </h1>
+                <p>{% trans "Preencha os dados do endereço abaixo" %}</p>
             </div>
+            <a href="{% url 'logradouro:listar_logradouros' %}" class="btn-hero">
+                <i class="bi bi-arrow-left me-1"></i> {% trans "Voltar" %}
+            </a>
         </div>
     </div>
 
+    <!-- Formulário -->
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0">
-                        <i class="bi bi-geo-alt text-primary me-2"></i>{% trans "Dados do Endereço" %}
-                    </h6>
+            <div class="log-card">
+                <div class="log-card-header">
+                    <h5>
+                        <i class="bi bi-geo-alt me-2" style="color: var(--log-primary);"></i>{% trans "Dados do Endereço" %}
+                    </h5>
                 </div>
-                <div class="card-body p-4">
-                    <form method="post" novalidate>
+                <div class="log-card-body">
+                    <form method="post" novalidate class="log-form">
                         {% csrf_token %}
-                        
+
                         {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
+                        <div class="log-alert log-alert-danger mb-4" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             {{ form.non_field_errors }}
                         </div>
                         {% endif %}
 
-                        <!-- Filial -->
+                        <!-- ═══ Filial ═══ -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <label for="{{ form.filial.id_for_label }}" class="form-label fw-semibold">
@@ -57,26 +70,31 @@
                                 </label>
                                 {% render_field form.filial class="form-select" %}
                                 {% for error in form.filial.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- CEP + Busca Automática + Tipo de Logradouro -->
+                        <hr class="log-divider">
+
+                        <!-- ═══ CEP + Tipo de Logradouro ═══ -->
+                        <div class="log-section-title">
+                            <i class="bi bi-search me-1"></i>{% trans "Localização" %}
+                        </div>
                         <div class="row mb-4">
                             <div class="col-md-4">
                                 <label for="id_cep" class="form-label fw-semibold">
                                     {% trans "CEP" %} <span class="text-danger">*</span>
                                 </label>
                                 <div class="input-group">
-                                    {% render_field form.cep class="form-control" placeholder="00000000" %}
-                                    <span class="input-group-text" id="cep-status">
+                                    {% render_field form.cep class="form-control" placeholder="00000-000" maxlength="9" %}
+                                    <span class="input-group-text" id="cep-status" style="min-width: 42px; justify-content: center;">
                                         <i class="bi bi-search"></i>
                                     </span>
                                 </div>
                                 <div class="form-text">{% trans "Digite o CEP para busca automática" %}</div>
                                 {% for error in form.cep.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="col-md-4">
@@ -85,12 +103,12 @@
                                 </label>
                                 {% render_field form.tipo_logradouro class="form-select" %}
                                 {% for error in form.tipo_logradouro.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Endereço + Número -->
+                        <!-- ═══ Endereço + Número ═══ -->
                         <div class="row mb-4">
                             <div class="col-md-8">
                                 <label for="id_endereco" class="form-label fw-semibold">
@@ -98,7 +116,7 @@
                                 </label>
                                 {% render_field form.endereco class="form-control" %}
                                 {% for error in form.endereco.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="col-md-4">
@@ -107,12 +125,12 @@
                                 </label>
                                 {% render_field form.numero class="form-control" %}
                                 {% for error in form.numero.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Complemento + Bairro -->
+                        <!-- ═══ Complemento + Bairro ═══ -->
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <label for="id_complemento" class="form-label fw-semibold">
@@ -120,7 +138,7 @@
                                 </label>
                                 {% render_field form.complemento class="form-control" placeholder="Apto, Sala, Bloco..." %}
                                 {% for error in form.complemento.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="col-md-6">
@@ -129,12 +147,17 @@
                                 </label>
                                 {% render_field form.bairro class="form-control" %}
                                 {% for error in form.bairro.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Cidade + Estado + País -->
+                        <hr class="log-divider">
+
+                        <!-- ═══ Cidade + Estado + País ═══ -->
+                        <div class="log-section-title">
+                            <i class="bi bi-globe-americas me-1"></i>{% trans "Localidade" %}
+                        </div>
                         <div class="row mb-4">
                             <div class="col-md-5">
                                 <label for="id_cidade" class="form-label fw-semibold">
@@ -142,7 +165,7 @@
                                 </label>
                                 {% render_field form.cidade class="form-control" %}
                                 {% for error in form.cidade.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="col-md-3">
@@ -151,7 +174,7 @@
                                 </label>
                                 {% render_field form.estado class="form-select" %}
                                 {% for error in form.estado.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="col-md-4">
@@ -160,12 +183,12 @@
                                 </label>
                                 {% render_field form.pais class="form-control" %}
                                 {% for error in form.pais.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Ponto de Referência -->
+                        <!-- ═══ Ponto de Referência ═══ -->
                         <div class="row mb-4">
                             <div class="col-12">
                                 <label for="id_ponto_referencia" class="form-label fw-semibold">
@@ -173,12 +196,18 @@
                                 </label>
                                 {% render_field form.ponto_referencia class="form-control" placeholder="Próximo a..." %}
                                 {% for error in form.ponto_referencia.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Coordenadas (Opcional) -->
+                        <hr class="log-divider">
+
+                        <!-- ═══ Coordenadas ═══ -->
+                        <div class="log-section-title">
+                            <i class="bi bi-pin-map me-1"></i>{% trans "Coordenadas" %}
+                            <span class="text-lowercase fw-normal">({% trans "opcional" %})</span>
+                        </div>
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <label for="id_latitude" class="form-label fw-semibold">
@@ -186,7 +215,7 @@
                                 </label>
                                 {% render_field form.latitude class="form-control" placeholder="-23.550520" %}
                                 {% for error in form.latitude.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                             <div class="col-md-6">
@@ -195,23 +224,29 @@
                                 </label>
                                 {% render_field form.longitude class="form-control" placeholder="-46.633309" %}
                                 {% for error in form.longitude.errors %}
-                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        <!-- Botões -->
-                        <div class="border-top pt-4 mt-4 d-flex justify-content-between flex-wrap gap-2">
-                            <a href="{% url 'logradouro:upload_logradouros' %}" class="btn btn-outline-info">
+                        <!-- ═══ Botões ═══ -->
+                        <div class="border-top pt-4 mt-2 d-flex justify-content-between flex-wrap gap-2">
+                            <a href="{% url 'logradouro:upload_logradouros' %}" class="btn btn-outline-info" style="border-radius: var(--log-radius-sm);">
                                 <i class="bi bi-upload me-1"></i> {% trans "Importar Planilha" %}
                             </a>
                             <div class="d-flex gap-2">
-                                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn btn-outline-secondary" style="border-radius: var(--log-radius-sm);">
                                     <i class="bi bi-x-lg me-1"></i> {% trans "Cancelar" %}
                                 </a>
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="bi bi-check-lg me-1"></i> {% trans "Salvar" %}
+                                {% if perms.logradouro.add_logradouro or user.is_superuser %}
+                                <button type="submit" class="btn btn-primary px-4" style="border-radius: var(--log-radius-sm);">
+                                    {% if form.instance.pk %}
+                                        <i class="bi bi-check-lg me-1"></i> {% trans "Salvar Alterações" %}
+                                    {% else %}
+                                        <i class="bi bi-plus-lg me-1"></i> {% trans "Cadastrar" %}
+                                    {% endif %}
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
                     </form>
@@ -220,54 +255,85 @@
         </div>
     </div>
 
-</div>
-{% endblock %}
+{% endblock logradouro_content %}
 
-{% block extra_js %}
+{% block logradouro_extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const cepInput = document.getElementById('id_cep');
-    const enderecoInput = document.getElementById('id_endereco');
-    const bairroInput = document.getElementById('id_bairro');
-    const cidadeInput = document.getElementById('id_cidade');
-    const estadoSelect = document.getElementById('id_estado');
-    const cepStatus = document.getElementById('cep-status');
+    const cepInput    = document.getElementById('id_cep');
+    const enderecoInp = document.getElementById('id_endereco');
+    const bairroInp   = document.getElementById('id_bairro');
+    const cidadeInp   = document.getElementById('id_cidade');
+    const estadoSel   = document.getElementById('id_estado');
+    const cepStatus   = document.getElementById('cep-status');
 
-    if (cepInput) {
-        cepInput.addEventListener('blur', function () {
-            let cep = this.value.replace(/\D/g, '');
+    if (!cepInput) return;
 
-            if (cep.length === 8) {
-                // Feedback visual
-                cepStatus.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-                
-                const url = `{% url 'logradouro:consulta_cep' %}?cep=${cep}`;
+    // ═══ Máscara de CEP: 00000-000 ═══
+    cepInput.addEventListener('input', function () {
+        let v = this.value.replace(/\D/g, '').substring(0, 8);
+        if (v.length > 5) {
+            v = v.substring(0, 5) + '-' + v.substring(5);
+        }
+        this.value = v;
+    });
 
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.erro) {
-                            cepStatus.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
-                            alert(data.erro);
-                            enderecoInput.value = '';
-                            bairroInput.value = '';
-                            cidadeInput.value = '';
-                            estadoSelect.value = '';
-                        } else {
-                            cepStatus.innerHTML = '<i class="bi bi-check-circle text-success"></i>';
-                            enderecoInput.value = data.endereco;
-                            bairroInput.value = data.bairro;
-                            cidadeInput.value = data.cidade;
-                            estadoSelect.value = data.estado;
-                        }
-                    })
-                    .catch(error => {
-                        cepStatus.innerHTML = '<i class="bi bi-exclamation-circle text-warning"></i>';
-                        console.error('Falha ao buscar CEP:', error);
-                    });
-            }
-        });
-    }
+    // ═══ Busca automática via API ═══
+    cepInput.addEventListener('blur', function () {
+        const cep = this.value.replace(/\D/g, '');
+
+        if (cep.length !== 8) return;
+
+        // Loading
+        cepStatus.innerHTML = '<span class="spinner-border spinner-border-sm text-primary"></span>';
+        cepInput.classList.remove('is-invalid', 'is-valid');
+
+        const url = `{% url 'logradouro:consulta_cep' %}?cep=${cep}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error('Erro na requisição');
+                return response.json();
+            })
+            .then(data => {
+                if (data.erro) {
+                    cepStatus.innerHTML = '<i class="bi bi-x-circle text-danger"></i>';
+                    cepInput.classList.add('is-invalid');
+
+                    // Limpar campos
+                    if (enderecoInp) enderecoInp.value = '';
+                    if (bairroInp)   bairroInp.value = '';
+                    if (cidadeInp)   cidadeInp.value = '';
+                    if (estadoSel)   estadoSel.value = '';
+                } else {
+                    cepStatus.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+                    cepInput.classList.add('is-valid');
+
+                    // Preencher campos
+                    if (enderecoInp) enderecoInp.value = data.endereco || '';
+                    if (bairroInp)   bairroInp.value   = data.bairro   || '';
+                    if (cidadeInp)   cidadeInp.value   = data.cidade   || '';
+                    if (estadoSel)   estadoSel.value   = data.estado   || '';
+
+                    // Focar no campo número após preencher
+                    const numInp = document.getElementById('id_numero');
+                    if (numInp) numInp.focus();
+                }
+            })
+            .catch(error => {
+                cepStatus.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i>';
+                console.error('Falha ao buscar CEP:', error);
+            });
+    });
+
+    // ═══ Buscar ao pressionar Enter no CEP ═══
+    cepInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this.blur(); // Dispara o blur que faz a busca
+        }
+    });
 });
 </script>
-{% endblock %}
+{% endblock logradouro_extra_js %}
+

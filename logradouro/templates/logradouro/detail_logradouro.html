@@ -1,0 +1,318 @@
+
+{# templates/logradouro/detail_logradouro.html #}
+{% extends 'logradouro/base_logradouro.html' %}
+{% load i18n %}
+
+{% block logradouro_title %}{% trans "Detalhes do Endereço" %}{% endblock logradouro_title %}
+
+{% block logradouro_content %}
+
+    {# ═══════════════════════════ BREADCRUMB ═══════════════════════════ #}
+    <nav class="log-breadcrumb" aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{% url 'logradouro:listar_logradouros' %}">
+                    <i class="bi bi-geo-alt-fill me-1"></i>{% trans "Logradouros" %}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">{% trans "Detalhes" %}</li>
+        </ol>
+    </nav>
+
+    {# ═══════════════════════════ HERO HEADER ═══════════════════════════ #}
+    <div class="log-hero">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1>
+                    <i class="bi bi-geo-alt me-2"></i>{{ logradouro.tipo_logradouro_display }} {{ logradouro.endereco }}, {{ logradouro.numero }}
+                </h1>
+                <p>
+                    {{ logradouro.bairro }} — {{ logradouro.cidade }}/{{ logradouro.estado }}
+                </p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'logradouro:listar_logradouros' %}" class="btn-hero">
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Voltar" %}
+                </a>
+                {% if perms.logradouro.change_logradouro or user.is_superuser %}
+                    <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}" class="btn-hero">
+                        <i class="bi bi-pencil me-1"></i> {% trans "Editar" %}
+                    </a>
+                {% endif %}
+                {% if perms.logradouro.delete_logradouro or user.is_superuser %}
+                    <a href="{% url 'logradouro:confirmar_exclusao' logradouro.pk %}" class="btn-hero" style="border-color: rgba(231,74,59,0.5);">
+                        <i class="bi bi-trash3 me-1"></i> {% trans "Excluir" %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        {# ═══════════════════════════ ENDEREÇO ═══════════════════════════ #}
+        <div class="col-lg-8">
+            <div class="log-card">
+                <div class="log-card-header">
+                    <h5>
+                        <i class="bi bi-house-door me-2" style="color: var(--log-primary);"></i>{% trans "Dados do Endereço" %}
+                    </h5>
+                    <span class="log-badge log-badge-primary">
+                        {{ logradouro.tipo_logradouro_display }}
+                    </span>
+                </div>
+                <div class="log-card-body">
+
+                    {# Endereço Completo #}
+                    <div class="mb-4 p-3 rounded-3" style="background: var(--bs-tertiary-bg, #f8f9fc);">
+                        <div class="log-section-title mb-2">
+                            <i class="bi bi-signpost-2 me-1"></i>{% trans "Endereço Completo" %}
+                        </div>
+                        <p class="mb-0 fs-6 fw-semibold" style="color: var(--bs-body-color);">
+                            {{ logradouro.get_endereco_completo }}
+                        </p>
+                    </div>
+
+                    {# Grid de detalhes #}
+                    <div class="row g-4">
+                        {# Tipo de Logradouro #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Tipo" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                {{ logradouro.tipo_logradouro_display }}
+                            </p>
+                        </div>
+
+                        {# Logradouro #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Logradouro" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                {{ logradouro.endereco }}
+                            </p>
+                        </div>
+
+                        {# Número #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Número" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                {{ logradouro.numero }}
+                            </p>
+                        </div>
+
+                        {# Complemento #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Complemento" %}</div>
+                            <p class="mb-0" style="color: var(--bs-body-color);">
+                                {% if logradouro.complemento %}
+                                    {{ logradouro.complemento }}
+                                {% else %}
+                                    <span class="text-muted fst-italic">{% trans "Não informado" %}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        {# CEP #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "CEP" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                <code class="fs-6">{{ logradouro.cep_formatado }}</code>
+                            </p>
+                        </div>
+
+                        {# Bairro #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Bairro" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                {{ logradouro.bairro }}
+                            </p>
+                        </div>
+
+                        <div class="col-12"><hr class="log-divider my-0"></div>
+
+                        {# Cidade #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Cidade" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                {{ logradouro.cidade }}
+                            </p>
+                        </div>
+
+                        {# Estado #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "Estado" %}</div>
+                            <p class="mb-0">
+                                <span class="log-badge log-badge-secondary">
+                                    {{ logradouro.get_estado_display }}
+                                </span>
+                            </p>
+                        </div>
+
+                        {# País #}
+                        <div class="col-sm-6 col-md-4">
+                            <div class="log-section-title">{% trans "País" %}</div>
+                            <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                {{ logradouro.pais|default:"Brasil" }}
+                            </p>
+                        </div>
+
+                        {# Ponto de Referência #}
+                        <div class="col-12">
+                            <div class="log-section-title">{% trans "Ponto de Referência" %}</div>
+                            <p class="mb-0" style="color: var(--bs-body-color);">
+                                {% if logradouro.ponto_referencia %}
+                                    <i class="bi bi-pin-map me-1" style="color: var(--log-info);"></i>
+                                    {{ logradouro.ponto_referencia }}
+                                {% else %}
+                                    <span class="text-muted fst-italic">{% trans "Não informado" %}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# ═══════════════════════════ SIDEBAR ═══════════════════════════ #}
+        <div class="col-lg-4">
+
+            {# Card — Filial #}
+            <div class="log-card mb-4">
+                <div class="log-card-header">
+                    <h5>
+                        <i class="bi bi-building me-2" style="color: var(--log-info);"></i>{% trans "Filial" %}
+                    </h5>
+                </div>
+                <div class="log-card-body">
+                    {% if logradouro.filial %}
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="log-stat-icon icon-info">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-semibold" style="color: var(--bs-body-color);">
+                                    {{ logradouro.filial }}
+                                </p>
+                                <small class="text-muted">ID: {{ logradouro.filial.pk }}</small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <span class="text-muted fst-italic">{% trans "Sem filial vinculada" %}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Card — Coordenadas #}
+            <div class="log-card mb-4">
+                <div class="log-card-header">
+                    <h5>
+                        <i class="bi bi-pin-map-fill me-2" style="color: var(--log-success);"></i>{% trans "Coordenadas" %}
+                    </h5>
+                </div>
+                <div class="log-card-body">
+                    {% if logradouro.latitude and logradouro.longitude %}
+                        <div class="row g-3 mb-3">
+                            <div class="col-6">
+                                <div class="log-section-title">{% trans "Latitude" %}</div>
+                                <code class="fs-6">{{ logradouro.latitude }}</code>
+                            </div>
+                            <div class="col-6">
+                                <div class="log-section-title">{% trans "Longitude" %}</div>
+                                <code class="fs-6">{{ logradouro.longitude }}</code>
+                            </div>
+                        </div>
+                        <a href="https://www.google.com/maps?q={{ logradouro.latitude }},{{ logradouro.longitude }}"
+                           target="_blank" rel="noopener noreferrer"
+                           class="btn btn-outline-success btn-sm w-100"
+                           style="border-radius: var(--log-radius-sm);">
+                            <i class="bi bi-map me-1"></i> {% trans "Abrir no Google Maps" %}
+                        </a>
+                    {% else %}
+                        <div class="text-center py-2">
+                            <i class="bi bi-pin-map text-muted fs-3 d-block mb-2"></i>
+                            <span class="text-muted fst-italic small">{% trans "Coordenadas não informadas" %}</span>
+                        </div>
+                        {% if perms.logradouro.change_logradouro or user.is_superuser %}
+                            <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}"
+                               class="btn btn-outline-primary btn-sm w-100 mt-2"
+                               style="border-radius: var(--log-radius-sm);">
+                                <i class="bi bi-plus-lg me-1"></i> {% trans "Adicionar Coordenadas" %}
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Card — Registro #}
+            <div class="log-card mb-4">
+                <div class="log-card-header">
+                    <h5>
+                        <i class="bi bi-clock-history me-2" style="color: var(--log-warning);"></i>{% trans "Registro" %}
+                    </h5>
+                </div>
+                <div class="log-card-body">
+                    <div class="mb-3">
+                        <div class="log-section-title">{% trans "Cadastrado em" %}</div>
+                        <p class="mb-0" style="color: var(--bs-body-color);">
+                            <i class="bi bi-calendar-plus me-1 text-muted"></i>
+                            {{ logradouro.data_cadastro|date:"d/m/Y" }}
+                            <small class="text-muted ms-1">{{ logradouro.data_cadastro|time:"H:i" }}</small>
+                        </p>
+                    </div>
+                    <div>
+                        <div class="log-section-title">{% trans "Última Atualização" %}</div>
+                        <p class="mb-0" style="color: var(--bs-body-color);">
+                            <i class="bi bi-calendar-check me-1 text-muted"></i>
+                            {{ logradouro.data_atualizacao|date:"d/m/Y" }}
+                            <small class="text-muted ms-1">{{ logradouro.data_atualizacao|time:"H:i" }}</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {# Card — Ações Rápidas #}
+            <div class="log-card">
+                <div class="log-card-header">
+                    <h5>
+                        <i class="bi bi-lightning me-2" style="color: var(--log-primary);"></i>{% trans "Ações" %}
+                    </h5>
+                </div>
+                <div class="log-card-body d-grid gap-2">
+                    {% if perms.logradouro.change_logradouro or user.is_superuser %}
+                        <a href="{% url 'logradouro:editar_logradouro' logradouro.pk %}"
+                           class="btn btn-outline-primary"
+                           style="border-radius: var(--log-radius-sm);">
+                            <i class="bi bi-pencil me-1"></i> {% trans "Editar Endereço" %}
+                        </a>
+                    {% endif %}
+
+                    {% if perms.logradouro.add_logradouro or user.is_superuser %}
+                        <a href="{% url 'logradouro:cadastrar_logradouro' %}"
+                           class="btn btn-outline-success"
+                           style="border-radius: var(--log-radius-sm);">
+                            <i class="bi bi-plus-circle me-1"></i> {% trans "Novo Endereço" %}
+                        </a>
+                    {% endif %}
+
+                    {% if perms.logradouro.delete_logradouro or user.is_superuser %}
+                        <a href="{% url 'logradouro:confirmar_exclusao' logradouro.pk %}"
+                           class="btn btn-outline-danger"
+                           style="border-radius: var(--log-radius-sm);">
+                            <i class="bi bi-trash3 me-1"></i> {% trans "Excluir Endereço" %}
+                        </a>
+                    {% endif %}
+
+                    <hr class="log-divider my-1">
+
+                    <a href="{% url 'logradouro:listar_logradouros' %}"
+                       class="btn btn-outline-secondary"
+                       style="border-radius: var(--log-radius-sm);">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Voltar à Lista" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+{% endblock logradouro_content %}
+

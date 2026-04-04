@@ -8,9 +8,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-upc-scan"></i> NCMs</h3>
+        {% if perms.trubacao.add_ncm or user.is.superuser %}
         <a href="{% url 'tributacao:ncm_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Novo NCM
         </a>
+        {% endif %}
     </div>
 
     <!-- Busca -->
@@ -54,14 +56,18 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
+                        {% if perms.trubacao.change_ncm or user.is.superuser %}
                         <a href="{% url 'tributacao:ncm_update' ncm.pk %}" 
                            class="btn btn-sm btn-outline-primary" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
+                        {% endif %}
+                        {% if perms.trubacao.delete_ncm or user.is.superuser %}
                         <a href="{% url 'tributacao:ncm_delete' ncm.pk %}" 
                            class="btn btn-sm btn-outline-danger" title="Excluir">
                             <i class="bi bi-trash"></i>
                         </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

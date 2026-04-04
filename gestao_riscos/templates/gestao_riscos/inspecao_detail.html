@@ -148,6 +148,7 @@
                     </a>
 
                     <!-- Confirmar (se Pendente de Aprovação) -->
+                    
                     {% if inspecao.status == 'PENDENTE_APROVACAO' and perms.gestao_riscos.change_inspecao %}
                     <form action="{% url 'gestao_riscos:inspecao_confirmar' inspecao.pk %}" method="POST">
                         {% csrf_token %}

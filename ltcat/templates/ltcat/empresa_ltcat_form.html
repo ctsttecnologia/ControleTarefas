@@ -163,9 +163,11 @@
                         <a href="{% url 'ltcat:empresa_ltcat_list' %}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-1"></i> Cancelar
                         </a>
+                        {% if perms.ltcat.add_empresa_ltcat or user.is_superuser %}
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-check me-1"></i> Salvar
                         </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

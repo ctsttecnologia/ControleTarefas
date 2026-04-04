@@ -44,24 +44,32 @@
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
             {% if recarga.status == 'pendente' %}
+            {% if perms.controle_de_telefone.change_recarga or user.is_superuser %}
             <a href="{% url 'controle_de_telefone:recarga_update' recarga.pk %}" class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-pencil me-1"></i>Editar
             </a>
+            {% endif %}
+            
             {% if perms.controle_de_telefone.aprovar_recarga %}
-            <a href="{% url 'controle_de_telefone:recarga_aprovar' recarga.pk %}" class="btn btn-info btn-sm">
-                <i class="bi bi-check-lg me-1"></i>Aprovar
-            </a>
+                {% if perms.controle_de_telefone.add_aprovar_recarga or user.is_superuser %}
+                <a href="{% url 'controle_de_telefone:recarga_aprovar' recarga.pk %}" class="btn btn-info btn-sm">
+                    <i class="bi bi-check-lg me-1"></i>Aprovar
+                </a>
+                {% endif %}
             {% endif %}
+            {% if recarga.status in 'pendente, aprovada' %}
+                {% if perms.controle_de_telefone.realizar_recarga %}
+                <a href="{% url 'controle_de_telefone:recarga_realizar' recarga.pk %}" class="btn btn-success btn-sm">
+                    <i class="bi bi-check-circle me-1"></i>Marcar Realizada
+                </a>
+                {% endif %}
             {% endif %}
-            {% if recarga.status in 'pendente,aprovada' %}
-            <a href="{% url 'controle_de_telefone:recarga_realizar' recarga.pk %}" class="btn btn-success btn-sm">
-                <i class="bi bi-check-circle me-1"></i>Marcar Realizada
-            </a>
-            {% if perms.controle_de_telefone.cancelar_recarga %}
-            <a href="{% url 'controle_de_telefone:recarga_cancelar' recarga.pk %}" class="btn btn-outline-danger btn-sm">
-                <i class="bi bi-x-circle me-1"></i>Cancelar
-            </a>
-            {% endif %}
+            {% if recarga.status in 'pendente, aprovada, realizada' %}
+                {% if perms.controle_de_telefone.cancelar_recarga %}
+                <a href="{% url 'controle_de_telefone:recarga_cancelar' recarga.pk %}" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                </a>
+                {% endif %}
             {% endif %}
         </div>
     </header>

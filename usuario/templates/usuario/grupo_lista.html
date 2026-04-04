@@ -11,9 +11,11 @@
         <h5 class="mb-0">
             <i class="bi bi-collection me-2 text-primary"></i>Grupos de Permissões
         </h5>
+        {% if perms.usuario.add_grupo or user.is_superuser %}
         <a href="{% url 'usuario:grupo_criar' %}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle me-1"></i>Novo Grupo
         </a>
+        {% endif %}
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -41,14 +43,18 @@
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
+                                {% if perms.usuario.change_grupo or user.is_superuser %}
                                 <a href="{% url 'usuario:grupo_form' grupo.pk %}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.usuario.delete_grupo or user.is_superuser %}    
                                 <a href="{% url 'usuario:grupo_excluir' grupo.pk %}"
                                    class="btn btn-outline-danger" title="Excluir">
                                     <i class="bi bi-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

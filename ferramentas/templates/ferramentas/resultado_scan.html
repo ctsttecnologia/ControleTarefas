@@ -47,7 +47,9 @@
             </div>
         </div>
         <div class="card-footer text-center">
+            {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
              <a href="{% url 'ferramentas:ferramenta_detail' pk=ferramenta.pk %}" class="btn btn-outline-primary">Ver Painel Completo</a>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -167,9 +167,11 @@
                         <a href="{% url 'ltcat:local_list' %}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-1"></i> Cancelar
                         </a>
+                        {% if perms.ltcat.change_local or user.is_superuser %}
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-check me-1"></i> Salvar Alterações
                         </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -222,11 +224,13 @@
                     Unidades / Locais
                     <span id="badge-total" class="badge bg-secondary badge-counter ms-2">0</span>
                 </h6>
+                {% if perms.ltcat.add_local %}
                 <button type="button" id="btn-toggle-form" class="btn btn-sm btn-success btn-toggle-form">
                     <i class="fas fa-plus me-1"></i>
                     <span id="btn-toggle-text">Adicionar Unidade</span>
                     <i class="fas fa-chevron-down ms-1"></i>
                 </button>
+                {% endif %}
             </div>
 
             <div class="card-body">
@@ -348,9 +352,11 @@
                         <button type="button" id="btn-cancelar-unidade" class="btn btn-outline-secondary btn-sm">
                             <i class="fas fa-times me-1"></i> Cancelar
                         </button>
+                        {% if perms.ltcat.add_local or user.is_superuser %}
                         <button type="button" id="btn-adicionar-unidade" class="btn btn-success btn-sm">
                             <i class="fas fa-plus me-1"></i> Adicionar à Lista
                         </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>

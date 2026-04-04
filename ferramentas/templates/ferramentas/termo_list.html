@@ -12,9 +12,11 @@
     <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
         <i class="bi bi-speedometer2 me-1"></i>Dashboard
     </a>
+    {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
     <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i>Novo Termo
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block ferramentas_content %}
@@ -46,9 +48,11 @@
                     <i class="bi bi-funnel me-1"></i>Filtrar
                 </button>
                 {% if query or status_atual %}
+                {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
                 <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary" title="Limpar filtros">
                     <i class="bi bi-x-lg"></i>
                 </a>
+                {% endif %}
                 {% endif %}
             </div>
         </form>
@@ -134,14 +138,18 @@
                     {# Ações #}
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
+                            {% if perms.ferramentas.view_termo_detail or user.is_superuser %}
                             <a href="{% url 'ferramentas:termo_detail' termo.pk %}" 
                                class="btn btn-outline-primary" title="Ver Detalhes">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            {% endif %}
+                            {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
                             <a href="{% url 'ferramentas:termo_pdf_download' termo.pk %}" 
                                class="btn btn-outline-secondary" title="Baixar PDF">
                                 <i class="bi bi-file-pdf"></i>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -153,9 +161,11 @@
                         {% if query or status_atual %}
                             <p class="text-muted small">Tente ajustar os filtros de busca.</p>
                         {% endif %}
+                        {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
                         <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-sm btn-primary mt-2">
                             <i class="bi bi-plus-lg me-1"></i>Criar Termo
                         </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

@@ -17,18 +17,36 @@
             <p class="mb-0 opacity-75">Visão geral do estoque, movimentações e indicadores</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
+            {% if perms.documentos.view_ferramenta or user.is_superuser %}
             <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-light fw-semibold">
                 <i class="bi bi-tools me-1"></i>Ferramentas
             </a>
+            {% endif %}
+             {% if perms.documentos.view_mala or user.is_superuser %}
+             <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-light fw-semibold">
+                <i class="bi bi-box-seam me-1"></i>Malas
+            </a>
+            {% endif %}
+             {% if perms.documentos.view_termoderesponsabilidade or user.is_superuser %}
+             <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-light fw-semibold">
+                <i class="bi bi-file-text me-1"></i>Termos
+            </a>
+            {% endif %}
+            {% if perms.documentos.view_mala or user.is_superuser %}
             <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-light fw-semibold">
                 <i class="bi bi-box-seam me-1"></i>Malas
             </a>
+            {% endif %}
+            {% if perms.documentos.view_termoderesponsabilidade or user.is_superuser %}
             <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-light fw-semibold">
                 <i class="bi bi-file-text me-1"></i>Termos
             </a>
+            {% endif %}
+            {% if perms.documentos.add_termoderesponsabilidade or user.is_superuser %}
             <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-warning fw-semibold">
                 <i class="bi bi-plus-circle me-1"></i>Novo Termo
             </a>
+            {% endif %}
         </div>
     </div>
 </div>

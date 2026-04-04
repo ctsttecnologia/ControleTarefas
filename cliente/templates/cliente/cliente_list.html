@@ -158,10 +158,12 @@
                                 <p class="text-muted mb-3" style="font-size: .85rem;">
                                     Comece cadastrando seu primeiro cliente
                                 </p>
-                                <a href="{% url 'cliente:cadastro_cliente' %}"
-                                   class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle me-1"></i>Novo Cliente
-                                </a>
+                                    {% if perms.cliente.add_cliente or user.is_superuser %}
+                                    <a href="{% url 'cliente:cadastro_cliente' %}"
+                                    class="btn btn-sm btn-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>Novo Cliente
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -204,12 +206,14 @@
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                {% if perms.cliente.delete_cliente or user.is_superuser %}
                 <form id="js-delete-form" method="post" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">
                         <i class="bi bi-trash3 me-1"></i>Sim, Excluir
                     </button>
                 </form>
+                {% endif %}
             </div>
         </div>
     </div>

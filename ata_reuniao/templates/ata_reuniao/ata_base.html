@@ -50,7 +50,7 @@
     <nav class="module-nav no-print">
         <ul class="nav nav-pills">
             <li class="nav-item">
-                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}"
                    class="nav-link {% block nav_dashboard %}{% endblock %}">
                     <i class="bi bi-speedometer2"></i> Dashboard
@@ -58,7 +58,7 @@
                 {% endif %}
             </li>
             <li class="nav-item">
-                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_list' %}"
                    class="nav-link {% block nav_lista %}{% endblock %}">
                     <i class="bi bi-list-ul"></i> Lista de Atas
@@ -66,7 +66,7 @@
                 {% endif %}
             </li>
             <li class="nav-item">
-                {% if perms.ata_reuniao.add_atareuniao or user.is_superuser %}
+                {% if perms.ata_reuniao.add_ata_reuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_create' %}"
                    class="nav-link {% block nav_nova %}{% endblock %}">
                     <i class="bi bi-plus-circle"></i> Nova Ata
@@ -74,7 +74,7 @@
                 {% endif %}
             </li>
             <li class="nav-item">
-                {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
+                {% if perms.ata_reuniao.change_ata_reuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_upload' %}"
                    class="nav-link {% block nav_import %}{% endblock %}">
                     <i class="bi bi-cloud-arrow-up"></i> Importar

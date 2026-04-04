@@ -11,6 +11,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import EmailMultiAlternatives
+from django.db.models import Q         
 from django.template.loader import render_to_string
 from django.urls import reverse
 
@@ -230,9 +231,9 @@ def notificar_pgr_plano_atrasado(plano, usuario):
     )
 
 
-# =============================================================================
+# ═════════════════════════════════════════════════════════════════
 # FUNÇÕES ESPECÍFICAS PARA SUPRIMENTOS
-# =============================================================================
+# ═════════════════════════════════════════════════════════════════
 
 def _obter_gerentes_da_filial(filial):
     """
@@ -245,21 +246,17 @@ def _obter_gerentes_da_filial(filial):
     )
 
     if filial:
-        # 1º: Tenta por filiais_permitidas (ManyToMany)
         gerentes_filial = gerentes.filter(filiais_permitidas=filial)
         if gerentes_filial.exists():
             return gerentes_filial
 
-        # 2º: Fallback por filial_ativa (FK)
         gerentes_filial = gerentes.filter(filial_ativa=filial)
         if gerentes_filial.exists():
             return gerentes_filial
 
-    # Último fallback: todos os gerentes + superusers
     return (gerentes | User.objects.filter(
         is_superuser=True, is_active=True
     )).distinct()
-
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -268,7 +265,6 @@ def _obter_gerentes_da_filial(filial):
 
 def notificar_pedido_pendente(pedido):
     """Notifica gerentes que há um pedido aguardando aprovação."""
-    from accounts.models import User
     gerentes = User.objects.filter(
         Q(groups__name='Gerente') | Q(is_superuser=True),
         is_active=True,
@@ -284,26 +280,26 @@ def notificar_pedido_pendente(pedido):
     valor_total = f"R$ {pedido.valor_total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
 
     for gerente in gerentes:
-        # Notificação interna
         criar_notificacao(
-            destinatario=gerente,
-            tipo='PEDIDO',
+            usuario=gerente,
             titulo=f'📋 Pedido {pedido.numero} aguardando aprovação',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='alta',
             mensagem=(
                 f'{solicitante} criou um pedido para {contrato_info}.\n'
                 f'Tipo: {pedido.get_tipo_obra_display()}\n'
                 f'Valor: {valor_total}\n'
                 f'Data necessária: {pedido.data_necessaria.strftime("%d/%m/%Y") if pedido.data_necessaria else "Não informada"}'
             ),
-            url=pedido.get_absolute_url(),
-            prioridade='ALTA',
+            url_destino=pedido.get_absolute_url(),
+            icone='bi-clipboard-check',
         )
 
-        # Email
         enviar_email_notificacao(
-            destinatario=gerente,
             assunto=f'[Suprimentos] Pedido {pedido.numero} — Aprovação Pendente',
-            template='notifications/emails/pedido_pendente.html',
+            template_texto='notifications/emails/pedido_pendente.txt',
+            template_html='notifications/emails/pedido_pendente.html',
             contexto={
                 'pedido': pedido,
                 'solicitante': solicitante,
@@ -312,6 +308,7 @@ def notificar_pedido_pendente(pedido):
                 'gerente': gerente,
                 'url': pedido.get_absolute_url(),
             },
+            destinatarios=[gerente.email],
         )
 
 
@@ -320,28 +317,31 @@ def notificar_pedido_revisao(pedido):
     aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
 
     criar_notificacao(
-        destinatario=pedido.solicitante,
-        tipo='PEDIDO',
+        usuario=pedido.solicitante,
         titulo=f'🔄 Pedido {pedido.numero} devolvido para revisão',
+        tipo='sistema',
+        categoria='suprimentos',
+        prioridade='alta',
         mensagem=(
             f'{aprovador} devolveu seu pedido para correção.\n'
             f'Motivo: {pedido.motivo_revisao}\n\n'
             f'Corrija os pontos indicados e reenvie para aprovação.'
         ),
-        url=pedido.get_absolute_url(),
-        prioridade='ALTA',
+        url_destino=pedido.get_absolute_url(),
+        icone='bi-arrow-counterclockwise',
     )
 
     enviar_email_notificacao(
-        destinatario=pedido.solicitante,
         assunto=f'[Suprimentos] Pedido {pedido.numero} — Devolvido para Revisão',
-        template='notifications/emails/pedido_revisao.html',
+        template_texto='notifications/emails/pedido_revisao.txt',
+        template_html='notifications/emails/pedido_revisao.html',
         contexto={
             'pedido': pedido,
             'aprovador': aprovador,
             'motivo': pedido.motivo_revisao,
             'url': pedido.get_absolute_url(),
         },
+        destinatarios=[pedido.solicitante.email],
     )
 
 
@@ -350,27 +350,30 @@ def notificar_pedido_aprovado(pedido):
     aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
 
     criar_notificacao(
-        destinatario=pedido.solicitante,
-        tipo='PEDIDO',
+        usuario=pedido.solicitante,
         titulo=f'✅ Pedido {pedido.numero} APROVADO!',
+        tipo='sistema',
+        categoria='suprimentos',
+        prioridade='media',
         mensagem=(
             f'Seu pedido foi aprovado por {aprovador}.\n'
             f'Uma Solicitação de Compra foi gerada automaticamente '
             f'e encaminhada para a equipe de Suprimentos.'
         ),
-        url=pedido.get_absolute_url(),
-        prioridade='NORMAL',
+        url_destino=pedido.get_absolute_url(),
+        icone='bi-check-circle-fill',
     )
 
     enviar_email_notificacao(
-        destinatario=pedido.solicitante,
         assunto=f'[Suprimentos] Pedido {pedido.numero} — APROVADO ✅',
-        template='notifications/emails/pedido_aprovado.html',
+        template_texto='notifications/emails/pedido_aprovado.txt',
+        template_html='notifications/emails/pedido_aprovado.html',
         contexto={
             'pedido': pedido,
             'aprovador': aprovador,
             'url': pedido.get_absolute_url(),
         },
+        destinatarios=[pedido.solicitante.email],
     )
 
 
@@ -379,43 +382,48 @@ def notificar_pedido_reprovado(pedido):
     aprovador = pedido.aprovador.get_full_name() if pedido.aprovador else 'Gerente'
 
     criar_notificacao(
-        destinatario=pedido.solicitante,
-        tipo='PEDIDO',
+        usuario=pedido.solicitante,
         titulo=f'❌ Pedido {pedido.numero} REPROVADO',
+        tipo='sistema',
+        categoria='suprimentos',
+        prioridade='alta',
         mensagem=(
             f'Seu pedido foi reprovado por {aprovador}.\n'
             f'Motivo: {pedido.motivo_reprovacao}'
         ),
-        url=pedido.get_absolute_url(),
-        prioridade='ALTA',
+        url_destino=pedido.get_absolute_url(),
+        icone='bi-x-circle-fill',
     )
 
     enviar_email_notificacao(
-        destinatario=pedido.solicitante,
         assunto=f'[Suprimentos] Pedido {pedido.numero} — Reprovado',
-        template='notifications/emails/pedido_reprovado.html',
+        template_texto='notifications/emails/pedido_reprovado.txt',
+        template_html='notifications/emails/pedido_reprovado.html',
         contexto={
             'pedido': pedido,
             'aprovador': aprovador,
             'motivo': pedido.motivo_reprovacao,
             'url': pedido.get_absolute_url(),
         },
+        destinatarios=[pedido.solicitante.email],
     )
 
 
 def notificar_pedido_entregue(pedido):
     """Notifica solicitante que o pedido foi marcado como entregue."""
     criar_notificacao(
-        destinatario=pedido.solicitante,
-        tipo='PEDIDO',
+        usuario=pedido.solicitante,
         titulo=f'📦 Pedido {pedido.numero} — ENTREGUE',
+        tipo='sistema',
+        categoria='suprimentos',
+        prioridade='media',
         mensagem=(
             f'Seu pedido foi marcado como entregue.\n'
             f'Data: {pedido.data_entrega.strftime("%d/%m/%Y") if pedido.data_entrega else "Hoje"}\n'
             f'Confirme o recebimento quando possível.'
         ),
-        url=pedido.get_absolute_url(),
-        prioridade='NORMAL',
+        url_destino=pedido.get_absolute_url(),
+        icone='bi-box-seam',
     )
 
 
@@ -424,18 +432,19 @@ def notificar_pedido_recebido(pedido):
     if pedido.aprovador:
         recebedor = pedido.recebedor.get_full_name() if pedido.recebedor else 'Solicitante'
         criar_notificacao(
-            destinatario=pedido.aprovador,
-            tipo='PEDIDO',
+            usuario=pedido.aprovador,
             titulo=f'✅ Pedido {pedido.numero} — Recebimento confirmado',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='baixa',
             mensagem=f'Recebido por {recebedor} em {pedido.data_recebimento.strftime("%d/%m/%Y %H:%M") if pedido.data_recebimento else "agora"}.',
-            url=pedido.get_absolute_url(),
-            prioridade='BAIXA',
+            url_destino=pedido.get_absolute_url(),
+            icone='bi-check2-all',
         )
 
 
 def notificar_pedido_verba_excedida(pedido, erros):
     """Notifica gerentes sobre estouro de verba."""
-    from accounts.models import User
     gerentes = User.objects.filter(
         Q(groups__name='Gerente') | Q(is_superuser=True),
         is_active=True,
@@ -445,15 +454,17 @@ def notificar_pedido_verba_excedida(pedido, erros):
 
     for gerente in gerentes:
         criar_notificacao(
-            destinatario=gerente,
-            tipo='ALERTA',
+            usuario=gerente,
             titulo=f'⚠️ Pedido {pedido.numero} — Verba Excedida',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='critica',
             mensagem=(
                 f'O pedido de {pedido.solicitante.get_full_name()} '
                 f'excede o limite de verba:\n{erros_txt}'
             ),
-            url=pedido.get_absolute_url(),
-            prioridade='URGENTE',
+            url_destino=pedido.get_absolute_url(),
+            icone='bi-exclamation-triangle-fill',
         )
 
 
@@ -463,7 +474,6 @@ def notificar_pedido_verba_excedida(pedido, erros):
 
 def _get_compradores(filial=None):
     """Retorna usuários do grupo Comprador."""
-    from accounts.models import User
     qs = User.objects.filter(
         Q(groups__name='Comprador') | Q(groups__name='Administrador') | Q(is_superuser=True),
         is_active=True,
@@ -475,7 +485,6 @@ def _get_compradores(filial=None):
 
 def _get_gerentes(filial=None):
     """Retorna gerentes da filial."""
-    from accounts.models import User
     qs = User.objects.filter(
         Q(groups__name='Gerente') | Q(is_superuser=True),
         is_active=True,
@@ -486,19 +495,18 @@ def _get_gerentes(filial=None):
 
 
 def notificar_solicitacao_criada(solicitacao):
-    """
-    Notifica compradores que uma nova solicitação foi gerada.
-    Chamada quando o Pedido é aprovado e gera a Solicitação.
-    """
+    """Notifica compradores que uma nova solicitação foi gerada."""
     compradores = _get_compradores(solicitacao.filial)
     contrato = f"{solicitacao.contrato.cm} — {solicitacao.contrato.cliente}"
     solicitante = solicitacao.solicitante.get_full_name() or solicitacao.solicitante.username
 
     for comprador in compradores:
         criar_notificacao(
-            destinatario=comprador,
-            tipo='SOLICITACAO',
+            usuario=comprador,
             titulo=f'🆕 Nova Solicitação {solicitacao.numero} — Fazer Cotação',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='alta',
             mensagem=(
                 f'Solicitante: {solicitante}\n'
                 f'Contrato: {contrato}\n'
@@ -506,14 +514,14 @@ def notificar_solicitacao_criada(solicitacao):
                 f'Qtd: {solicitacao.quantidade} {solicitacao.get_unidade_medida_display()}\n'
                 f'Data necessária: {solicitacao.data_necessaria.strftime("%d/%m/%Y") if solicitacao.data_necessaria else "Não informada"}'
             ),
-            url=solicitacao.get_absolute_url(),
-            prioridade='ALTA',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-cart-plus',
         )
 
         enviar_email_notificacao(
-            destinatario=comprador,
             assunto=f'[Suprimentos] Nova Solicitação {solicitacao.numero} — Cotação Necessária',
-            template='notifications/emails/solicitacao_criada.html',
+            template_texto='notifications/emails/solicitacao_criada.txt',
+            template_html='notifications/emails/solicitacao_criada.html',
             contexto={
                 'solicitacao': solicitacao,
                 'solicitante': solicitante,
@@ -521,6 +529,7 @@ def notificar_solicitacao_criada(solicitacao):
                 'comprador': comprador,
                 'url': solicitacao.get_absolute_url(),
             },
+            destinatarios=[comprador.email],
         )
 
 
@@ -531,34 +540,37 @@ def notificar_cotacao_enviada(solicitacao):
 
     for gerente in gerentes:
         criar_notificacao(
-            destinatario=gerente,
-            tipo='SOLICITACAO',
+            usuario=gerente,
             titulo=f'📊 Cotação enviada — {solicitacao.numero}',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='alta',
             mensagem=(
                 f'{comprador} registrou cotação Nº {solicitacao.numero_cotacao}.\n'
                 f'CNPJ: {solicitacao.cnpj_compra}\n'
                 f'Tipo NF: {solicitacao.get_tipo_nota_fiscal_display()}\n\n'
                 f'Valide a cotação para prosseguir.'
             ),
-            url=solicitacao.get_absolute_url(),
-            prioridade='ALTA',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-graph-up',
         )
 
         enviar_email_notificacao(
-            destinatario=gerente,
             assunto=f'[Suprimentos] Cotação {solicitacao.numero} — Validação Necessária',
-            template='notifications/emails/cotacao_enviada.html',
+            template_texto='notifications/emails/cotacao_enviada.txt',
+            template_html='notifications/emails/cotacao_enviada.html',
             contexto={
                 'solicitacao': solicitacao,
                 'comprador': comprador,
                 'gerente': gerente,
                 'url': solicitacao.get_absolute_url(),
             },
+            destinatarios=[gerente.email],
         )
 
 
 def notificar_cotacao_validada(solicitacao):
-    """Notifica comprador que a cotação foi validada — pode criar pedido."""
+    """Notifica comprador que a cotação foi validada."""
     if solicitacao.comprador:
         validador = (
             solicitacao.aprovador_cotacao.get_full_name()
@@ -566,54 +578,59 @@ def notificar_cotacao_validada(solicitacao):
         )
 
         criar_notificacao(
-            destinatario=solicitacao.comprador,
-            tipo='SOLICITACAO',
+            usuario=solicitacao.comprador,
             titulo=f'✅ Cotação validada — {solicitacao.numero}',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='media',
             mensagem=(
                 f'Cotação validada por {validador}.\n'
                 f'Prossiga criando o Pedido no Sienge.'
             ),
-            url=solicitacao.get_absolute_url(),
-            prioridade='NORMAL',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-check-circle',
         )
 
         enviar_email_notificacao(
-            destinatario=solicitacao.comprador,
             assunto=f'[Suprimentos] {solicitacao.numero} — Cotação Validada ✅',
-            template='notifications/emails/cotacao_validada.html',
+            template_texto='notifications/emails/cotacao_validada.txt',
+            template_html='notifications/emails/cotacao_validada.html',
             contexto={
                 'solicitacao': solicitacao,
                 'validador': validador,
                 'url': solicitacao.get_absolute_url(),
             },
+            destinatarios=[solicitacao.comprador.email],
         )
 
 
 def notificar_pedido_sienge_criado(solicitacao):
-    """Notifica gerentes que o pedido Sienge foi criado — precisa aprovação."""
+    """Notifica gerentes que o pedido Sienge foi criado."""
     gerentes = _get_gerentes(solicitacao.filial)
     comprador = solicitacao.comprador.get_full_name() if solicitacao.comprador else 'Comprador'
     valor = f"R$ {solicitacao.valor_pedido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.') if solicitacao.valor_pedido else 'N/D'
 
     for gerente in gerentes:
         criar_notificacao(
-            destinatario=gerente,
-            tipo='SOLICITACAO',
+            usuario=gerente,
             titulo=f'📦 Pedido Sienge criado — {solicitacao.numero}',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='alta',
             mensagem=(
                 f'{comprador} criou o pedido Nº {solicitacao.numero_pedido_sienge}.\n'
                 f'Fornecedor: {solicitacao.fornecedor}\n'
                 f'Valor: {valor}\n\n'
                 f'Aprove o pedido para prosseguir.'
             ),
-            url=solicitacao.get_absolute_url(),
-            prioridade='ALTA',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-box-seam',
         )
 
         enviar_email_notificacao(
-            destinatario=gerente,
             assunto=f'[Suprimentos] Pedido Sienge {solicitacao.numero_pedido_sienge} — Aprovação Necessária',
-            template='notifications/emails/pedido_sienge_criado.html',
+            template_texto='notifications/emails/pedido_sienge_criado.txt',
+            template_html='notifications/emails/pedido_sienge_criado.html',
             contexto={
                 'solicitacao': solicitacao,
                 'comprador': comprador,
@@ -621,11 +638,12 @@ def notificar_pedido_sienge_criado(solicitacao):
                 'gerente': gerente,
                 'url': solicitacao.get_absolute_url(),
             },
+            destinatarios=[gerente.email],
         )
 
 
 def notificar_pedido_sienge_aprovado(solicitacao):
-    """Notifica comprador que o pedido Sienge foi aprovado — pode enviar."""
+    """Notifica comprador que o pedido Sienge foi aprovado."""
     if solicitacao.comprador:
         aprovador = (
             solicitacao.aprovador_pedido.get_full_name()
@@ -633,26 +651,29 @@ def notificar_pedido_sienge_aprovado(solicitacao):
         )
 
         criar_notificacao(
-            destinatario=solicitacao.comprador,
-            tipo='SOLICITACAO',
+            usuario=solicitacao.comprador,
             titulo=f'✅ Pedido aprovado — {solicitacao.numero}',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='media',
             mensagem=(
                 f'Pedido Sienge Nº {solicitacao.numero_pedido_sienge} aprovado por {aprovador}.\n'
                 f'Envie o pedido ao fornecedor.'
             ),
-            url=solicitacao.get_absolute_url(),
-            prioridade='NORMAL',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-check-circle-fill',
         )
 
         enviar_email_notificacao(
-            destinatario=solicitacao.comprador,
             assunto=f'[Suprimentos] {solicitacao.numero} — Pedido Aprovado, Enviar ao Fornecedor',
-            template='notifications/emails/pedido_sienge_aprovado.html',
+            template_texto='notifications/emails/pedido_sienge_aprovado.txt',
+            template_html='notifications/emails/pedido_sienge_aprovado.html',
             contexto={
                 'solicitacao': solicitacao,
                 'aprovador': aprovador,
                 'url': solicitacao.get_absolute_url(),
             },
+            destinatarios=[solicitacao.comprador.email],
         )
 
 
@@ -664,40 +685,43 @@ def notificar_pedido_enviado_fornecedor(solicitacao):
         if solicitacao.data_prevista_entrega else 'Não definida'
     )
 
-    # Notifica solicitante
     criar_notificacao(
-        destinatario=solicitacao.solicitante,
-        tipo='SOLICITACAO',
+        usuario=solicitacao.solicitante,
         titulo=f'🚚 Pedido enviado — {solicitacao.numero}',
+        tipo='sistema',
+        categoria='suprimentos',
+        prioridade='media',
         mensagem=(
             f'Seu material foi pedido ao fornecedor {solicitacao.fornecedor}.\n'
             f'Previsão de entrega: {previsao}'
         ),
-        url=solicitacao.get_absolute_url(),
-        prioridade='NORMAL',
+        url_destino=solicitacao.get_absolute_url(),
+        icone='bi-truck',
     )
 
     enviar_email_notificacao(
-        destinatario=solicitacao.solicitante,
         assunto=f'[Suprimentos] {solicitacao.numero} — Pedido Enviado ao Fornecedor 🚚',
-        template='notifications/emails/pedido_enviado_fornecedor.html',
+        template_texto='notifications/emails/pedido_enviado_fornecedor.txt',
+        template_html='notifications/emails/pedido_enviado_fornecedor.html',
         contexto={
             'solicitacao': solicitacao,
             'comprador': comprador,
             'previsao': previsao,
             'url': solicitacao.get_absolute_url(),
         },
+        destinatarios=[solicitacao.solicitante.email],
     )
 
-    # Notifica gerente aprovador
     if solicitacao.aprovador_inicial:
         criar_notificacao(
-            destinatario=solicitacao.aprovador_inicial,
-            tipo='SOLICITACAO',
+            usuario=solicitacao.aprovador_inicial,
             titulo=f'🚚 Pedido enviado — {solicitacao.numero}',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='baixa',
             mensagem=f'Enviado por {comprador}. Previsão: {previsao}.',
-            url=solicitacao.get_absolute_url(),
-            prioridade='BAIXA',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-truck',
         )
 
 
@@ -709,26 +733,29 @@ def notificar_entrega_registrada(solicitacao):
     )
 
     criar_notificacao(
-        destinatario=solicitacao.solicitante,
-        tipo='SOLICITACAO',
+        usuario=solicitacao.solicitante,
         titulo=f'📦 Material entregue — {solicitacao.numero}',
+        tipo='sistema',
+        categoria='suprimentos',
+        prioridade='media',
         mensagem=(
             f'Seu material foi entregue em {data_entrega}.\n'
             f'Fornecedor: {solicitacao.fornecedor}'
         ),
-        url=solicitacao.get_absolute_url(),
-        prioridade='NORMAL',
+        url_destino=solicitacao.get_absolute_url(),
+        icone='bi-box-seam',
     )
 
     enviar_email_notificacao(
-        destinatario=solicitacao.solicitante,
         assunto=f'[Suprimentos] {solicitacao.numero} — Material Entregue 📦',
-        template='notifications/emails/entrega_registrada.html',
+        template_texto='notifications/emails/entrega_registrada.txt',
+        template_html='notifications/emails/entrega_registrada.html',
         contexto={
             'solicitacao': solicitacao,
             'data_entrega': data_entrega,
             'url': solicitacao.get_absolute_url(),
         },
+        destinatarios=[solicitacao.solicitante.email],
     )
 
 
@@ -741,32 +768,37 @@ def notificar_solicitacao_concluida(solicitacao):
     if solicitacao.comprador:
         envolvidos.add(solicitacao.comprador)
 
+    valor_fmt = (
+        f"R$ {solicitacao.valor_pedido:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        if solicitacao.valor_pedido else 'N/D'
+    )
+
     for user in envolvidos:
         criar_notificacao(
-            destinatario=user,
-            tipo='SOLICITACAO',
+            usuario=user,
             titulo=f'🎉 Solicitação {solicitacao.numero} CONCLUÍDA!',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='media',
             mensagem=(
                 f'NF: {solicitacao.numero_nota_fiscal}\n'
                 f'Material: {solicitacao.descricao_material[:80]}...\n'
                 f'Fornecedor: {solicitacao.fornecedor}\n'
-                f'Valor: R$ {solicitacao.valor_pedido:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
-                if solicitacao.valor_pedido else
-                f'NF: {solicitacao.numero_nota_fiscal}\n'
-                f'Material: {solicitacao.descricao_material[:80]}...'
+                f'Valor: {valor_fmt}'
             ),
-            url=solicitacao.get_absolute_url(),
-            prioridade='NORMAL',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-trophy',
         )
 
     enviar_email_notificacao(
-        destinatario=solicitacao.solicitante,
         assunto=f'[Suprimentos] {solicitacao.numero} — CONCLUÍDA ✅🎉',
-        template='notifications/emails/solicitacao_concluida.html',
+        template_texto='notifications/emails/solicitacao_concluida.txt',
+        template_html='notifications/emails/solicitacao_concluida.html',
         contexto={
             'solicitacao': solicitacao,
             'url': solicitacao.get_absolute_url(),
         },
+        destinatarios=[solicitacao.solicitante.email],
     )
 
 
@@ -781,12 +813,14 @@ def notificar_solicitacao_cancelada(solicitacao):
 
     for user in envolvidos:
         criar_notificacao(
-            destinatario=user,
-            tipo='ALERTA',
+            usuario=user,
             titulo=f'🚫 Solicitação {solicitacao.numero} CANCELADA',
+            tipo='sistema',
+            categoria='suprimentos',
+            prioridade='alta',
             mensagem=f'Motivo: {solicitacao.motivo_cancelamento}',
-            url=solicitacao.get_absolute_url(),
-            prioridade='ALTA',
+            url_destino=solicitacao.get_absolute_url(),
+            icone='bi-x-octagon-fill',
         )
 
 

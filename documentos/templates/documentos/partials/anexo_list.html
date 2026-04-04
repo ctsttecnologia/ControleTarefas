@@ -25,9 +25,11 @@
                 {% for doc in object.documentos.all %}
                 <tr>
                     <td>
+                        {% if perms.documentos.view_documento or user.is_superuser %}
                         <a href="{% url 'documentos:download' doc.pk %}" class="text-decoration-none">
                             <i class="bi bi-file-earmark-arrow-down me-1 text-primary"></i>{{ doc.nome }}
                         </a>
+                        {% endif %}
                     </td>
                     <td>
                         {% if doc.status == 'VENCIDO' %}
@@ -49,16 +51,20 @@
                     </td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm">
+                            {% if perms.documentos.change_documento or user.is_superuser %}
                             {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
                             <a href="{% url 'documentos:renovar' doc.pk %}"
-                               class="btn btn-outline-info" title="Renovar">
+                            class="btn btn-outline-info" title="Renovar">
                                 <i class="bi bi-arrow-repeat"></i>
                             </a>
                             {% endif %}
+                            {% endif %}
+                            {% if perms.documentos.delete_documento or user.is_superuser %}
                             <a href="{% url 'documentos:deletar' doc.pk %}"
-                               class="btn btn-outline-danger" title="Excluir">
+                            class="btn btn-outline-danger" title="Excluir">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

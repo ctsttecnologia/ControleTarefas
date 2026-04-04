@@ -91,9 +91,11 @@
         <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left me-1"></i>Voltar
         </a>
+        {% if perms.cliente.add_cliente or user.is_superuser %}
         <a href="{% url 'cliente:importacao_massa' %}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-import-fill me-1"></i>Importação em Massa
         </a>
+        {% endif %}
         </div>
     </header>
 
@@ -210,10 +212,12 @@
                     <a href="{% url 'cliente:lista_clientes' %}" class="btn btn-light px-4">
                         <i class="bi bi-x-lg me-1"></i>Cancelar
                     </a>
+                    {% if perms.cliente.add_cliente or user.is_superuser %}
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-check-lg me-1"></i>
                         {% if object %}Salvar Alterações{% else %}Cadastrar{% endif %}
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

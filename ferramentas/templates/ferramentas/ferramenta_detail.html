@@ -15,17 +15,20 @@
 {% endblock %}
 
 {% block ferramentas_actions %}
+    {% if perms.ferramentas.view_ferramenta or user.is_superuser %}
     <a href="{% url 'ferramentas:ferramenta_list' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Lista
     </a>
+    {% endif %}
+    {% if perms.ferramentas.change_ferramenta or user.is_superuser %}
     <a href="{% url 'ferramentas:ferramenta_update' pk=ferramenta.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block ferramentas_content %}
 <div class="row g-4">
-
     {# =================== COLUNA ESQUERDA =================== #}
     <div class="col-lg-4">
 
@@ -49,12 +52,16 @@
                             <p class="text-muted small">Pronta para retirada ou manutenção.</p>
                         </div>
                         <div class="d-grid gap-2">
+                            {% if perms.ferramentas.retirar_ferramenta or user.is_superuser %}
                             <a href="{% url 'ferramentas:retirar_ferramenta' ferramenta_pk=ferramenta.pk %}" class="btn btn-primary">
                                 <i class="bi bi-box-arrow-right me-2"></i>Realizar Retirada
                             </a>
+                            {% endif %}
+                            {% if perms.ferramentas.iniciar_manutencao or user.is_superuser %}
                             <button type="submit" formaction="{% url 'ferramentas:iniciar_manutencao' pk=ferramenta.pk %}" class="btn btn-outline-info">
                                 <i class="bi bi-wrench me-2"></i>Iniciar Manutenção
                             </button>
+                            {% endif %}
                         </div>
 
                     {% elif status_efetivo == 'em_uso' %}
@@ -76,9 +83,11 @@
                         </div>
                         {% if movimentacao_ativa and not ferramenta.mala %}
                         <div class="d-grid">
+                            {% if perms.ferramentas.add_devolver_form or user.is_superuser %}
                             <a href="{% url 'ferramentas:devolver_form' pk=movimentacao_ativa.pk %}" class="btn btn-success">
                                 <i class="bi bi-box-arrow-in-left me-2"></i>Realizar Devolução
                             </a>
+                            {% endif %}
                         </div>
                         {% endif %}
 
@@ -89,9 +98,11 @@
                             <p class="text-muted small">Indisponível para uso.</p>
                         </div>
                         <div class="d-grid">
+                            {% if perms.ferramentas.finalizar_manutencao or user.is_superuser %}
                             <button type="submit" formaction="{% url 'ferramentas:finalizar_manutencao' pk=ferramenta.pk %}" class="btn btn-info">
                                 <i class="bi bi-check2-all me-2"></i>Finalizar Manutenção
                             </button>
+                            {% endif %}
                         </div>
 
                     {% elif ferramenta.status == 'descartada' %}

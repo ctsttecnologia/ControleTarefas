@@ -39,10 +39,12 @@
                             <i class="bi bi-arrow-left me-1"></i> Cancelar
                         </a>
                         <form method="post" class="d-inline">
+                            {% if perms.gestao_riscos.delete_cartaotag %}
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger">
                                 <i class="bi bi-trash me-1"></i> Confirmar Exclusão
                             </button>
+                            {% endif %}
                         </form>
                     </div>
                 </div>

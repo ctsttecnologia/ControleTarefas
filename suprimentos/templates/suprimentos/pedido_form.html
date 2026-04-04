@@ -123,9 +123,11 @@
                     <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-light">
                         <i class="fas fa-times me-1"></i>Cancelar
                     </a>
+                    {% if perms.suprimentos.add_pedido or user.is.superuser %}
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class="fas fa-save me-2"></i>Criar Pedido (Rascunho)
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

@@ -32,6 +32,7 @@
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
             {% if perms.controle_de_telefone.change_vinculo %}
+            {% if perms.controle_de_telefone.change_vinculo or user.is_superuser %}
             <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil me-1"></i>Editar
             </a>
@@ -72,9 +73,11 @@
 
                     {% if not vinculo.data_devolucao and vinculo.status == 'ativo' %}
                     <div class="mt-4 pt-3 border-top text-end">
+                        {% if perms.controle_de_telefone.change_vinculo or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:vinculo_update' vinculo.pk %}" class="btn btn-sm btn-outline-info">
                             <i class="bi bi-box-arrow-in-left me-1"></i>Registrar Devolução
                         </a>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -190,9 +193,11 @@
                                         <a href="{{ termo_gerado_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
                                 <i class="bi bi-file-earmark-pdf me-1"></i>Ver Termo
                             </a>
+                            {% if perms.controle_de_telefone.add_assinado_termo or user.is_superuser %}
                             <a href="{% url 'controle_de_telefone:assinar_termo' object.pk %}" class="btn btn-primary btn-sm">
                                 <i class="bi bi-vector-pen me-1"></i>Assinar
                             </a>
+                            {% endif %}
                         </div>
                         {% else %}
                         <div class="d-flex align-items-center justify-content-between">

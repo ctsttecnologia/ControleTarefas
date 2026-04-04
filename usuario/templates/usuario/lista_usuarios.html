@@ -87,15 +87,19 @@
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
+                                {% if perms.usuario.change_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:usuario_editar' usuario.pk %}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.usuario.view_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:gerenciar_grupos_usuario' usuario.pk %}"
                                    class="btn btn-outline-secondary" title="Grupos">
                                     <i class="bi bi-people"></i>
                                 </a>
-                                {% if user.is_superuser %}
+                                {% endif %}
+                                {% if perms.usuario.change_usuario or user.is_superuser %}
                                 <a href="{% url 'usuario:alterar_senha' usuario.pk %}"
                                    class="btn btn-outline-warning" title="Redefinir Senha">
                                     <i class="bi bi-key"></i>

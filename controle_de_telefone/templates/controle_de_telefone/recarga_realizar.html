@@ -53,9 +53,11 @@
                             <a href="{% url 'controle_de_telefone:recarga_detail' recarga.pk %}" class="btn btn-light px-4">
                                 <i class="bi bi-x-lg me-1"></i>Cancelar
                             </a>
+                            {% if perms.controle_de_telefone.add_recarga or user.is_superuser %}
                             <button type="submit" class="btn btn-success px-4">
                                 <i class="bi bi-check-circle me-1"></i>Confirmar Realização
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

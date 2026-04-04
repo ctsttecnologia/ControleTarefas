@@ -301,37 +301,46 @@ def grupo_detail(request, pk):
 
 def grupo_tributario_api(request, pk):
     """Retorna dados do grupo tributário para preview no form de material."""
-    from .models import GrupoTributario
     grupo = get_object_or_404(GrupoTributario, pk=pk)
+
+    # Tributação Federal (OneToOne via related_name='tributacao_federal')
+    federal = getattr(grupo, 'tributacao_federal', None)
+
+    # Tributação Estadual (pega a primeira ativa)
+    estadual = grupo.tributacoes_estaduais.filter(ativo=True).first()
+
     return JsonResponse({
         'nome': grupo.nome,
-        'cfop': f"{grupo.cfop.codigo} — {grupo.cfop.descricao[:50]}",
+        'cfop': f"{grupo.cfop.codigo} — {grupo.cfop.descricao[:50]}" if grupo.cfop else '—',
         'icms': {
-            'cst': str(grupo.icms_cst) if grupo.icms_cst else '—',
-            'aliquota': str(grupo.icms_aliquota),
-            'recuperavel': grupo.icms_recuperavel,
-            'reducao_base': str(grupo.icms_reducao_base),
+            'cst': str(estadual.cst_icms) if estadual and estadual.cst_icms else '—',
+            'aliquota': str(estadual.aliquota_icms) if estadual else '0',
+            'reducao_base': str(estadual.reducao_base_icms) if estadual else '0',
+            'permite_credito': estadual.permite_credito if estadual else False,
         },
         'ipi': {
-            'cst': str(grupo.ipi_cst) if grupo.ipi_cst else '—',
-            'aliquota': str(grupo.ipi_aliquota),
-            'recuperavel': grupo.ipi_recuperavel,
+            'cst': str(federal.cst_ipi) if federal and federal.cst_ipi else '—',
+            'aliquota': str(federal.aliquota_ipi) if federal else '0',
         },
         'pis': {
-            'cst': str(grupo.pis_cst) if grupo.pis_cst else '—',
-            'aliquota': str(grupo.pis_aliquota),
-            'recuperavel': grupo.pis_recuperavel,
+            'cst': str(federal.cst_pis) if federal and federal.cst_pis else '—',
+            'aliquota': str(federal.aliquota_pis) if federal else '0',
+            'gera_credito': federal.gera_credito_pis if federal else False,
         },
         'cofins': {
-            'cst': str(grupo.cofins_cst) if grupo.cofins_cst else '—',
-            'aliquota': str(grupo.cofins_aliquota),
-            'recuperavel': grupo.cofins_recuperavel,
+            'cst': str(federal.cst_cofins) if federal and federal.cst_cofins else '—',
+            'aliquota': str(federal.aliquota_cofins) if federal else '0',
+            'gera_credito': federal.gera_credito_cofins if federal else False,
         },
         'icms_st': {
-            'aliquota': str(grupo.icms_st_aliquota),
-            'mva': str(grupo.icms_st_mva),
+            'tem_st': estadual.tem_st if estadual else False,
+            'aliquota': str(estadual.aliquota_icms_st) if estadual else '0',
+            'mva': str(estadual.mva) if estadual else '0',
+            'aliquota_fcp': str(estadual.aliquota_fcp) if estadual else '0',
         },
     })
+
+
 
 def api_grupo_detail(request, pk):
     """API para preview do grupo tributário no formulário de material."""

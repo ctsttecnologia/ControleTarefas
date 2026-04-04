@@ -17,7 +17,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.views import View
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 
 import openpyxl
 import pandas as pd
@@ -57,6 +57,20 @@ class LogradouroListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         # Total ANTES da busca (para o cabeçalho)
         self.total_logradouros_na_filial = queryset.count()
 
+        # KPIs de cidades e estados (antes dos filtros de busca)
+        self.total_cidades = (
+            queryset
+            .values('cidade')
+            .distinct()
+            .count()
+        )
+        self.total_estados = (
+            queryset
+            .values('estado')
+            .distinct()
+            .count()
+        )
+
         q_endereco = self.request.GET.get('q_endereco', '').strip()
         q_cep = self.request.GET.get('q_cep', '').strip()
 
@@ -71,6 +85,8 @@ class LogradouroListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         context = super().get_context_data(**kwargs)
         context['total_logradouros'] = getattr(self, 'total_logradouros_na_filial', 0)
         context['total_filtrados'] = context['paginator'].count if context.get('paginator') else 0
+        context['total_cidades'] = getattr(self, 'total_cidades', 0)
+        context['total_estados'] = getattr(self, 'total_estados', 0)
 
         query_params = self.request.GET.copy()
         query_params.pop('page', None)
@@ -126,6 +142,15 @@ class LogradouroDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermission
     def form_valid(self, form):
         messages.success(self.request, _('Endereço excluído com sucesso!'))
         return super().form_valid(form)
+
+
+class LogradouroDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DetailView):
+    """Visualização detalhada de um logradouro."""
+    app_label_required = 'logradouro'
+    permission_required = 'logradouro.view_logradouro'
+    model = Logradouro
+    template_name = 'logradouro/detail_logradouro.html'
+    context_object_name = 'logradouro'
 
 
 # =============================================================================
@@ -185,6 +210,7 @@ class LogradouroExportExcelView(LoginRequiredMixin, AppPermissionMixin, SSTPermi
         )
         wb.save(response)
         return response
+
 
 
 # =============================================================================

@@ -11,9 +11,11 @@
             <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-1"></i> Voltar
             </a>
+            {% if perms.suprimentos.add_material or user.is.superuser %}
             <a href="{% url 'suprimentos:material_criar' %}" class="btn btn-success">
                 <i class="bi bi-plus-lg me-1"></i> Novo Material
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -100,10 +102,12 @@
                 </div>
                 {% if filtro_q or filtro_classificacao or filtro_tipo or filtro_sem_grupo %}
                 <div class="col-md-1">
+                    {% if perms.suprimentos.delete_material or user.is.superuser %}
                     <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary w-100"
                        title="Limpar filtros">
                         <i class="bi bi-x-lg"></i>
                     </a>
+                    {% endif %}
                 </div>
                 {% endif %}
             </form>
@@ -242,10 +246,12 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'suprimentos:material_editar' pk=m.pk %}"
-                                   class="btn btn-sm btn-outline-primary" title="Editar">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
+                                {% if perms.suprimentos.change_material or user.is.superuser %}
+                                    <a href="{% url 'suprimentos:material_editar' pk=m.pk %}"
+                                       class="btn btn-sm btn-outline-primary" title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endwith %}

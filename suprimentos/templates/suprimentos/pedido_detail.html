@@ -29,10 +29,13 @@
             </small>
         </div>
         <div class="text-end">
+            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
             {% if pode_enviar %}
             <form method="post" action="{% url 'suprimentos:pedido_enviar' pedido.pk %}" class="d-inline">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary"
+                <button type="submit" class="btn btn-primary btn-sm"
                         onclick="return confirm('Enviar para aprovação do Gerente?')">
                     <i class="fas fa-paper-plane me-1"></i>Enviar para Aprovação
                 </button>
@@ -140,7 +143,7 @@
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     onclick="return confirm('Remover este item?')">
-                                                <i class="fas fa-trash"></i>
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     </td>
@@ -292,9 +295,11 @@
                                 {{ anexo_form.arquivo }}
                             </div>
                             <div class="col-md-4">
+                                {% if perms.suprimentos.add_anexo or user.is.superuser %}
                                 <button type="submit" class="btn btn-outline-primary w-100">
                                     <i class="fas fa-upload me-1"></i>Enviar
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
                     </form>

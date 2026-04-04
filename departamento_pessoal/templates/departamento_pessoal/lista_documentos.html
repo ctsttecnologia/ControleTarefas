@@ -84,10 +84,12 @@
                         {% for doc in object_list %}
                         <tr>
                             <td>
+                                {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
                                 <a href="{% url 'departamento_pessoal:detalhe_funcionario' doc.funcionario.pk %}"
                                    class="text-decoration-none">
                                     {{ doc.funcionario.nome_completo }}
                                 </a>
+                                {% endif %}
                             </td>
                             <td>
                                 <span class="doc-tipo-icon bg-primary bg-opacity-10 text-primary me-1">
@@ -132,10 +134,12 @@
                             <td class="text-center">
                                 {% if doc.anexo %}
                                     {% secure_url doc "anexo" as anexo_url %}
+                                    {% if perms.departamento_pessoal.view_documento or user.is_superuser %}
                                     <a href="{{ anexo_url }}" target="_blank"
                                        class="btn btn-sm btn-outline-secondary">
                                         <i class="bi bi-paperclip me-1"></i> Ver
                                     </a>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}

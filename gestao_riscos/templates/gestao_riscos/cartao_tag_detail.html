@@ -144,9 +144,12 @@
                     <button id="print-btn" class="btn btn-info">
                         <i class="bi bi-printer me-1"></i> Imprimir
                     </button>
+                    {% if perms.gestao_riscos.change_cartaotag or user.is_superuser %}
                     <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" class="btn btn-warning">
                         <i class="bi bi-pencil me-1"></i> Editar
                     </a>
+                    {% endif %}
+                    
                     <a href="{% url 'gestao_riscos:cartao_tag_list' %}" class="btn btn-outline-light">
                         <i class="bi bi-arrow-left me-1"></i> Voltar
                     </a>
