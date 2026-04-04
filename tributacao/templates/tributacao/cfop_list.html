@@ -8,9 +8,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-signpost-2"></i> CFOPs</h3>
+        {% if perms.trubacao.add_cfop or user.is.superuser %}
         <a href="{% url 'tributacao:cfop_create' %}" class="btn btn-success">
             <i class="bi bi-plus-circle"></i> Novo CFOP
         </a>
+        {% endif %}
     </div>
 
     <form method="get" class="mb-3">
@@ -21,10 +23,12 @@
                 <i class="bi bi-search"></i>
             </button>
             {% if q %}
+            {% if perms.trubacao.view_cfop_list or user.is.superuser %}
             <a href="{% url 'tributacao:cfop_list' %}" class="btn btn-outline-danger">
                 <i class="bi bi-x"></i>
             </a>
             {% endif %}
+             {% endif %}
         </div>
     </form>
 
@@ -59,14 +63,18 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
+                        {% if perms.trubacao.change_cfop or user.is.superuser %}
                         <a href="{% url 'tributacao:cfop_update' cfop.pk %}" 
                            class="btn btn-sm btn-outline-primary" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
+                        {% endif %}
+                        {% if perms.trubacao.delete_cfop or user.is.superuser %}
                         <a href="{% url 'tributacao:cfop_delete' cfop.pk %}" 
                            class="btn btn-sm btn-outline-danger" title="Excluir">
                             <i class="bi bi-trash"></i>
                         </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

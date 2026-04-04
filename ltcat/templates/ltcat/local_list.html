@@ -21,9 +21,11 @@
     <h4 class="fw-bold mb-0">
         <i class="fas fa-map-marker-alt me-2"></i>Locais de Prestação de Serviço
     </h4>
+    {% if perms.ltcat.add_local or user.is_superuser %}
     <a href="{% url 'ltcat:local_create' %}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i> Novo Local
     </a>
+    {% endif %} 
 </div>
 
 <!-- Filtros -->
@@ -77,14 +79,18 @@
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
+                                {% if perms.ltcat.change_local or user.is_superuser %}
                                 <a href="{% url 'ltcat:local_update' local.pk %}"
                                    class="btn btn-outline-warning" title="Editar">
                                     <i class="fas fa-pencil"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.ltcat.delete_local or user.is_superuser %}
                                 <a href="{% url 'ltcat:local_delete' local.pk %}"
                                    class="btn btn-outline-danger" title="Excluir">
                                     <i class="fas fa-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -93,9 +99,11 @@
                         <td colspan="6" class="text-center text-muted py-5">
                             <i class="fas fa-map-marker-alt fa-2x d-block mb-2 opacity-50"></i>
                             <p class="mb-2">Nenhum local de prestação cadastrado.</p>
+                            {% if perms.ltcat.add_local or user.is_superuser %}
                             <a href="{% url 'ltcat:local_create' %}" class="btn btn-sm btn-primary">
                                 <i class="fas fa-plus me-1"></i> Cadastrar primeiro local
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

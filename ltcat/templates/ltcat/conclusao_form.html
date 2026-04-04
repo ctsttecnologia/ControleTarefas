@@ -4,8 +4,14 @@
 {% block ltcat_title %}Conclusão por Função - LTCAT{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_list' %}">Laudos</a></li>
-<li class="breadcrumb-item"><a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a></li>
+<li class="breadcrumb-item">
+    <a href="{% url 'ltcat:ltcat_list' %}">Laudos</a>
+</li>
+<li class="breadcrumb-item">
+    {% if perms.ltcat.view_ltcat or user.is_superuser %}
+    <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}">{{ ltcat.codigo_documento }}</a>
+    {% endif %}
+</li>
 <li class="breadcrumb-item active">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Conclusão</li>
 {% endblock %}
 

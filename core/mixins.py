@@ -369,7 +369,7 @@ class AppPermissionMixin(PermissionRequiredMixin):
 
     def handle_no_permission(self):
         if self.request.user.is_authenticated:
-            return render(self.request, 'core/acesso_negado.html', {
+            return render(self.request, 'errors/acesso_negado.html', {
                 'titulo': 'Acesso Negado',
                 'mensagem': (
                     'Você não possui permissão para acessar este módulo. '

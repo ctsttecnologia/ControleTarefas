@@ -25,5 +25,6 @@ def notification_processor(request):
     return {
         'notification_count': notificacoes_nao_lidas.count(),
         'notification_list': notificacoes_nao_lidas[:MAX_DROPDOWN],
+        'notificacao_list': list(notificacoes_nao_lidas[:MAX_DROPDOWN]),
     }
 

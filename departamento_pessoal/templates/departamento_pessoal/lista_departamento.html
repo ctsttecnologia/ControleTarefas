@@ -76,9 +76,11 @@
         </div>
         <h5>Nenhum departamento cadastrado</h5>
         <p>Estruture os setores da empresa.</p>
+        {% if perms.departamento_pessoal.add_departamento or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:departamento_form' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Departamento
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

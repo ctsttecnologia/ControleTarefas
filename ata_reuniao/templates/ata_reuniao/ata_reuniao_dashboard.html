@@ -372,12 +372,12 @@
                 <p>Performance e fluxo de trabalho das atividades de reunião</p>
             </div>
                 <div>
-                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_kanban' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-bar-chart-line me-1"></i> Kamban
                 </a>
                 {% endif %}
-                {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
                 <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-sm btn-outline-light no-print">
                     <i class="bi bi-list-ul me-1"></i> Ver Lista
                 </a>

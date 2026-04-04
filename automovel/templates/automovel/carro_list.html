@@ -93,9 +93,11 @@
                 <a href="{% url 'automovel:gerar_relatorio_excel' tipo='agendamentos' %}" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
                 </a>
+                {% if perms.automovel.add_automovel or user.is_superuser %}
                 <a href="{% url 'automovel:carro_create' %}" class="btn btn-sm btn-light fw-semibold">
                     <i class="bi bi-plus-circle me-1"></i> Novo Veículo
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -173,9 +175,11 @@
                 <div class="empty-state-icon"><i class="bi bi-car-front"></i></div>
                 <h5 class="fw-bold mb-2">Nenhum veículo encontrado</h5>
                 <p class="text-muted mb-3">{% if request.GET.search %}Nenhum resultado para a pesquisa.{% else %}Cadastre o primeiro veículo da frota.{% endif %}</p>
+                {% if perms.automovel.add_automovel or user.is_superuser %}
                 <a href="{% url 'automovel:carro_create' %}" class="btn btn-primary" style="border-radius: 0.625rem;">
                     <i class="bi bi-plus-circle me-1"></i> Novo Veículo
                 </a>
+                {% endif %}
             </div>
             {% endfor %}
         </div>

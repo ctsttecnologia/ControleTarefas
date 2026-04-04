@@ -8,9 +8,11 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3><i class="bi bi-collection"></i> Grupos Tributários</h3>
+        {% if perms.trubacao.add_grupo or user.is.superuser %}
         <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Novo Grupo
         </a>
+        {% endif %}
     </div>
 
     <form method="get" class="mb-3">
@@ -45,9 +47,13 @@
                 {% for grupo in grupos %}
                 <tr>
                     <td>
+                        {% if perms.trubacao.view_grupo_detail or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_detail' grupo.pk %}" class="text-decoration-none fw-bold">
                             {{ grupo.nome }}
                         </a>
+                        {% else %}
+                        {{ grupo.nome }}
+                        {% endif %}
                     </td>
                     <td>
                         {% if grupo.natureza == "E" %}
@@ -73,18 +79,24 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
+                        {% if perms.trubacao.view_grupo_detail or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_detail' grupo.pk %}" 
                            class="btn btn-sm btn-outline-info" title="Detalhes">
                             <i class="bi bi-eye"></i>
                         </a>
+                        {% endif %}
+                        {% if perms.trubacao.change_grupo or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_update' grupo.pk %}" 
                            class="btn btn-sm btn-outline-primary" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
+                        {% endif %}
+                        {% if perms.trubacao.delete_grupo or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_delete' grupo.pk %}" 
                            class="btn btn-sm btn-outline-danger" title="Excluir">
                             <i class="bi bi-trash"></i>
                         </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

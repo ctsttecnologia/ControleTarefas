@@ -1,50 +1,88 @@
 
-// static/js/form_grupo.js
+/// static/jsusuario/form_grupo.js
+// Responsabilidade: Filtro e seleção de permissões no formulário de Grupo
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const filterInput = document.getElementById('permission-filter');
-    // CORREÇÃO: Buscamos pela classe que definimos no widget
-    const permissionsContainer = document.querySelector('.permissions-list'); 
-    
-    if (!filterInput || !permissionsContainer) {
-        console.warn("Componentes do formulário de grupo (filtro ou container de permissões) não encontrados.");
-        return; // Sai se os elementos não existirem
-    }
+    const permissionsContainer = document.getElementById('id_permissions');
 
-    // O Django renderiza cada checkbox dentro de um <label>, vamos usá-lo como item.
-    const permissionItems = permissionsContainer.querySelectorAll('label'); 
+    // Guard: só executa se os elementos existirem
+    if (!filterInput || !permissionsContainer) return;
+
+    const permissionItems = permissionsContainer.querySelectorAll('li');
     const selectAllBtn = document.getElementById('select-all-perms');
     const deselectAllBtn = document.getElementById('deselect-all-perms');
 
-    // Função de Filtro (continua igual)
-    filterInput.addEventListener('keyup', function() {
-        const searchTerm = filterInput.value.toLowerCase();
+    // ═══════════════════════════════════════
+    // FILTRO DE PERMISSÕES
+    // ═══════════════════════════════════════
+    filterInput.addEventListener('keyup', function () {
+        const searchTerm = this.value.toLowerCase().trim();
+
         permissionItems.forEach(item => {
-            const labelText = item.textContent.toLowerCase();
-            // CORREÇÃO: O elemento pai do <label> é o <li> ou <div> que queremos esconder
-            if (labelText.includes(searchTerm)) {
-                item.parentElement.style.display = 'block';
-            } else {
-                item.parentElement.style.display = 'none';
-            }
+            const label = item.querySelector('label');
+            if (!label) return;
+
+            const text = label.textContent.toLowerCase();
+            item.style.display = text.includes(searchTerm) ? '' : 'none';
         });
+
+        // Atualiza contador de visíveis
+        updateVisibleCount();
     });
 
-    // Função Selecionar Todas
-    selectAllBtn.addEventListener('click', function() {
-        permissionItems.forEach(item => {
-            if (item.parentElement.style.display !== 'none') {
-                item.querySelector('input[type="checkbox"]').checked = true;
-            }
+    // ═══════════════════════════════════════
+    // SELECIONAR TODAS (apenas visíveis)
+    // ═══════════════════════════════════════
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function () {
+            permissionItems.forEach(item => {
+                if (item.style.display !== 'none') {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox) checkbox.checked = true;
+                }
+            });
+            updateSelectedCount();
         });
-    });
+    }
 
-    // Função Limpar Seleção
-    deselectAllBtn.addEventListener('click', function() {
-        permissionItems.forEach(item => {
-            if (item.parentElement.style.display !== 'none') {
-                item.querySelector('input[type="checkbox"]').checked = false;
-            }
+    // ═══════════════════════════════════════
+    // LIMPAR SELEÇÃO (apenas visíveis)
+    // ═══════════════════════════════════════
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function () {
+            permissionItems.forEach(item => {
+                if (item.style.display !== 'none') {
+                    const checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox) checkbox.checked = false;
+                }
+            });
+            updateSelectedCount();
         });
-    });
+    }
+
+    // ═══════════════════════════════════════
+    // CONTADORES (opcional, mas útil)
+    // ═══════════════════════════════════════
+    const countDisplay = document.getElementById('permission-count');
+
+    function updateVisibleCount() {
+        if (!countDisplay) return;
+        const visible = [...permissionItems].filter(item => item.style.display !== 'none').length;
+        const total = permissionItems.length;
+        countDisplay.textContent = `${visible} de ${total} permissões`;
+    }
+
+    function updateSelectedCount() {
+        const selected = permissionsContainer.querySelectorAll('input[type="checkbox"]:checked').length;
+        const badge = document.getElementById('selected-perms-count');
+        if (badge) badge.textContent = `${selected} selecionadas`;
+    }
+
+    // Atualiza contagem ao carregar
+    updateVisibleCount();
+    updateSelectedCount();
+
+    // Atualiza ao clicar em qualquer checkbox
+    permissionsContainer.addEventListener('change', updateSelectedCount);
 });

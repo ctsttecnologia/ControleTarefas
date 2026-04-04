@@ -63,9 +63,11 @@
                             <a href="{% url 'departamento_pessoal:lista_cargo' %}" class="btn btn-secondary">
                                 Cancelar
                             </a>
+                            {% if perms.departamento_pessoal.add_cargo or user.is_superuser %}
                             <button type="submit" class="btn btn-primary px-4">
                                 <i class="bi bi-check-lg me-1"></i> Salvar
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

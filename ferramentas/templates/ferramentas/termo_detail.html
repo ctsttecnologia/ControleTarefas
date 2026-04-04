@@ -2,26 +2,32 @@
 {# ferramentas/termo_detail.html #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 
-{% block ferramentas_page_title %}Termo #{{ termo.pk }}{% endblock %}
+{% block ferramentas_page_title %}Termo - {{ termo.pk }}{% endblock %}
 
 {% block ferramentas_title %}
-    <i class="bi bi-file-earmark-text me-2"></i>Termo de Responsabilidade #{{ termo.pk }}
+    <i class="bi bi-file-earmark-text me-2"></i>Termo de Responsabilidade - {{ termo.pk }}
 {% endblock %}
 
 {% block ferramentas_actions %}
+    {% if perms.ferramentas.view_termoderesponsabilidade or user.is_superuser %}
     <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Lista
     </a>
+    {% endif %}
+    {% if perms.ferramentas.add_termo_pdf_download or user.is_superuser %}
     <a href="{% url 'ferramentas:termo_pdf_download' pk=termo.pk %}" class="btn btn-outline-primary">
         <i class="bi bi-file-pdf me-1"></i>Baixar PDF
     </a>
+    {% endif %}
     {% if pode_reverter %}
     <form action="{% url 'ferramentas:termo_reverter' pk=termo.pk %}" method="post" class="d-inline"
           onsubmit="return confirm('Tem certeza? Todos os itens serão devolvidos ao estoque.');">
         {% csrf_token %}
+        {% if perms.ferramentas.add_termo_reverter or user.is_superuser %}
         <button type="submit" class="btn btn-danger">
             <i class="bi bi-arrow-counterclockwise me-1"></i>Estornar Termo
         </button>
+        {% endif %}
     </form>
     {% endif %}
 {% endblock %}

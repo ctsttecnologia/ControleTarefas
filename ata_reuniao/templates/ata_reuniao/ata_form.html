@@ -249,13 +249,13 @@
                         <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-back">
                             <i class="bi bi-x-circle me-1"></i> Cancelar
                         </a>
-                        {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
+                        {% if perms.ata_reuniao.change_ata_reuniao or user.is_superuser %}
                         <a href="{% url 'ata_reuniao:ata_reuniao_upload' %}" class="btn btn-back">
                             <i class="bi bi-cloud-arrow-up me-1"></i> Importar em Massa
                         </a>
                         {% endif %}
                     </div>
-                    {% if perms.ata_reuniao.add_atareuniao or user.is_superuser %}
+                    {% if perms.ata_reuniao.add_ata_reuniao or user.is_superuser %}
                     <button type="submit" class="btn btn-save-main">
                         <i class="bi bi-check-circle-fill me-2"></i>
                         {% if object %}Salvar Alterações{% else %}Criar Ata{% endif %}

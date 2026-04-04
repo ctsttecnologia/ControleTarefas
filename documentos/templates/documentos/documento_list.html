@@ -14,9 +14,11 @@
             </h2>
             <p class="text-muted mb-0">Gerencie todos os documentos da empresa em um só lugar.</p>
         </div>
+        {% if perms.documentos.add_documento or user.is_superuser %}
         <a href="{% url 'documentos:criar' %}" class="btn btn-primary shadow-sm">
             <i class="bi bi-plus-lg me-1"></i> Novo Documento
         </a>
+        {% endif %}
     </div>
 
     {# ── Busca ── #}
@@ -194,35 +196,42 @@
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
                                     {% if doc.arquivo %}
+                                        {% if perms.documentos.view_documento or user.is_superuser %}
                                         <a href="{% url 'documentos:download' doc.pk %}"
                                            target="_blank"
                                            class="btn btn-outline-secondary"
                                            title="Visualizar">
                                             <i class="bi bi-file-earmark-pdf"></i>
                                         </a>
+                                        {% endif %}
                                     {% endif %}
 
                                     {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
+                                        {% if perms.documentos.add_documento or user.is_superuser %}
                                         <a href="{% url 'documentos:renovar' doc.pk %}"
                                            class="btn btn-outline-info"
                                            title="Renovar">
                                             <i class="bi bi-arrow-repeat"></i>
                                         </a>
+                                        {% endif %}
                                     {% endif %}
 
                                     {% if doc.is_avulso %}
+                                        {% if perms.documentos.change_documento or user.is_superuser %}
                                         <a href="{% url 'documentos:editar' doc.pk %}"
                                            class="btn btn-outline-primary"
                                            title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
+                                        {% endif %}
                                     {% endif %}
-
+                                    {% if perms.documentos.delete_documento or user.is_superuser %}
                                     <a href="{% url 'documentos:excluir' doc.pk %}"
                                        class="btn btn-outline-danger"
                                        title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -231,9 +240,11 @@
                             <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="bi bi-folder2-open display-4 d-block mb-3 opacity-50"></i>
                                 <p class="mb-2">Nenhum documento encontrado.</p>
+                                {% if perms.documentos.add_documento or user.is_superuser %}
                                 <a href="{% url 'documentos:criar' %}" class="btn btn-sm btn-primary">
                                     <i class="bi bi-plus-lg me-1"></i> Cadastrar primeiro documento
                                 </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

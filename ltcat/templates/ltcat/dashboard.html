@@ -18,9 +18,11 @@
             </h3>
             <p class="mb-0 opacity-75">Visão geral dos Laudos Técnicos das Condições Ambientais de Trabalho</p>
         </div>
+        {% if perms.ltcat.add_ltcat or user.is_superuser %}
         <a href="{% url 'ltcat:ltcat_create' %}" class="btn btn-light">
             <i class="fas fa-plus me-1"></i> Novo LTCAT
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -93,10 +95,12 @@
                             </span>
                         </td>
                         <td class="text-end">
+                            {% if perms.ltcat.view_ltcat or user.is_superuser %}
                             <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}"
                                class="btn btn-sm btn-outline-primary" title="Visualizar">
                                 <i class="fas fa-eye"></i>
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

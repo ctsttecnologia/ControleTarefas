@@ -52,7 +52,9 @@
                     <hr>
                     <div class="d-flex justify-content-end mt-4">
                         <a href="{{ mala.get_absolute_url }}" class="btn btn-secondary me-2">Cancelar</a>
+                        {% if perms.ferramentas.add_retirada or user.is_superuser %}
                         <button type="submit" class="btn btn-primary">Confirmar Retirada</button>
+                        {% endif %} 
                     </div>
                 </form>
             </div>

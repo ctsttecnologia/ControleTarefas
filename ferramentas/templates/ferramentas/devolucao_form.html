@@ -64,9 +64,11 @@
                     <hr class="my-4">
                     <div class="d-flex justify-content-end gap-2">
                         <a href="{{ movimentacao.ferramenta.get_absolute_url }}" class="btn btn-outline-secondary">Cancelar</a>
+                        {% if perms.ferramentas.add_devolucao or user.is_superuser %}
                         <button type="submit" class="btn btn-warning px-4">
                             <i class="bi bi-check-lg me-1"></i>Confirmar Devolução
                         </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

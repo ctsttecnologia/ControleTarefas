@@ -86,10 +86,12 @@
                                 </small>
                             {% endif %}
                         </div>
+                        {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
                         <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}"
                            class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-x-lg"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -511,11 +513,16 @@
 
                         <!-- ═══ BOTÕES ═══ -->
                         <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                             {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
                             <a href="{% if funcionario %}{% url 'departamento_pessoal:detalhe_funcionario' pk=funcionario.pk %}{% else %}{% url 'departamento_pessoal:lista_documentos' %}{% endif %}"
-                               class="btn btn-secondary">Cancelar</a>
+                               class="btn btn-secondary">Cancelar
+                            </a>
+                            {% endif %}
+                             {% if perms.departamento_pessoal.add_documento or perms.departamento_pessoal.change_documento or user.is_superuser %}
                             <button type="submit" class="btn btn-primary px-4" id="btnSalvarDoc">
                                 <i class="bi bi-check-lg me-1"></i> Salvar Documento
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

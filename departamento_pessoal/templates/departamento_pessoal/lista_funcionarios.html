@@ -21,7 +21,7 @@
             <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
         </a>
         {% endif %}
-        {% if perms.departamento_pessoal.view_cargo or user.is_superuser %}
+        {% if perms.departamento_pessoal.add_funcionario or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn btn-header-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Funcionário
         </a>
@@ -42,7 +42,7 @@
         </form>
     </div>
 
-    <!-- Tabela -->
+        <!-- Tabela -->
     {% if funcionarios %}
     <div class="table-responsive">
         <table class="table table-modern">
@@ -59,23 +59,29 @@
                 </tr>
             </thead>
             <tbody>
-                {% for funcionario in funcionarios %}
+            {% for funcionario in funcionarios %}
                 <tr>
                     <td>
-                        {% if funcionario.foto_3x4 %}
+                        <div class="d-flex align-items-center gap-2">
+                            {% if funcionario.foto_3x4 %}
                                 <img src="{{ funcionario.foto_3x4.url }}" 
-                                    class="rounded-circle" width="40" height="40" style="object-fit: cover;"
-                                    onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=40&bold=true';">
+                                     class="rounded-circle" width="40" height="40" style="object-fit: cover;"
+                                     onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=40&bold=true';">
                             {% else %}
                                 <img src="https://ui-avatars.com/api/?name={{ funcionario.nome_completo|urlencode }}&background=3b82f6&color=fff&size=40&bold=true"
-                                    class="rounded-circle" width="40" height="40">
+                                     class="rounded-circle" width="40" height="40">
                             {% endif %}
                             <div>
-                                <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}"
-                                   class="fw-semibold text-dark text-decoration-none">
-                                    {{ funcionario.nome_completo }}
-                                </a>
-                                <div class="small text-muted">{{ funcionario.email_pessoal|default:"" }}</div>
+                                {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
+                                    <a href="{% url 'departamento_pessoal:detalhe_funcionario' funcionario.pk %}"
+                                       class="fw-semibold text-dark text-decoration-none">
+                                        {{ funcionario.nome_completo }}
+                                    </a>
+                                    <div class="small text-muted">{{ funcionario.email_pessoal|default:"" }}</div>
+                                {% else %}
+                                    <span class="fw-semibold">{{ funcionario.nome_completo }}</span>
+                                    <div class="small text-muted">{{ funcionario.email_pessoal|default:"" }}</div>
+                                {% endif %}
                             </div>
                         </div>
                     </td>
@@ -94,7 +100,6 @@
                             <span class="badge-status bg-warning-soft text-warning">{{ funcionario.get_status_display }}</span>
                         {% endif %}
                     </td>
-                    <!-- ✅ Coluna Contrato com dados do Cliente -->
                     <td>
                         {% if funcionario.cliente %}
                             <span class="badge-status bg-primary-soft text-primary">
@@ -136,17 +141,10 @@
                         </div>
                     </td>
                 </tr>
-                {% endfor %}
+            {% endfor %}
             </tbody>
         </table>
     </div>
-
-    {% if is_paginated %}
-    <div class="content-card-body border-top">
-        {% include 'partials/pagination.html' %}
-    </div>
-    {% endif %}
-
     {% else %}
     <!-- Empty State -->
     <div class="empty-state">
@@ -155,13 +153,16 @@
         </div>
         <h5>Nenhum funcionário encontrado</h5>
         <p>Cadastre o primeiro funcionário da empresa.</p>
+        {% if perms.departamento_pessoal.add_funcionario or user.is_superuser %}
         <a href="{% url 'departamento_pessoal:funcionario_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Funcionário
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>
 {% endblock %}
+
 
 
 

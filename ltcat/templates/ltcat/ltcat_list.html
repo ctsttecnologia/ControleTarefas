@@ -91,18 +91,24 @@
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
+                                {% if perms.ltcat.view_ltcat or user.is_superuser %}
                                 <a href="{% url 'ltcat:ltcat_detail' ltcat.pk %}"
                                    class="btn btn-outline-primary" title="Visualizar">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.ltcat.change_ltcat or user.is_superuser %}
                                 <a href="{% url 'ltcat:ltcat_update' ltcat.pk %}"
                                    class="btn btn-outline-warning" title="Editar">
                                     <i class="fas fa-pencil"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.ltcat.delete_ltcat or user.is_superuser %}
                                 <a href="{% url 'ltcat:ltcat_delete' ltcat.pk %}"
                                    class="btn btn-outline-danger" title="Excluir">
                                     <i class="fas fa-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

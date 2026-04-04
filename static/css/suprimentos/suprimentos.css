@@ -1,0 +1,314 @@
+
+/* =================================================================
+   SUPRIMENTOS — Correções Tema Claro / Escuro
+   Sistema: Gerenciando Tarefas | Cetest Minas
+   ================================================================= */
+
+/* ═══════════════════════════════════════════════════════════════════
+   1. NAVBAR SECUNDÁRIA (suprimentos_base.html)
+═══════════════════════════════════════════════════════════════════ */
+.suprimentos-nav {
+    background-color: var(--bs-tertiary-bg) !important;
+    border-bottom: 1px solid var(--bs-border-color) !important;
+}
+
+.suprimentos-nav .navbar-brand {
+    color: var(--bs-primary) !important;
+}
+
+.suprimentos-nav .nav-link {
+    color: var(--bs-body-color) !important;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+}
+
+.suprimentos-nav .nav-link:hover,
+.suprimentos-nav .nav-link.active {
+    color: var(--bs-primary) !important;
+    opacity: 1;
+}
+
+.suprimentos-nav .dropdown-menu {
+    background-color: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+}
+
+.suprimentos-nav .dropdown-item {
+    color: var(--bs-body-color);
+}
+
+.suprimentos-nav .dropdown-item:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   2. CARDS — FUNDO E TEXTO ADAPTÁVEIS
+═══════════════════════════════════════════════════════════════════ */
+
+/* Card padrão */
+[data-bs-theme="dark"] .card {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+/* Card headers com bg-light / bg-white */
+[data-bs-theme="dark"] .card-header.bg-light,
+[data-bs-theme="dark"] .card-header.bg-white {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--bs-body-color) !important;
+    border-bottom-color: var(--bs-border-color);
+}
+
+/* Card headers coloridos (etapas) — manter cor de fundo, garantir texto legível */
+[data-bs-theme="dark"] .card-header.bg-info,
+[data-bs-theme="dark"] .card-header.bg-warning,
+[data-bs-theme="dark"] .card-header.bg-primary,
+[data-bs-theme="dark"] .card-header.bg-success,
+[data-bs-theme="dark"] .card-header.bg-danger {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Card body */
+[data-bs-theme="dark"] .card-body {
+    color: var(--bs-body-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   3. TEXTOS — CORRIGIR VISIBILIDADE NO DARK
+═══════════════════════════════════════════════════════════════════ */
+
+/* text-dark fica invisível no dark mode */
+[data-bs-theme="dark"] .card .text-dark,
+[data-bs-theme="dark"] .sol-card .text-dark,
+[data-bs-theme="dark"] .sol-action-area .text-dark {
+    color: var(--bs-body-color) !important;
+}
+
+/* text-muted precisa ser mais claro no escuro */
+[data-bs-theme="dark"] .text-muted {
+    color: #94a3b8 !important;
+}
+
+/* Labels de formulário */
+[data-bs-theme="dark"] .form-label {
+    color: var(--bs-body-color);
+}
+
+/* Títulos h2, h3, h4, h5, h6 dentro de cards */
+[data-bs-theme="dark"] .card h2,
+[data-bs-theme="dark"] .card h3,
+[data-bs-theme="dark"] .card h4,
+[data-bs-theme="dark"] .card h5,
+[data-bs-theme="dark"] .card h6,
+[data-bs-theme="dark"] .container-fluid h2,
+[data-bs-theme="dark"] .container-fluid h3 {
+    color: var(--bs-body-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   4. BACKGROUNDS HARDCODED — OVERRIDE NO DARK
+═══════════════════════════════════════════════════════════════════ */
+
+/* bg-white */
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--bs-tertiary-bg) !important;
+}
+
+/* bg-light (usado em alertas, áreas de resumo, etc.) */
+[data-bs-theme="dark"] .bg-light {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Badges bg-light */
+[data-bs-theme="dark"] .badge.bg-light {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-light.text-dark {
+    color: var(--bs-body-color) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   5. ALERTAS NO DARK MODE
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .alert-light {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border-color: var(--bs-border-color) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .alert-success {
+    background-color: rgba(25, 135, 84, 0.15) !important;
+    border-color: rgba(25, 135, 84, 0.3) !important;
+    color: #75b798 !important;
+}
+
+[data-bs-theme="dark"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+    border-color: rgba(220, 53, 69, 0.3) !important;
+    color: #ea868f !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   6. SOL-CARD (lista) — ÁREA EXPANDÍVEL
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .sol-action-area {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-top-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .sol-card {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   7. LIST-GROUP (sidebar cronologia, responsáveis, histórico)
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .list-group-item {
+    background-color: transparent;
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .list-group-flush .list-group-item {
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. STEPPER (detail) — VISIBILIDADE
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .rounded-circle.bg-light {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+}
+
+[data-bs-theme="dark"] .rounded-circle.bg-light.text-muted {
+    color: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   9. STEPPER MINI (lista) — CORES
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .stepper-mini .step {
+    background: #334155;
+}
+
+[data-bs-theme="dark"] .stepper-mini .step.done {
+    background: #198754;
+}
+
+[data-bs-theme="dark"] .stepper-mini .step.current {
+    background: #6ea8fe;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   10. MODAL — CANCELAR
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .modal-content {
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .modal-footer {
+    border-top-color: var(--bs-border-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   11. KPI CARDS (lista) — TEXTO
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .card .text-uppercase.text-muted {
+    color: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   12. INPUTS — DARK MODE
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: #64748b;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--bs-primary);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .input-group-text {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: var(--bs-border-color);
+    color: #94a3b8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   13. BORDERS — VISIBILIDADE
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .border {
+    border-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .border-bottom {
+    border-bottom-color: var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] hr {
+    border-color: rgba(255, 255, 255, 0.1);
+    opacity: 0.3;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   14. DETAIL — CAIXA DE DADOS bg-light (pré-wrap)
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .border.rounded.bg-light {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   15. DROPDOWN FILTROS
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .form-select option {
+    background-color: #1e293b;
+    color: var(--bs-body-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   16. BADGE WARNING TEXT-DARK FIX
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .badge.bg-warning.text-dark {
+    color: #1a202c !important;  /* manter escuro sobre amarelo */
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   17. LINKS E BOTÕES
+═══════════════════════════════════════════════════════════════════ */
+[data-bs-theme="dark"] .btn-outline-secondary {
+    border-color: #475569;
+    color: #94a3b8;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: #64748b;
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] a.text-decoration-none {
+    color: #6ea8fe;
+}
+
+[data-bs-theme="dark"] a.text-decoration-none:hover {
+    color: #93c5fd;
+}
+

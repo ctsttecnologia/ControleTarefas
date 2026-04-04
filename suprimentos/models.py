@@ -1134,6 +1134,7 @@ class SolicitacaoCompra(models.Model):
 
     @property
     def etapa_atual(self):
+        """Retorna número da etapa atual (1 a 8) baseado no status."""
         mapa = {
             'FAZER_COTACAO': 1,
             'COTACAO_ENVIADA': 2,
@@ -1144,18 +1145,49 @@ class SolicitacaoCompra(models.Model):
             'CONCLUIDO': 8,
             'CANCELADO': 0,
         }
-        return mapa.get(self.status, 0)
+        etapa = mapa.get(self.status, 1)
+        # Sub-etapa: entrega registrada, falta NF → etapa 7
+        if self.status == 'ENTREGA_PENDENTE' and self.data_entrega_efetiva:
+            etapa = 7
+        return etapa
+
 
     @property
-    def pode_cancelar(self):
-        return self.status not in ('CONCLUIDO', 'CANCELADO')
+    def status_badge_class(self):
+        """Classe CSS do badge conforme status."""
+        mapa = {
+            'FAZER_COTACAO': 'info',
+            'COTACAO_ENVIADA': 'warning text-dark',
+            'CRIAR_PEDIDO_CT': 'primary',
+            'EM_APROVACAO': 'warning text-dark',
+            'ENVIAR_PEDIDO': 'info',
+            'ENTREGA_PENDENTE': 'secondary',
+            'CONCLUIDO': 'success',
+            'CANCELADO': 'dark',
+        }
+        return mapa.get(self.status, 'secondary')
 
     @property
     def dias_em_aberto(self):
-        if self.status == 'CONCLUIDO' and self.data_entrega_efetiva:
-            return (self.data_entrega_efetiva - self.criado_em.date()).days
-        return (timezone.now().date() - self.criado_em.date()).days
+        """Dias desde a criação."""
+        from django.utils import timezone
+        if self.status in ('CONCLUIDO', 'CANCELADO'):
+            return 0
+        delta = timezone.now().date() - self.criado_em.date()
+        return delta.days
 
+    @property
+    def pode_cancelar(self):
+        """Pode cancelar se não estiver concluído ou já cancelado."""
+        return self.status not in ('CONCLUIDO', 'CANCELADO')
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('suprimentos:solicitacao_detalhe', kwargs={'pk': self.pk})
+    
+    
+
+    
 
 # ═════════════════════════════════════════════════
 # 6b. ANEXOS DA SOLICITAÇÃO

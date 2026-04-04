@@ -487,7 +487,7 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         # Funcionários: superusuário vê todos, demais só da filial ativa
         funcionarios_qs = User.objects.filter(is_active=True)
         if not user.is_superuser and filial_ativa:
-            funcionarios_qs = funcionarios_qs.filter(filial=filial_ativa)
+            funcionarios_qs = funcionarios_qs.filter(filial_ativa=filial_ativa)
         ctx['funcionarios_filter'] = funcionarios_qs.order_by('first_name', 'last_name')
 
         # Clientes: superusuário vê todos, demais só da filial ativa
@@ -1520,6 +1520,7 @@ class PedidoAprovarView(LoginRequiredMixin, AppPermissionMixin, View):
             logger.error(f"Erro ao gerar solicitação: {e}")
             messages.success(request, f'Pedido {pedido.numero} aprovado! ✅')
             messages.error(request, f'Erro ao gerar solicitação: {e}')
+        return redirect(pedido.get_absolute_url())
 
 
 # ── Anexo do Pedido ──
@@ -2051,126 +2052,209 @@ def _registrar_hist_sol(sol, descricao, user, status_ant='', status_novo=''):
 
 
 class SolicitacaoListView(LoginRequiredMixin, AppPermissionMixin, ListView):
+    """
+    Lista de Solicitações de Compra com formulários inline por etapa.
+    Aprovador pode flag/liberar, Comprador pode inserir cotação direto na lista.
+    """
     app_label_required = _APP
-    model = SolicitacaoCompra
     template_name = 'suprimentos/solicitacao/solicitacao_list.html'
     context_object_name = 'solicitacoes'
     paginate_by = 20
 
     def get_queryset(self):
         user = self.request.user
-        qs = _sol_qs_for_user(user)
+        qs = SolicitacaoCompra.objects.select_related(
+            'contrato', 'solicitante', 'comprador',
+            'fornecedor', 'aprovador_inicial',
+            'aprovador_cotacao', 'aprovador_pedido',
+        ).order_by('-criado_em')
 
-        if not (_user_is_aprovador(user) or _user_is_comprador(user)):
-            qs = qs.filter(solicitante=user)
+        # ── Filtro por filial ──
+        if not user.is_superuser:
+            filial = getattr(user, 'filial_ativa', None)
+            if filial:
+                qs = qs.filter(contrato__filial=filial)
 
+        # ── Filtros GET ──
         status = self.request.GET.get('status', '')
-        q = self.request.GET.get('q', '')
-        tipo_obra = self.request.GET.get('tipo_obra', '')
-
         if status:
             qs = qs.filter(status=status)
-        if q:
-            qs = qs.filter(
-                Q(numero__icontains=q)
-                | Q(descricao_material__icontains=q)
-                | Q(contrato__cm__icontains=q)
-                | Q(contrato__cliente__icontains=q)
-            )
+
+        tipo_obra = self.request.GET.get('tipo_obra', '')
         if tipo_obra:
             qs = qs.filter(tipo_obra=tipo_obra)
+
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                Q(numero__icontains=q) |
+                Q(descricao_material__icontains=q) |
+                Q(contrato__cm__icontains=q) |
+                Q(contrato__cliente__icontains=q) |
+                Q(numero_cotacao__icontains=q) |
+                Q(numero_pedido_sienge__icontains=q)
+            )
 
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['titulo_pagina'] = 'Solicitações de Compra'
-        ctx['status_choices'] = SolicitacaoCompra.StatusChoices.choices
-        ctx['tipo_obra_choices'] = TipoObra.choices
-        ctx['filtro_status'] = self.request.GET.get('status', '')
-        ctx['filtro_q'] = self.request.GET.get('q', '')
-        ctx['filtro_tipo_obra'] = self.request.GET.get('tipo_obra', '')
-        ctx['is_aprovador'] = _user_is_aprovador(self.request.user)
-        ctx['is_comprador'] = _user_is_comprador(self.request.user)
-
         user = self.request.user
-        base_qs = _sol_qs_for_user(user)
-        if not (_user_is_aprovador(user) or _user_is_comprador(user)):
-            base_qs = base_qs.filter(solicitante=user)
 
+        # Permissões
+        is_aprovador = _user_is_aprovador(user)
+        is_comprador = _user_is_comprador(user)
+        ctx['is_aprovador'] = is_aprovador
+        ctx['is_comprador'] = is_comprador
+
+        # KPIs
+        base_qs = self.get_queryset()
         ctx['count_cotacao'] = base_qs.filter(status='FAZER_COTACAO').count()
-        ctx['count_aprovacao'] = base_qs.filter(status='EM_APROVACAO').count()
+        ctx['count_aprovacao'] = base_qs.filter(
+            status__in=['COTACAO_ENVIADA', 'EM_APROVACAO']
+        ).count()
         ctx['count_pendentes'] = base_qs.exclude(
             status__in=['CONCLUIDO', 'CANCELADO']
         ).count()
+
+        # Filtros para o template
+        ctx['filtro_q'] = self.request.GET.get('q', '')
+        ctx['filtro_status'] = self.request.GET.get('status', '')
+        ctx['filtro_tipo_obra'] = self.request.GET.get('tipo_obra', '')
+
+        # Choices para selects de filtro
+        ctx['status_choices'] = SolicitacaoCompra.StatusChoices.choices
+        ctx['tipo_obra_choices'] = SolicitacaoCompra._meta.get_field('tipo_obra').choices
+
+        # ── Formulários inline para cada solicitação ──
+        solicitacoes = ctx['solicitacoes']
+        forms_map = {}
+        for sol in solicitacoes:
+            sol_forms = {}
+
+            # Comprador: Fazer Cotação
+            if sol.status == 'FAZER_COTACAO' and is_comprador:
+                sol_forms['form_cotacao'] = CotacaoForm(prefix=f'cot_{sol.pk}')
+                sol_forms['form_anexo'] = AnexoSolicitacaoForm(prefix=f'anx_{sol.pk}')
+
+            # Aprovador: Validar Cotação
+            if sol.status == 'COTACAO_ENVIADA' and is_aprovador:
+                sol_forms['form_validar'] = ValidarCotacaoForm(prefix=f'val_{sol.pk}')
+
+            # Comprador: Criar Pedido
+            if sol.status == 'CRIAR_PEDIDO_CT' and is_comprador:
+                sol_forms['form_pedido'] = CriarPedidoSiengeForm(prefix=f'ped_{sol.pk}')
+
+            # Aprovador: Aprovar Pedido
+            if sol.status == 'EM_APROVACAO' and is_aprovador:
+                sol_forms['form_aprovar'] = AprovarPedidoSiengeForm(prefix=f'apr_{sol.pk}')
+
+            # Comprador: Enviar ao Fornecedor
+            if sol.status == 'ENVIAR_PEDIDO' and is_comprador:
+                sol_forms['form_enviar'] = EnviarPedidoFornecedorForm(prefix=f'env_{sol.pk}')
+
+            # Comprador: Registrar Entrega
+            if sol.status == 'ENTREGA_PENDENTE' and is_comprador:
+                sol_forms['form_entrega'] = RegistrarEntregaForm(prefix=f'ent_{sol.pk}')
+                if sol.data_entrega_efetiva:
+                    sol_forms['form_encerrar'] = EncerrarSolicitacaoForm(prefix=f'enc_{sol.pk}')
+
+            if sol_forms:
+                forms_map[sol.pk] = sol_forms
+
+        ctx['forms_map'] = forms_map
+
+        # Dados para os forms inline
+        ctx['fornecedores'] = Parceiro.objects.filter(
+            eh_fornecedor=True, ativo=True
+        ).order_by('nome_fantasia')
+
+        # Choices de Tipo NF
+        ctx['tipo_nf_choices'] = SolicitacaoCompra._meta.get_field('tipo_nota_fiscal').choices
 
         return ctx
 
 
 class SolicitacaoDetailView(LoginRequiredMixin, AppPermissionMixin, DetailView):
+    """Detalhe da Solicitação de Compra com formulários contextuais."""
     app_label_required = _APP
     model = SolicitacaoCompra
     template_name = 'suprimentos/solicitacao/solicitacao_detail.html'
     context_object_name = 'sol'
 
     def get_queryset(self):
-        return _sol_qs_for_user(self.request.user)
+        return SolicitacaoCompra.objects.select_related(
+            'contrato', 'solicitante', 'comprador',
+            'fornecedor', 'aprovador_inicial',
+            'aprovador_cotacao', 'aprovador_pedido',
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         sol = self.object
         user = self.request.user
+        is_aprovador = _user_is_aprovador(user)
+        is_comprador = _user_is_comprador(user)
 
-        ctx['anexos'] = sol.anexos.all()
-        ctx['historico'] = sol.historico.all()
-        ctx['is_aprovador'] = _user_is_aprovador(user)
-        ctx['is_comprador'] = _user_is_comprador(user)
+        ctx['is_aprovador'] = is_aprovador
+        ctx['is_comprador'] = is_comprador
 
-        # Pedido de origem
-        if hasattr(sol, 'pedido_origem'):
-            ctx['pedido_origem'] = sol.pedido_origem
+        # ── Etapas do stepper ──
+        ctx['etapas'] = [
+            {'num': 1, 'titulo': 'Fazer Cotação'},
+            {'num': 2, 'titulo': 'Validar Cotação'},
+            {'num': 3, 'titulo': 'Criar Pedido'},
+            {'num': 4, 'titulo': 'Aprovar Pedido'},
+            {'num': 5, 'titulo': 'Enviar Fornecedor'},
+            {'num': 6, 'titulo': 'Entrega'},
+            {'num': 7, 'titulo': 'Nota Fiscal'},
+            {'num': 8, 'titulo': 'Concluído'},
+        ]
 
-        # Forms contextuais
-        status = sol.status
-        if status == 'FAZER_COTACAO' and _user_is_comprador(user):
+        # ── Formulários contextuais ──
+        if sol.status == 'FAZER_COTACAO' and is_comprador:
             ctx['form_cotacao'] = CotacaoForm(instance=sol)
-        if status == 'COTACAO_ENVIADA' and _user_is_aprovador(user):
+
+        if sol.status == 'COTACAO_ENVIADA' and is_aprovador:
             ctx['form_validar_cotacao'] = ValidarCotacaoForm()
-        if status == 'CRIAR_PEDIDO_CT' and _user_is_comprador(user):
+
+        if sol.status == 'CRIAR_PEDIDO_CT' and is_comprador:
             ctx['form_criar_pedido'] = CriarPedidoSiengeForm(instance=sol)
-        if status == 'EM_APROVACAO' and _user_is_aprovador(user):
+
+        if sol.status == 'EM_APROVACAO' and is_aprovador:
             ctx['form_aprovar_pedido'] = AprovarPedidoSiengeForm()
-        if status == 'ENVIAR_PEDIDO' and _user_is_comprador(user):
+            # Verificar verba
+            if hasattr(sol, 'verificar_verba'):
+                ok, msg = sol.verificar_verba()
+                ctx['verba_ok'] = ok
+                ctx['verba_msg'] = msg
+
+        if sol.status == 'ENVIAR_PEDIDO' and is_comprador:
             ctx['form_enviar_fornecedor'] = EnviarPedidoFornecedorForm()
-        if status == 'ENTREGA_PENDENTE' and _user_is_comprador(user):
-            ctx['form_entrega'] = RegistrarEntregaForm()
-            if sol.data_entrega_efetiva:
+
+        if sol.status == 'ENTREGA_PENDENTE' and is_comprador:
+            if not sol.data_entrega_efetiva:
+                ctx['form_entrega'] = RegistrarEntregaForm()
+            else:
                 ctx['form_encerrar'] = EncerrarSolicitacaoForm()
 
-        if sol.pode_cancelar:
-            ctx['form_cancelar'] = CancelarSolicitacaoForm()
+        # Formulários permanentes
         ctx['form_anexo'] = AnexoSolicitacaoForm()
         ctx['form_observacao'] = ObservacaoSolicitacaoForm()
+        ctx['form_cancelar'] = CancelarSolicitacaoForm()
 
-        if sol.valor_pedido:
-            ok, msg = sol.verificar_verba()
-            ctx['verba_ok'] = ok
-            ctx['verba_msg'] = msg
+        # Anexos e Histórico
+        ctx['anexos'] = sol.anexos.all() if hasattr(sol, 'anexos') else []
+        ctx['historico'] = sol.historicos.all().order_by('-criado_em') if hasattr(sol, 'historicos') else []
 
-        ctx['etapas'] = [
-            {'num': 1, 'titulo': 'Cotação', 'desc': 'Fazer Cotação'},
-            {'num': 2, 'titulo': 'Validação', 'desc': 'Cotação Enviada'},
-            {'num': 3, 'titulo': 'Pedido', 'desc': 'Criar Pedido/CT'},
-            {'num': 4, 'titulo': 'Aprovação', 'desc': 'Em Aprovação'},
-            {'num': 5, 'titulo': 'Envio', 'desc': 'Enviar Pedido'},
-            {'num': 6, 'titulo': 'Entrega', 'desc': 'Entrega Pendente'},
-            {'num': 7, 'titulo': 'Recebimento', 'desc': 'Entrega Efetiva'},
-            {'num': 8, 'titulo': 'NF', 'desc': 'Nota Fiscal'},
-        ]
-        ctx['etapa_atual'] = sol.etapa_atual
+        # Pedido de origem
+        if hasattr(sol, 'pedido'):
+            ctx['pedido_origem'] = sol.pedido
+        elif hasattr(sol, 'pedido_origem'):
+            ctx['pedido_origem'] = sol.pedido_origem
 
         return ctx
-
+    
 
 class SolicitacaoCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
     app_label_required = _APP
@@ -2207,7 +2291,11 @@ class SolicitacaoCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
                 logger.error(f"Erro notificação cotação enviada: {e}")
 
             messages.success(request, 'Cotação registrada! Aguardando validação. 📊')
-
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url())
 
 class SolicitacaoValidarCotacaoView(LoginRequiredMixin, AppPermissionMixin, View):
     app_label_required = _APP
@@ -2245,6 +2333,11 @@ class SolicitacaoValidarCotacaoView(LoginRequiredMixin, AppPermissionMixin, View
                 logger.error(f"Erro notificação cotação validada: {e}")
 
             messages.success(request, 'Cotação validada! Comprador pode criar o pedido. ✅')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url()) 
 
 
 class SolicitacaoCriarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
@@ -2286,6 +2379,11 @@ class SolicitacaoCriarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
                 logger.error(f"Erro notificação pedido sienge criado: {e}")
 
             messages.success(request, 'Pedido criado! Aguardando aprovação. 📦')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url())
 
 
 class SolicitacaoAprovarPedidoView(LoginRequiredMixin, AppPermissionMixin, View):
@@ -2324,6 +2422,11 @@ class SolicitacaoAprovarPedidoView(LoginRequiredMixin, AppPermissionMixin, View)
                 logger.error(f"Erro notificação pedido aprovado: {e}")
 
             messages.success(request, 'Pedido aprovado! Enviar ao fornecedor. ✅')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url())
 
 class SolicitacaoEnviarFornecedorView(LoginRequiredMixin, AppPermissionMixin, View):
     app_label_required = _APP
@@ -2362,6 +2465,11 @@ class SolicitacaoEnviarFornecedorView(LoginRequiredMixin, AppPermissionMixin, Vi
                 logger.error(f"Erro notificação envio fornecedor: {e}")
 
             messages.success(request, f'Pedido enviado! Previsão: {sol.data_prevista_entrega}. 🚚')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url())
 
 class SolicitacaoRegistrarEntregaView(LoginRequiredMixin, AppPermissionMixin, View):
     app_label_required = _APP
@@ -2394,6 +2502,11 @@ class SolicitacaoRegistrarEntregaView(LoginRequiredMixin, AppPermissionMixin, Vi
                 logger.error(f"Erro notificação entrega: {e}")
 
             messages.success(request, f'Entrega registrada! Agora informe o Nº da NF para encerrar. 📦')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url())
 
 class SolicitacaoEncerrarView(LoginRequiredMixin, AppPermissionMixin, View):
     app_label_required = _APP
@@ -2427,6 +2540,11 @@ class SolicitacaoEncerrarView(LoginRequiredMixin, AppPermissionMixin, View):
                 logger.error(f"Erro notificação conclusão: {e}")
 
             messages.success(request, f'Solicitação {sol.numero} CONCLUÍDA! ✅🎉')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{field}: {error}')
+        return redirect(sol.get_absolute_url())
 
 
 class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
@@ -2475,6 +2593,9 @@ class SolicitacaoCancelarView(LoginRequiredMixin, AppPermissionMixin, View):
                 logger.error(f"Erro notificação cancelamento: {e}")
 
             messages.warning(request, f'Solicitação {sol.numero} cancelada.')
+        else:
+            messages.error(request, 'Informe o motivo do cancelamento.')
+        return redirect(sol.get_absolute_url())
 
 
 class SolicitacaoAnexoView(LoginRequiredMixin, AppPermissionMixin, View):

@@ -10,9 +10,11 @@
         <h5 class="mb-0">
             <i class="bi bi-building me-2 text-primary"></i>Filiais Cadastradas
         </h5>
+        {% if perms.usuario.add_filial or user.is_superuser %}
         <a href="{% url 'usuario:filial_create' %}" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle me-1"></i>Nova Filial
         </a>
+        {% endif %}
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -36,14 +38,18 @@
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
+                                {% if perms.usuario.change_filial or user.is_superuser %}
                                 <a href="{% url 'usuario:filial_update' filial.pk %}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.usuario.delete_filial or user.is_superuser %}
                                 <a href="{% url 'usuario:filial_delete' filial.pk %}"
                                    class="btn btn-outline-danger" title="Excluir">
                                     <i class="bi bi-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

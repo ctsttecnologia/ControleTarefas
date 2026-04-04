@@ -5,13 +5,14 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="{% static 'css/suprimentos/suprimentos.css' %}">
 {% endblock %}
 
 {% block content %}
 {# ═══════ Barra de navegação secundária do Suprimentos ═══════ #}
-<nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm sticky-top" style="z-index: 1020;">
+<nav class="navbar navbar-expand-lg suprimentos-nav border-bottom shadow-sm sticky-top" style="z-index: 1020;">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold text-primary" href="{% url 'suprimentos:dashboard' %}">
+        <a class="navbar-brand fw-bold" href="{% url 'suprimentos:dashboard' %}">
             <i class="bi bi-box-seam-fill me-1"></i> Suprimentos
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -43,8 +44,9 @@
                     </a>
                 </li>
 
-                {# ── NOVO: Solicitações de Compra ── #}
+                {# Solicitações de Compra #}
                 <li class="nav-item">
+                    {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
                     <a class="nav-link position-relative {% if 'solicitacao' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
                        href="{% url 'suprimentos:solicitacao_lista' %}">
                         <i class="bi bi-bag-check me-1"></i> Solicitações
@@ -55,33 +57,41 @@
                         </span>
                         {% endif %}
                     </a>
+                    {% endif %}
                 </li>
 
                 {# Contratos #}
                 <li class="nav-item">
+                    {% if perms.suprimentos.view_contrato or user.is.superuser %}
                     <a class="nav-link {% if 'contrato' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
                        href="{% url 'suprimentos:contrato_lista' %}">
                         <i class="bi bi-file-earmark-text me-1"></i> Contratos
                     </a>
+                    {% endif %}
                 </li>
 
                 {# Materiais #}
                 <li class="nav-item">
+                    {% if perms.suprimentos.view_material or user.is.superuser %}
                     <a class="nav-link {% if 'material' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
                        href="{% url 'suprimentos:material_lista' %}">
                         <i class="bi bi-box-seam me-1"></i> Materiais
                     </a>
+                    {% endif %}
                 </li>
 
                 {# Parceiros #}
                 <li class="nav-item">
+                    {% if perms.suprimentos.view_parceiro or user.is.superuser %}
                     <a class="nav-link {% if 'parceiro' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
                        href="{% url 'suprimentos:parceiro_list' %}">
                         <i class="bi bi-people me-1"></i> Parceiros
                     </a>
+                    {% endif %}
                 </li>
 
                 {# Relatórios (dropdown) #}
+                
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle fw-semibold
                        {% if 'relatorio' in request.resolver_match.url_name or request.resolver_match.app_name == 'tributacao' %}active{% endif %}"
@@ -117,9 +127,11 @@
             </ul>
 
             {# Botão Novo Pedido #}
+            {% if perms.suprimentos.add_pedido or user.is.superuser %}
             <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-success btn-sm">
                 <i class="bi bi-cart-plus me-1"></i> Novo Pedido
             </a>
+            {% endif %}
         </div>
     </div>
 </nav>
@@ -127,6 +139,3 @@
 {% block suprimentos_content %}{% endblock %}
 
 {% endblock content %}
-
-
-

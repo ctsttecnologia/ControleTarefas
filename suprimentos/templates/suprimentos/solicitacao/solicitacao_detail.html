@@ -1,671 +1,797 @@
 
+{# templates/suprimentos/solicitacao/solicitacao_detail.html #}
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
 {% block title %}{{ sol.numero }} — Solicitação de Compra{% endblock %}
 
-{% block extra_css %}
-<style>
-    .timeline-step {
-        position: relative;
-        text-align: center;
-        flex: 1;
-    }
-    .timeline-step .step-circle {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 3px solid #dee2e6;
-        background: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 8px;
-        font-weight: bold;
-        font-size: 0.8rem;
-        z-index: 2;
-        position: relative;
-    }
-    .timeline-step.completed .step-circle {
-        border-color: #198754;
-        background: #198754;
-        color: #fff;
-    }
-    .timeline-step.active .step-circle {
-        border-color: #0d6efd;
-        background: #0d6efd;
-        color: #fff;
-        box-shadow: 0 0 0 4px rgba(13,110,253,0.25);
-    }
-    .timeline-step.cancelled .step-circle {
-        border-color: #dc3545;
-        background: #dc3545;
-        color: #fff;
-    }
-    .timeline-connector {
-        position: absolute;
-        top: 18px;
-        left: 50%;
-        width: 100%;
-        height: 3px;
-        background: #dee2e6;
-        z-index: 1;
-    }
-    .timeline-step.completed .timeline-connector {
-        background: #198754;
-    }
-    .timeline-step .step-label {
-        font-size: 0.7rem;
-        color: #6c757d;
-    }
-    .timeline-step.active .step-label {
-        color: #0d6efd;
-        font-weight: bold;
-    }
-    .timeline-step.completed .step-label {
-        color: #198754;
-    }
-</style>
-{% endblock %}
-
-{% block content %}
+{% block suprimentos_content %}
 <div class="container-fluid py-4">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-start mb-4">
+    {# ═══ CABEÇALHO ═══ #}
+    <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
-            <a href="{% url 'suprimentos:solicitacao_lista' %}" class="text-decoration-none text-muted">
-                <i class="fas fa-arrow-left me-1"></i>Solicitações
-            </a>
-            <h2 class="mt-2 mb-0">
-                {{ sol.numero }}
-                <span class="badge bg-{{ sol.status_badge_class }} ms-2">{{ sol.get_status_display }}</span>
-            </h2>
-            <small class="text-muted">
-                {{ sol.contrato.cliente }} — {{ sol.get_tipo_obra_display }}
-                | {{ sol.dias_em_aberto }} dias em aberto
-                {% if pedido_origem %}
-                    | Pedido: <a href="{{ pedido_origem.get_absolute_url }}">{{ pedido_origem.numero }}</a>
-                {% endif %}
-            </small>
+            <h3 class="fw-bold mb-1">
+                <i class="bi bi-bag-check-fill text-primary me-2"></i>{{ sol.numero }}
+            </h3>
+            <p class="text-muted mb-0">
+                {{ sol.contrato }} · {{ sol.get_tipo_obra_display }}
+                <span class="badge bg-{{ sol.status_badge_class }} ms-2 px-3">{{ sol.get_status_display }}</span>
+            </p>
         </div>
-        <div>
+        <div class="d-flex gap-2">
             {% if sol.pode_cancelar %}
-            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#modalCancelar">
-                <i class="fas fa-ban me-1"></i>Cancelar
+            <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#modalCancelar">
+                <i class="bi bi-x-octagon me-1"></i> Cancelar
             </button>
             {% endif %}
+            <a href="{% url 'suprimentos:solicitacao_lista' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
         </div>
     </div>
 
-    <!-- Timeline Visual -->
+    {# ═══════════════════════════════════════════════════ #}
+    {#  STEPPER — PIPELINE VISUAL                         #}
+    {# ═══════════════════════════════════════════════════ #}
+    {% if sol.status != 'CANCELADO' %}
     <div class="card shadow-sm mb-4">
-        <div class="card-body py-4">
-            <div class="d-flex position-relative">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center overflow-auto pb-2" style="gap: 0;">
                 {% for etapa in etapas %}
-                <div class="timeline-step {% if sol.status == 'CANCELADO' %}cancelled{% elif etapa.num < etapa_atual %}completed{% elif etapa.num == etapa_atual %}active{% endif %}">
-                    {% if not forloop.last %}
-                    <div class="timeline-connector"></div>
-                    {% endif %}
-                    <div class="step-circle">
-                        {% if sol.status == 'CANCELADO' and etapa.num == 1 %}
-                            <i class="fas fa-ban" style="font-size: 0.7rem;"></i>
-                        {% elif etapa.num < etapa_atual %}
-                            <i class="fas fa-check" style="font-size: 0.7rem;"></i>
+                {% with current=sol.etapa_atual %}
+                <div class="text-center flex-shrink-0" style="min-width: 100px;">
+                    {# Ícone circular #}
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-1
+                        {% if etapa.num < current %}bg-success text-white
+                        {% elif etapa.num == current %}bg-primary text-white shadow
+                        {% else %}bg-light text-muted border{% endif %}"
+                        style="width:36px;height:36px;font-size:.85rem;font-weight:700;">
+                        {% if etapa.num < current %}
+                            <i class="bi bi-check-lg"></i>
                         {% else %}
                             {{ etapa.num }}
                         {% endif %}
                     </div>
-                    <div class="step-label">{{ etapa.titulo }}</div>
+                    <div class="small {% if etapa.num == current %}fw-bold text-primary{% elif etapa.num < current %}text-success{% else %}text-muted{% endif %}"
+                         style="font-size:.7rem;line-height:1.2;">
+                        {{ etapa.titulo }}
+                    </div>
                 </div>
+                {# Linha conectora #}
+                {% if not forloop.last %}
+                <div class="flex-grow-1" style="height:2px;min-width:20px;
+                    background:{% if etapa.num < current %}#198754{% else %}#dee2e6{% endif %};
+                    margin-top:-12px;"></div>
+                {% endif %}
+                {% endwith %}
                 {% endfor %}
             </div>
         </div>
     </div>
-
-    <!-- Alerta de Verba -->
-    {% if verba_ok == False %}
-    <div class="alert alert-danger">
-        <i class="fas fa-exclamation-triangle me-2"></i>{{ verba_msg }}
-    </div>
     {% endif %}
 
-    <div class="row">
-        <!-- Coluna Principal -->
+    <div class="row g-4">
+
+        {# ═══════════════════════════════════════════════ #}
+        {#  COLUNA ESQUERDA — DADOS + AÇÃO ATUAL          #}
+        {# ═══════════════════════════════════════════════ #}
         <div class="col-lg-8">
 
-            <!-- Dados do Material -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-box me-2"></i>Material Solicitado</h5>
-                </div>
-                <div class="card-body">
-                    <p class="mb-3" style="white-space: pre-wrap;">{{ sol.descricao_material }}</p>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">QUANTIDADE</label>
-                            <p>{{ sol.quantidade }} {{ sol.get_unidade_medida_display }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">TIPO INSUMO</label>
-                            <p>{{ sol.get_tipo_insumo_display|default:"—" }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">DATA NECESSÁRIA</label>
-                            <p>{{ sol.data_necessaria|date:"d/m/Y"|default:"—" }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="fw-bold text-muted small">TIPO OBRA</label>
-                            <p>{{ sol.get_tipo_obra_display }}</p>
-                        </div>
+            {# ── Alerta verba ── #}
+            {% if verba_ok is not None %}
+                {% if not verba_ok %}
+                <div class="alert alert-danger d-flex align-items-center mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                    <div>
+                        <strong>Verba Excedida!</strong> {{ verba_msg }}
                     </div>
                 </div>
-            </div>
+                {% endif %}
+            {% endif %}
 
-            <!-- Dados Operacionais (preenchidos ao longo do workflow) -->
+            {# ── Dados gerais ── #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Dados Operacionais</h5>
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-info-circle me-1"></i> Dados da Solicitação
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <!-- Cotação -->
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 h-100 {% if sol.numero_cotacao %}bg-light{% endif %}">
-                                <h6 class="text-primary mb-2"><i class="fas fa-search-dollar me-1"></i>Cotação</h6>
-                                {% if sol.numero_cotacao %}
-                                <dl class="mb-0 small">
-                                    <dt class="text-muted">Nº Cotação</dt><dd>{{ sol.numero_cotacao }}</dd>
-                                    <dt class="text-muted">Data</dt><dd>{{ sol.data_cotacao|date:"d/m/Y" }}</dd>
-                                    <dt class="text-muted">CNPJ</dt><dd>{{ sol.cnpj_compra }}</dd>
-                                    <dt class="text-muted">Tipo NF</dt><dd>{{ sol.get_tipo_nota_fiscal_display }}</dd>
-                                    {% if sol.data_validacao_cotacao %}
-                                    <dt class="text-muted">Validado em</dt><dd class="text-success">{{ sol.data_validacao_cotacao|date:"d/m/Y" }} ✅</dd>
-                                    {% endif %}
-                                </dl>
-                                {% else %}
-                                <p class="text-muted small mb-0">Aguardando cotação...</p>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small">Contrato</div>
+                            <div class="fw-semibold">{{ sol.contrato.cm }} — {{ sol.contrato.cliente }}</div>
                         </div>
-
-                        <!-- Pedido Sienge -->
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 h-100 {% if sol.numero_pedido_sienge %}bg-light{% endif %}">
-                                <h6 class="text-info mb-2"><i class="fas fa-file-invoice me-1"></i>Pedido Sienge</h6>
-                                {% if sol.numero_pedido_sienge %}
-                                <dl class="mb-0 small">
-                                    <dt class="text-muted">Nº Pedido</dt><dd>{{ sol.numero_pedido_sienge }}</dd>
-                                    <dt class="text-muted">Criado em</dt><dd>{{ sol.data_criacao_pedido|date:"d/m/Y" }}</dd>
-                                    <dt class="text-muted">Fornecedor</dt><dd>{{ sol.fornecedor|default:"—" }}</dd>
-                                    <dt class="text-muted">Valor</dt><dd class="fw-bold">R$ {{ sol.valor_pedido|floatformat:2 }}</dd>
-                                    {% if sol.data_aprovacao_pedido %}
-                                    <dt class="text-muted">Aprovado em</dt><dd class="text-success">{{ sol.data_aprovacao_pedido|date:"d/m/Y" }} ✅</dd>
-                                    {% endif %}
-                                </dl>
-                                {% else %}
-                                <p class="text-muted small mb-0">Aguardando criação...</p>
-                                {% endif %}
-                            </div>
+                        <div class="col-md-4">
+                            <div class="text-muted small">Tipo de Obra</div>
+                            <div>{{ sol.get_tipo_obra_display }}</div>
                         </div>
-
-                        <!-- Entrega -->
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 h-100 {% if sol.data_envio_fornecedor %}bg-light{% endif %}">
-                                <h6 class="text-warning mb-2"><i class="fas fa-truck me-1"></i>Entrega</h6>
-                                {% if sol.data_envio_fornecedor %}
-                                <dl class="mb-0 small">
-                                    <dt class="text-muted">Enviado em</dt><dd>{{ sol.data_envio_fornecedor|date:"d/m/Y" }}</dd>
-                                    <dt class="text-muted">Previsão</dt><dd>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</dd>
-                                    {% if sol.data_entrega_efetiva %}
-                                    <dt class="text-muted">Entregue em</dt><dd class="text-success">{{ sol.data_entrega_efetiva|date:"d/m/Y" }} ✅</dd>
-                                    {% endif %}
-                                </dl>
+                        <div class="col-md-4">
+                            <div class="text-muted small">Data Necessária</div>
+                            <div>
+                                {% if sol.data_necessaria %}
+                                    {{ sol.data_necessaria|date:"d/m/Y" }}
+                                    {% with dias=sol.dias_em_aberto %}
+                                    <span class="badge {% if dias > 15 %}bg-danger{% elif dias > 7 %}bg-warning text-dark{% else %}bg-secondary{% endif %} ms-1">
+                                        {{ dias }}d em aberto
+                                    </span>
+                                    {% endwith %}
                                 {% else %}
-                                <p class="text-muted small mb-0">Aguardando envio...</p>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- NF -->
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 h-100 {% if sol.numero_nota_fiscal %}bg-success bg-opacity-10{% endif %}">
-                                <h6 class="text-success mb-2"><i class="fas fa-file-invoice-dollar me-1"></i>Nota Fiscal</h6>
-                                {% if sol.numero_nota_fiscal %}
-                                <p class="fw-bold mb-0">NF: {{ sol.numero_nota_fiscal }}</p>
-                                <small class="text-success">✅ Solicitação Concluída</small>
-                                {% else %}
-                                <p class="text-muted small mb-0">Aguardando...</p>
+                                    <span class="text-muted">Não informada</span>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
+                    <hr>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="text-muted small">Descrição do Material</div>
+                            <div class="border rounded p-2 bg-light" style="white-space:pre-wrap;">{{ sol.descricao_material|default:"—" }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Quantidade</div>
+                            <div class="fw-semibold">{{ sol.quantidade|default:"—" }} {{ sol.get_unidade_medida_display }}</div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-muted small">Tipo de Insumo</div>
+                            <div>{{ sol.get_tipo_insumo_display|default:"—" }}</div>
+                        </div>
+                    </div>
+
+                    {# Dados preenchidos nas etapas #}
+                    {% if sol.fornecedor or sol.valor_pedido or sol.numero_cotacao %}
+                    <hr>
+                    <div class="row g-3">
+                        {% if sol.numero_cotacao %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">Nº Cotação</div>
+                            <div class="fw-semibold">{{ sol.numero_cotacao }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.cnpj_compra %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">CNPJ Compra</div>
+                            <div>{{ sol.cnpj_compra }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.tipo_nota_fiscal %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">Tipo NF</div>
+                            <div>{{ sol.get_tipo_nota_fiscal_display }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.fornecedor %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">Fornecedor</div>
+                            <div class="fw-semibold">{{ sol.fornecedor }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.valor_pedido %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">Valor do Pedido</div>
+                            <div class="fw-bold text-primary fs-5">R$ {{ sol.valor_pedido|floatformat:2 }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.numero_pedido_sienge %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">Nº Pedido (Sistema)</div>
+                            <div class="fw-semibold">{{ sol.numero_pedido_sienge }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.numero_nota_fiscal %}
+                        <div class="col-md-3">
+                            <div class="text-muted small">Nº Nota Fiscal</div>
+                            <div class="fw-semibold text-success">{{ sol.numero_nota_fiscal }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {# Datas do workflow #}
+                    {% if sol.data_envio_fornecedor or sol.data_prevista_entrega or sol.data_entrega_efetiva %}
+                    <hr>
+                    <div class="row g-3">
+                        {% if sol.data_envio_fornecedor %}
+                        <div class="col-md-4">
+                            <div class="text-muted small">Enviado ao Fornecedor</div>
+                            <div>{{ sol.data_envio_fornecedor|date:"d/m/Y" }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.data_prevista_entrega %}
+                        <div class="col-md-4">
+                            <div class="text-muted small">Previsão de Entrega</div>
+                            <div>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</div>
+                        </div>
+                        {% endif %}
+                        {% if sol.data_entrega_efetiva %}
+                        <div class="col-md-4">
+                            <div class="text-muted small">Entrega Efetiva</div>
+                            <div class="fw-semibold text-success">
+                                <i class="bi bi-check-circle me-1"></i>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- ═══ FORMS CONTEXTUAIS (aparecem conforme status) ═══ -->
+            {# ═══════════════════════════════════════════ #}
+            {#  CARD DE AÇÃO — FORMULÁRIO DA ETAPA ATUAL  #}
+            {# ═══════════════════════════════════════════ #}
 
-            <!-- Comprador: Cotação -->
+            {# ── ETAPA 1: Fazer Cotação (Comprador) ── #}
             {% if form_cotacao %}
-            <div class="card shadow-sm mb-4 border-info">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-search-dollar me-2"></i>Registrar Cotação</h5>
+            <div class="card shadow-sm mb-4 border-info border-2">
+                <div class="card-header bg-info text-white fw-bold">
+                    <i class="bi bi-1-circle me-2"></i> Registrar Cotação
                 </div>
                 <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Preencha os dados da cotação realizada para este material.
+                    </p>
                     <form method="post" action="{% url 'suprimentos:solicitacao_cotacao' sol.pk %}">
                         {% csrf_token %}
-                        <div class="row mb-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Data da Cotação</label>
+                                <label class="form-label fw-semibold">Data da Cotação *</label>
                                 {{ form_cotacao.data_cotacao }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Nº da Cotação</label>
+                                <label class="form-label fw-semibold">Nº da Cotação *</label>
                                 {{ form_cotacao.numero_cotacao }}
                             </div>
-                        </div>
-                        <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">CNPJ para Compra</label>
+                                <label class="form-label fw-semibold">CNPJ para Compra *</label>
                                 {{ form_cotacao.cnpj_compra }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Tipo de Nota Fiscal</label>
+                                <label class="form-label fw-semibold">Tipo de Nota Fiscal *</label>
                                 {{ form_cotacao.tipo_nota_fiscal }}
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-info">
-                            <i class="fas fa-paper-plane me-1"></i>Enviar Cotação para Validação
-                        </button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Aprovador: Validar Cotação -->
-            {% if form_validar_cotacao %}
-            <div class="card shadow-sm mb-4 border-success">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-check-double me-2"></i>Validar Cotação</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{% url 'suprimentos:solicitacao_validar_cotacao' sol.pk %}">
-                        {% csrf_token %}
-                        <div class="row align-items-end">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Data da Validação</label>
-                                {{ form_validar_cotacao.data_validacao }}
-                            </div>
-                            <div class="col-md-6">
-                                <button type="submit" class="btn btn-success"
-                                        onclick="return confirm('Confirma validação da cotação?')">
-                                    <i class="fas fa-check me-1"></i>Validar Cotação
-                                </button>
-                            </div>
+                        <div class="mt-3 text-end">
+                            <button type="submit" class="btn btn-info text-white">
+                                <i class="bi bi-send me-1"></i> Enviar Cotação para Validação
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
             {% endif %}
 
-            <!-- Comprador: Criar Pedido Sienge -->
-            {% if form_criar_pedido %}
-            <div class="card shadow-sm mb-4 border-primary">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Criar Pedido no Sienge</h5>
+            {# ── ETAPA 2: Validar Cotação (Aprovador) ── #}
+            {% if form_validar_cotacao %}
+            <div class="card shadow-sm mb-4 border-warning border-2">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="bi bi-2-circle me-2"></i> Validar Cotação
                 </div>
                 <div class="card-body">
+                    <div class="alert alert-light border mb-3">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <span class="text-muted small">Cotação Nº</span><br>
+                                <strong>{{ sol.numero_cotacao }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">CNPJ</span><br>
+                                <strong>{{ sol.cnpj_compra }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">Tipo NF</span><br>
+                                <strong>{{ sol.get_tipo_nota_fiscal_display }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">Comprador</span><br>
+                                <strong>{{ sol.comprador.get_full_name|default:sol.comprador.username }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <form method="post" action="{% url 'suprimentos:solicitacao_validar_cotacao' sol.pk %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Data da Validação *</label>
+                                {{ form_validar_cotacao.data_validacao }}
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            {% if perms.suprimentos.change_solicitacao or user.is.superuser %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i> Validar Cotação
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── ETAPA 3: Criar Pedido/CT (Comprador) ── #}
+            {% if form_criar_pedido %}
+            <div class="card shadow-sm mb-4 border-info border-2">
+                <div class="card-header bg-info text-white fw-bold">
+                    <i class="bi bi-3-circle me-2"></i> Criar Pedido / CT
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Registre os dados do pedido criado no sistema de compras.
+                    </p>
                     <form method="post" action="{% url 'suprimentos:solicitacao_criar_pedido' sol.pk %}">
                         {% csrf_token %}
-                        <div class="row mb-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Data de Criação</label>
+                                <label class="form-label fw-semibold">Data Criação do Pedido *</label>
                                 {{ form_criar_pedido.data_criacao_pedido }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Nº do Pedido (Sienge)</label>
+                                <label class="form-label fw-semibold">Nº do Pedido (Sistema) *</label>
                                 {{ form_criar_pedido.numero_pedido_sienge }}
                             </div>
-                        </div>
-                        <div class="row mb-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Fornecedor</label>
+                                <label class="form-label fw-semibold">Fornecedor *</label>
                                 {{ form_criar_pedido.fornecedor }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Valor do Pedido (R$)</label>
+                                <label class="form-label fw-semibold">Valor do Pedido (R$) *</label>
                                 {{ form_criar_pedido.valor_pedido }}
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Criar Pedido → Enviar para Aprovação
-                        </button>
-                    </form>
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Aprovador: Aprovar Pedido -->
-            {% if form_aprovar_pedido %}
-            <div class="card shadow-sm mb-4 border-success">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-gavel me-2"></i>Aprovar Pedido Sienge</h5>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="{% url 'suprimentos:solicitacao_aprovar_pedido' sol.pk %}">
-                        {% csrf_token %}
-                        <div class="row align-items-end">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Data da Aprovação</label>
-                                {{ form_aprovar_pedido.data_aprovacao_pedido }}
-                            </div>
-                            <div class="col-md-6">
-                                <button type="submit" class="btn btn-success"
-                                        onclick="return confirm('Confirma aprovação do pedido?')">
-                                    <i class="fas fa-check me-1"></i>Aprovar Pedido
-                                </button>
-                            </div>
+                        <div class="mt-3 text-end">
+                            <button type="submit" class="btn btn-info text-white">
+                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido e Enviar para Aprovação
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
             {% endif %}
 
-            <!-- Comprador: Enviar ao Fornecedor -->
+            {# ── ETAPA 4: Aprovar Pedido (Aprovador) ── #}
+            {% if form_aprovar_pedido %}
+            <div class="card shadow-sm mb-4 border-warning border-2">
+                <div class="card-header bg-warning text-dark fw-bold">
+                    <i class="bi bi-4-circle me-2"></i> Aprovar Pedido
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light border mb-3">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <span class="text-muted small">Pedido Nº</span><br>
+                                <strong>{{ sol.numero_pedido_sienge }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">Fornecedor</span><br>
+                                <strong>{{ sol.fornecedor }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">Valor</span><br>
+                                <strong class="text-primary fs-5">R$ {{ sol.valor_pedido|floatformat:2 }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted small">Comprador</span><br>
+                                <strong>{{ sol.comprador.get_full_name|default:"—" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if verba_ok is not None and not verba_ok %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i> {{ verba_msg }}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'suprimentos:solicitacao_aprovar_pedido' sol.pk %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Data da Aprovação *</label>
+                                {{ form_aprovar_pedido.data_aprovacao_pedido }}
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            {% if perms.suprimentos.change_solicitacao or user.is.superuser %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check2-circle me-1"></i> Aprovar Pedido
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── ETAPA 5: Enviar ao Fornecedor (Comprador) ── #}
             {% if form_enviar_fornecedor %}
-            <div class="card shadow-sm mb-4 border-primary">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Enviar Pedido ao Fornecedor</h5>
+            <div class="card shadow-sm mb-4 border-primary border-2">
+                <div class="card-header bg-primary text-white fw-bold">
+                    <i class="bi bi-5-circle me-2"></i> Enviar Pedido ao Fornecedor
                 </div>
                 <div class="card-body">
                     <form method="post" action="{% url 'suprimentos:solicitacao_enviar_fornecedor' sol.pk %}">
                         {% csrf_token %}
-                        <div class="row mb-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Data de Envio</label>
+                                <label class="form-label fw-semibold">Data de Envio *</label>
                                 {{ form_enviar_fornecedor.data_envio }}
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">Data Prevista de Entrega</label>
+                                <label class="form-label fw-semibold">Data Prevista de Entrega *</label>
                                 {{ form_enviar_fornecedor.data_prevista }}
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-1"></i>Confirmar Envio
-                        </button>
+                        <div class="mt-3 text-end">
+                            {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-truck me-1"></i> Confirmar Envio ao Fornecedor
+                            </button>
+                            {% endif %}
+                        </div>
                     </form>
                 </div>
             </div>
             {% endif %}
 
-            <!-- Comprador: Registrar Entrega -->
+            {# ── ETAPA 6: Registrar Entrega (Comprador) ── #}
             {% if form_entrega %}
-            <div class="card shadow-sm mb-4 border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="fas fa-box-open me-2"></i>Registrar Entrega</h5>
+            <div class="card shadow-sm mb-4 border-success border-2">
+                <div class="card-header bg-success text-white fw-bold">
+                    <i class="bi bi-6-circle me-2"></i> Registrar Entrega
                 </div>
                 <div class="card-body">
-                    {% if not sol.data_entrega_efetiva %}
+                    {% if sol.data_prevista_entrega %}
+                    <div class="alert alert-light border mb-3">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        Previsão: <strong>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</strong>
+                    </div>
+                    {% endif %}
                     <form method="post" action="{% url 'suprimentos:solicitacao_registrar_entrega' sol.pk %}">
                         {% csrf_token %}
-                        <div class="row align-items-end">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Data de Entrega Efetiva</label>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Data de Entrega Efetiva *</label>
                                 {{ form_entrega.data_entrega }}
                             </div>
-                            <div class="col-md-6">
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="fas fa-check me-1"></i>Registrar Entrega
-                                </button>
-                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-box-seam me-1"></i> Confirmar Entrega
+                            </button>
+                            {% endif %}
                         </div>
                     </form>
-                    {% endif %}
-
-                    {% if form_encerrar %}
-                    <hr>
-                    <form method="post" action="{% url 'suprimentos:solicitacao_encerrar' sol.pk %}">
-                        {% csrf_token %}
-                        <div class="row align-items-end">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Nº da Nota Fiscal</label>
-                                {{ form_encerrar.numero_nota_fiscal }}
-                            </div>
-                            <div class="col-md-6">
-                                <button type="submit" class="btn btn-success"
-                                        onclick="return confirm('Encerrar solicitação?')">
-                                    <i class="fas fa-flag-checkered me-1"></i>Encerrar Solicitação
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- Anexos -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light d-flex justify-content-between">
-                    <h5 class="mb-0"><i class="fas fa-paperclip me-2"></i>Anexos</h5>
-                    <span class="badge bg-secondary">{{ anexos.count }}</span>
+
+            {# Sub-etapa B: Encerrar com NF (após entrega registrada) #}
+            {% if form_encerrar %}
+            <div class="card shadow-sm mb-4 border-success border-2">
+                <div class="card-header bg-success text-white fw-bold">
+                    <i class="bi bi-7-circle me-2"></i> Encerrar Solicitação
                 </div>
                 <div class="card-body">
-                    {% if anexos %}
-                    <div class="row g-3 mb-3">
-                        {% for anexo in anexos %}
-                        <div class="col-md-4">
-                            <div class="border rounded p-3 h-100">
-                                {% if anexo.is_imagem %}
-                                <img src="{{ anexo.arquivo.url }}" class="img-fluid rounded mb-2"
-                                     style="max-height: 120px; object-fit: cover;">
-                                {% elif anexo.is_pdf %}
-                                <div class="text-center mb-2"><i class="fas fa-file-pdf fa-3x text-danger"></i></div>
-                                {% else %}
-                                <div class="text-center mb-2"><i class="fas fa-file fa-3x text-secondary"></i></div>
-                                {% endif %}
-                                <p class="small mb-1 fw-bold text-truncate">{{ anexo.nome_arquivo }}</p>
-                                <div class="d-flex justify-content-between">
-                                    <a href="{{ anexo.arquivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-download"></i>
-                                    </a>
-                                    <form method="post" action="{% url 'suprimentos:solicitacao_anexo_remover' sol.pk anexo.pk %}">
-                                        {% csrf_token %}
-                                        <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
+                    <div class="alert alert-success mb-3">
+                        <i class="bi bi-check-circle-fill me-1"></i>
+                        Entrega registrada em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>.
+                        Agora informe o Nº da Nota Fiscal para encerrar.
+                    </div>
+                    <form method="post" action="{% url 'suprimentos:solicitacao_encerrar' sol.pk %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Nº da Nota Fiscal *</label>
+                                {{ form_encerrar.numero_nota_fiscal }}
                             </div>
                         </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    <form method="post" action="{% url 'suprimentos:solicitacao_anexo' sol.pk %}" enctype="multipart/form-data">
+                        <div class="mt-3 text-end">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-trophy me-1"></i> Encerrar Solicitação
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+
+            {# ── Status CONCLUÍDO ── #}
+            {% if sol.status == 'CONCLUIDO' %}
+            <div class="card shadow-sm mb-4 border-success border-2">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-trophy-fill text-success" style="font-size:3rem;"></i>
+                    <h4 class="fw-bold text-success mt-2">Solicitação Concluída!</h4>
+                    <p class="text-muted mb-0">
+                        NF: <strong>{{ sol.numero_nota_fiscal }}</strong>
+                        {% if sol.data_entrega_efetiva %}
+                        · Entregue em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>
+                        {% endif %}
+                        {% if sol.valor_pedido %}
+                        · Valor: <strong>R$ {{ sol.valor_pedido|floatformat:2 }}</strong>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── Status CANCELADO ── #}
+            {% if sol.status == 'CANCELADO' %}
+            <div class="card shadow-sm mb-4 border-dark border-2">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-x-octagon-fill text-dark" style="font-size:3rem;"></i>
+                    <h4 class="fw-bold text-dark mt-2">Solicitação Cancelada</h4>
+                    <p class="text-muted mb-0">
+                        Motivo: <em>{{ sol.motivo_cancelamento|default:"Não informado" }}</em>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── Pedido de origem ── #}
+            {% if pedido_origem %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-link-45deg me-1"></i> Pedido de Origem
+                </div>
+                <div class="card-body">
+                    <a href="{{ pedido_origem.get_absolute_url }}" class="text-decoration-none fw-semibold">
+                        <i class="bi bi-cart me-1"></i> {{ pedido_origem.numero }}
+                    </a>
+                    <span class="text-muted ms-2">
+                        — {{ pedido_origem.solicitante.get_full_name|default:pedido_origem.solicitante.username }}
+                        · {{ pedido_origem.data_pedido|date:"d/m/Y" }}
+                        · <span class="badge bg-{{ pedido_origem.status|lower }}">{{ pedido_origem.get_status_display }}</span>
+                    </span>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── Observações ── #}
+            {% if sol.observacoes %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light fw-semibold d-flex justify-content-between">
+                    <span><i class="bi bi-chat-text me-1"></i> Observações</span>
+                </div>
+                <div class="card-body">
+                    <pre class="mb-0" style="white-space:pre-wrap;font-family:inherit;font-size:.9rem;">{{ sol.observacoes }}</pre>
+                </div>
+            </div>
+            {% endif %}
+
+            {# ── Adicionar Observação ── #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-pencil-square me-1"></i> Adicionar Observação
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'suprimentos:solicitacao_observacao' sol.pk %}">
                         {% csrf_token %}
-                        <div class="row g-2">
-                            <div class="col-md-8">{{ form_anexo.arquivo }}</div>
-                            <div class="col-md-4">
-                                <button type="submit" class="btn btn-outline-primary w-100">
-                                    <i class="fas fa-upload me-1"></i>Enviar
-                                </button>
-                            </div>
+                        {{ form_observacao.texto }}
+                        <div class="mt-2 text-end">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-chat-dots me-1"></i> Registrar
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Histórico -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Histórico de Alterações</h5>
-                </div>
-                <div class="card-body p-0">
-                    {% if historico %}
-                    <div class="table-responsive">
-                        <table class="table table-sm mb-0">
-                            <thead class="table-light">
-                                <tr><th>Versão</th><th>Data</th><th>Alteração</th><th>Responsável</th></tr>
-                            </thead>
-                            <tbody>
-                                {% for h in historico %}
-                                <tr>
-                                    <td><span class="badge bg-secondary">v{{ h.versao }}</span></td>
-                                    <td class="text-nowrap small">{{ h.criado_em|date:"d/m/Y H:i" }}</td>
-                                    <td>
-                                        {{ h.descricao }}
-                                        {% if h.status_anterior and h.status_novo %}
-                                        <br><small class="text-muted">{{ h.status_anterior }} → {{ h.status_novo }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td class="small">{{ h.responsavel.get_full_name|default:h.responsavel.username }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <p class="text-muted text-center py-3 mb-0">Sem registros.</p>
-                    {% endif %}
-                </div>
-            </div>
         </div>
 
-        <!-- Sidebar -->
+        {# ═══════════════════════════════════════════════ #}
+        {#  COLUNA DIREITA — RESPONSÁVEIS + TIMELINE      #}
+        {# ═══════════════════════════════════════════════ #}
         <div class="col-lg-4">
-            <!-- Responsáveis -->
+
+            {# ── Responsáveis ── #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="fas fa-users me-2"></i>Responsáveis</h6>
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-people me-1"></i> Responsáveis
                 </div>
-                <div class="card-body">
-                    <dl class="mb-0">
-                        <dt class="text-muted small">Solicitante</dt>
-                        <dd>
-                            <i class="fas fa-user text-primary me-1"></i>
-                            {{ sol.solicitante.get_full_name|default:sol.solicitante.username }}
-                        </dd>
-
-                        <dt class="text-muted small">Aprovador Inicial</dt>
-                        <dd>
-                            <i class="fas fa-user-tie text-success me-1"></i>
-                            {{ sol.aprovador_inicial.get_full_name|default:"Aguardando"|default:sol.aprovador_inicial.username }}
-                        </dd>
-
-                        <dt class="text-muted small">Comprador</dt>
-                        <dd>
-                            {% if sol.comprador %}
-                            <i class="fas fa-user-cog text-info me-1"></i>
-                            {{ sol.comprador.get_full_name|default:sol.comprador.username }}
-                            {% else %}
-                            <span class="text-muted">Aguardando atribuição...</span>
-                            {% endif %}
-                        </dd>
-
-                        {% if sol.aprovador_cotacao %}
-                        <dt class="text-muted small">Validou Cotação</dt>
-                        <dd>{{ sol.aprovador_cotacao.get_full_name|default:sol.aprovador_cotacao.username }}</dd>
-                        {% endif %}
-
-                        {% if sol.aprovador_pedido %}
-                        <dt class="text-muted small">Aprovou Pedido</dt>
-                        <dd>{{ sol.aprovador_pedido.get_full_name|default:sol.aprovador_pedido.username }}</dd>
-                        {% endif %}
-
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="text-muted small">Solicitante</span><br>
+                                <span class="fw-semibold">{{ sol.solicitante.get_full_name|default:sol.solicitante.username }}</span>
+                            </div>
+                            <i class="bi bi-person text-muted"></i>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="text-muted small">Aprovador Inicial</span><br>
+                                <span class="fw-semibold">
+                                    {% if sol.aprovador_inicial %}
+                                        {{ sol.aprovador_inicial.get_full_name|default:sol.aprovador_inicial.username }}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <i class="bi bi-shield-check text-muted"></i>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="text-muted small">Comprador</span><br>
+                                <span class="fw-semibold">
+                                    {% if sol.comprador %}
+                                        {{ sol.comprador.get_full_name|default:sol.comprador.username }}
+                                    {% else %}
+                                        <span class="text-muted fst-italic">Aguardando atribuição</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <i class="bi bi-cart-check text-muted"></i>
+                        </li>
                         {% if sol.fornecedor %}
-                        <dt class="text-muted small">Fornecedor</dt>
-                        <dd><i class="fas fa-building text-warning me-1"></i>{{ sol.fornecedor.nome_fantasia }}</dd>
-                        {% endif %}
-                    </dl>
-                </div>
-            </div>
-
-            <!-- Datas -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Cronologia</h6>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mb-0">
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-success me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Criada:</small> {{ sol.criado_em|date:"d/m/Y H:i" }}
-                        </li>
-                        {% if sol.data_aprovacao_inicial %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-primary me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Aprovação:</small> {{ sol.data_aprovacao_inicial|date:"d/m/Y H:i" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_cotacao %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-info me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Cotação:</small> {{ sol.data_cotacao|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_validacao_cotacao %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-success me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Validação:</small> {{ sol.data_validacao_cotacao|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_criacao_pedido %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-primary me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Pedido Sienge:</small> {{ sol.data_criacao_pedido|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_aprovacao_pedido %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-success me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Aprovação Pedido:</small> {{ sol.data_aprovacao_pedido|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_envio_fornecedor %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-warning me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Envio:</small> {{ sol.data_envio_fornecedor|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_prevista_entrega %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-secondary me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Previsão:</small> {{ sol.data_prevista_entrega|date:"d/m/Y" }}
-                        </li>
-                        {% endif %}
-                        {% if sol.data_entrega_efetiva %}
-                        <li class="mb-2">
-                            <i class="fas fa-circle text-success me-2" style="font-size: 0.5rem; vertical-align: middle;"></i>
-                            <small class="text-muted">Entrega:</small> {{ sol.data_entrega_efetiva|date:"d/m/Y" }}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                            <div>
+                                <span class="text-muted small">Fornecedor</span><br>
+                                <span class="fw-semibold">{{ sol.fornecedor }}</span>
+                            </div>
+                            <i class="bi bi-building text-muted"></i>
                         </li>
                         {% endif %}
                     </ul>
                 </div>
             </div>
 
-            <!-- Observações -->
+            {# ── Datas do Workflow ── #}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="fas fa-comment-dots me-2"></i>Observações</h6>
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-calendar3 me-1"></i> Cronologia
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush small">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Criado em</span>
+                            <span>{{ sol.criado_em|date:"d/m/Y H:i" }}</span>
+                        </li>
+                        {% if sol.data_aprovacao_inicial %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Aprovação Inicial</span>
+                            <span>{{ sol.data_aprovacao_inicial|date:"d/m/Y H:i" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if sol.data_cotacao %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Cotação</span>
+                            <span>{{ sol.data_cotacao|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if sol.data_validacao_cotacao %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Validação Cotação</span>
+                            <span>{{ sol.data_validacao_cotacao|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if sol.data_criacao_pedido %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Pedido Criado</span>
+                            <span>{{ sol.data_criacao_pedido|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if sol.data_aprovacao_pedido %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Pedido Aprovado</span>
+                            <span>{{ sol.data_aprovacao_pedido|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if sol.data_envio_fornecedor %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Enviado ao Fornecedor</span>
+                            <span>{{ sol.data_envio_fornecedor|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endif %}
+                        {% if sol.data_entrega_efetiva %}
+                        <li class="list-group-item d-flex justify-content-between text-success">
+                            <span>Entrega Efetiva</span>
+                            <span class="fw-semibold">{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            {# ── Anexos ── #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-paperclip me-1"></i> Anexos
+                    <span class="badge bg-secondary ms-1">{{ anexos|length }}</span>
                 </div>
                 <div class="card-body">
-                    {% if sol.observacoes %}
-                    <div class="bg-light rounded p-3 mb-3" style="white-space: pre-wrap; font-size: 0.85rem;">{{ sol.observacoes }}</div>
+                    {% if anexos %}
+                    <ul class="list-unstyled mb-3">
+                        {% for anexo in anexos %}
+                        <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                            <a href="{{ anexo.arquivo.url }}" target="_blank" class="text-decoration-none small">
+                                {% if anexo.is_pdf %}
+                                    <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                {% elif anexo.is_imagem %}
+                                    <i class="bi bi-file-earmark-image text-primary me-1"></i>
+                                {% else %}
+                                    <i class="bi bi-file-earmark text-secondary me-1"></i>
+                                {% endif %}
+                                {{ anexo.nome_arquivo|truncatechars:30 }}
+                            </a>
+                            <form method="post" action="{% url 'suprimentos:solicitacao_anexo_remover' sol.pk anexo.pk %}"
+                                  class="d-inline" onsubmit="return confirm('Remover este anexo?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Remover">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted small mb-2">Nenhum anexo.</p>
                     {% endif %}
-                    <form method="post" action="{% url 'suprimentos:solicitacao_observacao' sol.pk %}">
+
+                    <form method="post" action="{% url 'suprimentos:solicitacao_anexo' sol.pk %}"
+                          enctype="multipart/form-data">
                         {% csrf_token %}
-                        {{ form_observacao.texto }}
-                        <button type="submit" class="btn btn-sm btn-outline-primary mt-2 w-100">
-                            <i class="fas fa-plus me-1"></i>Adicionar Observação
+                        <div class="mb-2">{{ form_anexo.arquivo }}</div>
+                        <div class="mb-2">{{ form_anexo.descricao }}</div>
+                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="bi bi-upload me-1"></i> Enviar Anexo
                         </button>
                     </form>
                 </div>
             </div>
+
+            {# ── Histórico / Timeline ── #}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light fw-semibold">
+                    <i class="bi bi-clock-history me-1"></i> Histórico
+                </div>
+                <div class="card-body p-0" style="max-height:500px;overflow-y:auto;">
+                    {% if historico %}
+                    <div class="list-group list-group-flush">
+                        {% for h in historico %}
+                        <div class="list-group-item py-2 px-3">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-semibold small">v{{ h.versao }}</span>
+                                <span class="text-muted" style="font-size:.7rem;">
+                                    {{ h.criado_em|date:"d/m/Y H:i" }}
+                                </span>
+                            </div>
+                            <div class="small">{{ h.descricao }}</div>
+                            {% if h.status_anterior or h.status_novo %}
+                            <div class="mt-1">
+                                {% if h.status_anterior %}
+                                <span class="badge bg-secondary" style="font-size:.65rem;">{{ h.status_anterior }}</span>
+                                {% endif %}
+                                {% if h.status_anterior and h.status_novo %}
+                                <i class="bi bi-arrow-right text-muted mx-1" style="font-size:.7rem;"></i>
+                                {% endif %}
+                                {% if h.status_novo %}
+                                <span class="badge bg-primary" style="font-size:.65rem;">{{ h.status_novo }}</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if h.responsavel %}
+                            <div class="text-muted" style="font-size:.7rem;">
+                                <i class="bi bi-person me-1"></i>
+                                {{ h.responsavel.get_full_name|default:h.responsavel.username }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-3 text-muted text-center small">Nenhum registro.</div>
+                    {% endif %}
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
-<!-- Modal Cancelar -->
+{# ═══ MODAL: Cancelar Solicitação ═══ #}
 {% if sol.pode_cancelar %}
 <div class="modal fade" id="modalCancelar" tabindex="-1">
     <div class="modal-dialog">
@@ -673,21 +799,27 @@
             <form method="post" action="{% url 'suprimentos:solicitacao_cancelar' sol.pk %}">
                 {% csrf_token %}
                 <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="fas fa-ban me-2"></i>Cancelar Solicitação</h5>
+                    <h5 class="modal-title">
+                        <i class="bi bi-x-octagon me-1"></i> Cancelar Solicitação
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Informe o motivo do cancelamento:</p>
+                    <p>Tem certeza que deseja cancelar <strong>{{ sol.numero }}</strong>?</p>
+                    <p class="text-danger small">Esta ação não pode ser desfeita.</p>
+                    <label class="form-label fw-semibold">Motivo do Cancelamento *</label>
                     {{ form_cancelar.motivo }}
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Voltar</button>
-                    <button type="submit" class="btn btn-danger">Confirmar Cancelamento</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-octagon me-1"></i> Confirmar Cancelamento
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 {% endif %}
-{% endblock %}
 
+{% endblock %}

@@ -25,12 +25,12 @@
 
     <!-- Filtro mês/ano -->
     <form method="get" class="d-flex gap-2 mb-4">
-        <select name="mes" class="form-select form-select-sm" style="width:auto">
+        <select name="mes" class="form-select form-select-sm" style="width: 100px">
             {% for num, nome in meses %}
                 <option value="{{ num }}" {% if num == mes %}selected{% endif %}>{{ nome }}</option>
             {% endfor %}
         </select>
-        <select name="ano" class="form-select form-select-sm" style="width:auto">
+        <select name="ano" class="form-select form-select-sm" style="width: 100px">
             {% for a in anos_disponiveis %}
                 <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
             {% endfor %}
@@ -104,6 +104,7 @@
                     <form method="post" novalidate>
                         {% csrf_token %}
                         {{ verba_form|crispy }}
+                        
                         <button type="submit" class="btn btn-primary mt-2">
                             <i class="bi bi-check-lg me-1"></i> Salvar Verba
                         </button>

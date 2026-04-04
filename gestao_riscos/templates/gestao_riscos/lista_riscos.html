@@ -39,12 +39,16 @@
                     <a href="{% url 'gestao_riscos:tipo_risco_list' %}" class="btn btn-outline-light">
                         <i class="bi bi-list-task me-1"></i> Tipos de Riscos
                     </a>
+                    {% if perms.gestao_riscos.add_registra_incidente or user.is_superuser %}
                     <a href="{% url 'gestao_riscos:registrar_incidente' %}" class="btn btn-warning">
                         <i class="bi bi-exclamation-octagon-fill me-1"></i> Novo Acidente
                     </a>
+                    {% endif %}
+                    {% if perms.gestao_riscos.add_inspecao or user.is_superuser %}  
                     <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
                         <i class="bi bi-calendar-plus me-1"></i> Nova Inspeção
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

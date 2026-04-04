@@ -210,9 +210,11 @@
                                 {{ form.ncm }}
                                 <div class="form-text">
                                     Código fiscal do material no Mercosul.
+                                    {% if perms.tributacao.add_solicitacao or user.is.superuser %}
                                     <a href="{% url 'tributacao:ncm_create' %}" target="_blank">
                                         <i class="bi bi-plus-circle"></i> Cadastrar NCM
                                     </a>
+                                    {% endif %}
                                 </div>
                                 {% if form.ncm.errors %}
                                     <div class="text-danger small">{{ form.ncm.errors }}</div>
@@ -225,9 +227,11 @@
                                 {{ form.grupo_tributario }}
                                 <div class="form-text">
                                     Define CFOP, alíquotas e créditos fiscais.
+                                    {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}     
                                     <a href="{% url 'tributacao:grupo_create' %}" target="_blank">
                                         <i class="bi bi-plus-circle"></i> Criar grupo
                                     </a>
+                                    {% endif %}
                                 </div>
                                 {% if form.grupo_tributario.errors %}
                                     <div class="text-danger small">{{ form.grupo_tributario.errors }}</div>
@@ -274,9 +278,11 @@
                     <a href="{% url 'suprimentos:material_lista' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i> Voltar
                     </a>
+                    {% if perms.suprimentos.add_material or user.is.superuser %}
                     <button type="submit" class="btn btn-primary">
                         <i class="bi bi-check-lg me-1"></i> Salvar
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

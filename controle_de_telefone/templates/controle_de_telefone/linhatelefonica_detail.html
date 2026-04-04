@@ -30,9 +30,11 @@
             <a href="{% url 'controle_de_telefone:linhatelefonica_list' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>Voltar
             </a>
+            {% if perms.controle_de_telefone.change_linhatelefonica or user.is_superuser %}
             <a href="{% url 'controle_de_telefone:linhatelefonica_update' object.pk %}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil me-1"></i>Editar
             </a>
+            {% endif %}
         </div>
     </header>
 

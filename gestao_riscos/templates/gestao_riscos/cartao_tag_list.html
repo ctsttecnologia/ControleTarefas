@@ -19,9 +19,14 @@
                     </h4>
                     <small class="opacity-75">Gerenciamento de tags de segurança para bloqueio de equipamentos</small>
                 </div>
+                <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-light">
+                    <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
+                </a>
+                {% if perms.gestao_riscos.add_cartaotag or user.is_superuser %}
                 <a href="{% url 'gestao_riscos:cartao_tag_create' %}" class="btn btn-light">
                     <i class="bi bi-plus-circle me-1"></i> Novo Cartão
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -90,14 +95,18 @@
                                        class="btn btn-outline-info" title="Visualizar">
                                         <i class="bi bi-eye"></i>
                                     </a>
+                                    {% if perms.gestao_riscos.change_cartaotag or user.is_superuser %}
                                     <a href="{% url 'gestao_riscos:cartao_tag_update' cartao.pk %}" 
                                        class="btn btn-outline-warning" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if perms.gestao_riscos.delete_cartaotag or user.is_superuser %}
                                     <a href="{% url 'gestao_riscos:cartao_tag_delete' cartao.pk %}" 
                                        class="btn btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -106,9 +115,11 @@
                             <td colspan="6" class="text-center py-5">
                                 <i class="bi bi-tag text-muted fs-1"></i>
                                 <h6 class="mt-3 text-muted">Nenhum cartão encontrado</h6>
+                                {% if perms.gestao_riscos.add_cartaotag or user.is_superuser %}
                                 <a href="{% url 'gestao_riscos:cartao_tag_create' %}" class="btn btn-primary btn-sm mt-2">
                                     <i class="bi bi-plus-circle me-1"></i> Criar primeiro cartão
                                 </a>
+                                {% endif %} 
                             </td>
                         </tr>
                         {% endfor %}

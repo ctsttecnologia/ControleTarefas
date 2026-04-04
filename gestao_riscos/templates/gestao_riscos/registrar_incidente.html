@@ -68,9 +68,11 @@
                             <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-x-lg me-1"></i> Cancelar
                             </a>
+                            {% if perms.gestao_riscos.add_incidente or user.is_superuser %}
                             <button type="submit" class="btn btn-danger btn-lg">
                                 <i class="bi bi-check-lg me-1"></i> Registrar Incidente
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

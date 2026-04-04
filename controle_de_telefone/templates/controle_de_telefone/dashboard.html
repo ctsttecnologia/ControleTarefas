@@ -15,9 +15,11 @@
             </h2>
             <small class="text-muted">Painel de controle de aparelhos, linhas e vínculos</small>
         </div>
+        {% if perms.controle_de_telefone.add_vinculo or user.is_superuser %}
         <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle me-1"></i> Novo Vínculo
         </a>
+        {% endif %}
     </header>
 
     <!-- KPIs — 5 cards distribuídos uniformemente -->
@@ -43,9 +45,11 @@
                         <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-sm btn-outline-secondary flex-grow-1 px-1">
                             <i class="bi bi-list-ul"></i><span class="d-none d-xxl-inline ms-1">Listar</span>
                         </a>
+                        {% if perms.controle_de_telefone.add_recarga or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:recarga_create' %}" class="btn btn-sm btn-success flex-grow-1 px-1">
                             <i class="bi bi-plus"></i><span class="d-none d-xxl-inline ms-1">Nova</span>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -71,9 +75,11 @@
                         <a href="{% url 'controle_de_telefone:aparelho_list' %}" class="btn btn-sm btn-outline-secondary flex-grow-1 px-1">
                             <i class="bi bi-list-ul"></i><span class="d-none d-xxl-inline ms-1">Listar</span>
                         </a>
+                        {% if perms.controle_de_telefone.add_aparelho or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:aparelho_create' %}" class="btn btn-sm btn-primary flex-grow-1 px-1">
                             <i class="bi bi-plus"></i><span class="d-none d-xxl-inline ms-1">Novo</span>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -99,9 +105,11 @@
                         <a href="{% url 'controle_de_telefone:linhatelefonica_list' %}" class="btn btn-sm btn-outline-secondary flex-grow-1 px-1">
                             <i class="bi bi-list-ul"></i><span class="d-none d-xxl-inline ms-1">Listar</span>
                         </a>
+                        {% if perms.controle_de_telefone.add_linhatelefonica or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:linhatelefonica_create' %}" class="btn btn-sm btn-info flex-grow-1 px-1">
                             <i class="bi bi-plus"></i><span class="d-none d-xxl-inline ms-1">Nova</span>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -127,9 +135,11 @@
                         <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-sm btn-outline-secondary flex-grow-1 px-1">
                             <i class="bi bi-list-ul"></i><span class="d-none d-xxl-inline ms-1">Listar</span>
                         </a>
+                        {% if perms.controle_de_telefone.add_vinculo or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:vinculo_create' %}" class="btn btn-sm flex-grow-1 px-1" style="background: #6f42c1; color: white;">
                             <i class="bi bi-plus"></i><span class="d-none d-xxl-inline ms-1">Novo</span>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -154,10 +164,18 @@
                         </div>
                     </div>
                     <div class="d-flex gap-1 flex-wrap">
+                        {% if perms.controle_de_telefone.add_marca or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:marca_list' %}" class="btn btn-sm btn-outline-warning flex-grow-1 px-1" style="font-size: 0.7rem;">Marcas</a>
+                        {% endif %}
+                        {% if perms.controle_de_telefone.add_modelo or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:modelo_list' %}" class="btn btn-sm btn-outline-warning flex-grow-1 px-1" style="font-size: 0.7rem;">Modelos</a>
+                        {% endif %}
+                        {% if perms.controle_de_telefone.add_operadora or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:operadora_list' %}" class="btn btn-sm btn-outline-warning flex-grow-1 px-1" style="font-size: 0.7rem;">Operadoras</a>
+                        {% endif %}
+                        {% if perms.controle_de_telefone.add_plano or user.is_superuser %}
                         <a href="{% url 'controle_de_telefone:plano_list' %}" class="btn btn-sm btn-outline-warning flex-grow-1 px-1" style="font-size: 0.7rem;">Planos</a>
+                        {% endif %}                            
                     </div>
                 </div>
             </div>

@@ -22,9 +22,11 @@
             </a>
         </div>
         <div class="d-flex gap-2 mt-3 mt-md-0">
+            {% if perms.departamento_pessoal.add_importacao_massa_funcionarios or user.is_superuser %}
             <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" class="btn btn-header">
                 <i class="bi bi-plus me-1"></i> Importação em Massa
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -141,11 +143,16 @@
 
             <!-- Botões -->
             <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
+                 {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
                 <a href="{% if object %}{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}{% else %}{% url 'departamento_pessoal:lista_funcionarios' %}{% endif %}" 
-                   class="btn btn-secondary">Cancelar</a>
+                   class="btn btn-secondary">Cancelar
+                </a>
+                {% endif %}
+                {% if perms.departamento_pessoal.add_funcionario or user.is_superuser %}
                 <button type="submit" class="btn btn-primary px-4">
                     <i class="bi bi-check-lg me-1"></i> Salvar
                 </button>
+                {% endif %}
             </div>
         </form>
     </div>

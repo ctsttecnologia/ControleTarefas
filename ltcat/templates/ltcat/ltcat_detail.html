@@ -25,15 +25,21 @@
             </p>
         </div>
         <div class="d-flex gap-2 no-print">
+            {% if perms.ltcat.add_ltcat or user.is_superuser %}
             <a href="{% url 'ltcat:gerar_pdf' ltcat.pk %}" class="btn btn-light btn-sm" target="_blank">
                 <i class="fas fa-file-pdf me-1"></i> PDF
             </a>
+            {% endif %}
+            {% if perms.ltcat.change_ltcat or user.is_superuser %}
             <a href="{% url 'ltcat:ltcat_update' ltcat.pk %}" class="btn btn-light btn-sm">
                 <i class="fas fa-edit me-1"></i> Editar
             </a>
+            {% endif %}
+            {% if perms.ltcat.delete_ltcat or user.is_superuser %}
             <a href="{% url 'ltcat:ltcat_delete' ltcat.pk %}" class="btn btn-danger btn-sm">
                 <i class="fas fa-trash me-1"></i> Excluir
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -99,15 +105,19 @@
                     </h6>
                     <div class="d-flex align-items-center gap-2 no-print">
                         {% if ltcat.empresa_contratada %}
+                        {% if perms.ltcat.change_empresa_ltcat or user.is_superuser %}
                         <a href="{% url 'ltcat:empresa_ltcat_update' ltcat.empresa_contratada.pk %}?next={{ request.path }}"
                            class="btn btn-sm btn-outline-success" title="Editar dados da contratada">
                             <i class="fas fa-pencil"></i>
                         </a>
+                        {% endif %}
                         {% else %}
+                        {% if perms.ltcat.add_empresa_ltcat or user.is_superuser %}
                         <a href="{% url 'ltcat:empresa_ltcat_create' %}?next={{ request.path }}"
                            class="btn btn-sm btn-outline-success" title="Cadastrar empresa contratada">
                             <i class="fas fa-plus me-1"></i> Cadastrar
                         </a>
+                        {% endif %}
                         {% endif %}
                         <i class="fas fa-chevron-down text-muted"></i>
                     </div>
@@ -174,12 +184,14 @@
                             <i class="fas fa-building fa-2x d-block mb-2 opacity-50"></i>
                             <p class="mb-2">Nenhuma empresa contratada vinculada.</p>
                             <small>
+                                {% if perms.ltcat.change_empresa_ltcat or user.is_superuser %}
                                 <a href="{% url 'ltcat:ltcat_update' ltcat.pk %}" class="text-decoration-underline">
                                     Edite o LTCAT
                                 </a> para selecionar, ou
                                 <a href="{% url 'ltcat:empresa_ltcat_create' %}?next={{ request.path }}" class="text-decoration-underline">
                                     cadastre uma nova
                                 </a>.
+                                {% endif %}
                             </small>
                         </div>
                     {% endif %}
@@ -280,10 +292,12 @@
         <div class="collapse show" id="secaoLocais">
             <!-- Botão para gerenciar locais -->
             <div class="d-flex justify-content-end mt-3 mb-2">
+                {% if perms.ltcat.add_local or user.is_superuser %}
                 <button type="button" class="btn btn-sm btn-outline-primary"
                         data-bs-toggle="modal" data-bs-target="#modalVincularLocais">
                     <i class="fas fa-plus me-1"></i> Vincular Locais
                 </button>
+                {% endif %}
             </div>
 
             <!-- Tabela de locais vinculados -->
@@ -388,10 +402,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                {% if perms.ltcat.change_ltcat or user.is_superuser %}
                 <button type="button" class="btn btn-primary" id="btnConfirmarVincular" disabled>
                     <i class="fas fa-link me-1"></i>
                     Vincular Selecionados (<span id="countSelecionados">0</span>)
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -412,10 +428,12 @@
             </div>
         </div>
         <div class="collapse show" id="secaoFuncoes">
-            <div class="d-flex align-items-right justify-content-end gap-2">  
+            <div class="d-flex align-items-right justify-content-end gap-2">
+                {% if perms.ltcat.add_funcao or user.is_superuser %}  
                 <a href="{% url 'ltcat:funcao_create' ltcat.pk %}" class="btn btn-sm btn-outline-primary no-print">
                     <i class="fas fa-plus me-1"></i> Nova Função
                 </a>
+                {% endif %}
             </div> 
             {% if funcoes %}
             <div class="table-responsive mt-3">
@@ -442,18 +460,24 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
+                                    {% if perms.ltcat.change_risco or user.is_superuser %}
                                     <a href="{% url 'ltcat:risco_create' ltcat.pk %}?funcao={{ funcao.pk }}"
                                     class="btn btn-outline-success" title="Adicionar Risco">
                                         <i class="fas fa-plus"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if perms.ltcat.change_funcao or user.is_superuser %}
                                     <a href="{% url 'ltcat:funcao_update' ltcat.pk funcao.pk %}"
                                        class="btn btn-outline-warning" title="Editar">
                                         <i class="fas fa-pencil"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if perms.ltcat.delete_funcao or user.is_superuser %}
                                     <a href="{% url 'ltcat:funcao_delete' ltcat.pk funcao.pk %}"
                                        class="btn btn-outline-danger" title="Excluir">
                                         <i class="fas fa-trash"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -564,10 +588,12 @@
                             </td>
                             <td>{{ p.descricao|truncatechars:80|default:"-" }}</td>
                             <td class="text-end">
+                                {% if perms.ltcat.change_periculosidade or user.is_superuser %}
                                 <a href="{% url 'ltcat:periculosidade_update' ltcat.pk p.pk %}"
                                    class="btn btn-sm btn-outline-warning">
                                     <i class="fas fa-pencil"></i>
                                 </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -599,9 +625,11 @@
         </div>
         <div class="collapse show" id="secaoConclusoes">
             <div class="d-flex align-items-right justify-content-end gap-2">
+                {% if perms.ltcat.add_conclusao or user.is_superuser %}
                 <a href="{% url 'ltcat:conclusao_create' ltcat.pk %}" class="btn btn-sm btn-outline-success no-print">
                     <i class="fas fa-plus me-1"></i> Nova Conclusão
                 </a>
+                {% endif %}
             </div>
             {% if conclusoes %}
             <div class="table-responsive mt-3">
@@ -636,10 +664,12 @@
                                 {% else %}<i class="fas fa-minus text-muted"></i>{% endif %}
                             </td>
                             <td class="text-end">
+                                {% if perms.ltcat.change_conclusao or user.is_superuser %}
                                 <a href="{% url 'ltcat:conclusao_update' ltcat.pk c.pk %}"
                                    class="btn btn-sm btn-outline-warning">
                                     <i class="fas fa-pencil"></i>
                                 </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -669,9 +699,11 @@
         </div>
         <div class="collapse show" id="secaoRecomendacoes">
             <div class="d-flex align-items-rigth justify-content-end gap-2">
+                {% if perms.ltcat.add_recomendacao or user.is_superuser %}
                 <a href="{% url 'ltcat:recomendacao_create' ltcat.pk %}" class="btn btn-sm btn-outline-info no-print">
                     <i class="fas fa-plus me-1"></i> Nova Recomendação
                 </a>
+                {% endif %}
             </div>
             {% if recomendacoes %}
             <div class="table-responsive mt-3">
@@ -701,10 +733,14 @@
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
+                                    {% if perms.ltcat.change_recomendacao or user.is_superuser %}
                                     <a href="{% url 'ltcat:recomendacao_update' ltcat.pk r.pk %}"
                                        class="btn btn-outline-warning"><i class="fas fa-pencil"></i></a>
+                                    {% endif %}
+                                    {% if perms.ltcat.delete_recomendacao or user.is_superuser %}
                                     <a href="{% url 'ltcat:recomendacao_delete' ltcat.pk r.pk %}"
                                        class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -735,9 +771,11 @@
         </div>
         <div class="collapse show" id="secaoRevisoes">
             <div class="d-flex align-items-right justify-content-end gap-2">
+                {% if perms.ltcat.add_revisao or user.is_superuser %}
                 <a href="{% url 'ltcat:revisao_create' ltcat.pk %}" class="btn btn-sm btn-outline-secondary no-print">
                     <i class="fas fa-plus me-1"></i> Nova Revisão
                 </a>
+                {% endif %}
             </div>
             {% if revisoes %}
             <div class="table-responsive mt-3">
@@ -760,14 +798,18 @@
                             <td>{{ rev.realizada_por|default:"-" }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
+                                    {% if perms.ltcat.change_revisao or user.is_superuser %}
                                     <a href="{% url 'ltcat:revisao_update' ltcat.pk rev.pk %}"
                                        class="btn btn-outline-warning">
                                        <i class="fas fa-pencil"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if perms.ltcat.delete_revisao or user.is_superuser %}
                                     <a href="{% url 'ltcat:revisao_delete' ltcat.pk rev.pk %}"
                                        class="btn btn-outline-danger">
                                        <i class="fas fa-trash"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -798,9 +840,11 @@
         </div>
         <div class="collapse show" id="secaoAnexos">
             <div class="d-flex align-items-right justify-content-end gap-2">
+                {% if perms.ltcat.add_anexo or user.is_superuser %}
                 <a href="{% url 'ltcat:anexo_create' ltcat.pk %}" class="btn btn-sm btn-outline-secondary no-print">
                     <i class="fas fa-plus me-1"></i> Novo Anexos
                 </a>
+                {% endif %} 
             </div>
             {% if anexos %}
             <div class="table-responsive mt-3">
@@ -824,6 +868,7 @@
                             <td>{{ anexo.tamanho_formatado }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
+
                                     <a href="{{ anexo.arquivo.url }}" class="btn btn-outline-primary" target="_blank">
                                         <i class="fas fa-download"></i>
                                     </a>
@@ -864,10 +909,12 @@
 
             <!-- Botão vincular -->
             <div class="d-flex justify-content-end mt-3 mb-2 no-print">
+                {% if perms.ltcat.add_responsavel or user.is_superuser %}
                 <button type="button" class="btn btn-sm btn-outline-info"
                         data-bs-toggle="modal" data-bs-target="#modalVincularResponsavel">
                     <i class="fas fa-user-plus me-1"></i> Vincular Responsável
                 </button>
+                {% endif %}
             </div>
 
             <!-- Cards dos responsáveis -->
@@ -917,6 +964,7 @@
                                         {% endif %}
                                     </div>
                                     <div class="mt-2 no-print">
+                                        {% if perms.ltcat.change_profissional or user.is_superuser %}
                                         <button type="button"
                                                 class="btn btn-xs btn-outline-primary btn-abrir-assinatura"
                                                 data-profissional-id="{{ resp.profissional.pk }}"
@@ -924,7 +972,9 @@
                                                 title="Assinar digitalmente">
                                             <i class="fas fa-pen-nib me-1"></i> Assinar
                                         </button>
+                                        {% endif %}
                                         {% if resp.profissional.assinatura_imagem %}
+                                        {% if perms.ltcat.change_profissional or user.is_superuser %}
                                         <button type="button"
                                                 class="btn btn-xs btn-outline-danger btn-limpar-assinatura ms-1"
                                                 data-profissional-id="{{ resp.profissional.pk }}"
@@ -932,11 +982,13 @@
                                             <i class="fas fa-eraser"></i>
                                         </button>
                                         {% endif %}
+                                        {% endif %}
                                     </div>
                                 </div>
 
                                 <!-- Ações -->
                                 <div class="col-md-3 text-end no-print">
+                                    {% if perms.ltcat.change_responsavel or user.is_superuser %}
                                     <button type="button"
                                             class="btn btn-sm btn-outline-danger btn-desvincular-resp"
                                             data-vinculo-id="{{ resp.pk }}"
@@ -944,6 +996,7 @@
                                             title="Desvincular responsável">
                                         <i class="fas fa-unlink me-1"></i> Desvincular
                                     </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -1066,9 +1119,12 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancelar
                 </button>
+                {% if perms.ltcat.add_responsavel or user.is_superuser %}
                 <button type="button" class="btn btn-info text-white" id="btnConfirmarVincularResp" disabled>
                     <i class="fas fa-link me-1"></i> Vincular Responsável
                 </button>
+                {% endif %}
+
             </div>
         </div>
     </div>
@@ -1124,9 +1180,11 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     Cancelar
                 </button>
+                {% if perms.ltcat.add_assinatura or user.is_superuser %}
                 <button type="button" class="btn btn-success" id="btnSalvarAssinatura">
                     <i class="fas fa-save me-1"></i> Salvar Assinatura
                 </button>
+                {% endif %}
             </div>
         </div>
     </div>

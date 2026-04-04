@@ -1,92 +1,148 @@
 
+{# solicitacao_list.html #}
 {% extends "suprimentos/suprimentos_base.html" %}
 {% load static %}
 
-{% block title %}Solicitações de Compra — Suprimentos{% endblock %}
+{% block title %}Solicitações de Compra{% endblock %}
 
-{% block content %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .sol-card { transition: all .2s ease; border-left: 4px solid #dee2e6; }
+    .sol-card:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.1); }
+    .sol-card.status-FAZER_COTACAO { border-left-color: #0dcaf0; }
+    .sol-card.status-COTACAO_ENVIADA { border-left-color: #ffc107; }
+    .sol-card.status-CRIAR_PEDIDO_CT { border-left-color: #0d6efd; }
+    .sol-card.status-EM_APROVACAO { border-left-color: #fd7e14; }
+    .sol-card.status-ENVIAR_PEDIDO { border-left-color: #6f42c1; }
+    .sol-card.status-ENTREGA_PENDENTE { border-left-color: #20c997; }
+    .sol-card.status-CONCLUIDO { border-left-color: #198754; }
+    .sol-card.status-CANCELADO { border-left-color: #6c757d; opacity: .7; }
+
+    .sol-action-area { background: #f8f9fa; border-top: 1px dashed #dee2e6; }
+    .stepper-mini { display: flex; gap: 2px; }
+    .stepper-mini .step {
+        width: 20px; height: 4px; border-radius: 2px; background: #dee2e6;
+    }
+    .stepper-mini .step.done { background: #198754; }
+    .stepper-mini .step.current { background: #0d6efd; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+
+    .badge-etapa {
+        font-size: .7rem; padding: .25em .6em;
+        border-radius: .5rem; font-weight: 600;
+    }
+    .collapse-icon { transition: transform .2s; }
+    .collapsed .collapse-icon { transform: rotate(-90deg); }
+</style>
+{% endblock %}
+
+{% block suprimentos_content %}
 <div class="container-fluid py-4">
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    {# ═══ CABEÇALHO ═══ #}
+    <div class="d-flex justify-content-between align-items-start mb-4">
         <div>
-            <h2 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Solicitações de Compra</h2>
-            <small class="text-muted">Geradas automaticamente a partir de Pedidos aprovados</small>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-bag-check-fill text-primary me-2"></i>Solicitações de Compra
+            </h2>
+            <p class="text-muted mb-0">
+                Gerencie cotações, aprovações e entregas direto nesta tela
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if perms.suprimentos.view_pedido_lista and user.is_aprovador and user.is.superuser %}
+            <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Pedidos
+            </a>
+            {% endif %}
+            <a href="{% url 'suprimentos:dashboard' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            </a>
         </div>
     </div>
 
-    <!-- Contadores -->
+    {# ═══ CARDS KPI ═══ #}
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-start border-info border-4 h-100">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0dcaf0 !important;">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted small mb-0">Fazer Cotação</p>
-                            <h3 class="mb-0">{{ count_cotacao }}</h3>
+                            <div class="text-muted small fw-semibold text-uppercase">Fazer Cotação</div>
+                            <div class="fs-2 fw-bold text-info">{{ count_cotacao }}</div>
                         </div>
-                        <i class="fas fa-search-dollar fa-2x text-info opacity-50"></i>
+                        <i class="bi bi-receipt-cutoff text-info" style="font-size:2rem;opacity:.3;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-start border-warning border-4 h-100">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #fd7e14 !important;">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted small mb-0">Em Aprovação</p>
-                            <h3 class="mb-0">{{ count_aprovacao }}</h3>
+                            <div class="text-muted small fw-semibold text-uppercase">Em Aprovação</div>
+                            <div class="fs-2 fw-bold" style="color:#fd7e14;">{{ count_aprovacao }}</div>
                         </div>
-                        <i class="fas fa-clock fa-2x text-warning opacity-50"></i>
+                        <i class="bi bi-shield-check" style="font-size:2rem;opacity:.3;color:#fd7e14;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-start border-primary border-4 h-100">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0d6efd !important;">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted small mb-0">Total Pendentes</p>
-                            <h3 class="mb-0">{{ count_pendentes }}</h3>
+                            <div class="text-muted small fw-semibold text-uppercase">Total Pendentes</div>
+                            <div class="fs-2 fw-bold text-primary">{{ count_pendentes }}</div>
                         </div>
-                        <i class="fas fa-tasks fa-2x text-primary opacity-50"></i>
+                        <i class="bi bi-hourglass-split text-primary" style="font-size:2rem;opacity:.3;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-start border-success border-4 h-100">
+        <div class="col-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #198754 !important;">
                 <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted small mb-0">Meu Perfil</p>
-                            <h3 class="mb-0 small">
-                                {% if is_aprovador %}Aprovador{% endif %}
-                                {% if is_comprador %}Comprador{% endif %}
-                                {% if not is_aprovador and not is_comprador %}Solicitante{% endif %}
-                            </h3>
+                            <div class="text-muted small fw-semibold text-uppercase">Meu Perfil</div>
+                            <div class="fs-5 fw-bold text-success">
+                                {% if is_aprovador %}
+                                    <span class="badge bg-warning text-dark me-1">Aprovador</span>
+                                {% endif %}
+                                {% if is_comprador %}
+                                    <span class="badge bg-info text-white">Comprador</span>
+                                {% endif %}
+                                {% if not is_aprovador and not is_comprador %}
+                                    <span class="badge bg-secondary">Visualizador</span>
+                                {% endif %}
+                            </div>
                         </div>
-                        <i class="fas fa-user-tag fa-2x text-success opacity-50"></i>
+                        <i class="bi bi-person-badge text-success" style="font-size:2rem;opacity:.3;"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filtros -->
+    {# ═══ FILTROS ═══ #}
     <div class="card shadow-sm mb-4">
         <div class="card-body py-3">
             <form method="get" class="row g-2 align-items-end">
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold">Buscar</label>
-                    <input type="text" name="q" class="form-control" value="{{ filtro_q }}"
-                           placeholder="Nº, material, contrato...">
+                    <label class="form-label fw-semibold small mb-1">Buscar</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" value="{{ filtro_q }}"
+                               class="form-control" placeholder="Nº, material, contrato...">
+                    </div>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold">Status</label>
-                    <select name="status" class="form-select">
+                    <label class="form-label fw-semibold small mb-1">Status</label>
+                    <select name="status" class="form-select form-select-sm">
                         <option value="">Todos</option>
                         {% for value, label in status_choices %}
                         <option value="{{ value }}" {% if filtro_status == value %}selected{% endif %}>
@@ -96,8 +152,8 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label small fw-bold">Tipo de Obra</label>
-                    <select name="tipo_obra" class="form-select">
+                    <label class="form-label fw-semibold small mb-1">Tipo de Obra</label>
+                    <select name="tipo_obra" class="form-select form-select-sm">
                         <option value="">Todos</option>
                         {% for value, label in tipo_obra_choices %}
                         <option value="{{ value }}" {% if filtro_tipo_obra == value %}selected{% endif %}>
@@ -106,130 +162,595 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-grow-1">
-                        <i class="fas fa-search me-1"></i>Filtrar
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-funnel me-1"></i> Filtrar
                     </button>
-                    <a href="{% url 'suprimentos:solicitacao_lista' %}" class="btn btn-outline-secondary">
-                        <i class="fas fa-times"></i>
+                </div>
+                <div class="col-md-1">
+                    <a href="{% url 'suprimentos:solicitacao_lista' %}"
+                       class="btn btn-outline-secondary btn-sm w-100" title="Limpar">
+                        <i class="bi bi-x-circle"></i>
                     </a>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Tabela -->
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            {% if solicitacoes %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nº Solicitação</th>
-                            <th>Tipo</th>
-                            <th>Contrato / Cliente</th>
-                            <th>Material</th>
-                            <th class="text-center">Status</th>
-                            <th>Comprador</th>
-                            <th class="text-center">Dias</th>
-                            <th class="text-end">Valor</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for sol in solicitacoes %}
-                        <tr class="{% if sol.status == 'CANCELADO' %}table-secondary{% endif %}"
-                            style="cursor: pointer;"
-                            onclick="window.location='{{ sol.get_absolute_url }}'">
-                            <td>
-                                <a href="{{ sol.get_absolute_url }}" class="fw-bold text-decoration-none">
-                                    {{ sol.numero }}
-                                </a>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark">{{ sol.get_tipo_obra_display }}</span>
-                            </td>
-                            <td>
-                                {{ sol.contrato.cm }}
-                                <br><small class="text-muted">{{ sol.contrato.cliente }}</small>
-                            </td>
-                            <td>
-                                <span class="d-inline-block text-truncate" style="max-width: 250px;">
-                                    {{ sol.descricao_material }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-{{ sol.status_badge_class }}">
-                                    {{ sol.get_status_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if sol.comprador %}
-                                    {{ sol.comprador.get_full_name|default:sol.comprador.username }}
-                                {% else %}
-                                    <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <span class="badge {% if sol.dias_em_aberto > 15 %}bg-danger{% elif sol.dias_em_aberto > 7 %}bg-warning{% else %}bg-light text-dark{% endif %}">
-                                    {{ sol.dias_em_aberto }}d
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                {% if sol.valor_pedido %}
-                                    R$ {{ sol.valor_pedido|floatformat:2 }}
-                                {% else %}
-                                    —
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    {# ═══ LISTA DE CARDS EXPANDÍVEIS ═══ #}
+    {% if solicitacoes %}
+    <div class="d-flex flex-column gap-3">
+        {% for sol in solicitacoes %}
+        {% with sol_forms=forms_map|default_if_none:"" %}
+        <div class="card shadow-sm sol-card status-{{ sol.status }}" id="sol-{{ sol.pk }}">
 
-            <!-- Paginação -->
-            {% if is_paginated %}
-            <div class="card-footer d-flex justify-content-center">
-                <nav>
-                    <ul class="pagination mb-0">
-                        {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ filtro_status }}&q={{ filtro_q }}&tipo_obra={{ filtro_tipo_obra }}">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                        </li>
+            {# ── CABEÇALHO DO CARD (sempre visível) ── #}
+            <div class="card-body py-3">
+                <div class="row align-items-center">
+
+                    {# Número + Status #}
+                    <div class="col-md-2">
+                        <a href="{% url 'suprimentos:solicitacao_detalhe' sol.pk %}"
+                           class="fw-bold text-decoration-none fs-6">
+                            {{ sol.numero }}
+                        </a>
+                        <div class="mt-1">
+                            <span class="badge bg-{{ sol.status_badge_class }} badge-etapa">
+                                {{ sol.get_status_display }}
+                            </span>
+                        </div>
+                        {# Mini stepper #}
+                        <div class="stepper-mini mt-2">
+                            {% for i in "12345678" %}
+                            {% with step_num=forloop.counter %}
+                            <div class="step {% if step_num < sol.etapa_atual %}done{% elif step_num == sol.etapa_atual %}current{% endif %}"></div>
+                            {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# Contrato + Material #}
+                    <div class="col-md-4">
+                        <div class="small text-muted">
+                            <i class="bi bi-file-text me-1"></i>
+                            {{ sol.contrato.cm }} — {{ sol.contrato.cliente|truncatechars:25 }}
+                        </div>
+                        <div class="mt-1" style="font-size:.85rem;">
+                            {{ sol.descricao_material|truncatechars:120 }}
+                        </div>
+                        {% if sol.quantidade %}
+                        <span class="badge bg-light text-dark border mt-1">
+                            {{ sol.quantidade }} {{ sol.get_unidade_medida_display }}
+                        </span>
                         {% endif %}
-                        {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}&status={{ filtro_status }}&q={{ filtro_q }}&tipo_obra={{ filtro_tipo_obra }}">{{ num }}</a>
-                            </li>
+                    </div>
+
+                    {# Responsáveis #}
+                    <div class="col-md-2">
+                        <div class="small">
+                            <span class="text-muted">Solicitante:</span><br>
+                            <span class="fw-semibold">{{ sol.solicitante.get_short_name|default:sol.solicitante.username }}</span>
+                        </div>
+                        {% if sol.comprador %}
+                        <div class="small mt-1">
+                            <span class="text-muted">Comprador:</span><br>
+                            <span>{{ sol.comprador.get_short_name|default:sol.comprador.username }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {# Valor + Dias #}
+                    <div class="col-md-2 text-center">
+                        {% if sol.valor_pedido %}
+                        <div class="fw-bold text-primary">R$ {{ sol.valor_pedido|floatformat:2 }}</div>
+                        {% endif %}
+                        {% if sol.fornecedor %}
+                        <div class="small text-muted">{{ sol.fornecedor.nome_fantasia|truncatechars:20 }}</div>
+                        {% endif %}
+                        <div class="mt-1">
+                            {% with dias=sol.dias_em_aberto %}
+                            <span class="badge {% if dias > 15 %}bg-danger{% elif dias > 7 %}bg-warning text-dark{% else %}bg-light text-dark border{% endif %}">
+                                <i class="bi bi-clock me-1"></i>{{ dias }}d
+                            </span>
+                            {% endwith %}
+                        </div>
+                    </div>
+
+                    {# Botão expandir #}
+                    <div class="col-md-2 text-end">
+                        {% if forms_map %}
+                        {% with sf=forms_map|default_if_none:"" %}
+                        {# Botão de ação rápida #}
+                        <button class="btn btn-sm btn-primary collapsed"
+                                type="button" data-bs-toggle="collapse"
+                                data-bs-target="#action-{{ sol.pk }}"
+                                aria-expanded="false">
+                            <i class="bi bi-chevron-down collapse-icon me-1"></i>
+                            {% if sol.status == 'FAZER_COTACAO' %}
+                                Fazer Cotação
+                            {% elif sol.status == 'COTACAO_ENVIADA' %}
+                                Validar
+                            {% elif sol.status == 'CRIAR_PEDIDO_CT' %}
+                                Criar Pedido
+                            {% elif sol.status == 'EM_APROVACAO' %}
+                                Aprovar
+                            {% elif sol.status == 'ENVIAR_PEDIDO' %}
+                                Enviar
+                            {% elif sol.status == 'ENTREGA_PENDENTE' %}
+                                Entrega
+                            {% else %}
+                                Detalhes
                             {% endif %}
-                        {% endfor %}
-                        {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ filtro_status }}&q={{ filtro_q }}&tipo_obra={{ filtro_tipo_obra }}">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
+                        </button>
+                        {% endwith %}
                         {% endif %}
-                    </ul>
-                </nav>
+                        {% if perms.suprimentos.view_pedido_lista or user.is.superuser %}
+                        <a href="{% url 'suprimentos:solicitacao_detalhe' sol.pk %}"
+                           class="btn btn-sm btn-outline-secondary ms-1" title="Ver detalhe completo">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-            {% endif %}
 
-            {% else %}
-            <div class="text-center py-5 text-muted">
-                <i class="fas fa-inbox fa-3x mb-3"></i>
-                <p class="mb-0">Nenhuma solicitação encontrada.</p>
-                <small>Solicitações são geradas automaticamente quando pedidos são aprovados.</small>
+            {# ── ÁREA EXPANDÍVEL — FORMULÁRIOS INLINE ── #}
+            <div class="collapse" id="action-{{ sol.pk }}">
+                <div class="sol-action-area p-4">
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 1: FAZER COTAÇÃO (Comprador)         #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'FAZER_COTACAO' and is_comprador %}
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <h6 class="fw-bold text-info mb-3">
+                                <i class="bi bi-1-circle-fill me-1"></i> Registrar Cotação
+                            </h6>
+                            <form method="post"
+                                  action="{% url 'suprimentos:solicitacao_cotacao' sol.pk %}"
+                                  enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Data Cotação *</label>
+                                        <input type="date" name="data_cotacao"
+                                               class="form-control form-control-sm" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Nº Cotação *</label>
+                                        <input type="text" name="numero_cotacao"
+                                               class="form-control form-control-sm"
+                                               placeholder="Nº no Sienge" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">CNPJ Compra *</label>
+                                        <input type="text" name="cnpj_compra"
+                                               class="form-control form-control-sm"
+                                               placeholder="00.000.000/0000-00" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold small">Tipo NF *</label>
+                                        <select name="tipo_nota_fiscal"
+                                                class="form-select form-select-sm" required>
+                                            <option value="">Selecione</option>
+                                            {% for value, label in tipo_nf_choices %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-between align-items-center">
+                                    <div class="text-muted small">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Após enviar, o gerente será notificado para validar.
+                                    </div>
+                                    <button type="submit" class="btn btn-info text-white btn-sm px-4">
+                                        <i class="bi bi-send me-1"></i> Enviar Cotação para Validação
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        {# Upload de arquivo da cotação #}
+                        <div class="col-lg-4">
+                            <h6 class="fw-bold text-secondary mb-3">
+                                <i class="bi bi-paperclip me-1"></i> Anexar Cotação
+                            </h6>
+                            <form method="post"
+                                  action="{% url 'suprimentos:solicitacao_anexo' sol.pk %}"
+                                  enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="mb-2">
+                                    <input type="file" name="arquivo"
+                                           class="form-control form-control-sm"
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx">
+                                </div>
+                                <div class="mb-2">
+                                    <input type="text" name="descricao"
+                                           class="form-control form-control-sm"
+                                           placeholder="Descrição (ex: Cotação Fornecedor X)">
+                                </div>
+                                <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="bi bi-upload me-1"></i> Upload
+                                </button>
+                            </form>
+                            {# Anexos existentes #}
+                            {% for anexo in sol.anexos.all %}
+                            <div class="d-flex align-items-center mt-2 small">
+                                <a href="{{ anexo.arquivo.url }}" target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-file-earmark me-1"></i>{{ anexo.nome_arquivo|truncatechars:25 }}
+                                </a>
+                                <form method="post" class="ms-auto"
+                                      action="{% url 'suprimentos:solicitacao_anexo_remover' sol.pk anexo.pk %}"
+                                      onsubmit="return confirm('Remover?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-link btn-sm text-danger p-0">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 2: VALIDAR COTAÇÃO (Aprovador)       #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'COTACAO_ENVIADA' and is_aprovador %}
+                    <h6 class="fw-bold text-warning mb-3">
+                        <i class="bi bi-2-circle-fill me-1"></i> Validar Cotação
+                    </h6>
+
+                    {# Resumo da cotação para o aprovador #}
+                    <div class="alert alert-light border mb-3 py-2">
+                        <div class="row small">
+                            <div class="col-md-3">
+                                <span class="text-muted">Cotação Nº:</span>
+                                <strong>{{ sol.numero_cotacao }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">CNPJ:</span>
+                                <strong>{{ sol.cnpj_compra }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">Tipo NF:</span>
+                                <strong>{{ sol.get_tipo_nota_fiscal_display }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">Comprador:</span>
+                                <strong>{{ sol.comprador.get_full_name|default:sol.comprador.username }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Anexos da cotação #}
+                    {% if sol.anexos.exists %}
+                    <div class="mb-3">
+                        <span class="small fw-semibold text-muted">Anexos:</span>
+                        {% for anexo in sol.anexos.all %}
+                        <a href="{{ anexo.arquivo.url }}" target="_blank"
+                           class="badge bg-light text-primary border text-decoration-none me-1">
+                            <i class="bi bi-file-earmark me-1"></i>{{ anexo.nome_arquivo|truncatechars:20 }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post"
+                          action="{% url 'suprimentos:solicitacao_validar_cotacao' sol.pk %}"
+                          class="d-flex align-items-end gap-3">
+                        {% csrf_token %}
+                        <div>
+                            <label class="form-label fw-semibold small">Data Validação *</label>
+                            <input type="date" name="data_validacao"
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-sm px-4">
+                            <i class="bi bi-check-circle me-1"></i> Validar e Liberar para Compra
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 3: CRIAR PEDIDO (Comprador)          #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'CRIAR_PEDIDO_CT' and is_comprador %}
+                    <h6 class="fw-bold text-primary mb-3">
+                        <i class="bi bi-3-circle-fill me-1"></i> Criar Pedido / CT
+                    </h6>
+                    <form method="post"
+                          action="{% url 'suprimentos:solicitacao_criar_pedido' sol.pk %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Data Criação *</label>
+                                <input type="date" name="data_criacao_pedido"
+                                       class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Nº Pedido (Sienge) *</label>
+                                <input type="text" name="numero_pedido_sienge"
+                                       class="form-control form-control-sm"
+                                       placeholder="Ex: 12345" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Fornecedor *</label>
+                                <select name="fornecedor" class="form-select form-select-sm" required>
+                                    <option value="">Selecione</option>
+                                    {% for f in fornecedores %}
+                                    <option value="{{ f.pk }}">{{ f.nome_fantasia }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold small">Valor (R$) *</label>
+                                <input type="number" name="valor_pedido"
+                                       class="form-control form-control-sm"
+                                       step="0.01" min="0" placeholder="0,00" required>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                            <button type="submit" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-box-seam me-1"></i> Registrar Pedido → Enviar para Aprovação
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 4: APROVAR PEDIDO (Aprovador)        #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'EM_APROVACAO' and is_aprovador %}
+                    <h6 class="fw-bold mb-3" style="color:#fd7e14;">
+                        <i class="bi bi-4-circle-fill me-1"></i> Aprovar Pedido
+                    </h6>
+
+                    {# Resumo do pedido #}
+                    <div class="alert alert-light border mb-3 py-2">
+                        <div class="row small">
+                            <div class="col-md-3">
+                                <span class="text-muted">Pedido Nº:</span>
+                                <strong>{{ sol.numero_pedido_sienge }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">Fornecedor:</span>
+                                <strong>{{ sol.fornecedor }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">Valor:</span>
+                                <strong class="text-primary fs-6">R$ {{ sol.valor_pedido|floatformat:2 }}</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">Comprador:</span>
+                                <strong>{{ sol.comprador.get_full_name|default:"—" }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post"
+                          action="{% url 'suprimentos:solicitacao_aprovar_pedido' sol.pk %}"
+                          class="d-flex align-items-end gap-3">
+                        {% csrf_token %}
+                        <div>
+                            <label class="form-label fw-semibold small">Data Aprovação *</label>
+                            <input type="date" name="data_aprovacao_pedido"
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                        <button type="submit" class="btn btn-success btn-sm px-4">
+                            <i class="bi bi-check2-circle me-1"></i> Aprovar e Liberar Compra
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 5: ENVIAR AO FORNECEDOR (Comprador)  #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'ENVIAR_PEDIDO' and is_comprador %}
+                    <h6 class="fw-bold text-purple mb-3">
+                        <i class="bi bi-5-circle-fill me-1"></i> Enviar Pedido ao Fornecedor
+                    </h6>
+                    <form method="post"
+                          action="{% url 'suprimentos:solicitacao_enviar_fornecedor' sol.pk %}"
+                          class="d-flex align-items-end gap-3 flex-wrap">
+                        {% csrf_token %}
+                        <div>
+                            <label class="form-label fw-semibold small">Data Envio *</label>
+                            <input type="date" name="data_envio"
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        <div>
+                            <label class="form-label fw-semibold small">Previsão Entrega *</label>
+                            <input type="date" name="data_prevista"
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                        <button type="submit" class="btn btn-primary btn-sm px-4">
+                            <i class="bi bi-truck me-1"></i> Confirmar Envio
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  ETAPA 6: REGISTRAR ENTREGA (Comprador)     #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'ENTREGA_PENDENTE' and is_comprador %}
+                    <h6 class="fw-bold text-success mb-3">
+                        <i class="bi bi-6-circle-fill me-1"></i> Registrar Entrega
+                    </h6>
+
+                    {% if sol.data_prevista_entrega %}
+                    <div class="small text-muted mb-2">
+                        <i class="bi bi-calendar-event me-1"></i>
+                        Previsão: <strong>{{ sol.data_prevista_entrega|date:"d/m/Y" }}</strong>
+                    </div>
+                    {% endif %}
+
+                    {% if not sol.data_entrega_efetiva %}
+                    <form method="post"
+                          action="{% url 'suprimentos:solicitacao_registrar_entrega' sol.pk %}"
+                          class="d-flex align-items-end gap-3">
+                        {% csrf_token %}
+                        <div>
+                            <label class="form-label fw-semibold small">Data Entrega *</label>
+                            <input type="date" name="data_entrega"
+                                   class="form-control form-control-sm" required>
+                        </div>
+                        {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                        <button type="submit" class="btn btn-success btn-sm px-4">
+                            <i class="bi bi-box-seam me-1"></i> Confirmar Entrega
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% else %}
+                    {# Já entregue → Encerrar #}
+                    <div class="alert alert-success py-2 small mb-2">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Entregue em <strong>{{ sol.data_entrega_efetiva|date:"d/m/Y" }}</strong>
+                    </div>
+                    <form method="post"
+                          action="{% url 'suprimentos:solicitacao_encerrar' sol.pk %}"
+                          class="d-flex align-items-end gap-3">
+                        {% csrf_token %}
+                        <div>
+                            <label class="form-label fw-semibold small">Nº Nota Fiscal *</label>
+                            <input type="text" name="numero_nota_fiscal"
+                                   class="form-control form-control-sm"
+                                   placeholder="Nº da NF" required>
+                        </div>
+                        {% if perms.suprimentos.change_solicitacao or user.is.superuser %}
+                        <button type="submit" class="btn btn-success btn-sm px-4">
+                            <i class="bi bi-trophy me-1"></i> Encerrar Solicitação
+                        </button>
+                        {% endif %}
+                    </form>
+                    {% endif %}
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  STATUS FINAL: CONCLUÍDO                    #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'CONCLUIDO' %}
+                    <div class="text-center py-2">
+                        <i class="bi bi-trophy-fill text-success fs-4 me-2"></i>
+                        <span class="fw-bold text-success">Concluída</span>
+                        <span class="text-muted ms-2">
+                            NF: {{ sol.numero_nota_fiscal }}
+                            {% if sol.valor_pedido %} · R$ {{ sol.valor_pedido|floatformat:2 }}{% endif %}
+                            {% if sol.data_entrega_efetiva %} · {{ sol.data_entrega_efetiva|date:"d/m/Y" }}{% endif %}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {# ════════════════════════════════════════════ #}
+                    {#  STATUS FINAL: CANCELADO                    #}
+                    {# ════════════════════════════════════════════ #}
+                    {% if sol.status == 'CANCELADO' %}
+                    <div class="text-center py-2">
+                        <i class="bi bi-x-octagon-fill text-secondary fs-4 me-2"></i>
+                        <span class="fw-bold text-secondary">Cancelada</span>
+                        <span class="text-muted ms-2">{{ sol.motivo_cancelamento|truncatechars:60 }}</span>
+                    </div>
+                    {% endif %}
+
+                </div>
             </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+    </div>
+
+    {# ═══ PAGINAÇÃO ═══ #}
+    {% if is_paginated %}
+    <nav class="mt-4 d-flex justify-content-center">
+        <ul class="pagination pagination-sm">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}{% if filtro_tipo_obra %}&tipo_obra={{ filtro_tipo_obra }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
             {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:"-4" and num < page_obj.number|add:"4" %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}{% if filtro_tipo_obra %}&tipo_obra={{ filtro_tipo_obra }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filtro_status %}&status={{ filtro_status }}{% endif %}{% if filtro_q %}&q={{ filtro_q }}{% endif %}{% if filtro_tipo_obra %}&tipo_obra={{ filtro_tipo_obra }}{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    {# Estado vazio #}
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">Nenhuma solicitação encontrada</h5>
+            <p class="text-muted">
+                Solicitações são geradas automaticamente quando pedidos são <strong>aprovados</strong>.
+            </p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                {% if perms.suprimentos.add_solicitacao or user.is.superuser %}
+                <a href="{% url 'suprimentos:pedido_criar' %}" class="btn btn-primary">
+                    <i class="bi bi-cart-plus me-1"></i> Criar Novo Pedido
+                </a>
+                {% endif %}
+                {% if perms.suprimentos.view_pedido_lista %}
+                <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-list-task me-1"></i> Ver Pedidos
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
+    {% endif %}
+
 </div>
 {% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script>
+// Auto-expand card se URL tem hash (ex: #sol-123)
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#sol-')) {
+        const card = document.querySelector(hash);
+        if (card) {
+            const collapseEl = card.querySelector('.collapse');
+            if (collapseEl) {
+                new bootstrap.Collapse(collapseEl, {show: true});
+                card.scrollIntoView({behavior: 'smooth', block: 'center'});
+            }
+        }
+    }
+
+    // Highlight card com mensagem de sucesso (via sessionStorage)
+    const highlightId = sessionStorage.getItem('sol_highlight');
+    if (highlightId) {
+        const card = document.getElementById('sol-' + highlightId);
+        if (card) {
+            card.style.boxShadow = '0 0 0 3px rgba(25,135,84,.5)';
+            setTimeout(() => { card.style.boxShadow = ''; }, 3000);
+        }
+        sessionStorage.removeItem('sol_highlight');
+    }
+});
+</script>
+{% endblock %}

@@ -392,22 +392,22 @@
                     </h5>
                 </div>
                 <div class="card-body d-grid gap-2">
-                    {% if perms.ata_reuniao.change_atareuniao or user.is_superuser %}
+                    {% if perms.ata_reuniao.change_ata_reuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_update' ata.pk %}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil-square me-2"></i> Editar Ata
                     </a>
                     {% endif %}
-                    {% if perms.ata_reuniao.delete_atareuniao or user.is_superuser %}
+                    {% if perms.ata_reuniao.delete_ata_reuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger btn-sm">
                         <i class="bi bi-trash me-2"></i> Excluir Ata
                     </a>
                     {% endif %}
-                    {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                    {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_list' %}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-list-check me-2"></i> Todas as Atas
                     </a>
                     {% endif %}
-                    {% if perms.ata_reuniao.view_atareuniao or user.is_superuser %}
+                    {% if perms.ata_reuniao.view_ata_reuniao or user.is_superuser %}
                     <a href="{% url 'ata_reuniao:ata_reuniao_dashboard' %}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-speedometer2 me-2"></i> Dashboard
                     </a>

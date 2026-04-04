@@ -114,9 +114,11 @@
 {# ═══════ Barra de navegação secundária do Tributação ═══════ #}
 <nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm sticky-top" style="z-index: 1020;">
     <div class="container-fluid">
+        {% if perms.trubacao.view_dashboard or user.is.superuser %}
         <a class="navbar-brand fw-bold text-primary" href="{% url 'tributacao:dashboard' %}">
             <i class="bi bi-calculator me-1"></i> Tributação
         </a>
+        {% endif %}
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navTributacao">
             <span class="navbar-toggler-icon"></span>
@@ -124,44 +126,59 @@
         <div class="collapse navbar-collapse" id="navTributacao">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item">
+                    {% if perms.trubacao.view_dashboard or user.is.superuser %}
                     <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-semibold{% endif %}"
-                       href="{% url 'tributacao:dashboard' %}">
+                    href="{% url 'tributacao:dashboard' %}">
                         <i class="bi bi-speedometer2 me-1"></i> Dashboard
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if perms.trubacao.view_grupo_list or user.is.superuser %}
                     <a class="nav-link {% if 'grupo' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                       href="{% url 'tributacao:grupo_list' %}">
+                    href="{% url 'tributacao:grupo_list' %}">
                         <i class="bi bi-collection me-1"></i> Grupos Tributários
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if perms.trubacao.view_ncm_list or user.is.superuser %}
                     <a class="nav-link {% if 'ncm' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                       href="{% url 'tributacao:ncm_list' %}">
+                    href="{% url 'tributacao:ncm_list' %}">
                         <i class="bi bi-upc-scan me-1"></i> NCM
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if perms.trubacao.view_cfop_list or user.is.superuser %}
                     <a class="nav-link {% if 'cfop' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                       href="{% url 'tributacao:cfop_list' %}">
+                    href="{% url 'tributacao:cfop_list' %}">
                         <i class="bi bi-signpost-2 me-1"></i> CFOP
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if perms.trubacao.view_cst_list or user.is.superuser %}
                     <a class="nav-link {% if 'cst' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                       href="{% url 'tributacao:cst_list' %}">
+                    href="{% url 'tributacao:cst_list' %}">
                         <i class="bi bi-tags me-1"></i> CST
                     </a>
+                    {% endif %}
                 </li>
                 <li class="nav-item">
+                    {% if perms.trubacao.view_suprimentos or user.is.superuser %}
                     <a class="nav-link fw-bold text-primary" href="{% url 'suprimentos:dashboard' %}">
                         <i class="bi bi-box-seam-fill me-1"></i> Suprimentos
                     </a>
+                    {% endif %}
                 </li>
             </ul>
+
+            {% if perms.trubacao.add_grupo_tributario or user.is.superuser %}
             <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-success btn-sm">
                 <i class="bi bi-plus-circle me-1"></i> Novo Grupo Tributário
             </a>
+            {% endif %}
         </div>
     </div>
 </nav>

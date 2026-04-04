@@ -29,12 +29,16 @@
                     <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
                         <i class="bi bi-arrow-left me-1"></i> Painel Inicial
                     </a>
+                    {% if perms.gestao_riscos.btn_popular_padrao or user.is_superuser %}
                     <button type="button" id="btnPopularPadrao" class="btn btn-info">
                         <i class="bi bi-magic me-1"></i> Popular Padrão
                     </button>
+                    {% endif %}
+                    {% if perms.gestao_riscos.add_tiporisco or user.is_superuser %}
                     <a href="{% url 'gestao_riscos:tipo_risco_create' %}" class="btn btn-light">
                         <i class="bi bi-plus-circle me-1"></i> Novo Tipo
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -213,14 +217,18 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
+                                    {% if perms.gestao_riscos.change_tiporisco or user.is_superuser %}
                                     <a href="{% url 'gestao_riscos:tipo_risco_update' tipo.pk %}"
                                        class="btn btn-outline-warning" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    {% endif %}
+                                    {% if perms.gestao_riscos.delete_tiporisco or user.is_superuser %}
                                     <a href="{% url 'gestao_riscos:tipo_risco_delete' tipo.pk %}"
                                        class="btn btn-outline-danger" title="Excluir">
                                         <i class="bi bi-trash"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -230,12 +238,16 @@
                                 <i class="bi bi-inbox text-muted fs-1"></i>
                                 <h6 class="mt-3 text-muted">Nenhum tipo de risco cadastrado</h6>
                                 <div class="mt-3">
+                                    {% if perms.gestao_riscos.btn_popular_padrao or user.is_superuser %}
                                     <button type="button" id="btnPopularVazio" class="btn btn-info me-2">
                                         <i class="bi bi-magic me-1"></i> Popular Padrão
                                     </button>
+                                    {% endif %}
+                                    {% if perms.gestao_riscos.add_tiporisco or user.is_superuser %}
                                     <a href="{% url 'gestao_riscos:tipo_risco_create' %}" class="btn btn-primary">
                                         <i class="bi bi-plus-circle me-1"></i> Cadastrar
                                     </a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

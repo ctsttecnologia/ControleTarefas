@@ -1,5 +1,5 @@
 ﻿
-{# ferramentas/mala_detail.html #}
+{# ferramentas/mala #}
 {% extends 'ferramentas/ferramentas_base.html' %}
 {% load secure_url %}
 
@@ -15,12 +15,16 @@
 {% endblock %}
 
 {% block ferramentas_actions %}
+    {% if perms.ferramentas.view_mala or user.is_superuser %}
     <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
         <i class="bi bi-arrow-left me-1"></i>Lista
     </a>
+    {% endif %}
+    {% if perms.ferramentas.change_mala or user.is_superuser %}
     <a href="{% url 'ferramentas:mala_update' pk=mala.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block ferramentas_content %}
@@ -38,9 +42,11 @@
                     <i class="bi bi-check-circle-fill display-4 text-success"></i>
                     <h5 class="mt-2 text-success">Disponível</h5>
                     <div class="d-grid mt-3">
+                        {% if perms.ferramentas.retirar_mala or user.is_superuser %}
                         <a href="{% url 'ferramentas:retirar_mala' mala_pk=mala.pk %}" class="btn btn-primary">
                             <i class="bi bi-box-arrow-right me-2"></i>Realizar Retirada
                         </a>
+                        {% endif %}
                     </div>
                 {% elif mala.status == 'em_uso' %}
                     <i class="bi bi-person-fill-up display-4 text-warning"></i>
@@ -50,9 +56,11 @@
                         Por <strong>{{ movimentacao_ativa.retirado_por.get_full_name }}</strong>
                     </p>
                     <div class="d-grid">
+                        {% if perms.ferramentas.devolver_mala or user.is_superuser %}
                         <a href="{% url 'ferramentas:mala_devolucao_form' pk=movimentacao_ativa.pk %}" class="btn btn-success">
                             <i class="bi bi-box-arrow-in-left me-2"></i>Realizar Devolução
                         </a>
+                        {% endif %}
                     </div>
                     {% endif %}
                 {% endif %}

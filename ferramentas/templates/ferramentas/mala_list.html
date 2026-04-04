@@ -11,9 +11,11 @@
     <a href="{% url 'ferramentas:dashboard' %}" class="btn btn-outline-secondary">
         <i class="bi bi-speedometer2 me-1"></i>Dashboard
     </a>
+    {% if perms.ferramentas.add_mala or user.is_superuser %}
     <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-primary">
         <i class="bi bi-plus-lg me-1"></i>Nova Mala
     </a>
+    {% endif %}
 {% endblock %}
 
 {% block ferramentas_content %}
@@ -31,6 +33,7 @@
                     <i class="bi bi-search me-1"></i>Buscar
                 </button>
                 {% if query %}
+                {% if perms.ferramentas.view_mala_list or user.is_superuser %}
                 <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-lg"></i>
                 </a>
@@ -75,12 +78,16 @@
                             <a href="{{ mala.get_absolute_url }}" class="btn btn-outline-primary" title="Detalhes">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            {% if perms.ferramentas.change_mala or user.is_superuser %}
                             <a href="{% url 'ferramentas:mala_update' pk=mala.pk %}" class="btn btn-outline-secondary" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            {% endif %}
+                            {% if perms.ferramentas.add_termo_responsabilidade or user.is_superuser %}
                             <a href="{% url 'ferramentas:criar_termo_responsabilidade' %}" class="btn btn-outline-info" title="Novo Termo">
                                 <i class="bi bi-file-earmark-text"></i>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -89,9 +96,11 @@
                     <td colspan="6" class="text-center py-5">
                         <i class="bi bi-inbox display-4 text-muted d-block mb-2"></i>
                         <h6 class="text-muted">Nenhuma mala cadastrada.</h6>
+                        {% if perms.ferramentas.add_mala or user.is_superuser %}
                         <a href="{% url 'ferramentas:mala_create' %}" class="btn btn-sm btn-primary mt-2">
                             <i class="bi bi-plus-lg me-1"></i>Adicionar mala
                         </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

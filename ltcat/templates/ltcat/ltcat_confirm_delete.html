@@ -28,9 +28,11 @@
                     <a href="{% url 'ltcat:ltcat_detail' object.pk %}" class="btn btn-outline-secondary me-2">
                         Cancelar
                     </a>
+                    {% if perms.ltcat.delete_ltcat or user.is_superuser %}
                     <button type="submit" class="btn btn-danger">
                         <i class="fas fa-trash me-1"></i> Sim, Excluir
                     </button>
+                    {% endif %}
                 </form>
             </div>
         </div>

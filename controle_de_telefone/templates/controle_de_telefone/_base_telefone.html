@@ -74,14 +74,28 @@
         <nav class="nav flex-column">
             <a class="nav-link" href="{% url 'controle_de_telefone:dashboard' %}"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Dashboard</a>
             <div class="nav-header">Gerenciamento</div>
+            {% if perms.controle_de_telefone.view_vinculo or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:vinculo_list' %}"><i class="fas fa-link fa-fw me-2"></i>Vínculos</a>
+            {% endif %}
+            {% if perms.controle_de_telefone.view_aparelho or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:aparelho_list' %}"><i class="fas fa-mobile-alt fa-fw me-2"></i>Aparelhos</a>
+            {% endif %}
+             {% if perms.controle_de_telefone.view_linhatelefonica or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:linhatelefonica_list' %}"><i class="fas fa-sim-card fa-fw me-2"></i>Linhas</a>
+            {% endif %}
             <div class="nav-header">Cadastros</div>
+            {% if perms.controle_de_telefone.view_marca or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:marca_list' %}"><i class="fas fa-copyright fa-fw me-2"></i>Marcas</a>
+            {% endif %}
+            {% if perms.controle_de_telefone.view_modelo or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:modelo_list' %}"><i class="fas fa-mobile fa-fw me-2"></i>Modelos</a>
+            {% endif %}
+            {% if perms.controle_de_telefone.view_operadora or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:operadora_list' %}"><i class="fas fa-broadcast-tower fa-fw me-2"></i>Operadoras</a>
+            {% endif %}
+            {% if perms.controle_de_telefone.view_plano or user.is_superuser %}
             <a class="nav-link" href="{% url 'controle_de_telefone:plano_list' %}"><i class="fas fa-file-invoice-dollar fa-fw me-2"></i>Planos</a>
+            {% endif %}
         </nav>
     </div>
 

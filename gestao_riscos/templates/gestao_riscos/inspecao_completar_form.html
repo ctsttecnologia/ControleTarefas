@@ -107,9 +107,11 @@
                             <a href="{{ inspecao.get_absolute_url }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i> Cancelar
                             </a>
+                            {% if perms.gestao_riscos.change_inspecao %}
                             <button type="submit" class="btn btn-success btn-lg">
                                 <i class="bi bi-check-circle me-2"></i> Marcar como Concluída
                             </button>
+                            {% endif %}
                         </div>
                     </form>
                 </div>

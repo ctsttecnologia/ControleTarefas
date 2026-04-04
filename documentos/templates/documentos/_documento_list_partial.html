@@ -4,9 +4,11 @@
 <div class="card shadow-sm mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Documentos Anexados</h5>
+        {% if perms.documentos.add_documento or user.is_superuser %}
         <a href="{% url 'documentos:adicionar' content_type.pk object.pk %}" class="btn btn-sm btn-primary">
             <i class="fas fa-plus"></i> Adicionar Documento
         </a>
+        {% endif %}
     </div>
     <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -22,9 +24,11 @@
                 {% for doc in object.documentos.all %} {# Assumindo related_name='documentos' #}
                     <tr>
                         <td>
+                            {% if perms.documentos.view_documento or user.is_superuser %}
                             <a href="{% url 'documentos:download' doc.pk %}" title="Baixar Documento">
                                 <i class="fas fa-file-download"></i> {{ doc.nome }}
                             </a>
+                            {% endif %}
                         </td>
                         <td>
                             {% if doc.status == 'VENCIDO' %}
@@ -46,14 +50,18 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if perms.documentos.change_documento or user.is_superuser %}
                             {% if doc.status == 'VENCIDO' or doc.status == 'A_VENCER' %}
                             <a href="{% url 'documentos:renovar' doc.pk %}" class="btn btn-sm btn-info" title="Renovar">
                                 <i class="fas fa-sync-alt"></i>
                             </a>
                             {% endif %}
+                            {% endif %}
+                            {% if perms.documentos.delete_documento or user.is_superuser %}
                             <a href="{% url 'documentos:deletar' doc.pk %}" class="btn btn-sm btn-danger" title="Deletar">
                                 <i class="fas fa-trash"></i>
                             </a>
+                            {% endif %}
                         </td>
                     </tr>
                 {% empty %}

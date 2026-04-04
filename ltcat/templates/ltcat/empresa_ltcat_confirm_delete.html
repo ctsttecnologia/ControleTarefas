@@ -26,9 +26,11 @@
                         <a href="{% url 'ltcat:empresa_ltcat_list' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-1"></i> Cancelar
                         </a>
+                        {% if perms.ltcat.delete_empresa_ltcat or user.is_superuser %}
                         <button type="submit" class="btn btn-danger">
                             <i class="fas fa-trash me-1"></i> Excluir
                         </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

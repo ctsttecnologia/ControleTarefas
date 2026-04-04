@@ -37,12 +37,16 @@
                     <small class="opacity-75">Clique em um dia para agendar uma nova inspeção</small>
                 </div>
                 <div class="d-flex gap-2">
+                    {% if perms.gestao_riscos.view_risco or user.is_superuser %}
                     <a href="{% url 'gestao_riscos:lista_riscos' %}" class="btn btn-outline-light">
                         <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
                     </a>
+                    {% endif %}
+                    {% if perms.gestao_riscos.add_inspecao or user.is_superuser %}
                     <a href="{% url 'gestao_riscos:agendar_inspecao' %}" class="btn btn-light">
                         <i class="bi bi-plus-circle me-1"></i> Nova Inspeção
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
