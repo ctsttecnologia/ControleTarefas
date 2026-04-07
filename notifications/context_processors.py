@@ -1,14 +1,5 @@
-
-# notifications/context_processors.py
-
-"""
-Context processor unificado de notificações.
-Substitui o notification_processor do app tarefas.
-"""
-
 from .models import Notificacao
 
-# Máximo de notificações exibidas no dropdown
 MAX_DROPDOWN = 8
 
 
@@ -17,14 +8,17 @@ def notification_processor(request):
     if not request.user.is_authenticated:
         return {}
 
-    notificacoes_nao_lidas = Notificacao.objects.filter(
-        usuario=request.user,
-        lida=False,
-    )
+    try:
+        qs = Notificacao.objects.filter(
+            usuario=request.user,
+            lida=False,
+        )
+        return {
+            'notification_count': qs.count(),          
+            'notification_list': qs[:MAX_DROPDOWN],   
+        }
+    except Exception as e:
+        print(f"[ERROR] notification_processor: {e}")
+        return {'notification_count': 0, 'notification_list': []}
 
-    return {
-        'notification_count': notificacoes_nao_lidas.count(),
-        'notification_list': notificacoes_nao_lidas[:MAX_DROPDOWN],
-        'notificacao_list': list(notificacoes_nao_lidas[:MAX_DROPDOWN]),
-    }
 

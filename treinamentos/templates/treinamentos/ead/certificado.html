@@ -100,9 +100,11 @@
     <!-- Download -->
     {% if certificado.arquivo_pdf %}
     <div class="text-center my-4">
+        {% if perms.treinamentos.add_certificado or user.is_superuser %}
         <a href="{{ certificado.arquivo_pdf.url }}" class="btn btn-primary btn-lg" target="_blank">
             <i class="bi bi-download me-1"></i> Baixar PDF
         </a>
+        {% endif %}
     </div>
     {% endif %}
 </div>

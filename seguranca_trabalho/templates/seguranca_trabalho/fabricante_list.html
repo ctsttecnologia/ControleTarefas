@@ -14,9 +14,11 @@
             </h4>
             <span class="sst-page-subtitle">Gerencie os fabricantes de EPIs e materiais</span>
         </div>
+        {% if perms.seguranca_trabalho.add_fabricante or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:fabricante_create' %}" class="sst-btn-header--primary">
             <i class="bi bi-plus-circle"></i> Novo Fabricante
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -66,12 +68,16 @@
                     </td>
                     <td class="text-center">
                         <div class="sst-action-group">
+                            {% if perms.seguranca_trabalho.view_fabricante or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fabricante_detail' fabricante.pk %}" class="sst-action-btn sst-action-btn--view" title="Ver">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            {% endif %}
+                            {% if perms.seguranca_trabalho.change_fabricante or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fabricante_update' fabricante.pk %}" class="sst-action-btn sst-action-btn--edit" title="Editar">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -81,9 +87,11 @@
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
                             <h6>Nenhum fabricante cadastrado</h6>
+                            {% if perms.seguranca_trabalho.add_fabricante or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:fabricante_create' %}" class="sst-btn-primary mt-2" style="font-size:0.82rem; padding:0.4rem 1rem;">
                                 <i class="bi bi-plus-circle"></i> Cadastrar primeiro
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

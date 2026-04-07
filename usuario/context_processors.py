@@ -1,7 +1,11 @@
 
 # usuario/context_processors.py
 
-def filial_context(request):
+from notifications.context_processors import MAX_DROPDOWN
+from notifications.models import Notificacao
+
+
+def usuario_filial_context(request):
     """
     Injeta informações da filial ativa e das filiais permitidas em todos os templates.
     """
@@ -14,3 +18,4 @@ def filial_context(request):
             'filiais_permitidas_global': filiais_permitidas,
         }
     return {}
+

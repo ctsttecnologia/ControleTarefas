@@ -2,15 +2,14 @@
 {% load static %}
 
 <header id="global-header">
-    {# FORÇANDO a cor inline para garantir que funciona #}
-    <nav class="navbar navbar-expand-lg fixed-top" 
+    <nav class="navbar navbar-expand-lg fixed-top"
          style="background-color: #00b8d4 !important; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
         <div class="container-fluid">
 
             <!-- Brand -->
-            <a class="navbar-brand fw-bold d-flex align-items-center text-white" 
+            <a class="navbar-brand fw-bold d-flex align-items-center text-white"
                href="{% if user.is_authenticated %}{% url 'usuario:profile' %}{% else %}{% url 'home' %}{% endif %}">
-                <img src="{% static 'images/logocetest.png' %}" alt="Logo" 
+                <img src="{% static 'images/logocetest.png' %}" alt="Logo"
                      width="100" height="auto" class="me-2">
                 <span class="d-none d-md-inline text-white">
                     | <i class="bi bi-check2-square me-1"></i><strong>Gerenciando Tarefas</strong>
@@ -18,7 +17,7 @@
             </a>
 
             <!-- Hamburger -->
-            <button class="navbar-toggler border-0" type="button" 
+            <button class="navbar-toggler border-0" type="button"
                     data-bs-toggle="collapse" data-bs-target="#navbarMain"
                     aria-controls="navbarMain" aria-expanded="false" aria-label="Menu">
                 <span class="navbar-toggler-icon" style="filter: brightness(0) invert(1);"></span>
@@ -32,7 +31,7 @@
                     {% if user.is_authenticated %}
                         {% if user.is_staff and filiais_permitidas_global|length > 1 %}
                         <li class="nav-item dropdown mx-lg-2">
-                            <a class="nav-link dropdown-toggle text-white" href="#" role="button" 
+                            <a class="nav-link dropdown-toggle text-white" href="#" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-building me-1"></i>
                                 <strong>
@@ -84,46 +83,48 @@
                 <div class="d-flex align-items-center gap-2">
                     {% if user.is_authenticated %}
 
-                    <!-- Notificações — Sistema Unificado -->
-<div class="dropdown">
-    <a href="#" id="header-notification-bell"
-       class="nav-link text-white position-relative"
-       data-bs-toggle="dropdown" aria-expanded="false"
-       title="Notificações">
-        <i class="bi bi-bell-fill fs-5"></i>
-        {% if notification_count > 0 %}
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-              style="font-size: 0.6em;" id="notification-badge">
-            {{ notification_count }}
-            <span class="visually-hidden">notificações não lidas</span>
-        </span>
-        {% endif %}
-    </a>
+                    <!-- ════════════════════════════════════════════ -->
+                    <!-- Notificações — Sistema Unificado            -->
+                    <!-- ════════════════════════════════════════════ -->
+                    <div class="dropdown">
+                        <a href="#" id="header-notification-bell"
+                           class="nav-link text-white position-relative"
+                           data-bs-toggle="dropdown" aria-expanded="false"
+                           title="Notificações">
+                            <i class="bi bi-bell-fill fs-5"></i>
+                            {% if notification_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size: 0.6em;" id="notification-badge">
+                                {{ notification_count }}
+                                <span class="visually-hidden">notificações não lidas</span>
+                            </span>
+                            {% endif %}
+                        </a>
 
-    <ul class="dropdown-menu dropdown-menu-end shadow-lg" 
-        style="min-width: 360px; max-height: 480px; overflow-y: auto;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg"
+                            style="min-width: 360px; max-height: 480px; overflow-y: auto;">
 
-        <!-- Header -->
-        <li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
-            <strong><i class="bi bi-bell me-1"></i> Notificações</strong>
-            {% if notification_count > 0 %}
-            <div class="d-flex align-items-center gap-2">
-                <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
-                <form method="post" action="{% url 'notifications:marcar_todas_como_lidas' %}" class="d-inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-link btn-sm text-muted p-0"
-                            title="Marcar todas como lidas" style="font-size: 0.75rem;">
-                        <i class="bi bi-check2-all"></i> Limpar
-                    </button>
-                </form>
-            </div>
-            {% endif %}
-        </li>
-        <li><hr class="dropdown-divider my-0"></li>
+                            <!-- Header do dropdown -->
+                            <li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
+                                <strong><i class="bi bi-bell me-1"></i> Notificações</strong>
+                                {% if notification_count > 0 %}
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
+                                    <form method="post" action="{% url 'notifications:marcar_todas_como_lidas' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-link btn-sm text-muted p-0"
+                                                title="Marcar todas como lidas" style="font-size: 0.75rem;">
+                                            <i class="bi bi-check2-all"></i> Limpar
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </li>
+                            <li><hr class="dropdown-divider my-0"></li>
 
-                            <!-- Lista de notificações -->
-                            {% if notificacao_list %}
-                                {% for notif in notificacao_list %}
+                            <!-- Lista de notificações (CORRIGIDO: notification_list) -->
+                            {% if notification_list %}
+                                {% for notif in notification_list %}
                                 <li>
                                     <form method="post" action="{% url 'notifications:marcar_como_lida' notif.pk %}" class="d-inline w-100">
                                         {% csrf_token %}
@@ -133,7 +134,7 @@
                                             <div class="d-flex align-items-start gap-2">
                                                 <!-- Ícone -->
                                                 <div class="mt-1">
-                                                    <i class="bi {{ notif.icone }} 
+                                                    <i class="bi {{ notif.icone }}
                                                         {% if notif.prioridade == 'critica' %}text-danger
                                                         {% elif notif.prioridade == 'alta' %}text-warning
                                                         {% elif notif.prioridade == 'media' %}text-info
@@ -155,7 +156,8 @@
                                                     </div>
                                                 </div>
                                                 <!-- Badge de categoria -->
-                                                <span class="badge {{ notif.badge_class }}" style="font-size: 0.65rem; white-space: nowrap;">
+                                                <span class="badge {{ notif.badge_class }}"
+                                                      style="font-size: 0.65rem; white-space: nowrap;">
                                                     {{ notif.get_categoria_display }}
                                                 </span>
                                             </div>
@@ -168,7 +170,7 @@
                                 <li><hr class="dropdown-divider my-0"></li>
                                 <li>
                                     <a class="dropdown-item text-center small text-primary py-2"
-                                    href="{% url 'tarefas:listar_tarefas' %}">
+                                       href="{% url 'notifications:notificacao_list' %}">
                                         Ver todas ({{ notification_count }}) →
                                     </a>
                                 </li>
@@ -185,7 +187,9 @@
                         </ul>
                     </div>
 
-                    <!-- Usuário -->
+                    <!-- ════════════════════════════════════════════ -->
+                    <!-- Usuário                                      -->
+                    <!-- ════════════════════════════════════════════ -->
                     <div class="dropdown">
                         <a href="#" class="nav-link dropdown-toggle text-white d-flex align-items-center gap-2"
                            data-bs-toggle="dropdown" aria-expanded="false">
@@ -233,7 +237,7 @@
                     </div>
 
                     <!-- Tema -->
-                    <button id="theme-switcher-btn" class="btn btn-outline-light btn-sm" 
+                    <button id="theme-switcher-btn" class="btn btn-outline-light btn-sm"
                             type="button" aria-label="Alternar tema">
                         <i class="bi bi-sun-fill theme-icon-light"></i>
                         <i class="bi bi-moon-stars-fill theme-icon-dark d-none"></i>
@@ -250,12 +254,12 @@
     </nav>
 </header>
 
- <!-- Script: Polling automático do contador (a cada 60s) -->
+<!-- Script: Polling automático do contador (a cada 60s) -->
 <script>
 (function() {
-    const INTERVALO_MS = 60000; // 60 segundos
+    const INTERVALO_MS = 60000;
     const badge = document.getElementById('notification-badge');
-    const bell = document.getElementById('header-notification-bell');
+    const bell  = document.getElementById('header-notification-bell');
 
     async function atualizarContador() {
         try {
@@ -264,13 +268,12 @@
             });
             if (!resp.ok) return;
             const data = await resp.json();
-            
+
             if (data.count > 0) {
                 if (badge) {
                     badge.textContent = data.count;
                     badge.style.display = '';
                 } else {
-                    // Cria badge se não existia
                     const newBadge = document.createElement('span');
                     newBadge.id = 'notification-badge';
                     newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
@@ -282,7 +285,7 @@
                 badge.style.display = 'none';
             }
         } catch (e) {
-            // Silencioso - não interrompe a UX
+            // Silencioso — não interrompe a UX
         }
     }
 

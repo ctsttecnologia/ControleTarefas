@@ -133,9 +133,11 @@
             <button type="button" id="btn-limpar" class="sst-btn-cancel">
                 <i class="bi bi-eraser"></i> Limpar
             </button>
+            {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
             <button type="submit" form="form-assinatura" id="btn-salvar" class="sst-btn-success">
                 <i class="bi bi-check-lg"></i> Confirmar Assinatura
             </button>
+            {% endif %}
         </div>
     </div>
 </div>

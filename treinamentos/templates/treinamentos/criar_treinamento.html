@@ -332,12 +332,14 @@
                                     {% render_field form.tipo_curso class+="form-select" %}
                                     <label for="{{ form.tipo_curso.id_for_label }}">{{ form.tipo_curso.label }}</label>
                                 </div>
+                                {% if perms.treinamentos.add_tipo_curso or user.is_superuser %}
                                 <a href="{% url 'treinamentos:criar_tipo_curso' %}" 
                                    class="btn btn-outline-secondary d-flex align-items-center" 
                                    title="Adicionar Novo Tipo de Curso"
                                    data-bs-toggle="tooltip">
                                     <i class="bi bi-plus-lg"></i>
                                 </a>
+                                {% endif %}
                             </div>
                             {% if form.tipo_curso.errors %}<div class="invalid-feedback d-block">{{ form.tipo_curso.errors.as_text }}</div>{% endif %}
                         </div>
@@ -525,10 +527,12 @@
                     <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-back">
                         <i class="bi bi-x-circle me-1"></i> Cancelar
                     </a>
+                    {% if perms.treinamentos.add_treinamento or user.is_superuser %}
                     <button type="submit" class="btn btn-save-main">
                         <i class="bi bi-check-circle-fill me-2"></i>
                         {% if form.instance.pk %}Salvar Alterações{% else %}Criar Treinamento{% endif %}
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

@@ -15,9 +15,11 @@
             <a href="{% url 'seguranca_trabalho:fornecedor_list' %}" class="sst-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
+            {% if perms.seguranca_trabalho.change_fornecedor or user.is_superuser %}
             <a href="{% url 'seguranca_trabalho:fornecedor_update' fornecedor.pk %}" class="sst-btn-header--primary">
                 <i class="bi bi-pencil"></i> Editar
             </a>
+            {% endif %}
         </div>
     </div>
 </div>

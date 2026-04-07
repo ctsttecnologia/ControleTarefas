@@ -470,7 +470,13 @@ class FuncionarioListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionM
         return queryset
 
 
-class FuncionarioCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+class FuncionarioCreateView(
+    LoginRequiredMixin,
+    AppPermissionMixin,
+    SSTPermissionMixin,
+    FilialCreateMixin,
+    CreateView
+):
     app_label_required = _APP
     permission_required = 'departamento_pessoal.add_funcionario'
     model = Funcionario
@@ -478,8 +484,16 @@ class FuncionarioCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissio
     template_name = 'departamento_pessoal/funcionario_form.html'
     extra_context = {'titulo_pagina': "Cadastrar Novo Funcionário"}
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
     def get_success_url(self):
-        return reverse_lazy('departamento_pessoal:detalhe_funcionario', kwargs={'pk': self.object.pk})
+        return reverse_lazy(
+            'departamento_pessoal:detalhe_funcionario',
+            kwargs={'pk': self.object.pk}
+        )
 
 
 class FuncionarioDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DetailView):

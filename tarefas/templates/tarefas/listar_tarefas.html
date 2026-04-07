@@ -354,21 +354,30 @@
             <p class="list-subtitle">Gerencie suas tarefas de forma eficiente</p>
         </div>
         <div class="list-actions">
+            {% if perms.tarefas.view_relatorio or user.is_superuser %}
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
                 <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
+            {% endif %}
+
             <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Dashboard">
                 <i class="bi bi-speedometer2 me-1"></i><span class="d-none d-md-inline">Dashboard</span>
             </a>
+            {% if perms.tarefas.view_calendario or user.is_superuser %}
             <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
                 <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
             </a>
+            {% endif %}
+            {% if perms.tarefas.view_kanban or user.is_superuser %}
             <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-secondary" title="Kanban">
                 <i class="bi bi-kanban me-1"></i><span class="d-none d-lg-inline">Kanban</span>
             </a>
+            {% endif %}
+            {% if perms.tarefas.add_tarefa or user.is_superuser %}
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
                 <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -413,9 +422,11 @@
                         <button type="submit" class="btn btn-sm btn-primary flex-fill">
                             <i class="bi bi-funnel me-1"></i> Filtrar
                         </button>
+                        {% if perms.tarefas.view_listar_tarefas or user.is_superuser %}
                         <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Limpar">
                             <i class="bi bi-x-lg"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
             </form>
@@ -447,9 +458,11 @@
                     {% for tarefa in object_list %}
                     <tr>
                         <td data-label="Tarefa">
+                            {% if perms.tarefas.change_tarefa or user.is_superuser %}
                             <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
                                 {{ tarefa.titulo }} 
                             </a>
+                            {% else %}
                             {% if tarefa.descricao %}
                                 <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
@@ -507,16 +520,22 @@
                         </td>
                         <td data-label="Ações" class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
+                                {% if perms.tarefas.view_tarefa or user.is_superuser %}
                                 <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="action-btn action-btn--view" title="Ver">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.tarefas.change_tarefa or user.is_superuser %}
                                 <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="action-btn action-btn--edit" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% endif %}
+                                {% if perms.tarefas.delete_tarefa or user.is_superuser %}
                                 <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="action-btn action-btn--delete" title="Excluir"
                                    onclick="return confirm('Excluir esta tarefa?')">
                                     <i class="bi bi-trash"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -527,9 +546,11 @@
                                 <div class="list-empty-icon"><i class="bi bi-inbox"></i></div>
                                 <div class="list-empty-title">Nenhuma tarefa encontrada</div>
                                 <p class="list-empty-text">Tente limpar os filtros ou crie uma nova tarefa.</p>
+                                {% if perms.tarefas.add_tarefa or user.is_superuser %}
                                 <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary mt-2">
                                     <i class="bi bi-plus-circle me-1"></i> Criar primeira tarefa
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

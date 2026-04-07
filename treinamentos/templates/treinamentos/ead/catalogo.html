@@ -100,13 +100,16 @@
                 <p class="lead mb-0">Capacite-se com nossos treinamentos online. Estude no seu ritmo.</p>
             </div>
             <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                {% if perms.treinamentos.view_ead_meus_cursos or user.is_superuser %}
                 <a href="{% url 'treinamentos:ead_meus_cursos' %}" class="btn btn-outline-light">
                     <i class="bi bi-book me-1"></i> Meus Cursos
                 </a>
-
+                {% endif %}
+                {% if perms.treinamentos.view_ead_dashboard or user.is_superuser %}
                 <a href="{% url 'treinamentos:dashboard' %}" class="btn btn-outline-light">
                     <i class="bi bi-laptop me-2"></i>EAD
-                </a>    
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -201,11 +204,12 @@
                     {% endwith %}
                     {% endif %}
                     {% endwith %}
-
+                    {% if perms.treinamentos.view_ead_curso_detail or user.is_superuser %}
                     <a href="{% url 'treinamentos:ead_curso_detail' slug=curso.slug %}"
                        class="btn btn-sm btn-outline-primary w-100 mt-auto">
                         <i class="bi bi-arrow-right me-1"></i> Ver Curso
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

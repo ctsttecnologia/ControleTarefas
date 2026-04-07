@@ -198,7 +198,6 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'icon': 'images/dp.gif',
                 'links': [
                     {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
-                    {'url': 'departamento_pessoal:lista_funcionarios', 'text': 'Funcionários'},
                     {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
                 ]
             },
@@ -233,7 +232,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'icon': 'images/reuniao.png',
                 'links': [
                     {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas'},
-                    {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Dashboard'},
+                    {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Painel de Atas'},
                 ]
             },
             {

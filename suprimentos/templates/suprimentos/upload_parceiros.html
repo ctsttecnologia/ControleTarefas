@@ -56,9 +56,11 @@
             {% if error_report_available %}
             <hr>
             <p class="fw-bold">{% trans "Para facilitar a correção, baixe uma planilha contendo apenas as linhas com problemas." %}</p>
-            <a href="{% url 'suprimentos:parceiro_download_erros' %}" class="btn btn-danger">
-                <i class="bi bi-file-earmark-excel-fill"></i> {% trans "Baixar Planilha com Erros" %}
-            </a>
+                {% if perms.suprimentos.add_parceiro or user.is_superuser %}
+                <a href="{% url 'suprimentos:parceiro_download_erros' %}" class="btn btn-danger">
+                    <i class="bi bi-file-earmark-excel-fill"></i> {% trans "Baixar Planilha com Erros" %}
+                </a>
+                {% endif %}
             {% endif %}
         </div>
     </div>

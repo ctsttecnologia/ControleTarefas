@@ -64,12 +64,16 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 mt-4 pt-3" style="border-top: 1px solid var(--sst-border);">
+                    {% if perms.seguranca_trabalho.view_ficha or user.is_superuser %}
                     <a href="{% url 'seguranca_trabalho:ficha_detail' object.pk %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
+                    {% endif %}
+                    {% if perms.seguranca_trabalho.delete_ficha or user.is_superuser %}
                     <button type="submit" class="sst-btn-danger">
                         <i class="bi bi-trash3"></i> Sim, Excluir Permanentemente
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

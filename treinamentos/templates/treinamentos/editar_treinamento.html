@@ -154,9 +154,11 @@
                             <div class="form-check d-none">
                                 {% render_field form.DELETE class+="form-check-input" %}
                             </div>
+                            {% if perms.treinamentos.add_treinamento or user.is_superuser %}
                             <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
                                 <i class="bi bi-trash3"></i>
                             </button>
+                            {% endif %}
                         </div>
                         {% if form.errors %}
                         <div class="col-12"><div class="alert alert-danger py-1 px-2 small">{{ form.errors }}</div></div>
@@ -192,24 +194,29 @@
                             <div class="form-check d-none">
                                 {% render_field participantes_formset.empty_form.DELETE class+="form-check-input" %}
                             </div>
+                            {% if perms.treinamentos.add_treinamento or user.is_superuser %}
                             <button type="button" class="btn btn-sm btn-outline-danger remove-form-row" title="Remover Participante">
                                 <i class="bi bi-trash3"></i>
                             </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
+                {% if perms.treinamentos.add_treinamento or user.is_superuser %}
                 <button type="button" id="add-form" class="btn btn-outline-secondary mt-2">
                     <i class="bi bi-plus-circle me-1"></i> Adicionar Participante
                 </button>
-
+                {% endif %}
                 <!-- Botões de Ação -->
                 <div class="d-flex justify-content-between mt-5 border-top pt-4">
                     <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-secondary">
                         <i class="bi bi-x-circle me-1"></i> Cancelar
                     </a>
+                    {% if perms.treinamentos.add_treinamento or user.is_superuser %}
                     <button type="submit" class="btn btn-primary px-4">
                         <i class="bi bi-check-circle-fill me-1"></i> Salvar Treinamento
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

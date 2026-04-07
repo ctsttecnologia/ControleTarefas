@@ -253,10 +253,12 @@
                 </a>
                 <form method="post" class="d-inline" id="deleteForm">
                     {% csrf_token %}
+                    {% if perms.treinamentos.delete_tipo_curso or user.is_superuser %}
                     <button type="submit" class="btn btn-delete-confirm" id="btnConfirmDelete">
                         <i class="bi bi-trash3 me-1"></i>
                         <span id="btnDeleteText">Excluir Permanentemente</span>
                     </button>
+                    {% endif %}
                 </form>
             </div>
 

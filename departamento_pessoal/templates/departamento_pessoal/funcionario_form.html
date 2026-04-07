@@ -2,171 +2,222 @@
 {% load secure_url %}
 {% load widget_tweaks %}
 
+{% load static %}
+
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block dp_content %}
-<!-- Header do Módulo -->
-<div class="module-header d-flex justify-content-between align-items-center flex-wrap">
-    <div>
-        <h1>
-            <i class="bi bi-person-{% if object %}gear{% else %}plus{% endif %} me-2"></i>
-            {{ titulo_pagina }}
-        </h1>
-        <p>{% if object %}Atualize os dados do colaborador{% else %}Preencha os dados do novo colaborador{% endif %}</p>
-    </div>
-    <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex gap-2 mt-3 mt-md-0">
-            <a href="{% if object %}{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}{% else %}{% url 'departamento_pessoal:lista_funcionarios' %}{% endif %}" 
-            class="btn btn-header">
-                <i class="bi bi-arrow-left me-1"></i> Voltar
-            </a>
-        </div>
-        <div class="d-flex gap-2 mt-3 mt-md-0">
-            {% if perms.departamento_pessoal.add_importacao_massa_funcionarios or user.is_superuser %}
-            <a href="{% url 'departamento_pessoal:importacao_massa_funcionarios' %}" class="btn btn-header">
-                <i class="bi bi-plus me-1"></i> Importação em Massa
-            </a>
-            {% endif %}
-        </div>
-    </div>
+<div class="module-header">
+    <h1>
+        <i class="bi bi-person-{% if object %}gear{% else %}plus{% endif %} me-2"></i>
+        {{ titulo_pagina }}
+    </h1>
 </div>
 
-<!-- Formulário -->
 <div class="content-card">
     <div class="content-card-body">
-        <form method="post" novalidate enctype="multipart/form-data">
+
+        {# ══════ ERROS GLOBAIS DO FORM ══════ #}
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Corrija os erros abaixo:</strong>
+            <ul class="mb-0 mt-1">
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {# ══════ ALERTA SE HÁ ERROS EM CAMPOS ══════ #}
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Existem {{ form.errors|length }} campo(s) com erro. Verifique abaixo.</strong>
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-            <div class="row">
-                <!-- Foto -->
-                <div class="col-md-3 text-center mb-4">
-                    <h6 class="text-muted mb-3">Foto 3x4</h6>
-                    {% if object.foto_3x4 %}
-                        {% secure_url object "foto_3x4" as foto_url %}
-                            <img src="{{ foto_url }}" alt="Foto" class="rounded mb-2" 
-                             style="width: 150px; height: 200px; object-fit: cover;">
-                    {% else %}
-                        <div class="d-flex align-items-center justify-content-center bg-light rounded mb-2 mx-auto" 
-                             style="width: 150px; height: 200px;">
-                            <i class="bi bi-person-bounding-box display-1 text-muted"></i>
-                        </div>
-                    {% endif %}
-                    {% render_field form.foto_3x4 class+="form-control form-control-sm" %}
-                </div>
 
-                <!-- Dados Pessoais -->
-                <div class="col-md-9">
-                    <h6 class="text-primary mb-3 border-bottom pb-2">
-                        <i class="bi bi-person me-2"></i>Informações Pessoais
-                    </h6>
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">{{ form.nome_completo.label }} <span class="text-danger">*</span></label>
-                            {% render_field form.nome_completo class+="form-control" %}
-                            {% for error in form.nome_completo.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.data_nascimento.label }}</label>
-                            {% render_field form.data_nascimento class+="form-control" %}
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label">{{ form.email_pessoal.label }}</label>
-                            {% render_field form.email_pessoal class+="form-control" placeholder="email@exemplo.com" %}
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">{{ form.telefone.label }}</label>
-                            {% render_field form.telefone class+="form-control" id="id_telefone" %}
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">{{ form.sexo.label }}</label>
-                            {% render_field form.sexo class+="form-select" %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <hr class="my-4">
-
-            <!-- Dados de Contratação -->
-            <h6 class="text-primary mb-3 border-bottom pb-2">
-                <i class="bi bi-briefcase me-2"></i>Dados de Contratação
-            </h6>
             <div class="row g-3">
+                {# ── Foto ── #}
+                <div class="col-12">
+                    <label class="form-label">{{ form.foto_3x4.label }}</label>
+                    {{ form.foto_3x4 }}
+                    {% if form.foto_3x4.errors %}
+                        <div class="text-danger small mt-1">{{ form.foto_3x4.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Nome Completo ── #}
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        {{ form.nome_completo.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.nome_completo }}
+                    {% if form.nome_completo.errors %}
+                        <div class="text-danger small mt-1">{{ form.nome_completo.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Matrícula ── #}
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        {{ form.matricula.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.matricula }}
+                    {% if form.matricula.errors %}
+                        <div class="text-danger small mt-1">{{ form.matricula.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Data Nascimento ── #}
+                <div class="col-md-3">
+                    <label class="form-label">{{ form.data_nascimento.label }}</label>
+                    {{ form.data_nascimento }}
+                    {% if form.data_nascimento.errors %}
+                        <div class="text-danger small mt-1">{{ form.data_nascimento.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Sexo ── #}
+                <div class="col-md-3">
+                    <label class="form-label">{{ form.sexo.label }}</label>
+                    {{ form.sexo }}
+                    {% if form.sexo.errors %}
+                        <div class="text-danger small mt-1">{{ form.sexo.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Email ── #}
+                <div class="col-md-5">
+                    <label class="form-label">{{ form.email_pessoal.label }}</label>
+                    {{ form.email_pessoal }}
+                    {% if form.email_pessoal.errors %}
+                        <div class="text-danger small mt-1">{{ form.email_pessoal.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Telefone ── #}
+                <div class="col-md-4">
+                    <label class="form-label">{{ form.telefone.label }}</label>
+                    {{ form.telefone }}
+                    {% if form.telefone.errors %}
+                        <div class="text-danger small mt-1">{{ form.telefone.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Usuário do Sistema ── #}
                 <div class="col-md-6">
                     <label class="form-label">{{ form.usuario.label }}</label>
-                    {% render_field form.usuario class+="form-select" %}
-                    {% if form.usuario.help_text %}<small class="text-muted">{{ form.usuario.help_text|safe }}</small>{% endif %}
+                    {{ form.usuario }}
+                    {% if form.usuario.help_text %}
+                        <div class="form-text">{{ form.usuario.help_text }}</div>
+                    {% endif %}
+                    {% if form.usuario.errors %}
+                        <div class="text-danger small mt-1">{{ form.usuario.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ form.matricula.label }}</label>
-                    {% render_field form.matricula class+="form-control" %}
+
+                <hr class="my-2">
+
+                {# ── Departamento ── #}
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        {{ form.departamento.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.departamento }}
+                    {% if form.departamento.errors %}
+                        <div class="text-danger small mt-1">{{ form.departamento.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ form.departamento.label }}</label>
-                    {% render_field form.departamento class+="form-select" %}
+
+                {# ── Cargo ── #}
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        {{ form.cargo.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.cargo }}
+                    {% if form.cargo.errors %}
+                        <div class="text-danger small mt-1">{{ form.cargo.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">{{ form.cargo.label }}</label>
-                    {% render_field form.cargo class+="form-select" %}
-                </div>
-                <div class="col-md-6">
+
+                {# ── Função SST ── #}
+                <div class="col-md-4">
                     <label class="form-label">{{ form.funcao.label }}</label>
-                    {% render_field form.funcao class+="form-select" %}
+                    {{ form.funcao }}
+                    {% if form.funcao.help_text %}
+                        <div class="form-text">{{ form.funcao.help_text }}</div>
+                    {% endif %}
+                    {% if form.funcao.errors %}
+                        <div class="text-danger small mt-1">{{ form.funcao.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-6">
+
+                {# ── Cliente/Contrato ── #}
+                <div class="col-md-4">
                     <label class="form-label">{{ form.cliente.label }}</label>
-                    {% render_field form.cliente class+="form-select" %}
+                    {{ form.cliente }}
+                    {% if form.cliente.errors %}
+                        <div class="text-danger small mt-1">{{ form.cliente.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">{{ form.data_admissao.label }}</label>
-                    {% render_field form.data_admissao class+="form-control" %}
+
+                {# ── Data Admissão ── #}
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        {{ form.data_admissao.label }} <span class="text-danger">*</span>
+                    </label>
+                    {{ form.data_admissao }}
+                    {% if form.data_admissao.errors %}
+                        <div class="text-danger small mt-1">{{ form.data_admissao.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-3">
+
+                {# ── Salário ── #}
+                <div class="col-md-4">
                     <label class="form-label">{{ form.salario.label }}</label>
-                    <div class="input-group">
-                        <span class="input-group-text">R$</span>
-                        {% render_field form.salario class+="form-control" %}
-                    </div>
+                    {{ form.salario }}
+                    {% if form.salario.errors %}
+                        <div class="text-danger small mt-1">{{ form.salario.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-3">
+
+                {# ── Status ── #}
+                <div class="col-md-4">
                     <label class="form-label">{{ form.status.label }}</label>
-                    {% render_field form.status class+="form-select" %}
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                        <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                    {% endif %}
                 </div>
-                <div class="col-md-3">
+
+                {# ── Data Demissão ── #}
+                <div class="col-md-4">
                     <label class="form-label">{{ form.data_demissao.label }}</label>
-                    {% render_field form.data_demissao class+="form-control" %}
+                    {{ form.data_demissao }}
+                    {% if form.data_demissao.errors %}
+                        <div class="text-danger small mt-1">{{ form.data_demissao.errors.0 }}</div>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Botões -->
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-4 border-top">
-                 {% if perms.departamento_pessoal.view_funcionario or user.is_superuser %}
-                <a href="{% if object %}{% url 'departamento_pessoal:detalhe_funcionario' object.pk %}{% else %}{% url 'departamento_pessoal:lista_funcionarios' %}{% endif %}" 
-                   class="btn btn-secondary">Cancelar
+            <hr>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Cancelar
                 </a>
-                {% endif %}
-                {% if perms.departamento_pessoal.add_funcionario or user.is_superuser %}
-                <button type="submit" class="btn btn-primary px-4">
-                    <i class="bi bi-check-lg me-1"></i> Salvar
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Salvar Funcionário
                 </button>
-                {% endif %}
             </div>
         </form>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-<script>
-$(document).ready(function() {
-    $('#id_telefone').mask('(00) 00000-0000');
-});
-</script>
 {% endblock %}
 
 

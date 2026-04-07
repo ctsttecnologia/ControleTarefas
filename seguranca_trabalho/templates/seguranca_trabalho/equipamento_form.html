@@ -153,9 +153,11 @@
                         </div>
                         {% if object %}
                         <div class="col-md-4 d-flex align-items-end">
+                            {% if perms.seguranca_trabalho.change_equipamento or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:ajuste_estoque' object.pk %}" class="sst-btn-outline w-100 justify-content-center">
                                 <i class="bi bi-arrow-left-right"></i> Ajuste de Estoque
                             </a>
+                            {% endif %}
                         </div>
                         {% endif %}
                     </div>
@@ -207,9 +209,11 @@
                     <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
+                    {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Salvar
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>
