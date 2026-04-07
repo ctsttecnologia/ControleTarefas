@@ -1,55 +1,69 @@
-
 {# templates/usuario/includes/submenu.html #}
 {% load static %}
 
-<nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm mb-0">
+<nav class="navbar navbar-expand-lg submenu-nav mb-0">
     <div class="container">
-        <span class="navbar-brand fw-bold text-primary">
-            <i class="bi bi-gear-wide-connected me-2"></i>Gerenciamento
-        </span>
 
-        <button class="navbar-toggler" type="button"
-                data-bs-toggle="collapse" data-bs-target="#submenuUsuario"
-                aria-controls="submenuUsuario" aria-expanded="false"
+        {# Brand #}
+        <div class="navbar-brand submenu-brand mb-0">
+            <div class="submenu-brand-icon">
+                <i class="bi bi-gear-wide-connected"></i>
+            </div>
+            <span>Gerenciamento</span>
+        </div>
+
+        {# Toggle Mobile — usa classes Bootstrap padrão #}
+        <button class="navbar-toggler submenu-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#submenuUsuario"
+                aria-controls="submenuUsuario"
+                aria-expanded="false"
                 aria-label="Alternar navegação">
-            <span class="navbar-toggler-icon"></span>
+            <i class="bi bi-chevron-down submenu-toggler-icon"></i>
         </button>
 
+        {# Menu Items — classe navbar-collapse obrigatória pro Bootstrap funcionar #}
         <div class="collapse navbar-collapse" id="submenuUsuario">
-            <ul class="navbar-nav ms-auto gap-1">
+            <ul class="navbar-nav ms-auto submenu-items">
 
                 {# Usuários — Staff pode ver #}
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'lista_usuarios' %}active fw-bold{% endif %}"
+                    <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'lista_usuarios' %}active{% endif %}"
                        href="{% url 'usuario:lista_usuarios' %}">
-                        <i class="bi bi-people me-1"></i>Usuários
+                        <i class="bi bi-people"></i>
+                        <span>Usuários</span>
                     </a>
                 </li>
 
                 {# Demais itens — Apenas admin/gerente/super #}
                 {% if user.is_superuser or user.is_gerente or user.is_administrador %}
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'usuario_criar' %}active fw-bold{% endif %}"
+                    <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'usuario_criar' %}active{% endif %}"
                        href="{% url 'usuario:usuario_criar' %}">
-                        <i class="bi bi-person-plus me-1"></i>Novo Usuário
+                        <i class="bi bi-person-plus"></i>
+                        <span>Novo Usuário</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'grupo_lista' %}active fw-bold{% endif %}"
+                    <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'grupo_lista' %}active{% endif %}"
                        href="{% url 'usuario:grupo_lista' %}">
-                        <i class="bi bi-collection me-1"></i>Grupos
+                        <i class="bi bi-collection"></i>
+                        <span>Grupos</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'gerenciar_cards' %}active fw-bold{% endif %}"
+                    <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'gerenciar_cards' %}active{% endif %}"
                        href="{% url 'usuario:gerenciar_cards' %}">
-                        <i class="bi bi-grid-3x3-gap me-1"></i>Cards
+                        <i class="bi bi-grid-3x3-gap"></i>
+                        <span>Cards</span>
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'filial_list' %}active fw-bold{% endif %}"
+                    <a class="nav-link submenu-link {% if request.resolver_match.url_name == 'filial_list' %}active{% endif %}"
                        href="{% url 'usuario:filial_list' %}">
-                        <i class="bi bi-building me-1"></i>Filiais
+                        <i class="bi bi-building"></i>
+                        <span>Filiais</span>
                     </a>
                 </li>
                 {% endif %}
@@ -58,5 +72,242 @@
         </div>
     </div>
 </nav>
+
+<style>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  SUBMENU — TEMA CLARO                                       ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+[data-bs-theme="light"] .submenu-nav,
+:root .submenu-nav {
+    --sm-bg:              #ffffff;
+    --sm-border:          #e5e7eb;
+    --sm-shadow:          0 1px 4px rgba(0,0,0,.05);
+
+    --sm-brand-color:     #2563eb;
+    --sm-brand-icon-bg:   linear-gradient(135deg, #3b82f6, #1d4ed8);
+    --sm-brand-icon-clr:  #ffffff;
+    --sm-brand-icon-shadow: 0 2px 6px rgba(37,99,235,.35);
+
+    --sm-link-color:      #6b7280;
+    --sm-link-hover-clr:  #111827;
+    --sm-link-hover-bg:   #f3f4f6;
+
+    --sm-active-clr:      #2563eb;
+    --sm-active-bg:       #eff6ff;
+    --sm-active-border:   #3b82f6;
+
+    --sm-divider:         #e5e7eb;
+
+    --sm-toggler-clr:     #6b7280;
+    --sm-toggler-border:  #d1d5db;
+    --sm-toggler-hover:   #f3f4f6;
+}
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  SUBMENU — TEMA ESCURO                                      ║
+   ║  Cores harmonizadas com navbar escura (~#0f172a)            ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+[data-bs-theme="dark"] .submenu-nav {
+    --sm-bg:              #0f1a2b;
+    --sm-border:          #1c2c42;
+    --sm-shadow:          0 1px 4px rgba(0,0,0,.3);
+
+    --sm-brand-color:     #38bdf8;
+    --sm-brand-icon-bg:   linear-gradient(135deg, #0ea5e9, #0284c7);
+    --sm-brand-icon-clr:  #ffffff;
+    --sm-brand-icon-shadow: 0 2px 6px rgba(14,165,233,.3);
+
+    --sm-link-color:      #7e94ad;
+    --sm-link-hover-clr:  #e2e8f0;
+    --sm-link-hover-bg:   rgba(255,255,255,.05);
+
+    --sm-active-clr:      #38bdf8;
+    --sm-active-bg:       rgba(56,189,248,.1);
+    --sm-active-border:   #38bdf8;
+
+    --sm-divider:         rgba(255,255,255,.06);
+
+    --sm-toggler-clr:     #7e94ad;
+    --sm-toggler-border:  #1c2c42;
+    --sm-toggler-hover:   rgba(255,255,255,.05);
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  ESTRUTURA                                                   ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.submenu-nav {
+    background: var(--sm-bg) !important;
+    border-bottom: 1px solid var(--sm-border) !important;
+    box-shadow: var(--sm-shadow);
+    padding-top: .35rem;
+    padding-bottom: .35rem;
+    transition: background .3s ease, border-color .3s ease;
+}
+
+
+/* ── Brand ─────────────────────────────────────────────────── */
+.submenu-brand {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-weight: 700;
+    font-size: .88rem;
+    color: var(--sm-brand-color) !important;
+    cursor: default;
+}
+
+.submenu-brand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--sm-brand-icon-bg);
+    color: var(--sm-brand-icon-clr);
+    font-size: .82rem;
+    box-shadow: var(--sm-brand-icon-shadow);
+    flex-shrink: 0;
+}
+
+
+/* ── Toggler ───────────────────────────────────────────────── */
+.submenu-toggler {
+    border: 1px solid var(--sm-toggler-border) !important;
+    border-radius: 7px !important;
+    color: var(--sm-toggler-clr) !important;
+    background: transparent !important;
+    width: 36px;
+    height: 36px;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s ease;
+}
+.submenu-toggler:hover {
+    background: var(--sm-toggler-hover) !important;
+}
+.submenu-toggler:focus {
+    box-shadow: 0 0 0 2px var(--sm-active-border) !important;
+}
+
+/* Rotação da seta */
+.submenu-toggler-icon {
+    transition: transform .3s ease;
+    font-size: 1rem;
+}
+.submenu-toggler[aria-expanded="true"] .submenu-toggler-icon {
+    transform: rotate(180deg);
+}
+
+
+/* ── Links ─────────────────────────────────────────────────── */
+.submenu-items {
+    gap: .15rem;
+}
+
+.submenu-link {
+    display: flex !important;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .7rem !important;
+    border-radius: 7px !important;
+    font-size: .82rem !important;
+    font-weight: 500;
+    color: var(--sm-link-color) !important;
+    transition: all .2s ease !important;
+    position: relative;
+    white-space: nowrap;
+}
+
+.submenu-link i {
+    font-size: .92rem;
+    transition: color .2s ease;
+}
+
+/* Hover */
+.submenu-link:hover {
+    color: var(--sm-link-hover-clr) !important;
+    background: var(--sm-link-hover-bg) !important;
+}
+
+/* Ativo */
+.submenu-link.active {
+    color: var(--sm-active-clr) !important;
+    background: var(--sm-active-bg) !important;
+    font-weight: 600 !important;
+}
+.submenu-link.active i {
+    color: var(--sm-active-clr) !important;
+}
+
+/* Barra inferior no item ativo — Desktop */
+@media (min-width: 992px) {
+    .submenu-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -7px;
+        left: 20%;
+        right: 20%;
+        height: 2.5px;
+        border-radius: 2px;
+        background: var(--sm-active-border);
+    }
+
+    /* Separador vertical sutil entre itens */
+    .submenu-items .nav-item + .nav-item .submenu-link::before {
+        content: '';
+        position: absolute;
+        left: -2px;
+        top: 22%;
+        bottom: 22%;
+        width: 1px;
+        background: var(--sm-divider);
+    }
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  MOBILE                                                      ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+@media (max-width: 991.98px) {
+    .submenu-nav .navbar-collapse {
+        background: var(--sm-bg);
+        border-top: 1px solid var(--sm-border);
+        margin-top: .35rem;
+        padding: .4rem 0 .5rem;
+        border-radius: 0 0 10px 10px;
+    }
+
+    .submenu-items {
+        gap: .1rem !important;
+    }
+
+    .submenu-link {
+        padding: .5rem .7rem !important;
+        font-size: .86rem !important;
+        border-radius: 7px !important;
+    }
+
+    /* Borda lateral no ativo (mobile) */
+    .submenu-link.active {
+        border-left: 3px solid var(--sm-active-border) !important;
+        border-radius: 0 7px 7px 0 !important;
+        padding-left: calc(.7rem - 3px) !important;
+    }
+}
+
+
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║  ACESSIBILIDADE                                              ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+.submenu-link:focus-visible {
+    outline: 2px solid var(--sm-active-border) !important;
+    outline-offset: 2px;
+}
+</style>
+
 
 

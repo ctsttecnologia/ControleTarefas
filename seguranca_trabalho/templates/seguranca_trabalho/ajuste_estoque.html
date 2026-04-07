@@ -488,9 +488,11 @@
                     <a href="{% url 'seguranca_trabalho:equipamento_detail' equipamento.pk %}" class="ae-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
+                    {% if perms.documentos.add_documento or user.is_superuser %}
                     <button type="submit" class="ae-btn-submit">
                         <i class="bi bi-check-lg"></i> Confirmar Ajuste
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

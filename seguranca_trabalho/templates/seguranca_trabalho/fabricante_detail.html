@@ -20,9 +20,11 @@
             <a href="{% url 'seguranca_trabalho:fabricante_list' %}" class="sst-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
+            {% if perms.seguranca_trabalho.change_fabricante or user.is_superuser %}
             <a href="{% url 'seguranca_trabalho:fabricante_update' fabricante.pk %}" class="sst-btn-header--primary">
                 <i class="bi bi-pencil"></i> Editar
             </a>
+            {% endif %}
         </div>
     </div>
 </div>

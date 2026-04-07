@@ -65,9 +65,11 @@
                     <a href="{% url 'seguranca_trabalho:ficha_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
+                    {% if perms.seguranca_trabalho.add_ficha or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Criar Ficha
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

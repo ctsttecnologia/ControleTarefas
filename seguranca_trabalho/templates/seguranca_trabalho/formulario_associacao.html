@@ -68,9 +68,11 @@
                     <a href="{% url 'seguranca_trabalho:lista_associacoes' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
+                    {% if perms.seguranca_trabalho.add_associacoes or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Criar Associação
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>

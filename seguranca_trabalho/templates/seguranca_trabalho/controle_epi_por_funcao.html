@@ -552,6 +552,7 @@
             </span>
         </div>
         <div class="d-flex gap-2">
+            {% if perms.seguranca_trabalho.add_funcao or user.is_superuser %}
             <button type="button" class="btn btn-sm btn-outline-light"
                     hx-get="{% url 'seguranca_trabalho:funcao_create' %}"
                     hx-target="#modal-content"
@@ -559,6 +560,8 @@
                     data-bs-target="#genericModal">
                 <i class="bi bi-plus-lg me-1"></i> Nova Função
             </button>
+            {% endif %}
+
         </div>
     </div>
 </div>

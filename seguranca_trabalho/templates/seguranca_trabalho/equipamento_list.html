@@ -14,9 +14,11 @@
             </h4>
             <span class="sst-page-subtitle">Gerencie os tipos de equipamentos disponíveis</span>
         </div>
+        {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
         <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="sst-btn-header sst-btn-header--secundary">
             <i class="bi bi-plus-circle"></i> Novo Equipamento
         </a>
+        {% endif %}
     </div>
 </div>
 
@@ -117,9 +119,11 @@
                         <div class="sst-empty">
                             <div class="sst-empty-icon"><i class="bi bi-inbox"></i></div>
                             <h6>Nenhum equipamento cadastrado</h6>
+                            {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
                             <a href="{% url 'seguranca_trabalho:equipamento_create' %}" class="sst-btn-primary mt-2" style="font-size:0.82rem; padding:0.4rem 1rem;">
                                 <i class="bi bi-plus-circle"></i> Cadastrar primeiro
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

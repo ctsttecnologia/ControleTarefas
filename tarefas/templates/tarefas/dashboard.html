@@ -344,21 +344,31 @@
             <p class="dash-subtitle">Visão geral das suas tarefas</p>
         </div>
         <div class="dash-actions">
+            {% if perms.tarefas.view_relatorio or user.is_superuser %}
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
                 <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
+            {% endif %}
+            {% if perms.tarefas.view_tarefa or user.is_superuser %}
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
                 <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
             </a>
+            {% endif %}
+            {% if perms.tarefas.view_kanban or user.is_superuser %}
             <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-secondary" title="Kanban">
                 <i class="bi bi-kanban me-1"></i><span class="d-none d-lg-inline">Kanban</span>
             </a>
+            {% endif %}
+            {% if perms.tarefas.view_calendario or user.is_superuser %}
             <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
                 <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
-            </a>
+            </a>    
+            {% endif %}
+            {% if perms.tarefas.add_tarefa or user.is_superuser %}
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
                 <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
             </a>
+            {% endif %}
         </div>
     </div>
 

@@ -432,9 +432,11 @@
             <a href="{% url 'seguranca_trabalho:equipamento_list' %}" class="ed-btn-header">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
+            {% if perms.seguranca_trabalho.change_equipamento or user.is_superuser %}
             <a href="{% url 'seguranca_trabalho:equipamento_update' equipamento.pk %}" class="ed-btn-header ed-btn-header--primary">
                 <i class="bi bi-pencil"></i> Editar
             </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -457,6 +459,7 @@
                 {% endif %}
 
                 <div>
+                    {% if perms.seguranca_trabalho.add_equipamento or user.is_superuser %}
                     {% if equipamento.ativo %}
                     <span class="ed-status-badge active">
                         <i class="bi bi-check-circle-fill"></i> Ativo
@@ -465,6 +468,7 @@
                     <span class="ed-status-badge inactive">
                         <i class="bi bi-x-circle-fill"></i> Inativo
                     </span>
+                    {% endif %}
                     {% endif %}
                 </div>
 
@@ -492,9 +496,11 @@
                         </span>
                         {% endif %}
                     </div>
+                    {% if perms.seguranca_trabalho.change_equipamento or user.is_superuser %}
                     <a href="{% url 'seguranca_trabalho:ajuste_estoque' equipamento.pk %}" class="ed-btn-stock">
                         <i class="bi bi-arrow-left-right"></i> Ajustar Estoque
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

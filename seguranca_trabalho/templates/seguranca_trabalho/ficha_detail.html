@@ -246,9 +246,11 @@
                     </div>
 
                     <div class="d-grid">
+                        {% if perms.seguranca_trabalho.add_entregaepi or user.is_superuser %}
                         <button type="submit" class="sst-btn-success" style="justify-content:center;">
                             <i class="bi bi-check-lg"></i> Registrar Entrega
                         </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

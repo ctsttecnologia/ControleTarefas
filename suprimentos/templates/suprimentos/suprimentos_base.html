@@ -91,7 +91,7 @@
                 </li>
 
                 {# Relatórios (dropdown) #}
-                
+                {% if perms.suprimentos.view_relatorio or user.is_superuser %}
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle fw-semibold
                        {% if 'relatorio' in request.resolver_match.url_name or request.resolver_match.app_name == 'tributacao' %}active{% endif %}"
@@ -124,6 +124,7 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
             </ul>
 
             {# Botão Novo Pedido #}

@@ -521,9 +521,11 @@
                     <a href="{% url 'seguranca_trabalho:ficha_detail' entrega.ficha.pk %}" class="as-btn-cancel">
                         Cancelar
                     </a>
+                    {% if perms.seguranca_trabalho.add_entrega or user.is_superuser %}
                     <button type="submit" form="formAssinatura" class="as-btn-confirm">
                         <i class="bi bi-check-lg"></i> Confirmar Assinatura
                     </button>
+                    {% endif %}
                 </div>
             </div>
         </div>

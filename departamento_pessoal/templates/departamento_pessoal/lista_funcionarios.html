@@ -103,8 +103,9 @@
                     <td>
                         {% if funcionario.cliente %}
                             <span class="badge-status bg-primary-soft text-primary">
-                                <i class="bi bi-building me-1"></i>{{ funcionario.cliente.nome|truncatechars:25 }}
+                                {{ funcionario.cliente.contrato|truncatechars:4 }}
                             </span>
+                            <span class="small text-muted">{{ funcionario.cliente.nome|truncatechars:10 }}</span>
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}

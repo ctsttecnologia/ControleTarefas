@@ -42,9 +42,11 @@
                     <a href="{% url 'seguranca_trabalho:funcao_list' %}" class="sst-btn-cancel">
                         <i class="bi bi-x-lg"></i> Cancelar
                     </a>
+                    {% if perms.seguranca_trabalho.add_funcao or user.is_superuser %}
                     <button type="submit" class="sst-btn-primary">
                         <i class="bi bi-check-lg"></i> Salvar
                     </button>
+                    {% endif %}
                 </div>
             </form>
         </div>
