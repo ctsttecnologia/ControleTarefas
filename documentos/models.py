@@ -11,13 +11,10 @@ from django.core.files.storage import FileSystemStorage
 
 from usuario.models import Filial
 from core.managers import FilialManager
+from documentos.storage import PrivateMediaStorage
 
+private_storage = PrivateMediaStorage()
 
-# Storage privado — salva em private_media/ ao invés de media/
-private_storage = FileSystemStorage(
-    location=getattr(settings, 'PRIVATE_MEDIA_ROOT', os.path.join(settings.BASE_DIR, 'private_media')),
-    base_url='/private/',
-)
 
 
 def private_document_path(instance, filename):
@@ -81,7 +78,7 @@ class Documento(models.Model):
     descricao = models.TextField("Descrição/Observações", blank=True, default='')
 
     arquivo = models.FileField(
-        "Arquivo",
+        verbose_name="Arquivo",
         upload_to=private_document_path,
         storage=private_storage,
         help_text="O arquivo será armazenado em local seguro.",
