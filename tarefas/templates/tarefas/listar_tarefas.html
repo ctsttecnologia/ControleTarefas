@@ -1,4 +1,3 @@
-
 <!-- templates/tarefas/listar_tarefas.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -7,10 +6,6 @@
 
 {% block extra_css %}
 <style>
-/* =============================================================================
-   LISTA DE TAREFAS — Tema Claro / Escuro
-   ============================================================================= */
-
 :root,
 [data-bs-theme="light"] {
     --list-bg: #f4f6fb;
@@ -22,9 +17,6 @@
     --list-hover-bg: #f8f9fc;
     --list-divider: #edf0f5;
     --list-table-header-bg: #f8f9fc;
-    --list-priority-bar-alta: #ef4444;
-    --list-priority-bar-media: #f59e0b;
-    --list-priority-bar-baixa: #22c55e;
 }
 
 [data-bs-theme="dark"] {
@@ -37,157 +29,34 @@
     --list-hover-bg: #252536;
     --list-divider: #2e2e44;
     --list-table-header-bg: #252536;
-    --list-priority-bar-alta: #ef4444;
-    --list-priority-bar-media: #f59e0b;
-    --list-priority-bar-baixa: #22c55e;
 }
 
-/* ── Layout ── */
-.list-wrapper {
-    padding: 1rem;
-    min-height: calc(100vh - 60px);
-}
+.list-wrapper { padding: 1rem; min-height: calc(100vh - 60px); }
+@media (min-width: 768px) { .list-wrapper { padding: 1.5rem 2rem; } }
 
-@media (min-width: 768px) {
-    .list-wrapper {
-        padding: 1.5rem 2rem;
-    }
-}
+.list-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; }
+.list-title { font-size: 1.4rem; font-weight: 700; color: var(--list-text); margin-bottom: 0.15rem; }
+.list-subtitle { font-size: 0.85rem; color: var(--list-text-muted); margin: 0; }
+.list-actions { display: flex; gap: 0.5rem; flex-shrink: 0; flex-wrap: wrap; }
 
-/* ── Header ── */
-.list-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
+.list-card { background: var(--list-card-bg); border: 1px solid var(--list-card-border); border-radius: 12px; box-shadow: var(--list-card-shadow); overflow: hidden; margin-bottom: 1rem; }
+.list-card-header { padding: 0.75rem 1.15rem; border-bottom: 1px solid var(--list-divider); display: flex; justify-content: space-between; align-items: center; background: var(--list-card-bg); }
+.list-card-header-title { font-size: 0.85rem; font-weight: 700; color: var(--list-text); margin: 0; }
+.list-card-body { padding: 1rem 1.15rem; }
 
-.list-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--list-text);
-    margin-bottom: 0.15rem;
-}
+.filter-label { font-size: 0.75rem; font-weight: 600; color: var(--list-text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
 
-.list-subtitle {
-    font-size: 0.85rem;
-    color: var(--list-text-muted);
-    margin: 0;
-}
+.list-table { width: 100%; border-collapse: collapse; }
+.list-table thead th { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--list-text-muted); padding: 0.7rem 0.85rem; border-bottom: 2px solid var(--list-divider); background: var(--list-table-header-bg); white-space: nowrap; }
+.list-table tbody td { font-size: 0.82rem; color: var(--list-text); padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--list-divider); vertical-align: middle; }
+.list-table tbody tr:hover { background: var(--list-hover-bg); }
+.list-table tbody tr:last-child td { border-bottom: none; }
 
-.list-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
+.task-link { font-weight: 600; color: var(--list-text); text-decoration: none; transition: color 0.15s ease; }
+.task-link:hover { color: #6366f1; }
+.task-desc { font-size: 0.73rem; color: var(--list-text-muted); margin-top: 0.15rem; }
 
-/* ── Cards padrão ── */
-.list-card {
-    background: var(--list-card-bg);
-    border: 1px solid var(--list-card-border);
-    border-radius: 12px;
-    box-shadow: var(--list-card-shadow);
-    overflow: hidden;
-    margin-bottom: 1rem;
-}
-
-.list-card-header {
-    padding: 0.75rem 1.15rem;
-    border-bottom: 1px solid var(--list-divider);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: var(--list-card-bg);
-}
-
-.list-card-header-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--list-text);
-    margin: 0;
-}
-
-.list-card-body {
-    padding: 1rem 1.15rem;
-}
-
-/* ── Filtros ── */
-.filter-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--list-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.35rem;
-}
-
-/* ── Tabela ── */
-.list-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.list-table thead th {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--list-text-muted);
-    padding: 0.7rem 0.85rem;
-    border-bottom: 2px solid var(--list-divider);
-    background: var(--list-table-header-bg);
-    white-space: nowrap;
-}
-
-.list-table tbody td {
-    font-size: 0.82rem;
-    color: var(--list-text);
-    padding: 0.7rem 0.85rem;
-    border-bottom: 1px solid var(--list-divider);
-    vertical-align: middle;
-}
-
-.list-table tbody tr:hover {
-    background: var(--list-hover-bg);
-}
-
-.list-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-/* ── Task link ── */
-.task-link {
-    font-weight: 600;
-    color: var(--list-text);
-    text-decoration: none;
-    transition: color 0.15s ease;
-}
-
-.task-link:hover {
-    color: #6366f1;
-}
-
-.task-desc {
-    font-size: 0.73rem;
-    color: var(--list-text-muted);
-    margin-top: 0.15rem;
-}
-
-/* ── Badges ── */
-.task-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.2em 0.6em;
-    border-radius: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-}
-
-/* Status */
+.task-badge { font-size: 0.65rem; font-weight: 700; padding: 0.2em 0.6em; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
 .badge-status-pendente   { background: rgba(245,158,11,0.12); color: #d97706; }
 .badge-status-atrasada   { background: rgba(239,68,68,0.12);  color: #dc2626; }
 .badge-status-andamento  { background: rgba(59,130,246,0.12);  color: #2563eb; }
@@ -195,7 +64,6 @@
 .badge-status-pausada    { background: rgba(139,92,246,0.12);  color: #7c3aed; }
 .badge-status-cancelada  { background: rgba(100,116,139,0.12); color: #475569; }
 
-/* Prioridade */
 .badge-prio-alta    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 .badge-prio-media   { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 .badge-prio-baixa   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
@@ -206,146 +74,47 @@
 [data-bs-theme="dark"] .badge-prio-baixa  { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); }
 [data-bs-theme="dark"] .badge-prio-normal { background: rgba(79,109,202,0.15); border-color: rgba(79,109,202,0.3); }
 
-/* ── Date ── */
-.task-date {
-    font-size: 0.78rem;
-    color: var(--list-text-muted);
-    white-space: nowrap;
-}
+.task-date { font-size: 0.78rem; color: var(--list-text-muted); white-space: nowrap; }
+.task-date.overdue { color: #ef4444; font-weight: 700; }
 
-.task-date.overdue {
-    color: #ef4444;
-    font-weight: 700;
-}
+.task-progress-bar { height: 6px; border-radius: 3px; background: var(--list-divider); overflow: hidden; min-width: 70px; }
+.task-progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+.task-progress-text { font-size: 0.7rem; font-weight: 600; color: var(--list-text-muted); min-width: 32px; text-align: right; }
 
-/* ── Progress ── */
-.task-progress-bar {
-    height: 6px;
-    border-radius: 3px;
-    background: var(--list-divider);
-    overflow: hidden;
-    min-width: 70px;
-}
-
-.task-progress-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-.task-progress-text {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--list-text-muted);
-    min-width: 32px;
-    text-align: right;
-}
-
-/* ── Action Buttons ── */
-.action-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    border: 1px solid var(--list-card-border);
-    background: var(--list-card-bg);
-    color: var(--list-text-muted);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    transition: all 0.15s ease;
-    text-decoration: none;
-}
-
-.action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
+.action-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--list-card-border); background: var(--list-card-bg); color: var(--list-text-muted); display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.15s ease; text-decoration: none; }
+.action-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
 .action-btn--view:hover   { color: #6366f1; border-color: #6366f1; }
 .action-btn--edit:hover   { color: #f59e0b; border-color: #f59e0b; }
 .action-btn--delete:hover { color: #ef4444; border-color: #ef4444; }
 
-/* ── Empty State ── */
-.list-empty {
-    padding: 3rem 1rem;
-    text-align: center;
-}
+.list-empty { padding: 3rem 1rem; text-align: center; }
+.list-empty-icon { font-size: 2.5rem; color: var(--list-text-muted); opacity: 0.4; margin-bottom: 1rem; }
+.list-empty-title { font-size: 1rem; font-weight: 600; color: var(--list-text); margin-bottom: 0.5rem; }
+.list-empty-text { font-size: 0.82rem; color: var(--list-text-muted); }
 
-.list-empty-icon {
-    font-size: 2.5rem;
-    color: var(--list-text-muted);
-    opacity: 0.4;
-    margin-bottom: 1rem;
-}
+.list-pagination { padding: 0.75rem 1.15rem; border-top: 1px solid var(--list-divider); display: flex; justify-content: center; }
 
-.list-empty-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--list-text);
-    margin-bottom: 0.5rem;
-}
-
-.list-empty-text {
-    font-size: 0.82rem;
-    color: var(--list-text-muted);
-}
-
-/* ── Pagination ── */
-.list-pagination {
-    padding: 0.75rem 1.15rem;
-    border-top: 1px solid var(--list-divider);
-    display: flex;
-    justify-content: center;
-}
-
-/* ── Mobile ── */
 @media (max-width: 767.98px) {
     .list-wrapper { padding: 0.75rem; }
     .list-title { font-size: 1.15rem; }
     .list-table thead { display: none; }
-    .list-table,
-    .list-table tbody,
-    .list-table tr,
-    .list-table td {
-        display: block;
-        width: 100%;
-    }
-    .list-table tbody tr {
-        padding: 0.75rem;
-        border-bottom: 1px solid var(--list-divider);
-        position: relative;
-    }
-    .list-table tbody td {
-        padding: 0.25rem 0;
-        border: none;
-        text-align: left;
-    }
-    .list-table tbody td::before {
-        content: attr(data-label);
-        font-size: 0.65rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: var(--list-text-muted);
-        display: block;
-        margin-bottom: 0.15rem;
-    }
-    .list-table tbody td:last-child {
-        padding-top: 0.5rem;
-    }
+    .list-table, .list-table tbody, .list-table tr, .list-table td { display: block; width: 100%; }
+    .list-table tbody tr { padding: 0.75rem; border-bottom: 1px solid var(--list-divider); position: relative; }
+    .list-table tbody td { padding: 0.25rem 0; border: none; text-align: left; }
+    .list-table tbody td::before { content: attr(data-label); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: var(--list-text-muted); display: block; margin-bottom: 0.15rem; }
+    .list-table tbody td:last-child { padding-top: 0.5rem; }
     .list-actions .btn span { display: none; }
 }
 </style>
 {% endblock %}
 
-{% include 'tarefas/partials/_nav_views.html' with active_view='lista' %}
-{% include 'tarefas/partials/_nav_views.html' with active_view='kanban' %}
-{% include 'tarefas/partials/_nav_views.html' with active_view='relatorio' %}
-
 {% block content %}
+
+{% include 'tarefas/partials/_nav_views.html' with active_view='lista' %}
+
 <div class="list-wrapper">
 
-        <!-- Header -->
+    <!-- Header -->
     <div class="list-header">
         <div>
             <h1 class="list-title">
@@ -354,25 +123,6 @@
             <p class="list-subtitle">Gerencie suas tarefas de forma eficiente</p>
         </div>
         <div class="list-actions">
-            {% if perms.tarefas.view_relatorio or user.is_superuser %}
-            <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
-                <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
-            </a>
-            {% endif %}
-
-            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary" title="Dashboard">
-                <i class="bi bi-speedometer2 me-1"></i><span class="d-none d-md-inline">Dashboard</span>
-            </a>
-            {% if perms.tarefas.view_calendario or user.is_superuser %}
-            <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
-                <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
-            </a>
-            {% endif %}
-            {% if perms.tarefas.view_kanban or user.is_superuser %}
-            <a href="{% url 'tarefas:kanban_board' %}" class="btn btn-sm btn-outline-secondary" title="Kanban">
-                <i class="bi bi-kanban me-1"></i><span class="d-none d-lg-inline">Kanban</span>
-            </a>
-            {% endif %}
             {% if perms.tarefas.add_tarefa or user.is_superuser %}
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
                 <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
@@ -422,11 +172,9 @@
                         <button type="submit" class="btn btn-sm btn-primary flex-fill">
                             <i class="bi bi-funnel me-1"></i> Filtrar
                         </button>
-                        {% if perms.tarefas.view_listar_tarefas or user.is_superuser %}
                         <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Limpar">
                             <i class="bi bi-x-lg"></i>
                         </a>
-                        {% endif %}
                     </div>
                 </div>
             </form>
@@ -446,7 +194,7 @@
                 <thead>
                     <tr>
                         <th>Tarefa</th>
-                        <th>Responsavel</th>
+                        <th>Responsável</th>
                         <th>Prioridade</th>
                         <th>Status</th>
                         <th>Prazo</th>
@@ -459,61 +207,52 @@
                     <tr>
                         <td data-label="Tarefa">
                             {% if perms.tarefas.change_tarefa or user.is_superuser %}
-                            <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
-                                {{ tarefa.titulo }} 
-                            </a>
+                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">{{ tarefa.titulo }}</a>
                             {% else %}
+                                <span class="task-link">{{ tarefa.titulo }}</span>
+                            {% endif %}
                             {% if tarefa.descricao %}
                                 <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
                         </td>
                         <td data-label="Responsável">
                             {% if tarefa.responsavel %}
-                            <span class="task-badge badge-responsavel">
-                                {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|truncatewords:10|upper }}
-                            </span>
+                                <span class="task-badge badge-responsavel">
+                                    {{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username|truncatewords:10|upper }}
+                                </span>
                             {% else %}
-                            <span class="text-muted">—</span>
+                                <span class="text-muted">—</span>
                             {% endif %}
-
                             {% if tarefa.participantes.exists %}
-                            <div class="task-desc mt-1">
-                                {% for p in tarefa.participantes.all %}
-                                    <small class="d-block text-muted">
-                                        <i class="bi bi-person me-1"></i>{{ p.get_full_name|default:p.username }}
-                                    </small>
-                                {% endfor %}
-                            </div>
+                                <div class="task-desc mt-1">
+                                    {% for p in tarefa.participantes.all %}
+                                        <small class="d-block text-muted">
+                                            <i class="bi bi-person me-1"></i>{{ p.get_full_name|default:p.username }}
+                                        </small>
+                                    {% endfor %}
+                                </div>
                             {% endif %}
                         </td>
-
                         <td data-label="Prioridade">
-                            <span class="task-badge badge-prio-{{ tarefa.prioridade|lower }}">
-                                {{ tarefa.get_prioridade_display }}
-                            </span>
+                            <span class="task-badge badge-prio-{{ tarefa.prioridade|lower }}">{{ tarefa.get_prioridade_display }}</span>
                         </td>
                         <td data-label="Status">
-                            <span class="task-badge badge-status-{{ tarefa.status }}">
-                                {{ tarefa.get_status_display }}
-                            </span>
+                            <span class="task-badge badge-status-{{ tarefa.status }}">{{ tarefa.get_status_display }}</span>
                         </td>
                         <td data-label="Prazo">
                             {% if tarefa.prazo %}
-                            <span class="task-date {% if tarefa.atrasada %}overdue{% endif %}">
-                                <i class="bi bi-calendar-event me-1"></i>{{ tarefa.prazo|date:"d/m/Y" }}
-                            </span>
+                                <span class="task-date {% if tarefa.atrasada %}overdue{% endif %}">
+                                    <i class="bi bi-calendar-event me-1"></i>{{ tarefa.prazo|date:"d/m/Y" }}
+                                </span>
                             {% else %}
-                            <span class="task-date">—</span>
+                                <span class="task-date">—</span>
                             {% endif %}
                         </td>
                         <td data-label="Progresso">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="task-progress-bar flex-fill">
-                                    <div class="task-progress-fill
-                                        {% if tarefa.progresso == 100 %}bg-success
-                                        {% elif tarefa.progresso >= 50 %}bg-primary
-                                        {% else %}bg-warning{% endif %}"
-                                        style="width: {{ tarefa.progresso }}%"></div>
+                                    <div class="task-progress-fill {% if tarefa.progresso == 100 %}bg-success{% elif tarefa.progresso >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                                         style="width: {{ tarefa.progresso }}%"></div>
                                 </div>
                                 <span class="task-progress-text">{{ tarefa.progresso }}%</span>
                             </div>
@@ -541,7 +280,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="list-empty">
                                 <div class="list-empty-icon"><i class="bi bi-inbox"></i></div>
                                 <div class="list-empty-title">Nenhuma tarefa encontrada</div>
@@ -567,4 +306,3 @@
     </div>
 </div>
 {% endblock %}
-

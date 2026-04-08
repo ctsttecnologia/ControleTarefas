@@ -466,7 +466,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
                 {% endif %}
             </form>
             <!-- ═══ FIM DO FILTRO ═══ -->
-            {% if perms.tarefas.view_relatorio or user.is_superuser %}
+            {% if perms.tarefas.view_calendario or user.is_superuser %}
             <a href="{% url 'tarefas:relatorio_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Relatórios">
                 <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
@@ -475,7 +475,7 @@ body.kanban-dragging .kanban-column:hover .kanban-cards {
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
                 <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
             </a>
-
+            {% endif %}
             {% if perms.tarefas.view_calendario or user.is_superuser %}
             <a href="{% url 'tarefas:calendario_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Calendário">
                 <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
