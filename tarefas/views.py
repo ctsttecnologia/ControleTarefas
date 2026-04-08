@@ -165,8 +165,6 @@ class TarefaCreateView(AppPermissionMixin, ViewFilialScopedMixin, CreateView):
         
         return response
             
-        
-        return super().form_valid(form)
 
 
 class TarefaUpdateView(AppPermissionMixin, TarefaAccessMixin, UpdateView):
