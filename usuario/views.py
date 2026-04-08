@@ -154,13 +154,30 @@ class ProfileView(LoginRequiredMixin, DetailView):
         all_cards = self._get_all_cards()
         allowed_card_ids = self._get_allowed_card_ids(user)
 
-        context['allowed_cards'] = [
-            card for card in all_cards
-            if user.is_superuser
-            or user.has_perm(card['permission'])
-            or card['id'] in allowed_card_ids
-        ]
+        visible_cards = []
+        for card in all_cards:
+            # Verifica se o card é visível
+            if not (user.is_superuser
+                    or user.has_perm(card['permission'])
+                    or card['id'] in allowed_card_ids):
+                continue
+
+            # Filtra os links que o usuário pode ver
+            filtered_links = [
+                link for link in card['links']
+                if user.is_superuser or user.has_perm(link.get('permission', ''))
+            ]
+
+            # Só exibe o card se tiver pelo menos 1 link visível
+            if filtered_links:
+                visible_cards.append({
+                    **card,
+                    'links': filtered_links,
+                })
+
+        context['allowed_cards'] = visible_cards
         return context
+
 
     def _get_allowed_card_ids(self, user):
         """Retorna IDs de cards permitidos pelos grupos do usuário."""
@@ -186,9 +203,10 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'title': 'Clientes',
                 'permission': 'cliente.view_cliente',
                 'icon': 'images/cliente.gif',
-                'links': [
-                    {'url': 'cliente:cliente_create', 'text': 'Cadastrar'},
-                    {'url': 'cliente:lista_clientes', 'text': 'Lista de Clientes'},
+                'links': [ 
+                    {'url': 'cliente:cliente_create', 'text': 'Cadastrar', 'permission': 'cliente.add_cliente', },
+                    
+                    {'url': 'cliente:lista_clientes', 'text': 'Lista de Clientes', 'permission': 'cliente.view_cliente'},
                 ]
             },
             {
@@ -197,7 +215,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'departamento_pessoal.departamento_pessoal',
                 'icon': 'images/dp.gif',
                 'links': [
-                    {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP'},
+                    {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP', 'permission': 'departamento_pessoal.view_painel_dp'},
                     {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
                 ]
             },
@@ -207,9 +225,9 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'seguranca_trabalho.view_fichaepi',
                 'icon': 'images/tst.gif',
                 'links': [
-                    {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel SST'},
-                    {'url': 'seguranca_trabalho:ficha_list', 'text': 'Fichas de EPI'},
-                    {'url': 'gestao_riscos:lista_riscos', 'text': 'Gestão de Riscos'},
+                    {'url': 'seguranca_trabalho:dashboard', 'text': 'Painel SST', 'permission': 'seguranca_trabalho.view_fichaepi'},
+                    {'url': 'seguranca_trabalho:ficha_list', 'text': 'Fichas de EPI', 'permission': 'seguranca_trabalho.view_fichaepi'},
+                    {'url': 'gestao_riscos:lista_riscos', 'text': 'Gestão de Riscos', 'permission': 'gestao_riscos.view_risco'},
                 ]
             },
             {
@@ -218,8 +236,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'logradouro.view_logradouro',
                 'icon': 'images/cadastro.gif',
                 'links': [
-                    {'url': 'logradouro:cadastrar_logradouro', 'text': 'Cadastrar'},
-                    {'url': 'logradouro:listar_logradouros', 'text': 'Lista de Logradouros'},
+                    {'url': 'logradouro:cadastrar_logradouro', 'text': 'Cadastrar', 'permission': 'logradouro.add_logradouro'},
+                    {'url': 'logradouro:listar_logradouros', 'text': 'Lista de Logradouros', 'permission': 'logradouro.view_logradouro'},
                 ]
             },
             # ══════════════════════════════════════════════════════════
@@ -231,8 +249,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'ata_reuniao.view_atareuniao',
                 'icon': 'images/reuniao.png',
                 'links': [
-                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas'},
-                    {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Painel de Atas'},
+                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
+                    {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Painel de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
                 ]
             },
             {
@@ -241,7 +259,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'suprimentos.view_pedido',
                 'icon': 'images/suprimentos.gif', 
                 'links': [
-                    {'url': 'suprimentos:dashboard', 'text': 'Suprimentos'},
+                    {'url': 'suprimentos:dashboard', 'text': 'Suprimentos', 'permission': 'suprimentos.view_pedido'},
                 ]
             },
             {
@@ -250,7 +268,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'documentos.view_documento',
                 'icon': 'images/documentos.gif',  
                 'links': [
-                    {'url': 'documentos:lista', 'text': 'Gestão de Documentos'},
+                    {'url': 'documentos:lista', 'text': 'Gestão de Documentos', 'permission': 'documentos.view_documento'},
                 ]
             },
             {
@@ -259,7 +277,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'controle_de_telefone.view_linhatelefonica',
                 'icon': 'images/telefones.gif',  
                 'links': [
-                    {'url': 'controle_de_telefone:dashboard', 'text': 'Gestão de Telefones'},
+                    {'url': 'controle_de_telefone:dashboard', 'text': 'Gestão de Telefones', 'permission': 'controle_de_telefone.view_linhatelefonica'},
                 ]
             },
             {
@@ -268,7 +286,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'seguranca_trabalho.view_equipamento',
                 'icon': 'images/estoque.gif',  
                 'links': [
-                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Equipamentos e Material'},
+                    {'url': 'seguranca_trabalho:equipamento_list', 'text': 'Equipamentos e Material', 'permission': 'seguranca_trabalho.view_equipamento'},
                 ]
             },
             # ══════════════════════════════════════════════════════════
@@ -280,9 +298,9 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'automovel.view_carro',
                 'icon': 'images/carro.gif',
                 'links': [
-                    {'url': 'automovel:carro_list', 'text': 'Frota'},
-                    {'url': 'automovel:agendamento_list', 'text': 'Agendamentos'},
-                    {'url': 'automovel:dashboard', 'text': 'Relatórios'},
+                    {'url': 'automovel:carro_list', 'text': 'Frota', 'permission': 'automovel.view_carro'},
+                    {'url': 'automovel:agendamento_list', 'text': 'Agendamentos', 'permission': 'automovel.view_agendamento'},
+                    {'url': 'automovel:dashboard', 'text': 'Relatórios', 'permission': 'automovel.view_dashboard'},
                 ]
             },
             {
@@ -291,8 +309,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'ferramentas.view_ferramentas',
                 'icon': 'images/serviço.gif',
                 'links': [
-                    {'url': 'tarefas:dashboard', 'text': 'Tarefas'},
-                    {'url': 'ferramentas:dashboard', 'text': 'Ferramentas'},
+                    {'url': 'tarefas:dashboard', 'text': 'Tarefas', 'permission': 'tarefas.view_dashboard'},
+                    {'url': 'ferramentas:dashboard', 'text': 'Ferramentas', 'permission': 'ferramentas.view_dashboard'},
                 ]
             },
             {
@@ -301,7 +319,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'GARANT_ALL',
                 'icon': 'images/favicon.ico',
                 'links': [
-                    {'url': 'dashboard:dashboard_geral', 'text': 'Visão Geral'},
+                    {'url': 'dashboard:dashboard_geral', 'text': 'Visão Geral', 'permission': 'dashboard.view_dashboard_geral'},
                 ]
             },
         ]
@@ -386,8 +404,17 @@ class UserUpdateView(LoginRequiredMixin, AdminOrManagerMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
+        response = super().form_valid(form)
+
+        # Garante que filial_ativa esteja entre as permitidas
+        user = self.object
+        if user.filial_ativa and user.filial_ativa not in user.filiais_permitidas.all():
+            user.filial_ativa = user.filiais_permitidas.first()
+            user.save(update_fields=['filial_ativa'])
+
         messages.success(self.request, f"Usuário '{form.instance.username}' atualizado com sucesso.")
-        return super().form_valid(form)
+        return response
+
 
 
 class UserToggleActiveView(LoginRequiredMixin, AdminOrManagerMixin, View):

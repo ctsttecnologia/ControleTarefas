@@ -102,7 +102,7 @@
     {% if form %}{{ form.media.js }}{% endif %}
 
     <!-- 4. HTMX -->
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="{% static 'js/htmx.min.js' %}"></script>
 
     <!-- 5. SignaturePad Lib (CDN — dependência do signature.js) -->
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.4/dist/signature_pad.umd.min.js"></script>

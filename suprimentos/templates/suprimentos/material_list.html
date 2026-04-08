@@ -1,9 +1,120 @@
-
 {% extends "suprimentos/suprimentos_base.html" %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
 {% block suprimentos_content %}
+<style>
+    /* ── Barra de rolagem horizontal estilizada ── */
+    .table-scroll-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+    }
+
+    .table-scroll-wrapper table {
+        min-width: 1400px;
+        margin-bottom: 0;
+    }
+
+    /* Fixa a coluna de Ações à direita */
+    .table-scroll-wrapper th:last-child,
+    .table-scroll-wrapper td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        background: #fff;
+        box-shadow: -4px 0 8px rgba(0, 0, 0, 0.04);
+    }
+    .table-scroll-wrapper thead th:last-child {
+        background: #f8f9fa;
+        z-index: 3;
+    }
+
+    /* Fixa a coluna Código à esquerda */
+    .table-scroll-wrapper th:first-child,
+    .table-scroll-wrapper td:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: #fff;
+        box-shadow: 4px 0 8px rgba(0, 0, 0, 0.04);
+    }
+    .table-scroll-wrapper thead th:first-child {
+        background: #f8f9fa;
+        z-index: 3;
+    }
+
+    /* Zebra — corrige fundo das colunas fixas */
+    .table-scroll-wrapper tbody tr:nth-child(even) td:first-child,
+    .table-scroll-wrapper tbody tr:nth-child(even) td:last-child {
+        background: #f8f9fa;
+    }
+    .table-scroll-wrapper tbody tr:hover td:first-child,
+    .table-scroll-wrapper tbody tr:hover td:last-child {
+        background: #e9ecef;
+    }
+    .table-scroll-wrapper tbody tr:hover td {
+        background: #e9ecef;
+    }
+
+    /* Scrollbar personalizada */
+    .table-scroll-wrapper::-webkit-scrollbar {
+        height: 8px;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb {
+        background: #b0b0b0;
+        border-radius: 4px;
+    }
+    .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #888;
+    }
+
+    /* Cabeçalho fixo no topo ao rolar */
+    .table-scroll-wrapper thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f8f9fa;
+    }
+
+    /* Impede quebra de texto nos cabeçalhos */
+    .table-scroll-wrapper thead th {
+        white-space: nowrap;
+        font-size: 0.82rem;
+        padding: 0.6rem 0.75rem;
+    }
+
+    .table-scroll-wrapper tbody td {
+        white-space: nowrap;
+        font-size: 0.85rem;
+        padding: 0.55rem 0.75rem;
+    }
+
+    /* Indicador visual de scroll */
+    .scroll-hint {
+        display: none;
+        text-align: center;
+        padding: 0.4rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-top: none;
+        border-radius: 0 0 0.5rem 0.5rem;
+    }
+
+    @media (max-width: 1400px) {
+        .scroll-hint {
+            display: block;
+        }
+    }
+</style>
+
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-box-seam me-2"></i>{{ titulo_pagina }}</h2>
@@ -112,8 +223,8 @@
                 {% endif %}
             </form>
 
-            {# ── Tabela ── #}
-            <div class="table-responsive">
+            {# ── Tabela com scroll horizontal ── #}
+            <div class="table-scroll-wrapper" id="tableWrapper">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
@@ -265,6 +376,11 @@
                     </tbody>
                 </table>
             </div>
+            {# ── Indicador de scroll ── #}
+            <div class="scroll-hint" id="scrollHint">
+                <i class="bi bi-arrow-left-right me-1"></i>
+                Deslize para ver todas as colunas
+            </div>
 
             {% if is_paginated %}
                 {% include 'partials/pagination.html' %}
@@ -272,4 +388,20 @@
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    // Esconde o hint quando o usuário já rolou
+    const wrapper = document.getElementById('tableWrapper');
+    const hint = document.getElementById('scrollHint');
+    if (wrapper && hint) {
+        wrapper.addEventListener('scroll', function() {
+            if (wrapper.scrollLeft > 20) {
+                hint.style.display = 'none';
+            }
+        });
+    }
+})();
+</script>
 {% endblock suprimentos_content %}
+

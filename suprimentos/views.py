@@ -7,7 +7,9 @@ import uuid
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
-
+from django.db.models import Q
+from functools import reduce
+import operator
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -605,11 +607,12 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
                 a_ -= 1
             periodos.append((a_, m_))
 
+        periodo_q = reduce(operator.or_, [Q(ano=a_, mes=m_) for a_, m_ in periodos])
+
         verbas_bulk = VerbaContrato.objects.filter(
             contrato_id__in=contrato_ids,
         ).filter(
-            *[Q(ano=a_, mes=m_) for a_, m_ in periodos],
-            _connector=Q.OR,
+            periodo_q,
         ).values('ano', 'mes').annotate(
             epi       =Coalesce(Sum('verba_epi'),        Decimal('0')),
             consumo   =Coalesce(Sum('verba_consumo'),    Decimal('0')),
@@ -617,12 +620,16 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
         )
         verbas_map = {(v['ano'], v['mes']): v for v in verbas_bulk}
 
+        compras_periodo_q = reduce(
+            operator.or_,
+            [Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos]
+        )
+
         compras_bulk_qs = ItemPedido.objects.filter(
             pedido__contrato_id__in=contrato_ids,
             pedido__status__in=STATUS_COMPRA,
         ).filter(
-            *[Q(pedido__data_pedido__year=a_, pedido__data_pedido__month=m_) for a_, m_ in periodos],
-            _connector=Q.OR,
+            compras_periodo_q,
         )
         if funcionario_id:
             compras_bulk_qs = compras_bulk_qs.filter(pedido__solicitante_id=funcionario_id)

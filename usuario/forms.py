@@ -8,6 +8,8 @@ from django.db import transaction
 # Importe o modelo que faltava
 from .models import Usuario, Filial, GroupCardPermissions 
 from departamento_pessoal.models import Funcionario
+from django.contrib.auth.models import Group, Permission
+
 
 # =============================================================================
 # == FORMULÁRIOS DE USUÁRIO
@@ -61,26 +63,39 @@ class CustomUserCreationForm(UserCreationForm):
 class CustomUserChangeForm(UserChangeForm):
     """
     Formulário para um administrador editar os dados de um usuário existente.
-    - Usa o widget FilteredSelectMultiple para uma melhor UX na seleção de grupos e filiais.
-    - Remove o campo de senha para evitar alterações acidentais.
     """
     password = None
 
     groups = forms.ModelMultipleChoiceField(
         queryset=Group.objects.all(),
         widget=FilteredSelectMultiple(verbose_name='Grupos', is_stacked=False),
-        required=False
+        required=False,
+        label="Grupos",
     )
+    
+    # ═══════════════════════════════════════════════════
+    # NOVO: Permissões individuais do usuário
+    # ═══════════════════════════════════════════════════
+    user_permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.select_related('content_type').order_by(
+            'content_type__app_label', 'codename'
+        ),
+        widget=FilteredSelectMultiple(verbose_name='Permissões', is_stacked=False),
+        required=False,
+        label="Permissões do Usuário",
+        help_text="Permissões específicas para este usuário, além das herdadas pelos grupos.",
+    )
+
     filiais_permitidas = forms.ModelMultipleChoiceField(
         queryset=Filial.objects.all().order_by('nome'),
         widget=FilteredSelectMultiple(verbose_name='Filiais Permitidas', is_stacked=False),
-        required=False
+        required=False,
     )
     filial_ativa = forms.ModelChoiceField(
         queryset=Filial.objects.none(),
         required=False,
         label="Filial Ativa",
-        help_text="A filial que o usuário usará por padrão. Deve ser uma das Filiais Permitidas."
+        help_text="A filial que o usuário usará por padrão. Deve ser uma das Filiais Permitidas.",
     )
 
     class Meta:
@@ -89,7 +104,7 @@ class CustomUserChangeForm(UserChangeForm):
             'username', 'first_name', 'last_name', 'email',
             'filiais_permitidas', 'filial_ativa',
             'is_active', 'is_staff', 'is_superuser',
-            'groups'
+            'groups', 'user_permissions',
         )
 
     def __init__(self, *args, **kwargs):
@@ -102,6 +117,9 @@ class CustomUserChangeForm(UserChangeForm):
         if self.instance.pk:
             self.fields['groups'].initial = self.instance.groups.all()
             self.fields['filiais_permitidas'].initial = self.instance.filiais_permitidas.all()
+            # ── NOVO: carregar permissões atuais ──
+            self.fields['user_permissions'].initial = self.instance.user_permissions.all()
+
 
 
 class CustomPasswordChangeForm(PasswordChangeForm):
