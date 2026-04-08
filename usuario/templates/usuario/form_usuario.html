@@ -147,6 +147,12 @@
             .selector { flex-direction: column; }
             .selector .selector-control { flex-direction: row; padding: 0.25rem 0; }
         }
+
+        /* ── Altura maior para o widget de permissões ── */
+        #id_user_permissions_from,
+        #id_user_permissions_to {
+            min-height: 250px !important;
+        }
     </style>
 {% endblock %}
 
@@ -376,6 +382,28 @@
                         </div>
                     </div>
                     {% endif %}
+                    
+                    {# ══════════════════════════════════════════════ #}
+                    {# ── SEÇÃO 5: PERMISSÕES DO USUÁRIO (NOVO!) ── #}
+                    {# ══════════════════════════════════════════════ #}
+                    <div class="section-divider mt-4">
+                        <i class="bi bi-key me-1"></i>Permissões do Usuário
+                    </div>
+                    <div class="mb-4">
+                        <label for="{{ form.user_permissions.id_for_label }}" class="form-label fw-semibold">
+                            Permissões Específicas
+                        </label>
+                        {{ form.user_permissions }}
+                        <div class="form-text mt-2">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>
+                                Permissões individuais deste usuário, <strong>além</strong> das herdadas pelos grupos.
+                            </small>
+                        </div>
+                        {% for error in form.user_permissions.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
                     {# ── RODAPÉ ── #}
                     <hr class="my-4">

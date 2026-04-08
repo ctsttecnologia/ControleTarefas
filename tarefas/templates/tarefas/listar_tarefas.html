@@ -110,7 +110,7 @@
 
 {% block content %}
 
-{% include 'tarefas/partials/_nav_views.html' with active_view='lista' %}
+
 
 <div class="list-wrapper">
 
@@ -123,6 +123,9 @@
             <p class="list-subtitle">Gerencie suas tarefas de forma eficiente</p>
         </div>
         <div class="list-actions">
+            <a href="{% url 'tarefas:dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
             {% if perms.tarefas.add_tarefa or user.is_superuser %}
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
                 <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
@@ -214,7 +217,7 @@
                             {% if tarefa.descricao %}
                                 <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
-                            {% endif %}
+
                         </td>
                         <td data-label="Responsável">
                             {% if tarefa.responsavel %}
