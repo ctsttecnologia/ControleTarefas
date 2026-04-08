@@ -1,6 +1,4 @@
-
 <!-- templates/tarefas/partials/_nav_views.html -->
-{% load querystring_tags %}
 
 <nav class="views-nav" aria-label="Navegação de visualizações">
     <div class="views-nav-inner">
@@ -36,4 +34,40 @@
         </a>
     </div>
 </nav>
+
+<style>
+.views-nav {
+    margin-bottom: 1rem;
+}
+.views-nav-inner {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    background: var(--list-card-bg, #fff);
+    border: 1px solid var(--list-card-border, #e2e6ee);
+    border-radius: 10px;
+    padding: 0.35rem;
+}
+.views-nav-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 7px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--list-text-muted, #6b7280);
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.views-nav-item:hover {
+    background: rgba(99, 102, 241, 0.06);
+    color: #6366f1;
+}
+.views-nav-item.active {
+    background: #6366f1;
+    color: #fff;
+}
+</style>
+
 
