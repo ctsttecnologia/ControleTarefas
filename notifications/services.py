@@ -924,12 +924,12 @@ def notificar_tarefa_criada(tarefa, criador):
     if emails_destinatarios:
         enviar_email(
             assunto=f"Nova tarefa: {tarefa.titulo}",
-            template_texto='tarefas/emails/email_tarefa_criada.txt',
-            template_html='tarefas/emails/email_tarefa_criada.html',
+            template_texto='tarefas/emails/email_nova_tarefa.txt',
+            template_html='tarefas/emails/email_nova_tarefa.html',
             contexto={
                 'tarefa': tarefa,
                 'criador': criador,
-                'url': url,
+                'tarefa_url': url,
             },
             destinatarios=emails_destinatarios,
         )
@@ -978,7 +978,7 @@ def notificar_tarefa_comentario(tarefa, autor, texto_comentario):
                 'tarefa': tarefa,
                 'autor': autor,
                 'texto_comentario': texto_comentario,
-                'url': url,
+                'tarefa_url': url,
             },
             destinatarios=emails_destinatarios,
         )
@@ -1077,90 +1077,17 @@ def notificar_tarefa_participante_adicionado(tarefa, novos_participantes, adicio
     if emails:
         enviar_email(
             assunto=f"Você foi adicionado à tarefa: {tarefa.titulo}",
-            template_texto='tarefas/emails/email_tarefa_criada.txt',
-            template_html='tarefas/emails/email_tarefa_criada.html',
+            template_texto='tarefas/emails/email_nova_tarefa.txt',
+            template_html='tarefas/emails/email_nova_tarefa.html',
             contexto={
                 'tarefa': tarefa,
                 'criador': adicionado_por,
-                'url': url,
+                'tarefa_url': url,
             },
             destinatarios=emails,
         )
 
     return resultados
-
-# ═══════════════════════════════════════════════════════════════════════
-# FUNÇÕES PARA PARTICIPANTES DE TAREFAS (sino + e-mail)
-# ═══════════════════════════════════════════════════════════════════════
-
-def _coletar_interessados_tarefa(tarefa, excluir_usuario=None):
-    """
-    Retorna set de usuários interessados numa tarefa:
-    criador + responsável + participantes, excluindo quem disparou a ação.
-    """
-    interessados = set()
-
-    if tarefa.usuario:
-        interessados.add(tarefa.usuario)
-    if tarefa.responsavel:
-        interessados.add(tarefa.responsavel)
-
-    for p in tarefa.participantes.all():
-        interessados.add(p)
-
-    if excluir_usuario:
-        interessados.discard(excluir_usuario)
-
-    return interessados
-
-
-def notificar_tarefa_criada(tarefa, criador):
-    """
-    Notifica responsável e participantes que foram incluídos numa nova tarefa.
-    Cria notificação no sino + envia e-mail usando template existente.
-    """
-    destinatarios = _coletar_interessados_tarefa(tarefa, excluir_usuario=criador)
-    if not destinatarios:
-        return []
-
-    url = reverse('tarefas:tarefa_detail', kwargs={'pk': tarefa.pk})
-    resultados = []
-
-    for user in destinatarios:
-        n = criar_notificacao(
-            usuario=user,
-            titulo=f'Nova tarefa: {tarefa.titulo[:50]}',
-            tipo='tarefa_atribuida',
-            categoria='tarefa',
-            prioridade='media',
-            mensagem=(
-                f'Criada por: {criador.get_full_name() or criador.username}\n'
-                f'Prazo: {tarefa.prazo.strftime("%d/%m/%Y %H:%M") if tarefa.prazo else "Não definido"}'
-            ),
-            url_destino=url,
-            icone='bi-plus-circle-fill',
-            duplicar=True,
-        )
-        if n:
-            resultados.append(n)
-
-    # E-mail — usa template existente email_nova_tarefa
-    emails_dest = [u.email for u in destinatarios if u.email]
-    if emails_dest:
-        enviar_email(
-            assunto=f"Nova tarefa atribuída: {tarefa.titulo}",
-            template_texto='tarefas/emails/email_nova_tarefa.txt',
-            template_html='tarefas/emails/email_nova_tarefa.html',
-            contexto={
-                'tarefa': tarefa,
-                'criador': criador,
-                'tarefa_url': url,
-            },
-            destinatarios=emails_dest,
-        )
-
-    return resultados
-
 
 def notificar_tarefa_comentario(tarefa, autor, texto_comentario):
     """
