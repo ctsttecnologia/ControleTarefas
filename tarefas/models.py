@@ -150,6 +150,12 @@ class Tarefas(models.Model):
             models.Index(fields=['prazo']),
             models.Index(fields=['responsavel', 'status']),
         ]
+        permissions = [
+            ('view_dashboard', 'Pode ver o dashboard de tarefas'),
+            ('view_relatorio', 'Pode ver relatórios de tarefas'),
+            ('view_kanban', 'Pode ver o quadro Kanban'),
+            ('view_calendario', 'Pode ver o calendário de tarefas'),
+        ]
 
     def __str__(self):
         return self.titulo
