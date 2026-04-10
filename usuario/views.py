@@ -165,7 +165,9 @@ class ProfileView(LoginRequiredMixin, DetailView):
             # Filtra os links que o usuário pode ver
             filtered_links = [
                 link for link in card['links']
-                if user.is_superuser or user.has_perm(link.get('permission', ''))
+                if user.is_superuser
+                or user.has_perm(link.get('permission', ''))
+                or card['id'] in allowed_card_ids          # ← LINHA ADICIONADA
             ]
 
             # Só exibe o card se tiver pelo menos 1 link visível
@@ -177,6 +179,7 @@ class ProfileView(LoginRequiredMixin, DetailView):
 
         context['allowed_cards'] = visible_cards
         return context
+
 
 
     def _get_allowed_card_ids(self, user):

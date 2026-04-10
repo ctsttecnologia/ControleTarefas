@@ -349,7 +349,7 @@
                 <i class="bi bi-file-earmark-bar-graph me-1"></i><span class="d-none d-md-inline">Relatórios</span>
             </a>
             {% endif %}
-            {% if perms.tarefas.view_tarefa or user.is_superuser %}
+            {% if perms.tarefas.view_tarefas or user.is_superuser %}
             <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Lista">
                 <i class="bi bi-list-ul me-1"></i><span class="d-none d-md-inline">Lista</span>
             </a>
@@ -364,7 +364,7 @@
                 <i class="bi bi-calendar3 me-1"></i><span class="d-none d-lg-inline">Calendário</span>
             </a>    
             {% endif %}
-            {% if perms.tarefas.add_tarefa or user.is_superuser %}
+            {% if perms.tarefas.add_tarefas or user.is_superuser %}
             <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary" title="Nova Tarefa">
                 <i class="bi bi-plus-lg me-1"></i><span class="d-none d-sm-inline">Nova Tarefa</span>
             </a>
