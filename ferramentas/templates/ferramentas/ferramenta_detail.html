@@ -118,7 +118,7 @@
 
         {# Card: Ficha Técnica #}
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white fw-bold">
+            <div class="card-header fw-bold">
                 <i class="bi bi-info-circle me-2"></i>Ficha Técnica
             </div>
             <ul class="list-group list-group-flush small">
@@ -159,7 +159,7 @@
 
         {# Card: QR Code #}
         <div class="card shadow-sm">
-            <div class="card-header bg-white fw-bold">
+            <div class="card-header fw-bold">
                 <i class="bi bi-qr-code me-2"></i>QR Code
             </div>
             <div class="card-body text-center">
@@ -183,7 +183,7 @@
 
         {# Histórico de Movimentações #}
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white fw-bold">
+            <div class="card-header fw-bold">
                 <i class="bi bi-arrow-left-right me-2"></i>Histórico de Movimentações
             </div>
             <div class="table-responsive">
@@ -227,7 +227,7 @@
 
         {# Gráfico de uso mensal #}
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white fw-bold">
+            <div class="card-header fw-bold">
                 <i class="bi bi-bar-chart me-2"></i>Uso Mensal (Últimos 6 meses)
             </div>
             <div class="card-body" style="height: 250px;">
@@ -237,7 +237,7 @@
 
         {# Log de Atividades #}
         <div class="card shadow-sm">
-            <div class="card-header bg-white fw-bold">
+            <div class="card-header fw-bold">
                 <i class="bi bi-journal-text me-2"></i>Log de Atividades
             </div>
             <div class="list-group list-group-flush small" style="max-height: 280px; overflow-y: auto;">
@@ -267,8 +267,11 @@
 document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('usageChart');
     if (!ctx) return;
+
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const labels = {{ chart_labels|safe|default:'[]' }};
     const data = {{ chart_data|safe|default:'[]' }};
+
     if (labels.length > 0) {
         new Chart(ctx, {
             type: 'bar',
@@ -277,26 +280,55 @@ document.addEventListener('DOMContentLoaded', function () {
                 datasets: [{
                     label: 'Movimentações',
                     data: data,
-                    backgroundColor: 'rgba(13, 110, 253, 0.5)',
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    borderWidth: 1, borderRadius: 4
+                    backgroundColor: isDark ? 'rgba(59, 130, 246, 0.6)' : 'rgba(13, 110, 253, 0.5)',
+                    borderColor: isDark ? 'rgba(59, 130, 246, 1)' : 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
                 }]
             },
             options: {
                 maintainAspectRatio: false,
-                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-                plugins: { legend: { display: false } }
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            color: isDark ? '#94a3b8' : '#6b7280'
+                        },
+                        grid: {
+                            color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: isDark ? '#94a3b8' : '#6b7280'
+                        },
+                        grid: {
+                            color: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isDark ? '#252840' : '#fff',
+                        bodyColor: isDark ? '#e2e8f0' : '#333',
+                        titleColor: isDark ? '#e2e8f0' : '#333',
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#dee2e6',
+                        borderWidth: 1,
+                    }
+                }
             }
         });
     } else {
         const c = ctx.getContext('2d');
-        c.font = "14px sans-serif"; c.textAlign = 'center'; c.fillStyle = '#999';
+        c.font = "14px sans-serif";
+        c.textAlign = 'center';
+        c.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : '#999';
         c.fillText('Sem dados de uso', ctx.canvas.width / 2, ctx.canvas.height / 2);
     }
 });
 </script>
 {% endblock %}
-
-
 
 

@@ -181,7 +181,7 @@ class DetalheTreinamentoView(LoginRequiredMixin, TecnicoScopeMixin, DetailView):
     """Exibe os detalhes de um treinamento específico."""
     model = Treinamento
     template_name = 'treinamentos/detalhe_treinamento.html'
-
+    permission_required = 'treinamentos.view_treinamento'
     # O técnico só pode ver o detalhe se o lookup for verdadeiro
     tecnico_scope_lookup = 'participantes__funcionario'
 
@@ -210,12 +210,13 @@ class ExcluirTreinamentoView(LoginRequiredMixin, PermissionRequiredMixin, Succes
         return super().delete(request, *args, **kwargs)
 
 
-class TipoCursoListView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class TipoCursoListView(LoginRequiredMixin, PermissionRequiredMixin, ViewFilialScopedMixin, ListView):
     """Lista todos os tipos de curso com filtros."""
     model = TipoCurso
     template_name = 'treinamentos/lista_tipo_curso.html'
     context_object_name = 'cursos'
     paginate_by = 30
+    permission_required = 'treinamentos.view_tipocurso'
 
     def get_queryset(self):
         """Aplica filtros de status e busca textual."""
@@ -291,12 +292,13 @@ class ExcluirTipoCursoView(LoginRequiredMixin, PermissionRequiredMixin, SuccessM
     template_name = 'treinamentos/excluir_tipo_curso.html'
     success_url = reverse_lazy('treinamentos:lista_tipos_curso')
     permission_required = 'treinamentos.delete_tipocurso'
+    permission_required = 'treinamentos.ver_relatorios'
     success_message = "Tipo de curso excluído com sucesso!"
 
 
 # --- Visualizações para Relatórios ---
 
-class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
+class RelatorioTreinamentosView(LoginRequiredMixin, PermissionRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
     """
     Gera um relatório de treinamentos com base em filtros.
     Agora herda de ListView para buscar e listar os treinamentos.
@@ -305,7 +307,7 @@ class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, Tecni
     template_name = 'treinamentos/relatorio_treinamentos.html'
     context_object_name = 'object_list'  # O nome padrão, mas é bom ser explícito
     paginate_by = 30 # Opcional: Adiciona paginação
-
+    permission_required = 'treinamentos.ver_relatorios'
     tecnico_scope_lookup = 'participantes__funcionario'
 
     def get_queryset(self):
@@ -347,56 +349,6 @@ class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, Tecni
         context['current_tipo_curso'] = self.request.GET.get('tipo_curso')
         return context
  
-class RelatorioTreinamentosView(LoginRequiredMixin, ViewFilialScopedMixin, TecnicoScopeMixin, ListView):
-    """
-    Gera um relatório de treinamentos com base em filtros.
-    Agora herda de ListView para buscar e listar os treinamentos.
-    """
-    model = Treinamento
-    template_name = 'treinamentos/relatorio_treinamentos.html'
-    context_object_name = 'object_list'  # O nome padrão, mas é bom ser explícito
-    paginate_by = 30 # Opcional: Adiciona paginação
-
-    tecnico_scope_lookup = 'participantes__funcionario'
-
-    def get_queryset(self):
-        """
-        Filtra os treinamentos por ano e tipo de curso, conforme os parâmetros da URL.
-        """
-        # Começa com todos os treinamentos e aplica os filtros
-        # O super().get_queryset() aqui refere-se ao ListView, que já aplica
-        # os mixins de escopo (Filial e Tecnico) se eles estiverem corretamente
-        # configurados para modificar o queryset base do ListView.
-        queryset = super().get_queryset().select_related('tipo_curso', 'responsavel')
-
-        ano = self.request.GET.get('ano')
-        if ano:
-            queryset = queryset.filter(data_inicio__year=ano)
-
-        tipo_curso_id = self.request.GET.get('tipo_curso')
-        if tipo_curso_id:
-            queryset = queryset.filter(tipo_curso_id=tipo_curso_id)
-
-        return queryset.order_by('-data_inicio')
-
-    def get_context_data(self, **kwargs):
-        """
-        Adiciona os dados necessários para os menus de filtro (dropdowns) ao contexto.
-        """
-        context = super().get_context_data(**kwargs)
-        
-        # Para o filtro de anos
-        # Usar o queryset filtrado (sem data) para pegar os anos pode ser mais performático
-        anos_qs = Treinamento.objects.dates('data_inicio', 'year', order='DESC')
-        context['anos'] = anos_qs
-        
-        # Para o filtro de tipos de curso
-        context['tipos_curso'] = TipoCurso.objects.filter(ativo=True).order_by('nome')
-        
-        # Passa os filtros atuais de volta para o template
-        context['current_ano'] = self.request.GET.get('ano')
-        context['current_tipo_curso'] = self.request.GET.get('tipo_curso')
-        return context
  
 class RelatorioTreinamentoWordView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMixin, View):
     """
@@ -1463,6 +1415,9 @@ class GestaoAvaliacoesCursoView(LoginRequiredMixin, DetailView):
     template_name = "treinamentos/ead/gestao_avaliacoes.html"
     context_object_name = "curso"
     slug_field = "slug"
+    permission_required = 'treinamentos.ver_relatorios'
+    
+    
 
     def get_queryset(self):
         return CursoEAD.objects.filter(
@@ -1499,6 +1454,8 @@ class GestaoTentativaDetailView(LoginRequiredMixin, DetailView):
     template_name = "treinamentos/ead/gestao_tentativa.html"
     context_object_name = "tentativa"
     pk_url_kwarg = "tentativa_id"
+    permission_required = 'treinamentos.ver_relatorios'
+    
 
     def get_queryset(self):
         return TentativaAvaliacaoEAD.objects.filter(
@@ -1539,6 +1496,7 @@ class GestaoTentativaDetailView(LoginRequiredMixin, DetailView):
 
 class GestaoLiberarTentativaView(LoginRequiredMixin, View):
     """Gestor libera uma nova tentativa para o colaborador."""
+    permission_required = 'treinamentos.alterar_status'
 
     def post(self, request, matricula_id):
         try:
@@ -1585,6 +1543,7 @@ class GestaoImprimirProvaView(LoginRequiredMixin, DetailView):
     template_name = "treinamentos/ead/imprimir_prova.html"
     context_object_name = "tentativa"
     pk_url_kwarg = "tentativa_id"
+    permission_required = 'treinamentos.ver_relatorios'
 
     def get_queryset(self):
         return TentativaAvaliacaoEAD.objects.filter(
@@ -1624,6 +1583,7 @@ class GestaoImprimirProvaView(LoginRequiredMixin, DetailView):
 
 class GestaoGerarCertificadoEADView(LoginRequiredMixin, View):
     """Gestor gera o certificado EAD para um colaborador aprovado."""
+    permission_required = 'treinamentos.gerar_certificados'
 
     def post(self, request, matricula_id):
         try:

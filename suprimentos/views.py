@@ -733,7 +733,6 @@ class DashboardSuprimentosView(LoginRequiredMixin, AppPermissionMixin, TemplateV
 # ════════════════════════════════════════════
 
 class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
-    """Materiais são globais (catálogo compartilhado entre filiais)."""
     app_label_required = _APP
     model = Material
     template_name = 'suprimentos/material_list.html'
@@ -741,9 +740,15 @@ class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
     paginate_by = 30
 
     def get_queryset(self):
+        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
+
         qs = Material.objects.select_related(
             'ncm', 'grupo_tributario'
         ).all()
+
+        # ══════ FILTRO POR FILIAL ══════
+        if filial_ativa:
+            qs = qs.filter(filial=filial_ativa)
 
         q = self.request.GET.get('q', '')
         classificacao = self.request.GET.get('classificacao', '')
@@ -767,6 +772,7 @@ class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
         ctx['titulo_pagina'] = 'Catálogo de Materiais'
         ctx['classificacoes'] = CategoriaMaterial.choices
         ctx['tipos'] = TipoMaterial.choices
@@ -775,7 +781,11 @@ class MaterialListView(LoginRequiredMixin, AppPermissionMixin, ListView):
         ctx['filtro_tipo'] = self.request.GET.get('tipo', '')
         ctx['filtro_sem_grupo'] = self.request.GET.get('sem_grupo', '')
 
+        # ══════ CONTADORES TAMBÉM FILTRADOS ══════
         qs = Material.objects.filter(ativo=True)
+        if filial_ativa:
+            qs = qs.filter(filial=filial_ativa)
+
         ctx['total_materiais'] = qs.count()
         ctx['com_grupo_tributario'] = qs.filter(grupo_tributario__isnull=False).count()
         ctx['sem_grupo_tributario'] = qs.filter(grupo_tributario__isnull=True).count()
@@ -798,6 +808,8 @@ class MaterialCreateView(LoginRequiredMixin, AppPermissionMixin, CreateView):
         response = super().form_valid(form)
         material = self.object
         filial_ativa = getattr(self.request.user, 'filial_ativa', None)
+        form.instance.filial = filial_ativa
+        response = super().form_valid(form)
         msgs = []
 
         if form.cleaned_data.get('criar_equipamento_epi'):
@@ -849,6 +861,14 @@ class MaterialUpdateView(LoginRequiredMixin, AppPermissionMixin, UpdateView):
     model = Material
     form_class = MaterialForm
     template_name = 'suprimentos/material_form.html'
+
+    def get_queryset(self):
+        """Garante que o usuário só edite materiais da sua filial."""
+        qs = super().get_queryset()
+        filial_ativa = getattr(self.request.user, 'filial_ativa', None)
+        if filial_ativa:
+            qs = qs.filter(filial=filial_ativa)
+        return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

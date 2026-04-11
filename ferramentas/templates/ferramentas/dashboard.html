@@ -32,11 +32,6 @@
                 <i class="bi bi-file-text me-1"></i>Termos
             </a>
             {% endif %}
-            {% if perms.documentos.view_mala or user.is_superuser %}
-            <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-light fw-semibold">
-                <i class="bi bi-box-seam me-1"></i>Malas
-            </a>
-            {% endif %}
             {% if perms.documentos.view_termoderesponsabilidade or user.is_superuser %}
             <a href="{% url 'ferramentas:termoderesponsabilidade_list' %}" class="btn btn-light fw-semibold">
                 <i class="bi bi-file-text me-1"></i>Termos
@@ -153,7 +148,7 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-0">
+            <div class="card-header py-3 border-0"> 
                 <h6 class="mb-0 fw-bold">
                     <i class="bi bi-pie-chart me-2 text-primary"></i>{{ ferramentas_chart_data.title }}
                 </h6>
@@ -165,7 +160,7 @@
     </div>
     <div class="col-lg-6">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-0">
+            <div class="card-header py-3 border-0">
                 <h6 class="mb-0 fw-bold">
                     <i class="bi bi-bar-chart me-2 text-primary"></i>{{ malas_chart_data.title }}
                 </h6>
@@ -185,7 +180,7 @@
     {# Ferramentas em uso #}
     <div class="col-lg-4">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 border-0 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">
                     <i class="bi bi-tools me-2 text-warning"></i>Ferramentas em Uso
                 </h6>
@@ -221,7 +216,7 @@
     {# Malas em uso #}
     <div class="col-lg-4">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 border-0 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">
                     <i class="bi bi-box-seam-fill me-2 text-warning"></i>Malas em Uso
                 </h6>
@@ -257,7 +252,7 @@
     {# Últimas atividades #}
     <div class="col-lg-4">
         <div class="card shadow-sm h-100">
-            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+            <div class="card-header py-3 border-0 d-flex justify-content-between align-items-center">
                 <h6 class="mb-0 fw-bold">
                     <i class="bi bi-clock-history me-2 text-primary"></i>Últimas Atividades
                 </h6>
@@ -303,19 +298,26 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
     const defaultOptions = {
         maintainAspectRatio: false,
         plugins: {
             legend: {
                 display: true,
                 position: 'right',
-                labels: { padding: 16, boxWidth: 14, font: { size: 12, family: "'Inter', sans-serif" } }
+                labels: {
+                    padding: 16,
+                    boxWidth: 14,
+                    color: isDark ? '#cbd5e1' : '#4a5568',
+                    font: { size: 12, family: "'Inter', sans-serif" }
+                }
             },
             tooltip: {
-                backgroundColor: "#fff",
-                bodyColor: "#333",
-                titleColor: "#333",
-                borderColor: '#dee2e6',
+                backgroundColor: isDark ? '#252840' : '#fff',
+                bodyColor: isDark ? '#e2e8f0' : '#333',
+                titleColor: isDark ? '#e2e8f0' : '#333',
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : '#dee2e6',
                 borderWidth: 1,
                 padding: 12,
                 displayColors: true,
@@ -340,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         data: chartData.data,
                         backgroundColor: colors,
                         borderWidth: 2,
-                        borderColor: '#fff',
+                        borderColor: isDark ? '#1e2130' : '#fff',
                         hoverOffset: 8,
                     }],
                 },
@@ -351,18 +353,16 @@ document.addEventListener('DOMContentLoaded', function () {
             c.font = "14px 'Inter', sans-serif";
             c.textAlign = 'center';
             c.textBaseline = 'middle';
-            c.fillStyle = '#adb5bd';
+            c.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : '#adb5bd';
             c.fillText('Sem dados para exibir', ctx.canvas.width / 2, ctx.canvas.height / 2);
         }
     }
 
-    // Gráfico de Ferramentas — Cores: Disponível (verde), Em Uso (amarelo), Manutenção (azul)
     createChart('ferramentasChart', {{ ferramentas_chart_data|safe }}, ['#22c55e', '#eab308', '#06b6d4']);
-
-    // Gráfico de Malas — Cores: Disponível (verde), Em Uso (amarelo)
     createChart('malasChart', {{ malas_chart_data|safe }}, ['#22c55e', '#eab308']);
 });
 </script>
 {% endblock %}
+
 
 

@@ -21,7 +21,7 @@
 {% block ferramentas_content %}
 <div class="card shadow-sm">
     {# Busca #}
-    <div class="card-header bg-white p-3">
+    <div class="card-header p-3">
         <form method="get" class="row g-2 align-items-center">
             <div class="col-lg-5 col-md-8">
                 <input type="text" name="q" class="form-control"
@@ -33,10 +33,11 @@
                     <i class="bi bi-search me-1"></i>Buscar
                 </button>
                 {% if query %}
-                {% if perms.ferramentas.view_mala_list or user.is_superuser %}
-                <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-lg"></i>
-                </a>
+                    {% if perms.ferramentas.view_mala_list or user.is_superuser %}
+                    <a href="{% url 'ferramentas:mala_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
                 {% endif %}
             </div>
         </form>
@@ -109,7 +110,7 @@
     </div>
 
     {% if is_paginated %}
-    <div class="card-footer bg-white">
+    <div class="card-footer">
         {% include 'partials/pagination.html' %}
     </div>
     {% endif %}

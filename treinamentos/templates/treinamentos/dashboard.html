@@ -147,7 +147,7 @@
                 <button onclick="window.print()" class="btn btn-sm btn-outline-light">
                     <i class="bi bi-printer me-1"></i> Imprimir
                 </button>
-                {% if perms.treinamentos.view_treinamento_list or user.is_superuser %}
+                {% if perms.treinamentos.view_treinamento or user.is_superuser %}
                 <a href="{% url 'treinamentos:treinamento_list' %}" class="btn btn-sm btn-light">
                     <i class="bi bi-list-check me-1"></i> Lista de Treinamentos
                 </a>
@@ -438,7 +438,7 @@
                                     </a>
                                 </div>
                                 <div class="col-sm-6 col-md-4">
-                                    {% if perms.treinamentos.view_treinamento_list or user.is_superuser %}
+                                    {% if perms.treinamentos.view_treinamento or user.is_superuser %}
                                     <a href="{% url 'treinamentos:ead_meus_cursos' %}" class="ead-quick-link">
                                         <i class="bi bi-book"></i>
                                         <div>
@@ -449,7 +449,7 @@
                                     {% endif %}
                                 </div>
                                 <div class="col-sm-6 col-md-4">
-                                    {% if perms.treinamentos.view_tipo_curso or user.is_superuser %}
+                                    {% if perms.treinamentos.view_tipocurso or user.is_superuser %}
                                     <a href="{% url 'treinamentos:lista_tipos_curso' %}" class="ead-quick-link">
                                         <i class="bi bi-tags"></i>
                                         <div>

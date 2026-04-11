@@ -1,16 +1,349 @@
-/* static/css/global_styles.css */
+/* ═══════════════════════════════════════════════════════════════════
+   FERRAMENTAS.CSS — TEMA CLARO + ESCURO (CORREÇÃO DEFINITIVA)
+   ═══════════════════════════════════════════════════════════════════ */
 
-/* Adicionar estas variáveis de cor ao bloco :root */
+/* ═══ VARIÁVEIS ═══ */
 :root {
-    /* ... suas outras variáveis de cor ... */
-    --status-disponivel-bg: lab(62.79% 1.23 -57.96);
-    --status-em_uso-bg: hsl(195, 100%, 41%);
-    --status-em_manutencao-bg: hsl(190, 80%, 55%);
-    --status-descartada-bg: hsl(201, 100%, 77%);
+    --fer-card-bg: #ffffff;
+    --fer-card-header-bg: #f8f9fa;
+    --fer-card-border: rgba(0, 0, 0, 0.08);
+    --fer-text-primary: #1a202c;
+    --fer-text-secondary: #4a5568;
+    --fer-text-muted: #718096;
+    --fer-list-border: #e2e8f0;
+    --fer-table-header-bg: #f8f9fa;
+    --fer-table-hover: rgba(0, 0, 0, 0.02);
+    --fer-input-bg: #ffffff;
+    --fer-input-border: #dee2e6;
+    --fer-chart-empty-text: #adb5bd;
+    --fer-scrollbar-track: #f1f1f1;
+    --fer-scrollbar-thumb: #c1c1c1;
 }
 
-/* Adicionar estas regras junto com as outras de .status-badge */
-.status-badge.status-disponivel { background-color: var(--status-disponivel-bg); }
-.status-badge.status-em_uso { background-color: var(--status-em_uso-bg); color: #212529; /* Texto escuro para melhor contraste */ }
-.status-badge.status-em_manutencao { background-color: var(--status-em_manutencao-bg); }
-.status-badge.status-descartada { background-color: var(--status-descartada-bg); }
+[data-bs-theme="dark"] {
+    --fer-card-bg: #1e2130;
+    --fer-card-header-bg: #252840;
+    --fer-card-border: rgba(255, 255, 255, 0.08);
+    --fer-text-primary: #e2e8f0;
+    --fer-text-secondary: #cbd5e1;
+    --fer-text-muted: rgba(255, 255, 255, 0.5);
+    --fer-list-border: rgba(255, 255, 255, 0.06);
+    --fer-table-header-bg: rgba(255, 255, 255, 0.03);
+    --fer-table-hover: rgba(255, 255, 255, 0.03);
+    --fer-input-bg: rgba(255, 255, 255, 0.05);
+    --fer-input-border: rgba(255, 255, 255, 0.12);
+    --fer-chart-empty-text: rgba(255, 255, 255, 0.4);
+    --fer-scrollbar-track: rgba(255, 255, 255, 0.03);
+    --fer-scrollbar-thumb: rgba(255, 255, 255, 0.12);
+}
+
+
+/* ═══════════════════════════════════════
+   PAGE HEADER (ferramentas_base.html)
+   ═══════════════════════════════════════ */
+
+.ferramentas-content h1,
+.ferramentas-content h2,
+.ferramentas-content .ferramentas-title {
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .ferramentas-title small,
+.ferramentas-content .ferramentas-title .text-muted {
+    color: var(--fer-text-muted) !important;
+}
+
+
+/* ═══════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .card {
+    background-color: var(--fer-card-bg);
+    border-color: var(--fer-card-border);
+}
+
+/* Card Header — a correção principal */
+.ferramentas-content .card-header {
+    background-color: var(--fer-card-header-bg) !important;
+    border-bottom-color: var(--fer-card-border);
+}
+
+.ferramentas-content .card-header,
+.ferramentas-content .card-header h5,
+.ferramentas-content .card-header h6,
+.ferramentas-content .card-header span:not(.badge),
+.ferramentas-content .card-header i,
+.ferramentas-content .card-header .fw-bold,
+.ferramentas-content .card-header .fw-semibold {
+    color: var(--fer-text-primary);
+}
+
+/* Card Body */
+.ferramentas-content .card-body {
+    color: var(--fer-text-secondary);
+}
+
+.ferramentas-content .card-body h3,
+.ferramentas-content .card-body h5,
+.ferramentas-content .card-body h6,
+.ferramentas-content .card-body .h3,
+.ferramentas-content .card-body strong,
+.ferramentas-content .card-body .fw-bold {
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .card-body p,
+.ferramentas-content .card-body span:not(.badge):not(.text-success):not(.text-warning):not(.text-info):not(.text-danger),
+.ferramentas-content .card-body small {
+    color: var(--fer-text-secondary);
+}
+
+/* Card Footer */
+.ferramentas-content .card-footer {
+    background-color: var(--fer-card-header-bg);
+    border-top-color: var(--fer-card-border);
+}
+
+
+/* ═══════════════════════════════════════
+   TEXT OVERRIDES (text-muted, text-dark, etc.)
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .text-muted {
+    color: var(--fer-text-muted) !important;
+}
+
+[data-bs-theme="dark"] .ferramentas-content .text-dark {
+    color: var(--fer-text-primary) !important;
+}
+
+[data-bs-theme="dark"] .ferramentas-content .text-body {
+    color: var(--fer-text-secondary) !important;
+}
+
+
+/* ═══════════════════════════════════════
+   LIST GROUP (Ficha Técnica, Atividades, etc.)
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .list-group-item {
+    background-color: transparent;
+    border-color: var(--fer-list-border);
+    color: var(--fer-text-secondary);
+}
+
+.ferramentas-content .list-group-item strong,
+.ferramentas-content .list-group-item .fw-bold {
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .list-group-item .text-muted,
+.ferramentas-content .list-group-item small {
+    color: var(--fer-text-muted) !important;
+}
+
+/* List group links (Ferramentas em Uso, etc.) */
+.ferramentas-content .list-group-item-action {
+    color: var(--fer-text-secondary);
+}
+
+.ferramentas-content .list-group-item-action:hover {
+    background-color: var(--fer-table-hover);
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .list-group-item-action strong {
+    color: var(--fer-text-primary);
+}
+
+
+/* ═══════════════════════════════════════
+   TABELAS (Histórico, Lista de Ferramentas)
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .table {
+    color: var(--fer-text-secondary);
+}
+
+.ferramentas-content .table thead {
+    background-color: var(--fer-table-header-bg);
+}
+
+[data-bs-theme="dark"] .ferramentas-content .table-light {
+    background-color: var(--fer-table-header-bg) !important;
+    color: var(--fer-text-muted);
+    --bs-table-bg: var(--fer-table-header-bg);
+    --bs-table-color: var(--fer-text-muted);
+}
+
+.ferramentas-content .table th {
+    color: var(--fer-text-muted);
+    border-bottom-color: var(--fer-card-border);
+    font-weight: 600;
+}
+
+.ferramentas-content .table td {
+    color: var(--fer-text-secondary);
+    border-bottom-color: var(--fer-card-border);
+}
+
+.ferramentas-content .table td strong,
+.ferramentas-content .table td .fw-bold {
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .table td a:not(.btn) {
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .table td a:not(.btn):hover {
+    color: #3b82f6;
+}
+
+.ferramentas-content .table td code {
+    color: var(--fer-text-secondary);
+}
+
+.ferramentas-content .table tbody tr:hover {
+    background-color: var(--fer-table-hover);
+}
+
+
+/* ═══════════════════════════════════════
+   KPI CARDS (Dashboard — stat cards com borda lateral)
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .card .h3,
+.ferramentas-content .card .display-6 {
+    color: var(--fer-text-primary);
+}
+
+/* Ícones de KPI mantêm as cores semânticas via Bootstrap (.text-primary, etc.) */
+
+
+/* ═══════════════════════════════════════
+   FORMULÁRIOS (Filtros, Inputs)
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .form-control,
+.ferramentas-content .form-select {
+    background-color: var(--fer-input-bg);
+    border-color: var(--fer-input-border);
+    color: var(--fer-text-primary);
+}
+
+.ferramentas-content .form-control::placeholder {
+    color: var(--fer-text-muted);
+}
+
+.ferramentas-content .form-control:focus,
+.ferramentas-content .form-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
+}
+
+
+/* ═══════════════════════════════════════
+   BADGES — garantir legibilidade em ambos temas
+   ═══════════════════════════════════════ */
+
+/* Badges subtle já funcionam nativamente no Bootstrap 5.3+ */
+/* Forçar apenas se houver override necessário */
+
+[data-bs-theme="dark"] .ferramentas-content .badge.bg-secondary {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    color: #cbd5e1 !important;
+}
+
+
+/* ═══════════════════════════════════════
+   MODAIS
+   ═══════════════════════════════════════ */
+
+[data-bs-theme="dark"] .ferramentas-content .modal-content {
+    background-color: var(--fer-card-bg);
+    border-color: var(--fer-card-border);
+}
+
+[data-bs-theme="dark"] .ferramentas-content .modal-header {
+    border-bottom-color: var(--fer-card-border);
+}
+
+[data-bs-theme="dark"] .ferramentas-content .modal-footer {
+    border-top-color: var(--fer-card-border);
+}
+
+[data-bs-theme="dark"] .ferramentas-content .modal-body {
+    color: var(--fer-text-secondary);
+}
+
+[data-bs-theme="dark"] .ferramentas-content .modal-body strong {
+    color: var(--fer-text-primary);
+}
+
+
+/* ═══════════════════════════════════════
+   GRÁFICOS (Chart.js)
+   ═══════════════════════════════════════ */
+
+/* Borda branca entre fatias do donut — adaptar ao dark */
+[data-bs-theme="dark"] .ferramentas-content .card-body canvas {
+    filter: none; /* Garantir que não há filtro inesperado */
+}
+
+
+/* ═══════════════════════════════════════
+   SCROLLBAR CUSTOMIZADA
+   ═══════════════════════════════════════ */
+
+.ferramentas-content ::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ferramentas-content ::-webkit-scrollbar-track {
+    background: var(--fer-scrollbar-track);
+    border-radius: 3px;
+}
+
+.ferramentas-content ::-webkit-scrollbar-thumb {
+    background: var(--fer-scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.ferramentas-content ::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+
+/* ═══════════════════════════════════════
+   EMPTY STATES
+   ═══════════════════════════════════════ */
+
+.ferramentas-content .list-group-item.text-center.text-muted,
+.ferramentas-content td.text-center.text-muted {
+    color: var(--fer-text-muted) !important;
+}
+
+.ferramentas-content .list-group-item .display-6,
+.ferramentas-content td .display-4 {
+    color: var(--fer-text-muted) !important;
+}
+
+
+/* ═══════════════════════════════════════
+   PRINT
+   ═══════════════════════════════════════ */
+
+@media print {
+    .ferramentas-content .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+    .ferramentas-content .card-header {
+        background: #f8f9fa !important;
+        color: #212529 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

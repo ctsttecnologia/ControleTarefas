@@ -179,6 +179,14 @@ class Material(models.Model):
         verbose_name="Grupo Tributário",
         help_text="Perfil fiscal para cálculo automático de impostos na compra",
     )
+    filial = models.ForeignKey(
+        Filial, 
+        on_delete=models.PROTECT,
+        related_name='materiais',
+        null=True,
+        blank=True,
+        verbose_name='Filial',
+    )
 
     def calcular_custo_compra(self, valor_total, quantidade=1):
         """
