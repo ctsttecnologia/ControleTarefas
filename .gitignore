@@ -5,6 +5,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.egg-info
 
 # Arquivo gerados pelo projeto
 /media/
