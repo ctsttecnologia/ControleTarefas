@@ -34,7 +34,7 @@ cycler==0.12.1
 daphne==4.2.1
 defusedxml==0.7.1
 dj-rest-auth==7.2.0
-Django==5.2.13
+Django>=5.2.13,<6.0
 django-appconf==1.1.0
 django-autocomplete-light==3.12.1
 django-bootstrap5==25.2
@@ -136,7 +136,6 @@ python-decouple==3.8
 python-docx==1.1.2
 python-dotenv==1.1.1
 python-magic==0.4.27
-python-magic-bin==0.4.14
 python-stdnum==2.1
 pytz==2025.2
 PyYAML==6.0.2
@@ -190,3 +189,4 @@ wsproto==1.2.0
 xhtml2pdf==0.2.17
 zope.interface==8.0.1
 zopfli==0.2.3.post1
+

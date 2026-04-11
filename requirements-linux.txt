@@ -1,0 +1,3 @@
+-r requirements.txt
+# No Linux, python-magic usa a libmagic nativa do sistema.
+# Certifique-se de instalar: sudo apt install libmagic1
