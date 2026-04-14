@@ -1,15 +1,18 @@
 
 # ltcat/forms.py
 
+import magic as python_magic
 from django import forms
-
+from core.forms import SecureUploadFormMixin  
 from cliente.models import Cliente
+from core.validators import SecureFileValidator
 from .models import (
     LTCATDocumento, RevisaoLTCAT, FuncaoAnalisada, ReconhecimentoRisco,
     AvaliacaoPericulosidade, ConclusaoFuncao, RecomendacaoTecnica,
     AnexoLTCAT, EmpresaLTCAT, LocalPrestacaoServicoLTCAT,
     ProfissionalResponsavelLTCAT, DocumentoLocalPrestacao,
 )
+from core.mixins import sanitize_image
 
 
 class BaseFormMixin:
@@ -535,24 +538,53 @@ class RecomendacaoTecnicaForm(BaseFormMixin, forms.ModelForm):
             'data_implementacao': 'Data de Implementação',
         }
 
-
 # ═══════════════════════════════════════════════════════
 # ANEXO
 # ═══════════════════════════════════════════════════════
-class AnexoLTCATForm(BaseFormMixin, forms.ModelForm):
+class AnexoLTCATForm(SecureUploadFormMixin, forms.ModelForm):
+    UPLOAD_APP = 'ltcat_anexos'       # 🔒 Config de validação
+    UPLOAD_FIELD = 'arquivo'          # 🔒 Nome do campo FileField
+
     class Meta:
         model = AnexoLTCAT
-        fields = [
-            'tipo', 'titulo', 'ordem', 'arquivo', 'descricao',
-        ]
+        fields = ['tipo', 'titulo', 'descricao', 'arquivo', 'incluir_no_pdf']
         widgets = {
-            'descricao': forms.Textarea(attrs={'rows': 3}),
-        }
-        labels = {
-            'tipo': 'Tipo de Anexo',
-            'titulo': 'Título (opcional)',
-            'ordem': 'Ordem',
-            'arquivo': 'Arquivo',
-            'descricao': 'Descrição',
+            'arquivo': forms.ClearableFileInput(attrs={
+                'accept': '.pdf,.jpg,.jpeg,.png,.webp,.docx,.xlsx',
+                'class': 'form-control',
+            }),
         }
 
+
+class ProfissionalAssinaturaForm(SecureUploadFormMixin, forms.ModelForm):
+    UPLOAD_APP = 'ltcat_assinatura'        # 🔒 Config de validação
+    UPLOAD_FIELD = 'assinatura_imagem'     # 🔒 Nome do campo ImageField
+
+    class Meta:
+        model = ProfissionalResponsavelLTCAT
+        fields = ['nome_completo', 'funcao', 'registro_classe', 'assinatura_imagem']
+        widgets = {
+            'assinatura_imagem': forms.ClearableFileInput(attrs={
+                'accept': '.jpg,.jpeg,.png,.webp',
+                'class': 'form-control',
+            }),
+        }
+
+class SecureUploadFormMixin:
+    
+    def clean(self):
+        cleaned = super().clean()
+        file = cleaned.get(self.UPLOAD_FIELD)
+
+        if file and hasattr(file, 'seek'):
+            validator = SecureFileValidator(app_name=self.UPLOAD_APP)
+            validator(file)
+
+            file.seek(0)
+            mime = python_magic.from_buffer(file.read(2048), mime=True)
+            file.seek(0)
+
+            if mime.startswith('image/'):
+                cleaned[self.UPLOAD_FIELD] = sanitize_image(file) 
+
+        return cleaned

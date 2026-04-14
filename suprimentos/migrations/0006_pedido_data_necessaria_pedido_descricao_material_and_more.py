@@ -5,7 +5,7 @@ from django.conf import settings
 import django.core.validators
 from django.db import migrations, models
 import django.db.models.deletion
-import suprimentos.models
+import core.upload
 
 
 class Migration(migrations.Migration):
@@ -158,7 +158,7 @@ class Migration(migrations.Migration):
             name='AnexoSolicitacao',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('arquivo', models.FileField(upload_to=suprimentos.models.solicitacao_upload_path, verbose_name='Arquivo')),
+                ('arquivo', models.FileField(upload_to=core.upload.UploadPath('suprimentos/solicitacoes'), verbose_name='Arquivo')),
                 ('descricao', models.CharField(blank=True, default='', max_length=255, verbose_name='Descrição')),
                 ('criado_em', models.DateTimeField(auto_now_add=True)),
                 ('enviado_por', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Enviado por')),
@@ -174,7 +174,7 @@ class Migration(migrations.Migration):
             name='AnexoPedido',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('arquivo', models.FileField(upload_to=suprimentos.models.anexo_pedido_upload_path, verbose_name='Arquivo')),
+                ('arquivo', models.FileField(upload_to=core.upload.UploadPath('suprimentos/pedidos'), verbose_name='Arquivo')),
                 ('descricao', models.CharField(blank=True, default='', max_length=255, verbose_name='Descrição')),
                 ('criado_em', models.DateTimeField(auto_now_add=True)),
                 ('enviado_por', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL, verbose_name='Enviado por')),

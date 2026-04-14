@@ -51,9 +51,9 @@ class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixi
     def get_queryset(self):
         qs = super().get_queryset()
 
-        status = self.request.GET.get('status', '')
+        status     = self.request.GET.get('status', '')
         prioridade = self.request.GET.get('prioridade', '')
-        query = self.request.GET.get('q', '')
+        query      = self.request.GET.get('q', '')
 
         if status:
             qs = qs.filter(status=status)
@@ -61,12 +61,26 @@ class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixi
             qs = qs.filter(prioridade=prioridade)
         if query:
             qs = qs.filter(
-                Q(titulo__icontains=query) |
-                Q(descricao__icontains=query) |
-                Q(projeto__icontains=query)
-            )
+                Q(titulo__icontains=query)                         |
+                Q(descricao__icontains=query)                      |
+                Q(projeto__icontains=query)                        |
+                # Responsável
+                Q(responsavel__first_name__icontains=query)        |
+                Q(responsavel__last_name__icontains=query)         |
+                Q(responsavel__username__icontains=query)          |
+                # Participantes (M2M)
+                Q(participantes__first_name__icontains=query)      |
+                Q(participantes__last_name__icontains=query)       |
+                Q(participantes__username__icontains=query)
+            ).distinct()  # ← obrigatório por causa do JOIN no M2M
 
-        return qs.select_related('usuario', 'responsavel', 'filial').order_by('-prazo', 'prioridade')
+        return (
+            qs
+            .select_related('usuario', 'responsavel', 'filial')
+            .prefetch_related('participantes')  # ← evita N+1 no M2M
+            .order_by('-prazo', 'prioridade')
+        )
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

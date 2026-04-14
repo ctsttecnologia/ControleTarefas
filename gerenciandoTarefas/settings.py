@@ -9,7 +9,9 @@ from pathlib import Path
 from decouple import config
 from celery.schedules import crontab
 import logging
+from core.upload_config import UPLOAD_CONFIG
 
+UPLOAD_CONFIG = UPLOAD_CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -349,8 +351,8 @@ SENDFILE_BACKEND = 'sendfile2.backends.simple'
 SENDFILE_ROOT = PRIVATE_MEDIA_ROOT
 SENDFILE_URL = '/private'
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
-FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
+DATA_UPLOAD_MAX_MEMORY_SIZE = 30 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 

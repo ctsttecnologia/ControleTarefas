@@ -11,8 +11,12 @@ from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
 from django.apps import apps
-
 from usuario.models import Filial
+import logging
+
+logger = logging.getLogger('uploads')
+
+
 
 
 class SecureFileDownloadView(LoginRequiredMixin, View):
@@ -52,7 +56,8 @@ class SecureFileDownloadView(LoginRequiredMixin, View):
             # ══════════════════════════════════════════════
             if settings.DEBUG:
                 try:
-                    from storages.backends.gcloud import GoogleCloudStorage
+                    import storages.backends.gcloud as gcloud_module
+                    GoogleCloudStorage = gcloud_module.GoogleCloudStorage
 
                     bucket_name = getattr(settings, 'GS_BUCKET_NAME', None)
                     credentials = getattr(settings, 'GS_CREDENTIALS', None)
@@ -194,3 +199,55 @@ def error_503_view(request, exception=None):
         from django.contrib.auth.models import AnonymousUser
         request.user = AnonymousUser()
     return render(request, 'errors/503.html', status=503)
+
+# ============================================================
+#  VIEW MIXIN DE UPLOAD SEGURO
+# ============================================================
+
+class SecureUploadViewMixin(LoginRequiredMixin):
+    """
+    Mixin para views de upload.
+
+    Uso:
+        class LaudoCreateView(SecureUploadViewMixin, CreateView):
+            UPLOAD_APP = 'ltcat'
+            model = LaudoLTCAT
+            form_class = LaudoForm
+    """
+
+    UPLOAD_APP = 'default'
+
+    def form_valid(self, form):
+        obj = form.save(commit=False)
+
+        if hasattr(obj, 'uploaded_by'):
+            obj.uploaded_by = self.request.user
+
+        obj.save()
+        form.save_m2m()
+
+        logger.info(
+            f'[UPLOAD][{self.UPLOAD_APP}] '
+            f'Usuário: {self.request.user.username} | '
+            f'Arquivo: {getattr(obj, "original_filename", "N/A")} | '
+            f'Tamanho: {getattr(obj, "file_size", 0)} bytes'
+        )
+
+        messages.success(self.request, '✅ Arquivo enviado com sucesso!')
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        logger.warning(
+            f'[UPLOAD FALHOU][{self.UPLOAD_APP}] '
+            f'Usuário: {self.request.user.username} | '
+            f'Erros: {form.errors.as_text()}'
+        )
+        messages.error(self.request, '❌ Erro no upload. Verifique o arquivo.')
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = context.get('form')
+        if form and hasattr(form, 'get_upload_config_display'):
+            context['upload_config'] = form.get_upload_config_display()
+        return context

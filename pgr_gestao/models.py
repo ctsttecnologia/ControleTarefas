@@ -2,26 +2,6 @@
 """
 Models do PGR - Programa de Gerenciamento de Riscos
 Versão Refatorada e Otimizada
-
-ARQUITETURA DE FILIAL:
-  ✅ Models com campo `filial` direto → herdam BaseModel + FilialManager
-  ✅ Models sem campo `filial` → definem `_filial_lookup` + FilialManager
-  ⏭️  Models globais (Filial, User, PGRSecaoTextoPadrao) → sem filtro
-
-TABELA DE LOOKUPS (models sem campo filial):
-  ┌────────────────────────────┬──────────────────────────────────────────────────┐
-  │ Model                      │ _filial_lookup                                   │
-  ├────────────────────────────┼──────────────────────────────────────────────────┤
-  │ CronogramaAcaoPGR          │ pgr_documento__filial_id                         │
-  │ AvaliacaoQuantitativa      │ risco_identificado__pgr_documento__filial_id     │
-  │ PGRDocumentoResponsavel    │ pgr_documento__filial_id                         │
-  │ PGRSecaoTexto              │ pgr_documento__filial_id                         │
-  │ RiscoEPIRecomendado        │ risco_identificado__pgr_documento__filial_id     │
-  │ RiscoMedidaControle        │ risco_identificado__pgr_documento__filial_id     │
-  │ RiscoTreinamentoNecessario │ risco_identificado__pgr_documento__filial_id     │
-  │ AnexoPlanoAcao             │ plano_acao__risco_identificado__pgr_documento__… │
-  │ AcompanhamentoPlanoAcao    │ plano_acao__risco_identificado__pgr_documento__… │
-  └────────────────────────────┴──────────────────────────────────────────────────┘
 """
 
 from django.conf import settings
@@ -38,6 +18,11 @@ from departamento_pessoal.models import Cargo, Funcionario
 from seguranca_trabalho.models import Equipamento, Funcao
 from cliente.models import Cliente
 from treinamentos.models import TipoCurso
+from core.upload import delete_old_file, safe_delete_file
+from core.validators import SecureFileValidator
+from core.mixins import make_upload_path, sanitize_image
+from core.magic_utils import get_mime_type
+import os
 
 User = get_user_model()
 
@@ -974,7 +959,13 @@ class AvaliacaoQuantitativa(models.Model):
     equipamento_utilizado = models.CharField('Equipamento Utilizado', max_length=255, blank=True)
     responsavel_avaliacao = models.CharField('Responsável pela Avaliação', max_length=255, blank=True)
     observacoes = models.TextField('Observações', blank=True)
-    laudo_tecnico = models.FileField('Laudo Técnico', upload_to='pgr/laudos/%Y/%m/', blank=True, null=True)
+    laudo_tecnico = models.FileField(
+        'Laudo Técnico',
+        upload_to=make_upload_path('pgr_laudos'),
+        blank=True,
+        null=True,
+        validators=[SecureFileValidator('pgr_laudos')],
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
@@ -982,11 +973,20 @@ class AvaliacaoQuantitativa(models.Model):
     _filial_lookup = 'risco_identificado__pgr_documento__filial_id'
     objects = FilialManager()
 
+
     class Meta:
         db_table = 'pgr_avaliacao_quantitativa'
         verbose_name = 'Avaliação Quantitativa'
         verbose_name_plural = 'Avaliações Quantitativas'
         ordering = ['-data_avaliacao']
+
+    def save(self, *args, **kwargs):
+        delete_old_file(self, 'laudo_tecnico')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'laudo_tecnico')
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_tipo_avaliacao_display()} - {self.data_avaliacao}"
@@ -1070,7 +1070,13 @@ class PlanoAcaoPGR(BaseModel):
     data_conclusao = models.DateField('Data de Conclusão', blank=True, null=True)
     custo_estimado = models.DecimalField('Custo Estimado (R$)', max_digits=12, decimal_places=2, blank=True, null=True)
     custo_real = models.DecimalField('Custo Real (R$)', max_digits=12, decimal_places=2, blank=True, null=True)
-    evidencia = models.FileField('Evidência de Conclusão', upload_to='pgr/evidencias/%Y/%m/', blank=True, null=True)
+    evidencia = models.FileField(
+        'Evidência de Conclusão',
+        upload_to=make_upload_path('pgr_evidencias'),
+        blank=True,
+        null=True,
+        validators=[SecureFileValidator('pgr_evidencias')],
+    )
     evidencia_conclusao = models.TextField('Descrição da Evidência', blank=True)
     recursos_necessarios = models.TextField('Recursos Necessários', blank=True)
     eficacia_acao = models.TextField('Eficácia da Ação', blank=True)
@@ -1092,6 +1098,14 @@ class PlanoAcaoPGR(BaseModel):
 
     def get_absolute_url(self):
         return reverse('pgr_gestao:plano_acao_detail', kwargs={'pk': self.pk})
+    
+    def save(self, *args, **kwargs):
+        delete_old_file(self, 'evidencia')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'evidencia')
+        super().delete(*args, **kwargs)
 
     @property
     def esta_atrasado(self):
@@ -1121,7 +1135,11 @@ class AnexoPlanoAcao(models.Model):
         related_name='anexos', verbose_name='Plano de Ação'
     )
     nome_arquivo = models.CharField('Nome do Arquivo', max_length=255)
-    arquivo = models.FileField('Arquivo', upload_to='pgr/planos_acao/anexos/%Y/%m/')
+    arquivo = models.FileField(
+        'Arquivo',
+        upload_to=make_upload_path('pgr_planos_acao_anexos'),
+        validators=[SecureFileValidator('pgr_planos_acao_anexos')],
+    )
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name='Criado por'
@@ -1137,6 +1155,14 @@ class AnexoPlanoAcao(models.Model):
         verbose_name = 'Anexo do Plano de Ação'
         verbose_name_plural = 'Anexos dos Planos de Ação'
         ordering = ['-criado_em']
+
+    def save(self, *args, **kwargs):
+        delete_old_file(self, 'arquivo')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'arquivo')
+        super().delete(*args, **kwargs)
 
     def __str__(self):
         return self.nome_arquivo
@@ -1163,8 +1189,11 @@ class AcompanhamentoPlanoAcao(models.Model):
     descricao = models.TextField('Descrição do Acompanhamento')
     evidencias = models.TextField('Evidências/Comprovações', blank=True, null=True)
     arquivo_evidencia = models.FileField(
-        'Arquivo de Evidência', upload_to='pgr/acompanhamentos/%Y/%m/',
-        blank=True, null=True
+        'Arquivo de Evidência',
+        upload_to=make_upload_path('pgr_acompanhamentos'),
+        blank=True,
+        null=True,
+        validators=[SecureFileValidator('pgr_acompanhamentos')],
     )
     dificuldades = models.TextField('Dificuldades Encontradas', blank=True, null=True)
     proximos_passos = models.TextField('Próximos Passos', blank=True, null=True)
@@ -1195,6 +1224,7 @@ class AcompanhamentoPlanoAcao(models.Model):
         return f"Acompanhamento de {self.plano_acao.descricao_acao[:30]} - {self.data_acompanhamento.strftime('%d/%m/%Y')}"
 
     def save(self, *args, **kwargs):
+        delete_old_file(self, 'arquivo_evidencia')
         if not self.pk and self.plano_acao:
             self.status_anterior = self.plano_acao.status
         super().save(*args, **kwargs)
@@ -1204,6 +1234,10 @@ class AcompanhamentoPlanoAcao(models.Model):
             if self.status_atual == 'concluido' and not plano.data_conclusao:
                 plano.data_conclusao = self.data_acompanhamento
             plano.save(update_fields=['status', 'data_conclusao'])
+
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'arquivo_evidencia')
+        super().delete(*args, **kwargs)
 
 
 # =============================================================================
@@ -1312,30 +1346,29 @@ class AnexoPGR(models.Model):
     """
     Anexos vinculados ao PGR Document (Laudos, Relatórios, Análises).
     Ex: ANEXO I – ANÁLISE QUANTITATIVA DE RUÍDO
-    Cada anexo aparece no final do PDF gerado como parte do relatório.
     """
 
     TIPO_ANEXO_CHOICES = [
-        ('analise_ruido', 'Análise Quantitativa de Ruído'),
-        ('analise_calor', 'Análise Quantitativa de Calor'),
-        ('analise_quimica', 'Análise Quantitativa de Agentes Químicos'),
-        ('analise_vibração', 'Análise Quantitativa de Vibração'),
-        ('analise_iluminacao', 'Análise de Iluminância'),
-        ('analise_biologica', 'Análise de Agentes Biológicos'),
-        ('laudo_insalubridade', 'Laudo de Insalubridade'),
+        ('analise_ruido',        'Análise Quantitativa de Ruído'),
+        ('analise_calor',        'Análise Quantitativa de Calor'),
+        ('analise_quimica',      'Análise Quantitativa de Agentes Químicos'),
+        ('analise_vibracao',     'Análise Quantitativa de Vibração'),
+        ('analise_iluminacao',   'Análise de Iluminância'),
+        ('analise_biologica',    'Análise de Agentes Biológicos'),
+        ('laudo_insalubridade',  'Laudo de Insalubridade'),
         ('laudo_periculosidade', 'Laudo de Periculosidade'),
-        ('laudo_ergonomico', 'Laudo Ergonômico'),
-        ('aet', 'Análise Ergonômica do Trabalho (AET)'),
-        ('ppra', 'PPRA – Programa de Prevenção de Riscos Ambientais'),
-        ('pcmso', 'PCMSO – Programa de Controle Médico'),
-        ('ltcat', 'LTCAT – Laudo Técnico das Condições do Ambiente'),
+        ('laudo_ergonomico',     'Laudo Ergonômico'),
+        ('aet',                  'Análise Ergonômica do Trabalho (AET)'),
+        ('ppra',                 'PPRA – Programa de Prevenção de Riscos Ambientais'),
+        ('pcmso',                'PCMSO – Programa de Controle Médico'),
+        ('ltcat',                'LTCAT – Laudo Técnico das Condições do Ambiente'),
         ('certificado_calibracao', 'Certificado de Calibração de Equipamentos'),
-        ('art', 'ART – Anotação de Responsabilidade Técnica'),
-        ('mapa_risco', 'Mapa de Risco'),
-        ('planta_baixa', 'Planta Baixa / Layout'),
-        ('fotografias', 'Registro Fotográfico'),
-        ('treinamento', 'Certificado / Registro de Treinamento'),
-        ('outro', 'Outro'),
+        ('art',                  'ART – Anotação de Responsabilidade Técnica'),
+        ('mapa_risco',           'Mapa de Risco'),
+        ('planta_baixa',         'Planta Baixa / Layout'),
+        ('fotografias',          'Registro Fotográfico'),
+        ('treinamento',          'Certificado / Registro de Treinamento'),
+        ('outro',                'Outro'),
     ]
 
     pgr_documento = models.ForeignKey(
@@ -1345,58 +1378,46 @@ class AnexoPGR(models.Model):
         verbose_name='Documento PGR'
     )
     tipo_anexo = models.CharField(
-        'Tipo de Anexo',
-        max_length=30,
-        choices=TIPO_ANEXO_CHOICES,
-        default='outro'
+        'Tipo de Anexo', max_length=30,
+        choices=TIPO_ANEXO_CHOICES, default='outro'
     )
     numero_romano = models.CharField(
-        'Número do Anexo',
-        max_length=10,
-        help_text='Ex: I, II, III, IV, V...',
-        blank=True
+        'Número do Anexo', max_length=10, blank=True,
+        help_text='Ex: I, II, III, IV, V...'
     )
     titulo = models.CharField(
-        'Título do Anexo',
-        max_length=300,
+        'Título do Anexo', max_length=300,
         help_text='Ex: ANÁLISE QUANTITATIVA DE RUÍDO'
     )
-    descricao = models.TextField(
-        'Descrição',
-        blank=True,
-        help_text='Descrição ou observações sobre este anexo'
-    )
+    descricao = models.TextField('Descrição', blank=True)
+
     arquivo = models.FileField(
         'Arquivo',
-        upload_to='pgr/anexos/%Y/%m/',
-        help_text='PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (máx. 50MB)'
+        upload_to=make_upload_path('pgr_anexos'),
+        validators=[SecureFileValidator('pgr_anexos')],
+        help_text='PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (máx. 50MB)',
     )
     nome_arquivo_original = models.CharField(
-        'Nome Original do Arquivo',
-        max_length=500,
-        blank=True
+        'Nome Original do Arquivo', max_length=500, blank=True
     )
-    tamanho_arquivo = models.PositiveIntegerField(
-        'Tamanho (bytes)',
-        default=0
+    tamanho_arquivo = models.PositiveIntegerField('Tamanho (bytes)', default=0)
+    mime_type = models.CharField(
+        'Tipo MIME', max_length=100, editable=False, default='',
     )
+
     incluir_no_pdf = models.BooleanField(
-        'Incluir como Anexo no PDF do PGR',
-        default=True,
+        'Incluir como Anexo no PDF do PGR', default=True,
         help_text='Se marcado, aparecerá listado nos anexos do relatório PDF'
     )
-    ordem = models.PositiveIntegerField(
-        'Ordem de Exibição',
-        default=0,
-        help_text='Define a ordem dos anexos no relatório'
-    )
+    ordem = models.PositiveIntegerField('Ordem de Exibição', default=0)
+
     criado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True, blank=True,
         verbose_name='Enviado por'
     )
-    criado_em = models.DateTimeField('Enviado em', auto_now_add=True)
+    criado_em  = models.DateTimeField('Enviado em', auto_now_add=True)
     atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
 
     # ── Filtro por filial via FK do pai ──
@@ -1404,10 +1425,10 @@ class AnexoPGR(models.Model):
     objects = FilialManager()
 
     class Meta:
-        db_table = 'pgr_anexo_pgr'
-        verbose_name = 'Anexo do PGR'
+        db_table        = 'pgr_anexo_pgr'
+        verbose_name    = 'Anexo do PGR'
         verbose_name_plural = 'Anexos do PGR'
-        ordering = ['ordem', 'numero_romano', 'criado_em']
+        ordering        = ['ordem', 'numero_romano', 'criado_em']
         unique_together = ['pgr_documento', 'numero_romano']
 
     def __str__(self):
@@ -1415,76 +1436,93 @@ class AnexoPGR(models.Model):
             return f"ANEXO {self.numero_romano} – {self.titulo}"
         return self.titulo
 
+    # ── Helpers ───────────────────────────────────────────────────────────
+
     @property
     def titulo_completo(self):
-        """Retorna título formatado com número romano"""
         if self.numero_romano:
             return f"ANEXO {self.numero_romano} – {self.titulo}"
         return self.titulo
 
     @property
     def extensao(self):
-        """Retorna a extensão do arquivo"""
         if self.arquivo and self.arquivo.name:
             return self.arquivo.name.rsplit('.', 1)[-1].upper()
         return ''
 
     @property
     def tamanho_formatado(self):
-        """Retorna o tamanho formatado (KB, MB)"""
-        if self.tamanho_arquivo < 1024:
-            return f"{self.tamanho_arquivo} B"
-        elif self.tamanho_arquivo < 1048576:
-            return f"{self.tamanho_arquivo / 1024:.1f} KB"
-        else:
-            return f"{self.tamanho_arquivo / 1048576:.1f} MB"
+        size = self.tamanho_arquivo
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024:
+                return f"{size:.1f} {unit}"
+            size /= 1024
+        return f"{size:.1f} TB"
 
     @property
     def icone_tipo(self):
-        """Retorna ícone FontAwesome baseado na extensão"""
-        ext = self.extensao.lower()
         icones = {
-            'pdf': 'fa-file-pdf text-danger',
-            'doc': 'fa-file-word text-primary',
+            'pdf':  'fa-file-pdf text-danger',
+            'doc':  'fa-file-word text-primary',
             'docx': 'fa-file-word text-primary',
-            'xls': 'fa-file-excel text-success',
+            'xls':  'fa-file-excel text-success',
             'xlsx': 'fa-file-excel text-success',
-            'jpg': 'fa-file-image text-warning',
+            'jpg':  'fa-file-image text-warning',
             'jpeg': 'fa-file-image text-warning',
-            'png': 'fa-file-image text-warning',
+            'png':  'fa-file-image text-warning',
         }
-        return icones.get(ext, 'fa-file text-secondary')
+        return icones.get(self.extensao.lower(), 'fa-file text-secondary')
+
+    # ── Lifecycle ─────────────────────────────────────────────────────────
 
     def save(self, *args, **kwargs):
-        # Salvar nome original e tamanho
-        if self.arquivo and not self.nome_arquivo_original:
-            self.nome_arquivo_original = self.arquivo.name
+        delete_old_file(self, 'arquivo')
+
         if self.arquivo:
+            if not self.nome_arquivo_original:
+                self.nome_arquivo_original = os.path.basename(self.arquivo.name)
             try:
                 self.tamanho_arquivo = self.arquivo.size
             except Exception:
                 pass
+            if not self.mime_type:
+                try:
+                    self.mime_type = get_mime_type(self.arquivo)
+                except Exception:
+                    self.mime_type = 'application/octet-stream'
+            if self.mime_type.startswith('image/') and hasattr(self.arquivo.file, 'seek'):
+                try:
+                    self.arquivo = sanitize_image(self.arquivo)
+                except Exception:
+                    pass
 
-        # Auto-numerar se não informado
+        # Auto-numerar
         if not self.numero_romano:
             existentes = AnexoPGR.objects.filter(
                 pgr_documento=self.pgr_documento
             ).exclude(pk=self.pk).count()
-            numeros = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
-                        'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX']
+            numeros = [
+                'I','II','III','IV','V','VI','VII','VIII',
+                'IX','X','XI','XII','XIII','XIV','XV',
+                'XVI','XVII','XVIII','XIX','XX',
+            ]
             idx = existentes
             self.numero_romano = numeros[idx] if idx < len(numeros) else str(idx + 1)
 
-        # Auto-definir ordem
+        # Auto-ordem
         if self.ordem == 0 and not self.pk:
+            from django.db.models import Max
             max_ordem = AnexoPGR.objects.filter(
                 pgr_documento=self.pgr_documento
-            ).aggregate(models.Max('ordem'))['ordem__max'] or 0
+            ).aggregate(Max('ordem'))['ordem__max'] or 0
             self.ordem = max_ordem + 1
 
-        # Auto-preencher título baseado no tipo
+        # Auto-título
         if not self.titulo and self.tipo_anexo != 'outro':
             self.titulo = dict(self.TIPO_ANEXO_CHOICES).get(self.tipo_anexo, '')
 
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'arquivo')
+        super().delete(*args, **kwargs)

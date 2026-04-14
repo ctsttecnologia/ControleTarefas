@@ -223,6 +223,7 @@ class CarroDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
     app_label_required = 'automovel'
     model = Carro
     template_name = 'automovel/carro_detail.html'
+    context_object_name = "carro" 
 
     def get_queryset(self):
         return super().get_queryset().select_related('filial').prefetch_related(

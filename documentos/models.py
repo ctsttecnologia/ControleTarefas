@@ -1,4 +1,4 @@
-
+# documentos/models.py
 
 import os
 from django.db import models
@@ -7,14 +7,15 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils import timezone
-from django.core.files.storage import FileSystemStorage
+from django.utils.translation import gettext_lazy as _
 
 from usuario.models import Filial
 from core.managers import FilialManager
+from core.upload import delete_old_file, safe_delete_file   # ← novo
+from core.validators import SecureFileValidator              # ← novo
 from documentos.storage import PrivateMediaStorage
 
 private_storage = PrivateMediaStorage()
-
 
 
 def private_document_path(instance, filename):
@@ -24,10 +25,10 @@ def private_document_path(instance, filename):
     """
     if instance.content_type:
         app_label = instance.content_type.app_label
-        obj_id = instance.object_id or 0
+        obj_id    = instance.object_id or 0
     else:
         app_label = 'empresa'
-        obj_id = instance.pk or 0
+        obj_id    = instance.pk or 0
     return f'documentos/{app_label}/{obj_id}/{filename}'
 
 
@@ -46,30 +47,30 @@ class Documento(models.Model):
     # ══════════════════════════════════════════════
 
     class StatusChoices(models.TextChoices):
-        VIGENTE = 'VIGENTE', 'Vigente'
-        A_VENCER = 'A_VENCER', 'A Vencer'
-        VENCIDO = 'VENCIDO', 'Vencido'
-        RENOVADO = 'RENOVADO', 'Renovado/Inativo'
+        VIGENTE   = 'VIGENTE',   'Vigente'
+        A_VENCER  = 'A_VENCER',  'A Vencer'
+        VENCIDO   = 'VENCIDO',   'Vencido'
+        RENOVADO  = 'RENOVADO',  'Renovado/Inativo'
         ARQUIVADO = 'ARQUIVADO', 'Arquivado'
 
     class TipoChoices(models.TextChoices):
-        CONTRATO = 'CONTRATO', 'Contrato'
-        ALVARA = 'ALVARA', 'Alvará'
-        CERTIDAO = 'CERTIDAO', 'Certidão'
-        FATURA = 'FATURA', 'Fatura/Nota Fiscal'
-        RELATORIO = 'RELATORIO', 'Relatório'
-        ART = 'ART', 'ART'
-        PGR = 'PGR', 'PGR'
-        LAUDO = 'LAUDO', 'Laudo'
-        CERTIFICADO = 'CERTIFICADO', 'Certificado'
-        OUTROS = 'OUTROS', 'Outros'
+        CONTRATO    = 'CONTRATO',   'Contrato'
+        ALVARA      = 'ALVARA',     'Alvará'
+        CERTIDAO    = 'CERTIDAO',   'Certidão'
+        FATURA      = 'FATURA',     'Fatura/Nota Fiscal'
+        RELATORIO   = 'RELATORIO',  'Relatório'
+        ART         = 'ART',        'ART'
+        PGR         = 'PGR',        'PGR'
+        LAUDO       = 'LAUDO',      'Laudo'
+        CERTIFICADO = 'CERTIFICADO','Certificado'
+        OUTROS      = 'OUTROS',     'Outros'
 
     # ══════════════════════════════════════════════
-    # CAMPOS PRINCIPAIS (ex-Documento + ex-Arquivo)
+    # CAMPOS PRINCIPAIS
     # ══════════════════════════════════════════════
 
-    nome = models.CharField("Nome do Documento", max_length=255)
-    tipo = models.CharField(
+    nome      = models.CharField("Nome do Documento", max_length=255)
+    tipo      = models.CharField(
         "Tipo de Documento",
         max_length=20,
         choices=TipoChoices.choices,
@@ -77,18 +78,21 @@ class Documento(models.Model):
     )
     descricao = models.TextField("Descrição/Observações", blank=True, default='')
 
+    # ── Upload: mantém storage privado + path dinâmico, adiciona validator ───
     arquivo = models.FileField(
         verbose_name="Arquivo",
-        upload_to=private_document_path,
-        storage=private_storage,
-        help_text="O arquivo será armazenado em local seguro.",
+        upload_to=private_document_path,        # ← path dinâmico preservado
+        storage=private_storage,                 # ← storage privado preservado
+        validators=[SecureFileValidator('documentos')],   # ← novo
+        help_text=_("O arquivo será armazenado em local seguro."),
     )
+    # ─────────────────────────────────────────────────────────────────────────
 
     # ══════════════════════════════════════════════
     # DATAS E VENCIMENTO
     # ══════════════════════════════════════════════
 
-    data_emissao = models.DateField("Data de Emissão", null=True, blank=True)
+    data_emissao    = models.DateField("Data de Emissão", null=True, blank=True)
     data_vencimento = models.DateField(
         "Data de Vencimento",
         null=True,
@@ -100,7 +104,6 @@ class Documento(models.Model):
         default=30,
         help_text="Dias de antecedência para notificar vencimento.",
     )
-
     status = models.CharField(
         "Status",
         max_length=10,
@@ -115,21 +118,17 @@ class Documento(models.Model):
     responsavel = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         verbose_name="Responsável",
         related_name="documentos_responsaveis",
     )
-
     cliente = models.ForeignKey(
         'cliente.Cliente',
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         verbose_name="Cliente Relacionado",
         related_name="documentos_cliente",
     )
-
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
@@ -139,17 +138,16 @@ class Documento(models.Model):
     )
 
     # ══════════════════════════════════════════════
-    # GENERIC FOREIGN KEY (opcional — permite anexar a qualquer modelo)
+    # GENERIC FOREIGN KEY
     # ══════════════════════════════════════════════
 
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
         verbose_name="Tipo de Objeto",
-        null=True,
-        blank=True,
+        null=True, blank=True,
     )
-    object_id = models.PositiveIntegerField("ID do Objeto", null=True, blank=True)
+    object_id      = models.PositiveIntegerField("ID do Objeto", null=True, blank=True)
     content_object = GenericForeignKey('content_type', 'object_id')
 
     # ══════════════════════════════════════════════
@@ -159,8 +157,7 @@ class Documento(models.Model):
     substitui = models.OneToOneField(
         'self',
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        null=True, blank=True,
         related_name="substituto",
         verbose_name="Substitui o Documento",
     )
@@ -169,7 +166,7 @@ class Documento(models.Model):
     # TIMESTAMPS
     # ══════════════════════════════════════════════
 
-    data_cadastro = models.DateTimeField("Data de Cadastro", auto_now_add=True)
+    data_cadastro    = models.DateTimeField("Data de Cadastro", auto_now_add=True)
     data_atualizacao = models.DateTimeField("Data de Atualização", auto_now=True)
 
     # ══════════════════════════════════════════════
@@ -179,22 +176,34 @@ class Documento(models.Model):
     objects = FilialManager()
 
     class Meta:
-        verbose_name = "Documento"
+        verbose_name        = "Documento"
         verbose_name_plural = "Documentos"
-        ordering = ['data_vencimento']
+        ordering            = ['data_vencimento']
         permissions = [
             ("pode_gerenciar_todos_documentos", "Pode gerenciar documentos de todas as filiais"),
-            ("pode_validar_documento", "Pode validar um documento enviado"),
+            ("pode_validar_documento",          "Pode validar um documento enviado"),
         ]
 
     def __str__(self):
         tipo_display = self.get_tipo_display() if self.tipo != 'OUTROS' else ''
-        if tipo_display:
-            return f"{self.nome} ({tipo_display})"
-        return self.nome
+        return f"{self.nome} ({tipo_display})" if tipo_display else self.nome
 
     def get_absolute_url(self):
         return reverse('documentos:download', kwargs={'pk': self.pk})
+
+    # ══════════════════════════════════════════════
+    # GERENCIAMENTO DE ARQUIVO  ← novo
+    # ══════════════════════════════════════════════
+
+    def save(self, *args, **kwargs):
+        # Substitui o arquivo antigo no storage privado ao editar
+        delete_old_file(self, 'arquivo')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Remove o arquivo físico ao deletar o registro
+        safe_delete_file(self, 'arquivo')
+        super().delete(*args, **kwargs)
 
     # ══════════════════════════════════════════════
     # HELPERS / PROPERTIES

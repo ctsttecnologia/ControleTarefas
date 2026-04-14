@@ -1,10 +1,10 @@
 <!-- Formulário para Criar/Editar Agendamento -->
-{% extends "base.html" %}
+{% extends "automovel/_base_automovel.html" %}
 {% load static crispy_forms_tags %}
 
 {% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Agendamento{% endblock %}
 
-{% block extra_css %}
+{% block module_css %}
 <style>
     .form-hero {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
@@ -79,7 +79,6 @@
 {% endblock %}
 
 {% block content %}
-{% include "partials/_messages.html" %}
 
 <div class="container-fluid py-4 px-lg-5">
 

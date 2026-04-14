@@ -1,45 +1,12 @@
 ﻿<!-- Detalhes do Carro -->
-{% extends "base.html" %}
+{% extends "automovel/_base_automovel.html" %}
 {% load static %}
+{% load secure_url %}
 
 {% block title %}{{ carro.marca }} {{ carro.modelo }} — {{ carro.placa }}{% endblock %}
 
-{% block extra_css %}
+{% block module_css %}
 <style>
-    /* ═══ HERO ═══ */
-    .vehicle-hero {
-        border-radius: 1rem;
-        color: #fff;
-        padding: 2rem 2.5rem;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-        background: linear-gradient(135deg, #4e73df 0%, #224abe 50%, #1a3a8a 100%);
-    }
-    .vehicle-hero::after {
-        content: '';
-        position: absolute;
-        top: -40%;
-        right: -8%;
-        width: 280px;
-        height: 280px;
-        background: rgba(255,255,255,0.07);
-        border-radius: 50%;
-        pointer-events: none;
-    }
-    .vehicle-hero h1 { font-weight: 700; font-size: 1.65rem; margin-bottom: 0.5rem; }
-    .hero-meta { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
-    .hero-badge {
-        background: rgba(255,255,255,0.2);
-        backdrop-filter: blur(4px);
-        border-radius: 50rem;
-        padding: 0.3rem 1rem;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-    .hero-badge-danger { background: rgba(231,74,59,0.5); }
-    .hero-badge-warning { background: rgba(246,194,62,0.5); }
-
     /* ═══ INFO CARD ═══ */
     .info-card { border: none; border-radius: 0.875rem; }
     .info-card .card-header {
@@ -80,7 +47,6 @@
     .maint-stat:last-child { border-bottom: none; }
     .maint-stat-label { font-size: 0.82rem; font-weight: 600; color: #4a5568; }
     .maint-stat-value { font-weight: 700; font-size: 0.9rem; }
-
     .maint-alert {
         border-radius: 0.75rem; padding: 0.75rem 1rem;
         font-size: 0.85rem; margin-top: 0.75rem;
@@ -102,21 +68,13 @@
     .timeline-title { font-weight: 700; font-size: 0.88rem; color: #2d3748; }
     .timeline-date { font-size: 0.78rem; color: #a0aec0; }
     .timeline-desc { font-size: 0.82rem; color: #4a5568; margin-top: 0.15rem; }
-
     .history-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; }
 
     /* ═══ QUICK ACTIONS ═══ */
-    .quick-actions .btn {
-        border-radius: 0.625rem;
-        font-weight: 600;
-        font-size: 0.85rem;
-    }
+    .quick-actions .btn { border-radius: 0.625rem; font-weight: 600; font-size: 0.85rem; }
 
     /* ═══ STATUS BADGE ═══ */
-    .status-pill-sm {
-        padding: 0.25rem 0.65rem; border-radius: 50rem;
-        font-size: 0.72rem; font-weight: 700;
-    }
+    .status-pill-sm { padding: 0.25rem 0.65rem; border-radius: 50rem; font-size: 0.72rem; font-weight: 700; }
 
     /* ═══ MODAL ═══ */
     .modal-styled .modal-content { border: none; border-radius: 1rem; overflow: hidden; }
@@ -127,20 +85,15 @@
     .modal-styled .modal-body { padding: 1.5rem; }
     .modal-styled .modal-footer { border-top: 2px solid #f0f2f5; padding: 1rem 1.5rem; }
     .modal-styled .form-control,
-    .modal-styled .form-select {
-        border: 2px solid #e2e8f0; border-radius: 0.625rem;
-    }
+    .modal-styled .form-select { border: 2px solid #e2e8f0; border-radius: 0.625rem; }
     .modal-styled .form-control:focus,
-    .modal-styled .form-select:focus {
-        border-color: #4e73df; box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
-    }
+    .modal-styled .form-select:focus { border-color: #4e73df; box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15); }
     .modal-styled .field-label {
         font-size: 0.78rem; font-weight: 600; color: #4a5568;
         text-transform: uppercase; letter-spacing: 0.3px;
     }
 
     /* ═══ DARK MODE ═══ */
-    [data-bs-theme="dark"] .vehicle-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .info-card .card-header { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .info-item { border-bottom-color: rgba(255,255,255,0.04); }
     [data-bs-theme="dark"] .info-item:hover { background: rgba(255,255,255,0.02); }
@@ -151,7 +104,6 @@
 
     @media print {
         .no-print { display: none !important; }
-        .vehicle-hero { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
     @media (max-width: 768px) {
         .info-grid { grid-template-columns: 1fr; }
@@ -159,66 +111,19 @@
 </style>
 {% endblock %}
 
-{% load secure_url %}
-{% block content %}
-{% include "partials/_messages.html" %}
+{% block automovel_content %}
 
-<div class="container-fluid py-4 px-lg-5">
-
-    <!-- ═══ HERO ═══ -->
-    <div class="vehicle-hero">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-            <div>
-                <div class="hero-meta mb-2">
-                    <span class="hero-badge">{{ carro.placa }}</span>
-                    <span class="hero-badge">
-                        {% if carro.disponivel %}
-                        <i class="bi bi-check-circle me-1"></i>Disponível
-                        {% else %}
-                        <i class="bi bi-dash-circle me-1"></i>Indisponível
-                        {% endif %}
-                    </span>
-                    {% with status=carro.status_manutencao %}
-                    {% if status.0 == 'vencido' %}
-                    <span class="hero-badge hero-badge-danger">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Manutenção Vencida
-                    </span>
-                    {% elif status.0 == 'proximo' %}
-                    <span class="hero-badge hero-badge-warning">
-                        <i class="bi bi-exclamation-circle me-1"></i>Manutenção Próxima
-                    </span>
-                    {% endif %}
-                    {% endwith %}
-                </div>
-                <h1><i class="bi bi-car-front-fill me-2"></i>{{ carro.marca }} {{ carro.modelo }}</h1>
-                <div class="hero-meta">
-                    <span style="font-size: 0.85rem; opacity: 0.9;">
-                        <i class="bi bi-calendar3 me-1"></i>Ano: {{ carro.ano }}
-                    </span>
-                    <span style="font-size: 0.85rem; opacity: 0.9;">
-                        <i class="bi bi-speedometer me-1"></i>{{ carro.quilometragem }} km
-                    </span>
-                    <span style="font-size: 0.85rem; opacity: 0.9;">
-                        <i class="bi bi-building me-1"></i>{{ carro.filial.nome }}
-                    </span>
-                </div>
-            </div>
-            <div class="d-flex gap-2 flex-wrap no-print">
-                <a href="{% url 'automovel:carro_list' %}" class="btn btn-sm btn-outline-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar
-                </a>
-                {% if perms.automovel.change_automovel or user.is_superuser %}
-                <a href="{% url 'automovel:carro_update' carro.id %}" class="btn btn-sm btn-light fw-semibold">
-                    <i class="bi bi-pencil-square me-1"></i> Editar
-                </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    {# ════════════════════════════════════════════════════════
+       O HERO FOI REMOVIDO DAQUI!
+       Agora quem renderiza a Placa Mercosul + título + botões
+       é o _base_automovel.html automaticamente via {% if carro %}
+       ════════════════════════════════════════════════════════ #}
 
     <div class="row g-4">
+
         <!-- ═══ SIDEBAR ESQUERDA ═══ -->
         <div class="col-lg-4">
+
             <!-- Foto -->
             <div class="card info-card shadow-sm mb-4">
                 <div class="card-header">
@@ -226,13 +131,13 @@
                 </div>
                 <div class="vehicle-photo">
                     {% if carro.foto %}
-                    {% secure_url carro "foto" as foto_url %}
+                        {% secure_url carro "foto" as foto_url %}
                         <img src="{{ foto_url }}" alt="{{ carro.modelo }}" loading="lazy">
                     {% else %}
-                    <div class="vehicle-photo-empty">
-                        <i class="bi bi-car-front"></i>
-                        <span class="small">Sem foto cadastrada</span>
-                    </div>
+                        <div class="vehicle-photo-empty">
+                            <i class="bi bi-car-front"></i>
+                            <span class="small">Sem foto cadastrada</span>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -268,7 +173,6 @@
                         <span class="maint-stat-label">Quilometragem</span>
                         <span class="maint-stat-value">{{ carro.quilometragem }} km</span>
                     </div>
-
                     {% with status=carro.status_manutencao %}
                     {% if status.0 == 'vencido' or status.0 == 'proximo' %}
                     <div class="maint-alert alert alert-{{ status.2 }} mb-0">
@@ -292,11 +196,10 @@
                     </a>
                     {% endif %}
                     {% if perms.automovel.change_automovel or user.is_superuser %}
-                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#agendarManutencaoModal">
+                    <button type="button" class="btn btn-warning btn-sm"
+                            data-bs-toggle="modal" data-bs-target="#agendarManutencaoModal">
                         <i class="bi bi-tools me-2"></i> Agendar Manutenção
                     </button>
-                    {% endif %}
-                    {% if perms.automovel.change_automovel or user.is_superuser %}
                     <a href="{% url 'automovel:carro_update' carro.id %}" class="btn btn-outline-primary btn-sm">
                         <i class="bi bi-pencil-square me-2"></i> Editar Veículo
                     </a>
@@ -307,6 +210,7 @@
 
         <!-- ═══ COLUNA PRINCIPAL ═══ -->
         <div class="col-lg-8">
+
             <!-- Informações -->
             <div class="card info-card shadow-sm mb-4">
                 <div class="card-header">
@@ -356,7 +260,7 @@
                 {% endif %}
             </div>
 
-            <!-- Históricos lado a lado -->
+            <!-- Históricos -->
             <div class="row g-4">
                 <!-- Agendamentos -->
                 <div class="col-md-6">
@@ -366,7 +270,8 @@
                                 <i class="bi bi-calendar3 text-primary"></i> Agendamentos
                             </h5>
                             <a href="{% url 'automovel:agendamento_list' %}?carro={{ carro.id }}"
-                               class="btn btn-sm btn-outline-primary no-print" style="border-radius: 50rem; font-size: 0.72rem;">
+                               class="btn btn-sm btn-outline-primary no-print"
+                               style="border-radius: 50rem; font-size: 0.72rem;">
                                 Ver Todos
                             </a>
                         </div>
@@ -374,7 +279,9 @@
                             {% if agendamentos %}
                             <ul class="timeline">
                                 {% for ag in agendamentos %}
-                                <li class="timeline-item {% if ag.status == 'finalizado' %}timeline-item-success{% elif ag.status == 'em_andamento' %}timeline-item-warning{% endif %}">
+                                <li class="timeline-item
+                                    {% if ag.status == 'finalizado' %}timeline-item-success
+                                    {% elif ag.status == 'em_andamento' %}timeline-item-warning{% endif %}">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
                                             <div class="timeline-title">{{ ag.funcionario }}</div>
@@ -385,19 +292,25 @@
                                         </div>
                                         <div class="text-end">
                                             <span class="badge status-pill-sm
-                                                bg-{% if ag.status == 'agendado' %}info{% elif ag.status == 'em_andamento' %}primary{% elif ag.status == 'finalizado' %}success{% else %}secondary{% endif %}">
+                                                bg-{% if ag.status == 'agendado' %}info
+                                                    {% elif ag.status == 'em_andamento' %}primary
+                                                    {% elif ag.status == 'finalizado' %}success
+                                                    {% else %}secondary{% endif %}">
                                                 {{ ag.get_status_display }}
                                             </span>
                                             <div class="mt-1">
                                                 <a href="{% url 'automovel:agendamento_detail' ag.id %}"
-                                                   class="btn btn-sm btn-outline-primary" style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;">
+                                                   class="btn btn-sm btn-outline-primary"
+                                                   style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
                                                 {% if ag.status != 'finalizado' and ag.status != 'cancelado' %}
-                                                <button type="button" class="btn btn-sm btn-success btn-finalizar-agenda"
+                                                <button type="button"
+                                                        class="btn btn-sm btn-success btn-finalizar-agenda"
                                                         style="border-radius: 50rem; font-size: 0.68rem; padding: 0.15rem 0.6rem;"
                                                         data-bs-toggle="modal" data-bs-target="#finalizarAgendamentoModal"
-                                                        data-id="{{ ag.id }}" data-placa="{{ carro.placa }}"
+                                                        data-id="{{ ag.id }}"
+                                                        data-placa="{{ carro.placa }}"
                                                         data-motorista="{{ ag.funcionario }}">
                                                     <i class="bi bi-check-lg"></i>
                                                 </button>
@@ -478,7 +391,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <!-- ═══ MODALS ═══ -->
 
@@ -632,18 +544,19 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
-{% block extra_js %}
+{% block module_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const today = new Date().toISOString().split('T')[0];
     const dateInput = document.getElementById('data_manutencao');
     if (dateInput) dateInput.min = today;
 
     // Finalizar Agendamento
     document.querySelectorAll('.btn-finalizar-agenda').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             document.getElementById('fin_placa').textContent = this.dataset.placa;
             document.getElementById('fin_motorista').textContent = this.dataset.motorista;
             document.getElementById('formFinalizarAgendamento').action =
@@ -653,7 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Editar Manutenção
     document.querySelectorAll('.btn-editar-manutencao').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             document.getElementById('edit_data_manutencao').value = this.dataset.data;
             document.getElementById('edit_tipo_manutencao').value = this.dataset.tipo;
             document.getElementById('edit_descricao').value = this.dataset.descricao;
@@ -667,7 +580,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-
-
-
-

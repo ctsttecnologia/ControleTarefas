@@ -7,13 +7,20 @@ from .forms import ChangeFilialForm
 from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
 from ferramentas.models import Atividade
 from django.http import HttpResponse
+import os
+import uuid
+from core.magic_utils import get_mime_type
+from io import BytesIO
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+from PIL import Image
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.exceptions import ValidationError
+from core.validators import SecureFileValidator
+import io
 
 
-# AppPermissionMixin, # 1º — Verifica acesso ao módulo
-# SSTPermissionMixin, # 2º — Verifica permissão específica
-# ViewFilialScopedMixin, # 3º — Filtra queryset por filial
-# AtividadeLogMixin, # 4º — Funcionalidade auxiliar
-# ListView, # Último — View genérica do Django
 
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (A SUA ARQUITETURA DE 3 NÍVEIS)
@@ -346,3 +353,172 @@ class AppPermissionMixin(PermissionRequiredMixin):
             }, status=403)
         return super().handle_no_permission()
 
+# ============================================================
+#  MIXIN DE UPLOAD SEGURO PARA MODELS
+# ============================================================
+
+class UploadPath:
+    """
+    Callable serializável para upload_to.
+    O Django consegue serializar classes com deconstruct().
+    """
+    def __init__(self, app_name):
+        self.app_name = app_name
+
+    def __call__(self, instance, filename):
+        ext = os.path.splitext(filename)[1].lower()
+        safe_name = f"{uuid.uuid4().hex}{ext}"
+        return f"{self.app_name}/{safe_name}"
+
+    def deconstruct(self):
+        return (
+            'core.mixins.UploadPath',  # caminho completo da classe
+            (self.app_name,),           # args
+            {},                         # kwargs
+        )
+
+def make_upload_path(app_name):
+    """
+    Retorna um callable serializável para upload_to.
+
+    Uso no model:
+        arquivo = models.FileField(upload_to=make_upload_path('ltcat_anexos'))
+    """
+    return UploadPath(app_name)
+
+
+def _sanitize_image(uploaded_file):
+    """
+    Re-salva a imagem para remover metadados (EXIF) e payloads maliciosos.
+    Retorna o arquivo limpo ou o original se não for imagem.
+    """
+    try:
+        img = Image.open(uploaded_file)
+        img.verify()  # verifica integridade
+        uploaded_file.seek(0)
+        img = Image.open(uploaded_file)  # reabre após verify
+
+        # Remove EXIF/metadados re-salvando
+        output = io.BytesIO()
+        img_format = img.format or "PNG"
+        img.save(output, format=img_format)
+        output.seek(0)
+
+        return InMemoryUploadedFile(
+            file=output,
+            field_name=uploaded_file.field_name if hasattr(uploaded_file, 'field_name') else 'file',
+            name=uploaded_file.name,
+            content_type=uploaded_file.content_type,
+            size=output.getbuffer().nbytes,
+            charset=None,
+        )
+    except Exception:
+        # Se não for imagem válida, retorna o original
+        uploaded_file.seek(0)
+        return uploaded_file
+
+class SecureUploadMixin(models.Model):
+    """
+    Mixin abstrato para upload seguro.
+
+    Uso para models NOVOS que precisam de upload como funcionalidade principal:
+        class MaterialTreinamento(SecureUploadMixin):
+            UPLOAD_APP = 'treinamentos'
+            titulo = models.CharField(max_length=200)
+
+    ⚠️ NÃO use se o model já herda de BaseModel ou outro abstract.
+       Nesses casos, use diretamente nos campos:
+        arquivo = models.FileField(
+            upload_to=make_upload_path('app_name'),
+            validators=[SecureFileValidator('app_name')],
+        )
+    """
+
+    UPLOAD_APP = 'default'
+
+    original_filename = models.CharField(
+        max_length=255,
+        verbose_name='Nome original',
+        editable=False,
+        default='',
+    )
+    file = models.FileField(
+        upload_to='uploads/',
+        verbose_name='Arquivo',
+    )
+    file_size = models.PositiveIntegerField(
+        verbose_name='Tamanho (bytes)',
+        editable=False,
+        default=0,
+    )
+    mime_type = models.CharField(
+        max_length=100,
+        verbose_name='Tipo MIME',
+        editable=False,
+        default='',
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Enviado por',
+        related_name='%(app_label)s_%(class)s_uploads',
+    )
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Data de envio',
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ['-uploaded_at']
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        app = getattr(cls, 'UPLOAD_APP', 'default')
+
+        for field in cls._meta.local_fields:
+            if field.name == 'file' and isinstance(field, models.FileField):
+                field.upload_to = make_upload_path(app)  # ✅ Usa a mesma função pública
+                field.validators = [SecureFileValidator(app)]
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            if not self.original_filename:
+                self.original_filename = os.path.basename(
+                    getattr(self.file, 'name', '') or ''
+                )
+            try:
+                self.file_size = self.file.size
+            except Exception:
+                pass
+
+            # ✅ Usa wrapper
+            if not self.mime_type:
+                try:
+                    self.mime_type = get_mime_type(self.file)
+                except Exception:
+                    self.mime_type = 'application/octet-stream'
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.original_filename} ({self.get_size_display()})"
+
+    def get_size_display(self):
+        if self.file_size < 1024:
+            return f"{self.file_size} B"
+        elif self.file_size < 1024 * 1024:
+            return f"{self.file_size / 1024:.1f} KB"
+        return f"{self.file_size / (1024 * 1024):.1f} MB"
+
+    @property
+    def is_image(self):
+        return self.mime_type.startswith('image/')
+
+    @property
+    def is_pdf(self):
+        return self.mime_type == 'application/pdf'
+
+sanitize_image = _sanitize_image

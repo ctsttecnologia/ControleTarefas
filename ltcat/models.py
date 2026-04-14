@@ -3,27 +3,9 @@
 """
 Models do LTCAT - Laudo Técnico das Condições Ambientais do Trabalho
 Seguindo
-
-ARQUITETURA DE FILIAL:
-  ✅ Models com campo `filial` direto → herdam BaseModel + FilialManager
-  ✅ Models sem campo `filial` → definem `_filial_lookup` + FilialManager
-  ⏭️  Models globais (LTCATSecaoTextoPadrao, TabelaRuidoNR15) → sem filtro
-
-TABELA DE LOOKUPS (models sem campo filial):
-  ┌─────────────────────────────┬───────────────────────────────────────────────────┐
-  │ Model                       │ _filial_lookup                                    │
-  ├─────────────────────────────┼───────────────────────────────────────────────────┤
-  │ RevisaoLTCAT                │ ltcat_documento__filial_id                        │
-  │ FuncaoAnalisada             │ ltcat_documento__filial_id                        │
-  │ ReconhecimentoRisco         │ funcao__ltcat_documento__filial_id                │
-  │ AvaliacaoPericulosidade     │ ltcat_documento__filial_id                        │
-  │ ConclusaoFuncao             │ ltcat_documento__filial_id                        │
-  │ RecomendacaoTecnica         │ ltcat_documento__filial_id                        │
-  │ AnexoLTCAT                  │ ltcat_documento__filial_id                        │
-  │ LTCATSecaoTexto             │ ltcat_documento__filial_id                        │
-  │ LTCATDocumentoResponsavel   │ ltcat_documento__filial_id                        │
-  └─────────────────────────────┴───────────────────────────────────────────────────┘
 """
+
+import os
 
 from django.conf import settings
 from django.db import models
@@ -31,13 +13,16 @@ from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from datetime import date
-
+from core.upload import delete_old_file, safe_delete_file
+from core.validators import SecureFileValidator, SecureImageValidator
 from logradouro.constant import ESTADOS_BRASIL
 from core.managers import FilialManager
 from usuario.models import Filial
 from departamento_pessoal.models import Cargo, Funcionario
 from seguranca_trabalho.models import Funcao
 from cliente.models import Cliente
+from core.mixins import make_upload_path, sanitize_image
+from core.magic_utils import get_mime_type
 
 User = get_user_model()
 
@@ -393,10 +378,11 @@ class ProfissionalResponsavelLTCAT(BaseModel):
     email = models.EmailField('E-mail', blank=True, null=True)
     assinatura_imagem = models.ImageField(
         'Assinatura Digital',
-        upload_to='assinaturas_ltcat/',
+        upload_to=make_upload_path('ltcat_assinatura'),  # UUID + path seguro
         blank=True,
         null=True,
-        help_text='Imagem da assinatura digital do profissional'
+        help_text='Imagem da assinatura digital (JPG, PNG, WEBP — máx. 2MB)',
+        validators=[SecureImageValidator('ltcat_assinatura')],  # Validação completa
     )
 
     class Meta:
@@ -409,13 +395,25 @@ class ProfissionalResponsavelLTCAT(BaseModel):
         return f"{self.nome_completo} - {self.funcao}"
 
     def save(self, *args, **kwargs):
+        delete_old_file(self, 'assinatura_imagem')           # ← adicionar
+
         if self.funcionario and not self.nome_completo:
             self.nome_completo = self.funcionario.nome_completo
-            self.email = self.email or getattr(self.funcionario, 'email', None)
+            self.email    = self.email    or getattr(self.funcionario, 'email',    None)
             self.telefone = self.telefone or getattr(self.funcionario, 'telefone', None)
+
+        if self.assinatura_imagem and hasattr(self.assinatura_imagem.file, 'seek'):
+            try:
+                from core.mixins import _sanitize_image
+                self.assinatura_imagem = _sanitize_image(self.assinatura_imagem)
+            except Exception:
+                pass
+
         super().save(*args, **kwargs)
 
-
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'assinatura_imagem')
+        super().delete(*args, **kwargs)
 # =============================================================================
 # DOCUMENTO LTCAT (Principal)
 # =============================================================================
@@ -725,7 +723,7 @@ class LTCATSecaoTexto(models.Model):
 class LTCATSecaoTextoPadrao(models.Model):
     """
     Textos PADRÃO globais das seções do LTCAT.
-    ⏭️ Model GLOBAL — sem filtro por filial (é template do sistema).
+    Model GLOBAL — sem filtro por filial (é template do sistema).
     """
 
     secao = models.CharField(
@@ -1091,13 +1089,19 @@ class AnexoLTCAT(models.Model):
     titulo = models.CharField('Título', max_length=300)
     descricao = models.TextField('Descrição', blank=True)
     arquivo = models.FileField(
-        'Arquivo', upload_to='ltcat/anexos/%Y/%m/',
-        help_text='PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (máx. 50MB)'
+        'Arquivo',
+        upload_to=make_upload_path('ltcat_anexos'),  # UUID + path seguro
+        validators=[SecureFileValidator('ltcat_anexos')],  # Validação completa
+        help_text='PDF, DOCX, XLSX, JPG, PNG, WEBP (máx. 50MB)',
     )
     nome_arquivo_original = models.CharField(
         'Nome Original do Arquivo', max_length=500, blank=True
     )
     tamanho_arquivo = models.PositiveIntegerField('Tamanho (bytes)', default=0)
+    # Campo novo — MIME type real (opcional mas útil)
+    mime_type = models.CharField(
+        'Tipo MIME', max_length=100, editable=False, default='',
+    )
     incluir_no_pdf = models.BooleanField(
         'Incluir no PDF do LTCAT', default=True,
         help_text='Se marcado, aparecerá listado nos anexos do relatório PDF'
@@ -1159,19 +1163,34 @@ class AnexoLTCAT(models.Model):
             'jpg': 'fa-file-image text-warning',
             'jpeg': 'fa-file-image text-warning',
             'png': 'fa-file-image text-warning',
+            'webp': 'fa-file-image text-warning',
         }
         return icones.get(ext, 'fa-file text-secondary')
 
     def save(self, *args, **kwargs):
-        if self.arquivo and not self.nome_arquivo_original:
-            self.nome_arquivo_original = self.arquivo.name
         if self.arquivo:
+            if not self.nome_arquivo_original:
+                self.nome_arquivo_original = os.path.basename(self.arquivo.name)
+
             try:
                 self.tamanho_arquivo = self.arquivo.size
             except Exception:
                 pass
 
-        # Auto-numerar
+            # ✅ Usa wrapper
+            if not self.mime_type:
+                try:
+                    self.mime_type = get_mime_type(self.arquivo)
+                except Exception:
+                    self.mime_type = 'application/octet-stream'
+
+            if self.mime_type.startswith('image/') and hasattr(self.arquivo.file, 'seek'):
+                try:
+                    self.arquivo = sanitize_image(self.arquivo)
+                except Exception:
+                    pass
+
+        # Auto-numerar (lógica existente mantida)
         if not self.numero_romano:
             existentes = AnexoLTCAT.objects.filter(
                 ltcat_documento=self.ltcat_documento
@@ -1183,23 +1202,27 @@ class AnexoLTCAT(models.Model):
             idx = existentes
             self.numero_romano = numeros[idx] if idx < len(numeros) else str(idx + 1)
 
-        # Auto-ordem
+        # Auto-ordem (lógica existente mantida)
         if self.ordem == 0 and not self.pk:
             max_ordem = AnexoLTCAT.objects.filter(
                 ltcat_documento=self.ltcat_documento
             ).aggregate(models.Max('ordem'))['ordem__max'] or 0
             self.ordem = max_ordem + 1
 
-        # Auto título pelo tipo
+        # Auto título pelo tipo (lógica existente mantida)
         if not self.titulo and self.tipo != 'outro':
             self.titulo = dict(TIPO_ANEXO_LTCAT_CHOICES).get(self.tipo, '')
 
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'arquivo')
+        super().delete(*args, **kwargs)    
+
 
 # =============================================================================
 # TABELA DE REFERÊNCIA — NR-15 ANEXO 1 (Seção 11.1)
-# ⏭️ Model GLOBAL — sem filtro por filial
+# Model GLOBAL — sem filtro por filial
 # =============================================================================
 
 class TabelaRuidoNR15(models.Model):

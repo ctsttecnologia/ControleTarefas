@@ -1,10 +1,10 @@
 ﻿<!-- Página de Visualização de Fotos do Agendamento -->
-{% extends "base.html" %}
+{% extends "automovel/_base_automovel.html" %}
 {% load static %}
 
 {% block title %}Fotos — Agendamento #{{ agendamento.id }}{% endblock %}
 
-{% block extra_css %}
+{% block module_css %}
 <style>
     .photos-hero {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);

@@ -2,6 +2,7 @@
 # tributacao/forms.py
 
 from django import forms
+from core.validators import SecureFileValidator
 from .models import NCM, CFOP, CST, GrupoTributario, TributacaoFederal, TributacaoEstadual
 
 
@@ -23,6 +24,9 @@ class BootstrapFormMixin:
             elif isinstance(field.widget, forms.Textarea):
                 field.widget.attrs["class"] = f"form-control {existing}".strip()
                 field.widget.attrs.setdefault("rows", 3)
+            elif isinstance(field.widget, forms.FileInput):
+                # FileInput e ClearableFileInput recebem form-control também
+                field.widget.attrs["class"] = f"form-control {existing}".strip()
             else:
                 field.widget.attrs["class"] = f"form-control {existing}".strip()
 
@@ -33,10 +37,23 @@ class BootstrapFormMixin:
 class NCMForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = NCM
-        fields = ["codigo", "descricao", "ex_tipi", "aliquota_ipi_padrao", "ativo"]
+        fields = [
+            "codigo", "descricao", "ex_tipi",
+            "aliquota_ipi_padrao",
+            "arquivo_xml",   # ← campo de upload seguro
+            "ativo",
+        ]
         widgets = {
             "codigo": forms.TextInput(attrs={"placeholder": "0000.00.00"}),
         }
+
+    def clean_arquivo_xml(self):
+        arquivo = self.cleaned_data.get("arquivo_xml")
+        # Só valida se um novo arquivo foi enviado
+        # (arquivo pode ser False = "limpar", ou None = sem alteração)
+        if arquivo and hasattr(arquivo, "name"):
+            SecureFileValidator("tributacao")(arquivo)
+        return arquivo
 
 
 # ══════════════════════════════════════════════════════
@@ -82,15 +99,23 @@ class TributacaoFederalForm(BootstrapFormMixin, forms.ModelForm):
             "cst_ipi", "aliquota_ipi",
             "cst_pis", "aliquota_pis", "gera_credito_pis",
             "cst_cofins", "aliquota_cofins", "gera_credito_cofins",
+            "documento_fiscal",  # ← campo de upload seguro
             "observacoes",
         ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Filtrar CSTs por tipo
-        self.fields["cst_ipi"].queryset = CST.objects.filter(tipo__startswith="IPI")
-        self.fields["cst_pis"].queryset = CST.objects.filter(tipo="PIS")
+        # Filtra CSTs por tipo
+        self.fields["cst_ipi"].queryset    = CST.objects.filter(tipo__startswith="IPI")
+        self.fields["cst_pis"].queryset    = CST.objects.filter(tipo="PIS")
         self.fields["cst_cofins"].queryset = CST.objects.filter(tipo="COFINS")
+
+    def clean_documento_fiscal(self):
+        arquivo = self.cleaned_data.get("documento_fiscal")
+        # Só valida se um novo arquivo foi enviado
+        if arquivo and hasattr(arquivo, "name"):
+            SecureFileValidator("tributacao")(arquivo)
+        return arquivo
 
 
 # ══════════════════════════════════════════════════════
@@ -110,6 +135,20 @@ class TributacaoEstadualForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["cst_icms"].queryset = CST.objects.filter(tipo="ICMS")
+
+    def clean(self):
+        cleaned = super().clean()
+        tem_st = cleaned.get("tem_st")
+        mva    = cleaned.get("mva")
+
+        # Alerta coerência: MVA preenchido sem ST ativo
+        if mva and mva > 0 and not tem_st:
+            self.add_error(
+                "tem_st",
+                'MVA preenchido mas "Tem ICMS-ST?" está desmarcado.'
+            )
+
+        return cleaned
 
 
 # ══════════════════════════════════════════════════════

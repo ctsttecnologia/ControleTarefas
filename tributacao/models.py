@@ -4,6 +4,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from core.upload import UploadPath, delete_old_file, safe_delete_file
+from core.validators import SecureFileValidator
 
 # ══════════════════════════════════════════════════════
 # CONSTANTES
@@ -35,13 +37,9 @@ def _pct_field(verbose, default=0, help_text=""):
 
 
 # ══════════════════════════════════════════════════════
-# 1. NCM — Nomenclatura Comum do Mercosul
+# 1. NCM
 # ══════════════════════════════════════════════════════
 class NCM(models.Model):
-    """
-    Tabela federal de classificação fiscal de mercadorias.
-    Cada produto do suprimentos aponta para um NCM.
-    """
     codigo = models.CharField(
         "Código NCM", max_length=10, unique=True,
         help_text="Formato: 0000.00.00 — Ex: 8544.49.00"
@@ -49,12 +47,22 @@ class NCM(models.Model):
     descricao = models.CharField("Descrição", max_length=500)
     ex_tipi = models.CharField(
         "Exceção TIPI", max_length=3, blank=True, default="",
-        help_text="Exceção da TIPI, se houver"
     )
     aliquota_ipi_padrao = _pct_field(
         "Alíquota IPI padrão (%)",
-        help_text="Alíquota IPI da TIPI — pode ser sobrescrita no Grupo Tributário"
+        help_text="Alíquota IPI da TIPI"
     )
+
+    # ── Upload seguro: tabela NCM em XML (ex: importação da RFB) ──
+    arquivo_xml = models.FileField(
+        "Arquivo XML (RFB)",
+        upload_to=UploadPath('tributacao'),
+        blank=True,
+        null=True,
+        validators=[SecureFileValidator('tributacao')],
+        help_text="XML da Receita Federal com a tabela NCM, se importado manualmente.",
+    )
+
     ativo = models.BooleanField("Ativo", default=True)
 
     class Meta:
@@ -65,14 +73,19 @@ class NCM(models.Model):
     def __str__(self):
         return f"{self.codigo} — {self.descricao[:60]}"
 
+    def save(self, *args, **kwargs):
+        delete_old_file(self, 'arquivo_xml')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'arquivo_xml')
+        super().delete(*args, **kwargs)
+
 
 # ══════════════════════════════════════════════════════
-# 2. CFOP — Código Fiscal de Operações e Prestações
+# 2. CFOP
 # ══════════════════════════════════════════════════════
 class CFOP(models.Model):
-    """
-    Define a natureza da operação fiscal (entrada/saída, estadual/interestadual).
-    """
     TIPO_CHOICES = [
         ("E", "Entrada"),
         ("S", "Saída"),
@@ -81,10 +94,7 @@ class CFOP(models.Model):
     codigo = models.CharField("Código CFOP", max_length=4, unique=True)
     descricao = models.CharField("Descrição", max_length=400)
     tipo = models.CharField("Tipo", max_length=1, choices=TIPO_CHOICES, default="E")
-    aplicacao = models.TextField(
-        "Aplicação", blank=True, default="",
-        help_text="Quando usar este CFOP"
-    )
+    aplicacao = models.TextField("Aplicação", blank=True, default="")
     ativo = models.BooleanField("Ativo", default=True)
 
     class Meta:
@@ -97,22 +107,17 @@ class CFOP(models.Model):
 
     @property
     def is_interestadual(self):
-        """CFOPs 2.xxx e 6.xxx = interestadual."""
         return self.codigo[0] in ("2", "6")
 
     @property
     def is_importacao(self):
-        """CFOPs 3.xxx e 7.xxx = importação/exportação."""
         return self.codigo[0] in ("3", "7")
 
 
 # ══════════════════════════════════════════════════════
-# 3. CST — Código de Situação Tributária
+# 3. CST
 # ══════════════════════════════════════════════════════
 class CST(models.Model):
-    """
-    Tabela unificada de CSTs para todos os tributos.
-    """
     TIPO_CHOICES = [
         ("ICMS", "CST ICMS — Regime Normal"),
         ("IPI_E", "CST IPI — Entrada"),
@@ -136,42 +141,25 @@ class CST(models.Model):
 
 
 # ══════════════════════════════════════════════════════
-# 4. GRUPO TRIBUTÁRIO — O perfil fiscal
+# 4. GRUPO TRIBUTÁRIO
 # ══════════════════════════════════════════════════════
 class GrupoTributario(models.Model):
-    """
-    Agrupa todas as regras fiscais de um tipo de material.
-    O Produto do suprimentos aponta para cá.
-
-    Exemplos:
-        - "Material Elétrico — Entrada Interna SP"
-        - "Material Hidráulico — Entrada Interestadual MG→SP"
-        - "Material de Consumo Genérico"
-    """
     NATUREZA_CHOICES = [
         ("E", "Entrada (Compra)"),
         ("S", "Saída (Venda/Remessa)"),
     ]
 
-    nome = models.CharField(
-        "Nome do Grupo", max_length=200,
-        help_text="Ex: Material Elétrico — Entrada SP"
-    )
+    nome = models.CharField("Nome do Grupo", max_length=200)
     descricao = models.TextField("Descrição", blank=True, default="")
     natureza = models.CharField(
-        "Natureza", max_length=1,
-        choices=NATUREZA_CHOICES, default="E"
+        "Natureza", max_length=1, choices=NATUREZA_CHOICES, default="E"
     )
     cfop = models.ForeignKey(
-        CFOP, on_delete=models.PROTECT,
-        verbose_name="CFOP padrão",
-        help_text="CFOP padrão para este grupo"
+        CFOP, on_delete=models.PROTECT, verbose_name="CFOP padrão"
     )
     ncm = models.ForeignKey(
         NCM, on_delete=models.SET_NULL,
-        verbose_name="NCM padrão",
-        blank=True, null=True,
-        help_text="Deixe vazio se o grupo for genérico"
+        verbose_name="NCM padrão", blank=True, null=True,
     )
     filial = models.ForeignKey(
         "usuario.Filial",
@@ -192,11 +180,9 @@ class GrupoTributario(models.Model):
         return self.nome
 
     def get_tributacao_federal(self):
-        """Retorna a tributação federal vinculada (OneToOne)."""
         return getattr(self, "tributacao_federal", None)
 
     def get_tributacao_estadual(self, uf_origem, uf_destino):
-        """Retorna a tributação estadual para o par de UFs."""
         return self.tributacoes_estaduais.filter(
             uf_origem=uf_origem,
             uf_destino=uf_destino,
@@ -204,10 +190,6 @@ class GrupoTributario(models.Model):
         ).first()
 
     def calcular_impostos(self, valor_produtos, quantidade=1, uf_origem='SP', uf_destino='SP'):
-        """
-        Calcula todos os impostos com base nas tributações vinculadas.
-        Retorna dict estruturado com valores e flags.
-        """
         from decimal import Decimal, ROUND_HALF_UP
 
         valor = Decimal(str(valor_produtos))
@@ -217,73 +199,56 @@ class GrupoTributario(models.Model):
         resultado = {
             'valor_produtos': valor,
             'sem_grupo': False,
-            'icms': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False, 'base': ZERO},
-            'icms_st': {'aliquota': ZERO, 'valor': ZERO, 'mva': ZERO},
-            'fcp': {'aliquota': ZERO, 'valor': ZERO},
-            'ipi': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
-            'pis': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
-            'cofins': {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
-            'total_impostos': ZERO,
-            'total_creditos': ZERO,
-            'total_nfe': ZERO,
-            'custo_real': ZERO,
-            'custo_unitario': ZERO,
+            'icms':     {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False, 'base': ZERO},
+            'icms_st':  {'aliquota': ZERO, 'valor': ZERO, 'mva': ZERO},
+            'fcp':      {'aliquota': ZERO, 'valor': ZERO},
+            'ipi':      {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
+            'pis':      {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
+            'cofins':   {'aliquota': ZERO, 'valor': ZERO, 'recuperavel': False},
+            'total_impostos':      ZERO,
+            'total_creditos':      ZERO,
+            'total_nfe':           ZERO,
+            'custo_real':          ZERO,
+            'custo_unitario':      ZERO,
             'percentual_economia': ZERO,
         }
 
-        # ════════════════════════════════════════════
-        # FEDERAL — OneToOneField → acesso direto
-        # ════════════════════════════════════════════
+        # ── Federal ──────────────────────────────────
         try:
-            federal = self.tributacao_federal  # OneToOne: retorna objeto ou raise
+            federal = self.tributacao_federal
         except TributacaoFederal.DoesNotExist:
             federal = None
 
         if federal:
-            # IPI
-            ipi_aliq = federal.aliquota_ipi or ZERO
+            ipi_aliq  = federal.aliquota_ipi or ZERO
             ipi_valor = (valor * ipi_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            # IPI é recuperável se empresa é indústria (simplificação: não recuperável por padrão)
-            resultado['ipi'] = {
-                'aliquota': ipi_aliq,
-                'valor': ipi_valor,
-                'recuperavel': False,
-            }
+            resultado['ipi'] = {'aliquota': ipi_aliq, 'valor': ipi_valor, 'recuperavel': False}
 
-            # PIS
-            pis_aliq = federal.aliquota_pis or ZERO
+            pis_aliq  = federal.aliquota_pis or ZERO
             pis_valor = (valor * pis_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            pis_recuperavel = federal.gera_credito_pis
             resultado['pis'] = {
                 'aliquota': pis_aliq,
                 'valor': pis_valor,
-                'recuperavel': pis_recuperavel,
+                'recuperavel': federal.gera_credito_pis,
             }
 
-            # COFINS
-            cofins_aliq = federal.aliquota_cofins or ZERO
+            cofins_aliq  = federal.aliquota_cofins or ZERO
             cofins_valor = (valor * cofins_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            cofins_recuperavel = federal.gera_credito_cofins
             resultado['cofins'] = {
                 'aliquota': cofins_aliq,
                 'valor': cofins_valor,
-                'recuperavel': cofins_recuperavel,
+                'recuperavel': federal.gera_credito_cofins,
             }
 
-        # ════════════════════════════════════════════
-        # ESTADUAL — ForeignKey → queryset filtrado
-        # ════════════════════════════════════════════
+        # ── Estadual ─────────────────────────────────
         estadual = self.tributacoes_estaduais.filter(
-            uf_origem=uf_origem,
-            uf_destino=uf_destino,
-            ativo=True,
+            uf_origem=uf_origem, uf_destino=uf_destino, ativo=True,
         ).first()
 
         if estadual:
-            # ICMS
-            icms_aliq = estadual.aliquota_icms or ZERO
-            reducao = estadual.reducao_base_icms or ZERO
-            base_icms = valor * (1 - reducao / 100)
+            icms_aliq  = estadual.aliquota_icms or ZERO
+            reducao    = estadual.reducao_base_icms or ZERO
+            base_icms  = valor * (1 - reducao / 100)
             icms_valor = (base_icms * icms_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             resultado['icms'] = {
                 'aliquota': icms_aliq,
@@ -292,78 +257,62 @@ class GrupoTributario(models.Model):
                 'base': base_icms.quantize(Decimal('0.01')),
             }
 
-            # ICMS-ST
             if estadual.tem_st:
-                mva = estadual.mva or ZERO
+                mva          = estadual.mva or ZERO
                 icms_st_aliq = estadual.aliquota_icms_st or ZERO
-                base_st = valor * (1 + mva / 100)
-                icms_st_valor = (base_st * icms_st_aliq / 100 - icms_valor).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                if icms_st_valor < ZERO:
-                    icms_st_valor = ZERO
+                base_st      = valor * (1 + mva / 100)
+                icms_st_val  = (base_st * icms_st_aliq / 100 - icms_valor).quantize(
+                    Decimal('0.01'), rounding=ROUND_HALF_UP
+                )
                 resultado['icms_st'] = {
                     'aliquota': icms_st_aliq,
-                    'valor': icms_st_valor,
+                    'valor': max(icms_st_val, ZERO),
                     'mva': mva,
                 }
 
-            # FCP
-            fcp_aliq = estadual.aliquota_fcp or ZERO
+            fcp_aliq  = estadual.aliquota_fcp or ZERO
             fcp_valor = (valor * fcp_aliq / 100).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            resultado['fcp'] = {
-                'aliquota': fcp_aliq,
-                'valor': fcp_valor,
-            }
+            resultado['fcp'] = {'aliquota': fcp_aliq, 'valor': fcp_valor}
 
-        # ════════════════════════════════════════════
-        # TOTAIS
-        # ════════════════════════════════════════════
-        total_impostos = (
-            resultado['ipi']['valor']
-            + resultado['pis']['valor']
-            + resultado['cofins']['valor']
-            + resultado['icms']['valor']
-            + resultado['icms_st']['valor']
-            + resultado['fcp']['valor']
+        # ── Totais ────────────────────────────────────
+        total_impostos = sum([
+            resultado['ipi']['valor'],
+            resultado['pis']['valor'],
+            resultado['cofins']['valor'],
+            resultado['icms']['valor'],
+            resultado['icms_st']['valor'],
+            resultado['fcp']['valor'],
+        ])
+
+        total_creditos = sum(
+            resultado[t]['valor']
+            for t in ('icms', 'ipi', 'pis', 'cofins')
+            if resultado[t]['recuperavel']
         )
 
-        total_creditos = ZERO
-        if resultado['icms']['recuperavel']:
-            total_creditos += resultado['icms']['valor']
-        if resultado['ipi']['recuperavel']:
-            total_creditos += resultado['ipi']['valor']
-        if resultado['pis']['recuperavel']:
-            total_creditos += resultado['pis']['valor']
-        if resultado['cofins']['recuperavel']:
-            total_creditos += resultado['cofins']['valor']
-
-        total_nfe = valor + resultado['ipi']['valor'] + resultado['icms_st']['valor'] + resultado['fcp']['valor']
+        total_nfe  = valor + resultado['ipi']['valor'] + resultado['icms_st']['valor'] + resultado['fcp']['valor']
         custo_real = (total_nfe - total_creditos).quantize(Decimal('0.01'))
         custo_unitario = (custo_real / qtd).quantize(Decimal('0.01'))
-
-        percentual_economia = ZERO
-        if total_nfe > 0:
-            percentual_economia = (total_creditos / total_nfe * 100).quantize(Decimal('0.01'))
+        percentual_economia = (
+            (total_creditos / total_nfe * 100).quantize(Decimal('0.01'))
+            if total_nfe > 0 else ZERO
+        )
 
         resultado.update({
-            'total_impostos': total_impostos,
-            'total_creditos': total_creditos,
-            'total_nfe': total_nfe,
-            'custo_real': custo_real,
-            'custo_unitario': custo_unitario,
+            'total_impostos':      total_impostos,
+            'total_creditos':      total_creditos,
+            'total_nfe':           total_nfe,
+            'custo_real':          custo_real,
+            'custo_unitario':      custo_unitario,
             'percentual_economia': percentual_economia,
         })
-
         return resultado
 
 
 # ══════════════════════════════════════════════════════
-# 5. TRIBUTAÇÃO FEDERAL — IPI, PIS, COFINS
+# 5. TRIBUTAÇÃO FEDERAL
 # ══════════════════════════════════════════════════════
 class TributacaoFederal(models.Model):
-    """
-    Tributos federais vinculados a um Grupo Tributário.
-    Relação 1:1 com GrupoTributario.
-    """
     grupo = models.OneToOneField(
         GrupoTributario,
         on_delete=models.CASCADE,
@@ -371,45 +320,39 @@ class TributacaoFederal(models.Model):
         verbose_name="Grupo Tributário"
     )
 
-    # ── IPI ──
     cst_ipi = models.ForeignKey(
-        CST, on_delete=models.PROTECT,
-        verbose_name="CST IPI",
-        related_name="+",
-        blank=True, null=True,
+        CST, on_delete=models.PROTECT, verbose_name="CST IPI",
+        related_name="+", blank=True, null=True,
         limit_choices_to={"tipo__startswith": "IPI"}
     )
     aliquota_ipi = _pct_field("Alíquota IPI (%)")
 
-    # ── PIS (não-cumulativo → Lucro Real) ──
     cst_pis = models.ForeignKey(
-        CST, on_delete=models.PROTECT,
-        verbose_name="CST PIS",
-        related_name="+",
-        blank=True, null=True,
+        CST, on_delete=models.PROTECT, verbose_name="CST PIS",
+        related_name="+", blank=True, null=True,
         limit_choices_to={"tipo": "PIS"}
     )
-    aliquota_pis = _pct_field("Alíquota PIS (%)", default=1.65)
-    gera_credito_pis = models.BooleanField(
-        "Gera crédito de PIS?", default=True,
-        help_text="Lucro Real não-cumulativo: insumos para serviço geram crédito"
-    )
+    aliquota_pis        = _pct_field("Alíquota PIS (%)", default=1.65)
+    gera_credito_pis    = models.BooleanField("Gera crédito de PIS?", default=True)
 
-    # ── COFINS (não-cumulativo → Lucro Real) ──
     cst_cofins = models.ForeignKey(
-        CST, on_delete=models.PROTECT,
-        verbose_name="CST COFINS",
-        related_name="+",
-        blank=True, null=True,
+        CST, on_delete=models.PROTECT, verbose_name="CST COFINS",
+        related_name="+", blank=True, null=True,
         limit_choices_to={"tipo": "COFINS"}
     )
-    aliquota_cofins = _pct_field("Alíquota COFINS (%)", default=7.60)
-    gera_credito_cofins = models.BooleanField(
-        "Gera crédito de COFINS?", default=True,
-        help_text="Lucro Real não-cumulativo: insumos para serviço geram crédito"
+    aliquota_cofins     = _pct_field("Alíquota COFINS (%)", default=7.60)
+    gera_credito_cofins = models.BooleanField("Gera crédito de COFINS?", default=True)
+
+    # ── Upload seguro: laudo / memorando fiscal em PDF ──
+    documento_fiscal = models.FileField(
+        "Documento Fiscal (PDF)",
+        upload_to=UploadPath('tributacao'),
+        blank=True,
+        null=True,
+        validators=[SecureFileValidator('tributacao')],
+        help_text="Laudo, parecer ou memorando fiscal em PDF ou XML.",
     )
 
-    # ── Observações ──
     observacoes = models.TextField("Observações", blank=True, default="")
 
     class Meta:
@@ -421,7 +364,6 @@ class TributacaoFederal(models.Model):
 
     @property
     def total_creditos_percentual(self):
-        """Soma das alíquotas que geram crédito."""
         total = 0
         if self.gera_credito_pis:
             total += self.aliquota_pis
@@ -429,69 +371,43 @@ class TributacaoFederal(models.Model):
             total += self.aliquota_cofins
         return total
 
+    def save(self, *args, **kwargs):
+        delete_old_file(self, 'documento_fiscal')
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'documento_fiscal')
+        super().delete(*args, **kwargs)
+
 
 # ══════════════════════════════════════════════════════
-# 6. TRIBUTAÇÃO ESTADUAL — ICMS (por par de UF)
+# 6. TRIBUTAÇÃO ESTADUAL
 # ══════════════════════════════════════════════════════
 class TributacaoEstadual(models.Model):
-    """
-    Tributação ICMS para cada combinação UF origem → UF destino.
-    Um GrupoTributario pode ter VÁRIAS tributações estaduais
-    (uma por par de UFs onde a empresa opera).
-    """
     grupo = models.ForeignKey(
         GrupoTributario,
         on_delete=models.CASCADE,
         related_name="tributacoes_estaduais",
         verbose_name="Grupo Tributário"
     )
-    uf_origem = models.CharField(
-        "UF Origem", max_length=2, choices=UF_CHOICES,
-        help_text="Estado do fornecedor"
-    )
-    uf_destino = models.CharField(
-        "UF Destino", max_length=2, choices=UF_CHOICES,
-        help_text="Estado da filial (destino da compra)"
-    )
+    uf_origem  = models.CharField("UF Origem",  max_length=2, choices=UF_CHOICES)
+    uf_destino = models.CharField("UF Destino", max_length=2, choices=UF_CHOICES)
 
-    # ── ICMS ──
     cst_icms = models.ForeignKey(
-        CST, on_delete=models.PROTECT,
-        verbose_name="CST ICMS",
-        related_name="+",
-        blank=True, null=True,
+        CST, on_delete=models.PROTECT, verbose_name="CST ICMS",
+        related_name="+", blank=True, null=True,
         limit_choices_to={"tipo": "ICMS"}
     )
-    aliquota_icms = _pct_field(
-        "Alíquota ICMS (%)",
-        help_text="Interna: 18% (SP), 17% (maioria). Interestadual: 7% ou 12%"
-    )
-    reducao_base_icms = _pct_field(
-        "Redução de Base ICMS (%)",
-        help_text="Alguns produtos têm base de cálculo reduzida"
-    )
-    permite_credito = models.BooleanField(
-        "Permite crédito de ICMS?", default=False,
-        help_text="Material para uso/consumo em serviço: geralmente NÃO permite crédito. "
-                  "Verifique a legislação do estado."
-    )
+    aliquota_icms      = _pct_field("Alíquota ICMS (%)")
+    reducao_base_icms  = _pct_field("Redução de Base ICMS (%)")
+    permite_credito    = models.BooleanField("Permite crédito de ICMS?", default=False)
 
-    # ── ICMS-ST (Substituição Tributária) ──
-    tem_st = models.BooleanField("Tem ICMS-ST?", default=False)
-    mva = _pct_field(
-        "MVA (%)",
-        help_text="Margem de Valor Agregado para ST"
-    )
+    tem_st         = models.BooleanField("Tem ICMS-ST?", default=False)
+    mva            = _pct_field("MVA (%)")
     aliquota_icms_st = _pct_field("Alíquota ICMS-ST (%)")
+    aliquota_fcp   = _pct_field("Alíquota FCP (%)")
 
-    # ── FCP (Fundo de Combate à Pobreza) ──
-    aliquota_fcp = _pct_field(
-        "Alíquota FCP (%)",
-        help_text="Fundo de Combate à Pobreza — varia por UF (0% a 4%)"
-    )
-
-    # ── Controle ──
-    ativo = models.BooleanField("Ativo", default=True)
+    ativo       = models.BooleanField("Ativo", default=True)
     observacoes = models.TextField("Observações", blank=True, default="")
 
     class Meta:

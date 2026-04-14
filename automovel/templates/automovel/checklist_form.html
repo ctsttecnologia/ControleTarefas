@@ -1,10 +1,10 @@
 <!-- Formulário para Criar ou Editar Checklist de Vistoria -->
-{% extends "base.html" %}
+{% extends "automovel/_base_automovel.html" %}
 {% load static crispy_forms_tags %}
 
 {% block title %}Checklist — {{ agendamento.carro.placa }}{% endblock %}
 
-{% block extra_css %}
+{% block module_css %}
 <style>
     .form-hero {
         background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
@@ -59,9 +59,7 @@
 </style>
 {% endblock %}
 
-{% block content %}
-{% include "partials/_messages.html" %}
-
+{% block automovel_content %}
 <div class="container-fluid py-4 px-lg-5">
 
     <div class="form-hero">

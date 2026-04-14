@@ -100,7 +100,7 @@
                 <!-- Card Anexos -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0"><i class="fas fa-paperclip me-2"></i>Anexos (opcional)</h5>
+                        <h5 class="mb-0"><i class="bi bi-paperclip me-2"></i>Anexos (opcional)</h5>
                     </div>
                     <div class="card-body">
                         <p class="text-muted small mb-3">
@@ -113,7 +113,7 @@
                             </div>
                         </div>
                         <button type="button" id="btn-add-anexo" class="btn btn-sm btn-outline-secondary mt-2">
-                            <i class="fas fa-plus me-1"></i>Mais um arquivo
+                            <i class="bi bi-plus me-1"></i>Mais um arquivo
                         </button>
                     </div>
                 </div>
@@ -121,11 +121,11 @@
                 <!-- Botões -->
                 <div class="d-flex justify-content-between">
                     <a href="{% url 'suprimentos:pedido_lista' %}" class="btn btn-light">
-                        <i class="fas fa-times me-1"></i>Cancelar
+                        <i class="bi bi-arrow-left me-1"></i> CANCELAR
                     </a>
                     {% if perms.suprimentos.add_pedido or user.is.superuser %}
                     <button type="submit" class="btn btn-primary btn-lg">
-                        <i class="fas fa-save me-2"></i>Criar Pedido (Rascunho)
+                        <i class="bi bi-save me-2"></i>Criar Pedido (Rascunho)
                     </button>
                     {% endif %}
                 </div>

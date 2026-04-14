@@ -8,14 +8,15 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import FileExtensionValidator, MinValueValidator
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from core.managers import FilialManager
+from core.upload import UploadPath, delete_old_file, safe_delete_file
+from core.validators import SecureFileValidator
 from usuario.models import Filial
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ User = settings.AUTH_USER_MODEL
 class Tarefas(models.Model):
 
     PRIORIDADE_CHOICES = [
-        ('alta', _('Alta')),
+        ('alta',  _('Alta')),
         ('media', _('Média')),
         ('baixa', _('Baixa')),
     ]
@@ -36,43 +37,41 @@ class Tarefas(models.Model):
     STATUS_CHOICES = [
         ('concluida', _('Concluída')),
         ('andamento', _('Andamento')),
-        ('pendente', _('Pendente')),
-        ('pausada', _('Pausada')),
-        ('atrasada', _('Atrasada')),
+        ('pendente',  _('Pendente')),
+        ('pausada',   _('Pausada')),
+        ('atrasada',  _('Atrasada')),
         ('cancelada', _('Cancelada')),
     ]
 
     FREQUENCIA_CHOICES = [
-        ('diaria', _('Diária')),
-        ('semanal', _('Semanal')),
+        ('diaria',    _('Diária')),
+        ('semanal',   _('Semanal')),
         ('quinzenal', _('Quinzenal')),
-        ('mensal', _('Mensal')),
-        ('anual', _('Anual')),
+        ('mensal',    _('Mensal')),
+        ('anual',     _('Anual')),
     ]
 
     # --- Campos Principais ---
-    titulo = models.CharField(_('Título'), max_length=100)
+    titulo    = models.CharField(_('Título'), max_length=100)
     descricao = models.TextField(_('Descrição'), blank=True, null=True)
-    status = models.CharField(
-        _('Status'), max_length=20,
-        choices=STATUS_CHOICES, default='pendente'
+    status    = models.CharField(
+        _('Status'), max_length=20, choices=STATUS_CHOICES, default='pendente'
     )
     prioridade = models.CharField(
-        _('Prioridade'), max_length=10,
-        choices=PRIORIDADE_CHOICES, default='baixa'  # ✅ Corrigido: era 'baixo'
+        _('Prioridade'), max_length=10, choices=PRIORIDADE_CHOICES, default='baixa'
     )
     projeto = models.CharField(_('Projeto'), max_length=40, blank=True, null=True)
 
     # --- Datas ---
-    data_criacao = models.DateTimeField(_('Data de Criação'), auto_now_add=True)
+    data_criacao     = models.DateTimeField(_('Data de Criação'), auto_now_add=True)
     data_atualizacao = models.DateTimeField(_('Última Atualização'), auto_now=True)
-    data_inicio = models.DateTimeField(_('Data de Início'), blank=True, null=True)
-    prazo = models.DateTimeField(_('Prazo Final'), blank=True, null=True)
-    concluida_em = models.DateTimeField(_('Concluída em'), blank=True, null=True)
+    data_inicio      = models.DateTimeField(_('Data de Início'), blank=True, null=True)
+    prazo            = models.DateTimeField(_('Prazo Final'), blank=True, null=True)
+    concluida_em     = models.DateTimeField(_('Concluída em'), blank=True, null=True)
 
     # --- Duração ---
     duracao_prevista = models.DurationField(_('Duração Prevista'), null=True, blank=True)
-    tempo_gasto = models.DurationField(_('Tempo Gasto'), null=True, blank=True)
+    tempo_gasto      = models.DurationField(_('Tempo Gasto'), null=True, blank=True)
 
     # --- Lembrete ---
     dias_lembrete = models.PositiveSmallIntegerField(
@@ -82,8 +81,7 @@ class Tarefas(models.Model):
         help_text=_('Deixe em branco se não desejar um lembrete automático.')
     )
     data_lembrete = models.DateTimeField(
-        _('Data de Lembrete'),
-        blank=True, null=True, editable=False
+        _('Data de Lembrete'), blank=True, null=True, editable=False
     )
 
     # --- Relacionamentos de Usuários ---
@@ -104,11 +102,10 @@ class Tarefas(models.Model):
     # --- Recorrência ---
     recorrente = models.BooleanField(_('É uma tarefa recorrente?'), default=False)
     frequencia_recorrencia = models.CharField(
-        _('Frequência'), max_length=10,
-        choices=FREQUENCIA_CHOICES, blank=True, null=True
+        _('Frequência'), max_length=10, choices=FREQUENCIA_CHOICES, blank=True, null=True
     )
-    data_fim_recorrencia = models.DateField(_('Repetir até'), blank=True, null=True)
-    tarefa_recorrencia_pai = models.ForeignKey(
+    data_fim_recorrencia    = models.DateField(_('Repetir até'), blank=True, null=True)
+    tarefa_recorrencia_pai  = models.ForeignKey(
         'self', on_delete=models.SET_NULL,
         null=True, blank=True,
         related_name='recorrencias_filhas',
@@ -126,8 +123,7 @@ class Tarefas(models.Model):
     # --- Relacionamentos Externos ---
     filial = models.ForeignKey(
         Filial, on_delete=models.PROTECT,
-        related_name='tarefas', verbose_name=_('Filial'),
-        null=True
+        related_name='tarefas', verbose_name=_('Filial'), null=True
     )
     ata_reuniao = models.ForeignKey(
         'ata_reuniao.ataReuniao',
@@ -141,7 +137,7 @@ class Tarefas(models.Model):
     objects = FilialManager()
 
     class Meta:
-        verbose_name = _('Tarefa')
+        verbose_name        = _('Tarefa')
         verbose_name_plural = _('Tarefas')
         ordering = ['-prioridade', 'prazo']
         indexes = [
@@ -151,9 +147,9 @@ class Tarefas(models.Model):
             models.Index(fields=['responsavel', 'status']),
         ]
         permissions = [
-            ('view_dashboard', 'Pode ver o dashboard de tarefas'),
-            ('view_relatorio', 'Pode ver relatórios de tarefas'),
-            ('view_kanban', 'Pode ver o quadro Kanban'),
+            ('view_dashboard',  'Pode ver o dashboard de tarefas'),
+            ('view_relatorio',  'Pode ver relatórios de tarefas'),
+            ('view_kanban',     'Pode ver o quadro Kanban'),
             ('view_calendario', 'Pode ver o calendário de tarefas'),
         ]
 
@@ -172,10 +168,9 @@ class Tarefas(models.Model):
 
     @property
     def progresso(self):
-        """Calcula o progresso com base nas subtarefas."""
         subtarefas = self.subtarefas.all()
         if subtarefas.exists():
-            total = subtarefas.count()
+            total     = subtarefas.count()
             concluidas = subtarefas.filter(status='concluida').count()
             return int((concluidas / total) * 100) if total > 0 else 0
         return 100 if self.status == 'concluida' else 0
@@ -183,9 +178,8 @@ class Tarefas(models.Model):
     # --- Save ---
     def save(self, *args, **kwargs):
         usuario = getattr(self, '_user', None)
-        is_new = self.pk is None
+        is_new  = self.pk is None
 
-        # Captura status antigo
         old_status = None
         if not is_new:
             try:
@@ -195,7 +189,6 @@ class Tarefas(models.Model):
             except Exception:
                 pass
 
-        # ── Registrar TODAS as alterações ANTES do save (exceto status) ──
         if not is_new and usuario:
             from tarefas.services import registrar_alteracoes_tarefa
             registrar_alteracoes_tarefa(self, usuario)
@@ -220,15 +213,12 @@ class Tarefas(models.Model):
         elif self.status != 'concluida':
             self.concluida_em = None
 
-        # ✅ Salva
         super().save(*args, **kwargs)
 
-        # ── Registrar criação ──
         if is_new and usuario:
             from tarefas.services import registrar_criacao_tarefa
             registrar_criacao_tarefa(self, usuario)
 
-        # ── Registrar mudança de status ──
         if old_status and old_status != self.status and usuario:
             from tarefas.services import registrar_alteracao_status
             registrar_alteracao_status(
@@ -237,9 +227,6 @@ class Tarefas(models.Model):
                 novo_status_key=self.status,
                 alterado_por=usuario,
             )
-
-            # Manter compatibilidade: criar HistoricoStatus antigo também
-            # (remova este bloco quando migrar completamente)
             try:
                 HistoricoTarefa.objects.create(
                     tarefa=self,
@@ -251,7 +238,6 @@ class Tarefas(models.Model):
             except Exception:
                 pass
 
-        # Cria recorrência se concluída
         if (
             old_status
             and old_status != 'concluida'
@@ -261,18 +247,17 @@ class Tarefas(models.Model):
             self._criar_proxima_recorrencia()
 
     def _criar_proxima_recorrencia(self):
-        """Cria a próxima ocorrência SEM corromper self."""
         if not self.data_fim_recorrencia or timezone.now().date() >= self.data_fim_recorrencia:
             return
         if not self.data_inicio:
             return
 
         deltas = {
-            'diaria': relativedelta(days=1),
-            'semanal': relativedelta(weeks=1),
+            'diaria':    relativedelta(days=1),
+            'semanal':   relativedelta(weeks=1),
             'quinzenal': relativedelta(weeks=2),
-            'mensal': relativedelta(months=1),
-            'anual': relativedelta(years=1),
+            'mensal':    relativedelta(months=1),
+            'anual':     relativedelta(years=1),
         }
         delta = deltas.get(self.frequencia_recorrencia)
         if not delta:
@@ -284,7 +269,6 @@ class Tarefas(models.Model):
 
         novo_prazo = (self.prazo + delta) if self.prazo else None
 
-        # ✅ Cria um NOVO objeto sem modificar self
         Tarefas.objects.create(
             titulo=self.titulo,
             descricao=self.descricao,
@@ -309,60 +293,56 @@ class Tarefas(models.Model):
 # HISTÓRICO TAREFAS
 # =============================================================================
 class HistoricoTarefa(models.Model):
-    """
-    Registra QUALQUER alteração em uma tarefa:
-    status, participantes, responsável, prioridade, prazo, título, etc.
-    """
 
     TIPO_ALTERACAO_CHOICES = [
-        ('criacao', _('Criação')),
-        ('status', _('Mudança de Status')),
-        ('participante_add', _('Participante Adicionado')),
-        ('participante_remove', _('Participante Removido')),
-        ('responsavel', _('Mudança de Responsável')),
-        ('prioridade', _('Mudança de Prioridade')),
-        ('prazo', _('Mudança de Prazo')),
-        ('titulo', _('Mudança de Título')),
-        ('descricao', _('Mudança de Descrição')),
-        ('projeto', _('Mudança de Projeto')),
-        ('recorrencia', _('Mudança de Recorrência')),
-        ('geral', _('Alteração Geral')),
+        ('criacao',            _('Criação')),
+        ('status',             _('Mudança de Status')),
+        ('participante_add',   _('Participante Adicionado')),
+        ('participante_remove',_('Participante Removido')),
+        ('responsavel',        _('Mudança de Responsável')),
+        ('prioridade',         _('Mudança de Prioridade')),
+        ('prazo',              _('Mudança de Prazo')),
+        ('titulo',             _('Mudança de Título')),
+        ('descricao',          _('Mudança de Descrição')),
+        ('projeto',            _('Mudança de Projeto')),
+        ('recorrencia',        _('Mudança de Recorrência')),
+        ('geral',              _('Alteração Geral')),
     ]
 
     ICONE_MAP = {
-        'criacao': 'bi-plus-circle-fill',
-        'status': 'bi-arrow-repeat',
-        'participante_add': 'bi-person-plus-fill',
+        'criacao':             'bi-plus-circle-fill',
+        'status':              'bi-arrow-repeat',
+        'participante_add':    'bi-person-plus-fill',
         'participante_remove': 'bi-person-dash-fill',
-        'responsavel': 'bi-person-check-fill',
-        'prioridade': 'bi-flag-fill',
-        'prazo': 'bi-calendar-event',
-        'titulo': 'bi-pencil-fill',
-        'descricao': 'bi-text-left',
-        'projeto': 'bi-folder-fill',
-        'recorrencia': 'bi-arrow-clockwise',
-        'geral': 'bi-gear-fill',
+        'responsavel':         'bi-person-check-fill',
+        'prioridade':          'bi-flag-fill',
+        'prazo':               'bi-calendar-event',
+        'titulo':              'bi-pencil-fill',
+        'descricao':           'bi-text-left',
+        'projeto':             'bi-folder-fill',
+        'recorrencia':         'bi-arrow-clockwise',
+        'geral':               'bi-gear-fill',
     }
 
     COR_MAP = {
-        'criacao': '#22c55e',
-        'status': '#3b82f6',
-        'participante_add': '#0ea5e9',
+        'criacao':             '#22c55e',
+        'status':              '#3b82f6',
+        'participante_add':    '#0ea5e9',
         'participante_remove': '#f97316',
-        'responsavel': '#8b5cf6',
-        'prioridade': '#f59e0b',
-        'prazo': '#ef4444',
-        'titulo': '#6366f1',
-        'descricao': '#6366f1',
-        'projeto': '#14b8a6',
-        'recorrencia': '#8b5cf6',
-        'geral': '#6b7280',
+        'responsavel':         '#8b5cf6',
+        'prioridade':          '#f59e0b',
+        'prazo':               '#ef4444',
+        'titulo':              '#6366f1',
+        'descricao':           '#6366f1',
+        'projeto':             '#14b8a6',
+        'recorrencia':         '#8b5cf6',
+        'geral':               '#6b7280',
     }
 
     tarefa = models.ForeignKey(
         Tarefas,
         on_delete=models.CASCADE,
-        related_name='historicos_v2',  # ← diferente do antigo 'historicos'
+        related_name='historicos_v2',
         verbose_name=_('Tarefa'),
     )
     alterado_por = models.ForeignKey(
@@ -378,20 +358,10 @@ class HistoricoTarefa(models.Model):
         default='status',
         db_index=True,
     )
-    campo_alterado = models.CharField(
-        _('Campo Alterado'),
-        max_length=50,
-        blank=True,
-        default='',
-    )
-    valor_anterior = models.TextField(_('Valor Anterior'), blank=True, default='')
-    valor_novo = models.TextField(_('Valor Novo'), blank=True, default='')
-    descricao = models.TextField(
-        _('Descrição'),
-        blank=True,
-        default='',
-        help_text=_('Descrição legível da alteração'),
-    )
+    campo_alterado  = models.CharField(_('Campo Alterado'), max_length=50, blank=True, default='')
+    valor_anterior  = models.TextField(_('Valor Anterior'), blank=True, default='')
+    valor_novo      = models.TextField(_('Valor Novo'), blank=True, default='')
+    descricao       = models.TextField(_('Descrição'), blank=True, default='')
     filial = models.ForeignKey(
         Filial,
         on_delete=models.PROTECT,
@@ -400,14 +370,12 @@ class HistoricoTarefa(models.Model):
         null=True, blank=True,
     )
     data_alteracao = models.DateTimeField(
-        _('Data da Alteração'),
-        auto_now_add=True,
-        db_index=True,
+        _('Data da Alteração'), auto_now_add=True, db_index=True,
     )
 
     class Meta:
         ordering = ['-data_alteracao']
-        verbose_name = _('Histórico da Tarefa')
+        verbose_name        = _('Histórico da Tarefa')
         verbose_name_plural = _('Históricos das Tarefas')
         indexes = [
             models.Index(fields=['tarefa', '-data_alteracao']),
@@ -441,8 +409,6 @@ class HistoricoTarefa(models.Model):
 # COMENTÁRIO
 # =============================================================================
 class Comentario(models.Model):
-    TAMANHO_MAXIMO_ANEXO = 5 * 1024 * 1024  # 5MB
-    EXTENSOES_PERMITIDAS = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif']
 
     tarefa = models.ForeignKey(
         Tarefas, on_delete=models.CASCADE,
@@ -453,19 +419,19 @@ class Comentario(models.Model):
         verbose_name=_('Autor')
     )
     texto = models.TextField(_('Comentário'))
+
+    # ── Upload seguro ─────────────────────────────────────────────────────────
     anexo = models.FileField(
         _('Anexo'),
-        upload_to='comentarios/%Y/%m/',
-        blank=True, null=True,
-        validators=[FileExtensionValidator(allowed_extensions=EXTENSOES_PERMITIDAS)],
-        help_text=format_html(
-            "<span style='color:red;font-weight:bold;'>ATENÇÃO:</span> "
-            "Tipos permitidos: {} (Max {}MB)",
-            ', '.join(EXTENSOES_PERMITIDAS),
-            TAMANHO_MAXIMO_ANEXO // (1024 * 1024)
-        )
+        upload_to=UploadPath('tarefas'),
+        blank=True,
+        null=True,
+        validators=[SecureFileValidator('tarefas')],
+        help_text=_('PDF, imagens ou documentos Office. Máximo: 15MB.'),
     )
-    criado_em = models.DateTimeField(_('Criado em'), auto_now_add=True)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    criado_em    = models.DateTimeField(_('Criado em'), auto_now_add=True)
     atualizado_em = models.DateTimeField(_('Atualizado em'), auto_now=True)
     filial = models.ForeignKey(
         Filial, on_delete=models.PROTECT,
@@ -476,27 +442,24 @@ class Comentario(models.Model):
     objects = FilialManager()
 
     class Meta:
-        verbose_name = _('Comentário')
+        verbose_name        = _('Comentário')
         verbose_name_plural = _('Comentários')
         ordering = ['-criado_em']
 
     def __str__(self):
         return f"Comentário em {self.tarefa} por {self.autor}"
 
-    def clean(self):
-        super().clean()
-        if self.anexo:
-            if self.anexo.size > self.TAMANHO_MAXIMO_ANEXO:
-                raise ValidationError({
-                    'anexo': _("Tamanho máximo excedido ({}MB)").format(
-                        self.TAMANHO_MAXIMO_ANEXO // (1024 * 1024))
-                })
-            ext = os.path.splitext(self.anexo.name)[1][1:].lower()
-            if ext not in self.EXTENSOES_PERMITIDAS:
-                raise ValidationError({
-                    'anexo': _("Extensão '{}' não permitida").format(ext)
-                })
+    # ── Gerenciamento de arquivo ──────────────────────────────────────────────
+    def save(self, *args, **kwargs):
+        delete_old_file(self, 'anexo')
+        super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        safe_delete_file(self, 'anexo')
+        super().delete(*args, **kwargs)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    # ── Properties de conveniência (mantidas para templates existentes) ───────
     @property
     def nome_anexo(self):
         return os.path.basename(self.anexo.name) if self.anexo else None
@@ -510,6 +473,7 @@ class Comentario(models.Model):
     @property
     def tamanho_anexo_mb(self):
         return round(self.anexo.size / (1024 * 1024), 2) if self.anexo else 0
+
 
 
         
