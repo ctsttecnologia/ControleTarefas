@@ -98,8 +98,10 @@ class OperadoraForm(forms.ModelForm):
         fields = ['nome']
 
     def __init__(self, *args, **kwargs):
+        filial_id = kwargs.pop('filial_id', None)
         super().__init__(*args, **kwargs)
-        self.fields['nome'].widget.attrs['class'] = 'form-control'
+        if filial_id:
+            self.fields['marca'].queryset = Marca.objects.filter(filial_id=filial_id)
 
 class PlanoForm(forms.ModelForm):
     class Meta:
@@ -107,9 +109,10 @@ class PlanoForm(forms.ModelForm):
         fields = ['operadora', 'nome', 'valor_mensal', 'franquia_dados_gb']
 
     def __init__(self, *args, **kwargs):
+        filial_id = kwargs.pop('filial_id', None)
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+        if filial_id:
+            self.fields['operadora'].queryset = Operadora.objects.filter(filial_id=filial_id)
 
 class LinhaTelefonicaForm(forms.ModelForm):
     class Meta:
@@ -146,40 +149,47 @@ class VinculoForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        # 1. Capture e remova o 'filial_id' ANTES de chamar o método pai.
-        filial_id = kwargs.pop('filial_id', None)
 
-        # 2. Chame o método pai com os argumentos já "limpos".
+        self.filial_id = kwargs.pop('filial_id', None)
+        
         super().__init__(*args, **kwargs)
         
         # 3. Use o filial_id para filtrar os campos do formulário.
-        if filial_id:
-            # Filtra funcionários para mostrar apenas os da filial ativa e que não foram demitidos.
+        if self.filial_id:
             self.fields['funcionario'].queryset = Funcionario.objects.filter(
-                filial_id=filial_id, data_demissao__isnull=True
+                filial_id=self.filial_id,
+            ).order_by('nome_completo')
+
+            # Aparelhos: disponíveis + o atual (se editando)
+            aparelhos_qs = Aparelho.objects.filter(
+                filial_id=self.filial_id,
+                status='disponivel',
             )
-            
-            # Filtra aparelhos e linhas para mostrar apenas os disponíveis na filial ativa.
-            # O 'self.instance.pk' garante que, na edição, o item já selecionado continue aparecendo.
-            aparelho_atual = self.instance.aparelho
-            linha_atual = self.instance.linha
+            if self.instance and self.instance.pk and self.instance.aparelho_id:
+                aparelhos_qs = aparelhos_qs | Aparelho.objects.filter(
+                    pk=self.instance.aparelho_id
+                )
+            self.fields['aparelho'].queryset = aparelhos_qs.select_related(
+                'modelo__marca'
+            ).distinct().order_by('modelo__marca__nome', 'modelo__nome')
 
-            aparelhos_disponiveis = Aparelho.objects.filter(filial_id=filial_id, status='disponivel')
-            if aparelho_atual:
-                aparelhos_disponiveis = aparelhos_disponiveis | Aparelho.objects.filter(pk=aparelho_atual.pk)
-            self.fields['aparelho'].queryset = aparelhos_disponiveis
+            # Linhas: disponíveis + a atual (se editando)
+            linhas_qs = LinhaTelefonica.objects.filter(
+                filial_id=self.filial_id,
+                status='disponivel',
+            )
+            if self.instance and self.instance.pk and self.instance.linha_id:
+                linhas_qs = linhas_qs | LinhaTelefonica.objects.filter(
+                    pk=self.instance.linha_id
+                )
+            self.fields['linha'].queryset = linhas_qs.select_related(
+                'plano__operadora'
+            ).distinct().order_by('numero')
 
-            linhas_disponiveis = LinhaTelefonica.objects.filter(filial_id=filial_id, status='disponivel')
-            if linha_atual:
-                linhas_disponiveis = linhas_disponiveis | LinhaTelefonica.objects.filter(pk=linha_atual.pk)
-            self.fields['linha'].queryset = linhas_disponiveis
-        # self.instance é o objeto que está sendo editado.
-        # Verificamos se a instância existe e se já tem uma data de entrega.
-        instance = getattr(self, 'instance', None)
-        if instance and instance.pk and instance.data_entrega:
-            # Se a data de entrega já foi definida, desabilita o campo de data de entrega
-            self.fields['data_entrega'].disabled = True
-            self.fields['data_entrega'].help_text = 'A data de entrega não pode ser alterada pois o recebimento já foi registrado.'
+        else:
+            self.fields['funcionario'].queryset = Funcionario.objects.none()
+            self.fields['aparelho'].queryset = Aparelho.objects.none()
+            self.fields['linha'].queryset = LinhaTelefonica.objects.none()
 
     # Garantir a cronologia com validação
     def clean(self):

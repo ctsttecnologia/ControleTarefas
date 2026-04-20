@@ -79,12 +79,12 @@ class ChatManager {
         this.dragData = { isDragging: false, offsetX: 0, offsetY: 0 };
 
         // Inicia os processos DEPOIS de tudo configurado.
-        this.initialize(); 
         this.connectNotificationSocket(); // ADICIONE A ÚNICA CHAMADA AQUI!
+        this.initialize();
     }
 
     // ==================== INICIALIZAÇÃO ====================
-    
+
     async initialize() {
         try {
             await this.waitForDOM();
@@ -102,6 +102,8 @@ class ChatManager {
             this.configureTemplateElements();
             
             await this.setupComponents();
+
+            this.connectNotificationSocket();
             this.log.success('Chat inicializado com sucesso');
             
             // Dispara evento de inicialização completa
@@ -457,39 +459,6 @@ class ChatManager {
         console.log('✅ Mensagens renderizadas com sucesso');
     }
 
-    groupMessagesByDate(messages) {
-        const groups = {};
-        
-        messages.forEach(message => {
-            const date = new Date(message.timestamp).toDateString();
-            if (!groups[date]) {
-                groups[date] = [];
-            }
-            groups[date].push(message);
-        });
-        
-        return groups;
-    }
-
-    formatDateHeader(dateString) {
-        const date = new Date(dateString);
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (date.toDateString() === today.toDateString()) {
-            return 'Hoje';
-        } else if (date.toDateString() === yesterday.toDateString()) {
-            return 'Ontem';
-        } else {
-            return date.toLocaleDateString('pt-BR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long'
-            });
-        }
-    }
-
     createMessageElement(data) {
         const messageDiv = document.createElement('div');
         const isOwn = data.user_id == this.currentUserId;
@@ -557,6 +526,10 @@ class ChatManager {
             const fileType = fileData.type || '';
             const fileUrl = fileData.url || '';
             
+            // Nome seguro para uso em atributos inline (escapa aspas simples e barras)
+            const safeName = fileName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            const safeUrl = fileUrl.replace(/'/g, "\\'");
+            
             let icon = 'bi-file-earmark';
             if (fileType.includes('image')) icon = 'bi-file-image';
             else if (fileType.includes('pdf')) icon = 'bi-file-pdf';
@@ -566,7 +539,7 @@ class ChatManager {
             else if (fileType.includes('audio')) icon = 'bi-file-music';
             else if (fileType.includes('zip') || fileType.includes('compressed')) icon = 'bi-file-zip';
             
-            // Se for imagem, mostra preview
+            // 🖼️ Se for imagem, mostra preview com fallback para imagens quebradas
             if (fileType.includes('image') && fileUrl) {
                 return `
                     <div class="message-file">
@@ -577,16 +550,20 @@ class ChatManager {
                         </div>
                     </div>
                     <div class="image-preview mt-2">
-                        <img src="${fileUrl}" alt="${fileName}" class="img-fluid rounded" 
+                        <img src="${fileUrl}" 
+                            alt="${this.escapeHtml(fileName)}" 
+                            class="img-fluid rounded" 
                             style="max-width: 200px; cursor: pointer;"
-                            onclick="chatManager.viewImage('${fileUrl}')">
+                            onclick="chatManager.viewImage('${safeUrl}')"
+                            onerror="chatManager.handleImageError(this, '${safeName}')">
                     </div>
                 `;
             }
             
+            // 📄 Outros tipos de arquivo (PDF, docs, etc)
             return `
                 <div class="message-file" style="cursor: pointer;" 
-                    onclick="chatManager.downloadFile('${fileUrl}', '${this.escapeHtml(fileName)}')">
+                    onclick="chatManager.downloadFile('${safeUrl}', '${safeName}')">
                     <div class="file-icon"><i class="bi ${icon}"></i></div>
                     <div class="file-info">
                         <div class="file-name">${this.escapeHtml(fileName)}</div>
@@ -599,72 +576,6 @@ class ChatManager {
             `;
         } catch (error) {
             console.error('Erro ao renderizar arquivo:', error);
-            return `<div class="message-text">📎 Arquivo anexado</div>`;
-        }
-    }
-
-    renderTextMessage(data) {
-        return `<div class="message-text">${this.formatMessageText(data.message)}</div>`;
-    }
-
-    renderFileMessage(data) {
-        try {
-            const fileData = data.file_data ? JSON.parse(data.file_data) : {};
-            const fileName = fileData.name || 'arquivo';
-            const fileSize = fileData.size ? this.formatFileSize(fileData.size) : '';
-            const fileType = fileData.type || '';
-            
-            let icon = 'bi-file-earmark';
-            if (fileType.includes('image')) icon = 'bi-file-image';
-            else if (fileType.includes('pdf')) icon = 'bi-file-pdf';
-            else if (fileType.includes('word') || fileType.includes('document')) icon = 'bi-file-word';
-            else if (fileType.includes('excel') || fileType.includes('sheet')) icon = 'bi-file-excel';
-            else if (fileType.includes('video')) icon = 'bi-file-play';
-            else if (fileType.includes('audio')) icon = 'bi-file-music';
-            else if (fileType.includes('zip') || fileType.includes('compressed')) icon = 'bi-file-zip';
-            
-            const url = fileData.url || '';
-            const isImage = fileType.includes('image');
-            
-            if (isImage && url) {
-                return `
-                    <div class="message-image-container">
-                        <div class="message-file">
-                            <div class="file-icon">
-                                <i class="bi ${icon}"></i>
-                            </div>
-                            <div class="file-info">
-                                <div class="file-name">${this.escapeHtml(fileName)}</div>
-                                ${fileSize ? `<div class="file-size">${fileSize}</div>` : ''}
-                            </div>
-                            <button class="btn btn-sm btn-outline-primary" onclick="chatManager.downloadFile('${url}', '${fileName}')">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </div>
-                        <div class="image-preview mt-2">
-                            <img src="${url}" alt="${fileName}" class="img-fluid rounded" 
-                                 onclick="chatManager.viewImage('${url}')" 
-                                 style="max-width: 200px; cursor: pointer;">
-                        </div>
-                    </div>
-                `;
-            }
-            
-            return `
-                <div class="message-file" onclick="chatManager.downloadFile('${url}', '${fileName}')">
-                    <div class="file-icon">
-                        <i class="bi ${icon}"></i>
-                    </div>
-                    <div class="file-info">
-                        <div class="file-name">${this.escapeHtml(fileName)}</div>
-                        ${fileSize ? `<div class="file-size">${fileSize}</div>` : ''}
-                    </div>
-                    <button class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-download"></i>
-                    </button>
-                </div>
-            `;
-        } catch (error) {
             return `<div class="message-text">📎 Arquivo anexado</div>`;
         }
     }
@@ -995,16 +906,29 @@ class ChatManager {
 
     async downloadFile(url, fileName) {
         if (!url) {
-            this.showNotification('Arquivo não disponível para download', 'warning');
+            this.showNotification('Arquivo não disponível', 'warning');
             return;
         }
         
         try {
-            // Usa o método fetch para baixar o arquivo
             const response = await fetch(url);
-            const blob = await response.blob();
             
-            // Cria link de download
+            if (!response.ok) {
+                if (response.status === 404) {
+                    this.showNotification(
+                        `⚠️ "${fileName}" não está mais disponível no servidor`,
+                        'warning'
+                    );
+                } else {
+                    this.showNotification(
+                        `Erro ${response.status} ao baixar arquivo`,
+                        'error'
+                    );
+                }
+                return;
+            }
+            
+            const blob = await response.blob();
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
@@ -1012,12 +936,10 @@ class ChatManager {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            // Limpa o URL
             window.URL.revokeObjectURL(downloadUrl);
             
         } catch (error) {
-            this.log.error('Erro ao baixar arquivo:', error);
+            console.error('Erro ao baixar arquivo:', error);
             this.showNotification('Falha ao baixar arquivo', 'error');
         }
     }
@@ -1175,11 +1097,17 @@ class ChatManager {
                 }
                 
                 this.reconnectTimeout = setTimeout(() => {
-                    // **DUPLA VERIFICAÇÃO ANTES DE RECONECTAR**
+                    if (this.pauseReconnections) {
+                        this.log.info('Reconexões pausadas (aba inativa)');
+                        this.reconnectTimeout = setTimeout(() => {
+                            if (!this.pauseReconnections && this.currentRoom === room_id) {
+                                this.connectWebSocket(room_id);
+                            }
+                        }, 5000);
+                        return;
+                    }
                     if (this.currentRoom === room_id && !this.isConnected && !this.isConnecting) {
                         this.connectWebSocket(room_id);
-                    } else {
-                        this.log.info('Condições mudaram. Cancelando reconexão programada.');
                     }
                 }, delay);
             };
@@ -1282,6 +1210,10 @@ class ChatManager {
                 }
                 
                 this.notificationReconnectTimeout = setTimeout(() => {
+                    if (this.pauseReconnections) {
+                        this.log.info('⏸️ Reconexão de notificações pausada');
+                        return;
+                    }
                     if (!this.notificationSocket || this.notificationSocket.readyState === WebSocket.CLOSED) {
                         this.connectNotificationSocket();
                     }
@@ -1315,7 +1247,7 @@ class ChatManager {
 
         // Encontra o container da lista de conversas
         // **IMPORTANTE**: Verifique se o ID 'active-chat-list-container' corresponde ao seu HTML.
-        const chatListContainer = document.getElementById('active-chat-list-container');
+        const chatListContainer = document.getElementById('active-chats-list');
         
         if (!chatListContainer) {
             this.log.error("Container da lista de chats ('active-chat-list-container') não encontrado!");
@@ -1344,7 +1276,7 @@ class ChatManager {
 
         // Adiciona o evento de clique para abrir a conversa
         newRoomElement.addEventListener('click', () => {
-            this.openChat(roomData.room_id, roomData.room_name);
+            this.openChatDialog(roomData.room_id, roomData.room_name);
         });
 
         // Adiciona a nova sala no topo da lista
@@ -2274,6 +2206,30 @@ class ChatManager {
         }
     }
 
+    /**
+     * Handler chamado quando uma imagem falha ao carregar (404, etc)
+     * @param {HTMLImageElement} imgElement - A tag <img> que falhou
+     * @param {string} fileName - Nome do arquivo para exibir
+     */
+    handleImageError(imgElement, fileName = 'Imagem') {
+        imgElement.style.display = 'none';
+        
+        // Evita criar múltiplos placeholders se o erro disparar mais de uma vez
+        if (imgElement.dataset.errorHandled === 'true') return;
+        imgElement.dataset.errorHandled = 'true';
+        
+        const placeholder = document.createElement('div');
+        placeholder.className = 'image-unavailable text-muted small p-2 border rounded mt-1';
+        placeholder.style.cssText = 'max-width: 200px; background: #f8f9fa;';
+        placeholder.innerHTML = `
+            <i class="bi bi-exclamation-triangle text-warning"></i>
+            <strong>Imagem indisponível</strong><br>
+            <span style="font-size: 0.85em;">${this.escapeHtml(fileName)}</span>
+        `;
+        
+        imgElement.insertAdjacentElement('afterend', placeholder);
+    }
+
     filterTasks(searchTerm) {
         const container = document.getElementById('task-list-container');
         if (!container) return;
@@ -2385,7 +2341,8 @@ class ChatManager {
         const modalContent = document.getElementById('chat-info-content');
         
         if (!modalContent || !modalElement) return;
-        
+
+                
         modalContent.innerHTML = `
             <div class="chat-info-details">
                 <h6>Detalhes da Conversa</h6>
@@ -2550,23 +2507,49 @@ class ChatManager {
     }
 
     playNotificationSound(type = 'notification') {
-        if (!this.soundEnabled || !this.soundInitialized) return;
+        if (!this.soundEnabled) return;
         
-        try {
-            const audio = this.audioElements?.[type];
-            if (audio) {
-                // Reset audio para permitir múltiplas reproduções
-                if (audio.currentTime) {
-                    audio.currentTime = 0;
-                }
-                audio.play().catch(e => {
-                    this.log.warn('Falha reprodução áudio:', e);
-                });
+        const sound = this.audioElements?.[type];
+        
+        if (!sound) {
+            this.log.debug(`Som '${type}' não disponível, tentando fallback`);
+            const fallback = this.audioElements?.notification;
+            if (!fallback) {
+                this.log.debug('Nenhum som disponível ainda (sistema carregando)');
+                return;
             }
-        } catch (error) {
-            this.log.warn('Erro playNotificationSound:', error);
+            return this._playSound(fallback);
+        }
+        
+        return this._playSound(sound);
+    }
+
+    _playSound(sound) {
+        try {
+            if (typeof sound === 'function') {
+                sound();
+                return;
+            }
+            if (sound && typeof sound.play === 'function') {
+                // Som sintético (objeto { play: fn }) OU HTMLAudioElement
+                if (sound instanceof HTMLAudioElement) {
+                    sound.currentTime = 0;
+                }
+                const p = sound.play();
+                if (p && typeof p.catch === 'function') {
+                    p.catch(err => this.log.warn('Erro ao tocar som:', err));
+                }
+            }
+        } catch (err) {
+            this.log.warn('Erro _playSound:', err);
         }
     }
+
+    countFilesInRoom() {
+        const messages = this.cache.messages[this.currentRoom] || [];
+        return messages.filter(m => m.message_type === 'file').length;
+    }
+
 
     // ==================== DRAG AND DROP ====================
 
@@ -2926,20 +2909,16 @@ class ChatManager {
         return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
     }
 
-    getCurrentUsername() {
-        const script = document.getElementById('json-username');
-        try {
-            return script ? JSON.parse(script.textContent) : '';
-        } catch {
-            return '';
-        }
-    }
-
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    countFilesInRoom() {
+        const messages = this.cache.messages[this.currentRoom] || [];
+        return messages.filter(m => m.message_type === 'file').length;
     }
 
     showNotification(message, type = 'info') {
@@ -3130,23 +3109,20 @@ window.openChatDialog = (roomId, roomName) => {
 
 // Limpa recursos quando a página é fechada
 window.addEventListener('beforeunload', () => {
-    if (window.chatManager) {
+    if (window.chatManager && typeof window.chatManager.cleanupWebSockets === 'function') {
         window.chatManager.cleanupWebSockets();
     }
 });
 
-// Limpa recursos quando a aba perde o foco
+// Pausa reconexões quando a aba perde o foco
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden && window.chatManager) {
-        // Opcional: pausa reconexões quando a aba não está ativa
-        window.chatManager.pauseReconnections = true;
-    } else if (window.chatManager) {
-        window.chatManager.pauseReconnections = false;
+    // ✅ Verifica se chatManager existe E é um objeto antes de atribuir
+    if (!window.chatManager || typeof window.chatManager !== 'object') {
+        return;
     }
+    
+    window.chatManager.pauseReconnections = document.hidden;
 });
-
-
-
 
 console.log('✅ Sistema de chat com controle de loop inicializado');
 console.log('✅ ChatManager v4.3 - Refatorado para template Django');

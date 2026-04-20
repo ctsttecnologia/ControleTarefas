@@ -5,6 +5,9 @@
 {% block title %}{% if object %}Editar Ata {{ object.id }}{% else %}Nova Ata de Reunião{% endif %}{% endblock %}
 
 {% block extra_css %}
+<!-- ═══ TOM SELECT CSS ═══ -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
 <style>
     .form-hero {
         background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
@@ -130,6 +133,70 @@
     }
     .btn-back:hover { border-color: #cbd5e0; background: #f7fafc; color: #4a5568; }
 
+    /* ═══ TOM SELECT CUSTOMIZAÇÃO ═══ */
+    .ts-wrapper.single .ts-control {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        padding: 0.5rem 0.75rem;
+        min-height: 44px;
+        font-size: 0.9rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ts-wrapper.single .ts-control:hover {
+        border-color: #cbd5e0;
+    }
+    .ts-wrapper.single.focus .ts-control {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78,115,223,0.15);
+    }
+    .ts-wrapper .ts-dropdown {
+        border: 2px solid #e2e8f0;
+        border-radius: 0.625rem;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+        margin-top: 4px;
+    }
+    .ts-wrapper .ts-dropdown .option {
+        padding: 0.6rem 1rem;
+        font-size: 0.88rem;
+        transition: background 0.15s;
+    }
+    .ts-wrapper .ts-dropdown .option.active {
+        background: #4e73df;
+        color: #fff;
+    }
+    .ts-wrapper .ts-dropdown .option:hover {
+        background: #edf2f7;
+        color: #2d3748;
+    }
+    .ts-wrapper .ts-dropdown .option.active:hover {
+        background: #3b5cc6;
+        color: #fff;
+    }
+    .ts-wrapper .ts-dropdown .no-results {
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        color: #a0aec0;
+        text-align: center;
+    }
+    .ts-wrapper .ts-control .item {
+        font-size: 0.9rem;
+        color: #2d3748;
+    }
+    .ts-wrapper .ts-control input::placeholder {
+        color: #a0aec0;
+        font-size: 0.88rem;
+    }
+
+    /* Tom Select com erro de validação */
+    .is-invalid + .ts-wrapper .ts-control,
+    .ts-wrapper.is-invalid .ts-control {
+        border-color: #e74a3b !important;
+    }
+    .is-invalid + .ts-wrapper.focus .ts-control {
+        box-shadow: 0 0 0 0.2rem rgba(231,74,59,0.15) !important;
+    }
+
+    /* ═══ DARK MODE ═══ */
     [data-bs-theme="dark"] .form-hero { background: linear-gradient(135deg, #224abe, #1a2d6d); }
     [data-bs-theme="dark"] .section-header { border-bottom-color: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .section-header h5 { color: #e2e8f0; }
@@ -138,6 +205,34 @@
     [data-bs-theme="dark"] .btn-back { border-color: #2d3748; color: #a0aec0; }
     [data-bs-theme="dark"] .timeline-item::before { background: rgba(255,255,255,0.06); }
     [data-bs-theme="dark"] .timeline-text { color: #a0aec0; }
+
+    [data-bs-theme="dark"] .ts-wrapper.single .ts-control {
+        background: var(--bs-body-bg);
+        border-color: #2d3748;
+        color: #e2e8f0;
+    }
+    [data-bs-theme="dark"] .ts-wrapper .ts-dropdown {
+        background: var(--bs-body-bg);
+        border-color: #2d3748;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    [data-bs-theme="dark"] .ts-wrapper .ts-dropdown .option {
+        color: #e2e8f0;
+    }
+    [data-bs-theme="dark"] .ts-wrapper .ts-dropdown .option:hover {
+        background: #2d3748;
+        color: #fff;
+    }
+    [data-bs-theme="dark"] .ts-wrapper .ts-dropdown .option.active {
+        background: #4e73df;
+    }
+    [data-bs-theme="dark"] .ts-wrapper .ts-control .item {
+        color: #e2e8f0;
+    }
+    [data-bs-theme="dark"] .ts-wrapper .ts-control input::placeholder {
+        color: #718096;
+    }
+    [data-bs-theme="dark"] .field-label { color: #a0aec0; }
 </style>
 {% endblock %}
 
@@ -192,9 +287,9 @@
                                     {% if field.field.required %}<span class="text-danger">*</span>{% endif %}
                                 </label>
                                 {% if field.errors %}
-                                    {% render_field field class+="form-control is-invalid" %}
+                                    {% render_field field class+="is-invalid" %}
                                 {% else %}
-                                    {% render_field field class+="form-control" %}
+                                    {% render_field field %}
                                 {% endif %}
                                 {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
                                 {% for error in field.errors %}<div class="invalid-feedback d-block"><i class="bi bi-exclamation-circle me-1" style="font-size:0.75rem;"></i>{{ error }}</div>{% endfor %}
@@ -267,5 +362,104 @@
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+<!-- ═══ TOM SELECT JS ═══ -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.3/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    // ═══════════════════════════════════════════════════════════════
+    // CONFIGURAÇÃO DOS CAMPOS COM AUTOCOMPLETE (TOM SELECT)
+    // ═══════════════════════════════════════════════════════════════
+
+    const autoCompleteFields = [
+        {
+            id: 'id_contrato',
+            placeholder: '🔍 Pesquisar contrato...',
+            noResults: 'Nenhum contrato encontrado',
+        },
+        {
+            id: 'id_coordenador',
+            placeholder: '🔍 Pesquisar coordenador...',
+            noResults: 'Nenhum coordenador encontrado',
+        },
+        {
+            id: 'id_responsavel',
+            placeholder: '🔍 Pesquisar responsável...',
+            noResults: 'Nenhum responsável encontrado',
+        },
+        {
+            id: 'id_natureza',
+            placeholder: '🔍 Pesquisar natureza...',
+            noResults: 'Nenhuma natureza encontrada',
+        },
+        {
+            id: 'id_status',
+            placeholder: '🔍 Pesquisar status...',
+            noResults: 'Nenhum status encontrado',
+        },
+    ];
+
+    autoCompleteFields.forEach(config => {
+        const el = document.getElementById(config.id);
+        if (!el) return;
+
+        // Verificar se o campo original tem classe is-invalid
+        const hasError = el.classList.contains('is-invalid');
+
+        new TomSelect(el, {
+            // ─── Busca & Comportamento ───
+            create:       false,
+            sortField:    { field: 'text', direction: 'asc' },
+            maxOptions:   50,
+            allowEmptyOption: true,
+
+            // ─── Placeholder ───
+            placeholder:  config.placeholder,
+
+            // ─── Templates personalizados ───
+            render: {
+                // Item selecionado
+                item: function(data, escape) {
+                    return `<div class="d-flex align-items-center gap-2">
+                                <span>${escape(data.text)}</span>
+                            </div>`;
+                },
+                // Opção no dropdown
+                option: function(data, escape) {
+                    if (!data.value) {
+                        return `<div class="text-muted" style="font-size:0.85rem;">
+                                    ${escape(data.text)}
+                                </div>`;
+                    }
+                    return `<div class="d-flex align-items-center gap-2 py-1">
+                                <i class="bi bi-dot text-primary" style="font-size:1.2rem;"></i>
+                                <span>${escape(data.text)}</span>
+                            </div>`;
+                },
+                // Sem resultados
+                no_results: function() {
+                    return `<div class="no-results">
+                                <i class="bi bi-search me-1"></i>
+                                ${config.noResults}
+                            </div>`;
+                },
+            },
+
+            // ─── Callback: propagar erro de validação ───
+            onInitialize: function() {
+                if (hasError) {
+                    this.wrapper.classList.add('is-invalid');
+                }
+            },
+        });
+    });
+
+});
+</script>
+{% endblock %}
+
 
 

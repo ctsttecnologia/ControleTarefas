@@ -1,107 +1,374 @@
+
 {% extends "base.html" %}
 {% load static %}
 
-{% block extra_css %}
-    <style>
-        .sidebar {
+{% block extra_head %}
+<style>
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* LAYOUT BASE - Wrapper                                              */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .telefone-wrapper {
+        display: flex;
+        min-height: calc(100vh - 60px);
+        position: relative;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* SIDEBAR                                                             */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .telefone-sidebar {
+        width: 240px;
+        min-width: 240px;
+        background: #fff;
+        border-right: 1px solid #e3e6f0;
+        padding: 1rem 0.75rem;
+        transition: transform 0.25s ease, margin-left 0.25s ease;
+        position: sticky;
+        top: 60px;
+        height: calc(100vh - 60px);
+        overflow-y: auto;
+        z-index: 100;
+        flex-shrink: 0;
+    }
+
+    /* Scrollbar custom */
+    .telefone-sidebar::-webkit-scrollbar { width: 6px; }
+    .telefone-sidebar::-webkit-scrollbar-thumb {
+        background: #d1d3e2;
+        border-radius: 3px;
+    }
+    .telefone-sidebar::-webkit-scrollbar-track { background: transparent; }
+
+    .telefone-sidebar .sidebar-header {
+        padding: 0.25rem 0.75rem 0.75rem;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #858796;
+        font-weight: 700;
+    }
+
+    .telefone-sidebar .nav-link {
+        color: #5a5c69;
+        padding: 0.6rem 0.85rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.15rem;
+        font-size: 0.88rem;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+    }
+    .telefone-sidebar .nav-link:hover {
+        background: rgba(78,115,223,0.08);
+        color: #4e73df;
+    }
+    .telefone-sidebar .nav-link.active {
+        background: rgba(78,115,223,0.12);
+        color: #4e73df;
+        font-weight: 600;
+    }
+    .telefone-sidebar .nav-link i {
+        width: 22px;
+        margin-right: 0.6rem;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .telefone-sidebar .section-title {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #858796;
+        font-weight: 700;
+        padding: 1rem 0.85rem 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* CONTEÚDO PRINCIPAL - MAIOR E RESPONSIVO                            */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .telefone-main {
+        flex: 1;
+        min-width: 0; /* Permite shrink em flex */
+        background: #f8f9fc;
+        min-height: calc(100vh - 60px);
+    }
+
+    .telefone-main-inner {
+        width: 100%;
+        max-width: 1600px; /* Limite generoso em telas muito grandes */
+        margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* TOGGLE MOBILE                                                       */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .telefone-sidebar-toggle {
+        display: none;
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: #4e73df;
+        color: white;
+        border: none;
+        box-shadow: 0 4px 12px rgba(78,115,223,0.4);
+        z-index: 1040;
+        font-size: 1.25rem;
+    }
+    .telefone-sidebar-toggle:hover {
+        background: #3a5ec0;
+    }
+
+    .telefone-sidebar-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 99;
+    }
+    .telefone-sidebar-backdrop.show {
+        display: block;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* RESPONSIVIDADE                                                      */
+    /* ═══════════════════════════════════════════════════════════════ */
+
+    /* Telas grandes: sidebar um pouco menor para dar mais espaço ao conteúdo */
+    @media (min-width: 1400px) {
+        .telefone-sidebar {
+            width: 230px;
+            min-width: 230px;
+        }
+    }
+
+    /* Tablets (lg): sidebar compacta */
+    @media (max-width: 1199.98px) and (min-width: 992px) {
+        .telefone-sidebar {
+            width: 210px;
+            min-width: 210px;
+        }
+    }
+
+    /* Tablets pequenos e mobile (md e menor): sidebar vira overlay */
+    @media (max-width: 991.98px) {
+        .telefone-sidebar {
             position: fixed;
-            top: 0;
+            top: 60px;
             left: 0;
-            bottom: 0;
-            width: 250px;
-            padding: 20px;
-            background-color: #343a40;
-            color: #fff;
-            z-index: 1000;
+            transform: translateX(-100%);
+            box-shadow: 2px 0 12px rgba(0,0,0,0.1);
+            width: 260px;
         }
-        .main-content {
-            margin-left: 260px;
-            padding: 20px;
+        .telefone-sidebar.show {
+            transform: translateX(0);
         }
-        .sidebar a:hover, .sidebar a.active {
-            background-color: #495057;
-            color: #fff;
+        .telefone-sidebar-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        
-        /* ================================================ */
-        /*  ESTILOS UNIFICADOS PARA OS BOTÕES DE AÇÕES  */
-        /* ================================================ */
-
-        .actions-container {
-            /* Impede que os botões quebrem a linha em telas pequenas */
-            white-space: nowrap;
+        .telefone-main {
+            width: 100%;
         }
+    }
 
-        /* Estilo base para cada botão de ação */
-        .actions-container .btn {
-            /* Define um pequeno espaço entre os botões */
-            margin: 0 3px;
-
-            /* Aumenta a espessura da borda para dar um pouco mais de destaque */
-            border-width: 1.5px;
-
-            /* Define a animação de transição para ser suave em todas as propriedades */
-            transition: all 0.2s ease-in-out;
+    /* Mobile puro: ajustes adicionais */
+    @media (max-width: 575.98px) {
+        .telefone-sidebar {
+            width: 85%;
+            max-width: 300px;
         }
+    }
 
-        /* Efeito ao passar o mouse ou focar (para acessibilidade com teclado) */
-        .actions-container .btn:hover,
-        .actions-container .btn:focus {
-            /* Efeito de "elevar" o botão ao interagir */
-            transform: translateY(-2px);
-
-            /* Sombra sutil para criar uma sensação de profundidade */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    /* ═══════════════════════════════════════════════════════════════ */
+    /* MENSAGENS FLASH                                                     */
+    /* ═══════════════════════════════════════════════════════════════ */
+    .telefone-messages {
+        padding: 1rem 1.5rem 0;
+    }
+    @media (min-width: 992px) {
+        .telefone-messages {
+            padding: 1rem 3rem 0;
         }
-
-    </style>
+    }
+</style>
+{% block telefone_extra_head %}{% endblock %}
 {% endblock %}
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Meu Sistema{% endblock %}</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-</head>
-
 
 {% block content %}
-    <div class="sidebar">
-        <h4 class="mb-4">Telefonia Corp</h4>
-        <nav class="nav flex-column">
-            <a class="nav-link" href="{% url 'controle_de_telefone:dashboard' %}"><i class="fas fa-tachometer-alt fa-fw me-2"></i>Dashboard</a>
-            <div class="nav-header">Gerenciamento</div>
+<div class="telefone-wrapper">
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- BACKDROP (mobile)                                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="telefone-sidebar-backdrop" id="telefoneSidebarBackdrop"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- SIDEBAR                                                             -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <aside class="telefone-sidebar" id="telefoneSidebar">
+        <div class="sidebar-header">
+            <i class="bi bi-phone me-1"></i>Telefonia
+        </div>
+
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:dashboard' %}">
+                    <i class="bi bi-speedometer2"></i>Painel
+                </a>
+            </li>
+        </ul>
+
+        <div class="section-title">Gestão</div>
+        <ul class="nav flex-column">
             {% if perms.controle_de_telefone.view_vinculo or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:vinculo_list' %}"><i class="fas fa-link fa-fw me-2"></i>Vínculos</a>
+            <li class="nav-item">
+                <a class="nav-link {% if 'vinculo' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:vinculo_list' %}">
+                    <i class="bi bi-link-45deg"></i>Vínculos
+                </a>
+            </li>
             {% endif %}
             {% if perms.controle_de_telefone.view_aparelho or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:aparelho_list' %}"><i class="fas fa-mobile-alt fa-fw me-2"></i>Aparelhos</a>
+            <li class="nav-item">
+                <a class="nav-link {% if 'aparelho' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:aparelho_list' %}">
+                    <i class="bi bi-phone"></i>Aparelhos
+                </a>
+            </li>
             {% endif %}
-             {% if perms.controle_de_telefone.view_linhatelefonica or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:linhatelefonica_list' %}"><i class="fas fa-sim-card fa-fw me-2"></i>Linhas</a>
+            {% if perms.controle_de_telefone.view_linhatelefonica or user.is_superuser %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'linhatelefonica' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:linhatelefonica_list' %}">
+                    <i class="bi bi-telephone"></i>Linhas
+                </a>
+            </li>
             {% endif %}
-            <div class="nav-header">Cadastros</div>
+            {% if perms.controle_de_telefone.view_recargacredito or user.is_superuser %}
+            <li class="nav-item">
+                <a class="nav-link {% if 'recarga' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:recarga_list' %}">
+                    <i class="bi bi-cash-coin"></i>Recargas
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="section-title">Cadastros</div>
+        <ul class="nav flex-column">
             {% if perms.controle_de_telefone.view_marca or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:marca_list' %}"><i class="fas fa-copyright fa-fw me-2"></i>Marcas</a>
+            <li class="nav-item">
+                <a class="nav-link {% if 'marca' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:marca_list' %}">
+                    <i class="bi bi-tags"></i>Marcas
+                </a>
+            </li>
             {% endif %}
             {% if perms.controle_de_telefone.view_modelo or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:modelo_list' %}"><i class="fas fa-mobile fa-fw me-2"></i>Modelos</a>
+            <li class="nav-item">
+                <a class="nav-link {% if 'modelo' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:modelo_list' %}">
+                    <i class="bi bi-phone-flip"></i>Modelos
+                </a>
+            </li>
             {% endif %}
             {% if perms.controle_de_telefone.view_operadora or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:operadora_list' %}"><i class="fas fa-broadcast-tower fa-fw me-2"></i>Operadoras</a>
+            <li class="nav-item">
+                <a class="nav-link {% if 'operadora' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:operadora_list' %}">
+                    <i class="bi bi-broadcast"></i>Operadoras
+                </a>
+            </li>
             {% endif %}
             {% if perms.controle_de_telefone.view_plano or user.is_superuser %}
-            <a class="nav-link" href="{% url 'controle_de_telefone:plano_list' %}"><i class="fas fa-file-invoice-dollar fa-fw me-2"></i>Planos</a>
+            <li class="nav-item">
+                <a class="nav-link {% if 'plano' in request.resolver_match.url_name %}active{% endif %}"
+                   href="{% url 'controle_de_telefone:plano_list' %}">
+                    <i class="bi bi-credit-card"></i>Planos
+                </a>
+            </li>
             {% endif %}
-        </nav>
-    </div>
+        </ul>
+    </aside>
 
-    <main class="main-content">
-        {% block page_content %}
-        {% endblock %}
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CONTEÚDO PRINCIPAL                                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <main class="telefone-main">
+        <div class="telefone-main-inner">
+
+            {# Mensagens flash #}
+            {% if messages %}
+            <div class="telefone-messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {# ═══════════════════════════════════════════════════════════ #}
+            {# BLOCO PRINCIPAL - Compatível com ambos os padrões             #}
+            {# ═══════════════════════════════════════════════════════════ #}
+            {% block telefone_content %}{% endblock %}
+
+        </div>
     </main>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- BOTÃO TOGGLE (mobile)                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <button class="telefone-sidebar-toggle" id="telefoneSidebarToggle" type="button" aria-label="Abrir menu">
+        <i class="bi bi-list"></i>
+    </button>
+</div>
+
+<script>
+(function() {
+    'use strict';
+    const sidebar = document.getElementById('telefoneSidebar');
+    const toggle = document.getElementById('telefoneSidebarToggle');
+    const backdrop = document.getElementById('telefoneSidebarBackdrop');
+
+    function openSidebar() {
+        sidebar.classList.add('show');
+        backdrop.classList.add('show');
+    }
+    function closeSidebar() {
+        sidebar.classList.remove('show');
+        backdrop.classList.remove('show');
+    }
+
+    toggle?.addEventListener('click', () => {
+        sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+    });
+    backdrop?.addEventListener('click', closeSidebar);
+
+    // Fecha ao clicar em link (mobile)
+    sidebar?.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 992) closeSidebar();
+        });
+    });
+
+    // Fecha ao redimensionar para desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 992) closeSidebar();
+    });
+
+    // Fecha com ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar.classList.contains('show')) closeSidebar();
+    });
+})();
+</script>
 {% endblock %}
+
+
 

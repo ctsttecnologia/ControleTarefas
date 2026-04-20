@@ -19,14 +19,16 @@
                     </h4>
                     <small class="opacity-75">Gerenciamento de tags de segurança para bloqueio de equipamentos</small>
                 </div>
-                <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-light">
-                    <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
-                </a>
-                {% if perms.gestao_riscos.add_cartaotag or user.is_superuser %}
-                <a href="{% url 'gestao_riscos:cartao_tag_create' %}" class="btn btn-light">
-                    <i class="bi bi-plus-circle me-1"></i> Novo Cartão
-                </a>
-                {% endif %}
+                <div>
+                    <a href="{% url 'seguranca_trabalho:dashboard' %}" class="btn btn-light">
+                        <i class="bi bi-arrow-left me-1"></i> Voltar ao Dashboard
+                    </a>
+                    {% if perms.gestao_riscos.add_cartaotag or user.is_superuser %}
+                    <a href="{% url 'gestao_riscos:cartao_tag_create' %}" class="btn btn-light">
+                        <i class="bi bi-plus-circle me-1"></i> Novo Cartão
+                    </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

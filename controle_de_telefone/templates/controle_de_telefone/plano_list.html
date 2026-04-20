@@ -6,19 +6,27 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- Cabeçalho -->
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-md-0">
             <h2 class="h4 fw-bold mb-1">
                 <i class="bi bi-credit-card text-warning me-2"></i>Planos de Telefonia
             </h2>
-            <small class="text-muted">{{ planos|length }} plano{{ planos|length|pluralize:"s" }} cadastrado{{ planos|length|pluralize:"s" }}</small>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <small class="text-muted">
+                    {{ planos|length }} plano{{ planos|length|pluralize:"s" }} cadastrado{{ planos|length|pluralize:"s" }}
+                </small>
+                {% if filial_ativa %}
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                    <i class="bi bi-building me-1"></i>{{ filial_ativa.nome }}
+                </span>
+                {% endif %}
+            </div>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'controle_de_telefone:dashboard' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>Painel
             </a>
-            {% if perms.controle_de_telefone.add_plano or user.is_superuser %}
+            {% if perms.controle_de_telefone.add_plano %}
             <a href="{% url 'controle_de_telefone:plano_create' %}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i>Novo Plano
             </a>
@@ -26,7 +34,13 @@
         </div>
     </header>
 
-    <!-- Card da Tabela -->
+    {% if not filial_ativa and not user.is_superuser %}
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><strong>Nenhuma filial selecionada.</strong> Selecione uma filial no menu superior.</div>
+    </div>
+    {% endif %}
+
     <div class="card border-0 shadow-sm rounded-3">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -60,13 +74,13 @@
                         </td>
                         <td class="text-end px-3">
                             <div class="btn-group btn-group-sm" role="group">
-                                {% if perms.controle_de_telefone.change_plano or user.is_superuser %}
+                                {% if perms.controle_de_telefone.change_plano %}
                                 <a href="{% url 'controle_de_telefone:plano_update' plano.pk %}"
                                    class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
                                 {% endif %}
-                                {% if perms.controle_de_telefone.delete_plano or user.is_superuser %}
+                                {% if perms.controle_de_telefone.delete_plano %}
                                 <a href="{% url 'controle_de_telefone:plano_delete' plano.pk %}"
                                    class="btn btn-outline-danger" title="Excluir">
                                     <i class="bi bi-trash3"></i>
@@ -81,7 +95,7 @@
                             <div class="py-4">
                                 <i class="bi bi-credit-card text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
                                 <h6 class="mt-3 text-muted fw-semibold">Nenhum plano cadastrado</h6>
-                                {% if perms.controle_de_telefone.add_plano or user.is_superuser %}
+                                {% if perms.controle_de_telefone.add_plano %}
                                 <a href="{% url 'controle_de_telefone:plano_create' %}" class="btn btn-sm btn-primary mt-2">
                                     <i class="bi bi-plus-circle me-1"></i>Novo Plano
                                 </a>

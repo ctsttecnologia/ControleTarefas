@@ -1,112 +1,314 @@
 
-{% extends "base.html" %}
-{% load static %}
+{% extends "controle_de_telefone/_base_telefone.html" %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}Assinar Termo — {{ vinculo.aparelho|default:"Vínculo" }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 px-lg-5">
+<div class="container py-4" style="max-width: 900px;">
 
     <!-- Cabeçalho -->
-    <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
-        <div>
-            <h2 class="h4 fw-bold mb-1">
-                <i class="bi bi-vector-pen text-primary me-2"></i>{{ titulo }}
-            </h2>
-            <small class="text-muted">
-                Entrega em: <strong>{{ vinculo.data_entrega|date:"d \d\e F \d\e Y" }}</strong>
-            </small>
-        </div>
-        <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left me-1"></i>Voltar
-        </a>
+    <header class="mb-4 pb-3 border-bottom">
+        <h2 class="h4 fw-bold mb-1">
+            <i class="bi bi-vector-pen text-success me-2"></i>{{ titulo|default:"Assinar Termo de Responsabilidade" }}
+        </h2>
+        <small class="text-muted">
+            Leia atentamente o termo abaixo e assine para confirmar o recebimento.
+        </small>
     </header>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom py-3">
-                    <h6 class="fw-bold mb-0">
-                        <i class="bi bi-file-earmark-text text-warning me-2"></i>Termo de Responsabilidade sobre Uso de Smartphone
-                    </h6>
-                </div>
-                <div class="card-body p-4 p-lg-5">
-
-                    <form method="post" id="formAssinatura" enctype="multipart/form-data" novalidate>
-                        {% csrf_token %}
-                        {{ form.as_p }}
-
-                        <!-- Campos ocultos -->
-                        <input type="hidden" name="signature_type" id="signature_type" value="draw">
-                        <input type="hidden" name="assinatura_base64" id="assinatura_base64">
-
-                        <!-- Tabs de Assinatura -->
-                        <ul class="nav nav-tabs mt-4" id="assinaturaTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active fw-semibold" id="draw-tab" data-bs-toggle="tab"
-                                        data-bs-target="#draw-pane" type="button" role="tab">
-                                    <i class="bi bi-brush me-1"></i>Desenhar
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link fw-semibold" id="upload-tab" data-bs-toggle="tab"
-                                        data-bs-target="#upload-pane" type="button" role="tab">
-                                    <i class="bi bi-upload me-1"></i>Upload
-                                </button>
-                            </li>
-                        </ul>
-
-                        <div class="tab-content" id="assinaturaTabsContent">
-                            <!-- Aba Desenho -->
-                            <div class="tab-pane fade show active p-4" id="draw-pane" role="tabpanel">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.85rem;">
-                                    Desenhe sua assinatura abaixo:
-                                </label>
-                                <div data-signature-pad-container>
-                                    <div class="rounded-3 overflow-hidden" style="border: 2px solid #dee2e6; background: #fff;">
-                                        <canvas data-signature-canvas
-                                                style="width: 100%; height: 200px; display: block; cursor: crosshair;"></canvas>
-                                    </div>
-                                    <div class="text-end mt-2">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-signature-clear-button>
-                                            <i class="bi bi-eraser me-1"></i>Limpar
-                                        </button>
-                                    </div>
-                                    <input type="hidden" name="assinatura_base64" data-signature-hidden-input>
-                                </div>
-                            </div>
-
-                            <!-- Aba Upload -->
-                            <div class="tab-pane fade p-4" id="upload-pane" role="tabpanel">
-                                <label for="assinatura_imagem_upload" class="form-label fw-semibold text-dark" style="font-size: 0.85rem;">
-                                    Fazer upload de assinatura:
-                                </label>
-                                <input class="form-control" type="file" id="assinatura_imagem_upload"
-                                       name="assinatura_imagem_upload" accept="image/png, image/jpeg, image/gif">
-                                <div class="form-text">Formatos aceitos: PNG, JPEG, GIF</div>
-                            </div>
-                        </div>
-
-                        <!-- Botões -->
-                        <div class="d-flex justify-content-end mt-4 pt-4 border-top gap-2">
-                            <a href="{% url 'controle_de_telefone:vinculo_list' %}" class="btn btn-light px-4">
-                                <i class="bi bi-x-lg me-1"></i>Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-circle me-1"></i>Enviar Assinatura
-                            </button>
-                        </div>
-                    </form>
-                </div>
+    <!-- Alerta instrução -->
+    <div class="alert alert-info d-flex align-items-start gap-2 mb-4">
+        <i class="bi bi-info-circle-fill fs-5 flex-shrink-0"></i>
+        <div>
+            <strong>Como assinar?</strong>
+            <div class="small mt-1">
+                Você pode <strong>desenhar sua assinatura</strong> na caixa abaixo usando o mouse ou dedo (em dispositivos touch),
+                ou <strong>fazer upload</strong> de uma imagem da sua assinatura.
             </div>
         </div>
     </div>
+
+    <!-- Prévia do Termo -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="fw-bold mb-0">
+                <i class="bi bi-file-earmark-text text-primary me-2"></i>Prévia do Termo
+            </h6>
+        </div>
+        <div class="card-body p-4" style="max-height: 360px; overflow-y: auto; background: #fafafa; font-size: 0.88rem;">
+            <h5 class="text-center mb-3">TERMO DE RESPONSABILIDADE</h5>
+            <p>
+                Eu, <strong>{{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}</strong>,
+                {% if rg_numero %}portador(a) do RG nº <strong>{{ rg_numero }}</strong>,{% endif %}
+                declaro ter recebido nesta data o(s) seguinte(s) item(ns):
+            </p>
+            <ul>
+                {% if vinculo.aparelho %}
+                <li>
+                    <strong>Aparelho:</strong> {{ vinculo.aparelho.modelo }}
+                    {% if vinculo.aparelho.imei %}(IMEI: {{ vinculo.aparelho.imei }}){% endif %}
+                    {% if vinculo.aparelho.numero_serie %}· Nº Série: {{ vinculo.aparelho.numero_serie }}{% endif %}
+                </li>
+                {% endif %}
+                {% if vinculo.linha %}
+                <li>
+                    <strong>Linha Telefônica:</strong> {{ vinculo.linha.numero }}
+                    ({{ vinculo.linha.plano.operadora.nome }} · {{ vinculo.linha.plano.nome }})
+                </li>
+                {% endif %}
+                {% if vinculo.aparelho.acessorios %}
+                <li><strong>Acessórios:</strong> {{ vinculo.aparelho.acessorios }}</li>
+                {% endif %}
+            </ul>
+            <p>
+                Comprometo-me a utilizar o(s) referido(s) item(ns) exclusivamente para fins profissionais,
+                zelando pela sua integridade e guarda. Em caso de dano, extravio ou mau uso,
+                responsabilizo-me pelos custos de reparo ou reposição.
+            </p>
+            <p>
+                <strong>Data de Entrega:</strong> {{ vinculo.data_entrega|date:"d/m/Y" }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Formulário de Assinatura -->
+    <form method="post" enctype="multipart/form-data" id="form-assinatura" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="signature_type" id="signature_type" value="draw">
+        <input type="hidden" name="assinatura_base64" id="assinatura_base64">
+
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-pen text-success me-2"></i>Sua Assinatura
+                </h6>
+            </div>
+            <div class="card-body p-4">
+
+                <!-- Tabs: Desenhar / Upload -->
+                <ul class="nav nav-pills mb-3" id="tabs-assinatura" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-desenhar" data-bs-toggle="pill"
+                                data-bs-target="#pane-desenhar" type="button" role="tab">
+                            <i class="bi bi-pencil me-1"></i>Desenhar
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-upload" data-bs-toggle="pill"
+                                data-bs-target="#pane-upload" type="button" role="tab">
+                            <i class="bi bi-cloud-upload me-1"></i>Upload de Imagem
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- Painel: Desenhar -->
+                    <div class="tab-pane fade show active" id="pane-desenhar" role="tabpanel">
+                        <div class="border rounded-3 bg-light p-2 position-relative">
+                            <canvas id="signature-canvas"
+                                    style="width: 100%; height: 200px; background: white; cursor: crosshair; border-radius: 0.25rem; touch-action: none;">
+                            </canvas>
+                            <div id="signature-placeholder"
+                                 class="position-absolute top-50 start-50 translate-middle text-muted pointer-events-none"
+                                 style="pointer-events: none; font-size: 0.9rem;">
+                                <i class="bi bi-hand-index me-1"></i>Assine aqui
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Use o mouse ou dedo para assinar
+                            </small>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-limpar">
+                                <i class="bi bi-eraser me-1"></i>Limpar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Painel: Upload -->
+                    <div class="tab-pane fade" id="pane-upload" role="tabpanel">
+                        <div class="mb-2">
+                            <input type="file" class="form-control"
+                                   name="assinatura_imagem_upload"
+                                   id="assinatura_imagem_upload"
+                                   accept="image/png,image/jpeg,image/jpg">
+                            <small class="form-text text-muted mt-1">
+                                Formatos aceitos: PNG, JPG · Tamanho máx: 5MB
+                            </small>
+                        </div>
+                        <div id="preview-upload" class="border rounded-3 p-3 text-center bg-light" style="display: none;">
+                            <img id="imagem-preview" src="" alt="Prévia" class="img-fluid" style="max-height: 200px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmação -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-body p-4">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="confirma_termo" required>
+                    <label for="confirma_termo" class="form-check-label">
+                        Declaro que <strong>li e concordo</strong> com o termo acima e confirmo o recebimento do(s) item(ns).
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="d-flex gap-2 justify-content-end flex-wrap">
+            <a href="{% url 'controle_de_telefone:vinculo_detail' vinculo.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+            <button type="submit" class="btn btn-success" id="btn-assinar">
+                <i class="bi bi-check-circle me-1"></i>Assinar e Confirmar
+            </button>
+        </div>
+    </form>
+
 </div>
+
+<script>
+(function() {
+    'use strict';
+
+    const canvas = document.getElementById('signature-canvas');
+    const placeholder = document.getElementById('signature-placeholder');
+    const btnLimpar = document.getElementById('btn-limpar');
+    const inputBase64 = document.getElementById('assinatura_base64');
+    const signatureType = document.getElementById('signature_type');
+    const form = document.getElementById('form-assinatura');
+    const tabDesenhar = document.getElementById('tab-desenhar');
+    const tabUpload = document.getElementById('tab-upload');
+    const inputUpload = document.getElementById('assinatura_imagem_upload');
+    const previewDiv = document.getElementById('preview-upload');
+    const imgPreview = document.getElementById('imagem-preview');
+    const checkConfirma = document.getElementById('confirma_termo');
+
+    let ctx, isDrawing = false, hasSignature = false;
+    let lastX = 0, lastY = 0;
+
+    // Ajusta resolução do canvas
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = '#1a1a1a';
+    }
+
+    // Coordenadas relativas
+    function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+        const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+        return { x, y };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawing = true;
+        const pos = getPos(e);
+        lastX = pos.x;
+        lastY = pos.y;
+        placeholder.style.display = 'none';
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        lastX = pos.x;
+        lastY = pos.y;
+        hasSignature = true;
+    }
+
+    function stopDraw() {
+        isDrawing = false;
+    }
+
+    function limparCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        hasSignature = false;
+        placeholder.style.display = '';
+        inputBase64.value = '';
+    }
+
+    // Eventos mouse
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+
+    // Eventos touch
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDraw);
+
+    btnLimpar.addEventListener('click', limparCanvas);
+
+    // Redimensiona no resize + inicial
+    window.addEventListener('resize', resizeCanvas);
+    // Aguarda layout para dimensionar corretamente
+    setTimeout(resizeCanvas, 50);
+
+    // Alternar tipo de assinatura ao mudar de tab
+    tabDesenhar.addEventListener('click', () => { signatureType.value = 'draw'; });
+    tabUpload.addEventListener('click', () => { signatureType.value = 'upload'; });
+
+    // Preview do upload
+    inputUpload.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            previewDiv.style.display = 'none';
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Arquivo muito grande. Máximo 5MB.');
+            inputUpload.value = '';
+            previewDiv.style.display = 'none';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            imgPreview.src = ev.target.result;
+            previewDiv.style.display = '';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // Validação e submit
+    form.addEventListener('submit', (e) => {
+        if (!checkConfirma.checked) {
+            e.preventDefault();
+            alert('Você precisa confirmar que leu e concorda com o termo.');
+            return;
+        }
+
+        if (signatureType.value === 'draw') {
+            if (!hasSignature) {
+                e.preventDefault();
+                alert('Desenhe sua assinatura antes de confirmar.');
+                return;
+            }
+            inputBase64.value = canvas.toDataURL('image/png');
+        } else if (signatureType.value === 'upload') {
+            if (!inputUpload.files || !inputUpload.files[0]) {
+                e.preventDefault();
+                alert('Selecione uma imagem da assinatura.');
+                return;
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}
-
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-<script src="{% static 'js/signature.js' %}"></script>
-{% endblock %}
-
-

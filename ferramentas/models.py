@@ -17,8 +17,6 @@ from django.urls import reverse
 from django.utils import timezone
 from core.managers import FilialQuerySet, FilialManager
 from departamento_pessoal.models import Funcionario
-from suprimentos.models import Parceiro
-
 
 # =============================================================================
 # QUERYSETS E MANAGERS CUSTOMIZADOS
@@ -201,7 +199,7 @@ class Ferramenta(models.Model):
         related_name='ferramentas', null=True
     )
     fornecedor = models.ForeignKey(
-        Parceiro, on_delete=models.SET_NULL,
+        'suprimentos.Parceiro', on_delete=models.SET_NULL,
         related_name='ferramentas_fornecidas',
         null=True, blank=True,
         verbose_name="Fornecedor Principal"

@@ -1362,3 +1362,22 @@ textarea:disabled {
     cursor: grabbing !important;
 }
 
+.image-unavailable {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    border-style: dashed !important;
+    border-color: #dee2e6 !important;
+    transition: background 0.2s;
+}
+
+.image-unavailable:hover {
+    background: #e9ecef !important;
+}
+
+.image-unavailable i {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}

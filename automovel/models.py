@@ -108,6 +108,9 @@ class Carro(BaseFilialModel):
         verbose_name = _("Carro")
         verbose_name_plural = _("Carros")
         ordering = ["marca", "modelo"]
+        permissions = [
+            ("view_all_automovel", "Pode ver todos os registros de automóveis da filial"),
+        ]
 
 
 # ═════════════════════════════════════════════════════════════════════════════

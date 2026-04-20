@@ -1,67 +1,86 @@
 # departamento_pessoal/urls.py
 from django.urls import path
+
 from .views import (
-    DocumentoCreateView, DocumentoDeleteView, DocumentoListView, DocumentoUpdateView, 
-    ExportarFuncionariosPDFView, ExportarFuncionariosExcelView, ExportarFuncionariosWordView,
-    FuncionarioAdmissaoView, FuncionarioListView, FuncionarioDetailView, 
-    FuncionarioCreateView, FuncionarioUpdateView, FuncionarioDeleteView,
+    # Painel
+    PainelDPView,
+    # Funcionários
+    FuncionarioListView, FuncionarioDetailView, FuncionarioCreateView,
+    FuncionarioUpdateView, FuncionarioDeleteView, FuncionarioAdmissaoView,
+    # Departamentos
     DepartamentoListView, DepartamentoCreateView, DepartamentoUpdateView,
-    CargoListView, CargoCreateView, CargoUpdateView, PainelDPView, UploadFuncionariosView, download_modelo_funcionarios_view,
-    importacao_massa_funcionarios_view, baixar_modelo_funcionarios, baixar_relatorio_erros
-    
+    # Cargos
+    CargoListView, CargoCreateView, CargoUpdateView,
+    # Documentos
+    DocumentoListView, DocumentoCreateView, DocumentoUpdateView, DocumentoDeleteView,
+    # Exportações
+    ExportarFuncionariosExcelView, ExportarFuncionariosPDFView, ExportarFuncionariosWordView,
+    # Upload / Importação (legado)
+    UploadFuncionariosView, baixar_modelo_funcionarios, baixar_relatorio_erros,
+    # Importação em Massa (novo serviço)
+    download_modelo_funcionarios_view, importacao_massa_funcionarios_view,
 )
 
 app_name = 'departamento_pessoal'
 
 urlpatterns = [
-    # A rota principal da app agora será a lista de funcionários
-    path('painel_dp', PainelDPView.as_view(), name='painel_dp'),
-    
-    
-    # Rotas para o CRUD de Funcionários
-    path('funcionarios', FuncionarioListView.as_view(), name='lista_funcionarios'),
+    # ─────────────────────────────────────────────────────
+    # Dashboard
+    # ─────────────────────────────────────────────────────
+    path('painel/', PainelDPView.as_view(), name='painel_dp'),
+
+    # ─────────────────────────────────────────────────────
+    # CRUD — Funcionários
+    # ─────────────────────────────────────────────────────
+    path('funcionarios/', FuncionarioListView.as_view(), name='lista_funcionarios'),
     path('funcionarios/novo/', FuncionarioCreateView.as_view(), name='funcionario_create'),
     path('funcionarios/<int:pk>/', FuncionarioDetailView.as_view(), name='detalhe_funcionario'),
     path('funcionarios/<int:pk>/editar/', FuncionarioUpdateView.as_view(), name='editar_funcionario'),
     path('funcionarios/<int:pk>/excluir/', FuncionarioDeleteView.as_view(), name='funcionario_delete'),
-
-    # NOVA URL PARA O PROCESSO DE ADMISSÃO
     path('funcionarios/<int:pk>/admissao/', FuncionarioAdmissaoView.as_view(), name='adicionar_admissao'),
 
-    # Rotas para o CRUD de Departamentos
+    # ─────────────────────────────────────────────────────
+    # CRUD — Departamentos
+    # ─────────────────────────────────────────────────────
     path('departamentos/', DepartamentoListView.as_view(), name='lista_departamento'),
     path('departamentos/novo/', DepartamentoCreateView.as_view(), name='departamento_form'),
     path('departamentos/<int:pk>/editar/', DepartamentoUpdateView.as_view(), name='departamento_update'),
-    
-    # Rotas para o CRUD de Cargos
+
+    # ─────────────────────────────────────────────────────
+    # CRUD — Cargos
+    # ─────────────────────────────────────────────────────
     path('cargos/', CargoListView.as_view(), name='lista_cargo'),
     path('cargos/novo/', CargoCreateView.as_view(), name='cargo_form'),
-    path('cargo/editar/<int:pk>/', CargoUpdateView.as_view(), name='edita_cargo'),
+    path('cargos/<int:pk>/editar/', CargoUpdateView.as_view(), name='edita_cargo'),
 
-    # Rota para exibir a lista de todos os documentos.
-    # O nome 'lista_documentos' permite referenciar esta URL em templates.
+    # ─────────────────────────────────────────────────────
+    # CRUD — Documentos
+    # ─────────────────────────────────────────────────────
     path('documentos/', DocumentoListView.as_view(), name='lista_documentos'),
-    # Rota para criar um novo documento sem um funcionário pré-definido.
     path('documentos/novo/', DocumentoCreateView.as_view(), name='criar_documento'),
-    # Rota para criar um novo documento, mas já associando a um funcionário específico
-    # através de um parâmetro na URL (<int:funcionario_pk>).
     path('documentos/novo/<int:funcionario_pk>/', DocumentoCreateView.as_view(), name='adicionar_documento'),
-    # Rota para editar um documento existente, identificado pelo seu ID (<int:pk>).
     path('documentos/<int:pk>/editar/', DocumentoUpdateView.as_view(), name='editar_documentos'),
     path('documentos/<int:pk>/excluir/', DocumentoDeleteView.as_view(), name='excluir_documento'),
 
-    # Rotas para relatórios
+    # ─────────────────────────────────────────────────────
+    # Relatórios / Exportações
+    # ─────────────────────────────────────────────────────
     path('funcionarios/exportar/excel/', ExportarFuncionariosExcelView.as_view(), name='exportar_excel'),
     path('funcionarios/exportar/pdf/', ExportarFuncionariosPDFView.as_view(), name='exportar_pdf'),
     path('funcionarios/exportar/word/', ExportarFuncionariosWordView.as_view(), name='exportar_word'),
 
+    # ─────────────────────────────────────────────────────
+    # Upload / Importação (legado)
+    # ─────────────────────────────────────────────────────
     path('funcionarios/upload/', UploadFuncionariosView.as_view(), name='upload_funcionarios'),
     path('funcionarios/upload/modelo/', baixar_modelo_funcionarios, name='baixar_modelo_funcionarios'),
     path('funcionarios/upload/relatorio-erros/', baixar_relatorio_erros, name='baixar_relatorio_erros'),
 
-    # Importação em Massa
-    path("importacao/modelo/", download_modelo_funcionarios_view, name="download_modelo_importacao_funcionarios",),
-    path( "importacao/", importacao_massa_funcionarios_view, name="importacao_massa_funcionarios"),
+    # ─────────────────────────────────────────────────────
+    # Importação em Massa (novo serviço)
+    # ─────────────────────────────────────────────────────
+    path('importacao/', importacao_massa_funcionarios_view, name='importacao_massa_funcionarios'),
+    path('importacao/modelo/', download_modelo_funcionarios_view, name='download_modelo_importacao_funcionarios'),
 ]
 
 

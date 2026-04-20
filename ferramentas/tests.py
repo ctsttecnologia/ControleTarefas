@@ -112,17 +112,17 @@ class FerramentasBaseTestCase(TestCase):
         # 5. Criar Funcionários
         cls.funcionario = Funcionario.objects.create(
             nome_completo='João da Silva Teste',
-            matricula=f'TESTE-{timestamp}',
+            matricula=f'TESTE-FUNC-{timestamp}',   # ← sufixo único
             filial=cls.filial,
             cargo=cls.cargo,
             funcao=cls.funcao,
             data_admissao=timezone.now().date(),
             departamento=cls.departamento
         )
-        
+
         cls.coordenador = Funcionario.objects.create(
             nome_completo='Maria Coordenadora Teste',
-            matricula=f'TESTE-{timestamp}',
+            matricula=f'TESTE-COORD-{timestamp}',  # ← sufixo único
             filial=cls.filial,
             cargo=cls.cargo,
             funcao=cls.funcao,
@@ -143,7 +143,7 @@ class FerramentasBaseTestCase(TestCase):
         cls.parceiro = Parceiro.objects.create(
             nome_fantasia='Fornecedor ABC Teste',
             filial=cls.filial,
-            cnpj_cpf='12.345.678/0001-99'
+            cnpj='12.345.678/0001-99'
         )
 
 

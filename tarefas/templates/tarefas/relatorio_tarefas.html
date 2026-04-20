@@ -482,15 +482,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     let statusData = [], priorityData = [];
     try {
-        statusData = JSON.parse('{{ status_data_json|escapejs }}' || '[]');
+        statusData   = JSON.parse('{{ status_data_json|escapejs }}'   || '[]');
         priorityData = JSON.parse('{{ priority_data_json|escapejs }}' || '[]');
     } catch(e) { console.error('Erro ao parsear dados:', e); }
 
-    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+    const isDark    = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
     const textColor = isDark ? '#8b8ea8' : '#6b7280';
 
-    Chart.defaults.color = textColor;
+    Chart.defaults.color       = textColor;
     Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
 
     const statusColors = {
@@ -499,43 +499,72 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     const prioColors = { 'alta': '#ef4444', 'media': '#f59e0b', 'baixa': '#22c55e' };
 
-    // Status Chart
+    // ═══ Status Chart (Doughnut) ═══
     const statusCtx = document.getElementById('statusChart');
     if (statusCtx && statusData.length) {
         new Chart(statusCtx, {
             type: 'doughnut',
             data: {
-                labels: statusData.map(i => i.status || i.label),
+                labels: statusData.map(i => i.label),
                 datasets: [{
-                    data: statusData.map(i => i.total || i.count),
-                    backgroundColor: statusData.map(i => statusColors[i.status || i.key] || '#94a3b8'),
-                    borderWidth: 0, hoverOffset: 6,
+                    data: statusData.map(i => i.total),
+                    backgroundColor: statusData.map(i => statusColors[i.key] || '#94a3b8'),
+                    borderWidth: 0,
+                    hoverOffset: 6,
                 }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false, cutout: '60%',
-                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 14, font: { size: 11 } } } }
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, padding: 14, font: { size: 11 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const item = statusData[ctx.dataIndex];
+                                return ` ${item.label}: ${item.total} (${item.percentual}%)`;
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
-    // Priority Chart
+    // ═══ Priority Chart (Bar) ═══
     const prioCtx = document.getElementById('priorityChart');
     if (prioCtx && priorityData.length) {
         new Chart(prioCtx, {
             type: 'bar',
             data: {
-                labels: priorityData.map(i => i.prioridade || i.label),
+                labels: priorityData.map(i => i.label),
                 datasets: [{
                     label: 'Tarefas',
-                    data: priorityData.map(i => i.total || i.count),
-                    backgroundColor: priorityData.map(i => prioColors[i.prioridade || i.key] || '#94a3b8'),
-                    borderRadius: 6, borderSkipped: false, barThickness: 40,
+                    data: priorityData.map(i => i.total),
+                    backgroundColor: priorityData.map(i => prioColors[i.key] || '#94a3b8'),
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    barThickness: 40,
                 }]
             },
             options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const item = priorityData[ctx.dataIndex];
+                                return ` ${item.label}: ${item.total} (${item.percentual}%)`;
+                            }
+                        }
+                    }
+                },
                 scales: {
                     x: { grid: { display: false } },
                     y: { beginAtZero: true, grid: { color: gridColor }, ticks: { stepSize: 1 } }
@@ -544,15 +573,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // PRINT: Converter Canvas → Imagem para impressão
-    // ═══════════════════════════════════════════════════════════
-
+    // ═══ PRINT: Canvas → Imagem ═══
     window.addEventListener('beforeprint', function() {
         document.querySelectorAll('.rel-chart-container canvas').forEach(function(canvas) {
-            // Só converte se ainda não tiver imagem de print
             if (canvas.parentNode.querySelector('.print-chart-img')) return;
-
             try {
                 const img = document.createElement('img');
                 img.src = canvas.toDataURL('image/png');
@@ -564,14 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-
-    window.addEventListener('afterprint', function() {
-        // Limpa as imagens após a impressão (opcional)
-        // As imagens ficam ocultas na tela, então não atrapalham
-    });
 });
 </script>
 {% endblock %}
-
-
 

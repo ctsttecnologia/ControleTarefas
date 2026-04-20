@@ -7,7 +7,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from departamento_pessoal.models import Cargo
-from suprimentos.models import Parceiro
 from core.managers import FilialManager
 from usuario.models import Filial
 
@@ -86,7 +85,7 @@ class Equipamento(models.Model):
     nome = models.CharField(max_length=150, verbose_name=_("Descrição EPI"))
     modelo = models.CharField(max_length=100, blank=True, verbose_name=_("Modelo"))
     fabricante = models.ForeignKey(
-        Parceiro,
+        'suprimentos.Parceiro',
         on_delete=models.PROTECT,
         limit_choices_to={'eh_fabricante': True},
         related_name='equipamentos_fabricados'
@@ -294,9 +293,8 @@ class MovimentacaoEstoque(models.Model):
     equipamento = models.ForeignKey(Equipamento, on_delete=models.PROTECT, related_name='movimentacoes_estoque')
     tipo = models.CharField(max_length=7, choices=MOVIMENTACAO)
     quantidade = models.IntegerField()
-    # ALTERADO: O campo agora pode ser nulo, pois nem toda movimentação (ex: Saída) tem um fornecedor.
     fornecedor = models.ForeignKey(
-        Parceiro,
+        'suprimentos.Parceiro',
         on_delete=models.PROTECT,
         limit_choices_to={'eh_fornecedor': True},
         related_name='movimentacoes_por_fornecedor',

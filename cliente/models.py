@@ -176,6 +176,9 @@ class Cliente(models.Model):
             models.Index(fields=["contrato"], name="idx_cliente_contrato"),
             models.Index(fields=["filial", "estatus"], name="idx_cliente_filial_status"),
         ]
+        permissions = [
+            ("view_all_cliente", "Pode ver todos os clientes da filial"),
+        ]
 
     # =========================================================================
     # STRING REPRESENTATION

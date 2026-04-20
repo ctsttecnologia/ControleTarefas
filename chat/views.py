@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import uuid
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -16,10 +15,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views import View
 from django.views.decorators.http import require_GET, require_POST
-
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-
+from core.decorators import app_permission_required
 from core.mixins import AppPermissionMixin
 from .models import ChatRoom, Message
 
@@ -43,11 +41,12 @@ def _get_room_for_user(user, room_id):
 
 
 # =============================================================================
-# LISTA DE USUÁRIOS (para criar DMs/grupos)
+# LISTA DE USUÁRIOS
 # =============================================================================
 
-@login_required
-@require_GET
+@login_required                     # 3º — checa login primeiro (mais externo)
+@app_permission_required('chat')    # 2º — checa permissão do app
+@require_GET                        # 1º — valida método HTTP (mais interno)
 def get_user_list(request):
     """Lista usuários para criar grupos/DMs."""
     try:
@@ -82,6 +81,7 @@ def get_user_list(request):
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 @require_GET
 def get_chat_history(request, room_id):
     """Retorna o histórico de mensagens de uma sala."""
@@ -144,10 +144,11 @@ def get_chat_history(request, room_id):
 
 
 # =============================================================================
-# LISTA DE TAREFAS (para vincular chat a tarefa)
+# LISTA DE TAREFAS
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 @require_GET
 def get_task_list(request):
     """Lista tarefas do usuário."""
@@ -190,6 +191,7 @@ def get_task_list(request):
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 @require_GET
 def get_active_room_list(request):
     """Retorna lista de salas ativas do usuário."""
@@ -223,10 +225,11 @@ def get_active_room_list(request):
 
 
 # =============================================================================
-# DM — Mensagem Direta
+# DM
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 @require_GET
 def start_or_get_dm_chat(request, user_id):
     """Inicia ou busca chat DM com outro usuário."""
@@ -239,7 +242,6 @@ def start_or_get_dm_chat(request, user_id):
                 'error': 'Não pode enviar DM para si mesmo',
             }, status=400)
 
-        # ✅ Busca DM existente entre os dois usuários (query única)
         room = ChatRoom.objects.filter(
             room_type='DM',
             is_group_chat=False,
@@ -263,7 +265,6 @@ def start_or_get_dm_chat(request, user_id):
             room.participants.add(request.user, other_user)
             is_new_room = True
 
-        # Notifica o outro usuário se a sala é nova
         if is_new_room:
             try:
                 channel_layer = get_channel_layer()
@@ -298,10 +299,11 @@ def start_or_get_dm_chat(request, user_id):
 
 
 # =============================================================================
-# GRUPO — Criar Chat em Grupo
+# GRUPO
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 @require_POST
 def create_group_chat(request):
     """Cria chat em grupo."""
@@ -348,10 +350,11 @@ def create_group_chat(request):
 
 
 # =============================================================================
-# TAREFA — Chat de Tarefa
+# TAREFA
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 def get_or_create_task_chat(request, task_id):
     """Chat de tarefa."""
     try:
@@ -387,7 +390,7 @@ def get_or_create_task_chat(request, task_id):
 
 
 # =============================================================================
-# UPLOAD — Imagens (CBV)
+# UPLOAD — Imagens (CBV) — já tinha AppPermissionMixin ✅
 # =============================================================================
 
 class ChatImageUploadView(LoginRequiredMixin, AppPermissionMixin, View):
@@ -401,7 +404,7 @@ class ChatImageUploadView(LoginRequiredMixin, AppPermissionMixin, View):
 
             image_file = request.FILES['image']
 
-            if image_file.size > 5 * 1024 * 1024:  # 5MB
+            if image_file.size > 5 * 1024 * 1024:
                 return JsonResponse({'error': 'Muito grande (máx 5MB)'}, status=400)
 
             allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -433,6 +436,7 @@ class ChatImageUploadView(LoginRequiredMixin, AppPermissionMixin, View):
 # =============================================================================
 
 @login_required
+@app_permission_required('chat')
 @require_POST
 def chat_file_upload(request):
     """Upload de arquivo para o chat."""
@@ -452,7 +456,6 @@ def chat_file_upload(request):
                 'error': 'room_id é obrigatório',
             }, status=400)
 
-        # ✅ Verifica se o usuário é participante da sala
         room = _get_room_for_user(request.user, room_id)
         if not room:
             return JsonResponse({
@@ -460,7 +463,6 @@ def chat_file_upload(request):
                 'error': 'Sala não encontrada ou acesso negado',
             }, status=403)
 
-        # Validação de tamanho (10MB)
         max_size = 10 * 1024 * 1024
         if file.size > max_size:
             return JsonResponse({

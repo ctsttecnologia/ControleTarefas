@@ -38,6 +38,8 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.contrib.messages import get_messages
 from django.core.exceptions import ObjectDoesNotExist
+from ata_reuniao import models
+
 
 User = get_user_model()
 
@@ -50,6 +52,11 @@ class FilialAtivaMixin:
     """
     Mixin central para obter a filial ativa do usuário.
     Usa a chave 'active_filial_id' da sessão (definida pelo seletor do header).
+
+    NOTA: Este mixin é independente do ViewFilialScopedMixin do core.
+    - ViewFilialScopedMixin → age no get_queryset() via for_request()
+    - FilialAtivaMixin → fornece métodos utilitários para filial ativa
+    Ambos coexistem sem conflito.
     """
 
     def get_filial_ativa(self):
@@ -94,27 +101,111 @@ class FilialAtivaMixin:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# MIXIN DE VISIBILIDADE — CONTROLE CENTRAL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AtaVisibilityMixin(FilialAtivaMixin):
+    """
+    Controla a visibilidade das atas de reunião conforme o perfil do usuário.
+
+    Hierarquia de camadas (não conflita com core/mixins.py):
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │ Camada 1: ViewFilialScopedMixin (core)                              │
+    │   → Filtra por filial no get_queryset() via for_request()           │
+    │                                                                      │
+    │ Camada 2: AtaVisibilityMixin (este mixin)                           │
+    │   → Filtra por perfil do usuário via apply_visibility()              │
+    │   → Chamado EXPLICITAMENTE após o queryset já filtrado por filial    │
+    │                                                                      │
+    │ Camada 3: Filtros GET (status, contrato, coordenador)               │
+    │   → Aplicados no AtaQuerysetMixin                                    │
+    └──────────────────────────────────────────────────────────────────────┘
+
+    Regras de visibilidade:
+    ┌─────────────────────────────────┬────────────────────────────────────────┐
+    │ Perfil                          │ Visibilidade                           │
+    ├─────────────────────────────────┼────────────────────────────────────────┤
+    │ Superuser                       │ Todas as atas (sem filtro)             │
+    │ Permissão view_all_ata_reuniao  │ Todas as atas da filial ativa         │
+    │ Usuário comum                   │ Apenas atas onde é coordenador ou      │
+    │                                 │ responsável (via Funcionario)          │
+    └─────────────────────────────────┴────────────────────────────────────────┘
+    """
+
+    def apply_visibility(self, queryset):
+        """Aplica filtro de visibilidade ao queryset já filtrado por filial."""
+        user = self.request.user
+
+        # Superuser → tudo
+        if user.is_superuser:
+            return queryset
+
+        # Permissão global da filial → tudo da filial
+        if user.has_perm('ata_reuniao.view_all_ata_reuniao'):
+            return queryset
+
+        # Usuário comum → apenas atas relacionadas ao seu Funcionario
+        funcionario = getattr(user, 'funcionario', None)
+
+        if funcionario:
+            return queryset.filter(
+                Q(coordenador=funcionario)
+                | Q(responsavel=funcionario)
+            ).distinct()
+
+        # Sem vínculo de funcionário → nenhuma ata
+        return queryset.none()
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MIXINS BASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class AtaReuniaoBaseMixin(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, ViewFilialScopedMixin):
-    """Mixin base para as views de Ata de Reunião."""
+class AtaReuniaoBaseMixin(
+    LoginRequiredMixin, AppPermissionMixin,
+    AtaVisibilityMixin, ViewFilialScopedMixin,
+):
+    """
+    Mixin base para as views de Ata de Reunião.
+
+    Ordem de herança (MRO):
+    1. LoginRequiredMixin     → garante autenticação
+    2. AppPermissionMixin     → verifica permissão do app (core)
+    3. AtaVisibilityMixin     → fornece apply_visibility() + FilialAtivaMixin
+    4. ViewFilialScopedMixin  → filtra get_queryset() por filial via for_request()
+
+    NOTA: ViewFilialScopedMixin.get_queryset() aplica filtro de filial.
+    AtaVisibilityMixin.apply_visibility() é chamado separadamente onde necessário.
+    Não há conflito porque operam em momentos diferentes.
+    """
     model = AtaReuniao
     form_class = AtaReuniaoForm
     success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
     app_label_required = 'ata_reuniao'
 
 
-class AtaQuerysetMixin(FilialAtivaMixin):
-    """Mixin para filtrar AtaReuniao por filial e parâmetros GET."""
+class AtaQuerysetMixin(AtaVisibilityMixin):
+    """
+    Mixin para filtrar AtaReuniao por filial, visibilidade e parâmetros GET.
+
+    Pipeline de filtragem:
+    1. for_request() ou filter_queryset_by_filial() → escopo da filial
+    2. apply_visibility()                            → escopo do perfil
+    3. filtros GET (contrato, status, coordenador)   → refinamento
+    """
 
     def get_ata_queryset(self, request, model_class):
+        # Camada 1: Filial scope
         if hasattr(model_class.objects, 'for_request'):
             queryset = model_class.objects.for_request(request)
         else:
             queryset = model_class.objects.all()
             queryset = self.filter_queryset_by_filial(queryset)
 
+        # Camada 2: Visibilidade por perfil
+        queryset = self.apply_visibility(queryset)
+
+        # Camada 3: Filtros GET
         contrato_id = request.GET.get('contrato')
         status = request.GET.get('status')
         coordenador_id = request.GET.get('coordenador')
@@ -151,6 +242,10 @@ class AtaFilterContextMixin(FilialAtivaMixin):
         return {
             'filial_ativa': filial_ativa,
             'is_superuser': self.request.user.is_superuser,
+            'can_view_all': (
+                self.request.user.is_superuser
+                or self.request.user.has_perm('ata_reuniao.view_all_ata_reuniao')
+            ),
             'coordenadores': coordenadores_qs.select_related('usuario').order_by('nome_completo'),
             'clientes': clientes_qs.order_by('nome')[:100],
         }
@@ -229,6 +324,11 @@ class AtaReuniaoUpdateView(AtaReuniaoBaseMixin, SuccessMessageMixin, UpdateView)
     template_name = 'ata_reuniao/ata_form.html'
     success_message = "🔄 Ata de reunião atualizada com sucesso!"
 
+    def get_queryset(self):
+        """Garante que o usuário só edite atas que pode ver."""
+        qs = super().get_queryset()
+        return self.apply_visibility(qs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
@@ -257,7 +357,9 @@ class AtaReuniaoDetailView(AtaReuniaoBaseMixin, DetailView):
     context_object_name = 'ata'
 
     def get_queryset(self):
-        return super().get_queryset().prefetch_related('historico__usuario')
+        """Garante que o usuário só veja detalhes de atas que pode ver."""
+        qs = super().get_queryset().prefetch_related('historico__usuario')
+        return self.apply_visibility(qs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -269,11 +371,13 @@ class AtaReuniaoAddCommentView(AtaReuniaoBaseMixin, View):
     """Adiciona comentário a uma ata existente."""
 
     def post(self, request, pk, *args, **kwargs):
-        ata = get_object_or_404(
-            AtaReuniao.objects.for_request(request) if hasattr(AtaReuniao.objects, 'for_request')
-            else AtaReuniao.objects.all(),
-            pk=pk,
-        )
+        # Busca apenas atas que o usuário pode ver
+        base_qs = AtaReuniao.objects.all()
+        base_qs = self.filter_queryset_by_filial(base_qs)
+        base_qs = self.apply_visibility(base_qs)
+
+        ata = get_object_or_404(base_qs, pk=pk)
+
         form = ComentarioForm(request.POST)
         if form.is_valid():
             HistoricoAta.objects.create(
@@ -290,12 +394,57 @@ class AtaReuniaoAddCommentView(AtaReuniaoBaseMixin, View):
 
 
 class AtaReuniaoDeleteView(AtaReuniaoBaseMixin, SuccessMessageMixin, DeleteView):
-    template_name = 'ata_reuniao/ata_confirm_delete.html'
-    success_message = "🗑️ Ata de reunião excluída com sucesso!"
 
-    def form_valid(self, form):
-        messages.success(self.request, self.success_message)
-        return super().form_valid(form)
+    """
+    View para exclusão de Ata de Reunião.
+    
+    NOTA: NÃO usar SuccessMessageMixin com DeleteView no Django 5.x.
+    O mixin falha silenciosamente porque DeleteView.form_valid()
+    não expõe form.cleaned_data da mesma forma que CreateView/UpdateView.
+    A mensagem de sucesso é adicionada manualmente no post().
+    """
+    template_name = 'ata_reuniao/ata_confirm_delete.html'
+    success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
+
+    def get_queryset(self):
+        """Garante que o usuário só exclua atas que pode ver."""
+        qs = super().get_queryset()
+        return self.apply_visibility(qs)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Sobrescreve o POST para controlar o fluxo completo:
+        1. Busca o objeto
+        2. Tenta deletar
+        3. Exibe mensagem de sucesso ou erro
+        """
+        self.object = self.get_object()
+        
+        try:
+            self.object.delete()
+            messages.success(
+                request,
+                f'🗑️ Ata "{self.object}" excluída com sucesso!'
+            )
+            return redirect(self.get_success_url())
+        
+        except models.ProtectedError:
+            messages.error(
+                request,
+                "❌ Não foi possível excluir esta ata. "
+                "Existem registros vinculados que impedem a exclusão."
+            )
+            return redirect(
+                'ata_reuniao:ata_reuniao_detail', pk=self.object.pk
+            )
+        except Exception as e:
+            messages.error(
+                request,
+                f"❌ Erro inesperado ao excluir: {e}"
+            )
+            return redirect(
+                'ata_reuniao:ata_reuniao_detail', pk=self.object.pk
+            )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -320,6 +469,7 @@ class AtaReuniaoDashboardView(
         # Filtros compartilhados via mixin
         context.update(self.get_filter_context())
 
+        # Queryset já com visibilidade aplicada
         base_queryset = self.get_ata_queryset(self.request, model_class=AtaReuniao)
 
         # ── KPIs ──
@@ -415,6 +565,7 @@ class AtaReuniaoKanbanView(
         # Filtros compartilhados
         context.update(self.get_filter_context())
 
+        # Queryset já com visibilidade aplicada
         base_queryset = self.get_ata_queryset(self.request, model_class=AtaReuniao)
 
         kanban_items = {}
@@ -450,10 +601,11 @@ class AtaReuniaoKanbanView(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @method_decorator(csrf_exempt, name='dispatch')
-class AtaUpdateStatusAPIView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, View):
+class AtaUpdateStatusAPIView(LoginRequiredMixin, AppPermissionMixin, AtaVisibilityMixin, View):
     """
     Endpoint unificado para atualizar status de ata via drag & drop (Kanban).
     Aceita POST com JSON: {"new_status": "concluido"}
+    Respeita visibilidade — só atualiza atas que o usuário pode ver.
     """
     app_label_required = 'ata_reuniao'
 
@@ -474,20 +626,16 @@ class AtaUpdateStatusAPIView(LoginRequiredMixin, AppPermissionMixin, FilialAtiva
                     'status': 'error', 'message': f'Status inválido: {new_status}'
                 }, status=400)
 
-            # Busca com filtro de filial
-            filial_ativa = self.get_filial_ativa()
+            # Busca com filtro de filial + visibilidade
+            base_qs = AtaReuniao.objects.all()
+            base_qs = self.filter_queryset_by_filial(base_qs)
+            base_qs = self.apply_visibility(base_qs)
+
             try:
-                if filial_ativa:
-                    ata = AtaReuniao.objects.get(pk=pk, filial=filial_ativa)
-                elif request.user.is_superuser:
-                    ata = AtaReuniao.objects.get(pk=pk)
-                else:
-                    return JsonResponse({
-                        'status': 'error', 'message': 'Ata não encontrada ou acesso negado'
-                    }, status=404)
+                ata = base_qs.get(pk=pk)
             except AtaReuniao.DoesNotExist:
                 return JsonResponse({
-                    'status': 'error', 'message': 'Ata não encontrada'
+                    'status': 'error', 'message': 'Ata não encontrada ou acesso negado'
                 }, status=404)
 
             old_status = ata.status
@@ -520,9 +668,11 @@ class AtaUpdateStatusAPIView(LoginRequiredMixin, AppPermissionMixin, FilialAtiva
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AtaReuniaoPDFExportView(LoginRequiredMixin, AppPermissionMixin, AtaQuerysetMixin, View):
+    """Exporta PDF respeitando visibilidade."""
     app_label_required = 'ata_reuniao'
 
     def get(self, request, *args, **kwargs):
+        # Queryset já com visibilidade aplicada
         atas = self.get_ata_queryset(request, model_class=AtaReuniao)
         filial_ativa = self.get_filial_ativa()
 
@@ -558,9 +708,11 @@ class AtaReuniaoPDFExportView(LoginRequiredMixin, AppPermissionMixin, AtaQueryse
 
 
 class AtaReuniaoExcelExportView(LoginRequiredMixin, AppPermissionMixin, AtaQuerysetMixin, View):
+    """Exporta Excel respeitando visibilidade."""
     app_label_required = 'ata_reuniao'
 
     def get(self, request, *args, **kwargs):
+        # Queryset já com visibilidade aplicada
         atas = self.get_ata_queryset(request, model_class=AtaReuniao)
 
         buffer = io.BytesIO()

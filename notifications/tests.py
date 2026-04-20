@@ -28,7 +28,7 @@ User = get_user_model()
 # URL NAMES — centralizados para fácil manutenção
 # ═════════════════════════════════════════════════════════════════════════════
 
-URL_LISTA = 'notifications:lista'
+URL_LISTA = 'notifications:notificacao_list'
 URL_MARCAR_LIDA = 'notifications:marcar_como_lida'
 URL_MARCAR_TODAS = 'notifications:marcar_todas_como_lidas'
 URL_API_CONTAGEM = 'notifications:api_contagem'
@@ -436,9 +436,10 @@ class NotificacaoModelTest(NotificacaoTestBase):
             password=TEST_PASSWORD,
         )
         Notificacao.objects.create(usuario=user_temp, titulo='Temp')
+        user_temp_id = user_temp.pk
         user_temp.delete()
         self.assertEqual(
-            Notificacao.objects.filter(usuario=user_temp).count(), 0,
+            Notificacao.objects.filter(usuario_id=user_temp_id).count(), 0,
         )
 
     # ── Campos opcionais ──

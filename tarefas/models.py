@@ -151,6 +151,7 @@ class Tarefas(models.Model):
             ('view_relatorio',  'Pode ver relatórios de tarefas'),
             ('view_kanban',     'Pode ver o quadro Kanban'),
             ('view_calendario', 'Pode ver o calendário de tarefas'),
+            ('view_all_tarefas', 'Pode visualizar todas as tarefas'),
         ]
 
     def __str__(self):

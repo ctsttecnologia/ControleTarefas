@@ -3,45 +3,155 @@
 
 import io
 import json
+from datetime import timedelta, datetime
+
 from django.conf import settings
-from django.shortcuts import get_object_or_404, redirect
-from django.views.generic import (
-    ListView, DetailView, CreateView, UpdateView, View, TemplateView
-)
-from django.urls import reverse_lazy, reverse
-from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse, Http404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
+from django.http import (
+    Http404, HttpResponse, HttpResponseBadRequest, JsonResponse,
+)
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from datetime import timedelta, datetime
+from django.views.generic import (
+    CreateView, DetailView, ListView, TemplateView, UpdateView, View,
+)
 
+# Bibliotecas de terceiros
 from docx import Document
-from docx.shared import Inches, Pt
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.shared import Inches
 from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-from openpyxl.utils import get_column_letter
 from openpyxl.cell import MergedCell
-
-from core.mixins import ViewFilialScopedMixin, AppPermissionMixin
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+from core.mixins import AppPermissionMixin, ViewFilialScopedMixin
+from departamento_pessoal.models import Funcionario
+from .models import Filial
+from .forms import AgendamentoForm, CarroForm, ChecklistForm, ManutencaoForm
 from .models import (
     Carro, Carro_agendamento, Carro_checklist,
-    Carro_rastreamento, Carro_manutencao
+    Carro_manutencao, Carro_rastreamento,
 )
-from .forms import CarroForm, AgendamentoForm, ChecklistForm, ManutencaoForm
 
 
-# =============================================================================
-# MIXINS LOCAIS DO APP
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIXIN CENTRAL DE FILIAL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class FilialAtivaMixin:
+    """Fornece utilitários para obter/filtrar pela filial ativa do usuário."""
+
+    def get_filial_ativa(self):
+        filial_id = self.request.session.get('active_filial_id')
+        if filial_id:
+            try:
+                return Filial.objects.get(pk=filial_id)
+            except Filial.DoesNotExist:
+                pass
+
+        user = self.request.user
+        filial_ativa = getattr(user, 'filial_ativa', None)
+        if filial_ativa:
+            return filial_ativa
+
+        try:
+            funcionario = Funcionario.objects.select_related('filial').get(usuario=user)
+            return funcionario.filial
+        except Funcionario.DoesNotExist:
+            pass
+
+        return None
+
+    def get_filial_ativa_id(self):
+        filial = self.get_filial_ativa()
+        return filial.id if filial else None
+
+    def filter_queryset_by_filial(self, queryset):
+        filial = self.get_filial_ativa()
+        if filial:
+            return queryset.filter(filial=filial)
+        elif not self.request.user.is_superuser:
+            return queryset.none()
+        return queryset
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIXIN DE VISIBILIDADE POR PERFIL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AutomovelVisibilityMixin(FilialAtivaMixin):
+    """
+    Controla visibilidade dos registros do app Automóvel.
+
+    Regras:
+    - Superuser           → tudo
+    - view_all_automovel  → tudo da filial ativa
+    - Usuário comum       → apenas registros onde é owner (owner_field)
+
+    IMPORTANTE: se a view usa um model que NÃO tem campo 'usuario' (ex.: Carro),
+    defina `apply_owner_filter = False` para não quebrar.
+    """
+
+    owner_field = 'usuario'
+    apply_owner_filter = True  # False para models sem campo de "dono"
+
+    def apply_visibility(self, queryset):
+        user = self.request.user
+
+        if user.is_superuser:
+            return queryset
+
+        if user.has_perm('automovel.view_all_automovel'):
+            return queryset
+
+        if not self.apply_owner_filter:
+            # Model sem "dono" (ex.: Carro) → sem filtro adicional (só filial scope)
+            return queryset
+
+        return queryset.filter(**{self.owner_field: user})
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIXIN BASE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AutomovelBaseMixin(
+    LoginRequiredMixin, AppPermissionMixin,
+    AutomovelVisibilityMixin, ViewFilialScopedMixin,
+):
+    """Mixin base para todas as views do app Automóvel."""
+    app_label_required = 'automovel'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not request.user.is_superuser:
+            try:
+                _ = request.user.funcionario
+            except ObjectDoesNotExist:
+                return render(request, 'automovel/acesso_negado.html', {
+                    'titulo': 'Acesso Restrito',
+                    'mensagem': (
+                        'Sua conta não está vinculada a um cadastro de Funcionário. '
+                        'Contate o RH ou Administrador para acessar o módulo de Automóveis.'
+                    )
+                }, status=403)
+        return super().dispatch(request, *args, **kwargs)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MIXINS LOCAIS DO APP (reutilizáveis)
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class ChecklistFormSectionsMixin:
-    """Organiza os campos do formulário de checklist em seções para o template."""
+    """Organiza os campos do checklist em seções para o template."""
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -75,29 +185,52 @@ class ChecklistFormSectionsMixin:
         return context
 
 
-# =============================================================================
-# DASHBOARD E CALENDÁRIO
-# =============================================================================
+class _ReverseGeocodeMixin:
+    """Geocoding reverso via OpenStreetMap Nominatim."""
 
-class DashboardView(AppPermissionMixin, ListView):
-    app_label_required = 'automovel'
+    def _reverse_geocode(self, lat, lng):
+        try:
+            import requests as http_requests
+            headers = {'User-Agent': 'ControleTarefas/1.0 (esg@cetestsp.com.br)'}
+            response = http_requests.get(
+                f'https://nominatim.openstreetmap.org/reverse'
+                f'?format=json&lat={lat}&lon={lng}&zoom=18',
+                headers=headers, timeout=5,
+            )
+            if response.status_code == 200:
+                return response.json().get('display_name', 'Endereço não identificado')
+        except Exception:
+            pass
+        return 'Endereço não disponível'
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DASHBOARD E CALENDÁRIO
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class DashboardView(AutomovelBaseMixin, ListView):
     template_name = 'automovel/dashboard.html'
     context_object_name = 'ultimos_agendamentos'
     model = Carro_agendamento
 
     def get_queryset(self):
-        return (
+        qs = (
             Carro_agendamento.objects.for_request(self.request)
             .select_related('carro', 'usuario')
-            .order_by('-data_hora_agenda')[:5]
         )
+        qs = self.apply_visibility(qs)
+        return qs.order_by('-data_hora_agenda')[:5]
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         hoje = timezone.now().date()
 
+        # Carro não tem campo 'usuario' → desabilita filtro de owner
         carros_qs = Carro.objects.for_request(self.request).filter(ativo=True)
-        agendamentos_qs = Carro_agendamento.objects.for_request(self.request)
+
+        agendamentos_qs = self.apply_visibility(
+            Carro_agendamento.objects.for_request(self.request)
+        )
 
         context['total_carros'] = carros_qs.count()
         context['carros_disponiveis'] = carros_qs.filter(disponivel=True).count()
@@ -108,18 +241,20 @@ class DashboardView(AppPermissionMixin, ListView):
             data_proxima_manutencao__lte=hoje + timedelta(days=7),
             data_proxima_manutencao__gte=hoje,
         ).count()
+        context['filial_ativa'] = self.get_filial_ativa()
         return context
 
 
-class CalendarioView(AppPermissionMixin, TemplateView):
-    app_label_required = 'automovel'
+class CalendarioView(AutomovelBaseMixin, TemplateView):
     template_name = 'automovel/calendario.html'
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['filial_ativa'] = self.get_filial_ativa()
+        return ctx
 
-class CalendarioAPIView(AppPermissionMixin, View):
-    app_label_required = 'automovel'
 
-    # Mapeamento de cores por status do agendamento
+class CalendarioAPIView(AutomovelBaseMixin, View):
     STATUS_COLORS = {
         'agendado': '#0d6efd',
         'em_andamento': '#ffc107',
@@ -133,13 +268,15 @@ class CalendarioAPIView(AppPermissionMixin, View):
         return JsonResponse(eventos, safe=False)
 
     def _get_eventos_agendamentos(self, request):
-        agendamentos = (
+        qs = (
             Carro_agendamento.objects.for_request(request)
             .filter(cancelar_agenda=False)
             .select_related('carro')
         )
+        qs = self.apply_visibility(qs)
+
         eventos = []
-        for ag in agendamentos:
+        for ag in qs:
             start = ag.data_hora_agenda
             end = ag.data_hora_devolucao or start + timedelta(hours=1)
             eventos.append({
@@ -154,12 +291,14 @@ class CalendarioAPIView(AppPermissionMixin, View):
         return eventos
 
     def _get_eventos_manutencoes(self, request):
-        manutencoes = (
+        qs = (
             Carro_manutencao.objects.for_request(request)
             .select_related('carro')
         )
+        qs = self.apply_visibility(qs)
+
         eventos = []
-        for man in manutencoes:
+        for man in qs:
             cor = '#6c757d' if man.concluida else '#d63384'
             prefixo = '✅ (OK) ' if man.concluida else ''
             eventos.append({
@@ -174,56 +313,62 @@ class CalendarioAPIView(AppPermissionMixin, View):
         return eventos
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # CARRO CRUD
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
-class CarroListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'automovel'
+class CarroListView(AutomovelBaseMixin, ListView):
+    """Carro não tem dono → apply_owner_filter = False"""
     model = Carro
     template_name = 'automovel/carro_list.html'
     context_object_name = 'carros'
     paginate_by = 10
+    apply_owner_filter = False
 
     def get_queryset(self):
-        queryset = super().get_queryset().filter(ativo=True)
+        qs = Carro.objects.for_request(self.request).filter(ativo=True)
+        qs = self.apply_visibility(qs)
         search = self.request.GET.get('search')
         if search:
-            queryset = queryset.filter(
+            qs = qs.filter(
                 Q(placa__icontains=search)
                 | Q(modelo__icontains=search)
                 | Q(marca__icontains=search)
             )
-        return queryset
+        return qs
 
 
-class CarroCreateView(AppPermissionMixin, SuccessMessageMixin, CreateView):
-    app_label_required = 'automovel'
+class CarroCreateView(AutomovelBaseMixin, SuccessMessageMixin, CreateView):
     model = Carro
     form_class = CarroForm
     template_name = 'automovel/carro_form.html'
     success_url = reverse_lazy('automovel:carro_list')
     success_message = "Carro cadastrado com sucesso!"
+    apply_owner_filter = False
 
     def form_valid(self, form):
-        form.instance.filial = self.request.user.filial_ativa
+        filial = self.get_filial_ativa()
+        if not filial:
+            messages.error(self.request, "Nenhuma filial ativa. Selecione uma filial no menu superior.")
+            return self.form_invalid(form)
+        form.instance.filial = filial
         return super().form_valid(form)
 
 
-class CarroUpdateView(AppPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
-    app_label_required = 'automovel'
+class CarroUpdateView(AutomovelBaseMixin, SuccessMessageMixin, UpdateView):
     model = Carro
     form_class = CarroForm
     template_name = 'automovel/carro_form.html'
     success_url = reverse_lazy('automovel:carro_list')
     success_message = "Carro atualizado com sucesso!"
+    apply_owner_filter = False
 
 
-class CarroDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = 'automovel'
+class CarroDetailView(AutomovelBaseMixin, DetailView):
     model = Carro
     template_name = 'automovel/carro_detail.html'
-    context_object_name = "carro" 
+    context_object_name = "carro"
+    apply_owner_filter = False
 
     def get_queryset(self):
         return super().get_queryset().select_related('filial').prefetch_related(
@@ -233,35 +378,37 @@ class CarroDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         carro = self.object
-        context['agendamentos'] = (
-            carro.agendamentos.all()
-            .select_related('usuario')
-            .order_by('-data_hora_agenda')[:10]
-        )
-        context['manutencoes'] = (
-            carro.manutencoes.all()
-            .order_by('-data_manutencao')[:10]
-        )
+
+        # Filtra agendamentos por visibilidade (aqui SIM tem 'usuario')
+        agendamentos_qs = carro.agendamentos.all().select_related('usuario')
+        # Reativa o filtro de owner temporariamente
+        original = self.apply_owner_filter
+        self.apply_owner_filter = True
+        agendamentos_qs = self.apply_visibility(agendamentos_qs)
+        self.apply_owner_filter = original
+
+        context['agendamentos'] = agendamentos_qs.order_by('-data_hora_agenda')[:10]
+        context['manutencoes'] = carro.manutencoes.all().order_by('-data_manutencao')[:10]
+        context['filial_ativa'] = self.get_filial_ativa()
         return context
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # AGENDAMENTO CRUD
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
-class AgendamentoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'automovel'
+class AgendamentoListView(AutomovelBaseMixin, ListView):
     model = Carro_agendamento
     template_name = 'automovel/agendamento_list.html'
     context_object_name = 'agendamentos'
     paginate_by = 20
 
     def get_queryset(self):
-        return super().get_queryset().select_related('carro', 'usuario')
+        qs = super().get_queryset().select_related('carro', 'usuario')
+        return self.apply_visibility(qs)
 
 
-class AgendamentoCreateView(AppPermissionMixin, SuccessMessageMixin, CreateView):
-    app_label_required = 'automovel'
+class AgendamentoCreateView(AutomovelBaseMixin, SuccessMessageMixin, CreateView):
     model = Carro_agendamento
     form_class = AgendamentoForm
     template_name = 'automovel/agendamento_form.html'
@@ -269,38 +416,48 @@ class AgendamentoCreateView(AppPermissionMixin, SuccessMessageMixin, CreateView)
     success_message = "Agendamento criado com sucesso!"
 
     def form_valid(self, form):
+        filial = self.get_filial_ativa()
+        if not filial:
+            messages.error(self.request, "Nenhuma filial ativa selecionada.")
+            return self.form_invalid(form)
         form.instance.usuario = self.request.user
-        form.instance.filial = self.request.user.filial_ativa
+        form.instance.filial = filial
         return super().form_valid(form)
 
 
-class AgendamentoUpdateView(AppPermissionMixin, ViewFilialScopedMixin, SuccessMessageMixin, UpdateView):
-    app_label_required = 'automovel'
+class AgendamentoUpdateView(AutomovelBaseMixin, SuccessMessageMixin, UpdateView):
     model = Carro_agendamento
     form_class = AgendamentoForm
     template_name = 'automovel/agendamento_form.html'
     success_message = "Agendamento atualizado com sucesso!"
 
+    def get_queryset(self):
+        return self.apply_visibility(super().get_queryset())
+
     def get_success_url(self):
         return reverse('automovel:agendamento_detail', kwargs={'pk': self.object.pk})
 
 
-class AgendamentoDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = 'automovel'
+class AgendamentoDetailView(AutomovelBaseMixin, DetailView):
     model = Carro_agendamento
     template_name = 'automovel/agendamento_detail.html'
+
+    def get_queryset(self):
+        return self.apply_visibility(super().get_queryset())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         agendamento = self.object
 
-        context['historico_agendamentos'] = (
+        historico_qs = (
             Carro_agendamento.objects.for_request(self.request)
             .filter(carro=agendamento.carro)
             .exclude(id=agendamento.id)
             .select_related('usuario')
-            .order_by('-data_hora_agenda')[:10]
         )
+        historico_qs = self.apply_visibility(historico_qs)
+        context['historico_agendamentos'] = historico_qs.order_by('-data_hora_agenda')[:10]
+
         context['rastreamentos'] = (
             Carro_rastreamento.objects.filter(agendamento=agendamento)
             .order_by('-data_hora')[:50]
@@ -308,16 +465,16 @@ class AgendamentoDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailVie
         context['checklist_saida'] = agendamento.checklists.filter(tipo='saida').first()
         context['checklist_retorno'] = agendamento.checklists.filter(tipo='retorno').first()
         context['mapbox_access_token'] = getattr(settings, 'MAPBOX_ACCESS_TOKEN', '')
+        context['filial_ativa'] = self.get_filial_ativa()
         return context
 
 
-class AgendamentoFinalizarView(AppPermissionMixin, View):
-    app_label_required = 'automovel'
+class AgendamentoFinalizarView(AutomovelBaseMixin, View):
 
     def post(self, request, pk):
-        agendamento = get_object_or_404(
-            Carro_agendamento.objects.for_request(request), pk=pk
-        )
+        base_qs = Carro_agendamento.objects.for_request(request)
+        base_qs = self.apply_visibility(base_qs)
+        agendamento = get_object_or_404(base_qs, pk=pk)
 
         km_final = request.POST.get('km_final')
         observacoes = request.POST.get('observacoes_devolucao')
@@ -340,14 +497,12 @@ class AgendamentoFinalizarView(AppPermissionMixin, View):
             )
             return redirect('automovel:carro_detail', pk=agendamento.carro.pk)
 
-        # Atualiza o Agendamento
         agendamento.km_final = km_final_float
         agendamento.ocorrencia = observacoes
         agendamento.status = 'finalizado'
         agendamento.data_hora_devolucao = timezone.now()
         agendamento.save()
 
-        # Atualiza o Carro
         carro = agendamento.carro
         carro.quilometragem = km_final_float
         carro.disponivel = True
@@ -357,45 +512,69 @@ class AgendamentoFinalizarView(AppPermissionMixin, View):
         return redirect('automovel:carro_detail', pk=carro.pk)
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # CHECKLIST CRUD
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
-class ChecklistListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'automovel'
+class ChecklistListView(AutomovelBaseMixin, ListView):
     model = Carro_checklist
     template_name = 'automovel/checklist_list.html'
     context_object_name = 'checklists'
 
     def get_queryset(self):
-        return super().get_queryset().select_related('agendamento__carro')
+        qs = super().get_queryset().select_related('agendamento__carro', 'usuario')
+        return self.apply_visibility(qs)
 
 
 class ChecklistCreateView(
-    AppPermissionMixin, SuccessMessageMixin, ChecklistFormSectionsMixin, CreateView
+    AutomovelBaseMixin, SuccessMessageMixin,
+    ChecklistFormSectionsMixin, CreateView
 ):
-    app_label_required = 'automovel'
     model = Carro_checklist
     form_class = ChecklistForm
     template_name = 'automovel/checklist_form.html'
 
-    def dispatch(self, request, *args, **kwargs):
-        self.agendamento = get_object_or_404(
-            Carro_agendamento.objects.for_request(request).select_related('carro'),
-            pk=self.kwargs.get('agendamento_pk'),
-        )
+    def setup(self, request, *args, **kwargs):
+        super().setup(request, *args, **kwargs)
+        self.agendamento = None
         self.tipo_checklist = request.GET.get('tipo', 'saida')
 
+    def dispatch(self, request, *args, **kwargs):
+        # Dispara o guard do AutomovelBaseMixin primeiro
+        parent = super().dispatch(request, *args, **kwargs)
+        # Se já retornou 403 do guard, não continua
+        if hasattr(parent, 'status_code') and parent.status_code == 403:
+            return parent
+        return parent
+
+    def get_agendamento(self):
+        """Busca o agendamento validando visibilidade."""
+        if self.agendamento is None:
+            agendamento_qs = (
+                Carro_agendamento.objects.for_request(self.request)
+                .select_related('carro')
+            )
+            agendamento_qs = self.apply_visibility(agendamento_qs)
+            self.agendamento = get_object_or_404(
+                agendamento_qs, pk=self.kwargs.get('agendamento_pk')
+            )
+        return self.agendamento
+
+    def get(self, request, *args, **kwargs):
+        agendamento = self.get_agendamento()
         if Carro_checklist.objects.filter(
-            agendamento=self.agendamento, tipo=self.tipo_checklist
+            agendamento=agendamento, tipo=self.tipo_checklist
         ).exists():
             messages.error(
                 request,
-                f"Um checklist de '{self.tipo_checklist}' já existe para este agendamento.",
+                f"Um checklist de '{self.tipo_checklist}' já existe para este agendamento."
             )
-            return redirect('automovel:agendamento_detail', pk=self.agendamento.pk)
+            return redirect('automovel:agendamento_detail', pk=agendamento.pk)
+        return super().get(request, *args, **kwargs)
 
-        return super().dispatch(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
+        self.get_agendamento()
+        return super().post(request, *args, **kwargs)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -403,45 +582,43 @@ class ChecklistCreateView(
         return kwargs
 
     def get_initial(self):
-        return {'agendamento': self.agendamento, 'tipo': self.tipo_checklist}
+        return {'agendamento': self.get_agendamento(), 'tipo': self.tipo_checklist}
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['agendamento'] = self.agendamento
+        context['agendamento'] = self.get_agendamento()
         return context
 
     def form_valid(self, form):
         usuario = self.request.user
-
-        if not hasattr(usuario, 'funcionario'):
+        try:
+            funcionario_logado = usuario.funcionario
+        except ObjectDoesNotExist:
             messages.error(
                 self.request,
-                "Seu usuário não está vinculado a um cadastro de Funcionário. "
-                "Contate o RH ou Administrador.",
+                "Seu usuário não está vinculado a um Funcionário. Contate o RH."
             )
             return self.form_invalid(form)
 
-        funcionario_logado = usuario.funcionario
+        agendamento = self.get_agendamento()
 
-        # Valida e atualiza KM no agendamento
         if self.tipo_checklist == 'saida':
             km_inicial = form.cleaned_data.get('km_inicial')
             if not km_inicial:
                 form.add_error('km_inicial', 'A quilometragem inicial é obrigatória.')
                 return self.form_invalid(form)
-            self.agendamento.km_inicial = km_inicial
-            self.agendamento.save(update_fields=['km_inicial'])
+            agendamento.km_inicial = km_inicial
+            agendamento.save(update_fields=['km_inicial'])
 
         elif self.tipo_checklist == 'retorno':
             km_final = form.cleaned_data.get('km_final')
             if not km_final:
                 form.add_error('km_final', 'A quilometragem final é obrigatória.')
                 return self.form_invalid(form)
-            self.agendamento.km_final = km_final
-            self.agendamento.save(update_fields=['km_final'])
+            agendamento.km_final = km_final
+            agendamento.save(update_fields=['km_final'])
 
-        # Preenche campos automáticos
-        form.instance.agendamento = self.agendamento
+        form.instance.agendamento = agendamento
         form.instance.usuario = usuario
         form.instance.responsavel = funcionario_logado
         form.instance.filial = funcionario_logado.filial
@@ -455,19 +632,21 @@ class ChecklistCreateView(
     def get_success_url(self):
         return reverse(
             'automovel:agendamento_detail',
-            kwargs={'pk': self.object.agendamento.pk},
+            kwargs={'pk': self.object.agendamento.pk}
         )
 
 
 class ChecklistUpdateView(
-    AppPermissionMixin, ViewFilialScopedMixin,
-    SuccessMessageMixin, ChecklistFormSectionsMixin, UpdateView
+    AutomovelBaseMixin, SuccessMessageMixin,
+    ChecklistFormSectionsMixin, UpdateView
 ):
-    app_label_required = 'automovel'
     model = Carro_checklist
     form_class = ChecklistForm
     template_name = 'automovel/checklist_form.html'
     success_message = 'Checklist atualizado com sucesso!'
+
+    def get_queryset(self):
+        return self.apply_visibility(super().get_queryset())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -477,67 +656,72 @@ class ChecklistUpdateView(
     def get_success_url(self):
         return reverse(
             'automovel:agendamento_detail',
-            kwargs={'pk': self.object.agendamento.pk},
+            kwargs={'pk': self.object.agendamento.pk}
         )
 
 
-class ChecklistDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = 'automovel'
+class ChecklistDetailView(AutomovelBaseMixin, DetailView):
     model = Carro_checklist
     template_name = 'automovel/checklist_detail.html'
     context_object_name = 'checklist'
 
+    def get_queryset(self):
+        return self.apply_visibility(super().get_queryset())
 
-# =============================================================================
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MANUTENÇÃO CRUD
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
-class ManutencaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = 'automovel'
+class ManutencaoListView(AutomovelBaseMixin, ListView):
     model = Carro_manutencao
     template_name = 'automovel/manutencao_list.html'
     context_object_name = 'manutencoes'
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = super().get_queryset().select_related('carro', 'usuario')
+        qs = super().get_queryset().select_related('carro', 'usuario')
+        qs = self.apply_visibility(qs)
 
         carro_id = self.request.GET.get('carro')
         if carro_id:
-            queryset = queryset.filter(carro_id=carro_id)
+            qs = qs.filter(carro_id=carro_id)
 
         status = self.request.GET.get('status')
         if status == 'concluidas':
-            queryset = queryset.filter(concluida=True)
+            qs = qs.filter(concluida=True)
         elif status == 'pendentes':
-            queryset = queryset.filter(concluida=False)
+            qs = qs.filter(concluida=False)
 
-        return queryset.order_by('-data_manutencao')
+        return qs.order_by('-data_manutencao')
 
 
-class ManutencaoUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = 'automovel'
+class ManutencaoUpdateView(AutomovelBaseMixin, UpdateView):
     model = Carro_manutencao
     form_class = ManutencaoForm
     template_name = 'automovel/manutencao_form.html'
+
+    def get_queryset(self):
+        return self.apply_visibility(super().get_queryset())
 
     def get_success_url(self):
         messages.success(self.request, "Manutenção atualizada com sucesso!")
         return reverse('automovel:carro_detail', kwargs={'pk': self.object.carro.pk})
 
 
-class AgendarManutencaoView(AppPermissionMixin, View):
-    app_label_required = 'automovel'
+class AgendarManutencaoView(AutomovelBaseMixin, View):
+    apply_owner_filter = False  # Carro não tem 'usuario'
 
     def post(self, request, pk):
-        carro = get_object_or_404(Carro.objects.for_request(request), pk=pk)
-        form = ManutencaoForm(request.POST)
+        carro_qs = Carro.objects.for_request(request)
+        carro = get_object_or_404(carro_qs, pk=pk)
 
+        form = ManutencaoForm(request.POST)
         if form.is_valid():
             manutencao = form.save(commit=False)
             manutencao.carro = carro
             manutencao.usuario = request.user
-            manutencao.filial = request.user.filial_ativa
+            manutencao.filial = self.get_filial_ativa()
             manutencao.save()
             messages.success(request, 'Manutenção agendada com sucesso!')
         else:
@@ -546,41 +730,18 @@ class AgendarManutencaoView(AppPermissionMixin, View):
         return redirect('automovel:carro_detail', pk=carro.pk)
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # RASTREAMENTO
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
-class _ReverseGeocodeMixin:
-    """Mixin utilitário para geocoding reverso (OpenStreetMap Nominatim)."""
-
-    def _reverse_geocode(self, lat, lng):
-        try:
-            import requests as http_requests
-
-            headers = {'User-Agent': 'ControleTarefas/1.0 (esg@cetestsp.com.br)'}
-            response = http_requests.get(
-                f'https://nominatim.openstreetmap.org/reverse'
-                f'?format=json&lat={lat}&lon={lng}&zoom=18',
-                headers=headers,
-                timeout=5,
-            )
-            if response.status_code == 200:
-                return response.json().get('display_name', 'Endereço não identificado')
-        except Exception:
-            pass
-        return 'Endereço não disponível'
-
-
-class RastreamentoCreateView(AppPermissionMixin, _ReverseGeocodeMixin, View):
-    app_label_required = 'automovel'
+class RastreamentoCreateView(AutomovelBaseMixin, _ReverseGeocodeMixin, View):
 
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
-            agendamento = get_object_or_404(
-                Carro_agendamento.objects.for_request(request),
-                pk=data.get('agendamento_id'),
-            )
+            base_qs = Carro_agendamento.objects.for_request(request)
+            base_qs = self.apply_visibility(base_qs)
+            agendamento = get_object_or_404(base_qs, pk=data.get('agendamento_id'))
 
             rastreamento = Carro_rastreamento.objects.create(
                 agendamento=agendamento,
@@ -590,9 +751,8 @@ class RastreamentoCreateView(AppPermissionMixin, _ReverseGeocodeMixin, View):
                 endereco_aproximado=self._reverse_geocode(
                     data.get('latitude'), data.get('longitude')
                 ),
-                filial=request.user.filial_ativa,
+                filial=self.get_filial_ativa(),
             )
-
             return JsonResponse({
                 'status': 'success',
                 'id': rastreamento.id,
@@ -603,10 +763,12 @@ class RastreamentoCreateView(AppPermissionMixin, _ReverseGeocodeMixin, View):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
-class RastreamentoMapView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = 'automovel'
+class RastreamentoMapView(AutomovelBaseMixin, DetailView):
     model = Carro_agendamento
     template_name = 'automovel/rastreamento_map.html'
+
+    def get_queryset(self):
+        return self.apply_visibility(super().get_queryset())
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -630,7 +792,7 @@ class RastreamentoMapView(AppPermissionMixin, ViewFilialScopedMixin, DetailView)
 
 @method_decorator(csrf_exempt, name='dispatch')
 class RastreamentoAPIView(_ReverseGeocodeMixin, View):
-    """Endpoint público para rastreadores físicos (sem autenticação por sessão)."""
+    """Endpoint público para rastreadores físicos (sem autenticação)."""
 
     def post(self, request, *args, **kwargs):
         try:
@@ -638,7 +800,6 @@ class RastreamentoAPIView(_ReverseGeocodeMixin, View):
             agendamento = get_object_or_404(
                 Carro_agendamento, pk=data.get('agendamento_id')
             )
-
             rastreamento = Carro_rastreamento.objects.create(
                 agendamento=agendamento,
                 latitude=data.get('latitude'),
@@ -649,26 +810,25 @@ class RastreamentoAPIView(_ReverseGeocodeMixin, View):
                 ),
                 filial=agendamento.filial,
             )
-
             return JsonResponse({'status': 'success', 'id': rastreamento.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # APIs
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
-class CarrosDisponiveisAPIView(AppPermissionMixin, View):
-    app_label_required = 'automovel'
+class CarrosDisponiveisAPIView(AutomovelBaseMixin, View):
+    apply_owner_filter = False
 
     def get(self, request, *args, **kwargs):
         carros = Carro.objects.for_request(request).filter(disponivel=True, ativo=True)
         return JsonResponse(list(carros.values('id', 'placa', 'modelo')), safe=False)
 
 
-class ProximaManutencaoAPIView(AppPermissionMixin, View):
-    app_label_required = 'automovel'
+class ProximaManutencaoAPIView(AutomovelBaseMixin, View):
+    apply_owner_filter = False
 
     def get(self, request, *args, **kwargs):
         hoje = timezone.now().date()
@@ -681,23 +841,19 @@ class ProximaManutencaoAPIView(AppPermissionMixin, View):
         return JsonResponse(data, safe=False)
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # GERADORES DE RELATÓRIO WORD
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class BaseWordReportGenerator:
-    """Classe base para criar relatórios .docx a partir de um único objeto."""
-
     def __init__(self, request, obj, filename_prefix):
         self.request = request
         self.obj = obj
-        self.filename = (
-            f"{filename_prefix}_{obj.pk}_{datetime.now().strftime('%Y%m%d')}.docx"
-        )
+        self.filename = f"{filename_prefix}_{obj.pk}_{datetime.now().strftime('%Y%m%d')}.docx"
         self.document = Document()
 
     def build_document(self):
-        raise NotImplementedError("Subclasses devem implementar 'build_document'")
+        raise NotImplementedError
 
     def add_title(self, text):
         title = self.document.add_heading(text, level=1)
@@ -708,10 +864,8 @@ class BaseWordReportGenerator:
 
     def generate(self):
         if not self.obj:
-            raise Http404("Objeto não encontrado para gerar o relatório.")
-
+            raise Http404("Objeto não encontrado.")
         self.build_document()
-
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
@@ -727,7 +881,6 @@ class ChecklistWordReportGenerator(BaseWordReportGenerator):
     def _add_summary_table(self):
         checklist = self.obj
         ag = checklist.agendamento
-
         table = self.document.add_table(rows=3, cols=4)
         table.style = 'Table Grid'
 
@@ -757,13 +910,11 @@ class ChecklistWordReportGenerator(BaseWordReportGenerator):
             ("Lado do Motorista", checklist.get_revisao_lado_motorista_status_display()),
             ("Lado do Passageiro", checklist.get_revisao_lado_passageiro_status_display()),
         ]
-
         table = self.document.add_table(rows=1, cols=2)
         table.style = 'Table Grid'
         hdr = table.rows[0].cells
         hdr[0].text = 'Item Vistoriado'
         hdr[1].text = 'Status'
-
         for item, status in itens:
             row = table.add_row().cells
             row[0].text = item
@@ -795,21 +946,17 @@ class ChecklistWordReportGenerator(BaseWordReportGenerator):
         self._add_photos()
 
 
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 # GERADORES DE RELATÓRIO EXCEL
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class BaseExcelReportGenerator:
-    """Classe base abstrata para criar relatórios Excel."""
-
     def __init__(self, request, queryset, filename_prefix):
         self.request = request
         self.queryset = queryset
         self.filename = f"{filename_prefix}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         self.header_font = Font(bold=True, color="FFFFFF")
-        self.header_fill = PatternFill(
-            start_color="4F81BD", end_color="4F81BD", fill_type="solid"
-        )
+        self.header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
         self.header_alignment = Alignment(horizontal="center", vertical="center")
         self.title_font = Font(bold=True, size=16)
         self.title_alignment = Alignment(horizontal="center", vertical="center")
@@ -862,17 +1009,13 @@ class BaseExcelReportGenerator:
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
         response['Content-Disposition'] = f'attachment; filename="{self.filename}"'
-
         wb = Workbook()
         ws = wb.active
         ws.title = self.get_report_title()[:30]
-
         self._write_title(ws)
         self._write_headers(ws)
-
         for obj in self.queryset:
             ws.append(self.get_row_data(obj))
-
         self._adjust_column_widths(ws)
         wb.save(response)
         return response
@@ -890,10 +1033,8 @@ class CarroReportGenerator(BaseExcelReportGenerator):
         return "Relatório de Carros Ativos"
 
     def get_headers(self):
-        return [
-            'Placa', 'Marca', 'Modelo', 'Ano', 'Cor',
-            'Disponível', 'Última Manutenção', 'Próxima Manutenção',
-        ]
+        return ['Placa', 'Marca', 'Modelo', 'Ano', 'Cor',
+                'Disponível', 'Última Manutenção', 'Próxima Manutenção']
 
     def get_row_data(self, carro):
         return [
@@ -912,25 +1053,22 @@ class AgendamentoReportGenerator(BaseExcelReportGenerator):
     def get_queryset(cls, request):
         return (
             Carro_agendamento.objects.for_request(request)
-            .select_related('carro')
-            .order_by('-data_hora_agenda')
+            .select_related('carro').order_by('-data_hora_agenda')
         )
 
     def get_report_title(self):
         return "Relatório de Agendamentos"
 
     def get_headers(self):
-        return [
-            'ID', 'Veículo', 'Placa', 'Funcionário', 'Data Agendamento',
-            'Data Devolução', 'Status', 'KM Inicial', 'KM Final', 'Descrição',
-        ]
+        return ['ID', 'Veículo', 'Placa', 'Funcionário', 'Data Agendamento',
+                'Data Devolução', 'Status', 'KM Inicial', 'KM Final', 'Descrição']
 
     def get_row_data(self, ag):
         return [
             ag.id,
             f"{ag.carro.marca} {ag.carro.modelo}",
             ag.carro.placa,
-            ag.funcionario or 'N/A',
+            str(ag.funcionario) if ag.funcionario else 'N/A',
             ag.data_hora_agenda.strftime('%d/%m/%Y %H:%M') if ag.data_hora_agenda else 'N/A',
             ag.data_hora_devolucao.strftime('%d/%m/%Y %H:%M') if ag.data_hora_devolucao else 'Pendente',
             ag.get_status_display(),
@@ -948,19 +1086,16 @@ class ChecklistReportGenerator(BaseExcelReportGenerator):
     def get_queryset(cls, request):
         return (
             Carro_checklist.objects.for_request(request)
-            .select_related('agendamento__carro', 'usuario')
-            .order_by('-data_hora')
+            .select_related('agendamento__carro', 'usuario').order_by('-data_hora')
         )
 
     def get_report_title(self):
         return "Relatório de Checklists"
 
     def get_headers(self):
-        return [
-            'ID', 'Agendamento', 'Veículo', 'Tipo', 'Data/Hora', 'Usuário',
-            'Status Frontal', 'Status Traseiro', 'Status Motorista',
-            'Status Passageiro', 'Observações',
-        ]
+        return ['ID', 'Agendamento', 'Veículo', 'Tipo', 'Data/Hora', 'Usuário',
+                'Status Frontal', 'Status Traseiro', 'Status Motorista',
+                'Status Passageiro', 'Observações']
 
     def get_row_data(self, cl):
         return [
@@ -986,18 +1121,15 @@ class RastreamentoReportGenerator(BaseExcelReportGenerator):
     def get_queryset(cls, request):
         return (
             Carro_rastreamento.objects.for_request(request)
-            .select_related('agendamento__carro')
-            .order_by('-data_hora')
+            .select_related('agendamento__carro').order_by('-data_hora')
         )
 
     def get_report_title(self):
         return "Relatório de Rastreamento"
 
     def get_headers(self):
-        return [
-            'ID', 'Agendamento', 'Veículo', 'Data/Hora',
-            'Latitude', 'Longitude', 'Velocidade (km/h)', 'Endereço Aproximado',
-        ]
+        return ['ID', 'Agendamento', 'Veículo', 'Data/Hora',
+                'Latitude', 'Longitude', 'Velocidade (km/h)', 'Endereço Aproximado']
 
     def get_row_data(self, r):
         return [
@@ -1012,45 +1144,55 @@ class RastreamentoReportGenerator(BaseExcelReportGenerator):
         ]
 
 
-# =============================================================================
-# VIEWS DE RELATÓRIO (Function-Based - Despachantes)
-# =============================================================================
+# ═══════════════════════════════════════════════════════════════════════════════
+# RELATÓRIOS (Function-Based) — ÚNICAS versões (sem duplicação)
+# ═══════════════════════════════════════════════════════════════════════════════
 
-def _check_automovel_permission(user):
-    """Helper para verificar permissão do módulo automovel."""
+def _user_has_automovel_access(user):
+    """Verifica permissão + vínculo com Funcionario."""
+    if not user.is_authenticated:
+        return False
     if user.is_superuser:
         return True
-    return any(p.startswith('automovel.') for p in user.get_all_permissions())
+    if not any(p.startswith('automovel.') for p in user.get_all_permissions()):
+        return False
+    try:
+        _ = user.funcionario
+    except ObjectDoesNotExist:
+        return False
+    return True
 
 
 @login_required
 def gerar_relatorio_word(request, tipo, pk):
-    if not _check_automovel_permission(request.user):
-        from django.core.exceptions import PermissionDenied
-        raise PermissionDenied
+    if not _user_has_automovel_access(request.user):
+        raise PermissionDenied("Acesso negado ao módulo Automóvel.")
 
     generators = {
         'checklist': (ChecklistWordReportGenerator, Carro_checklist),
     }
-
     config = generators.get(tipo)
     if not config:
         return HttpResponseBadRequest("Tipo de relatório inválido.")
 
     generator_class, model_class = config
+    qs = model_class.objects.for_request(request)
+
+    if not request.user.is_superuser and not request.user.has_perm('automovel.view_all_automovel'):
+        qs = qs.filter(usuario=request.user)
+
     try:
-        obj = model_class.objects.get(pk=pk)
+        obj = qs.get(pk=pk)
     except model_class.DoesNotExist:
-        raise Http404(f"{model_class._meta.verbose_name} não encontrado.")
+        raise Http404(f"{model_class._meta.verbose_name} não encontrado ou acesso negado.")
 
     return generator_class(request, obj).generate()
 
 
 @login_required
 def gerar_relatorio_excel(request, tipo):
-    if not _check_automovel_permission(request.user):
-        from django.core.exceptions import PermissionDenied
-        raise PermissionDenied
+    if not _user_has_automovel_access(request.user):
+        raise PermissionDenied("Acesso negado ao módulo Automóvel.")
 
     generators = {
         'carros': CarroReportGenerator,
@@ -1058,12 +1200,19 @@ def gerar_relatorio_excel(request, tipo):
         'checklists': ChecklistReportGenerator,
         'rastreamento': RastreamentoReportGenerator,
     }
-
     generator_class = generators.get(tipo)
     if not generator_class:
         return HttpResponseBadRequest("Tipo de relatório inválido.")
 
     queryset = generator_class.get_queryset(request)
+
+    # Filtra por dono somente se o model tiver campo 'usuario'
+    if not request.user.is_superuser and not request.user.has_perm('automovel.view_all_automovel'):
+        field_names = [f.name for f in queryset.model._meta.get_fields()]
+        if 'usuario' in field_names:
+            queryset = queryset.filter(usuario=request.user)
+
     return generator_class(request, queryset).generate()
+
 
     

@@ -251,6 +251,9 @@ class Funcionario(models.Model):
         verbose_name = _("Funcionário")
         verbose_name_plural = _("Funcionários")
         ordering = ["nome_completo"]
+        permissions = [
+            ("view_all_departamento_pessoal", "Pode ver todos os dados do DP (global)"),
+        ]
 
     def __str__(self):
         return self.nome_completo

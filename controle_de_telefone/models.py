@@ -47,11 +47,23 @@ def termo_upload_path(instance, filename):
 
 class Marca(BaseModel):
     nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Marca")
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name="marcas",
+        verbose_name="Filial",
+    )
+
+    objects = FilialManager()
 
     class Meta:
         verbose_name = "Marca"
         verbose_name_plural = "Marcas"
         ordering = ['nome']
+        unique_together = ('filial', 'nome') 
+        permissions = [
+            ("view_all_marca", "Pode ver todas as marcas da filial"),
+        ]
 
     def __str__(self):
         return self.nome
@@ -60,24 +72,47 @@ class Marca(BaseModel):
 class Modelo(BaseModel):
     marca = models.ForeignKey(Marca, on_delete=models.PROTECT, related_name="modelos")
     nome = models.CharField(max_length=150, verbose_name="Nome do Modelo")
+    filial = models.ForeignKey(
+            Filial,
+            on_delete=models.PROTECT,
+            related_name="modelos_aparelho",
+            verbose_name="Filial",
+        )
+
+    objects = FilialManager()
 
     class Meta:
         verbose_name = "Modelo de Aparelho"
         verbose_name_plural = "Modelos de Aparelhos"
-        unique_together = ('marca', 'nome')
+        unique_together = ('filial', 'marca', 'nome')
         ordering = ['marca__nome', 'nome']
+        permissions = [
+            ("view_all_modelo", "Pode ver todos os modelos da filial"),
+        ]
 
     def __str__(self):
         return f"{self.marca.nome} {self.nome}"
-
+    
 
 class Operadora(BaseModel):
     nome = models.CharField(max_length=100, unique=True, verbose_name="Nome da Operadora")
+    filial = models.ForeignKey(
+            Filial,
+            on_delete=models.PROTECT,
+            related_name="operadoras",
+            verbose_name="Filial",
+        )
+
+    objects = FilialManager()
 
     class Meta:
         verbose_name = "Operadora"
         verbose_name_plural = "Operadoras"
         ordering = ['nome']
+        unique_together = ('filial', 'nome')
+        permissions = [
+            ("view_all_operadora", "Pode ver todas as operadoras da filial"),
+        ]
 
     def __str__(self):
         return self.nome
@@ -89,11 +124,23 @@ class Plano(BaseModel):
     valor_mensal = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Valor Mensal")
     franquia_dados_gb = models.PositiveIntegerField(verbose_name="Franquia de Dados (GB)")
 
+    filial = models.ForeignKey(
+        Filial,
+        on_delete=models.PROTECT,
+        related_name="planos",
+        verbose_name="Filial",
+    )
+
+    objects = FilialManager()
+
     class Meta:
         verbose_name = "Plano de Telefonia"
         verbose_name_plural = "Planos de Telefonia"
-        unique_together = ('operadora', 'nome')
+        unique_together = ('filial', 'operadora', 'nome')
         ordering = ['operadora__nome', 'nome']
+        permissions = [
+            ("view_all_plano", "Pode ver todos os planos da filial"),
+        ]
 
     def __str__(self):
         return f"{self.operadora.nome} - {self.nome}"
@@ -140,6 +187,9 @@ class Aparelho(BaseModel):
         verbose_name = "Aparelho Telefônico"
         verbose_name_plural = "Aparelhos Telefônicos"
         ordering = ['modelo__marca__nome', 'modelo__nome']
+        permissions = [
+            ("view_all_aparelho", "Pode ver todos os aparelhos da filial"),
+        ]
 
     def __str__(self):
         return f"{self.modelo} (IMEI: {self.imei or 'N/A'})"
@@ -157,6 +207,11 @@ class LinhaTelefonica(BaseModel):
     numero = PhoneNumberField(unique=True, verbose_name="Número da Linha")
     data_ativacao = models.DateField(verbose_name="Data de Ativação")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='disponivel')
+
+    class Meta:
+        permissions = [
+            ("view_all_linhatelefonica", "Pode ver todas as linhas da filial"),
+        ]
 
     def __str__(self):
         return str(self.numero)
@@ -187,6 +242,10 @@ class Vinculo(BaseModel):
             models.Index(fields=['funcionario', 'status']),
             models.Index(fields=['aparelho', 'status']),
             models.Index(fields=['linha', 'status']),
+        ]
+        permissions = [
+            ("view_all_vinculo", "Pode ver todos os vínculos da filial"),
+
         ]
 
     def save(self, *args, **kwargs):
@@ -438,6 +497,7 @@ class RecargaCredito(models.Model):
         permissions = [
             ('aprovar_recarga', 'Pode aprovar recarga de crédito'),
             ('cancelar_recarga', 'Pode cancelar recarga de crédito'),
+            ('view_all_recargacredito', 'Pode ver todas as recargas da filial'),
         ]
 
     def __str__(self):
@@ -501,6 +561,7 @@ class RecargaCredito(models.Model):
     def cancelar(self, motivo_cancelamento=None, user=None):
         self.status = self.StatusRecarga.CANCELADA
         if motivo_cancelamento:
-            self.observacao += f"\n[CANCELAMENTO] {motivo_cancelamento}"
+            obs_atual = self.observacao or ''
+            separador = '\n\n' if obs_atual else ''
+            self.observacao = f"{obs_atual}{separador}[CANCELAMENTO] {motivo_cancelamento}"
         self.save()
-

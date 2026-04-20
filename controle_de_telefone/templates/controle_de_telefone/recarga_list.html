@@ -1,4 +1,3 @@
-
 {% extends "controle_de_telefone/_base_telefone.html" %}
 
 {% block title %}Recargas de Crédito{% endblock %}
@@ -6,39 +5,65 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- Cabeçalho -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CABEÇALHO                                                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom">
         <div class="mb-3 mb-md-0">
             <h2 class="h4 fw-bold mb-1">
                 <i class="bi bi-cash-coin text-success me-2"></i>Recargas de Crédito
             </h2>
-            <small class="text-muted">{{ total_recargas }} recarga{{ total_recargas|pluralize:"s" }} cadastrada{{ total_recargas|pluralize:"s" }}</small>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <small class="text-muted">
+                    {{ total_recargas }} recarga{{ total_recargas|pluralize:"s" }} cadastrada{{ total_recargas|pluralize:"s" }}
+                </small>
+                {% if filial_ativa %}
+                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                    <i class="bi bi-building me-1"></i>{{ filial_ativa.nome }}
+                </span>
+                {% elif user.is_superuser %}
+                <span class="badge bg-dark bg-opacity-10 text-dark border">
+                    <i class="bi bi-shield-lock me-1"></i>Visão Global
+                </span>
+                {% endif %}
+            </div>
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'controle_de_telefone:dashboard' %}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>Painel
             </a>
-            {% if perms.controle_de_telefone.add_recarga or user.is_superuser %}
-            <a href="{% url 'controle_de_telefone:recarga_create' %}" class="btn btn-primary">
+            {% if perms.controle_de_telefone.add_recargacredito or user.is_superuser %}
+            <a href="{% url 'controle_de_telefone:recarga_create' %}" class="btn btn-success">
                 <i class="bi bi-plus-circle me-1"></i>Nova Recarga
             </a>
             {% endif %}
         </div>
     </header>
 
-    <!-- KPIs -->
+    {% if not filial_ativa and not user.is_superuser %}
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><strong>Nenhuma filial selecionada.</strong> Selecione uma filial no menu superior.</div>
+    </div>
+    {% endif %}
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- KPIs                                                               -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-3 h-100" style="border-left: 4px solid #f6c23e !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center"
+                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
                              style="width: 44px; height: 44px; background: rgba(246,194,62,0.1);">
                             <i class="bi bi-hourglass-split text-warning fs-5"></i>
                         </div>
                         <div>
                             <div class="fw-bold text-warning" style="font-size: 1.5rem; line-height: 1;">{{ total_pendentes }}</div>
-                            <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase;">Pendentes</div>
+                            <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Pendentes
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -48,7 +73,7 @@
             <div class="card border-0 shadow-sm rounded-3 h-100" style="border-left: 4px solid #1cc88a !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center"
+                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
                              style="width: 44px; height: 44px; background: rgba(28,200,138,0.1);">
                             <i class="bi bi-calendar-month text-success fs-5"></i>
                         </div>
@@ -56,7 +81,9 @@
                             <div class="fw-bold text-success" style="font-size: 1.5rem; line-height: 1;">
                                 R$ {{ total_mes|floatformat:2 }}
                             </div>
-                            <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase;">Total do Mês</div>
+                            <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Total do Mês
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -66,13 +93,15 @@
             <div class="card border-0 shadow-sm rounded-3 h-100" style="border-left: 4px solid #4e73df !important;">
                 <div class="card-body p-3">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center"
+                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
                              style="width: 44px; height: 44px; background: rgba(78,115,223,0.1);">
                             <i class="bi bi-receipt text-primary fs-5"></i>
                         </div>
                         <div>
                             <div class="fw-bold text-primary" style="font-size: 1.5rem; line-height: 1;">{{ total_recargas }}</div>
-                            <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase;">Total Geral</div>
+                            <div class="text-muted fw-semibold" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Total Geral
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -80,13 +109,15 @@
         </div>
     </div>
 
-    <!-- Card Principal -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CARD PRINCIPAL                                                     -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <div class="card border-0 shadow-sm rounded-3">
 
         <!-- Filtros -->
         <div class="card-header bg-white border-bottom py-3">
-            <form method="get" action=".">
-                <div class="row g-2">
+            <form method="get" action="." id="form-filtros">
+                <div class="row g-2 align-items-center">
                     <div class="col-md-5">
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0">
@@ -101,7 +132,9 @@
                         <select name="status" class="form-select">
                             <option value="">Todos os status</option>
                             {% for value, label in status_choices %}
-                            <option value="{{ value }}" {% if status_filtro == value %}selected{% endif %}>{{ label }}</option>
+                            <option value="{{ value }}" {% if status_filtro == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
@@ -109,16 +142,45 @@
                         <select name="linha" class="form-select">
                             <option value="">Todas as linhas</option>
                             {% for linha in linhas %}
-                            <option value="{{ linha.pk }}">{{ linha.numero }}</option>
+                            <option value="{{ linha.pk }}" {% if request.GET.linha == linha.pk|stringformat:"s" %}selected{% endif %}>
+                                {{ linha.numero }}
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-1">
-                        <button class="btn btn-primary w-100" type="submit">
+                        <button class="btn btn-primary w-100" type="submit" title="Filtrar">
                             <i class="bi bi-funnel"></i>
                         </button>
                     </div>
                 </div>
+
+                {# Chip de filtros ativos #}
+                {% if search_query or status_filtro or request.GET.linha %}
+                <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                    <small class="text-muted">
+                        <i class="bi bi-funnel-fill me-1"></i>Filtros ativos:
+                    </small>
+                    {% if search_query %}
+                    <span class="badge bg-light text-dark border">
+                        Busca: "{{ search_query }}"
+                    </span>
+                    {% endif %}
+                    {% if status_filtro %}
+                    <span class="badge bg-light text-dark border">
+                        Status: {{ status_filtro|title }}
+                    </span>
+                    {% endif %}
+                    {% if request.GET.linha %}
+                    <span class="badge bg-light text-dark border">
+                        Linha filtrada
+                    </span>
+                    {% endif %}
+                    <a href="{% url 'controle_de_telefone:recarga_list' %}" class="text-danger text-decoration-none" style="font-size: 0.8rem;">
+                        <i class="bi bi-x-circle me-1"></i>Limpar tudo
+                    </a>
+                </div>
+                {% endif %}
             </form>
         </div>
 
@@ -140,46 +202,70 @@
                     {% for recarga in recargas %}
                     <tr>
                         <td class="px-3">
-                            <div class="fw-semibold text-dark" style="font-size: 0.88rem;">{{ recarga.linha.numero }}</div>
+                            <div class="fw-semibold text-dark font-monospace" style="font-size: 0.88rem;">
+                                {{ recarga.linha.numero }}
+                            </div>
                             <small class="text-muted">{{ recarga.linha.plano.operadora.nome }}</small>
                         </td>
                         <td class="px-3">
-                            <span class="badge bg-light text-muted border fw-semibold" style="font-size: 0.75rem;">
+                            <span class="badge bg-light text-muted border fw-semibold" style="font-size: 0.72rem;">
                                 {{ recarga.get_tipo_recarga_display }}
                             </span>
                         </td>
                         <td class="px-3">
-                            <div class="text-dark" style="font-size: 0.85rem;">{{ recarga.usuario_credito.nome_completo }}</div>
+                            <div class="text-dark" style="font-size: 0.85rem;">
+                                {{ recarga.usuario_credito.nome_completo }}
+                            </div>
+                            {% if recarga.usuario_credito.cargo %}
+                            <small class="text-muted" style="font-size: 0.72rem;">{{ recarga.usuario_credito.cargo }}</small>
+                            {% endif %}
                         </td>
                         <td class="px-3 text-end">
                             <span class="fw-bold text-dark">R$ {{ recarga.valor|floatformat:2 }}</span>
+                            {% if recarga.comprovante %}
+                            <div>
+                                <small class="text-success" title="Comprovante anexado">
+                                    <i class="bi bi-paperclip"></i>
+                                </small>
+                            </div>
+                            {% endif %}
                         </td>
                         <td class="px-3 text-center">
-                            <small class="text-muted">
+                            <small class="text-muted d-block">
                                 {{ recarga.data_inicio|date:"d/m" }} — {{ recarga.data_termino|date:"d/m/Y" }}
                             </small>
-                            {% if recarga.is_vigente %}
-                            <span class="badge bg-success bg-opacity-10 text-success ms-1" style="font-size: 0.65rem;">Vigente</span>
-                            {% elif recarga.is_expirada %}
-                            <span class="badge bg-danger bg-opacity-10 text-danger ms-1" style="font-size: 0.65rem;">Expirada</span>
+                            {% if recarga.status == 'realizada' or recarga.status == 'aprovada' %}
+                                {% if recarga.is_vigente %}
+                                <span class="badge bg-success bg-opacity-10 text-success mt-1" style="font-size: 0.65rem;">
+                                    <i class="bi bi-broadcast me-1"></i>Vigente
+                                </span>
+                                {% elif recarga.is_expirada %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger mt-1" style="font-size: 0.65rem;">
+                                    <i class="bi bi-slash-circle me-1"></i>Expirada
+                                </span>
+                                {% endif %}
                             {% endif %}
                         </td>
                         <td class="px-3 text-center">
                             {% if recarga.status == 'pendente' %}
-                            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning">
+                            <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
                                 <i class="bi bi-hourglass-split me-1"></i>Pendente
                             </span>
                             {% elif recarga.status == 'aprovada' %}
-                            <span class="badge rounded-pill bg-info bg-opacity-10 text-info">
+                            <span class="badge rounded-pill bg-info bg-opacity-10 text-info border border-info border-opacity-25">
                                 <i class="bi bi-check me-1"></i>Aprovada
                             </span>
                             {% elif recarga.status == 'realizada' %}
-                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success">
+                            <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25">
                                 <i class="bi bi-check-circle me-1"></i>Realizada
                             </span>
                             {% elif recarga.status == 'cancelada' %}
-                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger">
+                            <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
                                 <i class="bi bi-x-circle me-1"></i>Cancelada
+                            </span>
+                            {% elif recarga.status == 'expirada' %}
+                            <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border">
+                                <i class="bi bi-clock-history me-1"></i>Expirada
                             </span>
                             {% else %}
                             <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary">
@@ -190,13 +276,31 @@
                         <td class="text-end px-3">
                             <div class="btn-group btn-group-sm" role="group">
                                 <a href="{% url 'controle_de_telefone:recarga_detail' recarga.pk %}"
-                                   class="btn btn-outline-secondary" title="Detalhes">
+                                class="btn btn-outline-secondary" title="Detalhes">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                {% if recarga.status == 'pendente' %}
+
+                                {# ✅ CORRIGIDO: usa OR — mostra quando está pendente OU aprovada #}
+                                {% if recarga.status == 'pendente' or recarga.status == 'aprovada' %}
+                                    {% if perms.controle_de_telefone.change_recargacredito %}
+                                    <a href="{% url 'controle_de_telefone:recarga_realizar' recarga.pk %}"
+                                    class="btn btn-outline-success" title="Marcar como Realizada">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </a>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if recarga.status == 'pendente' and perms.controle_de_telefone.change_recargacredito %}
                                 <a href="{% url 'controle_de_telefone:recarga_update' recarga.pk %}"
-                                   class="btn btn-outline-primary" title="Editar">
+                                class="btn btn-outline-primary" title="Editar">
                                     <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+
+                                {% if perms.controle_de_telefone.delete_recargacredito %}
+                                <a href="{% url 'controle_de_telefone:recarga_delete' recarga.pk %}"
+                                class="btn btn-outline-danger" title="Excluir">
+                                    <i class="bi bi-trash3"></i>
                                 </a>
                                 {% endif %}
                             </div>
@@ -207,12 +311,24 @@
                         <td colspan="7" class="text-center py-5">
                             <div class="py-4">
                                 <i class="bi bi-cash-coin text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                                {% if search_query or status_filtro or request.GET.linha %}
                                 <h6 class="mt-3 text-muted fw-semibold">Nenhuma recarga encontrada</h6>
-                                <p class="text-muted mb-3" style="font-size: 0.85rem;">Cadastre a primeira recarga de crédito</p>
-                                {% if perms.controle_de_telefone.add_recarga or user.is_superuser %}
-                                <a href="{% url 'controle_de_telefone:recarga_create' %}" class="btn btn-sm btn-primary">
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">
+                                    Tente ajustar os filtros aplicados
+                                </p>
+                                <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-x-lg me-1"></i>Limpar filtros
+                                </a>
+                                {% else %}
+                                <h6 class="mt-3 text-muted fw-semibold">Nenhuma recarga cadastrada</h6>
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">
+                                    Cadastre a primeira recarga de crédito
+                                </p>
+                                {% if perms.controle_de_telefone.add_recargacredito or user.is_superuser %}
+                                <a href="{% url 'controle_de_telefone:recarga_create' %}" class="btn btn-sm btn-success">
                                     <i class="bi bi-plus-circle me-1"></i>Nova Recarga
                                 </a>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -227,33 +343,69 @@
         <div class="card-footer bg-white border-top py-3">
             <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
                 <small class="text-muted">
-                    Página {{ page_obj.number }} de {{ paginator.num_pages }}
+                    Página {{ page_obj.number }} de {{ paginator.num_pages }} · {{ paginator.count }} registro{{ paginator.count|pluralize:"s" }}
                 </small>
                 <nav aria-label="Paginação">
                     <ul class="pagination pagination-sm mb-0">
+
+                        {# ─── PRIMEIRA ─── #}
+                        {% if page_obj.number > 3 %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}"
+                               title="Primeira">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {# ─── ANTERIOR ─── #}
                         {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">
+                            <a class="page-link"
+                               href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}"
+                               title="Anterior">
                                 <i class="bi bi-chevron-left"></i>
                             </a>
                         </li>
                         {% endif %}
+
+                        {# ─── PÁGINAS ─── #}
                         {% for i in paginator.page_range %}
                             {% if page_obj.number == i %}
                             <li class="page-item active"><span class="page-link">{{ i }}</span></li>
                             {% elif i > page_obj.number|add:"-3" and i < page_obj.number|add:"3" %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ i }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">{{ i }}</a>
+                                <a class="page-link"
+                                   href="?page={{ i }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}">
+                                    {{ i }}
+                                </a>
                             </li>
                             {% endif %}
                         {% endfor %}
+
+                        {# ─── PRÓXIMA ─── #}
                         {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}">
+                            <a class="page-link"
+                               href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}"
+                               title="Próxima">
                                 <i class="bi bi-chevron-right"></i>
                             </a>
                         </li>
                         {% endif %}
+
+                        {# ─── ÚLTIMA ─── #}
+                        {% if page_obj.number|add:"2" < paginator.num_pages %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               href="?page={{ paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filtro %}&status={{ status_filtro }}{% endif %}{% if request.GET.linha %}&linha={{ request.GET.linha }}{% endif %}"
+                               title="Última">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
                     </ul>
                 </nav>
             </div>
@@ -262,6 +414,20 @@
 
     </div>
 </div>
+
+{# ═══════════════════════════════════════════════════════════════════════ #}
+{# AUTO-SUBMIT dos filtros de select ao mudar                               #}
+{# ═══════════════════════════════════════════════════════════════════════ #}
+<script>
+(function() {
+    'use strict';
+    const form = document.getElementById('form-filtros');
+    if (!form) return;
+    form.querySelectorAll('select[name="status"], select[name="linha"]').forEach(select => {
+        select.addEventListener('change', () => form.submit());
+    });
+})();
+</script>
 {% endblock %}
 
 

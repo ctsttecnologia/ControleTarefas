@@ -1,226 +1,342 @@
 
 {% extends "controle_de_telefone/_base_telefone.html" %}
-{% load widget_tweaks %}
 
-{% block title %}{{ titulo }}{% endblock %}
+{% block title %}{{ titulo|default:"Nova Recarga" }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4 px-lg-5">
-
+<div class="container py-4" style="max-width: 960px;">
     <!-- Cabeçalho -->
     <header class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
         <div>
             <h2 class="h4 fw-bold mb-1">
-                <i class="bi bi-cash-coin text-success me-2"></i>{{ titulo }}
+                <i class="bi bi-cash-coin text-success me-2"></i>{{ titulo|default:"Nova Recarga de Crédito" }}
             </h2>
         </div>
+        <div>
         <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left me-1"></i>Voltar
         </a>
+        <a href="{% url 'controle_de_telefone:dashboard' %}" class="btn btn-outline-primary btn-sm">Painel</a>
+        </div>
     </header>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body p-4 p-lg-5">
-                    <form method="post" enctype="multipart/form-data" novalidate>
-                        {% csrf_token %}
+    {% if not filial_ativa and not user.is_superuser %}
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div><strong>Nenhuma filial selecionada.</strong> Selecione uma filial no menu superior antes de continuar.</div>
+    </div>
+    {% endif %}
 
-                        {% if form.non_field_errors %}
-                        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
-                            <div>{{ form.non_field_errors }}</div>
-                        </div>
+    <form method="post" enctype="multipart/form-data" novalidate id="form-recarga">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Seção 1: Linha e Responsáveis -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-people text-primary me-2"></i>
+                    <span class="badge bg-primary rounded-pill me-2">1</span>Linha & Responsáveis
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="{{ form.linha.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.linha.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.linha }}
+                        {% if form.linha.errors %}
+                        <div class="invalid-feedback d-block">{{ form.linha.errors|join:", " }}</div>
                         {% endif %}
+                        <small class="form-text text-muted">Número que receberá a recarga</small>
+                    </div>
 
-                        <!-- Linha e Responsáveis -->
-                        <div class="mb-4 pb-4 border-bottom">
-                            <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                <i class="bi bi-telephone me-1"></i>Linha e Responsáveis
-                            </h6>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label for="{{ form.linha.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Linha Telefônica <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.linha.errors %}
-                                        {% render_field form.linha class+="form-select is-invalid" %}
-                                    {% else %}
-                                        {% render_field form.linha class+="form-select" %}
-                                    {% endif %}
-                                    {% for error in form.linha.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Responsável/Solicitante <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.responsavel.errors %}
-                                        {% render_field form.responsavel class+="form-select is-invalid" %}
-                                    {% else %}
-                                        {% render_field form.responsavel class+="form-select" %}
-                                    {% endif %}
-                                    {% for error in form.responsavel.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.usuario_credito.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Usuário dos Créditos <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.usuario_credito.errors %}
-                                        {% render_field form.usuario_credito class+="form-select is-invalid" %}
-                                    {% else %}
-                                        {% render_field form.usuario_credito class+="form-select" %}
-                                    {% endif %}
-                                    {% for error in form.usuario_credito.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.responsavel.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.responsavel.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.responsavel }}
+                        {% if form.responsavel.errors %}
+                        <div class="invalid-feedback d-block">{{ form.responsavel.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Quem autorizou a recarga</small>
+                    </div>
 
-                        <!-- Tipo e Valores -->
-                        <div class="mb-4 pb-4 border-bottom">
-                            <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                <i class="bi bi-currency-dollar me-1"></i>Tipo e Valores
-                            </h6>
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label for="{{ form.tipo_recarga.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Tipo de Recarga <span class="text-danger">*</span>
-                                    </label>
-                                    {% render_field form.tipo_recarga class+="form-select" %}
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="{{ form.valor.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Valor (R$) <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.valor.errors %}
-                                        {% render_field form.valor class+="form-control is-invalid" placeholder="0,00" %}
-                                    {% else %}
-                                        {% render_field form.valor class+="form-control" placeholder="0,00" %}
-                                    {% endif %}
-                                    {% for error in form.valor.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="{{ form.franquia_dados_mb.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Franquia de Dados (MB)
-                                    </label>
-                                    {% if form.franquia_dados_mb.errors %}
-                                        {% render_field form.franquia_dados_mb class+="form-control is-invalid" placeholder="Ex: 2048" %}
-                                    {% else %}
-                                        {% render_field form.franquia_dados_mb class+="form-control" placeholder="Ex: 2048" %}
-                                    {% endif %}
-                                    <div class="form-text">2048 MB = 2 GB</div>
-                                    {% for error in form.franquia_dados_mb.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-3">
-                                    <label for="{{ form.minutos_voz.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Minutos de Voz
-                                    </label>
-                                    {% if form.minutos_voz.errors %}
-                                        {% render_field form.minutos_voz class+="form-control is-invalid" placeholder="Ex: 100" %}
-                                    {% else %}
-                                        {% render_field form.minutos_voz class+="form-control" placeholder="Ex: 100" %}
-                                    {% endif %}
-                                    {% for error in form.minutos_voz.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Datas -->
-                        <div class="mb-4 pb-4 border-bottom">
-                            <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                <i class="bi bi-calendar3 me-1"></i>Período
-                            </h6>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label for="{{ form.data_recarga.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Data da Recarga <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.data_recarga.errors %}
-                                        {% render_field form.data_recarga class+="form-control is-invalid" %}
-                                    {% else %}
-                                        {% render_field form.data_recarga class+="form-control" %}
-                                    {% endif %}
-                                    {% for error in form.data_recarga.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.data_inicio.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Início da Vigência <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.data_inicio.errors %}
-                                        {% render_field form.data_inicio class+="form-control is-invalid" %}
-                                    {% else %}
-                                        {% render_field form.data_inicio class+="form-control" %}
-                                    {% endif %}
-                                    {% for error in form.data_inicio.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="{{ form.data_termino.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Término da Vigência <span class="text-danger">*</span>
-                                    </label>
-                                    {% if form.data_termino.errors %}
-                                        {% render_field form.data_termino class+="form-control is-invalid" %}
-                                    {% else %}
-                                        {% render_field form.data_termino class+="form-control" %}
-                                    {% endif %}
-                                    {% for error in form.data_termino.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Observações -->
-                        <div class="mb-4">
-                            <h6 class="fw-bold text-muted text-uppercase mb-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                <i class="bi bi-chat-text me-1"></i>Informações Adicionais
-                            </h6>
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label for="{{ form.motivo.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Motivo/Justificativa
-                                    </label>
-                                    {% render_field form.motivo class+="form-control" rows="2" placeholder="Justificativa para a recarga..." %}
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="{{ form.observacao.id_for_label }}" class="form-label fw-semibold" style="font-size: 0.85rem;">
-                                        Observações
-                                    </label>
-                                    {% render_field form.observacao class+="form-control" rows="2" placeholder="Informações adicionais..." %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Botões -->
-                        <div class="d-flex justify-content-end mt-4 pt-4 border-top gap-2">
-                            <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-light px-4">
-                                <i class="bi bi-x-lg me-1"></i>Cancelar
-                            </a>
-                            {% if perms.controle_de_telefone.add_recarga or user.is_superuser %}
-                            <button type="submit" class="btn btn-primary px-4">
-                                <i class="bi bi-check-lg me-1"></i>Salvar
-                            </button>
-                            {% endif %}
-                        </div>
-                    </form>
+                    <div class="col-md-6">
+                        <label for="{{ form.usuario_credito.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.usuario_credito.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.usuario_credito }}
+                        {% if form.usuario_credito.errors %}
+                        <div class="invalid-feedback d-block">{{ form.usuario_credito.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Quem usará os créditos</small>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-{% endblock %}
 
+        <!-- Seção 2: Tipo e Valor -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-cash text-success me-2"></i>
+                    <span class="badge bg-success rounded-pill me-2">2</span>Tipo de Recarga & Valores
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.tipo_recarga.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.tipo_recarga.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.tipo_recarga }}
+                        {% if form.tipo_recarga.errors %}
+                        <div class="invalid-feedback d-block">{{ form.tipo_recarga.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="{{ form.valor.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.valor.label }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            {{ form.valor }}
+                        </div>
+                        {% if form.valor.errors %}
+                        <div class="invalid-feedback d-block">{{ form.valor.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6" id="campo-dados">
+                        <label for="{{ form.franquia_dados_mb.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.franquia_dados_mb.label }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.franquia_dados_mb }}
+                            <span class="input-group-text">MB</span>
+                        </div>
+                        {% if form.franquia_dados_mb.errors %}
+                        <div class="invalid-feedback d-block">{{ form.franquia_dados_mb.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Ex: 1024 = 1 GB · 5120 = 5 GB</small>
+                    </div>
+
+                    <div class="col-md-6" id="campo-voz">
+                        <label for="{{ form.minutos_voz.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.minutos_voz.label }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.minutos_voz }}
+                            <span class="input-group-text">min</span>
+                        </div>
+                        {% if form.minutos_voz.errors %}
+                        <div class="invalid-feedback d-block">{{ form.minutos_voz.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 3: Datas -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-calendar-check text-info me-2"></i>
+                    <span class="badge bg-info rounded-pill me-2">3</span>Datas & Vigência
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.data_recarga.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.data_recarga.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.data_recarga }}
+                        {% if form.data_recarga.errors %}
+                        <div class="invalid-feedback d-block">{{ form.data_recarga.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.data_inicio.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.data_inicio.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.data_inicio }}
+                        {% if form.data_inicio.errors %}
+                        <div class="invalid-feedback d-block">{{ form.data_inicio.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="{{ form.data_termino.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.data_termino.label }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.data_termino }}
+                        {% if form.data_termino.errors %}
+                        <div class="invalid-feedback d-block">{{ form.data_termino.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <div class="alert alert-info mb-0 d-flex align-items-center gap-2" id="alerta-duracao" style="display: none !important;">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <span>Duração da vigência: <strong id="texto-duracao">—</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 4: Justificativa e Comprovante -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0">
+                    <i class="bi bi-file-earmark-text text-secondary me-2"></i>
+                    <span class="badge bg-secondary rounded-pill me-2">4</span>Justificativa & Comprovante
+                </h6>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label for="{{ form.motivo.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.motivo.label }}
+                        </label>
+                        {{ form.motivo }}
+                        {% if form.motivo.errors %}
+                        <div class="invalid-feedback d-block">{{ form.motivo.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Descreva o motivo/justificativa para esta recarga</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="{{ form.codigo_transacao.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.codigo_transacao.label }}
+                        </label>
+                        {{ form.codigo_transacao }}
+                        {% if form.codigo_transacao.errors %}
+                        <div class="invalid-feedback d-block">{{ form.codigo_transacao.errors|join:", " }}</div>
+                        {% endif %}
+                        <small class="form-text text-muted">Preencha após realizar a recarga</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="{{ form.comprovante.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.comprovante.label }}
+                        </label>
+                        {{ form.comprovante }}
+                        {% if form.comprovante.errors %}
+                        <div class="invalid-feedback d-block">{{ form.comprovante.errors|join:", " }}</div>
+                        {% endif %}
+                        {% if form.instance.comprovante %}
+                        <small class="form-text text-muted">
+                            Atual: <a href="{{ form.instance.comprovante.url }}" target="_blank">{{ form.instance.comprovante.name|cut:"recargas/comprovantes/" }}</a>
+                        </small>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12">
+                        <label for="{{ form.observacao.id_for_label }}" class="form-label fw-semibold">
+                            {{ form.observacao.label }}
+                        </label>
+                        {{ form.observacao }}
+                        {% if form.observacao.errors %}
+                        <div class="invalid-feedback d-block">{{ form.observacao.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="d-flex gap-2 justify-content-end flex-wrap mb-4">
+            <a href="{% url 'controle_de_telefone:recarga_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg me-1"></i>Cancelar
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-check-lg me-1"></i>{{ object|yesno:"Salvar Alterações,Cadastrar Recarga" }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    const tipoSelect = document.getElementById('{{ form.tipo_recarga.id_for_label }}');
+    const campoDados = document.getElementById('campo-dados');
+    const campoVoz = document.getElementById('campo-voz');
+    const dataInicio = document.getElementById('{{ form.data_inicio.id_for_label }}');
+    const dataTermino = document.getElementById('{{ form.data_termino.id_for_label }}');
+    const alertaDuracao = document.getElementById('alerta-duracao');
+    const textoDuracao = document.getElementById('texto-duracao');
+
+    // Mostra/oculta campos conforme tipo de recarga
+    function atualizarCamposPorTipo() {
+        if (!tipoSelect) return;
+        const tipo = tipoSelect.value;
+
+        // Mostrar/ocultar campo de dados
+        if (tipo === 'pacote_dados' || tipo === 'combo') {
+            campoDados.style.display = '';
+        } else {
+            campoDados.style.display = 'none';
+        }
+
+        // Mostrar/ocultar campo de voz
+        if (tipo === 'pacote_voz' || tipo === 'combo') {
+            campoVoz.style.display = '';
+        } else {
+            campoVoz.style.display = 'none';
+        }
+    }
+
+    // Calcula duração da vigência
+    function calcularDuracao() {
+        if (!dataInicio.value || !dataTermino.value) {
+            alertaDuracao.style.display = 'none';
+            return;
+        }
+
+        const inicio = new Date(dataInicio.value);
+        const termino = new Date(dataTermino.value);
+        const diffMs = termino - inicio;
+        const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDias < 0) {
+            alertaDuracao.classList.remove('alert-info');
+            alertaDuracao.classList.add('alert-danger');
+            textoDuracao.textContent = 'Data de término é anterior ao início!';
+        } else if (diffDias === 0) {
+            alertaDuracao.classList.remove('alert-danger');
+            alertaDuracao.classList.add('alert-info');
+            textoDuracao.textContent = 'Mesmo dia';
+        } else {
+            alertaDuracao.classList.remove('alert-danger');
+            alertaDuracao.classList.add('alert-info');
+            textoDuracao.textContent = `${diffDias} dia${diffDias > 1 ? 's' : ''}`;
+        }
+        alertaDuracao.style.display = '';
+    }
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', atualizarCamposPorTipo);
+        atualizarCamposPorTipo();
+    }
+    if (dataInicio && dataTermino) {
+        dataInicio.addEventListener('change', calcularDuracao);
+        dataTermino.addEventListener('change', calcularDuracao);
+        calcularDuracao();
+    }
+})();
+</script>
+{% endblock %}

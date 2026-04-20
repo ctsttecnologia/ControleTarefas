@@ -208,17 +208,21 @@
                 <tbody>
                     {% for tarefa in object_list %}
                     <tr>
+                        <!-- TAREFA -->
                         <td data-label="Tarefa">
-                            {% if perms.tarefas.change_tarefas or user.is_superuser %}
-                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">{{ tarefa.titulo }}</a>
+                            {% if perms.tarefas.change_tarefas or user.is_superuser or tarefa.responsavel == user %}
+                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="task-link">
+                                    {{ tarefa.titulo }}
+                                </a>
                             {% else %}
                                 <span class="task-link">{{ tarefa.titulo }}</span>
                             {% endif %}
                             {% if tarefa.descricao %}
                                 <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
-
                         </td>
+
+                        <!-- RESPONSÁVEL + PARTICIPANTES -->
                         <td data-label="Responsável">
                             {% if tarefa.responsavel %}
                                 <span class="task-badge badge-responsavel">
@@ -237,12 +241,22 @@
                                 </div>
                             {% endif %}
                         </td>
+
+                        <!-- PRIORIDADE -->
                         <td data-label="Prioridade">
-                            <span class="task-badge badge-prio-{{ tarefa.prioridade|lower }}">{{ tarefa.get_prioridade_display }}</span>
+                            <span class="task-badge badge-prio-{{ tarefa.prioridade|lower }}">
+                                {{ tarefa.get_prioridade_display }}
+                            </span>
                         </td>
+
+                        <!-- STATUS -->
                         <td data-label="Status">
-                            <span class="task-badge badge-status-{{ tarefa.status }}">{{ tarefa.get_status_display }}</span>
+                            <span class="task-badge badge-status-{{ tarefa.status }}">
+                                {{ tarefa.get_status_display }}
+                            </span>
                         </td>
+
+                        <!-- PRAZO -->
                         <td data-label="Prazo">
                             {% if tarefa.prazo %}
                                 <span class="task-date {% if tarefa.atrasada %}overdue{% endif %}">
@@ -252,33 +266,51 @@
                                 <span class="task-date">—</span>
                             {% endif %}
                         </td>
+
+                        <!-- PROGRESSO -->
                         <td data-label="Progresso">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="task-progress-bar flex-fill">
-                                    <div class="task-progress-fill {% if tarefa.progresso == 100 %}bg-success{% elif tarefa.progresso >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
-                                         style="width: {{ tarefa.progresso }}%"></div>
+                                    <div class="task-progress-fill
+                                        {% if tarefa.progresso == 100 %}bg-success
+                                        {% elif tarefa.progresso >= 50 %}bg-primary
+                                        {% else %}bg-warning{% endif %}"
+                                        style="width: {{ tarefa.progresso }}%">
+                                    </div>
                                 </div>
                                 <span class="task-progress-text">{{ tarefa.progresso }}%</span>
                             </div>
                         </td>
+
+                        <!-- AÇÕES -->
                         <td data-label="Ações" class="text-center">
                             <div class="d-flex gap-1 justify-content-center">
-                                {% if perms.tarefas.view_tarefas or user.is_superuser %}
-                                <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}" class="action-btn action-btn--view" title="Ver">
-                                    <i class="bi bi-eye"></i>
-                                </a>
+
+                                {# VER — responsável, participante, quem tem permissão ou superuser #}
+                                {% if perms.tarefas.view_tarefas or tarefa.responsavel == user or user in tarefa.participantes.all or user.is_superuser %}
+                                    <a href="{% url 'tarefas:tarefa_detail' tarefa.pk %}"
+                                    class="action-btn action-btn--view" title="Ver">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
                                 {% endif %}
-                                {% if perms.tarefas.change_tarefas or user.is_superuser %}
-                                <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}" class="action-btn action-btn--edit" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
+
+                                {# EDITAR — só responsável com permissão ou superuser #}
+                                {% if perms.tarefas.change_tarefas or tarefa.responsavel == user or user.is_superuser %}
+                                    <a href="{% url 'tarefas:editar_tarefa' tarefa.pk %}"
+                                    class="action-btn action-btn--edit" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                 {% endif %}
+
+                                {# EXCLUIR — só quem tem permissão ou superuser #}
                                 {% if perms.tarefas.delete_tarefas or user.is_superuser %}
-                                <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}" class="action-btn action-btn--delete" title="Excluir"
-                                   onclick="return confirm('Excluir esta tarefa?')">
-                                    <i class="bi bi-trash"></i>
-                                </a>
+                                    <a href="{% url 'tarefas:excluir_tarefa' tarefa.pk %}"
+                                    class="action-btn action-btn--delete" title="Excluir"
+                                    onclick="return confirm('Excluir esta tarefa?')">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
                                 {% endif %}
+
                             </div>
                         </td>
                     </tr>
@@ -290,9 +322,9 @@
                                 <div class="list-empty-title">Nenhuma tarefa encontrada</div>
                                 <p class="list-empty-text">Tente limpar os filtros ou crie uma nova tarefa.</p>
                                 {% if perms.tarefas.add_tarefas or user.is_superuser %}
-                                <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary mt-2">
-                                    <i class="bi bi-plus-circle me-1"></i> Criar primeira tarefa
-                                </a>
+                                    <a href="{% url 'tarefas:criar_tarefa' %}" class="btn btn-sm btn-primary mt-2">
+                                        <i class="bi bi-plus-circle me-1"></i> Criar primeira tarefa
+                                    </a>
                                 {% endif %}
                             </div>
                         </td>
@@ -301,6 +333,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
 
         {% if is_paginated %}
         <div class="list-pagination">

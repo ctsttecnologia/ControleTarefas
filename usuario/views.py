@@ -215,10 +215,11 @@ class ProfileView(LoginRequiredMixin, DetailView):
             {
                 'id': 'dp',
                 'title': 'Departamento Pessoal',
-                'permission': 'departamento_pessoal.departamento_pessoal',
+                'permission': 'departamento_pessoal.view_painel_dp',
                 'icon': 'images/dp.gif',
                 'links': [
-                    {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP', 'permission': 'departamento_pessoal.view_painel_dp'},
+                    {'url': 'departamento_pessoal:painel_dp', 'text': 'Painel DP', 
+                        'permission': 'departamento_pessoal.view_funcionario'},
                     {'url': 'treinamentos:dashboard', 'text': 'Treinamentos'},
                 ]
             },
@@ -252,8 +253,8 @@ class ProfileView(LoginRequiredMixin, DetailView):
                 'permission': 'ata_reuniao.view_atareuniao',
                 'icon': 'images/reuniao.png',
                 'links': [
-                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
                     {'url': 'ata_reuniao:ata_reuniao_dashboard', 'text': 'Painel de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
+                    {'url': 'ata_reuniao:ata_reuniao_list', 'text': 'Lista de Atas', 'permission': 'ata_reuniao.view_atareuniao'},
                 ]
             },
             {

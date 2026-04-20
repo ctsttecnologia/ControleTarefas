@@ -1,4 +1,3 @@
-
 # tarefas/services.py
 
 """
@@ -25,27 +24,61 @@ logger = logging.getLogger(__name__)
 def preparar_contexto_relatorio(queryset):
     """
     Prepara dados estatísticos a partir do queryset de tarefas
-    para uso no template de relatório e no dashboard.
+    para uso no template de relatório, dashboard e exportações.
     """
+    from .models import Tarefas
+
     total = queryset.count()
 
-    # Contagem por status
-    status_counts = queryset.values('status').annotate(total=Count('id')).order_by('status')
-    status_data = [
-        {'status': item['status'], 'total': item['total']}
-        for item in status_counts
-    ]
+    # Dicionários de labels legíveis
+    status_labels = dict(Tarefas.STATUS_CHOICES)
+    prioridade_labels = dict(Tarefas.PRIORIDADE_CHOICES)
 
-    # Contagem por prioridade
-    prioridade_counts = queryset.values('prioridade').annotate(total=Count('id')).order_by('prioridade')
-    prioridade_data = [
-        {'prioridade': item['prioridade'], 'total': item['total']}
-        for item in prioridade_counts
-    ]
+    # ═══ Contagem por STATUS ═══
+    status_counts = (
+        queryset
+        .values('status')
+        .annotate(total=Count('id'))
+        .order_by('status')
+    )
+    status_data = []
+    for item in status_counts:
+        key = item['status']
+        count = item['total']
+        pct = round((count / total * 100), 1) if total > 0 else 0
+        status_data.append({
+            'key': key,                                # chave técnica (para CSS/JS)
+            'status': key,                             # ← compatibilidade com gráficos
+            'label': status_labels.get(key, key),      # nome legível
+            'total': count,
+            'percentual': pct,
+        })
+
+    # ═══ Contagem por PRIORIDADE ═══
+    prioridade_counts = (
+        queryset
+        .values('prioridade')
+        .annotate(total=Count('id'))
+        .order_by('prioridade')
+    )
+    prioridade_data = []
+    for item in prioridade_counts:
+        key = item['prioridade']
+        count = item['total']
+        pct = round((count / total * 100), 1) if total > 0 else 0
+        prioridade_data.append({
+            'key': key,                                    # chave técnica
+            'prioridade': key,                             # ← compatibilidade com gráficos
+            'label': prioridade_labels.get(key, key),      # nome legível
+            'total': count,
+            'percentual': pct,
+        })
 
     # Tarefas atrasadas
     agora = timezone.now()
-    atrasadas = queryset.filter(prazo__lt=agora).exclude(status='concluida').count()
+    atrasadas = queryset.filter(prazo__lt=agora).exclude(
+        status__in=['concluida', 'cancelada']
+    ).count()
 
     # Concluídas
     concluidas = queryset.filter(status='concluida').count()
@@ -140,6 +173,8 @@ def gerar_docx_relatorio(context):
     """
     try:
         from docx import Document
+        from docx.shared import Pt, RGBColor
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
     except ImportError:
         logger.error("Biblioteca python-docx não instalada.")
         return HttpResponse(
@@ -151,14 +186,37 @@ def gerar_docx_relatorio(context):
     doc.add_heading('Relatório de Tarefas', level=1)
 
     # Resumo
-    doc.add_paragraph(f"Total de tarefas: {context.get('total_tarefas', 0)}")
-    doc.add_paragraph(f"Atrasadas: {context.get('atrasadas', 0)}")
-    doc.add_paragraph(f"Concluídas: {context.get('concluidas', 0)}")
+    total = context.get('total_tarefas', 0)
+    concluidas = context.get('concluidas', 0)
+    atrasadas = context.get('atrasadas', 0)
+    doc.add_paragraph(
+        f"Total: {total}  ·  Concluídas: {concluidas}  ·  Atrasadas: {atrasadas}"
+    )
+
+    # ═══ Análise por Status ═══
+    status_data = context.get('status_data', [])
+    if status_data:
+        doc.add_heading('Análise por Status', level=2)
+        for item in status_data:
+            doc.add_paragraph(
+                f"{item['label']}: {item['total']} ({item['percentual']}%)"
+            )
+
+    # ═══ Análise por Prioridade ═══
+    prioridade_data = context.get('prioridade_data', [])
+    if prioridade_data:
+        doc.add_heading('Análise por Prioridade', level=2)
+        for item in prioridade_data:
+            doc.add_paragraph(
+                f"{item['label']}: {item['total']} ({item['percentual']}%)"
+            )
+
     doc.add_paragraph('')
 
     # Tabela de tarefas
     tarefas = context.get('tarefas', [])
     if tarefas:
+        doc.add_heading('Detalhamento', level=2)
         table = doc.add_table(rows=1, cols=5)
         table.style = 'Light Grid Accent 1'
 

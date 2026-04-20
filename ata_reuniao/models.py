@@ -97,6 +97,10 @@ class AtaReuniao(models.Model):
         ordering = ['-entrada', '-id']
         get_latest_by = 'entrada'
 
+        permissions = [
+        ('view_all_ata_reuniao', 'Pode visualizar todas as atas de reunião'),
+    ]
+
     # --- MÉTODOS DEPOIS DA META CLASS ---
     
     def __str__(self):

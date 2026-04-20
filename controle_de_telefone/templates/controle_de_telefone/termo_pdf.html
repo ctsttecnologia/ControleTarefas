@@ -4,38 +4,323 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Termo de Responsabilidade - {{ vinculo.funcionario.nome_completo }}</title>
-    <style>
-        @page { size: a4 portrait; margin: 2cm; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; }
-        .assinatura-img { max-width: 300px; height: 80px; }
+    <meta charset="utf-8">
+    <title>Termo de Responsabilidade — {{ vinculo.funcionario }}</title>
+    <style type="text/css">
+        @page {
+            size: a4 portrait;
+            margin: 2cm 1.8cm 2.5cm 1.8cm;
+            @frame footer {
+                -pdf-frame-content: footerContent;
+                left: 1.8cm; width: 17.4cm;
+                bottom: 1cm; height: 1cm;
+            }
+        }
+        body {
+            font-family: "Helvetica", sans-serif;
+            font-size: 10.5pt;
+            color: #222;
+            line-height: 1.5;
+        }
+        .header {
+            border-bottom: 2px solid #222;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header-table { width: 100%; }
+        .header-table td { vertical-align: middle; }
+        .header-logo { width: 25%; }
+        .header-logo img { max-height: 55px; }
+        .header-title { width: 75%; text-align: right; }
+        .header-title h1 {
+            font-size: 16pt;
+            margin: 0;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+        .header-title .subtitle {
+            font-size: 9pt;
+            color: #666;
+            margin-top: 2px;
+        }
+        h2.doc-title {
+            text-align: center;
+            font-size: 13pt;
+            margin: 15px 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        p { margin: 0 0 10px 0; text-align: justify; }
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .info-table td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            font-size: 10pt;
+        }
+        .info-table .label {
+            background: #f4f4f4;
+            font-weight: bold;
+            width: 30%;
+            color: #444;
+        }
+        .section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 18px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #ccc;
+            color: #1a1a1a;
+        }
+        ul { margin: 5px 0 10px 20px; padding: 0; }
+        li { margin-bottom: 4px; }
+        .clauses {
+            font-size: 10pt;
+            text-align: justify;
+            margin: 10px 0;
+        }
+        .clauses p { margin-bottom: 8px; }
+        .signature-block {
+            margin-top: 40px;
+            text-align: center;
+        }
+        .signature-img {
+            max-height: 70px;
+            max-width: 280px;
+            margin-bottom: 5px;
+        }
+        .signature-line {
+            border-top: 1px solid #222;
+            width: 60%;
+            margin: 0 auto;
+            padding-top: 5px;
+            font-size: 10pt;
+        }
+        .signature-date {
+            text-align: center;
+            font-size: 10pt;
+            margin-top: 25px;
+        }
+        .badge-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 9pt;
+            font-weight: bold;
+        }
+        .badge-assinado {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-pendente {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .footer {
+            text-align: center;
+            font-size: 8pt;
+            color: #888;
+            border-top: 1px solid #ddd;
+            padding-top: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="termo-container">
-        <header class="termo-header">
-            {% if logo_base64 %}
-                <img src="{{ logo_base64 }}" alt="Logo da Empresa">
-            {% else %}
-                <p>Logo da Empresa</p>
-            {% endif %}
-            <h1>TERMO DE RESPONSABILIDADE SOBRE USO DE SMARTPHONE</h1>
-        </header>
 
-        <div class="signature-wrapper">
-            <p><strong>Assinatura do Colaborador:</strong></p>
-            {% if assinatura_path %}
-                <img src="{{ assinatura_path }}" alt="Assinatura Digital" class="assinatura-img">
-            {% else %}
-                <p>Assinatura pendente.</p>
-            {% endif %}
-            <p>___________________________________</p>
-            <p><strong>{{ vinculo.funcionario.nome_completo }}</strong></p>
-            <p><small>RG: {{ rg_numero }}</small></p>
-            <p><small>Assinado em: {{ vinculo.data_assinatura|date:"d/m/Y H:i:s" }}</small></p>
-        </div>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <table class="header-table">
+            <tr>
+                <td class="header-logo">
+                    {% if logo_base64 %}
+                    <img src="{{ logo_base64 }}" alt="Logo">
+                    {% endif %}
+                </td>
+                <td class="header-title">
+                    <h1>Termo de Responsabilidade</h1>
+                    <div class="subtitle">
+                        Aparelho/Linha Corporativa · Documento nº {{ vinculo.pk }}
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
+
+    <h2 class="doc-title">Termo de Entrega e Responsabilidade</h2>
+
+    <p>
+        Pelo presente instrumento, <strong>{{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}</strong>,
+        {% if rg_numero and rg_numero != "Documento não encontrado" and rg_numero != "RG não encontrado" %}
+        portador(a) do RG nº <strong>{{ rg_numero }}</strong>,
+        {% endif %}
+        doravante denominado(a) <strong>RESPONSÁVEL</strong>,
+        declara ter recebido da empresa, em perfeitas condições de uso, o(s) seguinte(s) item(ns)
+        destinado(s) ao exercício de suas atividades profissionais:
+    </p>
+
+    <!-- Dados do Funcionário -->
+    <div class="section-title">1. Dados do Responsável</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Nome Completo</td>
+            <td>{{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}</td>
+        </tr>
+        {% if vinculo.funcionario.matricula %}
+        <tr>
+            <td class="label">Matrícula</td>
+            <td>{{ vinculo.funcionario.matricula }}</td>
+        </tr>
+        {% endif %}
+        {% if vinculo.funcionario.cargo %}
+        <tr>
+            <td class="label">Cargo</td>
+            <td>{{ vinculo.funcionario.cargo }}</td>
+        </tr>
+        {% endif %}
+        {% if vinculo.funcionario.filial %}
+        <tr>
+            <td class="label">Filial</td>
+            <td>{{ vinculo.funcionario.filial.nome }}</td>
+        </tr>
+        {% endif %}
+        {% if rg_numero and rg_numero != "Documento não encontrado" and rg_numero != "RG não encontrado" %}
+        <tr>
+            <td class="label">RG</td>
+            <td>{{ rg_numero }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <!-- Dados do Aparelho -->
+    {% if vinculo.aparelho %}
+    <div class="section-title">2. Dados do Aparelho</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Tipo</td>
+            <td>{{ vinculo.aparelho.get_tipo_de_aparelho_display }}</td>
+        </tr>
+        <tr>
+            <td class="label">Marca / Modelo</td>
+            <td>{{ vinculo.aparelho.modelo.marca.nome }} {{ vinculo.aparelho.modelo.nome }}</td>
+        </tr>
+        {% if vinculo.aparelho.imei %}
+        <tr>
+            <td class="label">IMEI</td>
+            <td>{{ vinculo.aparelho.imei }}</td>
+        </tr>
+        {% endif %}
+        {% if vinculo.aparelho.numero_serie %}
+        <tr>
+            <td class="label">Nº de Série</td>
+            <td>{{ vinculo.aparelho.numero_serie }}</td>
+        </tr>
+        {% endif %}
+        {% if vinculo.aparelho.acessorios %}
+        <tr>
+            <td class="label">Acessórios</td>
+            <td>{{ vinculo.aparelho.acessorios }}</td>
+        </tr>
+        {% endif %}
+    </table>
+    {% endif %}
+
+    <!-- Dados da Linha -->
+    {% if vinculo.linha %}
+    <div class="section-title">{% if vinculo.aparelho %}3{% else %}2{% endif %}. Dados da Linha Telefônica</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Número</td>
+            <td>{{ vinculo.linha.numero }}</td>
+        </tr>
+        <tr>
+            <td class="label">Operadora</td>
+            <td>{{ vinculo.linha.plano.operadora.nome }}</td>
+        </tr>
+        <tr>
+            <td class="label">Plano</td>
+            <td>{{ vinculo.linha.plano.nome }} ({{ vinculo.linha.plano.franquia_dados_gb }} GB)</td>
+        </tr>
+        <tr>
+            <td class="label">Valor Mensal</td>
+            <td>R$ {{ vinculo.linha.plano.valor_mensal|floatformat:2 }}</td>
+        </tr>
+    </table>
+    {% endif %}
+
+    <!-- Datas -->
+    <div class="section-title">{% if vinculo.aparelho and vinculo.linha %}4{% elif vinculo.aparelho or vinculo.linha %}3{% else %}2{% endif %}. Datas</div>
+    <table class="info-table">
+        <tr>
+            <td class="label">Data de Entrega</td>
+            <td>{{ vinculo.data_entrega|date:"d/m/Y" }}</td>
+        </tr>
+        {% if vinculo.data_devolucao %}
+        <tr>
+            <td class="label">Data de Devolução</td>
+            <td>{{ vinculo.data_devolucao|date:"d/m/Y" }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <!-- Cláusulas -->
+    <div class="section-title">Cláusulas de Responsabilidade</div>
+    <div class="clauses">
+        <p>
+            <strong>1.</strong> O(A) RESPONSÁVEL compromete-se a utilizar o(s) item(ns) descrito(s) acima
+            <strong>exclusivamente para fins profissionais</strong>, relacionados ao exercício de suas
+            atribuições na empresa.
+        </p>
+        <p>
+            <strong>2.</strong> O(A) RESPONSÁVEL obriga-se a zelar pela integridade, guarda e conservação
+            do(s) item(ns), utilizando-o(s) com a devida diligência e cuidado.
+        </p>
+        <p>
+            <strong>3.</strong> Em caso de <strong>dano, extravio, roubo, furto ou mau uso</strong> do(s) item(ns),
+            o(a) RESPONSÁVEL obriga-se a comunicar imediatamente à empresa e a arcar com os custos
+            de reparo ou reposição, conforme apuração de responsabilidade.
+        </p>
+        <p>
+            <strong>4.</strong> O(A) RESPONSÁVEL declara estar ciente de que o(s) item(ns) pertence(m) à
+            empresa e deverá(ão) ser devolvido(s) em caso de desligamento, solicitação da empresa ou
+            término do uso profissional.
+        </p>
+        <p>
+            <strong>5.</strong> É vedado o compartilhamento do(s) item(ns) com terceiros, bem como a
+            instalação de softwares não autorizados ou o uso para fins que violem as políticas da empresa.
+        </p>
+    </div>
+
+    <!-- Assinatura -->
+    <div class="signature-block">
+        {% if vinculo.foi_assinado and assinatura_path %}
+            <img src="{{ assinatura_path }}" alt="Assinatura" class="signature-img"><br>
+            <div class="signature-line">
+                {{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}
+            </div>
+            <div class="signature-date">
+                Assinado em {{ vinculo.data_assinatura|date:"d/m/Y \à\s H:i" }}
+                <br>
+                <span class="badge-status badge-assinado">✓ DOCUMENTO ASSINADO DIGITALMENTE</span>
+            </div>
+        {% else %}
+            <div style="height: 70px;"></div>
+            <div class="signature-line">
+                {{ vinculo.funcionario.nome_completo|default:vinculo.funcionario }}
+            </div>
+            <div class="signature-date">
+                <span class="badge-status badge-pendente">⧗ PENDENTE DE ASSINATURA</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Rodapé -->
+    <div id="footerContent" class="footer">
+        Documento gerado em {{ vinculo.atualizado_em|date:"d/m/Y H:i" }}
+        · Página <pdf:pagenumber> de <pdf:pagecount>
+    </div>
+
 </body>
 </html>
-

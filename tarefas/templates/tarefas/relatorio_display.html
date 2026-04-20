@@ -220,8 +220,7 @@
             </a>
             {% endif %}
         </form>
-        <!-- ═══ FIM ═══ -->
-
+  
         <div class="table-responsive">
             <table class="rd-table">
                 <thead>
@@ -261,6 +260,83 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- ═══ ANÁLISE POR STATUS E PRIORIDADE ═══ -->
+        {% if status_data or prioridade_data %}
+        <div style="padding: 1.15rem; border-top: 1px solid var(--rd-divider);">
+            <div class="row g-4">
+
+                {% if status_data %}
+                <div class="col-md-6">
+                    <h6 style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.75rem;">
+                        <i class="bi bi-pie-chart me-1"></i>Análise por Status
+                    </h6>
+                    {% for item in status_data %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="rd-badge rd-badge-{{ item.key }}">{{ item.label }}</span>
+                            <span style="font-size: 0.78rem; font-weight: 600;">{{ item.total }} ({{ item.percentual }}%)</span>
+                        </div>
+                        <div style="background: var(--rd-divider); border-radius: 4px; height: 6px;">
+                            <div style="
+                                height: 100%; border-radius: 4px; width: {{ item.percentual }}%;
+                                background:
+                                    {% if item.key == 'concluida' %}#22c55e
+                                    {% elif item.key == 'andamento' %}#3b82f6
+                                    {% elif item.key == 'pendente' %}#f59e0b
+                                    {% elif item.key == 'pausada' %}#8b5cf6
+                                    {% elif item.key == 'atrasada' %}#ef4444
+                                    {% elif item.key == 'cancelada' %}#6b7280
+                                    {% else %}#9ca3af{% endif %};
+                            "></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if prioridade_data %}
+                <div class="col-md-6">
+                    <h6 style="font-size: 0.78rem; font-weight: 700; margin-bottom: 0.75rem;">
+                        <i class="bi bi-flag me-1"></i>Análise por Prioridade
+                    </h6>
+                    {% for item in prioridade_data %}
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span style="
+                                font-size: 0.7rem; font-weight: 700; padding: 0.2em 0.6em;
+                                border-radius: 6px; text-transform: uppercase;
+                                background:
+                                    {% if item.key == 'alta' %}rgba(239,68,68,0.12)
+                                    {% elif item.key == 'media' %}rgba(245,158,11,0.12)
+                                    {% elif item.key == 'baixa' %}rgba(34,197,94,0.12)
+                                    {% else %}rgba(100,116,139,0.12){% endif %};
+                                color:
+                                    {% if item.key == 'alta' %}#dc2626
+                                    {% elif item.key == 'media' %}#d97706
+                                    {% elif item.key == 'baixa' %}#16a34a
+                                    {% else %}#475569{% endif %};
+                            ">{{ item.label }}</span>
+                            <span style="font-size: 0.78rem; font-weight: 600;">{{ item.total }} ({{ item.percentual }}%)</span>
+                        </div>
+                        <div style="background: var(--rd-divider); border-radius: 4px; height: 6px;">
+                            <div style="
+                                height: 100%; border-radius: 4px; width: {{ item.percentual }}%;
+                                background:
+                                    {% if item.key == 'alta' %}#ef4444
+                                    {% elif item.key == 'media' %}#f59e0b
+                                    {% elif item.key == 'baixa' %}#22c55e
+                                    {% else %}#9ca3af{% endif %};
+                            "></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Export Bar -->
         {% if tarefas %}

@@ -1,10 +1,10 @@
+
 # seguranca_trabalho/views.py
 
 import base64
 import io
 import json
 import logging
-import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -14,9 +14,9 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import Q, Count, Sum, Value, IntegerField, ProtectedError
+from django.db.models import Q, Count, Sum, Value, IntegerField, ProtectedError, F
 from django.db.models.functions import Coalesce
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
@@ -35,7 +35,7 @@ from weasyprint import HTML, default_url_fetcher
 
 from core.mixins import (
     AppPermissionMixin, FilialCreateMixin, HTMXModalFormMixin,
-    SSTPermissionMixin, ViewFilialScopedMixin, TecnicoScopeMixin,
+    ViewFilialScopedMixin, TecnicoScopeMixin,
 )
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
@@ -59,13 +59,6 @@ _APP = 'seguranca_trabalho'
 # HELPERS
 # =============================================================================
 
-def _safe_data_uri(sig):
-    pattern = r'^data:image/(png|jpeg|jpg|gif|svg\+xml);base64,[A-Za-z0-9+/=\s]+$'
-    if re.match(pattern, sig):
-        return mark_safe(sig)
-    return ''
-
-
 def custom_url_fetcher(url):
     """Permite que o WeasyPrint acesse arquivos de media locais."""
     if url.startswith(settings.MEDIA_URL):
@@ -86,16 +79,45 @@ def _estoque_equipamento(equipamento, filial):
     return entradas - saidas
 
 
+def _processar_assinatura_base64(sig_str):
+    """Normaliza uma string de assinatura base64 para data URI válido."""
+    if not sig_str:
+        return None
+    sig = sig_str.strip()
+    if sig.startswith('data:image'):
+        return mark_safe(sig)
+    if len(sig) > 100:
+        return mark_safe(f'data:image/png;base64,{sig}')
+    return None
+
+
+def _imagem_file_para_base64(image_field):
+    """Converte um ImageField/FileField em data URI base64."""
+    if not image_field or not image_field.name:
+        return None
+    try:
+        image_field.open('rb')
+        content = image_field.read()
+        image_field.close()
+        if not content:
+            return None
+        mime = 'image/jpeg' if content[:2] == b'\xff\xd8' else 'image/png'
+        encoded = base64.b64encode(content).decode('utf-8')
+        return mark_safe(f'data:{mime};base64,{encoded}')
+    except Exception as e:
+        logger.warning("Erro ao converter imagem para base64: %s", e)
+        return None
+
+
 # =============================================================================
 # CRUD DE EQUIPAMENTOS
 # =============================================================================
 
-class EquipamentoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+class EquipamentoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
     app_label_required = _APP
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_list.html'
     context_object_name = 'equipamentos'
-    permission_required = 'seguranca_trabalho.view_equipamento'
     paginate_by = 20
 
     def get_context_data(self, **kwargs):
@@ -103,37 +125,43 @@ class EquipamentoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionM
         filial = getattr(self.request.user, 'filial_ativa', None)
 
         if filial:
-            mov = MovimentacaoEstoque.objects.filter(filial=filial)
+            # ✅ Pré-calcula estoque em UMA query usando subqueries agrupadas
+            movs_por_equip = (
+                MovimentacaoEstoque.objects
+                .filter(filial=filial)
+                .values('equipamento_id', 'tipo')
+                .annotate(total=Sum('quantidade'))
+            )
+
+            # Monta mapa: {equipamento_id: {'ENTRADA': X, 'SAIDA': Y}}
+            mapa = {}
+            for item in movs_por_equip:
+                eq_id = item['equipamento_id']
+                mapa.setdefault(eq_id, {'ENTRADA': 0, 'SAIDA': 0})
+                mapa[eq_id][item['tipo']] = item['total'] or 0
 
             for eq in context['equipamentos']:
-                entradas = mov.filter(equipamento=eq, tipo='ENTRADA').aggregate(
-                    total=Coalesce(Sum('quantidade'), Value(0, output_field=IntegerField()))
-                )['total']
-                saidas = mov.filter(equipamento=eq, tipo='SAIDA').aggregate(
-                    total=Coalesce(Sum('quantidade'), Value(0, output_field=IntegerField()))
-                )['total']
-                eq.estoque_atual = entradas - saidas
-                eq.total_entradas = entradas
-                eq.total_saidas = saidas
+                dados = mapa.get(eq.pk, {'ENTRADA': 0, 'SAIDA': 0})
+                eq.total_entradas = dados['ENTRADA']
+                eq.total_saidas = dados['SAIDA']
+                eq.estoque_atual = dados['ENTRADA'] - dados['SAIDA']
 
         return context
 
 
-class EquipamentoDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DetailView):
+class EquipamentoDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
     app_label_required = _APP
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_detail.html'
     context_object_name = 'equipamento'
-    permission_required = 'seguranca_trabalho.view_equipamento'
 
 
-class EquipamentoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+class EquipamentoCreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
     app_label_required = _APP
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
-    permission_required = 'seguranca_trabalho.add_equipamento'
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -151,107 +179,107 @@ class EquipamentoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissio
         return response
 
 
-class EquipamentoUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+class EquipamentoUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
     app_label_required = _APP
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
-    permission_required = 'seguranca_trabalho.change_equipamento'
 
     def get_queryset(self):
         return super().get_queryset().select_related('fabricante')
 
     def form_valid(self, form):
-        messages.success(self.request, f"Equipamento '{form.instance.nome}' atualizado com sucesso!")
+        messages.success(
+            self.request,
+            f"Equipamento '{form.instance.nome}' atualizado com sucesso!"
+        )
         return super().form_valid(form)
 
 
-class EquipamentoDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
+class EquipamentoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
     app_label_required = _APP
     model = Equipamento
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
     context_object_name = 'object'
-    permission_required = 'seguranca_trabalho.delete_equipamento'
 
     def form_valid(self, form):
         messages.success(self.request, "Equipamento excluído com sucesso!")
         return super().form_valid(form)
 
 
-class AjusteEstoqueView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+class AjusteEstoqueView(AppPermissionMixin, View):
     """Permite ajustar o estoque de um equipamento com justificativa."""
     app_label_required = _APP
-    permission_required = 'seguranca_trabalho.change_equipamento'
 
     def _get_equipamento(self, request, pk):
         filial = getattr(request.user, 'filial_ativa', None)
         return get_object_or_404(Equipamento, pk=pk, filial=filial)
 
-    def get(self, request, pk):
-        equipamento = self._get_equipamento(request, pk)
-        form = AjusteEstoqueForm()
+    def _render(self, request, equipamento, form):
         return render(request, 'seguranca_trabalho/ajuste_estoque.html', {
             'equipamento': equipamento,
             'form': form,
         })
+
+    def get(self, request, pk):
+        equipamento = self._get_equipamento(request, pk)
+        return self._render(request, equipamento, AjusteEstoqueForm())
 
     def post(self, request, pk):
         equipamento = self._get_equipamento(request, pk)
         filial = getattr(request.user, 'filial_ativa', None)
         form = AjusteEstoqueForm(request.POST)
 
-        if form.is_valid():
-            tipo = form.cleaned_data['tipo']
-            quantidade = form.cleaned_data['quantidade']
-            justificativa = form.cleaned_data['justificativa']
+        if not form.is_valid():
+            return self._render(request, equipamento, form)
 
-            # Calcula estoque atual via helper
-            estoque_atual = _estoque_equipamento(equipamento, filial)
+        tipo = form.cleaned_data['tipo']
+        quantidade = form.cleaned_data['quantidade']
+        justificativa = form.cleaned_data['justificativa']
 
-            if tipo == 'SAIDA' and quantidade > estoque_atual:
-                form.add_error('quantidade', _(
-                    f"Estoque insuficiente. Disponível: {estoque_atual}"
-                ))
-                return render(request, 'seguranca_trabalho/ajuste_estoque.html', {
-                    'equipamento': equipamento,
-                    'form': form,
-                })
+        estoque_atual = _estoque_equipamento(equipamento, filial)
 
-            MovimentacaoEstoque.objects.create(
-                equipamento=equipamento,
-                tipo=tipo,
-                quantidade=quantidade,
-                justificativa=f"[AJUSTE MANUAL] {justificativa}",
-                responsavel=request.user,
-                filial=filial,
+        if tipo == 'SAIDA' and quantidade > estoque_atual:
+            form.add_error(
+                'quantidade',
+                _(f"Estoque insuficiente. Disponível: {estoque_atual}")
             )
+            return self._render(request, equipamento, form)
 
-            tipo_label = "adicionadas ao" if tipo == 'ENTRADA' else "removidas do"
-            messages.success(
-                request,
-                f"{quantidade} unidades {tipo_label} estoque de '{equipamento.nome}'."
-            )
-            return redirect('seguranca_trabalho:equipamento_detail', pk=equipamento.pk)
+        MovimentacaoEstoque.objects.create(
+            equipamento=equipamento,
+            tipo=tipo,
+            quantidade=quantidade,
+            justificativa=f"[AJUSTE MANUAL] {justificativa}",
+            responsavel=request.user,
+            filial=filial,
+        )
 
-        return render(request, 'seguranca_trabalho/ajuste_estoque.html', {
-            'equipamento': equipamento,
-            'form': form,
-        })
+        tipo_label = "adicionadas ao" if tipo == 'ENTRADA' else "removidas do"
+        messages.success(
+            request,
+            f"{quantidade} unidades {tipo_label} estoque de '{equipamento.nome}'."
+        )
+        return redirect('seguranca_trabalho:equipamento_detail', pk=equipamento.pk)
 
 
 # =============================================================================
 # CRUD DE FICHAS DE EPI
 # =============================================================================
 
-class FichaEPIListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
+class FichaEPIListView(
+    AppPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+    ListView
+):
     app_label_required = _APP
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
     paginate_by = 30
-    permission_required = 'seguranca_trabalho.view_fichaepi'
     tecnico_scope_lookup = 'funcionario__usuario'
 
     def get_queryset(self):
@@ -265,13 +293,12 @@ class FichaEPIListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
         return qs.order_by('funcionario__nome_completo')
 
 
-class FichaEPICreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+class FichaEPICreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
     app_label_required = _APP
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_create.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
-    permission_required = 'seguranca_trabalho.add_fichaepi'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -283,13 +310,18 @@ class FichaEPICreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         return super().form_valid(form)
 
 
-class FichaEPIDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, FormMixin, DetailView):
+class FichaEPIDetailView(
+    AppPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+    FormMixin,
+    DetailView
+):
     app_label_required = _APP
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
     form_class = EntregaEPIForm
-    permission_required = 'seguranca_trabalho.view_fichaepi'
     tecnico_scope_lookup = 'funcionario__usuario'
 
     def get_success_url(self):
@@ -303,7 +335,11 @@ class FichaEPIDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = self.get_form()
-        context['entregas'] = self.object.entregas.select_related('equipamento').order_by('-data_entrega')
+        context['entregas'] = (
+            self.object.entregas
+            .select_related('equipamento')
+            .order_by('-data_entrega')
+        )
         return context
 
     def post(self, request, *args, **kwargs):
@@ -321,12 +357,16 @@ class FichaEPIDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
             nova_entrega.ficha = self.object
             nova_entrega.filial = self.object.filial
             nova_entrega.save()
+
             MovimentacaoEstoque.objects.create(
                 equipamento=nova_entrega.equipamento,
                 tipo='SAIDA',
                 quantidade=nova_entrega.quantidade,
                 responsavel=self.request.user,
-                justificativa=f"Entrega EPI - Ficha #{self.object.pk} ({self.object.funcionario.nome_completo})",
+                justificativa=(
+                    f"Entrega EPI - Ficha #{self.object.pk} "
+                    f"({self.object.funcionario.nome_completo})"
+                ),
                 entrega_associada=nova_entrega,
                 filial=nova_entrega.filial,
             )
@@ -334,12 +374,11 @@ class FichaEPIDetailView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         return redirect(self.get_success_url())
 
 
-class FichaEPIUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, UpdateView):
+class FichaEPIUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
     app_label_required = _APP
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_form.html'
-    permission_required = 'seguranca_trabalho.change_fichaepi'
 
     def get_success_url(self):
         return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.pk})
@@ -350,13 +389,12 @@ class FichaEPIUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         return kwargs
 
 
-class FichaEPIDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
+class FichaEPIDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
     app_label_required = _APP
     model = FichaEPI
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
     context_object_name = 'object'
-    permission_required = 'seguranca_trabalho.delete_fichaepi'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -386,17 +424,24 @@ class FichaEPIDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
 # AÇÕES DE ENTREGA (Assinatura, Devolução)
 # =============================================================================
 
-class AssinarEntregaView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, UpdateView):
+class AssinarEntregaView(
+    AppPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+    UpdateView
+):
     app_label_required = _APP
     model = EntregaEPI
     form_class = AssinaturaEntregaForm
     template_name = 'seguranca_trabalho/entrega_sign.html'
     context_object_name = 'entrega'
-    permission_required = 'seguranca_trabalho.assinar_entregaepi'
     tecnico_scope_lookup = 'ficha__funcionario__usuario'
 
     def get_success_url(self):
-        return reverse('seguranca_trabalho:ficha_detail', kwargs={'pk': self.object.ficha.pk})
+        return reverse(
+            'seguranca_trabalho:ficha_detail',
+            kwargs={'pk': self.object.ficha.pk}
+        )
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -422,9 +467,8 @@ class AssinarEntregaView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         return redirect(self.get_success_url())
 
 
-class RegistrarDevolucaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, View):
+class RegistrarDevolucaoView(AppPermissionMixin, TecnicoScopeMixin, View):
     app_label_required = _APP
-    permission_required = 'seguranca_trabalho.change_entregaepi'
     http_method_names = ['post']
     tecnico_scope_lookup = 'ficha__funcionario__usuario'
 
@@ -438,7 +482,10 @@ class RegistrarDevolucaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
         entrega = get_object_or_404(qs, pk=kwargs.get('pk'))
 
         if entrega.data_devolucao:
-            messages.warning(request, f"O EPI '{entrega.equipamento.nome}' já foi devolvido.")
+            messages.warning(
+                request,
+                f"O EPI '{entrega.equipamento.nome}' já foi devolvido."
+            )
         else:
             entrega.data_devolucao = timezone.now().date()
             entrega.recebedor_devolucao = request.user
@@ -448,11 +495,17 @@ class RegistrarDevolucaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
                 tipo='ENTRADA',
                 quantidade=entrega.quantidade,
                 responsavel=request.user,
-                justificativa=f"Devolução EPI - Ficha #{entrega.ficha.pk} ({entrega.ficha.funcionario.nome_completo})",
+                justificativa=(
+                    f"Devolução EPI - Ficha #{entrega.ficha.pk} "
+                    f"({entrega.ficha.funcionario.nome_completo})"
+                ),
                 entrega_associada=entrega,
                 filial=entrega.filial,
             )
-            messages.success(request, f"Devolução do EPI '{entrega.equipamento.nome}' registrada.")
+            messages.success(
+                request,
+                f"Devolução do EPI '{entrega.equipamento.nome}' registrada."
+            )
         return redirect('seguranca_trabalho:ficha_detail', pk=entrega.ficha.pk)
 
 
@@ -460,49 +513,32 @@ class RegistrarDevolucaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissi
 # RELATÓRIOS E PAINÉIS
 # =============================================================================
 
-class GerarFichaPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, DetailView):
+class GerarFichaPDFView(
+    AppPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+    DetailView
+):
     app_label_required = _APP
     model = FichaEPI
-    permission_required = 'seguranca_trabalho.view_fichaepi'
     tecnico_scope_lookup = 'funcionario__usuario'
 
     @staticmethod
     def _processar_assinatura(entrega):
         """Retorna data URI da assinatura ou None."""
-        if entrega.assinatura_recebimento:
-            sig = entrega.assinatura_recebimento.strip()
-            if sig.startswith('data:image'):
-                return mark_safe(sig)
-            if len(sig) > 100:
-                return mark_safe(f'data:image/png;base64,{sig}')
-
-        if entrega.assinatura_imagem and entrega.assinatura_imagem.name:
-            try:
-                entrega.assinatura_imagem.open('rb')
-                content = entrega.assinatura_imagem.read()
-                entrega.assinatura_imagem.close()
-                if content:
-                    mime = 'image/jpeg' if content[:2] == b'\xff\xd8' else 'image/png'
-                    encoded = base64.b64encode(content).decode('utf-8')
-                    return mark_safe(f'data:{mime};base64,{encoded}')
-            except Exception as e:
-                logger.warning("Erro assinatura_imagem #%s: %s", entrega.pk, e)
-
-        return None
+        # Tenta primeiro campo de texto (base64 direto)
+        resultado = _processar_assinatura_base64(entrega.assinatura_recebimento)
+        if resultado:
+            return resultado
+        # Fallback para arquivo de imagem
+        return _imagem_file_para_base64(entrega.assinatura_imagem)
 
     def _get_logo_base64(self, filial):
         """Logo da filial ou fallback estático."""
-        if filial and hasattr(filial, 'logo') and filial.logo and filial.logo.name:
-            try:
-                filial.logo.open('rb')
-                content = filial.logo.read()
-                filial.logo.close()
-                if content:
-                    mime = 'image/jpeg' if content[:2] == b'\xff\xd8' else 'image/png'
-                    encoded = base64.b64encode(content).decode('utf-8')
-                    return mark_safe(f'data:{mime};base64,{encoded}')
-            except Exception as e:
-                logger.warning("Erro logo filial: %s", e)
+        if filial and hasattr(filial, 'logo'):
+            logo = _imagem_file_para_base64(filial.logo)
+            if logo:
+                return logo
 
         for nome in ['logo.png', 'logo.jpg', 'logo_cetest.png']:
             logo_path = Path(settings.BASE_DIR) / 'static' / 'images' / nome
@@ -519,29 +555,24 @@ class GerarFichaPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMix
 
         logger.info("Gerando ficha PDF: %s", ficha.funcionario.nome_completo)
 
-        entregas = EntregaEPI.objects.filter(
-            ficha=ficha
-        ).select_related('equipamento').order_by('data_entrega')
+        entregas = (
+            EntregaEPI.objects
+            .filter(ficha=ficha)
+            .select_related('equipamento')
+            .order_by('data_entrega')
+        )
 
         for entrega in entregas:
             entrega.assinatura_base64 = self._processar_assinatura(entrega)
-
-        logo_base64 = self._get_logo_base64(ficha.filial)
-
-        assinatura_funcionario = None
-        if ficha.assinatura_funcionario:
-            sig = ficha.assinatura_funcionario.strip()
-            if sig.startswith('data:image'):
-                assinatura_funcionario = mark_safe(sig)
-            elif len(sig) > 100:
-                assinatura_funcionario = mark_safe(f'data:image/png;base64,{sig}')
 
         context = {
             'ficha': ficha,
             'entregas': entregas,
             'data_emissao': timezone.now(),
-            'logo_base64': logo_base64,
-            'assinatura_funcionario': assinatura_funcionario,
+            'logo_base64': self._get_logo_base64(ficha.filial),
+            'assinatura_funcionario': _processar_assinatura_base64(
+                ficha.assinatura_funcionario
+            ),
         }
 
         html_string = render_to_string(
@@ -568,13 +599,17 @@ class GerarFichaPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMix
         return response
 
 
-class AssinarTermoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, UpdateView):
+class AssinarTermoView(
+    AppPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+    UpdateView
+):
     app_label_required = _APP
     model = FichaEPI
     form_class = AssinaturaTermoForm
     template_name = 'seguranca_trabalho/termo_sign.html'
     context_object_name = 'ficha'
-    permission_required = 'seguranca_trabalho.change_fichaepi'
     tecnico_scope_lookup = 'funcionario__usuario'
 
     def get_success_url(self):
@@ -603,26 +638,28 @@ class AssinarTermoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
         return redirect(self.get_success_url())
 
 
-class DashboardSSTView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, TemplateView):
+class DashboardSSTView(
+    AppPermissionMixin,
+    TecnicoScopeMixin,
+    ViewFilialScopedMixin,
+    TemplateView
+):
     app_label_required = _APP
     template_name = 'seguranca_trabalho/dashboard.html'
-    permission_required = 'seguranca_trabalho.view_fichaepi'
     tecnico_scope_lookup = 'funcionario__usuario'
 
     def _is_tecnico(self):
-        user = self.request.user
-        if hasattr(user, 'is_tecnico'):
-            return user.is_tecnico
-        return not user.is_staff and not user.is_superuser
+        return getattr(self.request.user, 'is_tecnico', False)
 
-    def get_queryset_base(self, model_class):
+    def _queryset_por_filial(self, model_class):
+        """Retorna queryset do model filtrado pela filial ativa."""
         filial_id = self.request.session.get('active_filial_id')
         if not filial_id:
             return model_class.objects.none()
 
         if hasattr(model_class, 'filial'):
             return model_class.objects.filter(filial_id=filial_id)
-        elif hasattr(model_class, 'funcionario'):
+        if hasattr(model_class, 'funcionario'):
             return model_class.objects.filter(funcionario__filial_id=filial_id)
         return model_class.objects.none()
 
@@ -630,52 +667,52 @@ class DashboardSSTView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
         context = super().get_context_data(**kwargs)
 
         try:
-            equipamentos_da_filial = self.get_queryset_base(Equipamento)
-            fichas_da_filial = self.get_queryset_base(FichaEPI)
-            entregas_da_filial = self.get_queryset_base(EntregaEPI)
-            matriz_da_filial = self.get_queryset_base(MatrizEPI)
+            equipamentos = self._queryset_por_filial(Equipamento)
+            fichas = self._queryset_por_filial(FichaEPI)
+            entregas = self._queryset_por_filial(EntregaEPI)
+            matriz = self._queryset_por_filial(MatrizEPI)
         except Exception as e:
             logger.error("Erro no DashboardSST: %s", e)
-            equipamentos_da_filial = Equipamento.objects.none()
-            fichas_da_filial = FichaEPI.objects.none()
-            entregas_da_filial = EntregaEPI.objects.none()
-            matriz_da_filial = MatrizEPI.objects.none()
+            equipamentos = Equipamento.objects.none()
+            fichas = FichaEPI.objects.none()
+            entregas = EntregaEPI.objects.none()
+            matriz = MatrizEPI.objects.none()
 
+        # Técnicos só veem os próprios dados
         if self._is_tecnico():
-            equipamentos_da_filial = equipamentos_da_filial.none()
-            matriz_da_filial = matriz_da_filial.none()
-            fichas_da_filial = fichas_da_filial.filter(funcionario__usuario=self.request.user)
-            entregas_da_filial = entregas_da_filial.filter(ficha__funcionario__usuario=self.request.user)
+            equipamentos = equipamentos.none()
+            matriz = matriz.none()
+            fichas = fichas.filter(funcionario__usuario=self.request.user)
+            entregas = entregas.filter(ficha__funcionario__usuario=self.request.user)
 
-        # KPIs
-        context['total_equipamentos_ativos'] = equipamentos_da_filial.filter(ativo=True).count()
-        context['fichas_ativas'] = fichas_da_filial.filter(funcionario__status='ATIVO').count()
-        context['entregas_pendentes_assinatura'] = entregas_da_filial.filter(
+        # ---------- KPIs ----------
+        context['total_equipamentos_ativos'] = equipamentos.filter(ativo=True).count()
+        context['fichas_ativas'] = fichas.filter(funcionario__status='ATIVO').count()
+        context['entregas_pendentes_assinatura'] = entregas.filter(
             data_devolucao__isnull=True,
             data_assinatura__isnull=True
         ).count()
 
-        # GRÁFICO: Status de Vencimento
+        # ---------- GRÁFICO: Status de Vencimento ----------
         today = timezone.now().date()
         thirty_days = today + timedelta(days=30)
-        entregas_ativas = entregas_da_filial.filter(
+        entregas_ativas = entregas.filter(
             data_devolucao__isnull=True,
             data_entrega__isnull=False
         ).select_related('equipamento')
 
-        epis_vencidos = 0
-        epis_vencendo = 0
-        epis_regulares = 0
+        epis_vencidos = epis_vencendo = epis_regulares = 0
 
         for entrega in entregas_ativas:
-            if entrega.equipamento.vida_util_dias:
-                vencimento = entrega.data_entrega + timedelta(days=entrega.equipamento.vida_util_dias)
-                if vencimento < today:
-                    epis_vencidos += 1
-                elif today <= vencimento <= thirty_days:
-                    epis_vencendo += 1
-                else:
-                    epis_regulares += 1
+            if not entrega.equipamento.vida_util_dias:
+                epis_regulares += 1
+                continue
+
+            vencimento = entrega.data_entrega + timedelta(days=entrega.equipamento.vida_util_dias)
+            if vencimento < today:
+                epis_vencidos += 1
+            elif today <= vencimento <= thirty_days:
+                epis_vencendo += 1
             else:
                 epis_regulares += 1
 
@@ -683,25 +720,38 @@ class DashboardSSTView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
         context['chart_vencimento_labels'] = json.dumps(['Regulares', 'Vencendo (30d)', 'Vencidos'])
         context['chart_vencimento_data'] = json.dumps([epis_regulares, epis_vencendo, epis_vencidos])
 
-        # GRÁFICO: Matriz de EPI
-        matriz_data = matriz_da_filial.values('funcao__nome').annotate(
-            num_epis=Count('equipamento')
-        ).order_by('-num_epis')[:10]
+        # ---------- GRÁFICO: Matriz de EPI ----------
+        matriz_data = (
+            matriz.values('funcao__nome')
+            .annotate(num_epis=Count('equipamento'))
+            .order_by('-num_epis')[:10]
+        )
 
         if matriz_data:
             context['matriz_labels'] = json.dumps([m['funcao__nome'] for m in matriz_data])
             context['matriz_data'] = json.dumps([m['num_epis'] for m in matriz_data])
 
-        # GRÁFICO: Status das Entregas
-        entregas_assinadas = entregas_da_filial.filter(data_devolucao__isnull=True, data_assinatura__isnull=False).count()
+        # ---------- GRÁFICO: Status das Entregas ----------
+        entregas_assinadas = entregas.filter(
+            data_devolucao__isnull=True,
+            data_assinatura__isnull=False
+        ).count()
         entregas_pendentes = context['entregas_pendentes_assinatura']
-        entregas_devolvidas = entregas_da_filial.filter(data_devolucao__isnull=False).count()
+        entregas_devolvidas = entregas.filter(data_devolucao__isnull=False).count()
 
-        context['chart_status_entregas_labels'] = json.dumps(['Assinadas (Ativas)', 'Pendentes', 'Devolvidas'])
-        context['chart_status_entregas_data'] = json.dumps([entregas_assinadas, entregas_pendentes, entregas_devolvidas])
+        context['chart_status_entregas_labels'] = json.dumps(
+            ['Assinadas (Ativas)', 'Pendentes', 'Devolvidas']
+        )
+        context['chart_status_entregas_data'] = json.dumps(
+            [entregas_assinadas, entregas_pendentes, entregas_devolvidas]
+        )
 
-        # GRÁFICO: Top 5 EPIs
-        top_epis = entregas_da_filial.values('equipamento__nome').annotate(total=Count('id')).order_by('-total')[:5]
+        # ---------- GRÁFICO: Top 5 EPIs ----------
+        top_epis = (
+            entregas.values('equipamento__nome')
+            .annotate(total=Count('id'))
+            .order_by('-total')[:5]
+        )
         if top_epis:
             context['chart_top_epis_labels'] = json.dumps([e['equipamento__nome'] for e in top_epis])
             context['chart_top_epis_data'] = json.dumps([e['total'] for e in top_epis])
@@ -714,13 +764,12 @@ class DashboardSSTView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
 # CRUD DE FUNÇÕES
 # =============================================================================
 
-class FuncaoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+class FuncaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
     app_label_required = _APP
     model = Funcao
     template_name = 'seguranca_trabalho/funcao_list.html'
     context_object_name = 'funcoes'
     paginate_by = 15
-    permission_required = 'seguranca_trabalho.view_funcao'
 
     def get_queryset(self):
         queryset = super().get_queryset().prefetch_related('funcoes_cargo__cargo')
@@ -734,12 +783,16 @@ class FuncaoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin,
         return queryset.order_by('nome')
 
 
-class FuncaoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, HTMXModalFormMixin, CreateView):
+class FuncaoCreateView(
+    AppPermissionMixin,
+    FilialCreateMixin,
+    HTMXModalFormMixin,
+    CreateView
+):
     app_label_required = _APP
     model = Funcao
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
-    permission_required = 'seguranca_trabalho.add_funcao'
 
     def get_template_names(self):
         if self.request.htmx:
@@ -747,15 +800,22 @@ class FuncaoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
         return ['seguranca_trabalho/funcao_form.html']
 
 
-class FuncaoUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, HTMXModalFormMixin, UpdateView):
+class FuncaoUpdateView(
+    AppPermissionMixin,
+    ViewFilialScopedMixin,
+    HTMXModalFormMixin,
+    UpdateView
+):
     app_label_required = _APP
     model = Funcao
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
-    permission_required = 'seguranca_trabalho.change_funcao'
 
     def form_valid(self, form):
-        messages.success(self.request, f"Função '{form.instance.nome}' atualizada com sucesso.")
+        messages.success(
+            self.request,
+            f"Função '{form.instance.nome}' atualizada com sucesso."
+        )
         return super().form_valid(form)
 
     def get_template_names(self):
@@ -764,12 +824,11 @@ class FuncaoUpdateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
         return ['seguranca_trabalho/funcao_form.html']
 
 
-class FuncaoDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, DeleteView):
+class FuncaoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
     app_label_required = _APP
     model = Funcao
     template_name = 'seguranca_trabalho/funcao_confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
-    permission_required = 'seguranca_trabalho.delete_funcao'
     context_object_name = 'object'
 
     def form_valid(self, form):
@@ -781,15 +840,13 @@ class FuncaoDeleteView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixi
 # CRUD DE ASSOCIAÇÕES CARGO-FUNÇÃO
 # =============================================================================
 
-class AssociacaoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, ViewFilialScopedMixin, ListView):
+class AssociacaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
     app_label_required = _APP
     model = CargoFuncao
     template_name = 'seguranca_trabalho/lista_associacoes.html'
     paginate_by = 20
-    permission_required = 'seguranca_trabalho.view_cargofuncao'
 
     def get_queryset(self):
-        # ✅ Usa super() para que ViewFilialScopedMixin filtre por filial
         qs = super().get_queryset().select_related('cargo', 'funcao')
         q = self.request.GET.get('q')
         if q:
@@ -800,13 +857,12 @@ class AssociacaoListView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMi
         return qs.order_by('cargo__nome')
 
 
-class AssociacaoCreateView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, FilialCreateMixin, CreateView):
+class AssociacaoCreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
     app_label_required = _APP
     model = CargoFuncao
     form_class = CargoFuncaoForm
     template_name = 'seguranca_trabalho/formulario_associacao.html'
     success_url = reverse_lazy('seguranca_trabalho:lista_associacoes')
-    permission_required = 'seguranca_trabalho.add_cargofuncao'
 
     def form_valid(self, form):
         try:
@@ -842,48 +898,52 @@ def desvincular_funcao_cargo(request, funcao_id, cargo_id):
 # MATRIZ DE EPI POR FUNÇÃO
 # =============================================================================
 
-class ControleEPIPorFuncaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, TemplateView):
+class ControleEPIPorFuncaoView(AppPermissionMixin, TemplateView):
     app_label_required = _APP
-    permission_required = 'seguranca_trabalho.change_matrizepi'
     template_name = 'seguranca_trabalho/controle_epi_por_funcao.html'
+
+    def _get_filial_atual(self, request):
+        active_filial_id = request.session.get('active_filial_id')
+        if not active_filial_id:
+            return None
+        try:
+            return Filial.objects.get(pk=active_filial_id)
+        except Filial.DoesNotExist:
+            messages.error(request, "A filial selecionada é inválida.")
+            return None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        request = self.request
-        active_filial_id = request.session.get('active_filial_id')
-        filial_atual = None
-
-        if active_filial_id:
-            try:
-                filial_atual = Filial.objects.get(pk=active_filial_id)
-            except Filial.DoesNotExist:
-                messages.error(request, "A filial selecionada é inválida.")
+        filial_atual = self._get_filial_atual(self.request)
 
         if not filial_atual:
-            messages.warning(request, "Nenhuma filial selecionada.")
+            messages.warning(self.request, "Nenhuma filial selecionada.")
             context.update({
                 'titulo_pagina': "Matriz de EPIs",
                 'funcoes': [],
                 'equipamentos': [],
-                'matriz_data': {}
+                'matriz_data': {},
             })
             return context
 
         funcoes = Funcao.objects.filter(filial=filial_atual, ativo=True).order_by('nome')
         equipamentos = Equipamento.objects.filter(ativo=True).order_by('nome')
-        dados_salvos = MatrizEPI.objects.filter(funcao__in=funcoes).select_related('funcao', 'equipamento')
+        dados_salvos = (
+            MatrizEPI.objects
+            .filter(funcao__in=funcoes)
+            .select_related('funcao', 'equipamento')
+        )
 
         matriz_data = {}
         for item in dados_salvos:
-            if item.funcao_id not in matriz_data:
-                matriz_data[item.funcao_id] = {}
+            matriz_data.setdefault(item.funcao_id, {})
             matriz_data[item.funcao_id][item.equipamento_id] = item.frequencia_troca_meses
 
         context.update({
             'titulo_pagina': f"Matriz de EPIs - {filial_atual.nome}",
             'funcoes': funcoes,
             'equipamentos': equipamentos,
-            'matriz_data': matriz_data
+            'matriz_data': matriz_data,
         })
         return context
 
@@ -894,50 +954,60 @@ class ControleEPIPorFuncaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermis
             messages.error(request, "Sessão expirada ou filial não selecionada.")
             return redirect(request.path_info)
 
-        funcoes_ids = list(Funcao.objects.filter(
-            filial_id=active_filial_id, ativo=True
-        ).values_list('id', flat=True))
-        equipamentos_ids = list(Equipamento.objects.filter(ativo=True).values_list('id', flat=True))
+        funcoes_ids = set(
+            Funcao.objects.filter(
+                filial_id=active_filial_id, ativo=True
+            ).values_list('id', flat=True)
+        )
+        equipamentos_ids = set(
+            Equipamento.objects.filter(ativo=True).values_list('id', flat=True)
+        )
 
         existentes = MatrizEPI.objects.filter(funcao_id__in=funcoes_ids)
-        mapa_existentes = {(item.funcao_id, item.equipamento_id): item for item in existentes}
+        mapa_existentes = {
+            (item.funcao_id, item.equipamento_id): item
+            for item in existentes
+        }
 
         entries_to_create = []
         entries_to_update = []
         submitted_keys = set()
 
         for key, value in request.POST.items():
-            if key.startswith('freq_'):
-                try:
-                    _, funcao_id_str, equipamento_id_str = key.split('_')
-                    funcao_id = int(funcao_id_str)
-                    equipamento_id = int(equipamento_id_str)
+            if not key.startswith('freq_'):
+                continue
 
-                    if funcao_id not in funcoes_ids or equipamento_id not in equipamentos_ids:
-                        continue
+            try:
+                _, funcao_id_str, equipamento_id_str = key.split('_')
+                funcao_id = int(funcao_id_str)
+                equipamento_id = int(equipamento_id_str)
+            except (ValueError, IndexError):
+                continue
 
-                    submitted_keys.add((funcao_id, equipamento_id))
-                    frequencia = int(value) if value and value.isdigit() else 0
+            if funcao_id not in funcoes_ids or equipamento_id not in equipamentos_ids:
+                continue
 
-                    if frequencia <= 0:
-                        continue
+            submitted_keys.add((funcao_id, equipamento_id))
+            frequencia = int(value) if value and value.isdigit() else 0
 
-                    if (funcao_id, equipamento_id) in mapa_existentes:
-                        item_existente = mapa_existentes[(funcao_id, equipamento_id)]
-                        if item_existente.frequencia_troca_meses != frequencia:
-                            item_existente.frequencia_troca_meses = frequencia
-                            entries_to_update.append(item_existente)
-                    else:
-                        entries_to_create.append(
-                            MatrizEPI(
-                                funcao_id=funcao_id,
-                                equipamento_id=equipamento_id,
-                                filial_id=active_filial_id,
-                                frequencia_troca_meses=frequencia
-                            )
-                        )
-                except (ValueError, IndexError):
-                    continue
+            if frequencia <= 0:
+                continue
+
+            chave = (funcao_id, equipamento_id)
+            if chave in mapa_existentes:
+                item_existente = mapa_existentes[chave]
+                if item_existente.frequencia_troca_meses != frequencia:
+                    item_existente.frequencia_troca_meses = frequencia
+                    entries_to_update.append(item_existente)
+            else:
+                entries_to_create.append(
+                    MatrizEPI(
+                        funcao_id=funcao_id,
+                        equipamento_id=equipamento_id,
+                        filial_id=active_filial_id,
+                        frequencia_troca_meses=frequencia,
+                    )
+                )
 
         keys_to_delete = set(mapa_existentes.keys()) - submitted_keys
         pks_to_delete = [mapa_existentes[key].pk for key in keys_to_delete]
@@ -957,9 +1027,8 @@ class ControleEPIPorFuncaoView(LoginRequiredMixin, AppPermissionMixin, SSTPermis
 # RELATÓRIOS PDF/WORD
 # =============================================================================
 
-class RelatorioSSTPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+class RelatorioSSTPDFView(AppPermissionMixin, View):
     app_label_required = _APP
-    permission_required = 'seguranca_trabalho.view_fichaepi'
 
     def get(self, request, *args, **kwargs):
         entregas = EntregaEPI.objects.for_request(request).select_related(
@@ -977,9 +1046,8 @@ class RelatorioSSTPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionM
         return response
 
 
-class ExportarFuncionariosPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+class ExportarFuncionariosPDFView(AppPermissionMixin, View):
     app_label_required = _APP
-    permission_required = 'seguranca_trabalho.view_fichaepi'
 
     def get(self, request, *args, **kwargs):
         funcionarios = Funcionario.objects.for_request(request).select_related(
@@ -989,9 +1057,11 @@ class ExportarFuncionariosPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPer
         context = {
             'funcionarios': funcionarios,
             'data_emissao': timezone.now().strftime('%d/%m/%Y às %H:%M'),
-            'nome_filial': getattr(request.user, 'filial_ativa', None) or 'Geral'
+            'nome_filial': getattr(request.user, 'filial_ativa', None) or 'Geral',
         }
-        html_string = render_to_string('departamento_pessoal/relatorio_funcionarios_pdf.html', context)
+        html_string = render_to_string(
+            'departamento_pessoal/relatorio_funcionarios_pdf.html', context
+        )
         html = HTML(string=html_string, base_url=request.build_absolute_uri())
         pdf_file = html.write_pdf()
 
@@ -1000,9 +1070,8 @@ class ExportarFuncionariosPDFView(LoginRequiredMixin, AppPermissionMixin, SSTPer
         return response
 
 
-class ExportarFuncionariosWordView(LoginRequiredMixin, AppPermissionMixin, SSTPermissionMixin, View):
+class ExportarFuncionariosWordView(AppPermissionMixin, View):
     app_label_required = _APP
-    permission_required = 'seguranca_trabalho.view_fichaepi'
 
     def get(self, request, *args, **kwargs):
         funcionarios = Funcionario.objects.for_request(request).select_related(
@@ -1011,13 +1080,18 @@ class ExportarFuncionariosWordView(LoginRequiredMixin, AppPermissionMixin, SSTPe
 
         document = Document()
         document.add_heading('Relatório de Colaboradores', level=1)
-        document.add_paragraph(f'Gerado em: {timezone.now().strftime("%d/%m/%Y às %H:%M")}')
+        document.add_paragraph(
+            f'Gerado em: {timezone.now().strftime("%d/%m/%Y às %H:%M")}'
+        )
         document.add_paragraph()
 
         table = document.add_table(rows=1, cols=4)
         table.style = 'Table Grid'
         hdr = table.rows[0].cells
-        hdr[0].text, hdr[1].text, hdr[2].text, hdr[3].text = 'Nome', 'Cargo', 'Departamento', 'Admissão'
+        hdr[0].text = 'Nome'
+        hdr[1].text = 'Cargo'
+        hdr[2].text = 'Departamento'
+        hdr[3].text = 'Admissão'
 
         for f in funcionarios:
             row = table.add_row().cells
@@ -1045,17 +1119,19 @@ class ExportarFuncionariosWordView(LoginRequiredMixin, AppPermissionMixin, SSTPe
 @login_required
 def minha_ficha_redirect_view(request):
     """Redireciona o usuário para sua própria ficha de EPI."""
-    try:
-        funcionario_obj = get_object_or_404(Funcionario, usuario=request.user)
-    except Http404:
-        messages.error(request, "Seu usuário não está associado a um perfil de funcionário.")
+    funcionario_obj = Funcionario.objects.filter(usuario=request.user).first()
+    if not funcionario_obj:
+        messages.error(
+            request,
+            "Seu usuário não está associado a um perfil de funcionário."
+        )
         return redirect('usuario:profile')
 
-    try:
-        ficha = get_object_or_404(FichaEPI, funcionario=funcionario_obj)
-    except Http404:
+    ficha = FichaEPI.objects.filter(funcionario=funcionario_obj).first()
+    if not ficha:
         messages.error(request, "Você não possui uma ficha de EPI.")
         return redirect('usuario:profile')
 
     return redirect('seguranca_trabalho:ficha_detail', pk=ficha.pk)
+
 

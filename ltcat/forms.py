@@ -1,7 +1,7 @@
 
 # ltcat/forms.py
 
-import magic as python_magic
+import puremagic
 from django import forms
 from core.forms import SecureUploadFormMixin  
 from cliente.models import Cliente
@@ -581,7 +581,10 @@ class SecureUploadFormMixin:
             validator(file)
 
             file.seek(0)
-            mime = python_magic.from_buffer(file.read(2048), mime=True)
+            try:
+                mime = puremagic.from_string(file.read(2048), mime=True)
+            except puremagic.PureError:
+                mime = "application/octet-stream"
             file.seek(0)
 
             if mime.startswith('image/'):

@@ -38,6 +38,23 @@ _APP = 'tarefas'
 
 
 # =============================================================================
+# HELPER — Filtro de visibilidade reutilizável
+# =============================================================================
+
+def aplicar_filtro_visibilidade(queryset, user):
+    """
+    Aplica o filtro de visibilidade ao queryset:
+    - Superusuário ou quem tem 'tarefas.view_all_tarefas': vê tudo
+    - Demais: só tarefas onde é responsável, participante ou criador
+    """
+    if user.is_superuser or user.has_perm('tarefas.view_all_tarefas'):
+        return queryset
+    return queryset.filter(
+        Q(responsavel=user) | Q(participantes=user) | Q(usuario=user)
+    ).distinct()
+
+
+# =============================================================================
 # CRUD
 # =============================================================================
 
@@ -48,17 +65,28 @@ class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixi
     context_object_name = 'object_list'
     paginate_by = 20
 
-    def get_queryset(self):
+    def _get_base_queryset(self):
+        """
+        Queryset base com escopo de filial + filtro de visibilidade.
+        Reutilizado no get_queryset e no get_context_data.
+        """
         qs = super().get_queryset()
+        return aplicar_filtro_visibilidade(qs, self.request.user)
 
+    def get_queryset(self):
+        qs = self._get_base_queryset()
+
+        # --- Filtros da URL ---
         status     = self.request.GET.get('status', '')
         prioridade = self.request.GET.get('prioridade', '')
         query      = self.request.GET.get('q', '')
 
         if status:
             qs = qs.filter(status=status)
+
         if prioridade:
             qs = qs.filter(prioridade=prioridade)
+
         if query:
             qs = qs.filter(
                 Q(titulo__icontains=query)                         |
@@ -72,26 +100,27 @@ class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixi
                 Q(participantes__first_name__icontains=query)      |
                 Q(participantes__last_name__icontains=query)       |
                 Q(participantes__username__icontains=query)
-            ).distinct()  # ← obrigatório por causa do JOIN no M2M
+            ).distinct()
 
         return (
             qs
             .select_related('usuario', 'responsavel', 'filial')
-            .prefetch_related('participantes')  # ← evita N+1 no M2M
+            .prefetch_related('participantes')
             .order_by('-prazo', 'prioridade')
         )
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        base_qs = super().get_queryset()
 
-        context['total_tarefas'] = base_qs.count()
+        # Usa o mesmo queryset base COM filtro de visibilidade
+        base_qs = self._get_base_queryset()
+
+        context['total_tarefas']      = base_qs.count()
         context['tarefas_concluidas'] = base_qs.filter(status='concluida').count()
-        context['tarefas_pendentes'] = base_qs.exclude(
+        context['tarefas_pendentes']  = base_qs.exclude(
             status__in=['concluida', 'cancelada']
         ).count()
-        context['status_options'] = Tarefas.STATUS_CHOICES
+        context['status_options']     = Tarefas.STATUS_CHOICES
         context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
 
         return context
@@ -102,6 +131,11 @@ class TarefaDetailView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMi
     model = Tarefas
     template_name = 'tarefas/tarefa_detail.html'
     context_object_name = 'object'
+
+    def get_queryset(self):
+        """Restringe o queryset para respeitar a visibilidade."""
+        qs = super().get_queryset()
+        return aplicar_filtro_visibilidade(qs, self.request.user)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -163,12 +197,7 @@ class TarefaCreateView(AppPermissionMixin, ViewFilialScopedMixin, CreateView):
     def form_valid(self, form):
         form.instance.usuario = self.request.user
         form.instance.filial = self.request.user.filial_ativa
-        
-        #if not form.instance.filial_id:
-        #    filial_id = self.request.session.get('active_filial_id')
-        #    if filial_id:
-        #        form.instance.filial_id = filial_id
-        
+
         response = super().form_valid(form)  # Agora self.object existe
         self.object.participantes.add(self.request.user)
         # ✅ Notificar DEPOIS do save
@@ -176,9 +205,8 @@ class TarefaCreateView(AppPermissionMixin, ViewFilialScopedMixin, CreateView):
             tarefa=self.object,
             criador=self.request.user,
         )
-        
+
         return response
-            
 
 
 class TarefaUpdateView(AppPermissionMixin, TarefaAccessMixin, UpdateView):
@@ -186,6 +214,11 @@ class TarefaUpdateView(AppPermissionMixin, TarefaAccessMixin, UpdateView):
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/tarefa_form.html'
+
+    def get_queryset(self):
+        """Restringe o queryset para respeitar a visibilidade."""
+        qs = super().get_queryset()
+        return aplicar_filtro_visibilidade(qs, self.request.user)
 
     def get_object(self, queryset=None):
         obj = super().get_object(queryset)
@@ -210,6 +243,11 @@ class TarefaDeleteView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMi
     template_name = 'tarefas/confirmar_exclusao.html'
     success_url = reverse_lazy('tarefas:listar_tarefas')
 
+    def get_queryset(self):
+        """Restringe o queryset para respeitar a visibilidade."""
+        qs = super().get_queryset()
+        return aplicar_filtro_visibilidade(qs, self.request.user)
+
     def form_valid(self, form):
         messages.success(self.request, "Tarefa excluída com sucesso!")
         return super().form_valid(form)
@@ -220,11 +258,18 @@ class ConcluirTarefaView(LoginRequiredMixin, View):
 
     def post(self, request, pk):
         filial_id = request.session.get('active_filial_id')
-        query = Q(pk=pk) & (Q(usuario=request.user) | Q(responsavel=request.user))
-        if filial_id:
-            query &= Q(filial_id=filial_id)
 
-        tarefa = get_object_or_404(Tarefas, query)
+        # Base: filial + visibilidade
+        qs = Tarefas.objects.all()
+        if filial_id:
+            qs = qs.filter(filial_id=filial_id)
+        qs = aplicar_filtro_visibilidade(qs, request.user)
+
+        # Só responsável ou criador pode concluir
+        tarefa = get_object_or_404(
+            qs.filter(Q(usuario=request.user) | Q(responsavel=request.user)),
+            pk=pk,
+        )
 
         if tarefa.status != 'concluida':
             tarefa._user = request.user
@@ -256,14 +301,10 @@ class KanbanView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, T
         if filial_id:
             qs = qs.filter(filial_id=filial_id)
 
-        if not (user.is_superuser or user.is_staff):
-            qs = qs.filter(
-                Q(usuario=user) |
-                Q(responsavel=user) |
-                Q(participantes=user)
-            ).distinct()
+        # ★ Aplica filtro de visibilidade centralizado
+        qs = aplicar_filtro_visibilidade(qs, user)
 
-        # ═══ FILTRO POR RESPONSÁVEL (NOVO) ═══
+        # ═══ FILTRO POR RESPONSÁVEL ═══
         responsavel_id = self.request.GET.get('responsavel')
         if responsavel_id:
             qs = qs.filter(responsavel_id=responsavel_id)
@@ -272,7 +313,6 @@ class KanbanView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, T
         responsaveis = User.objects.filter(
             pk__in=qs.values_list('responsavel', flat=True).distinct()
         ).exclude(pk__isnull=True).order_by('first_name', 'username')
-        # ═══ FIM ═══
 
         # Agrupar por status
         ctx['colunas'] = []
@@ -284,8 +324,8 @@ class KanbanView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, T
             })
 
         ctx['status_choices'] = Tarefas.STATUS_CHOICES
-        ctx['responsaveis'] = responsaveis              
-        ctx['responsavel_atual'] = responsavel_id or ''  
+        ctx['responsaveis'] = responsaveis
+        ctx['responsavel_atual'] = responsavel_id or ''
         ctx['now'] = timezone.now()
         return ctx
 
@@ -306,15 +346,22 @@ def update_task_status(request):
             'message': 'Dados incompletos.'
         })
 
+    # ★ Busca com filtro de visibilidade
+    filial_id = request.session.get('active_filial_id')
+    qs = Tarefas.objects.all()
+    if filial_id:
+        qs = qs.filter(filial_id=filial_id)
+    qs = aplicar_filtro_visibilidade(qs, request.user)
+
     try:
-        tarefa = Tarefas.objects.get(pk=task_id)
+        tarefa = qs.get(pk=task_id)
     except Tarefas.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'message': 'Tarefa não encontrada.'
+            'message': 'Tarefa não encontrada ou sem permissão.'
         })
 
-    # Verificar permissão
+    # Verificar permissão de alteração
     if not TarefaAccessMixin.user_can_access(request.user, tarefa):
         return JsonResponse({
             'success': False,
@@ -384,7 +431,10 @@ class CalendarioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAcc
     template_name = 'tarefas/calendario.html'
 
     def get_queryset(self):
-        return super().get_queryset().filter(
+        qs = super().get_queryset()
+        # ★ Aplica filtro de visibilidade
+        qs = aplicar_filtro_visibilidade(qs, self.request.user)
+        return qs.filter(
             prazo__isnull=False
         ).exclude(
             status='cancelada'
@@ -452,11 +502,16 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'message': 'Status inválido.'}, status=400)
 
         try:
-            query = Q(pk=task_id) & (Q(usuario=request.user) | Q(responsavel=request.user))
+            # ★ Aplica filtro de visibilidade + só responsável/criador pode alterar
+            qs = Tarefas.objects.all()
             if filial_id:
-                query &= Q(filial_id=filial_id)
+                qs = qs.filter(filial_id=filial_id)
+            qs = aplicar_filtro_visibilidade(qs, request.user)
 
-            tarefa = Tarefas.objects.get(query)
+            tarefa = qs.filter(
+                Q(usuario=request.user) | Q(responsavel=request.user)
+            ).get(pk=task_id)
+
             tarefa._user = request.user
             tarefa.status = new_status
             tarefa.save()
@@ -485,18 +540,21 @@ class RelatorioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/relatorio_tarefas.html'
 
-    def get_queryset(self):
+    def _get_base_queryset(self):
+        """Queryset base com escopo de filial + visibilidade."""
         qs = super().get_queryset()
+        return aplicar_filtro_visibilidade(qs, self.request.user)
+
+    def get_queryset(self):
+        qs = self._get_base_queryset()
 
         status_filter = self.request.GET.get('status')
         if status_filter:
             qs = qs.filter(status=status_filter)
 
-        # ═══ FILTRO POR RESPONSÁVEL (NOVO) ═══
         responsavel_id = self.request.GET.get('responsavel')
         if responsavel_id:
             qs = qs.filter(responsavel_id=responsavel_id)
-        # ═══ FIM ═══
 
         return qs.order_by('-data_criacao')
 
@@ -517,9 +575,8 @@ class RelatorioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
         )
         context['status_choices'] = Tarefas.STATUS_CHOICES
 
-        # ═══ RESPONSÁVEIS PARA O FILTRO (NOVO) ═══
-        # Pega do queryset SEM o filtro de responsável para sempre mostrar todos
-        base_qs = super().get_queryset()
+        # Responsáveis para o filtro (base com visibilidade, sem filtro de responsável)
+        base_qs = self._get_base_queryset()
         status_filter = self.request.GET.get('status')
         if status_filter:
             base_qs = base_qs.filter(status=status_filter)
@@ -529,7 +586,6 @@ class RelatorioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
         ).exclude(pk__isnull=True).order_by('first_name', 'username')
 
         context['responsaveis'] = responsaveis
-        # ═══ FIM ═══
 
         context['current_filters'] = {
             'status': self.request.GET.get('status', ''),
@@ -561,7 +617,6 @@ class RelatorioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
         return redirect('tarefas:relatorio_tarefas')
 
 
-
 class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
     """Formulário para gerar relatório com filtros e escolher formato."""
     template_name = 'tarefas/gerar_relatorio.html'
@@ -577,11 +632,13 @@ class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView
         status_filter = request.POST.get('status', '')
         prioridade_filter = request.POST.get('prioridade', '')
 
-        # Monta queryset filtrado
+        # ★ Monta queryset filtrado COM visibilidade
         filial_id = request.session.get('active_filial_id')
         qs = Tarefas.objects.all()
         if filial_id:
             qs = qs.filter(filial_id=filial_id)
+        qs = aplicar_filtro_visibilidade(qs, request.user)
+
         if status_filter:
             qs = qs.filter(status=status_filter)
         if prioridade_filter:
@@ -623,18 +680,24 @@ class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
     model = Tarefas
     template_name = 'tarefas/relatorio_display.html'
 
-    def get_queryset(self):
+    def _get_base_queryset(self):
+        """Queryset base com escopo de filial + visibilidade."""
         qs = super().get_queryset()
+        return aplicar_filtro_visibilidade(qs, self.request.user)
+
+    def get_queryset(self):
+        qs = self._get_base_queryset()
+
         status_filter = self.request.GET.get('status')
         prioridade_filter = self.request.GET.get('prioridade')
-        responsavel_id = self.request.GET.get('responsavel') 
+        responsavel_id = self.request.GET.get('responsavel')
 
         if status_filter:
             qs = qs.filter(status=status_filter)
         if prioridade_filter:
             qs = qs.filter(prioridade=prioridade_filter)
-        if responsavel_id:                                  
-            qs = qs.filter(responsavel_id=responsavel_id)      
+        if responsavel_id:
+            qs = qs.filter(responsavel_id=responsavel_id)
 
         return qs.order_by('-data_criacao')
 
@@ -643,8 +706,8 @@ class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         qs = self.get_queryset()
         context.update(preparar_contexto_relatorio(qs))
 
-        # ═══ RESPONSÁVEIS PARA O FILTRO (NOVO) ═══
-        base_qs = super().get_queryset()
+        # Responsáveis para o filtro (base com visibilidade)
+        base_qs = self._get_base_queryset()
         status_filter = self.request.GET.get('status')
         prioridade_filter = self.request.GET.get('prioridade')
         if status_filter:
@@ -657,7 +720,6 @@ class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         ).exclude(pk__isnull=True).order_by('first_name', 'username')
 
         context['responsaveis'] = responsaveis
-        # ═══ FIM ═══
 
         context['current_filters'] = {
             'status': self.request.GET.get('status', ''),
@@ -668,7 +730,6 @@ class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-
 class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):
     """API de exportação direta via GET (para botões de download)."""
 
@@ -677,10 +738,13 @@ class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):
         status_filter = request.GET.get('status', '')
         prioridade_filter = request.GET.get('prioridade', '')
 
+        # ★ Aplica filial + visibilidade
         filial_id = request.session.get('active_filial_id')
         qs = Tarefas.objects.all()
         if filial_id:
             qs = qs.filter(filial_id=filial_id)
+        qs = aplicar_filtro_visibilidade(qs, request.user)
+
         if status_filter:
             qs = qs.filter(status=status_filter)
         if prioridade_filter:
@@ -714,13 +778,15 @@ class DashboardAnaliticoView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAc
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
         filial_id = self.request.session.get('active_filial_id')
         agora = timezone.now()
 
-        # Queryset base
+        # ★ Queryset base com filial + visibilidade
         base_qs = Tarefas.objects.all()
         if filial_id:
             base_qs = base_qs.filter(filial_id=filial_id)
+        base_qs = aplicar_filtro_visibilidade(base_qs, user)
 
         # KPIs
         total = base_qs.count()
@@ -865,12 +931,20 @@ class TarefaAdminListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 @login_required
 @require_POST
 def alterar_status_tarefa(request, pk):
+    """Altera o status de uma tarefa via AJAX (usado no detalhe)."""
     if not request.user.is_superuser:
         user_perms = request.user.get_all_permissions()
         if not any(p.startswith('tarefas.') for p in user_perms):
             return JsonResponse({'error': 'Sem permissão.'}, status=403)
-    """Altera o status de uma tarefa via AJAX (usado no detalhe)."""
-    tarefa = get_object_or_404(Tarefas, pk=pk)
+
+    # ★ Busca com filtro de visibilidade
+    filial_id = request.session.get('active_filial_id')
+    qs = Tarefas.objects.all()
+    if filial_id:
+        qs = qs.filter(filial_id=filial_id)
+    qs = aplicar_filtro_visibilidade(qs, request.user)
+
+    tarefa = get_object_or_404(qs, pk=pk)
 
     # Verificar acesso
     if not TarefaAccessMixin.user_can_access(request.user, tarefa):
@@ -927,3 +1001,4 @@ def alterar_status_tarefa(request, pk):
         'progresso': tarefa.progresso,
         'data_atualizacao': tarefa.data_atualizacao.strftime('%d/%m/%Y %H:%M'),
     })
+

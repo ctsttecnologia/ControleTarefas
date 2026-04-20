@@ -1,225 +1,240 @@
 
 <!-- templates/tarefas/relatorios/relatorio_pdf.html -->
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <title>Relatório de Tarefas</title>
     <style>
-        @page {
-            size: A4 landscape;
-            margin: 1.5cm;
-        }
-
-        * { box-sizing: border-box; }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'DejaVu Sans', 'Helvetica', sans-serif;
-            font-size: 9pt;
-            color: #1a1a2e;
-            line-height: 1.4;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 12px; color: #1a1a2e; line-height: 1.5;
+            padding: 30px 40px;
         }
 
-        /* ── Header ── */
-        .report-header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e6ee;
+        /* Header */
+        .pdf-header { text-align: center; margin-bottom: 24px; border-bottom: 3px solid #6366f1; padding-bottom: 16px; }
+        .pdf-header h1 { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .pdf-header .pdf-subtitle { font-size: 11px; color: #6b7280; }
+
+        /* KPI Row */
+        .pdf-kpi-row {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 24px; padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .pdf-kpi { text-align: center; }
+        .pdf-kpi-value { font-size: 20px; font-weight: 700; color: #6366f1; }
+        .pdf-kpi-label { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
+
+        /* Análise */
+        .pdf-section { margin-bottom: 20px; }
+        .pdf-section h3 {
+            font-size: 13px; font-weight: 700; color: #1a1a2e;
+            border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin-bottom: 10px;
         }
 
-        .report-header .logo img {
-            max-width: 120px;
-            height: auto;
-            margin-bottom: 8px;
+        .pdf-analysis-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        .pdf-analysis-table th {
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: #6b7280; text-align: left;
+            padding: 6px 10px; border-bottom: 2px solid #d1d5db; background: #f9fafb;
+        }
+        .pdf-analysis-table th:last-child { text-align: right; }
+        .pdf-analysis-table td {
+            padding: 7px 10px; border-bottom: 1px solid #e5e7eb; font-size: 11px;
+        }
+        .pdf-analysis-table td:last-child { text-align: right; font-weight: 600; }
+
+        /* Badge inline */
+        .pdf-badge {
+            display: inline-block; padding: 2px 8px; border-radius: 10px;
+            font-size: 9px; font-weight: 700; color: #fff;
+        }
+        .pdf-badge-concluida { background: #22c55e; }
+        .pdf-badge-andamento { background: #3b82f6; }
+        .pdf-badge-pendente  { background: #f59e0b; }
+        .pdf-badge-pausada   { background: #8b5cf6; }
+        .pdf-badge-atrasada  { background: #ef4444; }
+        .pdf-badge-cancelada { background: #6b7280; }
+        .pdf-badge-alta      { background: #ef4444; }
+        .pdf-badge-media     { background: #f59e0b; }
+        .pdf-badge-baixa     { background: #22c55e; }
+
+        /* Barra de progresso simples */
+        .pdf-bar-bg {
+            background: #e5e7eb; border-radius: 4px; height: 6px;
+            width: 120px; display: inline-block; vertical-align: middle; margin-left: 8px;
+        }
+        .pdf-bar-fill { height: 100%; border-radius: 4px; }
+        .pdf-bar-fill-status  { background: #6366f1; }
+        .pdf-bar-fill-prio    { background: #8b5cf6; }
+
+        /* Tabela principal */
+        .pdf-table { width: 100%; border-collapse: collapse; }
+        .pdf-table thead th {
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: #6b7280; text-align: left;
+            padding: 8px 10px; border-bottom: 2px solid #d1d5db; background: #f9fafb;
+        }
+        .pdf-table tbody td {
+            font-size: 11px; padding: 7px 10px;
+            border-bottom: 1px solid #e5e7eb; vertical-align: middle;
+        }
+        .pdf-table tbody tr:last-child td { border-bottom: none; }
+
+        /* Footer */
+        .pdf-footer {
+            margin-top: 30px; padding-top: 12px;
+            border-top: 1px solid #e5e7eb; text-align: center;
+            font-size: 9px; color: #9ca3af;
         }
 
-        .report-header h1 {
-            font-size: 16pt;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin: 0 0 4px 0;
-        }
-
-        .report-header .subtitle {
-            font-size: 9pt;
-            color: #6b7280;
-        }
-
-        /* ── Table ── */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-
-        th {
-            background: #f0f2f7;
-            font-size: 7.5pt;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: #3a3f55;
-            padding: 6px 8px;
-            border-bottom: 2px solid #d1d5e0;
-            text-align: left;
-        }
-
-        td {
-            padding: 5px 8px;
-            font-size: 8pt;
-            border-bottom: 1px solid #edf0f5;
-            word-wrap: break-word;
-            color: #1a1a2e;
-        }
-
-        tr:nth-child(even) {
-            background: #f8f9fc;
-        }
-
-        /* ── Status Badges ── */
-        .status-badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 4px;
-            font-size: 7.5pt;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .badge-pendente  { background: #f59e0b; }
-        .badge-andamento { background: #3b82f6; }
-        .badge-pausada   { background: #8b5cf6; }
-        .badge-concluida { background: #22c55e; }
-        .badge-cancelada { background: #64748b; }
-        .badge-atrasada  { background: #ef4444; }
-
-        /* ── Analysis ── */
-        .analysis-section {
-            margin-top: 25px;
-            page-break-inside: avoid;
-        }
-
-        .analysis-section h3 {
-            font-size: 10pt;
-            font-weight: 700;
-            color: #1a1a2e;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #e2e6ee;
-        }
-
-        .analysis-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 15px 0;
-        }
-
-        .analysis-list li {
-            font-size: 8.5pt;
-            padding: 3px 0;
-            color: #3a3f55;
-        }
-
-        .analysis-list li strong {
-            color: #1a1a2e;
-        }
-
-        /* ── Footer ── */
-        .report-footer {
-            text-align: center;
-            font-size: 7.5pt;
-            color: #9ca3af;
-            margin-top: 30px;
-            padding-top: 10px;
-            border-top: 1px solid #e2e6ee;
-        }
+        /* Page break */
+        .page-break { page-break-before: always; }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="report-header">
-        <div class="logo">
-            {% if logo_path %}
-            <img src="{{ logo_path }}" alt="Logotipo">
-            {% endif %}
-        </div>
+
+    <!-- ═══ HEADER ═══ -->
+    <div class="pdf-header">
         <h1>Relatório de Tarefas</h1>
-        <div class="subtitle">
-            Total: {{ total_tarefas }} · Concluídas: {{ concluidas }} · Atrasadas: {{ atrasadas }}
+        <div class="pdf-subtitle">
+            Total: {{ total_tarefas|default:0 }}
+            · Concluídas: {{ concluidas|default:0 }}
+            · Atrasadas: {{ atrasadas|default:0 }}
         </div>
     </div>
 
-    <!-- Tabela -->
-    <table>
-        <thead>
-            <tr>
-                <th>Título</th>
-                <th>Responsável</th>
-                <th>Status</th>
-                <th>Prior.</th>
-                <th>Projeto</th>
-                <th>Criação</th>
-                <th>Prazo</th>
-                <th>Dur. Prev.</th>
-                <th>T. Gasto</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for tarefa in tarefas %}
-            <tr>
-                <td>{{ tarefa.titulo }}</td>
-                <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.username }}{% else %}-{% endif %}</td>
-                <td>
-                    <span class="status-badge badge-{{ tarefa.status }}">
-                        {{ tarefa.get_status_display }}
-                    </span>
-                </td>
-                <td>{{ tarefa.get_prioridade_display|slice:":3" }}</td>
-                <td>{{ tarefa.projeto|default:"-" }}</td>
-                <td>{{ tarefa.data_criacao|date:"d/m/y" }}</td>
-                <td>{{ tarefa.prazo|date:"d/m/y"|default:"-" }}</td>
-                <td>{{ tarefa.duracao_prevista|default:"-" }}</td>
-                <td>{{ tarefa.tempo_gasto|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="9" style="text-align:center; padding:20px; color:#9ca3af;">
-                    Nenhum dado para exibir.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Análise -->
-    <div class="analysis-section">
-        <h3>Análise por Status</h3>
-        <ul class="analysis-list">
-            {% for item in status_data %}
-            <li>
-                <strong>{{ item.label }}</strong>: {{ item.count }} ({{ item.percent }}%)
-                {% if item.avg_duration %} — Duração Média: {{ item.avg_duration|floatformat:"2" }}{% endif %}
-            </li>
-            {% empty %}
-            <li>Nenhum dado de status disponível.</li>
-            {% endfor %}
-        </ul>
-
-        <h3>Análise por Prioridade</h3>
-        <ul class="analysis-list">
-            {% for item in prioridade_data %}
-            <li><strong>{{ item.label }}</strong>: {{ item.count }} ({{ item.percent }}%)</li>
-            {% empty %}
-            <li>Nenhum dado de prioridade disponível.</li>
-            {% endfor %}
-        </ul>
+    <!-- ═══ KPIs ═══ -->
+    <div class="pdf-kpi-row">
+        <div class="pdf-kpi">
+            <div class="pdf-kpi-value">{{ total_tarefas|default:0 }}</div>
+            <div class="pdf-kpi-label">Total</div>
+        </div>
+        <div class="pdf-kpi">
+            <div class="pdf-kpi-value" style="color: #22c55e;">{{ concluidas|default:0 }}</div>
+            <div class="pdf-kpi-label">Concluídas</div>
+        </div>
+        <div class="pdf-kpi">
+            <div class="pdf-kpi-value" style="color: #ef4444;">{{ atrasadas|default:0 }}</div>
+            <div class="pdf-kpi-label">Atrasadas</div>
+        </div>
     </div>
 
-    <!-- Footer -->
-    <div class="report-footer">
+    <!-- ═══ ANÁLISE POR STATUS ═══ -->
+    {% if status_data %}
+    <div class="pdf-section">
+        <h3>Análise por Status</h3>
+        <table class="pdf-analysis-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Status</th>
+                    <th style="width: 35%;">Distribuição</th>
+                    <th style="width: 25%;">Qtd (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in status_data %}
+                <tr>
+                    <td>
+                        <span class="pdf-badge pdf-badge-{{ item.key }}">{{ item.label }}</span>
+                    </td>
+                    <td>
+                        <div class="pdf-bar-bg">
+                            <div class="pdf-bar-fill pdf-bar-fill-status" style="width: {{ item.percentual }}%;"></div>
+                        </div>
+                    </td>
+                    <td>{{ item.total }} ({{ item.percentual }}%)</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- ═══ ANÁLISE POR PRIORIDADE ═══ -->
+    {% if prioridade_data %}
+    <div class="pdf-section">
+        <h3>Análise por Prioridade</h3>
+        <table class="pdf-analysis-table">
+            <thead>
+                <tr>
+                    <th style="width: 40%;">Prioridade</th>
+                    <th style="width: 35%;">Distribuição</th>
+                    <th style="width: 25%;">Qtd (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in prioridade_data %}
+                <tr>
+                    <td>
+                        <span class="pdf-badge pdf-badge-{{ item.key }}">{{ item.label }}</span>
+                    </td>
+                    <td>
+                        <div class="pdf-bar-bg">
+                            <div class="pdf-bar-fill pdf-bar-fill-prio" style="width: {{ item.percentual }}%;"></div>
+                        </div>
+                    </td>
+                    <td>{{ item.total }} ({{ item.percentual }}%)</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- ═══ TABELA DE TAREFAS ═══ -->
+    <div class="pdf-section">
+        <h3>Detalhamento das Tarefas</h3>
+        <table class="pdf-table">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Responsável</th>
+                    <th>Status</th>
+                    <th>Prior.</th>
+                    <th>Projeto</th>
+                    <th>Criação</th>
+                    <th>Prazo</th>
+                    <th>Dur. Prev.</th>
+                    <th>T. Gasto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tarefa in tarefas %}
+                <tr>
+                    <td><strong>{{ tarefa.titulo }}</strong></td>
+                    <td>{% if tarefa.responsavel %}{{ tarefa.responsavel.get_full_name|default:tarefa.responsavel.username }}{% else %}—{% endif %}</td>
+                    <td>
+                        <span class="pdf-badge pdf-badge-{{ tarefa.status }}">
+                            {{ tarefa.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ tarefa.get_prioridade_display }}</td>
+                    <td>{{ tarefa.projeto|default:"—" }}</td>
+                    <td>{{ tarefa.data_criacao|date:"d/m/Y" }}</td>
+                    <td>{{ tarefa.prazo|date:"d/m/Y"|default:"—" }}</td>
+                    <td>{% if tarefa.duracao_prevista %}{{ tarefa.duracao_prevista }}{% else %}—{% endif %}</td>
+                    <td>{% if tarefa.tempo_gasto %}{{ tarefa.tempo_gasto }}{% else %}—{% endif %}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 20px; color: #9ca3af;">
+                        Nenhuma tarefa encontrada.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ═══ FOOTER ═══ -->
+    <div class="pdf-footer">
         Relatório gerado em {{ now|date:"d/m/Y H:i:s" }}
     </div>
+
 </body>
 </html>
 

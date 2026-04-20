@@ -173,13 +173,12 @@ class AtaReuniaoForm(FilialFormMixin, forms.ModelForm):
     def _apply_styling(self):
         """Aplica classes CSS e placeholders aos campos do formulário."""
         for field_name, field in self.fields.items():
-            # Campos Select
+            # Campos Select → NÃO adicionar form-control (Tom Select cuida)
             if isinstance(field.widget, forms.Select):
                 field.widget.attrs.update({
                     'class': 'form-select',
-                    'data-placeholder': _(f'Selecione {field.label.lower()}') if field.label else ''
                 })
-            # Campos Checkbox (manter sem form-control)
+            # Campos Checkbox
             elif isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.update({'class': 'form-check-input'})
             # Demais campos (TextInput, Textarea, DateInput, etc.)
@@ -189,6 +188,7 @@ class AtaReuniaoForm(FilialFormMixin, forms.ModelForm):
                     field.widget.attrs.update({
                         'class': f'{current_class} form-control'.strip()
                     })
+
 
     def clean_prazo(self):
         """Validação para garantir que a data do prazo não seja no passado."""

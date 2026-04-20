@@ -14,18 +14,44 @@
             <h2 class="h4 fw-bold mb-1">
                 <i class="bi bi-people-fill text-primary me-2"></i>Clientes
             </h2>
-            <small class="text-muted">
-                {{ total_clientes }} cliente{{ total_clientes|pluralize:"s" }}
-                cadastrado{{ total_clientes|pluralize:"s" }}
-            </small>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <small class="text-muted">
+                    {{ total_clientes }} cliente{{ total_clientes|pluralize:"s" }}
+                    cadastrado{{ total_clientes|pluralize:"s" }}
+                </small>
+
+                {% if filial_ativa %}
+                <span class="badge bg-light text-dark border">
+                    <i class="bi bi-building me-1"></i>{{ filial_ativa }}
+                </span>
+                {% endif %}
+
+                {% if can_view_all %}
+                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"
+                      title="Você está visualizando todos os clientes da filial">
+                    <i class="bi bi-eye-fill me-1"></i>Visão completa
+                </span>
+                {% elif not user.is_superuser %}
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border"
+                      title="Você está visualizando apenas os clientes aos quais tem acesso">
+                    <i class="bi bi-shield-lock me-1"></i>Visão restrita
+                </span>
+                {% endif %}
+            </div>
         </div>
+
         <div class="d-flex gap-2">
+            {% if perms.cliente.add_cliente or user.is_superuser %}
             <a href="{% url 'cliente:cliente_create' %}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> Novo Cliente
             </a>
+            {% endif %}
+
+            {% if perms.cliente.view_cliente or user.is_superuser %}
             <a href="{% url 'cliente:exportar_excel' %}" class="btn btn-outline-success">
                 <i class="bi bi-file-earmark-spreadsheet me-1"></i> Exportar
             </a>
+            {% endif %}
         </div>
     </header>
 
@@ -36,24 +62,31 @@
 
         {# ── Pesquisa ── #}
         <div class="card-header bg-white border-bottom py-3">
-            <form method="get">
+            <form method="get" role="search">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0">
-                        <i class="bi bi-search text-muted"></i>
+                        <i class="bi bi-search text-muted" aria-hidden="true"></i>
                     </span>
                     <input type="text"
                            name="q"
                            class="form-control border-start-0 ps-0"
                            placeholder="Pesquisar por nome, CNPJ, contrato..."
-                           value="{{ termo_pesquisa }}">
+                           value="{{ termo_pesquisa }}"
+                           aria-label="Pesquisar clientes">
+
                     {% if termo_pesquisa %}
                     <a href="{% url 'cliente:lista_clientes' %}"
                        class="btn btn-outline-secondary"
-                       title="Limpar busca">
-                        <i class="bi bi-x-lg"></i>
+                       title="Limpar busca"
+                       aria-label="Limpar busca">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
                     </a>
                     {% endif %}
-                    <button class="btn btn-primary" type="submit">Buscar</button>
+
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search me-1 d-md-none" aria-hidden="true"></i>
+                        <span class="d-none d-md-inline">Buscar</span>
+                    </button>
                 </div>
             </form>
         </div>
@@ -73,7 +106,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for cliente in object_list %}
+                    {% for cliente in clientes %}
                     <tr>
                         {# Nome / Razão Social #}
                         <td class="px-3">
@@ -105,35 +138,48 @@
                         <td class="px-3 text-center">
                             {% if cliente.estatus %}
                             <span class="badge rounded-pill bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-check-circle me-1"></i>Ativo
+                                <i class="bi bi-check-circle me-1" aria-hidden="true"></i>Ativo
                             </span>
                             {% else %}
                             <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-x-circle me-1"></i>Inativo
+                                <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Inativo
                             </span>
                             {% endif %}
                         </td>
 
                         {# Ações #}
                         <td class="text-end px-3">
-                            <div class="btn-group btn-group-sm" role="group">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Ações do cliente">
+                                {% if perms.cliente.view_cliente or user.is_superuser %}
                                 <a href="{{ cliente.get_absolute_url }}"
-                                   class="btn btn-outline-secondary" title="Visualizar">
-                                    <i class="bi bi-eye"></i>
+                                   class="btn btn-outline-secondary"
+                                   title="Visualizar"
+                                   aria-label="Visualizar {{ cliente.nome }}">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
                                 </a>
+                                {% endif %}
+
+                                {% if perms.cliente.change_cliente or user.is_superuser %}
                                 <a href="{% url 'cliente:editar_cliente' cliente.pk %}"
-                                   class="btn btn-outline-primary" title="Editar">
-                                    <i class="bi bi-pencil"></i>
+                                   class="btn btn-outline-primary"
+                                   title="Editar"
+                                   aria-label="Editar {{ cliente.nome }}">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
                                 </a>
+                                {% endif %}
+
+                                {% if perms.cliente.delete_cliente or user.is_superuser %}
                                 <button type="button"
                                         class="btn btn-outline-danger js-btn-delete"
                                         data-bs-toggle="modal"
                                         data-bs-target="#modal-delete"
-                                        data-pk="{{ cliente.pk }}"
-                                        data-nome="{{ cliente.nome }}"
-                                        title="Excluir">
-                                    <i class="bi bi-trash3"></i>
+                                        data-nome="{{ cliente.nome|escape }}"
+                                        data-delete-url="{% url 'cliente:deletar_cliente' cliente.pk %}"
+                                        title="Excluir"
+                                        aria-label="Excluir {{ cliente.nome }}">
+                                    <i class="bi bi-trash3" aria-hidden="true"></i>
                                 </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
@@ -143,7 +189,8 @@
                         <td colspan="6" class="text-center py-5">
                             <div class="py-4">
                                 <i class="bi bi-people text-muted"
-                                   style="font-size: 3rem; opacity: .3;"></i>
+                                   style="font-size: 3rem; opacity: .3;"
+                                   aria-hidden="true"></i>
                                 <h6 class="mt-3 text-muted fw-semibold">Nenhum cliente encontrado</h6>
 
                                 {% if termo_pesquisa %}
@@ -152,17 +199,24 @@
                                 </p>
                                 <a href="{% url 'cliente:lista_clientes' %}"
                                    class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-x-lg me-1"></i>Limpar busca
+                                    <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar busca
                                 </a>
                                 {% else %}
-                                <p class="text-muted mb-3" style="font-size: .85rem;">
-                                    Comece cadastrando seu primeiro cliente
-                                </p>
-                                    {% if perms.cliente.add_cliente or user.is_superuser %}
-                                    <a href="{% url 'cliente:cadastro_cliente' %}"
-                                    class="btn btn-sm btn-primary">
-                                        <i class="bi bi-plus-circle me-1"></i>Novo Cliente
-                                    </a>
+                                    {% if can_view_all or user.is_superuser %}
+                                    <p class="text-muted mb-3" style="font-size: .85rem;">
+                                        Comece cadastrando seu primeiro cliente
+                                    </p>
+                                        {% if perms.cliente.add_cliente or user.is_superuser %}
+                                        <a href="{% url 'cliente:cliente_create' %}"
+                                           class="btn btn-sm btn-primary">
+                                            <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Novo Cliente
+                                        </a>
+                                        {% endif %}
+                                    {% else %}
+                                    <p class="text-muted mb-3" style="font-size: .85rem;">
+                                        Você não tem acesso a nenhum cliente no momento.<br>
+                                        Entre em contato com o administrador.
+                                    </p>
                                     {% endif %}
                                 {% endif %}
                             </div>
@@ -173,7 +227,7 @@
             </table>
         </div>
 
-        {# ── Paginação (componente reutilizável) ── #}
+        {# ── Paginação ── #}
         {% include 'cliente/_includes/_pagination.html' %}
 
     </div>
@@ -182,17 +236,18 @@
 {# ══════════════════════════════════════════════ #}
 {# MODAL DE EXCLUSÃO                              #}
 {# ══════════════════════════════════════════════ #}
-<div class="modal fade" id="modal-delete" tabindex="-1" aria-hidden="true">
+{% if perms.cliente.delete_cliente or user.is_superuser %}
+<div class="modal fade" id="modal-delete" tabindex="-1" aria-labelledby="modal-delete-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <div class="d-flex align-items-center gap-3">
                     <div class="rounded-circle bg-danger bg-opacity-10 d-flex align-items-center justify-content-center"
                          style="width: 48px; height: 48px;">
-                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5" aria-hidden="true"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title fw-bold mb-0">Excluir Cliente</h5>
+                        <h5 class="modal-title fw-bold mb-0" id="modal-delete-title">Excluir Cliente</h5>
                         <small class="text-muted">Esta ação não pode ser desfeita</small>
                     </div>
                 </div>
@@ -206,18 +261,17 @@
             </div>
             <div class="modal-footer border-0 pt-0">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                {% if perms.cliente.delete_cliente or user.is_superuser %}
                 <form id="js-delete-form" method="post" class="d-inline">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash3 me-1"></i>Sim, Excluir
+                        <i class="bi bi-trash3 me-1" aria-hidden="true"></i>Sim, Excluir
                     </button>
                 </form>
-                {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -228,14 +282,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
     modal.addEventListener('show.bs.modal', function (e) {
         var btn  = e.relatedTarget;
-        var pk   = btn.getAttribute('data-pk');
-        var nome = btn.getAttribute('data-nome');
+        if (!btn) return;
 
-        modal.querySelector('#js-delete-nome').textContent = '"' + nome + '"';
-        modal.querySelector('#js-delete-form').action = '{% url "cliente:lista_clientes" %}' + pk + '/excluir/';
+        var nome      = btn.getAttribute('data-nome');
+        var deleteUrl = btn.getAttribute('data-delete-url');
+
+        var nomeEl = modal.querySelector('#js-delete-nome');
+        var formEl = modal.querySelector('#js-delete-form');
+
+        if (nomeEl) nomeEl.textContent = '"' + nome + '"';
+        if (formEl && deleteUrl) formEl.action = deleteUrl;
     });
 });
 </script>
 {% endblock %}
-
 

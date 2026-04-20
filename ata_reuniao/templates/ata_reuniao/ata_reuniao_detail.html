@@ -398,7 +398,7 @@
                     </a>
                     {% endif %}
                     {% if perms.ata_reuniao.delete_ata_reuniao or user.is_superuser %}
-                    <a href="{% url 'ata_reuniao:ata_reuniao_delete' ata.pk %}" class="btn btn-outline-danger btn-sm">
+                    <a href="{% url 'ata_reuniao:ata_confirm_delete' ata.pk %}" class="btn btn-outline-danger btn-sm">
                         <i class="bi bi-trash me-2"></i> Excluir Ata
                     </a>
                     {% endif %}

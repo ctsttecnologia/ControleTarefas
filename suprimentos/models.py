@@ -21,12 +21,14 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-
 from core.managers import FilialManager
 from core.upload import make_upload_path
 from core.validators import SecureFileValidator
 from logradouro.models import Logradouro
 from usuario.models import Filial
+from core.validators import SecureFileValidator
+import os
+
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -786,7 +788,7 @@ class Pedido(models.Model):
 # ═════════════════════════════════════════════════════════════════════════════
 
 class AnexoPedido(models.Model):
-    """Arquivo anexo ao pedido (PDF, foto, catálogo, etc.)."""
+    """Anexo vinculado a um Pedido de Material (com upload seguro)."""
 
     pedido = models.ForeignKey(
         Pedido, on_delete=models.CASCADE,
@@ -795,18 +797,20 @@ class AnexoPedido(models.Model):
 
     # ── Upload seguro — Anexo ────────────────────────────────────────────────
     arquivo = models.FileField(
-        _("Arquivo"),
-        upload_to=make_upload_path("suprimentos_pedido"),
-        validators=[SecureFileValidator("suprimentos_pedido")],
-        help_text=_("PDF ou imagem (máx. 10 MB)."),
+        upload_to=make_upload_path('suprimentos_anexos_pedido'),
+        validators=[SecureFileValidator('suprimentos_anexos_pedido')],
+        verbose_name='Arquivo',
     )
 
     descricao = models.CharField(
         _("Descrição"), max_length=255, blank=True, default="",
     )
     enviado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, verbose_name=_("Enviado por"),
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='anexos_pedido_enviados',
+        verbose_name='Enviado por',
     )
     criado_em = models.DateTimeField(auto_now_add=True)
 
@@ -816,8 +820,8 @@ class AnexoPedido(models.Model):
         ordering = ["-criado_em"]
 
     def __str__(self):
-        return f"Anexo: {self.descricao or self.arquivo.name}"
-
+        return self.nome_arquivo
+    
     # ── Ciclo de vida ────────────────────────────────────────────────────────
 
     def save(self, *args, **kwargs):
@@ -844,7 +848,7 @@ class AnexoPedido(models.Model):
 
     @property
     def nome_arquivo(self):
-        return self.arquivo.name.split("/")[-1] if self.arquivo else ""
+        return os.path.basename(self.arquivo.name) if self.arquivo else ''
 
     @property
     def extensao(self):
@@ -1288,27 +1292,29 @@ class SolicitacaoCompra(models.Model):
 # ═════════════════════════════════════════════════════════════════════════════
 
 class AnexoSolicitacao(models.Model):
-    """Arquivo anexo à solicitação de compra."""
+    """Anexo vinculado a uma Solicitação de Compra (com upload seguro)."""
 
     solicitacao = models.ForeignKey(
-        SolicitacaoCompra, on_delete=models.CASCADE,
-        related_name="anexos", verbose_name=_("Solicitação"),
+        'SolicitacaoCompra',
+        on_delete=models.CASCADE,
+        related_name='anexos',
+        verbose_name='Solicitação',
     )
-
-    # ── Upload seguro — Anexo ────────────────────────────────────────────────
     arquivo = models.FileField(
-        _("Arquivo"),
-        upload_to=make_upload_path("suprimentos_solicitacao"),
-        validators=[SecureFileValidator("suprimentos_solicitacao")],
-        help_text=_("PDF ou imagem (máx. 10 MB)."),
+        upload_to=make_upload_path('suprimentos_anexos_solicitacao'),
+        validators=[SecureFileValidator('suprimentos_anexos_solicitacao')],
+        verbose_name='Arquivo',
     )
 
     descricao = models.CharField(
         _("Descrição"), max_length=255, blank=True, default="",
     )
     enviado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, verbose_name=_("Enviado por"),
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='anexos_solicitacao_enviados',
+        verbose_name='Enviado por',
     )
     criado_em = models.DateTimeField(auto_now_add=True)
 
@@ -1318,7 +1324,7 @@ class AnexoSolicitacao(models.Model):
         ordering = ["-criado_em"]
 
     def __str__(self):
-        return f"Anexo: {self.descricao or self.arquivo.name}"
+        return self.nome_arquivo
 
     # ── Ciclo de vida ────────────────────────────────────────────────────────
 
@@ -1345,7 +1351,7 @@ class AnexoSolicitacao(models.Model):
 
     @property
     def nome_arquivo(self):
-        return self.arquivo.name.split("/")[-1] if self.arquivo else ""
+        return os.path.basename(self.arquivo.name) if self.arquivo else ''
 
     @property
     def extensao(self):

@@ -1,35 +1,32 @@
 # core/mixins.py
-from django.db.models import Q, QuerySet
-from django.contrib import admin, messages
-from django.shortcuts import render, redirect
-from django.core.exceptions import PermissionDenied
-from .forms import ChangeFilialForm
-from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
-from ferramentas.models import Atividade
-from django.http import HttpResponse
+import io
 import os
 import uuid
-from core.magic_utils import get_mime_type
-from io import BytesIO
-from django.db import models
+
 from django.conf import settings
+from django.contrib import admin, messages
+from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.db import models
+from django.db.models import Q, QuerySet
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from PIL import Image
-from django.core.files.uploadedfile import InMemoryUploadedFile
-from django.core.exceptions import ValidationError
+from core.magic_utils import get_mime_type
 from core.validators import SecureFileValidator
-import io
-
+from .forms import ChangeFilialForm
 
 
 # =============================================================================
-# == MIXINS DE PERMISSÃO E ESCOPO (A SUA ARQUITETURA DE 3 NÍVEIS)
+# == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
 # =============================================================================
 
 class SSTPermissionMixin(PermissionRequiredMixin):
     """
     NÍVEL 1 (Página):
-    Mixin que herda do PermissionRequiredMixin do Django, mas customiza
+    Mixin que herda do PermissionRequiredMixin do Django, customizando
     o comportamento em caso de falha de permissão (UX amigável).
     """
 
@@ -41,27 +38,20 @@ class SSTPermissionMixin(PermissionRequiredMixin):
 class AdminFilialScopedMixin:
     """
     NÍVEL 2 (Horizontal/Filial) - Para o Admin:
-    Mixin para ser usado EXCLUSIVAMENTE no admin.py (ModelAdmin e Inlines).
     Filtra o queryset chamando o método 'for_request(request)' 
     do manager do modelo, SE disponível.
-
-    Seguro para uso em inlines cujo modelo NÃO possui FilialManager.
     """
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-
-        # ✅ Só chama for_request() se o queryset/manager suportar
         if hasattr(qs, 'for_request'):
             return qs.for_request(request)
-
         return qs
 
 
 class ViewFilialScopedMixin:
     """
     NÍVEL 2 (Horizontal/Filial) - Para Views:
-    Mixin para ser usado EXCLUSIVAMENTE em Class-Based Views (views.py).
     Filtra o queryset chamando o método 'for_request(request)' 
     do manager do modelo.
 
@@ -70,10 +60,8 @@ class ViewFilialScopedMixin:
 
     def get_queryset(self):
         qs = super().get_queryset()
-
         if hasattr(qs, 'for_request'):
             return qs.for_request(self.request)
-
         return qs
 
 
@@ -83,16 +71,23 @@ class TecnicoScopeMixin:
     Mixin global para filtrar querysets para usuários do grupo 'TÉCNICO'.
     Deve ser herdado ANTES do ViewFilialScopedMixin.
 
-    Ex: class MinhaView(SSTPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
+    Ex:
+        class MinhaView(AppPermissionMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
+            ...
     """
 
     tecnico_scope_lookup = None
+    _TECNICO_CACHE_ATTR = '_tecnico_group_cache'
 
     def _is_tecnico(self) -> bool:
         user = self.request.user
-        if not hasattr(user, '_is_tecnico'):
-            user._is_tecnico = user.groups.filter(name='TÉCNICO').exists()
-        return user._is_tecnico
+        if not hasattr(user, self._TECNICO_CACHE_ATTR):
+            setattr(
+                user,
+                self._TECNICO_CACHE_ATTR,
+                user.groups.filter(name='TÉCNICO').exists()
+            )
+        return getattr(user, self._TECNICO_CACHE_ATTR)
 
     def get_queryset(self) -> QuerySet:
         queryset = super().get_queryset()
@@ -123,6 +118,79 @@ class TarefaPermissionMixin(AccessMixin):
 
 
 # =============================================================================
+# == MIXIN DE PERMISSÃO POR APP
+# =============================================================================
+
+class AppPermissionMixin(PermissionRequiredMixin):
+    """
+    Mixin que verifica se o usuário tem pelo menos UMA permissão
+    do app especificado. Superusers passam direto.
+
+    ✅ Tolerante à presença (ou ausência) de LoginRequiredMixin na cadeia.
+       Se o usuário não estiver autenticado, o handle_no_permission delega
+       para o fluxo padrão do Django (redireciona para LOGIN_URL).
+
+    Uso nas views:
+        class MinhaView(AppPermissionMixin, ListView):
+            app_label_required = 'ata_reuniao'
+
+    Padrão Django (granular) também é suportado:
+        class MinhaView(AppPermissionMixin, ListView):
+            permission_required = 'ata_reuniao.view_atareuniao'
+
+    Compatibilidade retroativa:
+        class MinhaView(LoginRequiredMixin, AppPermissionMixin, ListView):
+            ...  # continua funcionando
+    """
+    app_label_required = None
+    permission_required = None
+    raise_exception = False  # ✅ False = redireciona pro login; True = 403
+
+    def get_permission_required(self):
+        if self.permission_required:
+            if isinstance(self.permission_required, str):
+                return (self.permission_required,)
+            return self.permission_required
+        return ()
+
+    def has_permission(self):
+        user = self.request.user
+
+        # Guard: anônimo nunca passa
+        if not user.is_authenticated:
+            return False
+
+        if user.is_superuser:
+            return True
+
+        if self.permission_required:
+            return super().has_permission()
+
+        if self.app_label_required:
+            all_perms = user.get_all_permissions()
+            return any(
+                perm.startswith(f'{self.app_label_required}.')
+                for perm in all_perms
+            )
+
+        return False
+
+    def handle_no_permission(self):
+        # Se NÃO está autenticado → redireciona pro login (comportamento padrão)
+        if not self.request.user.is_authenticated:
+            return redirect(f"{settings.LOGIN_URL}?next={self.request.path}")
+
+        # Autenticado mas sem permissão → página 403 customizada
+        return render(self.request, 'errors/acesso_negado.html', {
+            'titulo': 'Acesso Negado',
+            'mensagem': (
+                'Você não possui permissão para acessar este módulo. '
+                'Solicite acesso ao administrador do sistema.'
+            ),
+        }, status=403)
+
+
+# =============================================================================
 # == MIXINS UTILITÁRIOS
 # =============================================================================
 
@@ -137,16 +205,21 @@ class FilialCreateMixin:
         if not filial_id:
             messages.error(
                 self.request,
-                "Nenhuma filial selecionada. Por favor, escolha uma filial no menu superior."
+                "Nenhuma filial selecionada. "
+                "Por favor, escolha uma filial no menu superior."
             )
             raise PermissionDenied("Nenhuma filial selecionada para criação de objeto.")
 
         form.instance.filial_id = filial_id
-        messages.success(
-            self.request,
-            f"{self.model._meta.verbose_name.capitalize()} criado(a) com sucesso."
-        )
-        return super().form_valid(form)
+        response = super().form_valid(form)  # ✅ save primeiro
+
+        # Só envia mensagem se a view NÃO estiver usando SuccessMessageMixin
+        if not hasattr(self, 'success_message') or not self.success_message:
+            messages.success(
+                self.request,
+                f"{self.model._meta.verbose_name.capitalize()} criado(a) com sucesso."
+            )
+        return response
 
 
 class ChangeFilialAdminMixin:
@@ -210,7 +283,7 @@ class ChangeFilialAdminMixin:
 
 class AtividadeLogMixin:
     """
-    Mixin refatorado para criar logs de atividade para Ferramentas ou Malas.
+    Mixin para criar logs de atividade para Ferramentas ou Malas.
     """
 
     def _log_atividade(self, tipo, descricao, ferramenta=None, mala=None):
@@ -224,15 +297,17 @@ class AtividadeLogMixin:
                 f"O {self.__class__.__name__} deve ter acesso ao 'request.user' para logar atividades."
             )
 
+        # ✅ Import lazy — evita circular import no carregamento dos models
+        from ferramentas.models import Atividade
+
         Atividade.objects.create(
             ferramenta=ferramenta,
             mala=mala,
             filial=item.filial,
             tipo_atividade=tipo,
             descricao=descricao,
-            usuario=self.request.user
+            usuario=self.request.user,
         )
-
 
 class HTMXModalFormMixin:
     """
@@ -241,9 +316,10 @@ class HTMXModalFormMixin:
 
     def get_template_names(self):
         if self.request.htmx:
-            original_template = super().get_template_names()[0]
-            base, ext = original_template.rsplit('.', 1)
-            return [f"{base}_partial.{ext}"]
+            templates = super().get_template_names()
+            if templates:
+                base, ext = templates[0].rsplit('.', 1)
+                return [f"{base}_partial.{ext}"]
         return super().get_template_names()
 
     def form_valid(self, form):
@@ -297,65 +373,8 @@ class TarefaAccessMixin:
 
 
 # =============================================================================
-# == MIXIN DE PERMISSÃO POR APP (Controle de acesso por módulo)
+# == MIXIN DE UPLOAD SEGURO PARA MODELS
 # =============================================================================
-
-class AppPermissionMixin(PermissionRequiredMixin):
-    """
-    Mixin que verifica se o usuário tem pelo menos UMA permissão
-    do app especificado. Superusers passam direto.
-
-    Uso nas views:
-        class MinhaView(LoginRequiredMixin, AppPermissionMixin, ListView):
-            app_label_required = 'ata_reuniao'
-
-    Também aceita o padrão do Django:
-        class MinhaView(LoginRequiredMixin, AppPermissionMixin, ListView):
-            permission_required = 'ata_reuniao.view_atareuniao'
-    """
-    app_label_required = None
-    permission_required = None
-    raise_exception = True
-
-    def get_permission_required(self):
-        if self.permission_required:
-            if isinstance(self.permission_required, str):
-                return (self.permission_required,)
-            return self.permission_required
-        return ()
-
-    def has_permission(self):
-        user = self.request.user
-
-        if user.is_superuser:
-            return True
-
-        if self.permission_required:
-            return super().has_permission()
-
-        if self.app_label_required:
-            all_perms = user.get_all_permissions()
-            return any(
-                perm.startswith(f'{self.app_label_required}.')
-                for perm in all_perms
-            )
-
-        return False
-
-    def handle_no_permission(self):
-        if self.request.user.is_authenticated:
-            return render(self.request, 'errors/acesso_negado.html', {
-                'titulo': 'Acesso Negado',
-                'mensagem': (
-                    'Você não possui permissão para acessar este módulo. '
-                    'Solicite acesso ao administrador do sistema.'
-                ),
-            }, status=403)
-        return super().handle_no_permission()
-
-# ============================================================
-#  MIXIN DE UPLOAD SEGURO PARA MODELS
-# ============================================================
 
 class UploadPath:
     """
@@ -372,10 +391,11 @@ class UploadPath:
 
     def deconstruct(self):
         return (
-            'core.mixins.UploadPath',  # caminho completo da classe
-            (self.app_name,),           # args
-            {},                         # kwargs
+            'core.mixins.UploadPath',
+            (self.app_name,),
+            {},
         )
+
 
 def make_upload_path(app_name):
     """
@@ -390,36 +410,157 @@ def make_upload_path(app_name):
 def _sanitize_image(uploaded_file):
     """
     Re-salva a imagem para remover metadados (EXIF) e payloads maliciosos.
-    Retorna o arquivo limpo ou o original se não for imagem.
+    Retorna o arquivo limpo ou o original se não for imagem válida.
     """
     try:
+        # 1ª passada: verificar integridade
         img = Image.open(uploaded_file)
-        img.verify()  # verifica integridade
-        uploaded_file.seek(0)
-        img = Image.open(uploaded_file)  # reabre após verify
+        img.verify()
 
-        # Remove EXIF/metadados re-salvando
-        output = io.BytesIO()
+        # verify() invalida o objeto — precisa reabrir
+        uploaded_file.seek(0)
+        img = Image.open(uploaded_file)
+
         img_format = img.format or "PNG"
+
+        # JPEG não suporta RGBA/LA/P — converte pra RGB
+        if img_format.upper() == "JPEG" and img.mode in ("RGBA", "LA", "P"):
+            img = img.convert("RGB")
+
+        # Re-salva SEM metadados
+        output = io.BytesIO()
         img.save(output, format=img_format)
         output.seek(0)
 
         return InMemoryUploadedFile(
             file=output,
-            field_name=uploaded_file.field_name if hasattr(uploaded_file, 'field_name') else 'file',
+            field_name=getattr(uploaded_file, 'field_name', 'file'),
             name=uploaded_file.name,
-            content_type=uploaded_file.content_type,
+            content_type=getattr(uploaded_file, 'content_type', f'image/{img_format.lower()}'),
             size=output.getbuffer().nbytes,
             charset=None,
         )
     except Exception:
-        # Se não for imagem válida, retorna o original
-        uploaded_file.seek(0)
+        # Se não for imagem válida, retorna o original intacto
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
         return uploaded_file
+
+
+# Alias público
+sanitize_image = _sanitize_image
+
+def _sanitize_pdf(uploaded_file):
+    """
+    Re-escreve o PDF removendo:
+    - Metadados (autor, software, histórico)
+    - JavaScript embutido
+    - Ações automáticas (OpenAction, AA)
+    - Arquivos incorporados (EmbeddedFiles)
+    - Formulários XFA
+
+    Retorna o arquivo limpo ou o original se não for PDF válido.
+    """
+    try:
+        from pypdf import PdfReader, PdfWriter
+        from pypdf.generic import NameObject
+    except ImportError:
+        # pypdf não instalado — retorna original
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+        return uploaded_file
+
+    try:
+        uploaded_file.seek(0)
+        reader = PdfReader(uploaded_file, strict=False)
+
+        # PDFs criptografados: tenta abrir com senha vazia
+        if reader.is_encrypted:
+            try:
+                if not reader.decrypt(""):
+                    # Não conseguiu descriptografar → retorna original
+                    uploaded_file.seek(0)
+                    return uploaded_file
+            except Exception:
+                uploaded_file.seek(0)
+                return uploaded_file
+
+        writer = PdfWriter()
+
+        # Copia APENAS as páginas (sem estruturas do documento-raiz suspeitas)
+        for page in reader.pages:
+            # Remove ações de página (AA = Additional Actions)
+            if NameObject("/AA") in page:
+                del page[NameObject("/AA")]
+            # Remove anotações de JavaScript
+            if NameObject("/Annots") in page:
+                annots = page[NameObject("/Annots")]
+                try:
+                    # Filtra anotações que contêm JS
+                    safe_annots = []
+                    for annot_ref in annots:
+                        try:
+                            annot = annot_ref.get_object()
+                            subtype = annot.get("/Subtype")
+                            # Remove anotações de ação/JS
+                            if subtype in ("/Link",):
+                                action = annot.get("/A", {})
+                                if action and action.get("/S") == "/JavaScript":
+                                    continue
+                            safe_annots.append(annot_ref)
+                        except Exception:
+                            continue
+                    page[NameObject("/Annots")] = safe_annots
+                except Exception:
+                    # Se der erro processando annotations, remove todas
+                    del page[NameObject("/Annots")]
+
+            writer.add_page(page)
+
+        # Remove TODOS os metadados (autor, software, título, etc)
+        writer.add_metadata({})
+
+        # Garante que o writer não herde catálogo malicioso
+        # (OpenAction, Names/JavaScript, Names/EmbeddedFiles, AcroForm/XFA)
+        root = writer._root_object
+        for key in ("/OpenAction", "/AA", "/Names", "/AcroForm", "/JavaScript"):
+            name = NameObject(key)
+            if name in root:
+                del root[name]
+
+        output = io.BytesIO()
+        writer.write(output)
+        output.seek(0)
+
+        return InMemoryUploadedFile(
+            file=output,
+            field_name=getattr(uploaded_file, 'field_name', 'file'),
+            name=uploaded_file.name,
+            content_type='application/pdf',
+            size=output.getbuffer().nbytes,
+            charset=None,
+        )
+    except Exception:
+        # Se algo falhar na sanitização, retorna o original intacto
+        # (o validator já validou que é PDF legítimo)
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+        return uploaded_file
+
+
+# Alias público
+sanitize_pdf = _sanitize_pdf
+
 
 class SecureUploadMixin(models.Model):
     """
-    Mixin abstrato para upload seguro.
+    Mixin abstrato para upload seguro com sanitização automática de imagens.
 
     Uso para models NOVOS que precisam de upload como funcionalidade principal:
         class MaterialTreinamento(SecureUploadMixin):
@@ -480,28 +621,53 @@ class SecureUploadMixin(models.Model):
 
         for field in cls._meta.local_fields:
             if field.name == 'file' and isinstance(field, models.FileField):
-                field.upload_to = make_upload_path(app)  # ✅ Usa a mesma função pública
+                field.upload_to = make_upload_path(app)
                 field.validators = [SecureFileValidator(app)]
 
+    def _is_new_upload(self):
+        """Detecta se é um upload novo (não um registro já salvo sendo editado)."""
+        return (
+            self.file
+            and hasattr(self.file, 'file')
+            and isinstance(self.file.file, InMemoryUploadedFile)
+        )
+
     def save(self, *args, **kwargs):
-        if self.file:
+        if self.file and self._is_new_upload():
+            uploaded = self.file.file
+            content_type = getattr(uploaded, 'content_type', '') or ''
+
+            # ✅ Sanitização por tipo de arquivo
+            try:
+                if content_type.startswith('image/'):
+                    self.file.file = _sanitize_image(uploaded)
+                elif content_type == 'application/pdf':
+                    self.file.file = _sanitize_pdf(uploaded)
+            except Exception:
+                # Se sanitização falhar, deixa passar (validator já checou)
+                pass
+
+            # Captura nome original
             if not self.original_filename:
                 self.original_filename = os.path.basename(
                     getattr(self.file, 'name', '') or ''
                 )
+
+            # Captura tamanho (pode ter mudado após sanitização)
             try:
                 self.file_size = self.file.size
             except Exception:
-                pass
+                self.file_size = 0
 
-            # ✅ Usa wrapper
+            # Captura MIME type
             if not self.mime_type:
                 try:
                     self.mime_type = get_mime_type(self.file)
                 except Exception:
-                    self.mime_type = 'application/octet-stream'
+                    self.mime_type = content_type or 'application/octet-stream'
 
         super().save(*args, **kwargs)
+
 
     def __str__(self):
         return f"{self.original_filename} ({self.get_size_display()})"
@@ -521,4 +687,6 @@ class SecureUploadMixin(models.Model):
     def is_pdf(self):
         return self.mime_type == 'application/pdf'
 
+
+# Alias público
 sanitize_image = _sanitize_image
