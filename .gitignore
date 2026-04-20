@@ -35,3 +35,5 @@ private_media/
 resultado_bandit
 
 ctst-storage-key.json
+# Saídas de teste temporárias
+test_output.txt
