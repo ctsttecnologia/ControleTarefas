@@ -3,6 +3,113 @@
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ═══════════════════════════════════════════════════ */
+    /*  Lista de Documentos — Tema Adaptativo             */
+    /* ═══════════════════════════════════════════════════ */
+
+    /* Nome do documento adaptativo (substitui text-dark) */
+    .doc-nome {
+        color: #212529;
+        font-weight: 600;
+    }
+
+    [data-bs-theme="dark"] .doc-nome {
+        color: #f8f9fa !important;
+    }
+
+    /* Cabeçalho da tabela adaptativo */
+    .doc-thead {
+        background-color: #f8f9fa;
+        color: #495057;
+    }
+
+    [data-bs-theme="dark"] .doc-thead {
+        background-color: #1a1d21 !important;
+        color: #e9ecef !important;
+    }
+
+    [data-bs-theme="dark"] .doc-thead th {
+        border-bottom-color: #2d3339 !important;
+        color: #e9ecef !important;
+    }
+
+    /* Badge de tipo adaptativo */
+    .doc-badge-tipo {
+        background-color: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+    }
+
+    [data-bs-theme="dark"] .doc-badge-tipo {
+        background-color: #2d3339 !important;
+        color: #e9ecef !important;
+        border-color: #495057 !important;
+    }
+
+    /* Footer adaptativo */
+    .doc-footer {
+        background-color: #ffffff;
+        color: #6c757d;
+    }
+
+    [data-bs-theme="dark"] .doc-footer {
+        background-color: #1a1d21 !important;
+        color: #adb5bd !important;
+        border-top: 1px solid #2d3339;
+    }
+
+    /* Textos muted mais legíveis no escuro */
+    [data-bs-theme="dark"] .text-muted {
+        color: #adb5bd !important;
+    }
+
+    /* Badge bg-info com opacity no escuro */
+    [data-bs-theme="dark"] .badge.bg-info.bg-opacity-10 {
+        background-color: rgba(13, 202, 240, 0.15) !important;
+        color: #6edff6 !important;
+    }
+
+    /* Badge warning com text-dark (legibilidade) */
+    [data-bs-theme="dark"] .badge.bg-warning.text-dark {
+        color: #1a1d21 !important;
+    }
+
+    /* Card da tabela adaptativo */
+    [data-bs-theme="dark"] .card {
+        background-color: #212529;
+        border-color: #2d3339;
+    }
+
+    /* Hover nas linhas no escuro */
+    [data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+        background-color: rgba(77, 171, 247, 0.08) !important;
+        color: inherit;
+    }
+
+    /* Nav tabs no escuro */
+    [data-bs-theme="dark"] .nav-tabs {
+        border-bottom-color: #2d3339;
+    }
+
+    [data-bs-theme="dark"] .nav-tabs .nav-link {
+        color: #adb5bd;
+    }
+
+    [data-bs-theme="dark"] .nav-tabs .nav-link:hover {
+        color: #4dabf7;
+        border-color: transparent;
+    }
+
+    [data-bs-theme="dark"] .nav-tabs .nav-link.active {
+        background-color: transparent;
+        color: #4dabf7 !important;
+        border-color: #2d3339 #2d3339 #212529;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -66,12 +173,6 @@
             </a>
         </li>
         <li class="nav-item">
-            <!--<a class="nav-link {% if filtro_ativo == 'anexados' %}active fw-semibold{% endif %}"
-               href="?filtro=anexados">
-                <i class="bi bi-paperclip me-1"></i>Anexados
-            </a>-->
-        </li>
-        <li class="nav-item">
             <a class="nav-link {% if filtro_ativo == 'renovados' %}active fw-semibold{% endif %}"
                href="?filtro=renovados">
                 <i class="bi bi-archive me-1"></i>Renovados
@@ -90,7 +191,7 @@
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="doc-thead">
                         <tr>
                             <th style="min-width: 250px;">Nome / Descrição</th>
                             <th>Tipo</th>
@@ -106,7 +207,7 @@
                         <tr>
                             {# ── Nome ── #}
                             <td>
-                                <div class="fw-bold text-dark">{{ doc.nome }}</div>
+                                <div class="doc-nome">{{ doc.nome }}</div>
                                 {% if doc.descricao %}
                                     <small class="text-muted">{{ doc.descricao|truncatechars:60 }}</small>
                                 {% endif %}
@@ -114,7 +215,7 @@
 
                             {# ── Tipo ── #}
                             <td>
-                                <span class="badge bg-light text-dark border">
+                                <span class="badge doc-badge-tipo">
                                     {{ doc.get_tipo_display }}
                                 </span>
                             </td>
@@ -254,7 +355,7 @@
         </div>
 
         {% if documentos %}
-        <div class="card-footer bg-white text-muted small">
+        <div class="card-footer doc-footer small">
             <i class="bi bi-info-circle me-1"></i>
             {{ documentos|length }} documento{{ documentos|length|pluralize:"s" }} encontrado{{ documentos|length|pluralize:"s" }}
         </div>
@@ -266,5 +367,4 @@
     {% endif %}
 </div>
 {% endblock %}
-
 

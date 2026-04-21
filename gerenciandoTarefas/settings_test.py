@@ -13,6 +13,16 @@ os.environ['DEBUG'] = 'True'
 from .settings import *  # noqa: F401, F403, E402
 
 # =============================================================================
+# 🗄️ BANCO DE DADOS — SQLite em memória (super rápido e sem precisar de permissão)
+# =============================================================================
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': ':memory:',
+    }
+}
+
+# =============================================================================
 # 🔓 Reforço: neutraliza qualquer redirect HTTPS residual
 # =============================================================================
 SECURE_SSL_REDIRECT = False
@@ -60,3 +70,5 @@ logging.disable(logging.CRITICAL)
 # 🐛 DEBUG ligado (ajuda em tracebacks durante desenvolvimento de testes)
 # =============================================================================
 DEBUG = True
+
+

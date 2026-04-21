@@ -1,0 +1,256 @@
+
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ═══ Caixa adaptativa "Arquivo e Prazos" ═══ */
+    .doc-box {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+    }
+
+    /* Tema escuro */
+    [data-bs-theme="dark"] .doc-box {
+        background-color: #1a1d21;
+        border-color: #2d3339;
+        color: #e9ecef;
+    }
+
+    [data-bs-theme="dark"] .doc-box .form-label,
+    [data-bs-theme="dark"] .doc-box .form-text {
+        color: #e9ecef !important;
+    }
+
+    [data-bs-theme="dark"] .doc-box .form-text {
+        color: #adb5bd !important;
+    }
+
+    /* Inputs file no tema escuro */
+    [data-bs-theme="dark"] .doc-box .form-control[type="file"] {
+        background-color: #0f1318;
+        border-color: #2d3339;
+        color: #e9ecef;
+    }
+
+    [data-bs-theme="dark"] .doc-box .form-control[type="file"]::file-selector-button {
+        background-color: #2d3339;
+        color: #e9ecef;
+        border: 0;
+        border-right: 1px solid #495057;
+        padding: 0.375rem 0.75rem;
+        margin-right: 0.75rem;
+    }
+
+    [data-bs-theme="dark"] .doc-box .form-control[type="file"]::file-selector-button:hover {
+        background-color: #495057;
+    }
+
+    /* Inputs de data no tema escuro */
+    [data-bs-theme="dark"] .doc-box input[type="date"] {
+        background-color: #0f1318;
+        border-color: #2d3339;
+        color: #e9ecef;
+        color-scheme: dark;
+    }
+
+    /* Alert info no tema escuro */
+    [data-bs-theme="dark"] .alert-info {
+        background-color: #0c2d3f;
+        border-color: #17a2b8;
+        color: #b8daff;
+    }
+
+    [data-bs-theme="dark"] .alert-info strong {
+        color: #e2e6ea;
+    }
+
+    [data-bs-theme="dark"] .alert-secondary {
+        background-color: #1a1d21;
+        border-color: #2d3339;
+        color: #adb5bd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+
+            {# ── Breadcrumb ── #}
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    {% if perms.documentos.view_documento or user.is_superuser %}
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'documentos:lista' %}">Documentos</a>
+                        </li>
+                    {% endif %}
+                    <li class="breadcrumb-item active">
+                        {% if documento_antigo %}Renovar{% elif objeto_pai %}Anexar{% else %}Novo{% endif %}
+                    </li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm border-0">
+                {# ── Header ── #}
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0">
+                        {% if documento_antigo %}
+                            <i class="bi bi-arrow-repeat me-2"></i>Renovar Documento
+                        {% elif objeto_pai %}
+                            <i class="bi bi-paperclip me-2"></i>Anexar Documento
+                        {% else %}
+                            <i class="bi bi-cloud-upload me-2"></i>Novo Documento
+                        {% endif %}
+                    </h4>
+                </div>
+
+                <div class="card-body p-4">
+
+                    {# ── Info do documento antigo (renovação) ── #}
+                    {% if documento_antigo %}
+                        <div class="alert alert-info d-flex align-items-start">
+                            <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                            <div>
+                                <strong>Você está renovando:</strong>
+                                <div class="small mt-1">
+                                    📄 <strong>{{ documento_antigo.nome }}</strong>
+                                    {% if documento_antigo.data_vencimento %}
+                                        — venceu/vence em
+                                        <strong>{{ documento_antigo.data_vencimento|date:"d/m/Y" }}</strong>
+                                    {% endif %}
+                                </div>
+                                <div class="small mt-1 opacity-75">
+                                    O documento anterior será marcado como
+                                    <strong>Renovado</strong> automaticamente.
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# ── Info do objeto pai (anexo) ── #}
+                    {% if objeto_pai %}
+                        <div class="alert alert-secondary small">
+                            <i class="bi bi-link-45deg me-1"></i>
+                            Anexando a <strong>{{ objeto_pai_tipo }}</strong>: {{ objeto_pai }}
+                        </div>
+                    {% endif %}
+
+                    {# ── Alertas de Erro ── #}
+                    {% if form.errors %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Atenção!</strong> Corrija os erros abaixo.
+                            {% if form.non_field_errors %}
+                                <ul class="mb-0 mt-2">
+                                    {% for error in form.non_field_errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            {# Nome #}
+                            <div class="col-md-8">
+                                <label for="{{ form.nome.id_for_label }}" class="form-label fw-bold">
+                                    Nome do Documento <span class="text-danger">*</span>
+                                </label>
+                                {{ form.nome }}
+                                {% if form.nome.errors %}
+                                    <div class="text-danger small mt-1">{{ form.nome.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            {# Tipo #}
+                            <div class="col-md-4">
+                                <label for="{{ form.tipo.id_for_label }}" class="form-label fw-bold">
+                                    Tipo <span class="text-danger">*</span>
+                                </label>
+                                {{ form.tipo }}
+                                {% if form.tipo.errors %}
+                                    <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {# ── Arquivo e Prazos ── #}
+                        <h6 class="text-primary mb-3 mt-4 border-bottom pb-2">
+                            <i class="bi bi-file-earmark-arrow-up me-2"></i>Arquivo e Prazos
+                        </h6>
+
+                        <div class="text-strong">
+                            <div class="row g-3">
+                                {# Arquivo #}
+                                <div class="col-12">
+                                    <label for="{{ form.arquivo.id_for_label }}" class="form-label fw-bold">
+                                        Arquivo (PDF, Imagem, Doc)
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.arquivo }}
+                                    {% if form.arquivo.errors %}
+                                        <div class="text-danger small mt-1">{{ form.arquivo.errors }}</div>
+                                    {% endif %}
+                                    {% if documento_antigo %}
+                                        <div class="form-text">
+                                            <i class="bi bi-lightbulb me-1"></i>
+                                            Envie a <strong>nova versão</strong> do documento.
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                {# Data de Emissão #}
+                                <div class="col-md-6">
+                                    <label for="{{ form.data_emissao.id_for_label }}" class="form-label">
+                                        Data de Emissão
+                                    </label>
+                                    {{ form.data_emissao }}
+                                    {% if form.data_emissao.errors %}
+                                        <div class="text-danger small mt-1">{{ form.data_emissao.errors }}</div>
+                                    {% endif %}
+                                </div>
+
+                                {# Data de Vencimento #}
+                                <div class="col-md-6">
+                                    <label for="{{ form.data_vencimento.id_for_label }}" class="form-label fw-bold">
+                                        Data de Vencimento
+                                    </label>
+                                    {{ form.data_vencimento }}
+                                    {% if form.data_vencimento.errors %}
+                                        <div class="text-danger small mt-1">{{ form.data_vencimento.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ── Botões ── #}
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="{% url 'documentos:lista' %}" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="bi bi-check-lg me-1"></i>
+                                {% if documento_antigo %}Confirmar Renovação
+                                {% elif objeto_pai %}Anexar Documento
+                                {% else %}Cadastrar Documento{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -19,7 +19,7 @@
                     <small class="text-muted">NCMs Ativos</small>
                 </div>
                 <div class="card-footer bg-transparent text-center">
-                    {% if perms.trubacao.view_ncm or user.is.superuser %}
+                    {% if perms.tributacao.view_ncm or user.is.superuser %}
                     <a href="{% url 'tributacao:ncm_list' %}" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-list"></i> Gerenciar
                     </a>
@@ -34,7 +34,7 @@
                     <small class="text-muted">CFOPs Ativos</small>
                 </div>
                 <div class="card-footer bg-transparent text-center">
-                    {% if perms.trubacao.view_cfop or user.is.superuser %}
+                    {% if perms.tributacao.view_cfop or user.is.superuser %}
                     <a href="{% url 'tributacao:cfop_list' %}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-list"></i> Gerenciar
                     </a>
@@ -49,7 +49,7 @@
                     <small class="text-muted">CSTs Cadastrados</small>
                 </div>
                 <div class="card-footer bg-transparent text-center">
-                    {% if perms.trubacao.view_cst or user.is.superuser %}
+                    {% if perms.tributacao.view_cst or user.is.superuser %}
                     <a href="{% url 'tributacao:cst_list' %}" class="btn btn-sm btn-outline-info">
                         <i class="bi bi-list"></i> Gerenciar
                     </a>
@@ -64,7 +64,7 @@
                     <small class="text-muted">Grupos Tributários</small>
                 </div>
                 <div class="card-footer bg-transparent text-center">
-                    {% if perms.trubacao.view_grupo or user.is.superuser %}
+                    {% if perms.tributacao.view_grupo or user.is.superuser %}
                     <a href="{% url 'tributacao:grupo_list' %}" class="btn btn-sm btn-outline-warning">
                         <i class="bi bi-list"></i> Gerenciar
                     </a>
@@ -82,28 +82,28 @@
         <div class="card-body">
             <div class="row g-2">
                 <div class="col-md-3">
-                    {% if perms.trubacao.add_grupo_tributario or user.is.superuser %}
+                    {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}
                     <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary w-100" title="Novo Grupo Tributário">
                         <i class="bi bi-plus-circle"></i> Novo Grupo Tributário
                     </a>
                     {% endif %}
                 </div>
                 <div class="col-md-3">
-                    {% if perms.trubacao.add_ncm or user.is.superuser %}
+                    {% if perms.tributacao.add_ncm or user.is.superuser %}
                     <a href="{% url 'tributacao:ncm_create' %}" class="btn btn-outline-primary w-100" title="Nomenclatura Comum do Mercosul">
                         <i class="bi bi-plus"></i> Novo NCM
                     </a>
                     {% endif %}
                 </div>
                 <div class="col-md-3">
-                    {% if perms.trubacao.add_cfop or user.is.superuser %}
+                    {% if perms.tributacao.add_cfop or user.is.superuser %}
                     <a href="{% url 'tributacao:cfop_create' %}" class="btn btn-outline-success w-100" title="Código Fiscal de Operações">
                         <i class="bi bi-plus"></i> Novo CFOP
                     </a>
                     {% endif %}
                 </div>
                 <div class="col-md-3">
-                    {% if perms.trubacao.add_cst or user.is.superuser %}
+                    {% if perms.tributacao.add_cst or user.is.superuser %}
                     <a href="{% url 'tributacao:cst_create' %}" class="btn btn-outline-info w-100" title="Código de Situação Tributária">
                         <i class="bi bi-plus"></i> Novo CST
                     </a>
@@ -311,7 +311,7 @@
             </div>
 
             <div class="mt-3 text-center">
-                {% if perms.trubacao.add_grupo_tributario or user.is.superuser %}
+                {% if perms.tributacao.add_grupo_tributario or user.is.superuser %}
                 <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
                     <i class="bi bi-plus-circle"></i> Criar Primeiro Grupo Tributário
                 </a>

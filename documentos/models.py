@@ -180,8 +180,8 @@ class Documento(models.Model):
         verbose_name_plural = "Documentos"
         ordering            = ['data_vencimento']
         permissions = [
+            ("pode_validar_documento", "Pode validar um documento enviado"),
             ("pode_gerenciar_todos_documentos", "Pode gerenciar documentos de todas as filiais"),
-            ("pode_validar_documento",          "Pode validar um documento enviado"),
         ]
 
     def __str__(self):

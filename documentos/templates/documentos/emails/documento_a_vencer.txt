@@ -1,0 +1,17 @@
+
+Olá, {{ responsavel.get_full_name|default:responsavel.username }}!
+
+O documento abaixo está próximo do vencimento:
+
+📄 Nome: {{ documento.nome }}
+📂 Tipo: {{ documento.get_tipo_display }}
+📅 Vencimento: {{ data_vencimento }}
+⏳ Dias restantes: {{ dias_restantes }}
+
+Providencie a renovação para evitar transtornos.
+
+Acesse: {{ url }}
+
+—
+Gerenciando Tarefas — Cetest
+

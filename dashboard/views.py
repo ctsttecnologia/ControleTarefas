@@ -1,13 +1,17 @@
 # dashboard/views.py
 
 """
-Views do Dashboard — refatoradas para usar services.py.
+Views do Dashboard — CBV com permissões granulares.
 Toda lógica de queries está centralizada em dashboard.services.
 """
 
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import render
+from django.utils import timezone
+from django.views.generic import TemplateView
+
+from core.mixins import AppPermissionMixin
 
 from .services import (
     get_metricas_geral,
@@ -37,7 +41,7 @@ CYCLE_INTERVAL_MS = 15_000  # 15 segundos entre telas
 
 
 # =====================================================================
-# HELPERS (públicos — usados por outros apps)
+# HELPERS PÚBLICOS (usados por outros apps)
 # =====================================================================
 
 def get_filial_ativa(user):
@@ -61,137 +65,166 @@ def render_erro_filial(request, mensagem=None):
     })
 
 
-def _get_cycle_context(request, current_url_name):
-    """Retorna o contexto de rotação automática do carrossel."""
-    is_cycling = request.GET.get('cycle') == 'true'
-    return {
-        'is_cycling': is_cycling,
-        'next_dashboard_url': DASHBOARD_CYCLE.get(current_url_name) if is_cycling else None,
-        'cycle_interval': CYCLE_INTERVAL_MS,
-        'current_dashboard': current_url_name,
-    }
+# =====================================================================
+# BASE VIEW: LÓGICA COMUM DE TODOS OS DASHBOARDS
+# =====================================================================
+
+class BaseDashboardView(LoginRequiredMixin, AppPermissionMixin, TemplateView):
+    """
+    View base para todos os dashboards.
+    
+    Subclasses devem definir:
+    - template_name: caminho do template
+    - permission_required: permissão específica do dashboard
+    - dashboard_url_name: nome da URL (ex: 'dashboard:dashboard_geral')
+    - title: título da página
+    - get_metricas(filial): método que retorna dict de métricas
+    """
+    app_label_required = 'dashboard'  # fallback — mas usamos permission_required específica
+    dashboard_url_name = None
+    title = None
+
+    def get_metricas(self, filial):
+        """Sobrescrever nas subclasses — retorna dict de métricas."""
+        raise NotImplementedError(
+            f"{self.__class__.__name__} deve implementar get_metricas(filial)."
+        )
+
+    def get_cycle_context(self):
+        """Retorna o contexto de rotação automática do carrossel."""
+        is_cycling = self.request.GET.get('cycle') == 'true'
+        return {
+            'is_cycling': is_cycling,
+            'next_dashboard_url': (
+                DASHBOARD_CYCLE.get(self.dashboard_url_name) if is_cycling else None
+            ),
+            'cycle_interval': CYCLE_INTERVAL_MS,
+            'current_dashboard': self.dashboard_url_name,
+        }
+
+    def dispatch(self, request, *args, **kwargs):
+        """Verifica filial ativa ANTES de processar a view."""
+        # ⚠️ LoginRequiredMixin + AppPermissionMixin já rodaram aqui
+        # Mas só se o user estiver autenticado é que faz sentido checar filial
+        if request.user.is_authenticated:
+            self.filial = get_filial_ativa(request.user)
+            if not self.filial:
+                return render_erro_filial(request)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = self.get_title()
+        context.update(self.get_metricas(self.filial))
+        context.update(self.get_cycle_context())
+        return context
+
+    def get_title(self):
+        return self.title or 'Dashboard'
 
 
 # =====================================================================
 # VIEW: DASHBOARD GERAL
 # =====================================================================
 
-@login_required
-def dashboard_geral_view(request):
-    filial = get_filial_ativa(request.user)
-    if not filial:
-        return render_erro_filial(request)
+class DashboardGeralView(BaseDashboardView):
+    template_name = 'dashboard/dashboard_geral.html'
+    permission_required = 'dashboard.view_dashboard_geral'
+    dashboard_url_name = 'dashboard:dashboard_geral'
 
-    context = {
-        'title': f'Visão Geral — {filial}',
-        **get_metricas_geral(filial),
-        **_get_cycle_context(request, 'dashboard:dashboard_geral'),
-    }
-    return render(request, 'dashboard/dashboard_geral.html', context)
+    def get_title(self):
+        return f'Visão Geral — {self.filial}'
+
+    def get_metricas(self, filial):
+        return get_metricas_geral(filial)
 
 
 # =====================================================================
 # VIEW: DASHBOARD TREINAMENTOS
 # =====================================================================
 
-@login_required
-def dashboard_treinamentos_view(request):
-    filial = get_filial_ativa(request.user)
-    if not filial:
-        return render_erro_filial(request)
+class DashboardTreinamentosView(BaseDashboardView):
+    template_name = 'dashboard/dashboard_treinamentos.html'
+    permission_required = 'dashboard.view_dashboard_treinamentos'
+    dashboard_url_name = 'dashboard:dashboard_treinamentos'
+    title = 'Dashboard Treinamentos'
 
-    context = {
-        'title': 'Dashboard Treinamentos',
-        **get_metricas_treinamentos(filial, dias_alerta=15),
-        **_get_cycle_context(request, 'dashboard:dashboard_treinamentos'),
-    }
-    return render(request, 'dashboard/dashboard_treinamentos.html', context)
+    def get_metricas(self, filial):
+        return get_metricas_treinamentos(filial, dias_alerta=15)
 
 
 # =====================================================================
 # VIEW: DASHBOARD TAREFAS
 # =====================================================================
 
-@login_required
-def dashboard_tarefas_view(request):
-    filial = get_filial_ativa(request.user)
-    if not filial:
-        return render_erro_filial(request)
+class DashboardTarefasView(BaseDashboardView):
+    template_name = 'dashboard/dashboard_tarefas.html'
+    permission_required = 'dashboard.view_dashboard_tarefas'
+    dashboard_url_name = 'dashboard:dashboard_tarefas'
+    title = 'Dashboard Tarefas'
 
-    context = {
-        'title': 'Dashboard Tarefas',
-        **get_metricas_tarefas(filial),
-        **_get_cycle_context(request, 'dashboard:dashboard_tarefas'),
-    }
-    return render(request, 'dashboard/dashboard_tarefas.html', context)
+    def get_metricas(self, filial):
+        return get_metricas_tarefas(filial)
 
 
 # =====================================================================
 # VIEW: DASHBOARD EPI
 # =====================================================================
 
-@login_required
-def dashboard_epi_view(request):
-    filial = get_filial_ativa(request.user)
-    if not filial:
-        return render_erro_filial(request)
+class DashboardEpiView(BaseDashboardView):
+    template_name = 'dashboard/dashboard_epi.html'
+    permission_required = 'dashboard.view_dashboard_epi'
+    dashboard_url_name = 'dashboard:dashboard_epi'
+    title = 'Dashboard EPI'
 
-    context = {
-        'title': 'Dashboard EPI',
-        **get_metricas_epi(filial),
-        **_get_cycle_context(request, 'dashboard:dashboard_epi'),
-    }
-    return render(request, 'dashboard/dashboard_epi.html', context)
+    def get_metricas(self, filial):
+        return get_metricas_epi(filial)
 
 
 # =====================================================================
 # VIEW: DASHBOARD DOCUMENTOS
 # =====================================================================
 
-@login_required
-def dashboard_documentos_view(request):
-    filial = get_filial_ativa(request.user)
-    if not filial:
-        return render_erro_filial(request)
+class DashboardDocumentosView(BaseDashboardView):
+    template_name = 'dashboard/dashboard_documentos.html'
+    permission_required = 'dashboard.view_dashboard_documentos'
+    dashboard_url_name = 'dashboard:dashboard_documentos'
+    title = 'Dashboard Documentos'
 
-    context = {
-        'title': 'Dashboard Documentos',
-        **get_metricas_documentos(filial, dias_alerta=30),
-        **_get_cycle_context(request, 'dashboard:dashboard_documentos'),
-    }
-    return render(request, 'dashboard/dashboard_documentos.html', context)
+    def get_metricas(self, filial):
+        return get_metricas_documentos(filial, dias_alerta=30)
 
 
 # =====================================================================
-# VIEW: DASHBOARD PGR
+# VIEW: DASHBOARD PGR (comportamento especial)
 # =====================================================================
 
-@login_required
-def dashboard_pgr_view(request):
-    if not pgr_disponivel():
-        messages.error(request, "O módulo PGR não está disponível.")
-        return render(request, 'dashboard/erro_configuracao.html', {
-            'title': 'Erro de Configuração',
-        })
+class DashboardPgrView(BaseDashboardView):
+    permission_required = 'dashboard.view_dashboard_pgr'
+    dashboard_url_name = 'dashboard:dashboard_pgr'
+    title = 'Dashboard PGR'
 
-    filial = get_filial_ativa(request.user)
-    if not filial:
-        return render_erro_filial(request)
+    def dispatch(self, request, *args, **kwargs):
+        """PGR tem uma validação extra: o módulo precisa estar disponível."""
+        if not pgr_disponivel():
+            messages.error(request, "O módulo PGR não está disponível.")
+            return render(request, 'dashboard/erro_configuracao.html', {
+                'title': 'Erro de Configuração',
+            })
+        return super().dispatch(request, *args, **kwargs)
 
-    from django.utils import timezone
-    metricas = get_metricas_pgr(filial)
-    cycle_ctx = _get_cycle_context(request, 'dashboard:dashboard_pgr')
+    def get_metricas(self, filial):
+        return get_metricas_pgr(filial)
 
-    context = {
-        'title': 'Dashboard PGR',
-        'hoje': timezone.now().date(),
-        **metricas,
-        **cycle_ctx,
-    }
+    def get_template_names(self):
+        """PGR usa template fullscreen quando em modo carrossel."""
+        is_cycling = self.request.GET.get('cycle') == 'true'
+        if is_cycling:
+            return ['dashboard/dashboard_pgr_fullscreen.html']
+        return ['dashboard/dashboard_pgr.html']
 
-    template = (
-        'dashboard/dashboard_pgr_fullscreen.html'
-        if cycle_ctx['is_cycling']
-        else 'dashboard/dashboard_pgr.html'
-    )
-    return render(request, template, context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['hoje'] = timezone.now().date()
+        return context
+

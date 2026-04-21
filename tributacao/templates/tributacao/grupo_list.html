@@ -7,8 +7,14 @@
 {% block tributacao_content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
+        
         <h3><i class="bi bi-collection"></i> Grupos Tributários</h3>
-        {% if perms.trubacao.add_grupo or user.is.superuser %}
+        {% if pode_ver_todas_filiais %}
+        <span class="badge bg-info">🌐 Visão global: todas as filiais</span>
+        {% else %}
+        <span class="badge bg-secondary">🏢 Filial: {{ request.user.filial_ativa }}</span>
+        {% endif %}
+        {% if perms.tributacao.add_grupotributario %}
         <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Novo Grupo
         </a>
@@ -47,7 +53,7 @@
                 {% for grupo in grupos %}
                 <tr>
                     <td>
-                        {% if perms.trubacao.view_grupo_detail or user.is.superuser %}
+                        {% if perms.tributacao.view_grupo_detail or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_detail' grupo.pk %}" class="text-decoration-none fw-bold">
                             {{ grupo.nome }}
                         </a>
@@ -79,19 +85,19 @@
                         {% endif %}
                     </td>
                     <td class="text-center">
-                        {% if perms.trubacao.view_grupo_detail or user.is.superuser %}
+                        {% if perms.tributacao.view_grupo_detail or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_detail' grupo.pk %}" 
                            class="btn btn-sm btn-outline-info" title="Detalhes">
                             <i class="bi bi-eye"></i>
                         </a>
                         {% endif %}
-                        {% if perms.trubacao.change_grupo or user.is.superuser %}
+                        {% if perms.tributacao.change_grupo or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_update' grupo.pk %}" 
                            class="btn btn-sm btn-outline-primary" title="Editar">
                             <i class="bi bi-pencil"></i>
                         </a>
                         {% endif %}
-                        {% if perms.trubacao.delete_grupo or user.is.superuser %}
+                        {% if perms.tributacao.delete_grupo or user.is.superuser %}
                         <a href="{% url 'tributacao:grupo_delete' grupo.pk %}" 
                            class="btn btn-sm btn-outline-danger" title="Excluir">
                             <i class="bi bi-trash"></i>

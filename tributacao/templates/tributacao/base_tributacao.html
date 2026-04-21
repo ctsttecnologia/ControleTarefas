@@ -1,4 +1,3 @@
-
 <!-- templates/tributacao/base_tributacao.html -->
 {% extends "base.html" %}
 {% load static %}
@@ -7,9 +6,70 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <style>
-    /* ═══ Tributação — Tema Adaptativo ═══ */
+    /* ═══════════════════════════════════════════════════ */
+    /*  Tributação — Tema Adaptativo                       */
+    /* ═══════════════════════════════════════════════════ */
 
-    /* Cards de resumo com custo */
+    /* ─── NAVBAR SECUNDÁRIA ─── */
+    .trib-navbar {
+        background-color: #ffffff;
+        border-bottom: 1px solid #dee2e6;
+        transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .trib-navbar .navbar-brand {
+        color: #0d6efd;
+    }
+
+    .trib-navbar .nav-link {
+        color: #495057;
+        transition: color 0.2s;
+    }
+
+    .trib-navbar .nav-link:hover {
+        color: #0d6efd;
+    }
+
+    .trib-navbar .nav-link.active {
+        color: #0d6efd !important;
+    }
+
+    /* ─── NAVBAR NO TEMA ESCURO ─── */
+    [data-bs-theme="dark"] .trib-navbar {
+        background-color: #1a1d21 !important;
+        border-bottom-color: #2d3339 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-bs-theme="dark"] .trib-navbar .navbar-brand {
+        color: #4dabf7 !important;
+    }
+
+    [data-bs-theme="dark"] .trib-navbar .nav-link {
+        color: #e9ecef !important;
+    }
+
+    [data-bs-theme="dark"] .trib-navbar .nav-link:hover {
+        color: #4dabf7 !important;
+        background-color: rgba(77, 171, 247, 0.08);
+        border-radius: 0.375rem;
+    }
+
+    [data-bs-theme="dark"] .trib-navbar .nav-link.active {
+        color: #4dabf7 !important;
+        background-color: rgba(77, 171, 247, 0.12);
+        border-radius: 0.375rem;
+    }
+
+    [data-bs-theme="dark"] .trib-navbar .navbar-toggler {
+        border-color: #495057;
+    }
+
+    [data-bs-theme="dark"] .trib-navbar .navbar-toggler-icon {
+        filter: invert(1) grayscale(100%) brightness(200%);
+    }
+
+    /* ─── CARDS / CAIXAS ─── */
     .trib-custo-box {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -51,7 +111,7 @@
         transition: background-color 0.3s, border-color 0.3s, color 0.3s;
     }
 
-    /* ═══ TEMA ESCURO ═══ */
+    /* ─── TEMA ESCURO (CAIXAS) ─── */
     [data-bs-theme="dark"] .trib-custo-box {
         background-color: #1a1d21;
         border-color: #495057;
@@ -59,7 +119,7 @@
 
     [data-bs-theme="dark"] .trib-custo-box-success {
         background-color: #1a1d21;
-        border-color: #198754;
+        border-color: #372f6981;
     }
 
     [data-bs-theme="dark"] .trib-exemplo-bg {
@@ -76,12 +136,10 @@
         color: #e2e6ea;
     }
 
-    /* Badges mais legíveis no escuro */
     [data-bs-theme="dark"] .badge.bg-warning.text-dark {
         color: #1a1d21 !important;
     }
 
-    /* Code tags no escuro */
     [data-bs-theme="dark"] code {
         color: #e685b5;
         background-color: #2b2b3d;
@@ -89,17 +147,14 @@
         border-radius: 0.25rem;
     }
 
-    /* Textos muted mais legíveis no escuro */
     [data-bs-theme="dark"] .trib-text-secondary {
         color: #adb5bd !important;
     }
 
-    /* Linha divisória */
     [data-bs-theme="dark"] .trib-divider {
         border-color: #495057;
     }
 
-    /* Tema claro padrão */
     .trib-text-secondary {
         color: #6c757d;
     }
@@ -112,72 +167,81 @@
 
 {% block content %}
 {# ═══════ Barra de navegação secundária do Tributação ═══════ #}
-<nav class="navbar navbar-expand-lg bg-white border-bottom shadow-sm sticky-top" style="z-index: 1020;">
+<nav class="navbar navbar-expand-lg trib-navbar shadow-sm sticky-top" style="z-index: 1020;">
     <div class="container-fluid">
-        {% if perms.trubacao.view_dashboard or user.is.superuser %}
-        <a class="navbar-brand fw-bold text-primary" href="{% url 'tributacao:dashboard' %}">
-            <i class="bi bi-calculator me-1"></i> Tributação
-        </a>
+
+        {% if perms.tributacao.view_dashboard or user.is_superuser %}
+            <a class="navbar-brand fw-bold" href="{% url 'tributacao:dashboard' %}">
+                <i class="bi bi-calculator me-1"></i> Tributação
+            </a>
         {% endif %}
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navTributacao">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navTributacao">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    {% if perms.trubacao.view_dashboard or user.is.superuser %}
-                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-semibold{% endif %}"
-                    href="{% url 'tributacao:dashboard' %}">
-                        <i class="bi bi-speedometer2 me-1"></i> Dashboard
-                    </a>
-                    {% endif %}
-                </li>
-                <li class="nav-item">
-                    {% if perms.trubacao.view_grupo_list or user.is.superuser %}
-                    <a class="nav-link {% if 'grupo' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                    href="{% url 'tributacao:grupo_list' %}">
-                        <i class="bi bi-collection me-1"></i> Grupos Tributários
-                    </a>
-                    {% endif %}
-                </li>
-                <li class="nav-item">
-                    {% if perms.trubacao.view_ncm_list or user.is.superuser %}
-                    <a class="nav-link {% if 'ncm' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                    href="{% url 'tributacao:ncm_list' %}">
-                        <i class="bi bi-upc-scan me-1"></i> NCM
-                    </a>
-                    {% endif %}
-                </li>
-                <li class="nav-item">
-                    {% if perms.trubacao.view_cfop_list or user.is.superuser %}
-                    <a class="nav-link {% if 'cfop' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                    href="{% url 'tributacao:cfop_list' %}">
-                        <i class="bi bi-signpost-2 me-1"></i> CFOP
-                    </a>
-                    {% endif %}
-                </li>
-                <li class="nav-item">
-                    {% if perms.trubacao.view_cst_list or user.is.superuser %}
-                    <a class="nav-link {% if 'cst' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
-                    href="{% url 'tributacao:cst_list' %}">
-                        <i class="bi bi-tags me-1"></i> CST
-                    </a>
-                    {% endif %}
-                </li>
-                <li class="nav-item">
-                    {% if perms.trubacao.view_suprimentos or user.is.superuser %}
-                    <a class="nav-link fw-bold text-primary" href="{% url 'suprimentos:dashboard' %}">
-                        <i class="bi bi-box-seam-fill me-1"></i> Suprimentos
-                    </a>
-                    {% endif %}
-                </li>
+
+                {% if perms.tributacao.view_dashboard or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active fw-semibold{% endif %}"
+                           href="{% url 'tributacao:dashboard' %}">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if perms.tributacao.view_grupotributario or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'grupo' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                           href="{% url 'tributacao:grupo_list' %}">
+                            <i class="bi bi-collection me-1"></i> Grupos Tributários
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if perms.tributacao.view_ncm or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'ncm' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                           href="{% url 'tributacao:ncm_list' %}">
+                            <i class="bi bi-upc-scan me-1"></i> NCM
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if perms.tributacao.view_cfop or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'cfop' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                           href="{% url 'tributacao:cfop_list' %}">
+                            <i class="bi bi-signpost-2 me-1"></i> CFOP
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if perms.tributacao.view_cst or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if 'cst' in request.resolver_match.url_name %}active fw-semibold{% endif %}"
+                           href="{% url 'tributacao:cst_list' %}">
+                            <i class="bi bi-tags me-1"></i> CST
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% if perms.suprimentos.view_dashboard or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold" href="{% url 'suprimentos:dashboard' %}">
+                            <i class="bi bi-box-seam-fill me-1"></i> Suprimentos
+                        </a>
+                    </li>
+                {% endif %}
             </ul>
 
-            {% if perms.trubacao.add_grupo_tributario or user.is.superuser %}
-            <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-success btn-sm">
-                <i class="bi bi-plus-circle me-1"></i> Novo Grupo Tributário
-            </a>
+            {% if perms.tributacao.add_grupotributario or user.is_superuser %}
+                <a href="{% url 'tributacao:grupo_create' %}" class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> Novo Grupo Tributário
+                </a>
             {% endif %}
         </div>
     </div>

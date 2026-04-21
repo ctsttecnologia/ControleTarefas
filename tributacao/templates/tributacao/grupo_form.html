@@ -149,7 +149,7 @@
         <div class="card mb-3">
             <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Tributação Estadual (ICMS por UF)</h5>
-                {% if perms.trubacao.add_uf or user.is.superuser %}
+                {% if perms.tributacao.add_uf or user.is.superuser %}
                 <button type="button" class="btn btn-sm btn-dark" id="btn-add-estadual">
                     <i class="bi bi-plus"></i> Adicionar UF
                 </button>
@@ -244,7 +244,7 @@
 
         <!-- Botões -->
         <div class="d-flex gap-2">
-            {% if perms.trubacao.add_grupo or user.is.superuser %}
+            {% if perms.tributacao.add_grupo or user.is.superuser %}
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="bi bi-check-lg"></i> Salvar Grupo Tributário
             </button>

@@ -1,12 +1,6 @@
 
 # core/magic_utils.py
 
-"""
-Wrapper para detecção de MIME type.
-- Windows (dev): usa python-magic-bin
-- Linux (produção): usa python-magic
-"""
-
 import platform
 
 

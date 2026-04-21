@@ -83,12 +83,29 @@ class CSTForm(BootstrapFormMixin, forms.ModelForm):
 # ══════════════════════════════════════════════════════
 # GRUPO TRIBUTÁRIO
 # ══════════════════════════════════════════════════════
-class GrupoTributarioForm(BootstrapFormMixin, forms.ModelForm):
+class GrupoTributarioForm(forms.ModelForm):
     class Meta:
         model = GrupoTributario
-        fields = ["nome", "descricao", "natureza", "cfop", "ncm", "filial", "ativo"]
+        fields = ['nome', 'descricao', 'natureza', 'cfop', 'ncm', 'filial', 'ativo']
 
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
+        if user and not (user.is_superuser or user.has_perm('tributacao.pode_gerenciar_todas_filiais')):
+            # Restringe filiais no dropdown
+            filial_ativa = getattr(user, 'filial_ativa', None)
+            if filial_ativa:
+                self.fields['filial'].queryset = self.fields['filial'].queryset.filter(
+                    pk=filial_ativa.pk
+                )
+                self.fields['filial'].initial = filial_ativa
+                self.fields['filial'].disabled = True  # bloqueia alteração
+            else:
+                self.fields['filial'].queryset = self.fields['filial'].queryset.none()
+                self.fields['filial'].initial = None
+                self.fields['filial'].disabled = True  # bloqueia alteração 
+                
 # ══════════════════════════════════════════════════════
 # TRIBUTAÇÃO FEDERAL
 # ══════════════════════════════════════════════════════

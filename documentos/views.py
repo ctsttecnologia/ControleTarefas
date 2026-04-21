@@ -3,7 +3,7 @@
 
 import os
 import mimetypes
-
+from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, View
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -20,6 +20,29 @@ from .forms import DocumentoAnexoForm, DocumentoEmpresaForm
 
 
 # ══════════════════════════════════════════════════════════
+# MIXIN: QUERYSET SEGURO (filial + bypass global)
+# ══════════════════════════════════════════════════════════
+
+class DocumentoScopedQuerysetMixin:
+    """
+    Filtra o queryset por filial (via manager `for_request`).
+
+    Usuários com `documentos.pode_gerenciar_todos_documentos` ou superuser
+    recebem queryset SEM filtro de filial (veem tudo).
+    """
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_superuser or user.has_perm('documentos.pode_gerenciar_todos_documentos'):
+            qs = Documento.objects.all()
+        else:
+            qs = Documento.objects.for_request(self.request)
+
+        return qs.select_related('responsavel', 'content_type', 'filial', 'cliente')
+
+
+# ══════════════════════════════════════════════════════════
 # MIXIN BASE — DRY para views de documento empresa
 # ══════════════════════════════════════════════════════════
 
@@ -29,7 +52,6 @@ class DocumentoEmpresaBaseMixin:
     form_class = DocumentoEmpresaForm
     template_name = 'documentos/documento_empresa_form.html'
     success_url = reverse_lazy('documentos:lista')
-    app_label_required = 'documentos'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -37,42 +59,41 @@ class DocumentoEmpresaBaseMixin:
         return kwargs
 
     def form_valid(self, form):
+        # 🐛 BUGFIX: flag explícita em vez de checar pk (que já vem preenchido após save)
+        acao = 'cadastrado' if self._is_create else 'atualizado'
         form.save(user=self.request.user)
-        acao = 'cadastrado' if not form.instance.pk or self._is_create else 'atualizado'
-        messages.success(self.request, f'Documento "{form.instance.nome}" {acao} com sucesso!')
-        return redirect(self.success_url)
-
-
-# ══════════════════════════════════════════════════════════
-# QUERYSET SEGURO — filtra por filial via manager
-# ══════════════════════════════════════════════════════════
-
-class DocumentoScopedQuerysetMixin:
-    """Garante que qualquer queryset passe pelo filtro de filial do manager."""
-
-    def get_queryset(self):
-        return Documento.objects.for_request(self.request).select_related(
-            'responsavel', 'content_type', 'filial', 'cliente'
+        messages.success(
+            self.request,
+            f'Documento "{form.instance.nome}" {acao} com sucesso!'
         )
+        return redirect(self.success_url)
 
 
 # ══════════════════════════════════════════════════════════
 # LISTA UNIFICADA
 # ══════════════════════════════════════════════════════════
 
-class DocumentoListView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, ListView):
+class DocumentoListView(LoginRequiredMixin, AppPermissionMixin,
+                        DocumentoScopedQuerysetMixin, ListView):
     model = Documento
     template_name = 'documentos/documento_list.html'
     context_object_name = 'documentos'
     paginate_by = 20
-    app_label_required = 'documentos'
+    permission_required = 'documentos.view_documento'
 
     def get_queryset(self):
         user = self.request.user
         qs = super().get_queryset()
 
-        if not user.is_staff and not user.is_superuser:
-            qs = qs.filter(Q(responsavel=user) | Q(responsavel__isnull=True))
+        # 🔒 Usuário comum SÓ vê documentos em que é o responsável.
+        # Staff, superuser e gerentes globais veem tudo (dentro da filial, quando aplicável).
+        pode_ver_todos = (
+            user.is_superuser
+            or user.is_staff
+            or user.has_perm('documentos.pode_gerenciar_todos_documentos')
+        )
+        if not pode_ver_todos:
+            qs = qs.filter(responsavel=user)
 
         # Filtro por aba
         filtro = self.request.GET.get('filtro', 'pendentes')
@@ -110,11 +131,13 @@ class DocumentoListView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQ
 
 
 # ══════════════════════════════════════════════════════════
-# DOCUMENTOS AVULSOS DA EMPRESA (ex-Arquivos)
+# DOCUMENTOS AVULSOS DA EMPRESA
 # ══════════════════════════════════════════════════════════
 
-class DocumentoEmpresaCreateView(LoginRequiredMixin, AppPermissionMixin, DocumentoEmpresaBaseMixin, CreateView):
+class DocumentoEmpresaCreateView(LoginRequiredMixin, AppPermissionMixin,
+                                 DocumentoEmpresaBaseMixin, CreateView):
     """Cria documento avulso (contratos, alvarás, etc.) — sem GenericFK."""
+    permission_required = 'documentos.add_documento'
     _is_create = True
 
     def get_context_data(self, **kwargs):
@@ -123,9 +146,21 @@ class DocumentoEmpresaCreateView(LoginRequiredMixin, AppPermissionMixin, Documen
         return context
 
 
-class DocumentoEmpresaUpdateView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, DocumentoEmpresaBaseMixin, UpdateView):
-    """Edita documento avulso da empresa."""
+class DocumentoEmpresaUpdateView(LoginRequiredMixin, AppPermissionMixin,
+                                 DocumentoScopedQuerysetMixin,
+                                 DocumentoEmpresaBaseMixin, UpdateView):
+    """Edita documento avulso da empresa (somente na mesma filial)."""
+    permission_required = 'documentos.change_documento'
     _is_create = False
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        # Usuário comum só edita os seus; staff/superuser/gerente global editam qualquer
+        if user.is_superuser or user.is_staff \
+                or user.has_perm('documentos.pode_gerenciar_todos_documentos'):
+            return qs
+        return qs.filter(responsavel=user)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -142,7 +177,7 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateVie
     model = Documento
     form_class = DocumentoAnexoForm
     template_name = 'documentos/documento_form.html'
-    app_label_required = 'documentos'
+    permission_required = 'documentos.add_documento'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -163,6 +198,7 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateVie
 
             form.instance.content_type = ct
             form.instance.object_id = obj_id
+            # 🔒 Responsável SEMPRE é o usuário atual (obrigatório)
             form.instance.responsavel = self.request.user
 
             # Filial via atributo do user ou sessão
@@ -177,7 +213,10 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateVie
         except KeyError:
             return HttpResponseForbidden("URL inválida.")
 
-        messages.success(self.request, f'Documento "{form.instance.nome}" adicionado com sucesso!')
+        messages.success(
+            self.request,
+            f'Documento "{form.instance.nome}" adicionado com sucesso!'
+        )
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -191,24 +230,25 @@ class DocumentoAnexoCreateView(LoginRequiredMixin, AppPermissionMixin, CreateVie
 # DOWNLOAD SEGURO
 # ══════════════════════════════════════════════════════════
 
-class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, View):
-    """Serve arquivo privado com segurança + filtro de filial."""
-    app_label_required = 'documentos'
+class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin,
+                            DocumentoScopedQuerysetMixin, View):
+    """Serve arquivo privado com segurança + filtro de filial + bypass global."""
+    permission_required = 'documentos.view_documento'
 
     def get(self, request, *args, **kwargs):
-        # ✅ Usa queryset filtrado por filial (via manager)
-        documento = get_object_or_404(
-            self.get_queryset(),
-            pk=self.kwargs['pk']
-        )
+        documento = get_object_or_404(self.get_queryset(), pk=self.kwargs['pk'])
 
-        # Verificação adicional de permissão por responsável
-        if not (
+        # 🔒 Apenas responsável, staff, superuser ou gerente global podem baixar
+        pode_acessar = (
             request.user == documento.responsavel
             or request.user.is_staff
             or request.user.is_superuser
-        ):
-            return HttpResponseForbidden("Você não tem permissão para acessar este documento.")
+            or request.user.has_perm('documentos.pode_gerenciar_todos_documentos')
+        )
+        if not pode_acessar:
+            return HttpResponseForbidden(
+                "Você não tem permissão para acessar este documento."
+            )
 
         file_field = documento.arquivo
         file_path = file_field.path
@@ -252,20 +292,29 @@ class DocumentoDownloadView(LoginRequiredMixin, AppPermissionMixin, DocumentoSco
 # RENOVAÇÃO
 # ══════════════════════════════════════════════════════════
 
-class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, CreateView):
+class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin,
+                         DocumentoScopedQuerysetMixin, CreateView):
     """Renova um documento existente criando uma nova versão."""
     model = Documento
     form_class = DocumentoAnexoForm
     template_name = 'documentos/documento_form.html'
-    app_label_required = 'documentos'
+    permission_required = 'documentos.change_documento'
+
+    def get_queryset(self):
+        """
+        Usuário comum só pode renovar os próprios documentos.
+        Staff/superuser/gerente global renovam qualquer um (dentro da filial).
+        """
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_superuser or user.is_staff \
+                or user.has_perm('documentos.pode_gerenciar_todos_documentos'):
+            return qs
+        return qs.filter(responsavel=user)
 
     def get_old_doc(self):
         if not hasattr(self, '_old_doc'):
-            # ✅ Usa queryset filtrado por filial
-            self._old_doc = get_object_or_404(
-                self.get_queryset(),
-                pk=self.kwargs['pk']
-            )
+            self._old_doc = get_object_or_404(self.get_queryset(), pk=self.kwargs['pk'])
         return self._old_doc
 
     def get_context_data(self, **kwargs):
@@ -277,17 +326,20 @@ class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin, DocumentoScoped
 
     def get_initial(self):
         old_doc = self.get_old_doc()
+        hoje = timezone.now().date()
         return {
             'nome': old_doc.nome,
             'tipo': old_doc.tipo,
+            'data_emissao': hoje,
         }
 
     def form_valid(self, form):
         old_doc = self.get_old_doc()
-
+        nova_venc = form.cleaned_data.get('data_vencimento')
         new_doc = form.save(commit=False)
         new_doc.content_type = old_doc.content_type
         new_doc.object_id = old_doc.object_id
+        # 🔒 Responsável SEMPRE é o usuário atual (obrigatório)
         new_doc.responsavel = self.request.user
         new_doc.filial = old_doc.filial
         new_doc.cliente = old_doc.cliente
@@ -298,8 +350,18 @@ class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin, DocumentoScoped
         old_doc.status = Documento.StatusChoices.RENOVADO
         old_doc.save(update_fields=['status'])
 
+        if nova_venc and old_doc.data_vencimento and nova_venc <= old_doc.data_vencimento:
+            form.add_error(
+                'data_vencimento',
+                f'A nova data deve ser posterior à anterior ({old_doc.data_vencimento:%d/%m/%Y}).'
+            )
+            return self.form_invalid(form)
+
         self.object = new_doc
-        messages.success(self.request, f'Documento "{old_doc.nome}" renovado com sucesso!')
+        messages.success(
+            self.request,
+            f'Documento "{old_doc.nome}" renovado com sucesso!'
+        )
         return redirect(self.get_success_url())
 
     def get_success_url(self):
@@ -313,19 +375,21 @@ class DocumentoRenewView(LoginRequiredMixin, AppPermissionMixin, DocumentoScoped
 # EXCLUSÃO
 # ══════════════════════════════════════════════════════════
 
-class DocumentoDeleteView(LoginRequiredMixin, AppPermissionMixin, DocumentoScopedQuerysetMixin, DeleteView):
+class DocumentoDeleteView(LoginRequiredMixin, AppPermissionMixin,
+                          DocumentoScopedQuerysetMixin, DeleteView):
     """Exclui documento — sempre filtrado por filial via manager."""
     model = Documento
     template_name = 'documentos/documento_confirm_delete.html'
     context_object_name = 'documento'
-    app_label_required = 'documentos'
+    permission_required = 'documentos.delete_documento'
 
     def get_queryset(self):
-        # ✅ Parte do queryset já filtrado por filial
         qs = super().get_queryset()
-        if self.request.user.is_superuser or self.request.user.is_staff:
+        user = self.request.user
+        if user.is_superuser or user.is_staff \
+                or user.has_perm('documentos.pode_gerenciar_todos_documentos'):
             return qs
-        return qs.filter(responsavel=self.request.user)
+        return qs.filter(responsavel=user)
 
     def form_valid(self, form):
         nome = self.object.nome
@@ -335,6 +399,5 @@ class DocumentoDeleteView(LoginRequiredMixin, AppPermissionMixin, DocumentoScope
 
     def get_success_url(self):
         return reverse('documentos:lista')
-
 
     

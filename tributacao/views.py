@@ -2,9 +2,12 @@
 # tributacao/views.py
 
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.http import JsonResponse
 
 from .models import NCM, CFOP, CST, GrupoTributario, TributacaoFederal, TributacaoEstadual
 from .forms import (
@@ -12,42 +15,98 @@ from .forms import (
     GrupoTributarioForm, TributacaoFederalForm,
     TributacaoEstadualForm, TributacaoEstadualFormSet,
 )
-from django.http import JsonResponse
 
+
+# ══════════════════════════════════════════════════════
+# HELPERS DE PERMISSÃO
+# ══════════════════════════════════════════════════════
+def _pode_gerenciar_tabelas(user):
+    """Verifica se o usuário pode mexer em NCM/CFOP/CST (dados sensíveis)."""
+    return (
+        user.is_superuser
+        or user.has_perm('tributacao.pode_gerenciar_tabelas_fiscais')
+    )
+
+
+def _pode_ver_todas_filiais(user):
+    """Verifica bypass de filial para grupos tributários."""
+    return (
+        user.is_superuser
+        or user.has_perm('tributacao.pode_gerenciar_todas_filiais')
+    )
+
+
+def _filtrar_grupos_por_filial(qs, user):
+    """Aplica filtro de filial baseado nas permissões do usuário."""
+    if _pode_ver_todas_filiais(user):
+        return qs
+
+    # Filtra apenas pela filial ativa do usuário
+    filial_ativa = getattr(user, 'filial_ativa', None)
+    if filial_ativa:
+        return qs.filter(filial=filial_ativa)
+
+    # Sem filial ativa: filiais permitidas
+    filiais_permitidas = getattr(user, 'filiais_permitidas', None)
+    if filiais_permitidas is not None:
+        return qs.filter(filial__in=filiais_permitidas.all())
+
+    return qs.none()
 
 
 # ══════════════════════════════════════════════════════
 # DASHBOARD
 # ══════════════════════════════════════════════════════
 @login_required
+@permission_required('tributacao.view_grupotributario', raise_exception=True)
 def dashboard(request):
+    # Filtra grupos pela filial do usuário
+    grupos_qs = _filtrar_grupos_por_filial(GrupoTributario.objects.all(), request.user)
+
     context = {
         "total_ncm": NCM.objects.filter(ativo=True).count(),
         "total_cfop": CFOP.objects.filter(ativo=True).count(),
         "total_cst": CST.objects.count(),
-        "total_grupos": GrupoTributario.objects.filter(ativo=True).count(),
-        "total_trib_federal": TributacaoFederal.objects.count(),
-        "total_trib_estadual": TributacaoEstadual.objects.filter(ativo=True).count(),
+        "total_grupos": grupos_qs.filter(ativo=True).count(),
+        "total_trib_federal": TributacaoFederal.objects.filter(
+            grupo__in=grupos_qs
+        ).count(),
+        "total_trib_estadual": TributacaoEstadual.objects.filter(
+            grupo__in=grupos_qs, ativo=True
+        ).count(),
+        "pode_gerenciar_tabelas": _pode_gerenciar_tabelas(request.user),
+        "pode_ver_todas_filiais": _pode_ver_todas_filiais(request.user),
     }
     return render(request, "tributacao/dashboard.html", context)
 
 
 # ══════════════════════════════════════════════════════
-# NCM — CRUD
+# NCM — CRUD (dados globais, sensíveis)
 # ══════════════════════════════════════════════════════
 @login_required
+@permission_required('tributacao.view_ncm', raise_exception=True)
 def ncm_list(request):
     q = request.GET.get("q", "").strip()
     ncms = NCM.objects.all()
     if q:
         ncms = ncms.filter(Q(codigo__icontains=q) | Q(descricao__icontains=q))
-    return render(request, "tributacao/ncm_list.html", {"ncms": ncms, "q": q})
+
+    context = {
+        "ncms": ncms,
+        "q": q,
+        "pode_gerenciar": _pode_gerenciar_tabelas(request.user),
+    }
+    return render(request, "tributacao/ncm_list.html", context)
 
 
 @login_required
+@permission_required('tributacao.add_ncm', raise_exception=True)
 def ncm_create(request):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para cadastrar NCMs.")
+
     if request.method == "POST":
-        form = NCMForm(request.POST)
+        form = NCMForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, "NCM cadastrado com sucesso!")
@@ -58,10 +117,14 @@ def ncm_create(request):
 
 
 @login_required
+@permission_required('tributacao.change_ncm', raise_exception=True)
 def ncm_update(request, pk):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para editar NCMs.")
+
     ncm = get_object_or_404(NCM, pk=pk)
     if request.method == "POST":
-        form = NCMForm(request.POST, instance=ncm)
+        form = NCMForm(request.POST, request.FILES, instance=ncm)
         if form.is_valid():
             form.save()
             messages.success(request, "NCM atualizado com sucesso!")
@@ -72,7 +135,11 @@ def ncm_update(request, pk):
 
 
 @login_required
+@permission_required('tributacao.delete_ncm', raise_exception=True)
 def ncm_delete(request, pk):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para excluir NCMs.")
+
     ncm = get_object_or_404(NCM, pk=pk)
     if request.method == "POST":
         ncm.delete()
@@ -82,19 +149,28 @@ def ncm_delete(request, pk):
 
 
 # ══════════════════════════════════════════════════════
-# CFOP — CRUD
+# CFOP — CRUD (dados globais, sensíveis)
 # ══════════════════════════════════════════════════════
 @login_required
+@permission_required('tributacao.view_cfop', raise_exception=True)
 def cfop_list(request):
     q = request.GET.get("q", "").strip()
     cfops = CFOP.objects.all()
     if q:
         cfops = cfops.filter(Q(codigo__icontains=q) | Q(descricao__icontains=q))
-    return render(request, "tributacao/cfop_list.html", {"cfops": cfops, "q": q})
+    return render(request, "tributacao/cfop_list.html", {
+        "cfops": cfops,
+        "q": q,
+        "pode_gerenciar": _pode_gerenciar_tabelas(request.user),
+    })
 
 
 @login_required
+@permission_required('tributacao.add_cfop', raise_exception=True)
 def cfop_create(request):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para cadastrar CFOPs.")
+
     if request.method == "POST":
         form = CFOPForm(request.POST)
         if form.is_valid():
@@ -107,7 +183,11 @@ def cfop_create(request):
 
 
 @login_required
+@permission_required('tributacao.change_cfop', raise_exception=True)
 def cfop_update(request, pk):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para editar CFOPs.")
+
     cfop = get_object_or_404(CFOP, pk=pk)
     if request.method == "POST":
         form = CFOPForm(request.POST, instance=cfop)
@@ -121,7 +201,11 @@ def cfop_update(request, pk):
 
 
 @login_required
+@permission_required('tributacao.delete_cfop', raise_exception=True)
 def cfop_delete(request, pk):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para excluir CFOPs.")
+
     cfop = get_object_or_404(CFOP, pk=pk)
     if request.method == "POST":
         cfop.delete()
@@ -131,9 +215,10 @@ def cfop_delete(request, pk):
 
 
 # ══════════════════════════════════════════════════════
-# CST — CRUD
+# CST — CRUD (dados globais, sensíveis)
 # ══════════════════════════════════════════════════════
 @login_required
+@permission_required('tributacao.view_cst', raise_exception=True)
 def cst_list(request):
     q = request.GET.get("q", "").strip()
     tipo_filtro = request.GET.get("tipo", "").strip()
@@ -143,13 +228,20 @@ def cst_list(request):
     if tipo_filtro:
         csts = csts.filter(tipo=tipo_filtro)
     return render(request, "tributacao/cst_list.html", {
-        "csts": csts, "q": q, "tipo_filtro": tipo_filtro,
+        "csts": csts,
+        "q": q,
+        "tipo_filtro": tipo_filtro,
         "tipos": CST.TIPO_CHOICES,
+        "pode_gerenciar": _pode_gerenciar_tabelas(request.user),
     })
 
 
 @login_required
+@permission_required('tributacao.add_cst', raise_exception=True)
 def cst_create(request):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para cadastrar CSTs.")
+
     if request.method == "POST":
         form = CSTForm(request.POST)
         if form.is_valid():
@@ -162,7 +254,11 @@ def cst_create(request):
 
 
 @login_required
+@permission_required('tributacao.change_cst', raise_exception=True)
 def cst_update(request, pk):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para editar CSTs.")
+
     cst = get_object_or_404(CST, pk=pk)
     if request.method == "POST":
         form = CSTForm(request.POST, instance=cst)
@@ -176,7 +272,11 @@ def cst_update(request, pk):
 
 
 @login_required
+@permission_required('tributacao.delete_cst', raise_exception=True)
 def cst_delete(request, pk):
+    if not _pode_gerenciar_tabelas(request.user):
+        raise PermissionDenied("Você não tem permissão para excluir CSTs.")
+
     cst = get_object_or_404(CST, pk=pk)
     if request.method == "POST":
         cst.delete()
@@ -186,26 +286,47 @@ def cst_delete(request, pk):
 
 
 # ══════════════════════════════════════════════════════
-# GRUPO TRIBUTÁRIO — CRUD com inlines
+# GRUPO TRIBUTÁRIO — CRUD com filtro por filial
 # ══════════════════════════════════════════════════════
 @login_required
+@permission_required('tributacao.view_grupotributario', raise_exception=True)
 def grupo_list(request):
     q = request.GET.get("q", "").strip()
     grupos = GrupoTributario.objects.select_related("cfop", "ncm", "filial").all()
+
+    # Filtra por filial
+    grupos = _filtrar_grupos_por_filial(grupos, request.user)
+
     if q:
         grupos = grupos.filter(Q(nome__icontains=q) | Q(descricao__icontains=q))
-    return render(request, "tributacao/grupo_list.html", {"grupos": grupos, "q": q})
+
+    return render(request, "tributacao/grupo_list.html", {
+        "grupos": grupos,
+        "q": q,
+        "pode_ver_todas_filiais": _pode_ver_todas_filiais(request.user),
+    })
 
 
 @login_required
+@permission_required('tributacao.add_grupotributario', raise_exception=True)
 def grupo_create(request):
     if request.method == "POST":
-        form = GrupoTributarioForm(request.POST)
+        form = GrupoTributarioForm(request.POST, user=request.user)
         federal_form = TributacaoFederalForm(request.POST, prefix="federal")
         estadual_formset = TributacaoEstadualFormSet(request.POST, prefix="estadual")
 
         if form.is_valid() and federal_form.is_valid() and estadual_formset.is_valid():
-            grupo = form.save()
+            grupo = form.save(commit=False)
+
+            # Valida filial para não-admins
+            if not _pode_ver_todas_filiais(request.user):
+                filial_ativa = getattr(request.user, 'filial_ativa', None)
+                if filial_ativa and grupo.filial != filial_ativa:
+                    raise PermissionDenied(
+                        "Você só pode criar grupos para a sua filial ativa."
+                    )
+
+            grupo.save()
 
             # Federal
             federal = federal_form.save(commit=False)
@@ -219,7 +340,7 @@ def grupo_create(request):
             messages.success(request, "Grupo Tributário criado com sucesso!")
             return redirect("tributacao:grupo_list")
     else:
-        form = GrupoTributarioForm()
+        form = GrupoTributarioForm(user=request.user)
         federal_form = TributacaoFederalForm(prefix="federal")
         estadual_formset = TributacaoEstadualFormSet(prefix="estadual")
 
@@ -232,14 +353,24 @@ def grupo_create(request):
 
 
 @login_required
+@permission_required('tributacao.change_grupotributario', raise_exception=True)
 def grupo_update(request, pk):
     grupo = get_object_or_404(GrupoTributario, pk=pk)
 
-    # Pega ou cria tributação federal
+    # Checa acesso à filial
+    if not _pode_ver_todas_filiais(request.user):
+        grupos_permitidos = _filtrar_grupos_por_filial(
+            GrupoTributario.objects.all(), request.user
+        )
+        if grupo not in grupos_permitidos:
+            raise PermissionDenied(
+                "Você não tem permissão para editar grupos desta filial."
+            )
+
     federal_instance = getattr(grupo, "tributacao_federal", None)
 
     if request.method == "POST":
-        form = GrupoTributarioForm(request.POST, instance=grupo)
+        form = GrupoTributarioForm(request.POST, instance=grupo, user=request.user)
         federal_form = TributacaoFederalForm(
             request.POST, prefix="federal", instance=federal_instance
         )
@@ -259,7 +390,7 @@ def grupo_update(request, pk):
             messages.success(request, "Grupo Tributário atualizado com sucesso!")
             return redirect("tributacao:grupo_list")
     else:
-        form = GrupoTributarioForm(instance=grupo)
+        form = GrupoTributarioForm(instance=grupo, user=request.user)
         federal_form = TributacaoFederalForm(prefix="federal", instance=federal_instance)
         estadual_formset = TributacaoEstadualFormSet(prefix="estadual", instance=grupo)
 
@@ -272,8 +403,20 @@ def grupo_update(request, pk):
 
 
 @login_required
+@permission_required('tributacao.delete_grupotributario', raise_exception=True)
 def grupo_delete(request, pk):
     grupo = get_object_or_404(GrupoTributario, pk=pk)
+
+    # Checa acesso à filial
+    if not _pode_ver_todas_filiais(request.user):
+        grupos_permitidos = _filtrar_grupos_por_filial(
+            GrupoTributario.objects.all(), request.user
+        )
+        if grupo not in grupos_permitidos:
+            raise PermissionDenied(
+                "Você não tem permissão para excluir grupos desta filial."
+            )
+
     if request.method == "POST":
         grupo.delete()
         messages.success(request, "Grupo Tributário excluído com sucesso!")
@@ -284,11 +427,23 @@ def grupo_delete(request, pk):
 
 
 @login_required
+@permission_required('tributacao.view_grupotributario', raise_exception=True)
 def grupo_detail(request, pk):
     grupo = get_object_or_404(
         GrupoTributario.objects.select_related("cfop", "ncm", "filial"),
         pk=pk,
     )
+
+    # Checa acesso à filial
+    if not _pode_ver_todas_filiais(request.user):
+        grupos_permitidos = _filtrar_grupos_por_filial(
+            GrupoTributario.objects.all(), request.user
+        )
+        if grupo not in grupos_permitidos:
+            raise PermissionDenied(
+                "Você não tem permissão para visualizar grupos desta filial."
+            )
+
     federal = getattr(grupo, "tributacao_federal", None)
     estaduais = grupo.tributacoes_estaduais.filter(ativo=True).order_by("uf_origem", "uf_destino")
 
@@ -299,14 +454,24 @@ def grupo_detail(request, pk):
     })
 
 
+# ══════════════════════════════════════════════════════
+# APIs (usadas por JS em outros módulos)
+# ══════════════════════════════════════════════════════
+@login_required
+@permission_required('tributacao.view_grupotributario', raise_exception=True)
 def grupo_tributario_api(request, pk):
     """Retorna dados do grupo tributário para preview no form de material."""
     grupo = get_object_or_404(GrupoTributario, pk=pk)
 
-    # Tributação Federal (OneToOne via related_name='tributacao_federal')
-    federal = getattr(grupo, 'tributacao_federal', None)
+    # Checa acesso à filial
+    if not _pode_ver_todas_filiais(request.user):
+        grupos_permitidos = _filtrar_grupos_por_filial(
+            GrupoTributario.objects.all(), request.user
+        )
+        if grupo not in grupos_permitidos:
+            return JsonResponse({'error': 'Sem permissão'}, status=403)
 
-    # Tributação Estadual (pega a primeira ativa)
+    federal = getattr(grupo, 'tributacao_federal', None)
     estadual = grupo.tributacoes_estaduais.filter(ativo=True).first()
 
     return JsonResponse({
@@ -341,12 +506,20 @@ def grupo_tributario_api(request, pk):
     })
 
 
-
+@login_required
+@permission_required('tributacao.view_grupotributario', raise_exception=True)
 def api_grupo_detail(request, pk):
     """API para preview do grupo tributário no formulário de material."""
     grupo = get_object_or_404(GrupoTributario, pk=pk)
 
-    # Calcula com valor exemplo de R$ 1000 para mostrar alíquotas
+    # Checa acesso à filial
+    if not _pode_ver_todas_filiais(request.user):
+        grupos_permitidos = _filtrar_grupos_por_filial(
+            GrupoTributario.objects.all(), request.user
+        )
+        if grupo not in grupos_permitidos:
+            return JsonResponse({'error': 'Sem permissão'}, status=403)
+
     calc = grupo.calcular_impostos(valor_produtos=1000, quantidade=1)
 
     return JsonResponse({
@@ -357,7 +530,7 @@ def api_grupo_detail(request, pk):
             "aliquota": str(calc["icms"]["aliquota"]),
             "recuperavel": calc["icms"]["recuperavel"],
             "reducao_base": str(calc["icms"]["reducao_base"]),
-            "uf": calc["icms"]["uf"],
+            "uf": calc["icms"].get("uf", "SP"),
         },
         "ipi": {
             "aliquota": str(calc["ipi"]["aliquota"]),
@@ -376,3 +549,4 @@ def api_grupo_detail(request, pk):
             "mva": str(calc["icms_st"]["mva"]),
         },
     })
+

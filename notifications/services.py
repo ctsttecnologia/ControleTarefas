@@ -14,7 +14,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.db.models import Q         
 from django.template.loader import render_to_string
 from django.urls import reverse
-
+from django.utils import timezone
 from .models import Notificacao
 
 User = get_user_model()
@@ -1246,6 +1246,115 @@ def notificar_tarefa_participante_adicionado(tarefa, novos_participantes, adicio
         )
 
     return resultados
+
+# =============================================================================
+# FUNÇÕES ESPECÍFICAS PARA DOCUMENTOS (vencimento)
+# =============================================================================
+
+def notificar_documento_a_vencer(documento):
+    """
+    Notifica o responsável que um documento está próximo do vencimento.
+    Prioridade aumenta conforme se aproxima do prazo.
+    """
+    if not documento.responsavel or not documento.data_vencimento:
+        return None
+
+    dias_restantes = documento.dias_para_vencer
+    if dias_restantes is None:
+        return None
+
+    # Escala de prioridade
+    if dias_restantes <= 7:
+        prioridade = 'critica'
+        icone = 'bi-exclamation-triangle-fill'
+    elif dias_restantes <= 15:
+        prioridade = 'alta'
+        icone = 'bi-exclamation-circle-fill'
+    else:
+        prioridade = 'media'
+        icone = 'bi-calendar-event'
+
+    url = reverse('documentos:lista')
+    data_venc = documento.data_vencimento.strftime('%d/%m/%Y')
+
+    n = criar_notificacao(
+        usuario=documento.responsavel,
+        titulo=f'📄 Documento vence em {dias_restantes} dias: {documento.nome[:40]}',
+        tipo='sistema',
+        categoria='sistema',
+        prioridade=prioridade,
+        mensagem=(
+            f'Tipo: {documento.get_tipo_display()}\n'
+            f'Vencimento: {data_venc}\n'
+            f'Dias restantes: {dias_restantes}'
+        ),
+        url_destino=url,
+        icone=icone,
+    )
+
+    # E-mail (opcional, só para prioridade alta/crítica para não encher a caixa)
+    if prioridade in ('alta', 'critica') and documento.responsavel.email:
+        enviar_email(
+            assunto=f'[Documentos] {documento.nome} vence em {dias_restantes} dias',
+            template_texto='documentos/emails/documento_a_vencer.txt',
+            template_html='documentos/emails/documento_a_vencer.html',
+            contexto={
+                'documento': documento,
+                'responsavel': documento.responsavel,
+                'dias_restantes': dias_restantes,
+                'data_vencimento': data_venc,
+                'url': url,
+            },
+            destinatarios=[documento.responsavel.email],
+        )
+
+    return n
+
+
+def notificar_documento_vencido(documento):
+    """
+    Notifica o responsável que um documento VENCEU.
+    Prioridade crítica + e-mail sempre.
+    """
+    if not documento.responsavel or not documento.data_vencimento:
+        return None
+
+    url = reverse('documentos:lista')
+    data_venc = documento.data_vencimento.strftime('%d/%m/%Y')
+    dias_atraso = (timezone.now().date() - documento.data_vencimento).days
+
+    n = criar_notificacao(
+        usuario=documento.responsavel,
+        titulo=f'🚨 Documento VENCIDO: {documento.nome[:45]}',
+        tipo='sistema',
+        categoria='sistema',
+        prioridade='critica',
+        mensagem=(
+            f'Tipo: {documento.get_tipo_display()}\n'
+            f'Venceu em: {data_venc}\n'
+            f'Dias de atraso: {dias_atraso}\n\n'
+            f'Providencie a renovação o quanto antes!'
+        ),
+        url_destino=url,
+        icone='bi-x-octagon-fill',
+    )
+
+    if documento.responsavel.email:
+        enviar_email(
+            assunto=f'[URGENTE] Documento VENCIDO: {documento.nome}',
+            template_texto='documentos/emails/documento_vencido.txt',
+            template_html='documentos/emails/documento_vencido.html',
+            contexto={
+                'documento': documento,
+                'responsavel': documento.responsavel,
+                'dias_atraso': dias_atraso,
+                'data_vencimento': data_venc,
+                'url': url,
+            },
+            destinatarios=[documento.responsavel.email],
+        )
+
+    return n
 
 
 # Alias para compatibilidade com imports antigos

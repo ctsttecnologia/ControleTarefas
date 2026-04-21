@@ -1,0 +1,19 @@
+
+🚨 URGENTE!
+
+Olá, {{ responsavel.get_full_name|default:responsavel.username }}!
+
+O documento abaixo VENCEU e precisa de ação imediata:
+
+📄 Nome: {{ documento.nome }}
+📂 Tipo: {{ documento.get_tipo_display }}
+📅 Venceu em: {{ data_vencimento }}
+⏱️ Dias de atraso: {{ dias_atraso }}
+
+Providencie a renovação o quanto antes!
+
+Acesse: {{ url }}
+
+—
+Gerenciando Tarefas — Cetest
+

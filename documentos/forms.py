@@ -68,14 +68,21 @@ class DocumentoEmpresaForm(forms.ModelForm):
         # Filtra responsáveis ativos
         self.fields['responsavel'].queryset = get_user_model().objects.filter(is_active=True)
 
-        # Filtra clientes da filial do usuário
+        # Filtra clientes da filial do usuário (com fallback seguro)
         if user and 'cliente' in self.fields:
             from cliente.models import Cliente
-            self.fields['cliente'].queryset = Cliente.objects.filter(filial=user.filial_ativa)
+            filial_ativa = getattr(user, 'filial_ativa', None)
+            if filial_ativa:
+                self.fields['cliente'].queryset = Cliente.objects.filter(filial=filial_ativa)
+            elif user.is_superuser:
+                self.fields['cliente'].queryset = Cliente.objects.all()
+            else:
+                self.fields['cliente'].queryset = Cliente.objects.none()
 
         # Na edição, arquivo não é obrigatório (já tem um salvo)
         if self.instance and self.instance.pk:
             self.fields['arquivo'].required = False
+
 
     def save(self, commit=True, user=None):
         doc = super().save(commit=False)

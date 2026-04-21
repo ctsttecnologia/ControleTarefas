@@ -69,6 +69,9 @@ class NCM(models.Model):
         verbose_name = "NCM"
         verbose_name_plural = "NCMs"
         ordering = ["codigo"]
+        permissions = [
+            ("pode_gerenciar_tabelas_fiscais", "Pode gerenciar tabelas fiscais (NCM/CFOP/CST)"),
+        ]
 
     def __str__(self):
         return f"{self.codigo} — {self.descricao[:60]}"
@@ -175,6 +178,9 @@ class GrupoTributario(models.Model):
         verbose_name = "Grupo Tributário"
         verbose_name_plural = "Grupos Tributários"
         ordering = ["nome"]
+        permissions = [
+            ("pode_gerenciar_todas_filiais", "Pode gerenciar grupos tributários de todas as filiais"),
+        ]
 
     def __str__(self):
         return self.nome

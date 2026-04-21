@@ -2,6 +2,7 @@
    ARQUIVO DE ESTILOS GLOBAIS
    Sistema: Gerenciando Tarefas | Cetest Minas
    Autor: Emerson Gonçalves
+   Versão: 2.0 — Padronização de Temas
    ================================================================= */
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -20,12 +21,22 @@
     --bs-primary-hover: #009bb3;
 
     /* Background e Texto */
-    --bs-body-bg: #cfe5fc; /* Fallback */
-    --bs-body-bg-gradient: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%); /* Degradê Branco para Cinza-Azul */
+    --bs-body-bg: #cfe5fc;
+    --bs-body-bg-gradient: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
     --bs-body-color: #212529;
     --bs-tertiary-bg: #ffffff;
-    --bs-border-color: #e2e8f0; /* Clareado levemente para visual mais clean */
-    --bs-text-muted: #64748b; /* Tom mais suave e moderno para texto mutado */
+    --bs-border-color: #e2e8f0;
+    --bs-text-muted: #64748b;
+
+    /* 🆕 Superfícies adaptativas (para substituir bg-light, bg-white fixos) */
+    --surface-subtle: #f8f9fa;         /* Fundos suaves (caixas internas) */
+    --surface-elevated: #ffffff;       /* Cards e superfícies elevadas */
+    --surface-muted: #f1f5f9;          /* Cabeçalhos de tabela, footers */
+    --surface-hover: rgba(0, 184, 212, 0.05);
+
+    /* 🆕 Cores de texto auxiliares */
+    --text-strong: #0f172a;            /* Títulos / nomes em destaque */
+    --text-soft: #475569;              /* Texto secundário */
 
     /* Fonte */
     --bs-font-sans-serif: 'Poppins', sans-serif;
@@ -55,13 +66,24 @@
     --bs-primary-hover: #00d4f5;
 
     /* Background e Texto */
-    --bs-body-bg: #1a202c; /* Fallback */
-    --bs-body-bg-gradient: linear-gradient(135deg, #0f172a 0%, #000000 100%); /* Degradê Azul Escuro para Preto */
+    --bs-body-bg: #1a202c;
+    --bs-body-bg-gradient: linear-gradient(135deg, #0f172a 0%, #000000 100%);
     --bs-body-color: #f8fafc;
-    --bs-tertiary-bg: #1e293b; /* Fundo de cards um pouco mais refinado */
+    --bs-tertiary-bg: #1e293b;
     --bs-border-color: #334155;
+    --bs-text-muted: #94a3b8;
 
-    /* Header (mais escuro no dark mode) */
+    /* 🆕 Superfícies adaptativas */
+    --surface-subtle: #0f172a;         /* Fundos suaves internos */
+    --surface-elevated: #1e293b;       /* Cards */
+    --surface-muted: #111827;          /* Cabeçalhos de tabela, footers */
+    --surface-hover: rgba(0, 184, 212, 0.08);
+
+    /* 🆕 Cores de texto auxiliares */
+    --text-strong: #f8fafc;
+    --text-soft: #cbd5e1;
+
+    /* Header */
     --header-bg: #0f172a;
     --header-text: #f8fafc;
 
@@ -82,16 +104,16 @@
 body {
     background-color: var(--bs-body-bg);
     background-image: var(--bs-body-bg-gradient);
-    background-attachment: fixed; /* Mantém o degradê fixo na rolagem */
+    background-attachment: fixed;
     color: var(--bs-body-color);
     font-family: var(--bs-font-sans-serif);
-    -webkit-font-smoothing: antialiased; /* Suavização moderna de fontes */
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    padding-top: 60px; /* Compensa navbar fixed-top */
-    transition: background 0.4s ease, color 0.4s ease; /* Transição mais suave ao mudar de tema */
+    padding-top: 60px;
+    transition: background 0.4s ease, color 0.4s ease;
 }
 
 body.has-submenu {
@@ -113,10 +135,10 @@ body.has-submenu {
 
 #global-header .navbar {
     background-color: #00b8d4 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Sombra mais refinada */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
-    backdrop-filter: blur(10px); /* Leve efeito de desfoque se usar opacidade no futuro */
+    backdrop-filter: blur(10px);
 }
 
 [data-bs-theme="dark"] #global-header .navbar {
@@ -127,7 +149,7 @@ body.has-submenu {
 #global-header .navbar-brand {
     color: #ffffff !important;
     font-weight: 600;
-    letter-spacing: -0.5px; /* Toque moderno em logos */
+    letter-spacing: -0.5px;
 }
 
 #global-header .nav-link {
@@ -139,7 +161,7 @@ body.has-submenu {
 #global-header .nav-link:hover,
 #global-header .nav-link:focus {
     color: #ffffff !important;
-    transform: translateY(-1px); /* Micro-interação de hover */
+    transform: translateY(-1px);
 }
 
 #global-header .dropdown-toggle::after {
@@ -165,7 +187,7 @@ body.has-submenu {
 }
 
 .header-avatar {
-    width: 35px; /* Ligeiramente maior */
+    width: 35px;
     height: 35px;
     display: flex;
     align-items: center;
@@ -182,7 +204,6 @@ body.has-submenu {
     background-color: rgba(255, 255, 255, 0.3);
 }
 
-/* Hamburger icon branco */
 #global-header .navbar-toggler-icon {
     filter: brightness(0) invert(1);
 }
@@ -192,7 +213,7 @@ body.has-submenu {
 ═══════════════════════════════════════════════════════════════════ */
 #global-footer {
     background: transparent !important;
-    border-top: 1px solid rgba(0, 0, 0, 0.08); /* Borda mais suave */
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
     font-size: 0.85rem;
     padding: 1rem 0;
     margin-top: auto;
@@ -221,7 +242,6 @@ body.has-submenu {
     text-decoration-color: var(--bs-primary);
 }
 
-/* Footer — Tema Escuro */
 [data-bs-theme="dark"] #global-footer {
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -237,10 +257,36 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   8. TABELAS
+   7. CARDS ADAPTATIVOS
+═══════════════════════════════════════════════════════════════════ */
+.card {
+    background-color: var(--surface-elevated);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+.card-header {
+    border-bottom-color: var(--bs-border-color);
+}
+
+.card-footer {
+    background-color: var(--surface-muted);
+    border-top-color: var(--bs-border-color);
+    color: var(--bs-text-muted);
+}
+
+/* 🆕 Override: quem usa card-header bg-primary mantém ciano */
+.card-header.bg-primary {
+    background-color: var(--bs-primary) !important;
+    color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   8. TABELAS ADAPTATIVAS
 ═══════════════════════════════════════════════════════════════════ */
 .table {
     --bs-table-bg: transparent;
+    color: var(--bs-body-color);
 }
 
 .table thead th {
@@ -251,23 +297,38 @@ body.has-submenu {
     white-space: nowrap;
     border-bottom: 2px solid var(--bs-border-color);
     color: var(--bs-text-muted);
+    background-color: var(--surface-muted);
 }
 
 .table-hover tbody tr {
     cursor: default;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.03);
-}
-
-[data-bs-theme="dark"] .table-hover tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: var(--surface-hover);
 }
 
 .table-hover tbody tr a {
     text-decoration: none;
+}
+
+/* 🆕 Override: table-light adaptativo (substitui o branco fixo do Bootstrap) */
+.table-light,
+.table .table-light,
+.table thead.table-light {
+    --bs-table-bg: var(--surface-muted) !important;
+    --bs-table-color: var(--bs-body-color) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .table-light,
+[data-bs-theme="dark"] .table thead.table-light {
+    --bs-table-bg: var(--surface-muted) !important;
+    --bs-table-color: var(--bs-body-color) !important;
+    background-color: var(--surface-muted) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-border-color) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -277,7 +338,26 @@ body.has-submenu {
     font-weight: 500;
     letter-spacing: 0.3px;
     padding: 0.4em 0.7em;
-    border-radius: 6px; /* Badges um pouco mais retangulares/modernas */
+    border-radius: 6px;
+}
+
+/* 🆕 Override: badge bg-light text-dark adaptativo */
+.badge.bg-light {
+    background-color: var(--surface-muted) !important;
+    color: var(--bs-body-color) !important;
+    border: 1px solid var(--bs-border-color) !important;
+}
+
+[data-bs-theme="dark"] .badge.bg-light,
+[data-bs-theme="dark"] .badge.bg-light.text-dark {
+    background-color: var(--surface-muted) !important;
+    color: var(--text-soft) !important;
+    border-color: var(--bs-border-color) !important;
+}
+
+/* Manter legibilidade do badge warning com text-dark */
+[data-bs-theme="dark"] .badge.bg-warning.text-dark {
+    color: #1a202c !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -289,27 +369,87 @@ body.has-submenu {
     color: var(--bs-body-color);
 }
 
-.form-control, .form-select {
+.form-control,
+.form-select {
     background-color: var(--bs-tertiary-bg);
     border: 1px solid var(--bs-border-color);
-    border-radius: 8px; /* Cantos arredondados modernos */
+    border-radius: 8px;
     padding: 0.5rem 0.75rem;
+    color: var(--bs-body-color);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-control:focus,
 .form-select:focus {
     border-color: var(--bs-primary);
-    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.15); /* Focus ring moderno */
+    box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), 0.15);
+    background-color: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
 }
 
 [data-bs-theme="dark"] .form-control,
 [data-bs-theme="dark"] .form-select {
     color: var(--bs-body-color);
+    background-color: var(--surface-subtle);
+    border-color: var(--bs-border-color);
+}
+
+/* 🆕 Inputs de data — ícone do calendário adaptativo */
+[data-bs-theme="dark"] input[type="date"],
+[data-bs-theme="dark"] input[type="datetime-local"],
+[data-bs-theme="dark"] input[type="time"] {
+    color-scheme: dark;
+}
+
+/* 🆕 Input file — adaptação do botão "Escolher arquivo" */
+[data-bs-theme="dark"] .form-control[type="file"]::file-selector-button {
+    background-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+    border: 0;
+    border-right: 1px solid var(--bs-border-color);
+    padding: 0.375rem 0.75rem;
+    margin-right: 0.75rem;
+}
+
+[data-bs-theme="dark"] .form-control[type="file"]::file-selector-button:hover {
+    background-color: var(--bs-primary);
+    color: #fff;
+}
+
+/* 🆕 Form-text (dicas) adaptativo */
+.form-text {
+    color: var(--bs-text-muted);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   11. NAVEGAÇÃO SECUNDÁRIA (Submenu)
+   11. NAV TABS ADAPTATIVAS
+═══════════════════════════════════════════════════════════════════ */
+.nav-tabs {
+    border-bottom-color: var(--bs-border-color);
+}
+
+.nav-tabs .nav-link {
+    color: var(--bs-text-muted);
+    border: 1px solid transparent;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover:not(.active) {
+    color: var(--bs-primary);
+    border-color: transparent;
+    background-color: var(--surface-hover);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--bs-primary) !important;
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-border-color) var(--bs-border-color) var(--bs-tertiary-bg);
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   12. NAVEGAÇÃO SECUNDÁRIA (Submenu)
 ═══════════════════════════════════════════════════════════════════ */
 .subnav {
     background-color: var(--bs-tertiary-bg);
@@ -320,20 +460,20 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   12. CONTENT BOXES
+   13. CONTENT BOXES
 ═══════════════════════════════════════════════════════════════════ */
 .content-box {
     padding: 30px;
     background-color: var(--bs-tertiary-bg);
     border-radius: 12px;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); /* Sombra mais difusa e moderna */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .content-box:hover {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px); /* Efeito sutil de levantar (float) */
+    transform: translateY(-2px);
 }
 
 [data-bs-theme="dark"] .content-box {
@@ -346,7 +486,7 @@ body.has-submenu {
 }
 
 .confirmation-box {
-    padding: 40px 30px; /* Mais respiro */
+    padding: 40px 30px;
     background-color: var(--bs-tertiary-bg);
     border-radius: 12px;
     border: 1px solid rgba(0, 0, 0, 0.05);
@@ -362,11 +502,11 @@ body.has-submenu {
 }
 
 .confirmation-box h2 {
-    color: #dc3545; /* Tom padrão mais harmonioso do bootstrap vermelho */
+    color: #dc3545;
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 25px;
-    border-bottom: 1px solid var(--bs-border-color); /* Linha mais fina */
+    border-bottom: 1px solid var(--bs-border-color);
     padding-bottom: 15px;
 }
 
@@ -397,7 +537,7 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   13. THEME SWITCHER
+   14. THEME SWITCHER
 ═══════════════════════════════════════════════════════════════════ */
 [data-bs-theme="light"] .theme-icon-light { display: inline-block !important; }
 [data-bs-theme="light"] .theme-icon-dark  { display: none !important; }
@@ -405,7 +545,7 @@ body.has-submenu {
 [data-bs-theme="dark"]  .theme-icon-dark  { display: inline-block !important; }
 
 /* ═══════════════════════════════════════════════════════════════════
-   14. NOTIFICAÇÕES
+   15. NOTIFICAÇÕES
 ═══════════════════════════════════════════════════════════════════ */
 .notification-indicator {
     position: absolute;
@@ -417,7 +557,7 @@ body.has-submenu {
     border-radius: 50%;
     border: 2px solid white;
     display: none;
-    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2); /* Sutil brilho ao redor */
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
 }
 
 [data-bs-theme="dark"] .notification-indicator {
@@ -425,17 +565,17 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   15. PAGINAÇÃO
+   16. PAGINAÇÃO
 ═══════════════════════════════════════════════════════════════════ */
 .pagination {
-    gap: 4px; /* Espaçamento moderno entre itens */
+    gap: 4px;
 }
 
 .pagination .page-link {
     border-radius: 8px;
     margin: 0;
     padding: 0.4rem 0.85rem;
-    border: 1px solid transparent; /* Remove borda dura default */
+    border: 1px solid transparent;
     color: var(--bs-body-color);
     font-weight: 500;
     background-color: var(--bs-tertiary-bg);
@@ -457,7 +597,7 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   16. GRÁFICOS
+   17. GRÁFICOS
 ═══════════════════════════════════════════════════════════════════ */
 .chart-container {
     position: relative;
@@ -476,7 +616,7 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   17. EMPTY STATE
+   18. EMPTY STATE
 ═══════════════════════════════════════════════════════════════════ */
 .empty-state {
     padding: 4rem 1rem;
@@ -496,11 +636,10 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   18. PÁGINA DE LOGIN (Esconde Header/Footer)
+   19. PÁGINA DE LOGIN
 ═══════════════════════════════════════════════════════════════════ */
 .body-login {
     padding-top: 0 !important;
-    /* Mantém o degradê profissional também no login */
 }
 
 .body-login #global-header,
@@ -516,7 +655,7 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   19. IMPRESSÃO
+   20. IMPRESSÃO
 ═══════════════════════════════════════════════════════════════════ */
 @media print {
     #global-header,
@@ -556,10 +695,8 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   20. ANIMAÇÕES GLOBAIS
+   21. ANIMAÇÕES GLOBAIS
 ═══════════════════════════════════════════════════════════════════ */
-
-/* Fade In (entrada de componentes) */
 .fade-in {
     animation: fadeIn 0.4s ease-out forwards;
 }
@@ -569,7 +706,6 @@ body.has-submenu {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Slide Down (alertas / messages) */
 .alert {
     animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     border: none;
@@ -581,7 +717,6 @@ body.has-submenu {
     to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Pulse Vermelho (notificação urgente) */
 @keyframes pulse-red {
     0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
     70%  { transform: scale(1);    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
@@ -592,13 +727,11 @@ body.has-submenu {
     animation: pulse-red 2s infinite;
 }
 
-/* Blink vermelho (ícone de alerta) */
 @keyframes blink-red-icon {
     0%, 100% { color: inherit; transform: scale(1); }
     50% { color: #dc3545; transform: scale(1.15); }
 }
 
-/* Sortable (Kanban drag & drop ghost) */
 .sortable-ghost {
     opacity: 0.5;
     background-color: rgba(var(--bs-primary-rgb), 0.08);
@@ -607,10 +740,8 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   21. RESPONSIVIDADE GLOBAL
+   22. RESPONSIVIDADE GLOBAL
 ═══════════════════════════════════════════════════════════════════ */
-
-/* Navbar em mobile */
 @media (max-width: 991.98px) {
     #global-header .dropdown-menu {
         border: none;
@@ -628,7 +759,6 @@ body.has-submenu {
         color: #fff;
     }
 
-    /* Desativa hover-open em mobile */
     .dropdown:hover .dropdown-menu {
         display: none;
     }
@@ -637,7 +767,6 @@ body.has-submenu {
         display: block;
     }
 
-    /* Header brand ajuste mobile */
     #global-header .navbar-brand img {
         width: 80px;
     }
@@ -665,7 +794,7 @@ body.has-submenu {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   22. UTILITÁRIOS AUXILIARES
+   23. UTILITÁRIOS AUXILIARES
 ═══════════════════════════════════════════════════════════════════ */
 
 /* Truncar texto com reticências */
@@ -685,7 +814,7 @@ body.has-submenu {
     overflow: hidden;
 }
 
-/* Scrollbar customizada e moderna */
+/* Scrollbar customizada */
 .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -706,15 +835,81 @@ body.has-submenu {
     background-color: rgba(var(--bs-primary-rgb), 0.6);
 }
 
-/* Cursor pointer para elementos clicáveis */
+/* Cursor pointer */
 [role="button"],
 .clickable {
     cursor: pointer;
 }
 
-/* Selecionar texto proibido */
 .no-select {
     -webkit-user-select: none;
     user-select: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   24. 🆕 UTILITÁRIOS ADAPTATIVOS (substituem bg-light, bg-white fixos)
+═══════════════════════════════════════════════════════════════════ */
+
+/* Caixa adaptativa — substitui `bg-light p-3 rounded border` em forms */
+.bg-adaptive {
+    background-color: var(--surface-subtle);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    color: var(--bs-body-color);
+    transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+}
+
+/* Superfície elevada — para destacar blocos (alternativa ao card) */
+.surface-elevated {
+    background-color: var(--surface-elevated);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+}
+
+/* Superfície suave — para cabeçalhos internos, footers */
+.surface-muted {
+    background-color: var(--surface-muted);
+    color: var(--bs-text-muted);
+    border: 1px solid var(--bs-border-color);
+}
+
+/* Texto de destaque (nome, título forte) */
+.text-strong {
+    color: var(--text-strong) !important;
+    font-weight: 600;
+}
+
+/* Texto auxiliar (secundário, não muted) */
+.text-soft {
+    color: var(--text-soft) !important;
+}
+
+/* 🆕 Overrides de Bootstrap que quebram o tema escuro */
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--surface-elevated) !important;
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--surface-subtle) !important;
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-body-color) !important;
+}
+
+/* Alert info adaptativo no escuro */
+[data-bs-theme="dark"] .alert-info {
+    background-color: rgba(0, 184, 212, 0.1);
+    border-color: rgba(0, 184, 212, 0.3);
+    color: #a5f3fc;
+}
+
+[data-bs-theme="dark"] .alert-secondary {
+    background-color: var(--surface-subtle);
+    border-color: var(--bs-border-color);
+    color: var(--text-soft);
 }
 
