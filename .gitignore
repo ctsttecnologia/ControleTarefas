@@ -37,3 +37,9 @@ resultado_bandit
 ctst-storage-key.json
 # Saídas de teste temporárias
 test_output.txt
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
