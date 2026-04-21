@@ -1,17 +1,31 @@
-# .coveragerc
 [run]
 source = usuario
+branch = True
+parallel = False
 omit =
     */migrations/*
     */tests/*
-    */__init__.py
-    */apps.py
+    */test_*.py
+    */conftest.py
     usuario/tests.py
+    usuario/apps.py
+    usuario/urls.py
+    usuario/__init__.py
 
 [report]
 exclude_lines =
     pragma: no cover
+    def __repr__
+    def __str__
     raise NotImplementedError
     if __name__ == .__main__.:
     if TYPE_CHECKING:
+    @abstractmethod
+    if settings.DEBUG
 
+show_missing = True
+skip_covered = False
+precision = 1
+
+[html]
+directory = htmlcov
