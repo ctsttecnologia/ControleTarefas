@@ -1,4 +1,3 @@
-
 # core/managers.py
 
 from django.db import models
@@ -15,15 +14,16 @@ class FilialQuerySet(models.QuerySet):
     def for_request(self, request):
         """
         Filtra pela filial ativa da sessão.
-        - Superusuário sem filial selecionada → vê tudo
+        - Superusuário → SEMPRE vê tudo (acesso irrestrito)
         - Qualquer outro caso → filtra pelo campo/lookup de filial
         """
         user = request.user
-        filial_ativa_id = request.session.get('active_filial_id')
 
-        # Superusuário sem filial específica → vê tudo
-        if user.is_superuser and not filial_ativa_id:
+        # ✅ Superuser tem acesso irrestrito, sempre
+        if user.is_superuser:
             return self
+
+        filial_ativa_id = request.session.get('active_filial_id')
 
         # Determina o ID da filial a usar
         filial_id = filial_ativa_id

@@ -5,10 +5,9 @@ import io
 import json
 from datetime import timedelta, datetime
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -21,11 +20,11 @@ from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import (
-    CreateView, DetailView, ListView, TemplateView, UpdateView, View,
+    CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View,
 )
 
 # Bibliotecas de terceiros
-from docx import Document
+from docx import Document, settings
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.shared import Inches
@@ -124,26 +123,77 @@ class AutomovelVisibilityMixin(FilialAtivaMixin):
 # MIXIN BASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class AutomovelBaseMixin(
-    LoginRequiredMixin, AppPermissionMixin,
-    AutomovelVisibilityMixin, ViewFilialScopedMixin,
-):
-    """Mixin base para todas as views do app Automóvel."""
+class AutomovelBaseMixin(LoginRequiredMixin, AppPermissionMixin,
+    AutomovelVisibilityMixin, ViewFilialScopedMixin,):
+    """
+    Mixin base para views do módulo Automóvel.
+
+    Regras de acesso:
+      1. Superuser → passa direto (acesso total).
+      2. Usuário com Funcionario vinculado → valida permissões específicas.
+      3. Usuário sem Funcionario → bloqueia com mensagem.
+      4. Anônimo → LoginRequiredMixin redireciona pro login.
+    """
+
+    login_url = 'login' 
     app_label_required = 'automovel'
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and not request.user.is_superuser:
-            try:
-                _ = request.user.funcionario
-            except ObjectDoesNotExist:
-                return render(request, 'automovel/acesso_negado.html', {
-                    'titulo': 'Acesso Restrito',
-                    'mensagem': (
-                        'Sua conta não está vinculada a um cadastro de Funcionário. '
-                        'Contate o RH ou Administrador para acessar o módulo de Automóveis.'
-                    )
-                }, status=403)
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
+        # ✅ Superuser: bypass total
+        if request.user.is_superuser:
+            request.funcionario = getattr(request.user, 'funcionario', None)
+            return super().dispatch(request, *args, **kwargs)
+
+        # Usuário comum
+        try:
+            funcionario = request.user.funcionario
+        except ObjectDoesNotExist:
+            messages.error(request, "Seu usuário não possui funcionário vinculado.")
+            return redirect('dashboard')
+
+        if not self.tem_permissao_automovel(funcionario):
+            raise PermissionDenied("Sem permissão para Automóvel.")
+
+        request.funcionario = funcionario
         return super().dispatch(request, *args, **kwargs)
+
+
+    def tem_permissao_automovel(self, funcionario):
+        """
+        Libera acesso ao módulo Automóvel se:
+        - Não há funcionário (superuser) → True
+        - Funcionário está em setor privilegiado → True
+        - Cargo permite explicitamente → True
+        - Usuário tem QUALQUER permissão do app automovel (via grupo) → True
+        """
+        # ✅ Sem funcionário (superuser) → libera
+        if funcionario is None:
+            return True
+
+        # ✅ Setores privilegiados
+        setor = getattr(funcionario, 'setor', None)
+        if setor and setor.nome in ['TI', 'Frota', 'Diretoria']:
+            return True
+
+        # ✅ Cargo com flag explícita
+        cargo = getattr(funcionario, 'cargo', None)
+        if cargo and getattr(cargo, 'permite_automovel', False):
+            return True
+
+        # ✅ Usuário tem alguma permissão do app automovel (via grupo Django)
+        usuario = getattr(funcionario, 'usuario', None)
+        if usuario:
+            perms_automovel = [
+                p for p in usuario.get_all_permissions()
+                if p.startswith('automovel.')
+            ]
+            if perms_automovel:
+                return True
+
+        return False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -317,12 +367,13 @@ class CalendarioAPIView(AutomovelBaseMixin, View):
 # CARRO CRUD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class CarroListView(AutomovelBaseMixin, ListView):
+class CarroListView(AutomovelBaseMixin, PermissionRequiredMixin, ListView):
     """Carro não tem dono → apply_owner_filter = False"""
     model = Carro
     template_name = 'automovel/carro_list.html'
     context_object_name = 'carros'
     paginate_by = 10
+    permission_required = 'automovel.view_carro'
     apply_owner_filter = False
 
     def get_queryset(self):
@@ -338,13 +389,14 @@ class CarroListView(AutomovelBaseMixin, ListView):
         return qs
 
 
-class CarroCreateView(AutomovelBaseMixin, SuccessMessageMixin, CreateView):
+class CarroCreateView(AutomovelBaseMixin, PermissionRequiredMixin, CreateView):
     model = Carro
     form_class = CarroForm
     template_name = 'automovel/carro_form.html'
     success_url = reverse_lazy('automovel:carro_list')
     success_message = "Carro cadastrado com sucesso!"
     apply_owner_filter = False
+    permission_required = 'automovel.add_carro'
 
     def form_valid(self, form):
         filial = self.get_filial_ativa()
@@ -392,6 +444,16 @@ class CarroDetailView(AutomovelBaseMixin, DetailView):
         context['filial_ativa'] = self.get_filial_ativa()
         return context
 
+class CarroDeleteView(AutomovelBaseMixin, PermissionRequiredMixin, DeleteView):
+    permission_required = 'automovel.delete_carro'
+
+    def post(self, request, pk):
+        carro = get_object_or_404(Carro.objects.for_request(request), pk=pk)
+        carro.ativo = False
+        carro.save(update_fields=['ativo'])
+        messages.success(request, "Carro desativado com sucesso!")
+        return redirect('automovel:carro_list') 
+    
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # AGENDAMENTO CRUD
