@@ -1,4 +1,4 @@
-# notifications/tests.py
+﻿# notifications/tests.py
 
 """
 Suite completa de testes do sistema de notificações (sino do header).
@@ -472,7 +472,7 @@ class NotificacaoModelTest(NotificacaoTestBase):
         self.assertEqual(Notificacao._meta.ordering, ['-data_criacao'])
 
     def test_related_name(self):
-        """related_name 'notificacoes' funciona no User."""
+        """related_name 'notifications' funciona no User."""
         qs = self.usuario.notificacoes.all()
         self.assertEqual(qs.count(), 4)  # 3 não lidas + 1 lida
 
@@ -673,10 +673,10 @@ class MarcarTodasComoLidasViewTest(NotificacaoTestBase):
     def test_redireciona_para_referer(self):
         """Após POST (não-AJAX), redireciona para HTTP_REFERER."""
         url = reverse(URL_MARCAR_TODAS)
-        response = self.client.post(url, HTTP_REFERER='/notificacoes/')
+        response = self.client.post(url, HTTP_REFERER='/notifications/')
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, '/notificacoes/')
+        self.assertEqual(response.url, '/notifications/')
 
     def test_sem_referer_redireciona_raiz(self):
         """Sem HTTP_REFERER, redireciona para /."""
