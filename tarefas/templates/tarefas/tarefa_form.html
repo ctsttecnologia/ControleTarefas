@@ -151,6 +151,14 @@
     margin-bottom: 0.35rem;
 }
 
+[data-bs-theme="dark"] .form-field-label {
+    color: #e2e4f0 !important; /* Cor clara explícita para tema escuro */
+}
+
+[data-bs-theme="light"] .form-field-label {
+    color: #1a1a2e !important; /* Cor escura explícita para tema claro */
+}
+
 .form-field-label .required {
     color: #ef4444;
     margin-left: 2px;
@@ -257,46 +265,72 @@
     background-color: #2e2e44 !important;
 }
 
-/* ── Flatpickr Dark ── */
-[data-bs-theme="dark"] .flatpickr-calendar {
-    background: #1e1e2e !important;
-    border-color: #2e2e44 !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+/* ── Select2 Dark Override ── */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+    background-color: var(--form-input-bg) !important;
+    border-color: var(--form-input-border) !important;
+    color: var(--form-text) !important;
 }
 
-[data-bs-theme="dark"] .flatpickr-months .flatpickr-month,
-[data-bs-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months,
-[data-bs-theme="dark"] .flatpickr-weekdays,
-[data-bs-theme="dark"] span.flatpickr-weekday {
-    background: #252536 !important;
+/* 🎯 Texto digitado/placeholder dentro do multi-select */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__rendered,
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search__field {
+    color: var(--form-text) !important;
+}
+
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection__placeholder {
+    color: var(--form-help-text) !important;
+}
+
+/* 🏷️ TAGS selecionadas (chips) — multi-select */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+    background-color: #3a3a52 !important;
+    border-color: #4a4a68 !important;
+    color: #f0f1f5 !important;
+}
+
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__display {
+    color: #f0f1f5 !important;
+}
+
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
     color: #e2e4f0 !important;
+    border-color: #4a4a68 !important;
 }
 
-[data-bs-theme="dark"] .flatpickr-day {
-    color: #e2e4f0 !important;
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+    background-color: #ef4444 !important;
+    color: #fff !important;
 }
 
-[data-bs-theme="dark"] .flatpickr-day:hover {
-    background: #2e2e44 !important;
-    border-color: #2e2e44 !important;
+/* 📋 Dropdown aberto */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+    background-color: var(--form-card-bg) !important;
+    border-color: var(--form-card-border) !important;
 }
 
-[data-bs-theme="dark"] .flatpickr-day.selected {
-    background: #6366f1 !important;
-    border-color: #6366f1 !important;
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+    color: var(--form-text) !important;
 }
 
-[data-bs-theme="dark"] .numInputWrapper:hover,
-[data-bs-theme="dark"] .flatpickr-current-month input.cur-year {
-    color: #e2e4f0 !important;
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted,
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+    background-color: #6366f1 !important;
+    color: #fff !important;
 }
 
-/* ── Mobile ── */
-@media (max-width: 767.98px) {
-    .form-wrapper { padding: 0.75rem; }
-    .form-title { font-size: 1.15rem; }
-    .form-card-body { padding: 1rem; }
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
+    background-color: #2e2e44 !important;
+    color: var(--form-text) !important;
 }
+
+/* 🔍 Campo de busca dentro do dropdown */
+[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
+    background-color: var(--form-input-bg) !important;
+    border-color: var(--form-input-border) !important;
+    color: var(--form-text) !important;
+}
+
 </style>
 {% endblock %}
 
