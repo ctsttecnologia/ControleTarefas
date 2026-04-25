@@ -68,9 +68,6 @@ urlpatterns = [
     path('api/auth/', include('dj_rest_auth.urls')),
     path('notifications/', include('notifications.urls', namespace='notifications')),  # Para manter compatibilidade com URLs antigas
     path("ltcat/", include("ltcat.urls")),
-
-
-   
 ]
 
 

@@ -32,11 +32,9 @@ count_*.py
 check_matriz.*py
 private_media/
 
-resultado_bandit
 
 ctst-storage-key.json
-# Sa�das de teste tempor�rias
-test_output.txt
+storage_backends.py
 
 # Coverage
 .coverage
@@ -45,3 +43,10 @@ htmlcov/
 .pytest_cache/
 requirement_linux.txt
 .coveragerc
+
+# Teste
+run_tests.ps1
+.pytest_cache/
+test_output.txt
+manage_test.py
+test_output.txt
