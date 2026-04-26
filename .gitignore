@@ -51,3 +51,7 @@ run_tests.ps1
 test_output.txt
 manage_test.py
 test_output.txt
+
+# Relatorios de auditoria gerados localmente
+auditoria_*.txt
+
