@@ -4,10 +4,10 @@
 import io
 import json
 from datetime import timedelta, datetime
-
+from core.mixins import AppPermissionMixin, ViewFilialScopedMixin, FuncionarioRequiredMixin
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -15,7 +15,7 @@ from django.http import (
     Http404, HttpResponse, HttpResponseBadRequest, JsonResponse,
 )
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
+from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -32,7 +32,6 @@ from openpyxl import Workbook
 from openpyxl.cell import MergedCell
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
-from core.mixins import AppPermissionMixin, ViewFilialScopedMixin
 from departamento_pessoal.models import Funcionario
 from .models import Filial
 from .forms import AgendamentoForm, CarroForm, ChecklistForm, ManutencaoForm
@@ -123,67 +122,51 @@ class AutomovelVisibilityMixin(FilialAtivaMixin):
 # MIXIN BASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class AutomovelBaseMixin(LoginRequiredMixin, AppPermissionMixin,
-    AutomovelVisibilityMixin, ViewFilialScopedMixin,):
+class AutomovelBaseMixin(FuncionarioRequiredMixin, AppPermissionMixin, AutomovelVisibilityMixin, ViewFilialScopedMixin,):
     """
     Mixin base para views do módulo Automóvel.
 
     Regras de acesso:
-      1. Superuser → passa direto (acesso total).
-      2. Usuário com Funcionario vinculado → valida permissões específicas.
-      3. Usuário sem Funcionario → bloqueia com mensagem.
-      4. Anônimo → LoginRequiredMixin redireciona pro login.
+      1. Anônimo → LoginRequiredMixin redireciona pro login
+      2. Superuser → bypass total
+      3. Usuário sem Funcionario → tela amigável (core:sem_funcionario)
+      4. Usuário com Funcionario → valida permissões específicas
     """
 
-    login_url = 'login' 
+    login_url = 'login'
     app_label_required = 'automovel'
+    modulo_nome = 'Automóvel' 
 
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return super().dispatch(request, *args, **kwargs)
+        # FuncionarioRequiredMixin já trata: anônimo, superuser, sem funcionario
+        # Aqui só validamos a permissão específica do módulo
+        response = super().dispatch(request, *args, **kwargs)
 
-        # ✅ Superuser: bypass total
-        if request.user.is_superuser:
-            request.funcionario = getattr(request.user, 'funcionario', None)
-            return super().dispatch(request, *args, **kwargs)
+        # Se o super já retornou redirect (sem funcionario, login etc.), respeita
+        if response.status_code in (301, 302):
+            return response
 
-        # Usuário comum
-        try:
-            funcionario = request.user.funcionario
-        except ObjectDoesNotExist:
-            messages.error(request, "Seu usuário não possui funcionário vinculado.")
-            return redirect('dashboard')
+        return response
 
-        if not self.tem_permissao_automovel(funcionario):
-            raise PermissionDenied("Sem permissão para Automóvel.")
-
-        request.funcionario = funcionario
-        return super().dispatch(request, *args, **kwargs)
-
+    def has_permission(self):
+        """Hook chamado pelo AppPermissionMixin (se for o caso)."""
+        funcionario = getattr(self.request, 'funcionario', None)
+        if self.request.user.is_superuser:
+            return True
+        return self.tem_permissao_automovel(funcionario)
 
     def tem_permissao_automovel(self, funcionario):
-        """
-        Libera acesso ao módulo Automóvel se:
-        - Não há funcionário (superuser) → True
-        - Funcionário está em setor privilegiado → True
-        - Cargo permite explicitamente → True
-        - Usuário tem QUALQUER permissão do app automovel (via grupo) → True
-        """
-        # ✅ Sem funcionário (superuser) → libera
         if funcionario is None:
-            return True
+            return self.request.user.is_superuser
 
-        # ✅ Setores privilegiados
         setor = getattr(funcionario, 'setor', None)
         if setor and setor.nome in ['TI', 'Frota', 'Diretoria']:
             return True
 
-        # ✅ Cargo com flag explícita
         cargo = getattr(funcionario, 'cargo', None)
         if cargo and getattr(cargo, 'permite_automovel', False):
             return True
 
-        # ✅ Usuário tem alguma permissão do app automovel (via grupo Django)
         usuario = getattr(funcionario, 'usuario', None)
         if usuario:
             perms_automovel = [
@@ -194,7 +177,6 @@ class AutomovelBaseMixin(LoginRequiredMixin, AppPermissionMixin,
                 return True
 
         return False
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MIXINS LOCAIS DO APP (reutilizáveis)
