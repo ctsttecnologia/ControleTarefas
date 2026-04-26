@@ -10,7 +10,7 @@ from io import BytesIO
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
@@ -1148,12 +1148,13 @@ class _RecargaBaseMixin(TelefoneBaseMixin, FilialAtivaMixin):
             return RecargaCredito.objects.none()
         return qs
 
-class RecargaCreditoListView(PermissionRequiredMixin, ListView):
+class RecargaCreditoListView(_RecargaBaseMixin, ListView):
+    permission_required = 'controle_de_telefone.view_recargacredito'
     model = RecargaCredito
     template_name = 'controle_de_telefone/recarga_list.html'
     context_object_name = 'recargas'
-    paginate_by = 25
-    permission_required = 'controle_de_telefone.view_recargacredito'
+    paginate_by = 20
+
 
     def get_queryset(self):
         qs = super().get_queryset().select_related(
