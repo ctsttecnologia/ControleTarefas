@@ -1,10 +1,147 @@
 ﻿{% extends "departamento_pessoal/_base_dp.html" %}
 {% load secure_url %}
 {% load widget_tweaks %}
-
 {% load static %}
 
 {% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ═══════════════════════════════════════════════════════════
+       FORM FUNCIONÁRIO — usa variáveis do tema global
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Divisor de seção */
+    .form-section-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--bs-primary);
+        margin: 1.5rem 0 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--bs-border-color);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .form-section-title:first-child {
+        margin-top: 0;
+    }
+
+    /* ── Upload de foto: avatar + botão estilizado ── */
+    .photo-upload-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: var(--surface-subtle);
+        border: 1px dashed var(--bs-border-color);
+        border-radius: 10px;
+        transition: border-color 0.2s, background-color 0.2s;
+    }
+    .photo-upload-wrapper:hover {
+        border-color: var(--bs-primary);
+        background-color: var(--surface-hover);
+    }
+    .photo-preview {
+        width: 90px;
+        height: 110px;
+        border-radius: 8px;
+        background-color: var(--bs-tertiary-bg);
+        border: 1px solid var(--bs-border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+        color: var(--bs-text-muted);
+    }
+    .photo-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .photo-preview i {
+        font-size: 2.5rem;
+    }
+    .photo-upload-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .photo-upload-info .form-control[type="file"] {
+        max-width: 360px;
+    }
+    .photo-upload-hint {
+        font-size: 0.78rem;
+        color: var(--bs-text-muted);
+        margin-top: 0.4rem;
+    }
+
+    /* ── Inputs de data: ícone do calendário adaptativo ── */
+    input[type="date"].form-control {
+        min-height: calc(1.5em + 1rem + 2px);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.15s;
+        padding: 0.15rem;
+        border-radius: 4px;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+        opacity: 1;
+        background-color: rgba(var(--bs-primary-rgb), 0.15);
+    }
+    [data-bs-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(0.85);
+    }
+
+    /* ── Form labels: tom suave, bem alinhados ── */
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 0.4rem;
+        color: var(--bs-body-color);
+    }
+
+    /* ── Asterisco de obrigatório padronizado ── */
+    .required-mark {
+        color: #dc3545;
+        font-weight: 700;
+        margin-left: 2px;
+    }
+
+    /* ── Rodapé sticky do form ── */
+    .form-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--bs-border-color);
+    }
+
+    /* ── Erro de campo: visual mais limpo ── */
+    .field-error {
+        font-size: 0.8rem;
+        color: #dc3545;
+        margin-top: 0.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    /* ── Estado disabled (data demissão quando ativo) ── */
+    .form-control:disabled,
+    .form-select:disabled {
+        background-color: var(--surface-muted);
+        opacity: 0.7;
+    }
+</style>
+{% endblock %}
 
 {% block dp_content %}
 <div class="module-header">
@@ -17,10 +154,10 @@
 <div class="content-card">
     <div class="content-card-body">
 
-        {# ══════ ERROS GLOBAIS DO FORM ══════ #}
+        {# ══════ ERROS GLOBAIS ══════ #}
         {% if form.non_field_errors %}
         <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle me-2"></i>
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <strong>Corrija os erros abaixo:</strong>
             <ul class="mb-0 mt-1">
                 {% for error in form.non_field_errors %}
@@ -30,194 +167,328 @@
         </div>
         {% endif %}
 
-        {# ══════ ALERTA SE HÁ ERROS EM CAMPOS ══════ #}
-        {% if form.errors %}
-        <div class="alert alert-danger">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Existem {{ form.errors|length }} campo(s) com erro. Verifique abaixo.</strong>
+        {% if form.errors and not form.non_field_errors %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Existem {{ form.errors|length }} campo(s) com erro.</strong> Verifique os destaques em vermelho abaixo.
         </div>
         {% endif %}
 
-        <form method="post" enctype="multipart/form-data" novalidate>
+        <form method="post" enctype="multipart/form-data" novalidate id="form-funcionario">
             {% csrf_token %}
 
+            {# ═══════════════════════════════════════════════════════════
+               SEÇÃO 1: IDENTIFICAÇÃO PESSOAL
+               ═══════════════════════════════════════════════════════════ #}
+            <div class="form-section-title">
+                <i class="bi bi-person-vcard"></i> Identificação Pessoal
+            </div>
+
             <div class="row g-3">
-                {# ── Foto ── #}
+                {# ── Foto 3x4 (com preview) ── #}
                 <div class="col-12">
-                    <label class="form-label">{{ form.foto_3x4.label }}</label>
-                    {{ form.foto_3x4 }}
+                    <label class="form-label" for="{{ form.foto_3x4.id_for_label }}">
+                        {{ form.foto_3x4.label }}
+                    </label>
+                    <div class="photo-upload-wrapper">
+                        <div class="photo-preview" id="photo-preview">
+                            {% if form.instance.foto_3x4 %}
+                                <img src="{{ form.instance.foto_3x4.url }}" alt="Foto atual">
+                            {% else %}
+                                <i class="bi bi-person-bounding-box"></i>
+                            {% endif %}
+                        </div>
+                        <div class="photo-upload-info">
+                            {% render_field form.foto_3x4 class="form-control" accept="image/*" id="foto-input" %}
+                            <div class="photo-upload-hint">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Formatos aceitos: JPG, PNG. Tamanho recomendado: 300x400px.
+                            </div>
+                        </div>
+                    </div>
                     {% if form.foto_3x4.errors %}
-                        <div class="text-danger small mt-1">{{ form.foto_3x4.errors.0 }}</div>
+                        <div class="field-error">
+                            <i class="bi bi-exclamation-circle"></i>{{ form.foto_3x4.errors.0 }}
+                        </div>
                     {% endif %}
                 </div>
 
                 {# ── Nome Completo ── #}
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">
-                        {{ form.nome_completo.label }} <span class="text-danger">*</span>
+                    <label class="form-label" for="{{ form.nome_completo.id_for_label }}">
+                        {{ form.nome_completo.label }}<span class="required-mark">*</span>
                     </label>
-                    {{ form.nome_completo }}
+                    {% render_field form.nome_completo class="form-control" placeholder="Nome completo do colaborador" %}
                     {% if form.nome_completo.errors %}
-                        <div class="text-danger small mt-1">{{ form.nome_completo.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.nome_completo.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Matrícula ── #}
                 <div class="col-md-3">
-                    <label class="form-label fw-semibold">
-                        {{ form.matricula.label }} <span class="text-danger">*</span>
+                    <label class="form-label" for="{{ form.matricula.id_for_label }}">
+                        {{ form.matricula.label }}<span class="required-mark">*</span>
                     </label>
-                    {{ form.matricula }}
+                    {% render_field form.matricula class="form-control" placeholder="Ex: 12345" %}
                     {% if form.matricula.errors %}
-                        <div class="text-danger small mt-1">{{ form.matricula.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.matricula.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Data Nascimento ── #}
                 <div class="col-md-3">
-                    <label class="form-label">{{ form.data_nascimento.label }}</label>
-                    {{ form.data_nascimento }}
+                    <label class="form-label" for="{{ form.data_nascimento.id_for_label }}">
+                        {{ form.data_nascimento.label }}
+                    </label>
+                    {% render_field form.data_nascimento class="form-control" type="date" %}
                     {% if form.data_nascimento.errors %}
-                        <div class="text-danger small mt-1">{{ form.data_nascimento.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.data_nascimento.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Sexo ── #}
                 <div class="col-md-3">
-                    <label class="form-label">{{ form.sexo.label }}</label>
-                    {{ form.sexo }}
+                    <label class="form-label" for="{{ form.sexo.id_for_label }}">
+                        {{ form.sexo.label }}
+                    </label>
+                    {% render_field form.sexo class="form-select" %}
                     {% if form.sexo.errors %}
-                        <div class="text-danger small mt-1">{{ form.sexo.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.sexo.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Email ── #}
                 <div class="col-md-5">
-                    <label class="form-label">{{ form.email_pessoal.label }}</label>
-                    {{ form.email_pessoal }}
+                    <label class="form-label" for="{{ form.email_pessoal.id_for_label }}">
+                        {{ form.email_pessoal.label }}
+                    </label>
+                    {% render_field form.email_pessoal class="form-control" placeholder="email@exemplo.com" %}
                     {% if form.email_pessoal.errors %}
-                        <div class="text-danger small mt-1">{{ form.email_pessoal.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.email_pessoal.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Telefone ── #}
                 <div class="col-md-4">
-                    <label class="form-label">{{ form.telefone.label }}</label>
-                    {{ form.telefone }}
+                    <label class="form-label" for="{{ form.telefone.id_for_label }}">
+                        {{ form.telefone.label }}
+                    </label>
+                    {% render_field form.telefone class="form-control" placeholder="(00) 00000-0000" %}
                     {% if form.telefone.errors %}
-                        <div class="text-danger small mt-1">{{ form.telefone.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.telefone.errors.0 }}</div>
                     {% endif %}
                 </div>
+            </div>
 
-                {# ── Usuário do Sistema ── #}
-                <div class="col-md-6">
-                    <label class="form-label">{{ form.usuario.label }}</label>
-                    {{ form.usuario }}
+            {# ═══════════════════════════════════════════════════════════
+               SEÇÃO 2: VÍNCULO COM O SISTEMA
+               ═══════════════════════════════════════════════════════════ #}
+            <div class="form-section-title">
+                <i class="bi bi-link-45deg"></i> Vínculo com o Sistema
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-12">
+                    <label class="form-label" for="{{ form.usuario.id_for_label }}">
+                        {{ form.usuario.label }}
+                    </label>
+                    {% render_field form.usuario class="form-select" %}
                     {% if form.usuario.help_text %}
-                        <div class="form-text">{{ form.usuario.help_text }}</div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>{{ form.usuario.help_text }}
+                        </div>
                     {% endif %}
                     {% if form.usuario.errors %}
-                        <div class="text-danger small mt-1">{{ form.usuario.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.usuario.errors.0 }}</div>
                     {% endif %}
                 </div>
+            </div>
 
-                <hr class="my-2">
+            {# ═══════════════════════════════════════════════════════════
+               SEÇÃO 3: DADOS PROFISSIONAIS
+               ═══════════════════════════════════════════════════════════ #}
+            <div class="form-section-title">
+                <i class="bi bi-briefcase"></i> Dados Profissionais
+            </div>
 
+            <div class="row g-3">
                 {# ── Departamento ── #}
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">
-                        {{ form.departamento.label }} <span class="text-danger">*</span>
+                    <label class="form-label" for="{{ form.departamento.id_for_label }}">
+                        {{ form.departamento.label }}<span class="required-mark">*</span>
                     </label>
-                    {{ form.departamento }}
+                    {% render_field form.departamento class="form-select" %}
                     {% if form.departamento.errors %}
-                        <div class="text-danger small mt-1">{{ form.departamento.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.departamento.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Cargo ── #}
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">
-                        {{ form.cargo.label }} <span class="text-danger">*</span>
+                    <label class="form-label" for="{{ form.cargo.id_for_label }}">
+                        {{ form.cargo.label }}<span class="required-mark">*</span>
                     </label>
-                    {{ form.cargo }}
+                    {% render_field form.cargo class="form-select" %}
                     {% if form.cargo.errors %}
-                        <div class="text-danger small mt-1">{{ form.cargo.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.cargo.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Função SST ── #}
                 <div class="col-md-4">
-                    <label class="form-label">{{ form.funcao.label }}</label>
-                    {{ form.funcao }}
+                    <label class="form-label" for="{{ form.funcao.id_for_label }}">
+                        {{ form.funcao.label }}
+                    </label>
+                    {% render_field form.funcao class="form-select" %}
                     {% if form.funcao.help_text %}
-                        <div class="form-text">{{ form.funcao.help_text }}</div>
+                        <div class="form-text">
+                            <i class="bi bi-shield-check me-1"></i>{{ form.funcao.help_text }}
+                        </div>
                     {% endif %}
                     {% if form.funcao.errors %}
-                        <div class="text-danger small mt-1">{{ form.funcao.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.funcao.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Cliente/Contrato ── #}
-                <div class="col-md-4">
-                    <label class="form-label">{{ form.cliente.label }}</label>
-                    {{ form.cliente }}
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.cliente.id_for_label }}">
+                        {{ form.cliente.label }}
+                    </label>
+                    {% render_field form.cliente class="form-select" %}
                     {% if form.cliente.errors %}
-                        <div class="text-danger small mt-1">{{ form.cliente.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.cliente.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                {# ── Salário ── #}
+                <div class="col-md-6">
+                    <label class="form-label" for="{{ form.salario.id_for_label }}">
+                        {{ form.salario.label }}
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        {% render_field form.salario class="form-control" placeholder="0,00" %}
+                    </div>
+                    {% if form.salario.errors %}
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.salario.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# ═══════════════════════════════════════════════════════════
+               SEÇÃO 4: ADMISSÃO E STATUS
+               ═══════════════════════════════════════════════════════════ #}
+            <div class="form-section-title">
+                <i class="bi bi-calendar-check"></i> Admissão e Status
+            </div>
+
+            <div class="row g-3">
+                {# ── Status ── #}
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.status.id_for_label }}">
+                        {{ form.status.label }}
+                    </label>
+                    {% render_field form.status class="form-select" id="id_status" %}
+                    {% if form.status.errors %}
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.status.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Data Admissão ── #}
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">
-                        {{ form.data_admissao.label }} <span class="text-danger">*</span>
+                    <label class="form-label" for="{{ form.data_admissao.id_for_label }}">
+                        {{ form.data_admissao.label }}<span class="required-mark">*</span>
                     </label>
-                    {{ form.data_admissao }}
+                    {% render_field form.data_admissao class="form-control" type="date" %}
                     {% if form.data_admissao.errors %}
-                        <div class="text-danger small mt-1">{{ form.data_admissao.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                {# ── Salário ── #}
-                <div class="col-md-4">
-                    <label class="form-label">{{ form.salario.label }}</label>
-                    {{ form.salario }}
-                    {% if form.salario.errors %}
-                        <div class="text-danger small mt-1">{{ form.salario.errors.0 }}</div>
-                    {% endif %}
-                </div>
-
-                {# ── Status ── #}
-                <div class="col-md-4">
-                    <label class="form-label">{{ form.status.label }}</label>
-                    {{ form.status }}
-                    {% if form.status.errors %}
-                        <div class="text-danger small mt-1">{{ form.status.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.data_admissao.errors.0 }}</div>
                     {% endif %}
                 </div>
 
                 {# ── Data Demissão ── #}
                 <div class="col-md-4">
-                    <label class="form-label">{{ form.data_demissao.label }}</label>
-                    {{ form.data_demissao }}
+                    <label class="form-label" for="{{ form.data_demissao.id_for_label }}">
+                        {{ form.data_demissao.label }}
+                    </label>
+                    {% render_field form.data_demissao class="form-control" type="date" id="id_data_demissao" %}
                     {% if form.data_demissao.errors %}
-                        <div class="text-danger small mt-1">{{ form.data_demissao.errors.0 }}</div>
+                        <div class="field-error"><i class="bi bi-exclamation-circle"></i>{{ form.data_demissao.errors.0 }}</div>
                     {% endif %}
                 </div>
             </div>
 
-            <hr>
-
-            <div class="d-flex justify-content-end gap-2">
-                <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-1"></i> Cancelar
-                </a>
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i> Salvar Funcionário
-                </button>
+            {# ═══════════════════════════════════════════════════════════
+               RODAPÉ DO FORM
+               ═══════════════════════════════════════════════════════════ #}
+            <div class="form-footer">
+                <small class="text-muted">
+                    <span class="required-mark">*</span> Campos obrigatórios
+                </small>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'departamento_pessoal:lista_funcionarios' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary px-4">
+                        <i class="bi bi-check-lg me-1"></i>Salvar Funcionário
+                    </button>
+                </div>
             </div>
         </form>
     </div>
 </div>
 {% endblock %}
 
+{% block extra_js %}
+<script>
+(function () {
+    'use strict';
+
+    // ─── Preview da foto ao selecionar arquivo ─────────────────
+    const fotoInput = document.getElementById('foto-input');
+    const preview   = document.getElementById('photo-preview');
+
+    if (fotoInput && preview) {
+        fotoInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor, selecione um arquivo de imagem válido.');
+                this.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                preview.innerHTML = `<img src="${evt.target.result}" alt="Preview">`;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ─── Habilita/desabilita data de demissão conforme status ──
+    const statusSelect = document.getElementById('id_status');
+    const dataDemissao = document.getElementById('id_data_demissao');
+
+    function toggleDataDemissao() {
+        if (!statusSelect || !dataDemissao) return;
+        const status = (statusSelect.value || '').toLowerCase();
+        const isAtivo = status === 'ativo' || status === 'a';
+
+        if (isAtivo) {
+            dataDemissao.disabled = true;
+            dataDemissao.value = '';
+        } else {
+            dataDemissao.disabled = false;
+        }
+    }
+
+    if (statusSelect) {
+        statusSelect.addEventListener('change', toggleDataDemissao);
+        toggleDataDemissao(); // estado inicial
+    }
+})();
+</script>
+{% endblock %}
 

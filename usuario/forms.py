@@ -127,15 +127,27 @@ class CustomUserCreationForm(UserCreationForm):
         self.fields['filiais_permitidas'].queryset = _scoped_filiais_queryset(request_user)
         self.fields['groups'].queryset = _scoped_groups_queryset(request_user)
 
-        # 🔒 Remove campos de privilégio para quem não é superuser
+        if request_user and not self.instance.pk:
+            if request_user.filial_ativa:
+                self.fields['filiais_permitidas'].initial = [request_user.filial_ativa.pk]
+
+        # Remove campos de privilégio para quem não é superuser
         if request_user and not request_user.is_superuser:
             for flag in _PROTECTED_FLAGS:
                 self.fields.pop(flag, None)
 
         _aplicar_bootstrap(self.fields)
 
+    def clean_filiais_permitidas(self):
+        filiais = self.cleaned_data.get('filiais_permitidas')
+        if not filiais:
+            raise ValidationError(
+                "Selecione ao menos uma filial para o usuário."
+            )
+        return filiais
+
     def clean(self):
-        """🔒 Defesa em profundidade: valida flags mesmo se o campo foi removido."""
+        """ Defesa em profundidade: valida flags mesmo se o campo foi removido."""
         cleaned = super().clean()
 
         if self.request_user and not self.request_user.is_superuser:

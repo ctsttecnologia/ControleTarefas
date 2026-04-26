@@ -284,6 +284,15 @@ class UserCreateView(AppPermissionMixin,
     template_name = 'usuario/form_usuario.html'
     success_url = reverse_lazy('usuario:lista_usuarios')
 
+    def dispatch(self, request, *args, **kwargs):
+        if not Filial.objects.exists():
+            messages.warning(
+                request,
+                "Cadastre ao menos uma filial antes de criar usuários."
+            )
+            return redirect('usuario:filial_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['request_user'] = self.request.user
@@ -309,6 +318,17 @@ class UserCreateView(AppPermissionMixin,
         )
         return response
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request_user'] = self.request.user
+        return kwargs
+
+    def form_invalid(self, form):
+        audit_logger.warning(
+            f"Falha ao criar usuário por={self.request.user.username} "
+            f"erros={dict(form.errors)}"
+        )
+        return super().form_invalid(form)
 
 @method_decorator(never_cache, name='dispatch')
 class UserUpdateView(AppPermissionMixin,
