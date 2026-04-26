@@ -2,7 +2,6 @@
 import io
 import os
 import uuid
-
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
@@ -17,7 +16,9 @@ from PIL import Image
 from core.magic_utils import get_mime_type
 from core.validators import SecureFileValidator
 from .forms import ChangeFilialForm
-
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ObjectDoesNotExist
+from django.urls import reverse, NoReverseMatch
 
 # =============================================================================
 # == MIXINS DE PERMISSÃO E ESCOPO (ARQUITETURA DE 3 NÍVEIS)
@@ -686,6 +687,60 @@ class SecureUploadMixin(models.Model):
     @property
     def is_pdf(self):
         return self.mime_type == 'application/pdf'
+
+
+class FuncionarioRequiredMixin(LoginRequiredMixin):
+    """
+    Garante que o usuário autenticado possua um Funcionario vinculado.
+
+    - Superusers passam direto (não precisam de Funcionario)
+    - Usuários comuns sem Funcionario → tela amigável (core:sem_funcionario)
+    - Salva o funcionario em request.funcionario para uso posterior
+
+    Uso:
+        class MinhaView(FuncionarioRequiredMixin, ListView):
+            modulo_nome = 'Automóvel'  # opcional, exibido na tela amigável
+            ...
+    """
+
+    modulo_nome = ''  # Nome do módulo exibido na tela amigável (override por view)
+
+    def dispatch(self, request, *args, **kwargs):
+        # 1. Não autenticado → LoginRequiredMixin cuida
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+
+        # 2. Superuser → bypass
+        if request.user.is_superuser:
+            request.funcionario = getattr(request.user, 'funcionario', None)
+            return super().dispatch(request, *args, **kwargs)
+
+        # 3. Usuário comum → exige Funcionario vinculado
+        try:
+            request.funcionario = request.user.funcionario
+        except ObjectDoesNotExist:
+            return self._redirect_sem_funcionario(request)
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def _redirect_sem_funcionario(self, request):
+        """Redireciona para a tela amigável de 'sem funcionário vinculado'."""
+        messages.warning(
+            request,
+            "Seu usuário ainda não possui funcionário vinculado. "
+            "Entre em contato com o Departamento Pessoal."
+        )
+        try:
+            url = reverse('core:sem_funcionario')
+            modulo = getattr(self, 'modulo_nome', '')
+            if modulo:
+                url += f'?modulo={modulo}'
+            return redirect(url)
+        except NoReverseMatch:
+            try:
+                return redirect('core:home')
+            except NoReverseMatch:
+                return redirect('/')
 
 
 # Alias público

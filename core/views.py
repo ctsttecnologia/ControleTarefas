@@ -13,6 +13,8 @@ from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidd
 from django.apps import apps
 from usuario.models import Filial
 import logging
+from django.contrib.auth.decorators import login_required
+
 
 logger = logging.getLogger('uploads')
 
@@ -251,3 +253,13 @@ class SecureUploadViewMixin(LoginRequiredMixin):
         if form and hasattr(form, 'get_upload_config_display'):
             context['upload_config'] = form.get_upload_config_display()
         return context
+
+
+@login_required
+def sem_funcionario_view(request):
+    """
+    Tela amigável exibida quando o usuário autenticado tenta acessar
+    um módulo que exige vínculo com Funcionario, mas não possui.
+    """
+    modulo = request.GET.get('modulo', '')
+    return render(request, 'errors/sem_funcionario.html', {'modulo': modulo}, status=403)
