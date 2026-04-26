@@ -27,7 +27,7 @@ from io import BytesIO
 
 from cliente.models import Cliente
 from departamento_pessoal.models import Funcionario
-from core.mixins import ViewFilialScopedMixin, AppPermissionMixin
+from core.mixins import FuncionarioRequiredMixin, ViewFilialScopedMixin, AppPermissionMixin
 from core.decorators import app_permission_required
 
 from .forms import AtaReuniaoForm, HistoricoAtaForm, ComentarioForm, UploadAtaReuniaoForm
@@ -161,7 +161,7 @@ class AtaVisibilityMixin(FilialAtivaMixin):
 # MIXINS BASE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class AtaReuniaoBaseMixin(
+class AtaReuniaoBaseMixin(FuncionarioRequiredMixin,
     LoginRequiredMixin, AppPermissionMixin,
     AtaVisibilityMixin, ViewFilialScopedMixin,
 ):
@@ -182,6 +182,7 @@ class AtaReuniaoBaseMixin(
     form_class = AtaReuniaoForm
     success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
     app_label_required = 'ata_reuniao'
+    modulo_nome = 'Ata de Reunião'
 
 
 class AtaQuerysetMixin(AtaVisibilityMixin):

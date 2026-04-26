@@ -1,3 +1,4 @@
+
 # controle_de_telefone/views.py
 
 import os
@@ -26,7 +27,7 @@ from django.views.generic import (
 )
 from xhtml2pdf import pisa
 
-from core.mixins import ViewFilialScopedMixin, AppPermissionMixin
+from core.mixins import FuncionarioRequiredMixin, ViewFilialScopedMixin, AppPermissionMixin
 from core.decorators import app_permission_required
 from departamento_pessoal.models import Documento
 from notifications.models import Notificacao
@@ -104,14 +105,6 @@ class TelefoneVisibilityMixin(FilialAtivaMixin):
     """
     Controla visibilidade de Aparelhos, Linhas e Vínculos por perfil.
 
-    Regras:
-    ┌─────────────────────────────────────────┬────────────────────────────────┐
-    │ Perfil                                  │ Visibilidade                   │
-    ├─────────────────────────────────────────┼────────────────────────────────┤
-    │ Superuser                               │ Tudo                           │
-    │ Perm view_all_<modelo>                  │ Tudo da filial ativa           │
-    │ Funcionario comum                       │ Só vínculos/itens próprios     │
-    └─────────────────────────────────────────┴────────────────────────────────┘
     """
 
     def _can_view_all(self, modelo_nome='vinculo'):
@@ -159,11 +152,12 @@ class TelefoneVisibilityMixin(FilialAtivaMixin):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TelefoneBaseMixin(
-    LoginRequiredMixin, AppPermissionMixin,
+    FuncionarioRequiredMixin, AppPermissionMixin,
     TelefoneVisibilityMixin, ViewFilialScopedMixin,
 ):
     """Mixin base para todas as CBVs do app controle_de_telefone."""
     app_label_required = _APP
+    modulo_nome = 'Controle de Telefone'
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -388,13 +382,13 @@ class LinhaTelefonicaDeleteView(TelefoneBaseMixin, DeleteView):
 # NOTA: Estes são considerados GLOBAIS (sem filial).
 # Se precisarem de escopo de filial no futuro, adicione ViewFilialScopedMixin.
 
-class _CadastroAuxiliarBaseMixin(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin):
+class _CadastroAuxiliarBaseMixin(TelefoneBaseMixin, FilialAtivaMixin):
     """Base para CRUDs globais (Marca, Modelo, Operadora, Plano)."""
     app_label_required = _APP
 
 
 # ── Marca ──
-class MarcaListView(_CadastroAuxiliarBaseMixin, ListView):
+class MarcaListView(_CadastroAuxiliarBaseMixin, TelefoneBaseMixin, ListView):
     permission_required = 'controle_de_telefone.view_marca'
     model = Marca
     template_name = 'controle_de_telefone/marca_list.html'
@@ -402,7 +396,7 @@ class MarcaListView(_CadastroAuxiliarBaseMixin, ListView):
     paginate_by = 15
 
 
-class MarcaCreateView(_CadastroAuxiliarBaseMixin, SuccessMessageMixin, CreateView):
+class MarcaCreateView(_CadastroAuxiliarBaseMixin, SuccessMessageMixin, TelefoneBaseMixin, CreateView):
     permission_required = 'controle_de_telefone.add_marca'
     model = Marca
     form_class = MarcaForm
@@ -625,7 +619,7 @@ class PlanoDeleteView(_CadastroAuxiliarBaseMixin, DeleteView):
 # VÍNCULO CRUD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class _VinculoBaseMixin(LoginRequiredMixin, AppPermissionMixin, TelefoneVisibilityMixin):
+class _VinculoBaseMixin(TelefoneBaseMixin, TelefoneVisibilityMixin):
     """Base para CRUD de Vínculos — filtra por filial do funcionário + visibilidade."""
     app_label_required = _APP
 
@@ -793,7 +787,7 @@ def _gerar_termo_pdf(vinculo):
     return buffer
 
 
-class AssinarTermoView(LoginRequiredMixin, AppPermissionMixin, SuccessMessageMixin, UpdateView):
+class AssinarTermoView(TelefoneBaseMixin, SuccessMessageMixin, UpdateView):
     """View para o próprio funcionário assinar seu termo."""
     app_label_required = _APP
     # Sem permission_required — qualquer funcionário autenticado pode
@@ -897,7 +891,7 @@ class AssinarTermoView(LoginRequiredMixin, AppPermissionMixin, SuccessMessageMix
         return context
 
 
-class DownloadTermoView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, View):
+class DownloadTermoView(TelefoneBaseMixin, FilialAtivaMixin, View):
     app_label_required = _APP
 
     def get(self, request, *args, **kwargs):
@@ -934,7 +928,7 @@ class DownloadTermoView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin
         )
 
 
-class DownloadTermosAssinadosView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, View):
+class DownloadTermosAssinadosView(TelefoneBaseMixin, FilialAtivaMixin, View):
     app_label_required = _APP
     permission_required = 'controle_de_telefone.view_vinculo'
 
@@ -972,7 +966,7 @@ class DownloadTermosAssinadosView(LoginRequiredMixin, AppPermissionMixin, Filial
         return response
 
 
-class RegenerarTermoView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, View):
+class RegenerarTermoView(TelefoneBaseMixin, FilialAtivaMixin, View):
     app_label_required = _APP
 
     def post(self, request, *args, **kwargs):
@@ -1010,7 +1004,7 @@ class RegenerarTermoView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixi
         return redirect('controle_de_telefone:vinculo_detail', pk=vinculo.pk)
 
 
-class NotificarAssinaturaView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, View):
+class NotificarAssinaturaView(TelefoneBaseMixin, FilialAtivaMixin, View):
     app_label_required = _APP
 
     def post(self, request, *args, **kwargs):
@@ -1079,7 +1073,7 @@ class NotificarAssinaturaView(LoginRequiredMixin, AppPermissionMixin, FilialAtiv
 # DASHBOARD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class DashboardView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, TemplateView):
+class DashboardView(TelefoneBaseMixin, FilialAtivaMixin, TemplateView):
     app_label_required = _APP
     template_name = 'controle_de_telefone/dashboard.html'
 
@@ -1142,7 +1136,7 @@ class DashboardView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, Te
 # RECARGA DE CRÉDITO CRUD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class _RecargaBaseMixin(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin):
+class _RecargaBaseMixin(TelefoneBaseMixin, FilialAtivaMixin):
     app_label_required = _APP
 
     def get_queryset_filtered(self):
@@ -1154,7 +1148,7 @@ class _RecargaBaseMixin(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin
             return RecargaCredito.objects.none()
         return qs
 
-class RecargaCreditoListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
+class RecargaCreditoListView(PermissionRequiredMixin, ListView):
     model = RecargaCredito
     template_name = 'controle_de_telefone/recarga_list.html'
     context_object_name = 'recargas'
