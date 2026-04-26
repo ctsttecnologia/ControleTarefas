@@ -20,7 +20,7 @@ from django.views.decorators.http import require_POST
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 )
-from core.mixins import ViewFilialScopedMixin, TarefaAccessMixin, AppPermissionMixin
+from core.mixins import FuncionarioRequiredMixin, ViewFilialScopedMixin, TarefaAccessMixin, AppPermissionMixin
 from .forms import TarefaForm, ComentarioForm
 from .models import HistoricoTarefa, Tarefas
 from .services import (
@@ -54,10 +54,21 @@ def aplicar_filtro_visibilidade(queryset, user):
     ).distinct()
 
 
+
+class TarefasBaseMixin(
+    FuncionarioRequiredMixin,
+    AppPermissionMixin,
+    ViewFilialScopedMixin,
+    TarefaAccessMixin,
+):
+    """Mixin base para todas as views de Tarefas."""
+    app_name = 'tarefas'
+    modulo_nome = 'Tarefas'
+
 # =============================================================================
 # CRUD
 # =============================================================================
-
+    
 class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, ListView):
     app_label_required = _APP
     model = Tarefas
