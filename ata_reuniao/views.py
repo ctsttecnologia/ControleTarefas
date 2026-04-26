@@ -458,7 +458,7 @@ class AtaReuniaoDeleteView(AtaReuniaoBaseMixin, SuccessMessageMixin, DeleteView)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AtaReuniaoDashboardView(
-    LoginRequiredMixin, AppPermissionMixin,
+    AtaReuniaoBaseMixin,
     AtaQuerysetMixin, AtaFilterContextMixin, TemplateView,
 ):
     template_name = 'ata_reuniao/ata_reuniao_dashboard.html'
@@ -554,7 +554,7 @@ class AtaReuniaoDashboardView(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AtaReuniaoKanbanView(
-    LoginRequiredMixin, AppPermissionMixin,
+    AtaReuniaoBaseMixin,
     AtaQuerysetMixin, AtaFilterContextMixin, TemplateView,
 ):
     template_name = 'ata_reuniao/ata_reuniao_kanban.html'
@@ -602,11 +602,10 @@ class AtaReuniaoKanbanView(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @method_decorator(csrf_exempt, name='dispatch')
-class AtaUpdateStatusAPIView(LoginRequiredMixin, AppPermissionMixin, AtaVisibilityMixin, View):
+class AtaUpdateStatusAPIView(AtaReuniaoBaseMixin, View):
     """
     Endpoint unificado para atualizar status de ata via drag & drop (Kanban).
     Aceita POST com JSON: {"new_status": "concluido"}
-    Respeita visibilidade — só atualiza atas que o usuário pode ver.
     """
     app_label_required = 'ata_reuniao'
 
@@ -668,12 +667,13 @@ class AtaUpdateStatusAPIView(LoginRequiredMixin, AppPermissionMixin, AtaVisibili
 # EXPORT VIEWS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class AtaReuniaoPDFExportView(LoginRequiredMixin, AppPermissionMixin, AtaQuerysetMixin, View):
+class AtaReuniaoPDFExportView(AtaReuniaoBaseMixin, AtaQuerysetMixin, View):
     """Exporta PDF respeitando visibilidade."""
     app_label_required = 'ata_reuniao'
+    
 
     def get(self, request, *args, **kwargs):
-        # Queryset já com visibilidade aplicada
+        # Queryset já com visibilidade aplicadata_reuniao'
         atas = self.get_ata_queryset(request, model_class=AtaReuniao)
         filial_ativa = self.get_filial_ativa()
 
@@ -708,7 +708,7 @@ class AtaReuniaoPDFExportView(LoginRequiredMixin, AppPermissionMixin, AtaQueryse
         return response
 
 
-class AtaReuniaoExcelExportView(LoginRequiredMixin, AppPermissionMixin, AtaQuerysetMixin, View):
+class AtaReuniaoExcelExportView(AtaReuniaoBaseMixin, AtaQuerysetMixin, View):
     """Exporta Excel respeitando visibilidade."""
     app_label_required = 'ata_reuniao'
 
@@ -826,7 +826,7 @@ def download_ata_reuniao_template(request):
     return response
 
 
-class UploadAtaReuniaoView(LoginRequiredMixin, AppPermissionMixin, FilialAtivaMixin, View):
+class UploadAtaReuniaoView(AtaReuniaoBaseMixin, View):
     template_name = 'ata_reuniao/ata_reuniao_upload.html'
     form_class = UploadAtaReuniaoForm
     success_url = reverse_lazy('ata_reuniao:ata_reuniao_list')
