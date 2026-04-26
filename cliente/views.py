@@ -1,27 +1,6 @@
 ﻿
 # cliente/views.py
 
-"""
-Views do app Cliente.
-
-Arquitetura de permissões (em camadas):
-┌──────────────────────────────────────────────────────────────────────┐
-│ Camada 1: LoginRequiredMixin                                         │
-│   → Autenticação obrigatória                                         │
-│                                                                      │
-│ Camada 2: AppPermissionMixin                                         │
-│   → Permissão do app 'cliente' (bloqueia acesso sem módulo liberado) │
-│                                                                      │
-│ Camada 3: permission_required (Django)                              │
-│   → Permissão granular (view/add/change/delete_cliente)              │
-│                                                                      │
-│ Camada 4: ViewFilialScopedMixin                                      │
-│   → Filtra por filial ativa via FilialManager (for_request)          │
-│                                                                      │
-│ Camada 5: ClienteVisibilityMixin                                     │
-│   → Filtra por perfil (superuser / perm global / vínculo funcional) │
-└──────────────────────────────────────────────────────────────────────┘
-"""
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill
@@ -41,7 +20,7 @@ from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView,
 )
 
-from core.mixins import AppPermissionMixin, ViewFilialScopedMixin
+from core.mixins import AppPermissionMixin, FuncionarioRequiredMixin, ViewFilialScopedMixin
 from core.decorators import app_permission_required
 from logradouro.models import Logradouro
 from usuario.models import Filial
@@ -105,18 +84,6 @@ class ClienteVisibilityMixin(FilialAtivaMixin):
     """
     Controla a visibilidade dos clientes conforme o perfil do usuário.
 
-    Regras:
-    ┌──────────────────────────────────────┬────────────────────────────────────┐
-    │ Perfil                               │ Visibilidade                       │
-    ├──────────────────────────────────────┼────────────────────────────────────┤
-    │ Superuser                            │ Todos os clientes                  │
-    │ Permissão cliente.view_all_cliente   │ Todos da filial ativa              │
-    │ Funcionario vinculado a Cliente      │ Apenas clientes onde atua          │
-    │ Sem vínculo e sem perm global        │ Nenhum cliente                     │
-    └──────────────────────────────────────┴────────────────────────────────────┘
-
-    OBS: o vínculo usuário↔cliente é feito via Funcionario.cliente
-         (descoberto no model de departamento_pessoal).
     """
 
     def apply_visibility(self, queryset):
@@ -144,14 +111,14 @@ class ClienteVisibilityMixin(FilialAtivaMixin):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class ClienteBaseMixin(
-    LoginRequiredMixin, AppPermissionMixin,
+    FuncionarioRequiredMixin, AppPermissionMixin,
     ClienteVisibilityMixin, ViewFilialScopedMixin,
 ):
     """
     Mixin base para as CBVs de Cliente.
 
     MRO:
-      1. LoginRequiredMixin       → autenticação
+      1. FuncionarioRequiredMixin → autenticação + vínculo com Funcionario
       2. AppPermissionMixin       → permissão do app 'cliente'
       3. ClienteVisibilityMixin   → apply_visibility() + FilialAtivaMixin
       4. ViewFilialScopedMixin    → get_queryset() filtrado por filial
@@ -160,12 +127,12 @@ class ClienteBaseMixin(
     form_class = ClienteForm
     success_url = reverse_lazy('cliente:lista_clientes')
     app_label_required = _APP
+    modulo_nome = 'Cliente'
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ═════════════════════
 # CRUD
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# ════════════════════
 class ClienteListView(ClienteBaseMixin, ListView):
     permission_required = 'cliente.view_cliente'
     template_name = 'cliente/cliente_list.html'
@@ -333,10 +300,7 @@ class ClienteDetailView(ClienteBaseMixin, DetailView):
 # EXPORTAÇÃO
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class ExportarClientesExcelView(
-    LoginRequiredMixin, AppPermissionMixin,
-    ClienteVisibilityMixin, ViewFilialScopedMixin, ListView,
-):
+class ExportarClientesExcelView(ClienteBaseMixin, ListView):
     """Exporta clientes para Excel respeitando filial + visibilidade."""
     model = Cliente
     app_label_required = _APP
