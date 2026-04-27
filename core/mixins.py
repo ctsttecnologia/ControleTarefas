@@ -177,9 +177,18 @@ class AppPermissionMixin(PermissionRequiredMixin):
         return False
 
     def handle_no_permission(self):
+        """
+        Tratamento de acesso negado:
+        - Não autenticado → redireciona pro login (com next=)
+        - Autenticado sem permissão → página 403 customizada
+        """
         # Se NÃO está autenticado → redireciona pro login (comportamento padrão)
         if not self.request.user.is_authenticated:
-            return redirect(f"{settings.LOGIN_URL}?next={self.request.path}")
+            from django.contrib.auth.views import redirect_to_login
+            return redirect_to_login(
+                self.request.get_full_path(),
+                settings.LOGIN_URL,
+            )
 
         # Autenticado mas sem permissão → página 403 customizada
         return render(self.request, 'errors/acesso_negado.html', {
