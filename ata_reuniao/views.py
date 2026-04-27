@@ -162,7 +162,7 @@ class AtaVisibilityMixin(FilialAtivaMixin):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class AtaReuniaoBaseMixin(FuncionarioRequiredMixin,
-    LoginRequiredMixin, AppPermissionMixin,
+    AppPermissionMixin,
     AtaVisibilityMixin, ViewFilialScopedMixin,
 ):
     """
