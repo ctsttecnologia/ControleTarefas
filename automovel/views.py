@@ -22,7 +22,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView, View,
 )
-
 # Bibliotecas de terceiros
 from docx import Document, settings
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -39,6 +38,12 @@ from .models import (
     Carro, Carro_agendamento, Carro_checklist,
     Carro_manutencao, Carro_rastreamento,
 )
+import logging
+from .throttling import tracking_limiter
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+
+logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -837,35 +842,147 @@ class RastreamentoMapView(AutomovelBaseMixin, DetailView):
 @method_decorator(csrf_exempt, name='dispatch')
 class RastreamentoAPIView(_ReverseGeocodeMixin, View):
     """
-    Endpoint PÚBLICO para rastreadores físicos (sem autenticação).
-    
-    ⚠️ PROPOSITALMENTE SEM PROTEÇÃO:
-    - Hardware GPS envia POST direto, sem credenciais
-    - Autenticação é feita via `agendamento_id` (chave válida + filial correta)
-    - NÃO aplicar FuncionarioRequiredMixin aqui!
-    
-    # noqa: SECURITY-AUDIT
+    Endpoint para rastreadores físicos (hardware GPS).
+
+    🔐 AUTENTICAÇÃO:
+        Header obrigatório: `Authorization: Bearer <uuid-tracking-token>`
+        O token é gerado por agendamento (campo Carro_agendamento.tracking_token)
+        e entregue ao device físico no momento da ativação.
+
+    🛡️ PROTEÇÕES APLICADAS:
+        ✓ Token UUID inadivinhável (não é ID incremental)
+        ✓ Rate-limit: 60 req/min por token (sliding window)
+        ✓ Validação de formato Bearer
+        ✓ Validação geográfica (lat/lng/velocidade plausíveis)
+        ✓ Status do agendamento (rejeita finalizado/cancelado)
+        ✓ Logs de auditoria em rejeições
+
+    📨 PAYLOAD (JSON):
+        {
+          "latitude":  -23.5505,
+          "longitude": -46.6333,
+          "velocidade": 45.2
+        }
+
+    📤 RESPOSTAS:
+        200 → {"status": "success", "id": <int>}
+        400 → payload inválido (JSON malformado, coords fora de range)
+        401 → header Authorization ausente ou mal formado
+        403 → token desconhecido ou agendamento não-ativo
+        429 → rate-limit excedido
     """
 
+    # Limites geográficos plausíveis (ajustar se operar fora do Brasil)
+    LAT_MIN, LAT_MAX = -90.0, 90.0
+    LNG_MIN, LNG_MAX = -180.0, 180.0
+    VEL_MIN, VEL_MAX = 0.0, 300.0  # km/h
+
+    STATUS_PERMITIDOS = {"agendado", "em_andamento"}
+
     def post(self, request, *args, **kwargs):
+        # ── 1. Extrair e validar token ──────────────────────────
+        token = self._extract_bearer_token(request)
+        if not token:
+            logger.warning(
+                "RastreamentoAPI: header Authorization ausente/inválido (IP=%s)",
+                self._client_ip(request),
+            )
+            return JsonResponse(
+                {"status": "error", "message": "Authorization Bearer obrigatório"},
+                status=401,
+            )
+
+        # ── 2. Rate-limit por token ─────────────────────────────
+        if not tracking_limiter.is_allowed(token):
+            logger.warning("RastreamentoAPI: rate-limit excedido (token=%s...)", token[:8])
+            return JsonResponse(
+                {"status": "error", "message": "Rate-limit excedido (60 req/min)"},
+                status=429,
+            )
+
+        # ── 3. Resolver agendamento via token ───────────────────
+        try:
+            agendamento = Carro_agendamento.objects.select_related("carro", "filial").get(
+                tracking_token=token
+            )
+        except (Carro_agendamento.DoesNotExist, ValueError, DjangoValidationError):
+            logger.warning(
+                "RastreamentoAPI: token desconhecido/malformado (token=%s..., IP=%s)",
+                token[:8], self._client_ip(request),
+            )
+            return JsonResponse(
+                {"status": "error", "message": "Token inválido"},
+                status=403,
+            )
+
+        # ── 4. Verificar status do agendamento ──────────────────
+        if agendamento.status not in self.STATUS_PERMITIDOS:
+            logger.info(
+                "RastreamentoAPI: agendamento %s rejeitado (status=%s)",
+                agendamento.id, agendamento.status,
+            )
+            return JsonResponse(
+                {"status": "error", "message": f"Agendamento {agendamento.status}"},
+                status=403,
+            )
+
+        # ── 5. Parse + validação do payload ─────────────────────
         try:
             data = json.loads(request.body)
-            agendamento = get_object_or_404(
-                Carro_agendamento, pk=data.get('agendamento_id')
+            lat = float(data["latitude"])
+            lng = float(data["longitude"])
+            vel = float(data.get("velocidade", 0))
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            return JsonResponse(
+                {"status": "error", "message": f"Payload inválido: {exc}"},
+                status=400,
             )
-            rastreamento = Carro_rastreamento.objects.create(
-                agendamento=agendamento,
-                latitude=data.get('latitude'),
-                longitude=data.get('longitude'),
-                velocidade=data.get('velocidade'),
-                endereco_aproximado=self._reverse_geocode(
-                    data.get('latitude'), data.get('longitude')
-                ),
-                filial=agendamento.filial,
+
+        if not (self.LAT_MIN <= lat <= self.LAT_MAX):
+            return JsonResponse(
+                {"status": "error", "message": "latitude fora do range"},
+                status=400,
             )
-            return JsonResponse({'status': 'success', 'id': rastreamento.id})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        if not (self.LNG_MIN <= lng <= self.LNG_MAX):
+            return JsonResponse(
+                {"status": "error", "message": "longitude fora do range"},
+                status=400,
+            )
+        if not (self.VEL_MIN <= vel <= self.VEL_MAX):
+            return JsonResponse(
+                {"status": "error", "message": "velocidade implausível"},
+                status=400,
+            )
+
+        # ── 6. Persistir ────────────────────────────────────────
+        rastreamento = Carro_rastreamento.objects.create(
+            agendamento=agendamento,
+            latitude=lat,
+            longitude=lng,
+            velocidade=vel,
+            endereco_aproximado=self._reverse_geocode(lat, lng),
+            filial=agendamento.filial,
+        )
+        return JsonResponse({"status": "success", "id": rastreamento.id})
+
+    # ── Helpers ─────────────────────────────────────────────────
+
+    @staticmethod
+    def _extract_bearer_token(request) -> str | None:
+        """Extrai o token do header Authorization: Bearer <token>."""
+        auth = request.headers.get("Authorization", "").strip()
+        if not auth.lower().startswith("bearer "):
+            return None
+        token = auth[7:].strip()
+        return token or None
+
+    @staticmethod
+    def _client_ip(request) -> str:
+        """Best-effort para obter IP do cliente (atrás de proxy)."""
+        xff = request.META.get("HTTP_X_FORWARDED_FOR")
+        if xff:
+            return xff.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR", "unknown")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

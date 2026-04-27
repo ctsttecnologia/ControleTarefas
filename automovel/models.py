@@ -1,6 +1,6 @@
 
 # automovel/models.py
-
+import uuid
 from django import forms
 from django.db import models
 from django.conf import settings
@@ -163,10 +163,21 @@ class Carro_agendamento(BaseFilialModel):
     cancelar_agenda = models.BooleanField(default=False)
     motivo_cancelamento = models.TextField(blank=True, null=True)
 
+    # ── 🔐 Token de rastreamento (Bearer auth para hardware GPS) ──
+    tracking_token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+        db_index=True,
+        verbose_name=_("Token de Rastreamento"),
+        help_text=_(
+            "Token secreto entregue ao rastreador físico. "
+            "Enviado em cada POST via header Authorization: Bearer <token>."
+        ),
+    )
+
     def __str__(self):
         return f"Agendamento #{self.id} - {self.carro.placa} para {self.funcionario}"
-
-    # ── Ciclo de vida ────────────────────────────────────────────────────────
 
     def save(self, *args, **kwargs):
         from core.upload import sanitize_image, delete_old_file
@@ -184,6 +195,12 @@ class Carro_agendamento(BaseFilialModel):
 
         safe_delete_file(self, "foto_principal")
         super().delete(*args, **kwargs)
+
+    def rotate_tracking_token(self):
+        """Gera novo token e invalida o anterior. Use se suspeitar de vazamento."""
+        self.tracking_token = uuid.uuid4()
+        self.save(update_fields=["tracking_token"])
+        return self.tracking_token
 
     class Meta:
         db_table = "carro_agendamento"
