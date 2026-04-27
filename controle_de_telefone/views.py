@@ -1319,64 +1319,55 @@ class RecargaCreditoDeleteView(_RecargaBaseMixin, DeleteView):
             return redirect(self.success_url)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# AÇÕES DE RECARGA (FBVs)
-# ═══════════════════════════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════
+# AÇÕES DE RECARGA 
+# ════════════════════════════════════════════════════
 
-@login_required
-@app_permission_required(_APP)
-def recarga_aprovar(request, pk):
+class RecargaAprovarView(_RecargaBaseMixin, View):
     """Aprovar uma recarga pendente."""
-    filial_id = _get_filial_id(request)
+    permission_required = 'controle_de_telefone.aprovar_recarga'
+    http_method_names = ['post']  # 🔒 Bloqueia GET
 
-    qs = RecargaCredito.objects.all()
-    if filial_id:
-        qs = qs.filter(filial_id=filial_id)
-    elif not request.user.is_superuser:
-        return HttpResponseForbidden("Selecione uma filial.")
+    def post(self, request, pk):
+        recarga = get_object_or_404(self.get_queryset_filtered(), pk=pk)
 
-    recarga = get_object_or_404(qs, pk=pk)
+        if recarga.status != RecargaCredito.StatusRecarga.PENDENTE:
+            messages.error(request, 'Esta recarga não pode ser aprovada.')
+            return redirect('controle_de_telefone:recarga_detail', pk=pk)
 
-    if recarga.status != RecargaCredito.StatusRecarga.PENDENTE:
-        messages.error(request, 'Esta recarga não pode ser aprovada.')
+        recarga.aprovar(user=request.user)
+        messages.success(request, '✅ Recarga aprovada com sucesso!')
         return redirect('controle_de_telefone:recarga_detail', pk=pk)
 
-    if not request.user.has_perm('controle_de_telefone.aprovar_recarga'):
-        messages.error(request, 'Você não tem permissão para aprovar recargas.')
-        return redirect('controle_de_telefone:recarga_detail', pk=pk)
 
-    recarga.aprovar(user=request.user)
-    messages.success(request, '✅ Recarga aprovada com sucesso!')
-    return redirect('controle_de_telefone:recarga_detail', pk=pk)
+class RecargaRealizarView(_RecargaBaseMixin, View):
+    """Marcar recarga como realizada (form GET + POST)."""
+    permission_required = 'controle_de_telefone.realizar_recarga'  # ⬅️ nova perm
+    template_name = 'controle_de_telefone/recarga_realizar.html'
 
+    def _get_recarga(self, pk):
+        recarga = get_object_or_404(self.get_queryset_filtered(), pk=pk)
+        valid = [
+            RecargaCredito.StatusRecarga.PENDENTE,
+            RecargaCredito.StatusRecarga.APROVADA,
+        ]
+        if recarga.status not in valid:
+            return None
+        return recarga
 
-@login_required
-@app_permission_required(_APP)
-def recarga_realizar(request, pk):
-    """Marcar recarga como realizada."""
-    filial_id = _get_filial_id(request)
+    def get(self, request, pk):
+        recarga = self._get_recarga(pk)
+        if not recarga:
+            messages.error(request, 'Esta recarga não pode ser marcada como realizada.')
+            return redirect('controle_de_telefone:recarga_detail', pk=pk)
+        form = RecargaCreditoRealizarForm(instance=recarga)
+        return render(request, self.template_name, {'form': form, 'recarga': recarga})
 
-    qs = RecargaCredito.objects.all()
-    if filial_id:
-        qs = qs.filter(filial_id=filial_id)
-    elif not request.user.is_superuser:
-        return HttpResponseForbidden("Selecione uma filial.")
-
-    recarga = get_object_or_404(qs, pk=pk)
-
-    if not request.user.has_perm('controle_de_telefone.change_recargacredito'):
-        messages.error(request, 'Sem permissão.')
-        return redirect('controle_de_telefone:recarga_detail', pk=pk)
-
-    valid_statuses = [
-        RecargaCredito.StatusRecarga.PENDENTE,
-        RecargaCredito.StatusRecarga.APROVADA,
-    ]
-    if recarga.status not in valid_statuses:
-        messages.error(request, 'Esta recarga não pode ser marcada como realizada.')
-        return redirect('controle_de_telefone:recarga_detail', pk=pk)
-
-    if request.method == 'POST':
+    def post(self, request, pk):
+        recarga = self._get_recarga(pk)
+        if not recarga:
+            messages.error(request, 'Esta recarga não pode ser marcada como realizada.')
+            return redirect('controle_de_telefone:recarga_detail', pk=pk)
         form = RecargaCreditoRealizarForm(request.POST, request.FILES, instance=recarga)
         if form.is_valid():
             recarga = form.save(commit=False)
@@ -1384,43 +1375,34 @@ def recarga_realizar(request, pk):
             recarga.save()
             messages.success(request, '✅ Recarga marcada como realizada!')
             return redirect('controle_de_telefone:recarga_detail', pk=pk)
-    else:
-        form = RecargaCreditoRealizarForm(instance=recarga)
-
-    return render(request, 'controle_de_telefone/recarga_realizar.html', {
-        'form': form,
-        'recarga': recarga,
-    })
+        return render(request, self.template_name, {'form': form, 'recarga': recarga})
 
 
-@login_required
-@app_permission_required(_APP)
-def recarga_cancelar(request, pk):
-    """Cancelar uma recarga."""
-    filial_id = _get_filial_id(request)
+class RecargaCancelarView(_RecargaBaseMixin, View):
+    """Cancelar uma recarga (form GET + POST)."""
+    permission_required = 'controle_de_telefone.cancelar_recarga'
+    template_name = 'controle_de_telefone/recarga_cancelar.html'
 
-    qs = RecargaCredito.objects.all()
-    if filial_id:
-        qs = qs.filter(filial_id=filial_id)
-    elif not request.user.is_superuser:
-        return HttpResponseForbidden("Selecione uma filial.")
+    def _get_recarga(self, pk):
+        recarga = get_object_or_404(self.get_queryset_filtered(), pk=pk)
+        if recarga.status == RecargaCredito.StatusRecarga.REALIZADA:
+            return None
+        return recarga
 
-    recarga = get_object_or_404(qs, pk=pk)
+    def get(self, request, pk):
+        recarga = self._get_recarga(pk)
+        if not recarga:
+            messages.error(request, 'Recargas realizadas não podem ser canceladas.')
+            return redirect('controle_de_telefone:recarga_detail', pk=pk)
+        return render(request, self.template_name, {'recarga': recarga})
 
-    if recarga.status == RecargaCredito.StatusRecarga.REALIZADA:
-        messages.error(request, 'Recargas realizadas não podem ser canceladas.')
-        return redirect('controle_de_telefone:recarga_detail', pk=pk)
-
-    if not request.user.has_perm('controle_de_telefone.cancelar_recarga'):
-        messages.error(request, 'Você não tem permissão para cancelar recargas.')
-        return redirect('controle_de_telefone:recarga_detail', pk=pk)
-
-    if request.method == 'POST':
+    def post(self, request, pk):
+        recarga = self._get_recarga(pk)
+        if not recarga:
+            messages.error(request, 'Recargas realizadas não podem ser canceladas.')
+            return redirect('controle_de_telefone:recarga_detail', pk=pk)
         motivo = request.POST.get('motivo_cancelamento', '')
         recarga.cancelar(motivo_cancelamento=motivo, user=request.user)
         messages.success(request, '✅ Recarga cancelada com sucesso!')
         return redirect('controle_de_telefone:recarga_list')
 
-    return render(request, 'controle_de_telefone/recarga_cancelar.html', {
-        'recarga': recarga,
-    })

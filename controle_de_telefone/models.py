@@ -497,7 +497,8 @@ class RecargaCredito(models.Model):
         permissions = [
             ('aprovar_recarga', 'Pode aprovar recarga de crédito'),
             ('cancelar_recarga', 'Pode cancelar recarga de crédito'),
-            ('view_all_recargacredito', 'Pode ver todas as recargas da filial'),
+            ('view_all_recargacredito', 'Pode ver todas as recargas da filial'), 
+            ('realizar_recarga', 'Pode marcar recargas como realizadas'),  
         ]
 
     def __str__(self):

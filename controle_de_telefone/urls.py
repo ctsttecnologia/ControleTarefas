@@ -6,7 +6,7 @@ from . import views
 # Importe as novas classes de view
 from .views import (
     AparelhoListView, AparelhoDetailView, AparelhoCreateView, AparelhoUpdateView, AparelhoDeleteView, AssinarTermoView, DownloadTermosAssinadosView,
-    LinhaTelefonicaListView, LinhaTelefonicaDetailView, LinhaTelefonicaCreateView, LinhaTelefonicaUpdateView, LinhaTelefonicaDeleteView,
+    LinhaTelefonicaListView, LinhaTelefonicaDetailView, LinhaTelefonicaCreateView, LinhaTelefonicaUpdateView, LinhaTelefonicaDeleteView, RecargaAprovarView, RecargaCancelarView, RecargaRealizarView,
     VinculoListView, VinculoDetailView, VinculoCreateView, VinculoUpdateView, VinculoDeleteView,
     MarcaListView, MarcaCreateView, MarcaUpdateView, MarcaDeleteView,
     ModeloListView, ModeloCreateView, ModeloUpdateView, ModeloDeleteView,
@@ -15,7 +15,7 @@ from .views import (
     DashboardView, DownloadTermoView, RegenerarTermoView, NotificarAssinaturaView,
     RecargaCreditoListView, RecargaCreditoCreateView, RecargaCreditoUpdateView,
     RecargaCreditoDetailView, RecargaCreditoDeleteView,
-    recarga_aprovar, recarga_realizar, recarga_cancelar,
+
 )
 
 app_name = 'controle_de_telefone'
@@ -87,9 +87,9 @@ urlpatterns = [
     path('recargas/<int:pk>/', RecargaCreditoDetailView.as_view(), name='recarga_detail'),
     path('recargas/<int:pk>/editar/', RecargaCreditoUpdateView.as_view(), name='recarga_update'),
     path('recargas/<int:pk>/excluir/', RecargaCreditoDeleteView.as_view(), name='recarga_delete'),
-    path('recargas/<int:pk>/aprovar/', recarga_aprovar, name='recarga_aprovar'),
-    path('recargas/<int:pk>/realizar/', recarga_realizar, name='recarga_realizar'),
-    path('recargas/<int:pk>/cancelar/', recarga_cancelar, name='recarga_cancelar'),
+    path('recargas/<int:pk>/aprovar/', RecargaAprovarView.as_view(), name='recarga_aprovar'),
+    path('recargas/<int:pk>/realizar/', RecargaRealizarView.as_view(), name='recarga_realizar'),
+    path('recargas/<int:pk>/cancelar/', RecargaCancelarView.as_view(), name='recarga_cancelar'),
 
 ]
 
