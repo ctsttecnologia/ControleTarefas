@@ -836,7 +836,16 @@ class RastreamentoMapView(AutomovelBaseMixin, DetailView):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class RastreamentoAPIView(_ReverseGeocodeMixin, View):
-    """Endpoint público para rastreadores físicos (sem autenticação)."""
+    """
+    Endpoint PÚBLICO para rastreadores físicos (sem autenticação).
+    
+    ⚠️ PROPOSITALMENTE SEM PROTEÇÃO:
+    - Hardware GPS envia POST direto, sem credenciais
+    - Autenticação é feita via `agendamento_id` (chave válida + filial correta)
+    - NÃO aplicar FuncionarioRequiredMixin aqui!
+    
+    # noqa: SECURITY-AUDIT
+    """
 
     def post(self, request, *args, **kwargs):
         try:

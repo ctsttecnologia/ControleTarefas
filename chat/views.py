@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from core.mixins import AppPermissionMixin, FuncionarioRequiredMixin
 from django.core.files.storage import default_storage
 from django.db.models import Count, Q
 from django.http import JsonResponse
@@ -18,7 +19,6 @@ from django.views.decorators.http import require_GET, require_POST
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from core.decorators import app_permission_required
-from core.mixins import AppPermissionMixin
 from .models import ChatRoom, Message
 
 logger = logging.getLogger(__name__)
@@ -393,9 +393,10 @@ def get_or_create_task_chat(request, task_id):
 # UPLOAD — Imagens (CBV) — já tinha AppPermissionMixin ✅
 # =============================================================================
 
-class ChatImageUploadView(LoginRequiredMixin, AppPermissionMixin, View):
+class ChatImageUploadView(FuncionarioRequiredMixin, AppPermissionMixin, View):
     """Upload de imagens para o chat."""
     app_label_required = _APP
+    modulo_nome = 'Chat'
 
     def post(self, request):
         try:
