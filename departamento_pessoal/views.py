@@ -31,7 +31,7 @@ from django.views.generic import (
 )
 
 from core.mixins import (
-    AppPermissionMixin, ViewFilialScopedMixin, FilialCreateMixin,
+    AppPermissionMixin, FuncionarioRequiredMixin, ViewFilialScopedMixin, FilialCreateMixin,
 )
 from core.decorators import app_permission_required
 from seguranca_trabalho.models import Funcao
@@ -195,20 +195,20 @@ class DPVisibilityMixin(FilialAtivaMixin):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class DPBaseMixin(
-    LoginRequiredMixin, AppPermissionMixin,
+    FuncionarioRequiredMixin, AppPermissionMixin,
     DPVisibilityMixin, ViewFilialScopedMixin,
 ):
     """
     Mixin base para views do Departamento Pessoal.
 
-    Ordem de herança (MRO):
-    1. LoginRequiredMixin     → autenticação
-    2. AppPermissionMixin     → permissão do app (via app_label_required)
-    3. DPVisibilityMixin      → apply_visibility() + FilialAtivaMixin
-    4. ViewFilialScopedMixin  → filtra queryset por filial automaticamente
+    MRO:
+    1. FuncionarioRequiredMixin → autenticação + vínculo com Funcionario
+    2. AppPermissionMixin       → permissão do app (via app_label_required)
+    3. DPVisibilityMixin        → apply_visibility() + FilialAtivaMixin
+    4. ViewFilialScopedMixin    → filtra queryset por filial
     """
     app_label_required = _APP
-
+    modulo_nome = 'Departamento Pessoal'
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # UPLOAD / IMPORTAÇÃO DE FUNCIONÁRIOS (legado)
@@ -635,10 +635,9 @@ class FuncionarioListView(DPBaseMixin, ListView):
 
 
 class FuncionarioCreateView(
-    LoginRequiredMixin, AppPermissionMixin,
+    DPBaseMixin,
     FilialCreateMixin, CreateView,
 ):
-    app_label_required = _APP
     permission_required = 'departamento_pessoal.add_funcionario'
     model = Funcionario
     form_class = FuncionarioForm
@@ -791,10 +790,9 @@ class DepartamentoListView(DPBaseMixin, ListView):
 
 
 class DepartamentoCreateView(
-    LoginRequiredMixin, AppPermissionMixin,
+    DPBaseMixin,
     FilialCreateMixin, SuccessMessageMixin, CreateView,
 ):
-    app_label_required = _APP
     permission_required = 'departamento_pessoal.add_departamento'
     model = Departamento
     form_class = DepartamentoForm
@@ -840,10 +838,9 @@ class CargoListView(DPBaseMixin, ListView):
 
 
 class CargoCreateView(
-    LoginRequiredMixin, AppPermissionMixin,
+    DPBaseMixin,
     FilialCreateMixin, SuccessMessageMixin, CreateView,
 ):
-    app_label_required = _APP
     permission_required = 'departamento_pessoal.add_cargo'
     model = Cargo
     form_class = CargoForm
@@ -884,7 +881,7 @@ class _DocumentoFilialScopedMixin(FilialAtivaMixin):
 
 
 class DocumentoListView(
-    LoginRequiredMixin, AppPermissionMixin,
+    DPBaseMixin,
     _DocumentoFilialScopedMixin, ListView,
 ):
     app_label_required = _APP
@@ -927,10 +924,9 @@ class DocumentoListView(
 
 
 class DocumentoCreateView(
-    LoginRequiredMixin, AppPermissionMixin,
-    FilialCreateMixin, FilialAtivaMixin, CreateView,
+    DPBaseMixin,
+    FilialCreateMixin, CreateView,
 ):
-    app_label_required = _APP
     permission_required = 'departamento_pessoal.add_documento'
     model = Documento
     form_class = DocumentoForm
@@ -976,10 +972,8 @@ class DocumentoCreateView(
 
 
 class DocumentoUpdateView(
-    LoginRequiredMixin, AppPermissionMixin,
-    _DocumentoFilialScopedMixin, UpdateView,
+     DPBaseMixin, _DocumentoFilialScopedMixin, UpdateView,
 ):
-    app_label_required = _APP
     permission_required = 'departamento_pessoal.change_documento'
     model = Documento
     form_class = DocumentoForm
@@ -1004,10 +998,9 @@ class DocumentoUpdateView(
 
 
 class DocumentoDeleteView(
-    LoginRequiredMixin, AppPermissionMixin,
+    DPBaseMixin,
     _DocumentoFilialScopedMixin, DeleteView,
 ):
-    app_label_required = _APP
     permission_required = 'departamento_pessoal.delete_documento'
     model = Documento
     template_name = 'departamento_pessoal/documento_confirm_delete.html'
@@ -1025,10 +1018,7 @@ class DocumentoDeleteView(
 # PAINEL DP — Dashboard
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class PainelDPView(
-    LoginRequiredMixin, AppPermissionMixin,
-    FilialAtivaMixin, TemplateView,
-):
+class PainelDPView(DPBaseMixin, FilialAtivaMixin, TemplateView, ):
     app_label_required = _APP
     permission_required = 'departamento_pessoal.view_funcionario'
     template_name = 'departamento_pessoal/painel_dp.html'
@@ -1168,10 +1158,7 @@ class PainelDPView(
 # EXPORTAÇÕES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class _BaseExportView(
-    LoginRequiredMixin, AppPermissionMixin,
-    FilialAtivaMixin, View,
-):
+class _BaseExportView(DPBaseMixin, View):
     app_label_required = _APP
     permission_required = 'departamento_pessoal.view_funcionario'
 
