@@ -68,9 +68,9 @@ class TarefasBaseMixin(
 # =============================================================================
 # CRUD
 # =============================================================================
-    
-class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, ListView):
-    app_label_required = _APP
+
+class TarefaListView(TarefasBaseMixin, ListView):
+
     model = Tarefas
     template_name = 'tarefas/listar_tarefas.html'
     context_object_name = 'object_list'
@@ -137,8 +137,8 @@ class TarefaListView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixi
         return context
 
 
-class TarefaDetailView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, DetailView):
-    app_label_required = _APP
+class TarefaDetailView(TarefasBaseMixin, DetailView):
+   
     model = Tarefas
     template_name = 'tarefas/tarefa_detail.html'
     context_object_name = 'object'
@@ -194,8 +194,7 @@ class TarefaDetailView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMi
         return self.render_to_response(ctx)
 
 
-class TarefaCreateView(AppPermissionMixin, ViewFilialScopedMixin, CreateView):
-    app_label_required = _APP
+class TarefaCreateView(TarefasBaseMixin, CreateView):
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/tarefa_form.html'
@@ -220,8 +219,8 @@ class TarefaCreateView(AppPermissionMixin, ViewFilialScopedMixin, CreateView):
         return response
 
 
-class TarefaUpdateView(AppPermissionMixin, TarefaAccessMixin, UpdateView):
-    app_label_required = _APP
+class TarefaUpdateView(TarefasBaseMixin, UpdateView):
+
     model = Tarefas
     form_class = TarefaForm
     template_name = 'tarefas/tarefa_form.html'
@@ -248,8 +247,8 @@ class TarefaUpdateView(AppPermissionMixin, TarefaAccessMixin, UpdateView):
         return super().form_valid(form)
 
 
-class TarefaDeleteView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, DeleteView):
-    app_label_required = _APP
+class TarefaDeleteView(TarefasBaseMixin, DeleteView):
+   
     model = Tarefas
     template_name = 'tarefas/confirmar_exclusao.html'
     success_url = reverse_lazy('tarefas:listar_tarefas')
@@ -264,7 +263,7 @@ class TarefaDeleteView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMi
         return super().form_valid(form)
 
 
-class ConcluirTarefaView(LoginRequiredMixin, View):
+class ConcluirTarefaView(TarefasBaseMixin, View):
     """Marca uma tarefa como concluída via POST."""
 
     def post(self, request, pk):
@@ -297,8 +296,8 @@ class ConcluirTarefaView(LoginRequiredMixin, View):
 # KANBAN
 # =============================================================================
 
-class KanbanView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, TemplateView):
-    app_label_required = _APP
+class KanbanView(TarefasBaseMixin, TemplateView):
+
     """View do Kanban Board."""
     template_name = 'tarefas/kanban_board.html'
 
@@ -436,8 +435,8 @@ def update_task_status(request):
 # CALENDÁRIO
 # =============================================================================
 
-class CalendarioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, ListView):
-    app_label_required = _APP
+class CalendarioTarefasView(TarefasBaseMixin, ListView):
+   
     model = Tarefas
     template_name = 'tarefas/calendario.html'
 
@@ -496,7 +495,7 @@ class CalendarioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAcc
 # API — UpdateTaskStatusView (class-based, legado)
 # =============================================================================
 
-class UpdateTaskStatusView(LoginRequiredMixin, View):
+class UpdateTaskStatusView(TarefasBaseMixin, View):
     """API AJAX para atualizar status de tarefa (Kanban drag & drop) — versão legada."""
 
     def post(self, request, *args, **kwargs):
@@ -545,8 +544,8 @@ class UpdateTaskStatusView(LoginRequiredMixin, View):
 # RELATÓRIOS
 # =============================================================================
 
-class RelatorioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = _APP
+class RelatorioTarefasView(TarefasBaseMixin, ListView):
+    
     """Página principal de relatórios com tabela, gráficos e exportação."""
     model = Tarefas
     template_name = 'tarefas/relatorio_tarefas.html'
@@ -628,7 +627,7 @@ class RelatorioTarefasView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
         return redirect('tarefas:relatorio_tarefas')
 
 
-class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView):
+class GerarRelatorioView(TarefasBaseMixin, TemplateView):
     """Formulário para gerar relatório com filtros e escolher formato."""
     template_name = 'tarefas/gerar_relatorio.html'
 
@@ -686,7 +685,7 @@ class GerarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, TemplateView
         return redirect('tarefas:gerar_relatorio')
 
 
-class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
+class RelatorioDisplayView(TarefasBaseMixin, ListView):
     """Exibe relatório filtrado na tela (HTML)."""
     model = Tarefas
     template_name = 'tarefas/relatorio_display.html'
@@ -741,7 +740,7 @@ class RelatorioDisplayView(LoginRequiredMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):
+class ExportarRelatorioView(TarefasBaseMixin, View):
     """API de exportação direta via GET (para botões de download)."""
 
     def get(self, request, *args, **kwargs):
@@ -783,8 +782,8 @@ class ExportarRelatorioView(LoginRequiredMixin, ViewFilialScopedMixin, View):
 # DASHBOARD ANALÍTICO
 # =============================================================================
 
-class DashboardAnaliticoView(AppPermissionMixin, ViewFilialScopedMixin, TarefaAccessMixin, TemplateView):
-    app_label_required = _APP
+class DashboardAnaliticoView(TarefasBaseMixin, TemplateView):
+    
     template_name = 'tarefas/dashboard.html'
 
     def get_context_data(self, **kwargs):
