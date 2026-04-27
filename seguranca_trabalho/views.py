@@ -1037,14 +1037,16 @@ class RelatorioSSTPDFView(AppPermissionMixin, View):
         context = {
             'data_emissao': timezone.now(),
             'entregas': entregas,
+            'usuario': request.user,
         }
-        html_string = render_to_string('seguranca_trabalho/relatorio_geral_pdf.html', context)
+        html_string = render_to_string(
+            'seguranca_trabalho/relatorio_geral_pdf.html', context
+        )
         html = HTML(string=html_string, base_url=request.build_absolute_uri())
         pdf = html.write_pdf()
         response = HttpResponse(pdf, content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="relatorio_sst.pdf"'
         return response
-
 
 class ExportarFuncionariosPDFView(AppPermissionMixin, View):
     app_label_required = _APP
