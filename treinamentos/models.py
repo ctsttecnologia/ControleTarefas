@@ -164,10 +164,13 @@ class Participante(models.Model):
     nota_avaliacao       = models.DecimalField(max_digits=4, decimal_places=2, null=True, blank=True, verbose_name='Nota da Avaliação')
     certificado_emitido  = models.BooleanField(default=False, verbose_name='Certificado Emitido')
     data_registro        = models.DateTimeField(auto_now_add=True, verbose_name='Data de Registro', null=True)
-    protocolo_validacao  = models.UUIDField(
+    protocolo_validacao = models.UUIDField(
         "Protocolo de Validação",
-        default=uuid.uuid4, editable=False,
-        unique=False, null=True, db_index=True,
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,        # 🔧 mudou: garante unicidade
+        null=False,         # 🔧 mudou: sempre tem valor
+        db_index=True,      # (redundante com unique=True, mas tudo bem)
     )
 
     class Meta:
