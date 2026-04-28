@@ -91,12 +91,16 @@ class TarefaListView(TarefasBaseMixin, ListView):
         status     = self.request.GET.get('status', '')
         prioridade = self.request.GET.get('prioridade', '')
         query      = self.request.GET.get('q', '')
+        responsavel = self.request.GET.get('responsavel')
 
         if status:
             qs = qs.filter(status=status)
 
         if prioridade:
             qs = qs.filter(prioridade=prioridade)
+
+        if responsavel:
+            qs = qs.filter(responsavel_id=responsavel)
 
         if query:
             qs = qs.filter(
@@ -132,6 +136,9 @@ class TarefaListView(TarefasBaseMixin, ListView):
             status__in=['concluida', 'cancelada']
         ).count()
         context['status_options']     = Tarefas.STATUS_CHOICES
+        context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
+        context['responsaveis']        = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+        context['responsavel_atual'] = self.request.GET.get('responsavel', '')
         context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
 
         return context
