@@ -34,8 +34,8 @@ from docx import Document
 from weasyprint import HTML, default_url_fetcher
 
 from core.mixins import (
-    AppPermissionMixin, FilialCreateMixin, HTMXModalFormMixin,
-    ViewFilialScopedMixin, TecnicoScopeMixin,
+    AppPermissionMixin, FuncionarioRequiredMixin, HTMXModalFormMixin, ViewFilialScopedMixin,
+    TecnicoScopeMixin, FilialCreateMixin,
 )
 from departamento_pessoal.models import Funcionario
 from usuario.models import Filial
@@ -110,13 +110,42 @@ def _imagem_file_para_base64(image_field):
         logger.warning("Erro ao converter imagem para base64: %s", e)
         return None
 
+# =============================================================================
+# == MIXIN BASE DO APP (camada de seguranca consolidada)
+# =============================================================================
+
+class SSTBaseMixin(FuncionarioRequiredMixin, AppPermissionMixin):
+    """
+    Mixin base do app Seguranca do Trabalho.
+
+    Consolida a stack de seguranca padrao do projeto:
+      1. FuncionarioRequiredMixin -> autenticacao + vinculo com Funcionario
+      2. AppPermissionMixin       -> permissao por app (seguranca_trabalho)
+
+    NAO inclui ViewFilialScopedMixin nem TecnicoScopeMixin porque essas
+    camadas dependem do model e variam por view. Adicione-as conforme a
+    necessidade de cada classe filha.
+
+    Uso tipico:
+        class EquipamentoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
+            app_label_required = 'seguranca_trabalho'
+            model = Equipamento
+
+        class FichaEPIListView(SSTBaseMixin, TecnicoScopeMixin, ViewFilialScopedMixin, ListView):
+            app_label_required = 'seguranca_trabalho'
+            tecnico_scope_lookup = 'funcionario__user'
+            model = FichaEPI
+    """
+    modulo_nome = 'Seguranca do Trabalho'
+    app_label_required = 'seguranca_trabalho'
+
 
 # =============================================================================
 # EQUIPAMENTOS (CRUD + Ajuste de Estoque)
 # =============================================================================
 
-class EquipamentoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = _APP
+class EquipamentoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = 'seguranca_trabalho'
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_list.html'
     context_object_name = 'equipamentos'
@@ -151,15 +180,15 @@ class EquipamentoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
         return context
 
 
-class EquipamentoDetailView(AppPermissionMixin, ViewFilialScopedMixin, DetailView):
-    app_label_required = _APP
+class EquipamentoDetailView(SSTBaseMixin, ViewFilialScopedMixin, DetailView):
+    app_label_required = 'seguranca_trabalho'
     model = Equipamento
     template_name = 'seguranca_trabalho/equipamento_detail.html'
     context_object_name = 'equipamento'
 
 
-class EquipamentoCreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
-    app_label_required = _APP
+class EquipamentoCreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
+    app_label_required = 'seguranca_trabalho'
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
@@ -181,8 +210,8 @@ class EquipamentoCreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
         return response
 
 
-class EquipamentoUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = _APP
+class EquipamentoUpdateView(SSTBaseMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = 'seguranca_trabalho'
     model = Equipamento
     form_class = EquipamentoForm
     template_name = 'seguranca_trabalho/equipamento_form.html'
@@ -199,8 +228,8 @@ class EquipamentoUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateVie
         return super().form_valid(form)
 
 
-class EquipamentoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = _APP
+class EquipamentoDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
+    app_label_required = 'seguranca_trabalho'
     model = Equipamento
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:equipamento_list')
@@ -211,9 +240,9 @@ class EquipamentoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteVie
         return super().form_valid(form)
 
 
-class AjusteEstoqueView(AppPermissionMixin, View):
+class AjusteEstoqueView(SSTBaseMixin, View):
     """Permite ajustar o estoque de um equipamento com justificativa."""
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
 
     def _get_equipamento(self, request, pk):
         filial = getattr(request.user, 'filial_ativa', None)
@@ -272,12 +301,12 @@ class AjusteEstoqueView(AppPermissionMixin, View):
 # =============================================================================
 
 class FichaEPIListView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
     ListView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_list.html'
     context_object_name = 'fichas'
@@ -295,8 +324,8 @@ class FichaEPIListView(
         return qs.order_by('funcionario__nome_completo')
 
 
-class FichaEPICreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
-    app_label_required = _APP
+class FichaEPICreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_create.html'
@@ -313,13 +342,13 @@ class FichaEPICreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
 
 
 class FichaEPIDetailView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
     FormMixin,
     DetailView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     template_name = 'seguranca_trabalho/ficha_detail.html'
     context_object_name = 'ficha'
@@ -376,8 +405,8 @@ class FichaEPIDetailView(
         return redirect(self.get_success_url())
 
 
-class FichaEPIUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
-    app_label_required = _APP
+class FichaEPIUpdateView(SSTBaseMixin, ViewFilialScopedMixin, UpdateView):
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     form_class = FichaEPIForm
     template_name = 'seguranca_trabalho/ficha_form.html'
@@ -391,8 +420,8 @@ class FichaEPIUpdateView(AppPermissionMixin, ViewFilialScopedMixin, UpdateView):
         return kwargs
 
 
-class FichaEPIDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = _APP
+class FichaEPIDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     template_name = 'seguranca_trabalho/confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:ficha_list')
@@ -427,12 +456,12 @@ class FichaEPIDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
 # =============================================================================
 
 class AssinarEntregaView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
     UpdateView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = EntregaEPI
     form_class = AssinaturaEntregaForm
     template_name = 'seguranca_trabalho/entrega_sign.html'
@@ -469,8 +498,8 @@ class AssinarEntregaView(
         return redirect(self.get_success_url())
 
 
-class RegistrarDevolucaoView(AppPermissionMixin, TecnicoScopeMixin, View):
-    app_label_required = _APP
+class RegistrarDevolucaoView(SSTBaseMixin, TecnicoScopeMixin, View):
+    app_label_required = 'seguranca_trabalho'
     http_method_names = ['post']
     tecnico_scope_lookup = 'ficha__funcionario__usuario'
 
@@ -516,12 +545,12 @@ class RegistrarDevolucaoView(AppPermissionMixin, TecnicoScopeMixin, View):
 # =============================================================================
 
 class GerarFichaPDFView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
     DetailView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     tecnico_scope_lookup = 'funcionario__usuario'
 
@@ -605,12 +634,12 @@ class GerarFichaPDFView(
 # =============================================================================
 
 class AssinarTermoView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
     UpdateView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = FichaEPI
     form_class = AssinaturaTermoForm
     template_name = 'seguranca_trabalho/termo_sign.html'
@@ -647,12 +676,12 @@ class AssinarTermoView(
 # =============================================================================
 
 class DashboardSSTView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     TecnicoScopeMixin,
     ViewFilialScopedMixin,
     TemplateView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     template_name = 'seguranca_trabalho/dashboard.html'
     tecnico_scope_lookup = 'funcionario__usuario'
 
@@ -772,8 +801,8 @@ class DashboardSSTView(
 # FUNCOES (Cargos do Trabalho)
 # =============================================================================
 
-class FuncaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = _APP
+class FuncaoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = 'seguranca_trabalho'
     model = Funcao
     template_name = 'seguranca_trabalho/funcao_list.html'
     context_object_name = 'funcoes'
@@ -792,12 +821,12 @@ class FuncaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
 
 
 class FuncaoCreateView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     FilialCreateMixin,
     HTMXModalFormMixin,
     CreateView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = Funcao
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
@@ -809,12 +838,12 @@ class FuncaoCreateView(
 
 
 class FuncaoUpdateView(
-    AppPermissionMixin,
+    SSTBaseMixin,
     ViewFilialScopedMixin,
     HTMXModalFormMixin,
     UpdateView
 ):
-    app_label_required = _APP
+    app_label_required = 'seguranca_trabalho'
     model = Funcao
     form_class = FuncaoForm
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
@@ -832,8 +861,8 @@ class FuncaoUpdateView(
         return ['seguranca_trabalho/funcao_form.html']
 
 
-class FuncaoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
-    app_label_required = _APP
+class FuncaoDeleteView(SSTBaseMixin, ViewFilialScopedMixin, DeleteView):
+    app_label_required = 'seguranca_trabalho'
     model = Funcao
     template_name = 'seguranca_trabalho/funcao_confirm_delete.html'
     success_url = reverse_lazy('seguranca_trabalho:funcao_list')
@@ -848,8 +877,8 @@ class FuncaoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
 # ASSOCIACOES (Funcao x Cargo x EPI)
 # =============================================================================
 
-class AssociacaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
-    app_label_required = _APP
+class AssociacaoListView(SSTBaseMixin, ViewFilialScopedMixin, ListView):
+    app_label_required = 'seguranca_trabalho'
     model = CargoFuncao
     template_name = 'seguranca_trabalho/lista_associacoes.html'
     paginate_by = 20
@@ -865,8 +894,8 @@ class AssociacaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
         return qs.order_by('cargo__nome')
 
 
-class AssociacaoCreateView(AppPermissionMixin, FilialCreateMixin, CreateView):
-    app_label_required = _APP
+class AssociacaoCreateView(SSTBaseMixin, FilialCreateMixin, CreateView):
+    app_label_required = 'seguranca_trabalho'
     model = CargoFuncao
     form_class = CargoFuncaoForm
     template_name = 'seguranca_trabalho/formulario_associacao.html'
@@ -906,8 +935,8 @@ def desvincular_funcao_cargo(request, funcao_id, cargo_id):
 # MATRIZ DE EPI POR FUNÇÃO
 # =============================================================================
 
-class ControleEPIPorFuncaoView(AppPermissionMixin, TemplateView):
-    app_label_required = _APP
+class ControleEPIPorFuncaoView(SSTBaseMixin, TemplateView):
+    app_label_required = 'seguranca_trabalho'
     template_name = 'seguranca_trabalho/controle_epi_por_funcao.html'
 
     def _get_filial_atual(self, request):
@@ -1038,8 +1067,8 @@ class ControleEPIPorFuncaoView(AppPermissionMixin, TemplateView):
 # =============================================================================
 
 
-class RelatorioSSTPDFView(AppPermissionMixin, View):
-    app_label_required = _APP
+class RelatorioSSTPDFView(SSTBaseMixin, View):
+    app_label_required = 'seguranca_trabalho'
 
     def get(self, request, *args, **kwargs):
         entregas = EntregaEPI.objects.for_request(request).select_related(
@@ -1059,8 +1088,8 @@ class RelatorioSSTPDFView(AppPermissionMixin, View):
         response['Content-Disposition'] = 'attachment; filename="relatorio_sst.pdf"'
         return response
 
-class ExportarFuncionariosPDFView(AppPermissionMixin, View):
-    app_label_required = _APP
+class ExportarFuncionariosPDFView(SSTBaseMixin, View):
+    app_label_required = 'seguranca_trabalho'
 
     def get(self, request, *args, **kwargs):
         funcionarios = Funcionario.objects.for_request(request).select_related(
@@ -1083,8 +1112,8 @@ class ExportarFuncionariosPDFView(AppPermissionMixin, View):
         return response
 
 
-class ExportarFuncionariosWordView(AppPermissionMixin, View):
-    app_label_required = _APP
+class ExportarFuncionariosWordView(SSTBaseMixin, View):
+    app_label_required = 'seguranca_trabalho'
 
     def get(self, request, *args, **kwargs):
         funcionarios = Funcionario.objects.for_request(request).select_related(
