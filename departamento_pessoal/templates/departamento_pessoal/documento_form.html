@@ -10,60 +10,223 @@
 {% block extra_css %}
 {{ block.super }}
 <style>
-    /* ═══ Seletor visual de tipo ═══ */
+    /* ═══════════════════════════════════════════════════════════
+       VARIÁVEIS DE TEMA — Light/Dark
+       ═══════════════════════════════════════════════════════════ */
+    :root,
+    [data-bs-theme="light"] {
+        --doc-card-bg: #ffffff;
+        --doc-card-border: #e2e6ee;
+        --doc-card-text: #1a1a2e;
+        --doc-card-text-muted: #6b7280;
+        --doc-card-hover-bg: rgba(99, 102, 241, 0.05);
+        --doc-card-active-bg: rgba(99, 102, 241, 0.1);
+        --doc-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        --doc-card-shadow-hover: 0 4px 12px rgba(99, 102, 241, 0.15);
+        --doc-section-title: var(--bs-primary, #6366f1);
+        --doc-section-border: rgba(99, 102, 241, 0.15);
+        --doc-group-label: #6b7280;
+        --doc-upload-bg: #f8f9fc;
+        --doc-upload-border: #cbd5e1;
+    }
+
+    [data-bs-theme="dark"] {
+        --doc-card-bg: #1e1e2e;
+        --doc-card-border: #2e2e44;
+        --doc-card-text: #e2e4f0;
+        --doc-card-text-muted: #8b8ea8;
+        --doc-card-hover-bg: rgba(99, 102, 241, 0.12);
+        --doc-card-active-bg: rgba(99, 102, 241, 0.18);
+        --doc-card-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+        --doc-card-shadow-hover: 0 4px 16px rgba(99, 102, 241, 0.25);
+        --doc-section-title: #818cf8;
+        --doc-section-border: rgba(129, 140, 248, 0.2);
+        --doc-group-label: #8b8ea8;
+        --doc-upload-bg: #252536;
+        --doc-upload-border: #3a3a52;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SELETOR VISUAL DE TIPO — Grid de cards
+       ═══════════════════════════════════════════════════════════ */
     .doc-selector-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         gap: 0.6rem;
     }
+
     .doc-card {
-        background: #fff;
-        border: 2px solid var(--bs-border-color);
-        border-radius: 0.5rem;
-        padding: 0.75rem 0.5rem;
+        background: var(--doc-card-bg);
+        border: 2px solid var(--doc-card-border);
+        border-radius: 0.6rem;
+        padding: 0.85rem 0.5rem;
         text-align: center;
         cursor: pointer;
         transition: all 0.2s ease;
         user-select: none;
+        color: var(--doc-card-text);
+        box-shadow: var(--doc-card-shadow);
+        position: relative;
+        overflow: hidden;
     }
-    .doc-card:hover { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.04); }
-    .doc-card.active { border-color: var(--bs-primary); background: rgba(var(--bs-primary-rgb), 0.1); color: var(--bs-primary); }
-    .doc-card .doc-icon { font-size: 1.6rem; display: block; margin-bottom: 0.2rem; }
-    .doc-card .doc-label { font-size: 0.78rem; font-weight: 500; line-height: 1.2; }
 
-    /* ═══ Campos condicionais ═══ */
+    .doc-card:hover {
+        border-color: var(--bs-primary, #6366f1);
+        background: var(--doc-card-hover-bg);
+        transform: translateY(-2px);
+        box-shadow: var(--doc-card-shadow-hover);
+    }
+
+    .doc-card.active {
+        border-color: var(--bs-primary, #6366f1);
+        background: var(--doc-card-active-bg);
+        color: var(--bs-primary, #6366f1);
+        box-shadow: var(--doc-card-shadow-hover);
+    }
+
+    .doc-card.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--bs-primary, #6366f1);
+    }
+
+    .doc-card .doc-icon {
+        font-size: 1.6rem;
+        display: block;
+        margin-bottom: 0.3rem;
+        color: var(--doc-card-text-muted);
+        transition: color 0.2s ease;
+    }
+
+    .doc-card:hover .doc-icon,
+    .doc-card.active .doc-icon {
+        color: var(--bs-primary, #6366f1);
+    }
+
+    .doc-card .doc-label {
+        font-size: 0.78rem;
+        font-weight: 600;
+        line-height: 1.25;
+        color: var(--doc-card-text);
+        transition: color 0.2s ease;
+    }
+
+    .doc-card.active .doc-label {
+        color: var(--bs-primary, #6366f1);
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CAMPOS CONDICIONAIS
+       ═══════════════════════════════════════════════════════════ */
     .campo-condicional { display: none !important; }
     .campo-condicional.visible { display: block !important; }
-    .campo-condicional.visible.row {display: flex !important;}
+    .campo-condicional.visible.row { display: flex !important; }
 
-    /* ═══ Seção de tipo ═══ */
+    /* ═══════════════════════════════════════════════════════════
+       SEÇÃO DE TIPO — Títulos divisores
+       ═══════════════════════════════════════════════════════════ */
     .tipo-section-title {
         font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--bs-primary);
+        font-weight: 700;
+        color: var(--doc-section-title);
         padding: 0.5rem 0;
-        margin: 1rem 0 0.5rem 0;
-        border-bottom: 2px solid rgba(var(--bs-primary-rgb), 0.15);
+        margin: 1.25rem 0 0.75rem 0;
+        border-bottom: 2px solid var(--doc-section-border);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
 
-    /* ═══ Upload ═══ */
+    .tipo-section-title:first-of-type {
+        margin-top: 0.5rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       UPLOAD DE ARQUIVO
+       ═══════════════════════════════════════════════════════════ */
     .file-upload-wrapper {
         position: relative;
-        border: 2px dashed var(--bs-border-color);
-        border-radius: 0.5rem;
+        border: 2px dashed var(--doc-upload-border);
+        border-radius: 0.6rem;
         padding: 1.5rem;
         text-align: center;
-        background: var(--bs-body-bg);
+        background: var(--doc-upload-bg);
+        color: var(--doc-card-text-muted);
         transition: all 0.2s ease;
     }
-    .file-upload-wrapper:hover { border-color: var(--bs-primary); }
-    .file-upload-wrapper input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-    /* ═══ Ícone tipos ═══ */
-    .doc-tipo-group { margin-bottom: 0.5rem; }
+    .file-upload-wrapper:hover {
+        border-color: var(--bs-primary, #6366f1);
+        background: var(--doc-card-hover-bg);
+        color: var(--doc-card-text);
+    }
+
+    .file-upload-wrapper input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       GRUPOS DE TIPOS DE DOCUMENTO
+       ═══════════════════════════════════════════════════════════ */
+    .doc-tipo-group { margin-bottom: 0.75rem; }
+
     .doc-tipo-group-label {
-        font-size: 0.7rem; text-transform: uppercase; color: var(--bs-secondary);
-        font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.4rem;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        color: var(--doc-group-label);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       FOCO ACESSÍVEL — Teclado (Tab)
+       ═══════════════════════════════════════════════════════════ */
+    .doc-card:focus-visible {
+        outline: 2px solid var(--bs-primary, #6366f1);
+        outline-offset: 2px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RESPONSIVO — Mobile
+       ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 575.98px) {
+        .doc-selector-grid {
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 0.45rem;
+        }
+        .doc-card {
+            padding: 0.7rem 0.4rem;
+        }
+        .doc-card .doc-icon {
+            font-size: 1.4rem;
+        }
+        .doc-card .doc-label {
+            font-size: 0.72rem;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       PREFERÊNCIA DE MOVIMENTO REDUZIDO
+       ═══════════════════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+        .doc-card,
+        .doc-card .doc-icon,
+        .file-upload-wrapper {
+            transition: none;
+        }
+        .doc-card:hover {
+            transform: none;
+        }
     }
 </style>
 {% endblock %}
