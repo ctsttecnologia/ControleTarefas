@@ -55,6 +55,8 @@ logger = logging.getLogger(__name__)
 _APP = 'seguranca_trabalho'
 
 
+
+
 # =============================================================================
 # HELPERS
 # =============================================================================
@@ -110,7 +112,7 @@ def _imagem_file_para_base64(image_field):
 
 
 # =============================================================================
-# CRUD DE EQUIPAMENTOS
+# EQUIPAMENTOS (CRUD + Ajuste de Estoque)
 # =============================================================================
 
 class EquipamentoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
@@ -266,7 +268,7 @@ class AjusteEstoqueView(AppPermissionMixin, View):
 
 
 # =============================================================================
-# CRUD DE FICHAS DE EPI
+# FICHAS EPI (CRUD)
 # =============================================================================
 
 class FichaEPIListView(
@@ -421,7 +423,7 @@ class FichaEPIDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
 
 
 # =============================================================================
-# AÇÕES DE ENTREGA (Assinatura, Devolução)
+# ENTREGAS EPI (Assinatura e Devolucao)
 # =============================================================================
 
 class AssinarEntregaView(
@@ -510,7 +512,7 @@ class RegistrarDevolucaoView(AppPermissionMixin, TecnicoScopeMixin, View):
 
 
 # =============================================================================
-# RELATÓRIOS E PAINÉIS
+# RELATORIOS PDF - FICHA INDIVIDUAL
 # =============================================================================
 
 class GerarFichaPDFView(
@@ -598,6 +600,9 @@ class GerarFichaPDFView(
         )
         return response
 
+# =============================================================================
+# TERMOS E ASSINATURAS
+# =============================================================================
 
 class AssinarTermoView(
     AppPermissionMixin,
@@ -637,6 +642,9 @@ class AssinarTermoView(
         messages.success(self.request, "Termo assinado com sucesso!")
         return redirect(self.get_success_url())
 
+# =============================================================================
+# DASHBOARD SST
+# =============================================================================
 
 class DashboardSSTView(
     AppPermissionMixin,
@@ -761,7 +769,7 @@ class DashboardSSTView(
 
 
 # =============================================================================
-# CRUD DE FUNÇÕES
+# FUNCOES (Cargos do Trabalho)
 # =============================================================================
 
 class FuncaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
@@ -837,7 +845,7 @@ class FuncaoDeleteView(AppPermissionMixin, ViewFilialScopedMixin, DeleteView):
 
 
 # =============================================================================
-# CRUD DE ASSOCIAÇÕES CARGO-FUNÇÃO
+# ASSOCIACOES (Funcao x Cargo x EPI)
 # =============================================================================
 
 class AssociacaoListView(AppPermissionMixin, ViewFilialScopedMixin, ListView):
@@ -1023,9 +1031,12 @@ class ControleEPIPorFuncaoView(AppPermissionMixin, TemplateView):
         return redirect(request.path_info)
 
 
+
+
 # =============================================================================
-# RELATÓRIOS PDF/WORD
+# RELATORIOS PDF / WORD - GERAIS
 # =============================================================================
+
 
 class RelatorioSSTPDFView(AppPermissionMixin, View):
     app_label_required = _APP
@@ -1115,7 +1126,7 @@ class ExportarFuncionariosWordView(AppPermissionMixin, View):
 
 
 # =============================================================================
-# REDIRECT PARA MINHA FICHA
+# REDIRECTS / UTILITARIOS
 # =============================================================================
 
 @login_required
