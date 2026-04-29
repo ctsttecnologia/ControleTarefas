@@ -89,15 +89,15 @@ class TarefaListView(TarefasBaseMixin, ListView):
 
         # --- Filtros da URL ---
         status     = self.request.GET.get('status', '')
-        prioridade = self.request.GET.get('prioridade', '')
+        projeto    = self.request.GET.get('projeto', '')
         query      = self.request.GET.get('q', '')
         responsavel = self.request.GET.get('responsavel')
 
         if status:
             qs = qs.filter(status=status)
 
-        if prioridade:
-            qs = qs.filter(prioridade=prioridade)
+        if projeto:
+            qs = qs.filter(projeto=projeto)
 
         if responsavel:
             qs = qs.filter(responsavel_id=responsavel)
@@ -127,24 +127,43 @@ class TarefaListView(TarefasBaseMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Usa o mesmo queryset base COM filtro de visibilidade
         base_qs = self._get_base_queryset()
-        context['responsaveis'] = User.objects.filter(
-            tarefas_responsavel__in=base_qs
-        ).distinct()
-        context['responsavel_atual'] = self.request.GET.get('responsavel', '')
+
+        # Estatísticas
         context['total_tarefas']      = base_qs.count()
         context['tarefas_concluidas'] = base_qs.filter(status='concluida').count()
         context['tarefas_pendentes']  = base_qs.exclude(
             status__in=['concluida', 'cancelada']
         ).count()
+
+        # Opções dos filtros (choices fixos do model)
         context['status_options']     = Tarefas.STATUS_CHOICES
         context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
-        context['responsaveis']        = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+
+        # 🆕 Opções de projeto — gerado dinamicamente dos valores existentes
+        projetos_distintos = (
+            base_qs
+            .exclude(projeto__isnull=True)
+            .exclude(projeto__exact='')
+            .values_list('projeto', flat=True)
+            .distinct()
+            .order_by('projeto')
+        )
+        context['projeto_options'] = [(p, p) for p in projetos_distintos]
+
+        # Responsáveis ativos
+        context['responsaveis'] = User.objects.filter(
+            is_active=True
+        ).order_by('first_name', 'last_name')
+
+        # Valores atuais dos filtros (para manter selecionados após submit)
         context['responsavel_atual'] = self.request.GET.get('responsavel', '')
-        context['prioridade_options'] = Tarefas.PRIORIDADE_CHOICES
+        context['status_atual']      = self.request.GET.get('status', '')
+        context['projeto_atual']     = self.request.GET.get('projeto', '')
+        context['query_atual']       = self.request.GET.get('q', '')
 
         return context
+
 
 
 class TarefaDetailView(TarefasBaseMixin, DetailView):
