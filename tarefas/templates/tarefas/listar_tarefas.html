@@ -209,13 +209,13 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                         </select>
                     </div>
 
-                    <!-- PRIORIDADE -->
+                    <!-- Projeto -->
                     <div class="col-12 col-sm-6 col-md-3">
-                        <label class="filter-label" for="filtroPrioridade">Prioridade</label>
-                        <select name="prioridade" id="filtroPrioridade" class="form-select form-select-sm">
-                            <option value="">Todas</option>
-                            {% for val, label in prioridade_options %}
-                            <option value="{{ val }}" {% if request.GET.prioridade == val %}selected{% endif %}>{{ label }}</option>
+                        <label class="filter-label" for="filtroProjeto">Projeto</label>
+                        <select name="projeto" id="filtroProjeto" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            {% for val, label in projeto_options %}
+                            <option value="{{ val }}" {% if request.GET.projeto == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -265,6 +265,7 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                 <thead>
                     <tr>
                         <th>Tarefa</th>
+                        <th>Projeto</th>
                         <th>Responsável</th>
                         <th>Prioridade</th>
                         <th>Status</th>
@@ -288,6 +289,10 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                             {% if tarefa.descricao %}
                                 <div class="task-desc">{{ tarefa.descricao|truncatewords:10 }}</div>
                             {% endif %}
+                        </td>
+
+                        <td data-label="Projeto">
+                            <span class="task-link">{{ tarefa.projeto }}</span>
                         </td>
 
                         <!-- RESPONSÁVEL + PARTICIPANTES -->
