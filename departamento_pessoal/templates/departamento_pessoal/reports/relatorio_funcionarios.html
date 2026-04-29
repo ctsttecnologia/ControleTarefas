@@ -1,0 +1,65 @@
+
+{% extends "reports/base_report.html" %}
+
+{% block titulo %}Relatório de Funcionários{% endblock %}
+{% block report_title %}Relatório de Colaboradores Ativos{% endblock %}
+{% block report_subtitle %}Cadastro e situação dos colaboradores da empresa{% endblock %}
+{% block header_right %}Relatório de Colaboradores{% endblock %}
+
+{% block content %}
+
+    <div class="kpi-grid">
+        <div class="kpi-card info">
+            <p class="kpi-label">Total de Colaboradores</p>
+            <p class="kpi-value">{{ funcionarios|length }}</p>
+        </div>
+        <div class="kpi-card success">
+            <p class="kpi-label">Com Usuário Vinculado</p>
+            <p class="kpi-value">{{ total_com_usuario|default:0 }}</p>
+        </div>
+        <div class="kpi-card warning">
+            <p class="kpi-label">Departamentos</p>
+            <p class="kpi-value">{{ total_departamentos|default:0 }}</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2 class="section-title">Lista de Colaboradores</h2>
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th class="num-col">#</th>
+                    <th style="width:32%;">Nome Completo</th>
+                    <th style="width:20%;">Cargo</th>
+                    <th style="width:20%;">Departamento</th>
+                    <th style="width:14%;" class="text-center">Admissão</th>
+                    <th style="width:10%;" class="text-center">Usuário</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in funcionarios %}
+                <tr>
+                    <td class="num-col">{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ f.nome_completo }}</td>
+                    <td>{{ f.cargo.nome|default:"—" }}</td>
+                    <td>{{ f.departamento.nome|default:"—" }}</td>
+                    <td class="text-center">{{ f.data_admissao|date:"d/m/Y"|default:"—" }}</td>
+                    <td class="text-center">
+                        {% if f.usuario %}
+                            <span class="badge badge-concluida">{{ f.usuario.username }}</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">Nenhum funcionário encontrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}
+

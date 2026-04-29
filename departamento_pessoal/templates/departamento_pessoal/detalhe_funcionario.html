@@ -24,7 +24,7 @@
             <div class="profile-name">{{ funcionario.nome_completo|upper }}</div>
             <div class="profile-role">
                 {{ funcionario.cargo.nome|default:"Cargo não definido" }}
-                {% if funcionario.departamento %} • {{ funcionario.departamento.nome }}{% endif %}
+                {% if funcionario.departamento %} • {{ funcionario.departamento.nome }} • {{ funcionario.usuario.username }} {% endif %}
             </div>
         </div>
     </div>

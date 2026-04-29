@@ -97,16 +97,31 @@ class FuncionarioForm(forms.ModelForm):
                 field.widget.attrs.update({'class': 'form-control'})
 
         # Lógica inteligente para o campo 'usuario'
-        if self.instance and self.instance.pk:
-            # Se estiver EDITANDO um funcionário, não permite trocar o usuário do sistema associado.
+        editando = self.instance and self.instance.pk
+        ja_tem_usuario = editando and self.instance.usuario_id
+
+        if ja_tem_usuario:
+            # Editando e já tem usuário → bloqueia alteração
             self.fields['usuario'].disabled = True
-            self.fields['usuario'].help_text = 'Não é possível alterar o usuário de um funcionário existente.'
+            self.fields['usuario'].help_text = (
+                'Não é possível alterar o usuário de um funcionário que já possui vínculo.'
+            )
         else:
-            # Se estiver CRIANDO, mostra apenas usuários que AINDA NÃO estão ligados a outro funcionário.
-            usuarios_com_funcionario = Funcionario.objects.filter(usuario__isnull=False).values_list('usuario_id', flat=True)
-            self.fields['usuario'].queryset = User.objects.exclude(pk__in=usuarios_com_funcionario).order_by('username')
+            # Criando OU editando sem usuário vinculado → permite escolher
+            usuarios_livres = User.objects.exclude(
+                pk__in=Funcionario.objects.filter(
+                    usuario__isnull=False
+                ).values_list('usuario_id', flat=True)
+            ).order_by('username')
+
+            self.fields['usuario'].queryset = usuarios_livres
             self.fields['usuario'].empty_label = "Selecione um Usuário do sistema para vincular"
 
+            if editando:
+                self.fields['usuario'].help_text = (
+                    'Este funcionário ainda não possui usuário do sistema vinculado. '
+                    'Você pode vinculá-lo agora.'
+                )
 
 # --- Formulário de Documentos ---
 

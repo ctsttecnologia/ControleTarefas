@@ -4,6 +4,7 @@
 import json
 import logging
 from datetime import timedelta
+from multiprocessing import context
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -12,7 +13,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q, Count
 from django.db.models.functions import TruncWeek
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
@@ -31,6 +32,11 @@ from .services import (
     registrar_alteracao_status,
 )
 from notifications.services import notificar_tarefa_criada, notificar_tarefa_comentario
+from openpyxl import Workbook
+from django.http import HttpResponse
+from .utils.excel_styles import (
+    aplicar_cabecalho_relatorio, aplicar_estilo_tabela
+)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -163,7 +169,6 @@ class TarefaListView(TarefasBaseMixin, ListView):
         context['query_atual']       = self.request.GET.get('q', '')
 
         return context
-
 
 
 class TarefaDetailView(TarefasBaseMixin, DetailView):
@@ -572,239 +577,198 @@ class UpdateTaskStatusView(TarefasBaseMixin, View):
 # =============================================================================
 # RELATÓRIOS
 # =============================================================================
+@login_required
+def _build_queryset_relatorio(request):
+    """
+    Helper centralizado: aplica filial + visibilidade + filtros GET/POST.
+    Usado por todas as views de relatório.
+    """
+    filial_id = request.session.get('active_filial_id')
+    qs = Tarefas.objects.all()
 
-class RelatorioTarefasView(TarefasBaseMixin, ListView):
-    
-    """Página principal de relatórios com tabela, gráficos e exportação."""
-    model = Tarefas
-    template_name = 'tarefas/relatorio_tarefas.html'
+    if filial_id:
+        qs = qs.filter(filial_id=filial_id)
 
-    def _get_base_queryset(self):
-        """Queryset base com escopo de filial + visibilidade."""
-        qs = super().get_queryset()
-        return aplicar_filtro_visibilidade(qs, self.request.user)
+    qs = aplicar_filtro_visibilidade(qs, request.user)
 
-    def get_queryset(self):
-        qs = self._get_base_queryset()
+    # Aceita filtros tanto via GET quanto POST
+    params = request.POST if request.method == 'POST' else request.GET
 
-        status_filter = self.request.GET.get('status')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
+    if status := params.get('status'):
+        qs = qs.filter(status=status)
+    if prioridade := params.get('prioridade'):
+        qs = qs.filter(prioridade=prioridade)
+    if responsavel := params.get('responsavel'):
+        qs = qs.filter(responsavel_id=responsavel)
+    if projeto := params.get('projeto'):
+        qs = qs.filter(projeto_id=projeto)
 
-        responsavel_id = self.request.GET.get('responsavel')
-        if responsavel_id:
-            qs = qs.filter(responsavel_id=responsavel_id)
+    return qs.select_related('responsavel', 'filial').order_by('-data_criacao')
 
-        return qs.order_by('-data_criacao')
+@login_required
+def _exportar_relatorio(request, formato):
+    """
+    Roteador de exportação. Recebe o formato e devolve o HttpResponse correto.
+    """
+    qs = _build_queryset_relatorio(request)
+    context = preparar_contexto_relatorio(qs)
+    context['request'] = request
+    context['now'] = timezone.now()
+    context['data_emissao'] = timezone.now().strftime("%d/%m/%Y %H:%M")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        qs = self.get_queryset()
-        report_context = preparar_contexto_relatorio(qs)
-        context.update(report_context)
-
-        # JSON para gráficos
-        context['status_data_json'] = json.dumps(
-            report_context.get('status_data', []),
-            cls=DjangoJSONEncoder
-        )
-        context['priority_data_json'] = json.dumps(
-            report_context.get('prioridade_data', []),
-            cls=DjangoJSONEncoder
-        )
-        context['status_choices'] = Tarefas.STATUS_CHOICES
-
-        # Responsáveis para o filtro (base com visibilidade, sem filtro de responsável)
-        base_qs = self._get_base_queryset()
-        status_filter = self.request.GET.get('status')
-        if status_filter:
-            base_qs = base_qs.filter(status=status_filter)
-
-        responsaveis = User.objects.filter(
-            pk__in=base_qs.values_list('responsavel', flat=True).distinct()
-        ).exclude(pk__isnull=True).order_by('first_name', 'username')
-
-        context['responsaveis'] = responsaveis
-
-        context['current_filters'] = {
-            'status': self.request.GET.get('status', ''),
-            'responsavel': self.request.GET.get('responsavel', ''),
-        }
-        return context
-
-    def post(self, request, *args, **kwargs):
-        """Exportação direta via offcanvas."""
-        export_format = request.POST.get('export_format')
-        if not export_format:
-            return self.get(request, *args, **kwargs)
-
-        qs = self.get_queryset()
-        context = preparar_contexto_relatorio(qs)
-        context['request'] = request
-        context['now'] = timezone.now()
-
-        exporters = {
-            'pdf': gerar_pdf_relatorio,
-            'csv': gerar_csv_relatorio,
-            'docx': gerar_docx_relatorio,
-        }
-        exporter = exporters.get(export_format)
-        if exporter:
-            return exporter(context)
-
+    exporters = {
+        'pdf':  gerar_pdf_relatorio,
+        'csv':  gerar_csv_relatorio,
+        'docx': gerar_docx_relatorio,
+        'xlsx': gerar_xlsx_relatorio,
+    }
+    exporter = exporters.get(formato)
+    if not exporter:
         messages.error(request, 'Formato de exportação inválido.')
         return redirect('tarefas:relatorio_tarefas')
 
-
-class GerarRelatorioView(TarefasBaseMixin, TemplateView):
-    """Formulário para gerar relatório com filtros e escolher formato."""
-    template_name = 'tarefas/gerar_relatorio.html'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['status_choices'] = Tarefas.STATUS_CHOICES
-        context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
-        return context
-
-    def post(self, request, *args, **kwargs):
-        export_format = request.POST.get('export_format', 'html')
-        status_filter = request.POST.get('status', '')
-        prioridade_filter = request.POST.get('prioridade', '')
-
-        # ★ Monta queryset filtrado COM visibilidade
-        filial_id = request.session.get('active_filial_id')
-        qs = Tarefas.objects.all()
-        if filial_id:
-            qs = qs.filter(filial_id=filial_id)
-        qs = aplicar_filtro_visibilidade(qs, request.user)
-
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        if prioridade_filter:
-            qs = qs.filter(prioridade=prioridade_filter)
-        qs = qs.order_by('-data_criacao')
-
-        context = preparar_contexto_relatorio(qs)
-        context['request'] = request
-        context['now'] = timezone.now()
-
-        # Exportar
-        if export_format == 'html':
-            params = []
-            if status_filter:
-                params.append(f'status={status_filter}')
-            if prioridade_filter:
-                params.append(f'prioridade={prioridade_filter}')
-            query_string = '&'.join(params)
-            url = reverse('tarefas:relatorio_display')
-            if query_string:
-                url += f'?{query_string}'
-            return redirect(url)
-
-        exporters = {
-            'pdf': gerar_pdf_relatorio,
-            'csv': gerar_csv_relatorio,
-            'docx': gerar_docx_relatorio,
-        }
-        exporter = exporters.get(export_format)
-        if exporter:
-            return exporter(context)
-
-        messages.error(request, 'Formato inválido.')
-        return redirect('tarefas:gerar_relatorio')
+    return exporter(context)
 
 
-class RelatorioDisplayView(TarefasBaseMixin, ListView):
-    """Exibe relatório filtrado na tela (HTML)."""
+# =============================================================================
+# VIEW PRINCIPAL — Tela de relatório com filtros + tabela + exportação
+# =============================================================================
+class RelatorioTarefasView(TarefasBaseMixin, ListView):
+    """
+    Página única de relatórios:
+    - GET: exibe tabela + gráficos + filtros
+    - POST: exporta no formato escolhido
+    """
     model = Tarefas
-    template_name = 'tarefas/relatorio_display.html'
-
-    def _get_base_queryset(self):
-        """Queryset base com escopo de filial + visibilidade."""
-        qs = super().get_queryset()
-        return aplicar_filtro_visibilidade(qs, self.request.user)
+    template_name = 'tarefas/relatorio_tarefas.html'
 
     def get_queryset(self):
-        qs = self._get_base_queryset()
-
-        status_filter = self.request.GET.get('status')
-        prioridade_filter = self.request.GET.get('prioridade')
-        responsavel_id = self.request.GET.get('responsavel')
-
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        if prioridade_filter:
-            qs = qs.filter(prioridade=prioridade_filter)
-        if responsavel_id:
-            qs = qs.filter(responsavel_id=responsavel_id)
-
-        return qs.order_by('-data_criacao')
+        return _build_queryset_relatorio(self.request)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         qs = self.get_queryset()
         context.update(preparar_contexto_relatorio(qs))
 
-        # Responsáveis para o filtro (base com visibilidade)
-        base_qs = self._get_base_queryset()
-        status_filter = self.request.GET.get('status')
-        prioridade_filter = self.request.GET.get('prioridade')
-        if status_filter:
-            base_qs = base_qs.filter(status=status_filter)
-        if prioridade_filter:
-            base_qs = base_qs.filter(prioridade=prioridade_filter)
+        # JSON para gráficos
+        context['status_data_json'] = json.dumps(
+            context.get('status_data', []), cls=DjangoJSONEncoder
+        )
+        context['priority_data_json'] = json.dumps(
+            context.get('prioridade_data', []), cls=DjangoJSONEncoder
+        )
 
-        responsaveis = User.objects.filter(
+        # Choices para os selects
+        context['status_choices'] = Tarefas.STATUS_CHOICES
+        context['prioridade_choices'] = Tarefas.PRIORIDADE_CHOICES
+
+        # Responsáveis disponíveis (respeitando filial + visibilidade)
+        base_qs = aplicar_filtro_visibilidade(
+            Tarefas.objects.filter(
+                filial_id=self.request.session.get('active_filial_id')
+            ) if self.request.session.get('active_filial_id') else Tarefas.objects.all(),
+            self.request.user
+        )
+        context['responsaveis'] = User.objects.filter(
             pk__in=base_qs.values_list('responsavel', flat=True).distinct()
         ).exclude(pk__isnull=True).order_by('first_name', 'username')
 
-        context['responsaveis'] = responsaveis
-
+        # Filtros ativos (para manter selecionados no form)
         context['current_filters'] = {
-            'status': self.request.GET.get('status', ''),
-            'prioridade': self.request.GET.get('prioridade', ''),
+            'status':      self.request.GET.get('status', ''),
+            'prioridade':  self.request.GET.get('prioridade', ''),
             'responsavel': self.request.GET.get('responsavel', ''),
+            'projeto':     self.request.GET.get('projeto', ''),
         }
-        context['status_choices'] = Tarefas.STATUS_CHOICES
         return context
 
+    def post(self, request, *args, **kwargs):
+        """Exportação via formulário (offcanvas/modal)."""
+        formato = request.POST.get('export_format')
+        if not formato:
+            return self.get(request, *args, **kwargs)
+        return _exportar_relatorio(request, formato)
 
+
+# =============================================================================
+# EXPORTAÇÃO DIRETA — Endpoint para botões de download (links GET)
+# =============================================================================
 class ExportarRelatorioView(TarefasBaseMixin, View):
-    """API de exportação direta via GET (para botões de download)."""
-
+    """
+    Exportação rápida via GET. Útil para botões/links diretos:
+    /tarefas/relatorio/exportar/?formato=pdf&status=pendente
+    """
     def get(self, request, *args, **kwargs):
-        export_format = request.GET.get('formato', '')
-        status_filter = request.GET.get('status', '')
-        prioridade_filter = request.GET.get('prioridade', '')
+        formato = request.GET.get('formato', '')
+        return _exportar_relatorio(request, formato)
 
-        # ★ Aplica filial + visibilidade
-        filial_id = request.session.get('active_filial_id')
-        qs = Tarefas.objects.all()
-        if filial_id:
-            qs = qs.filter(filial_id=filial_id)
-        qs = aplicar_filtro_visibilidade(qs, request.user)
 
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        if prioridade_filter:
-            qs = qs.filter(prioridade=prioridade_filter)
-        qs = qs.order_by('-data_criacao')
+# =============================================================================
+# EXPORTADOR EXCEL — agora integrado e seguro
+# =============================================================================
+def gerar_xlsx_relatorio(context):
+    """
+    Gera arquivo Excel do relatório seguindo a identidade visual padrão.
+    Recebe o mesmo `context` que os outros exportadores (pdf/csv/docx).
+    """
+    from openpyxl import Workbook
+    from .utils.excel_styles import (
+        aplicar_cabecalho_relatorio,
+        aplicar_estilo_tabela,
+    )
 
-        context = preparar_contexto_relatorio(qs)
-        context['request'] = request
-        context['now'] = timezone.now()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Relatório de Tarefas"
 
-        exporters = {
-            'pdf': gerar_pdf_relatorio,
-            'csv': gerar_csv_relatorio,
-            'docx': gerar_docx_relatorio,
-        }
-        exporter = exporters.get(export_format)
-        if exporter:
-            return exporter(context)
+    headers = ["Qtda.", "Título", "Responsável", "Status", "Prioridade",
+               "Projeto", "Criação", "Prazo"]
 
-        messages.error(request, 'Formato de exportação inválido.')
-        return redirect('tarefas:relatorio_tarefas')
+    # Cabeçalho institucional padronizado
+    start_row = aplicar_cabecalho_relatorio(
+        ws,
+        titulo="Relatório de Tarefas",  
+        subtitulo="Acompanhamento e análise de tarefas do sistema",
+        data_emissao=context.get('data_emissao', timezone.now().strftime("%d/%m/%Y %H:%M")),
+        num_colunas=len(headers),
+    )
+
+    # Cabeçalho da tabela
+    for col, h in enumerate(headers, start=1):
+        ws.cell(row=start_row, column=col, value=h)
+
+    # Dados (vêm do context, já filtrados!)
+    tarefas = context.get('tarefas', [])
+    for idx, t in enumerate(tarefas, start=1):
+        row = start_row + idx
+        ws.cell(row=row, column=1, value=idx)
+        ws.cell(row=row, column=2, value=t.titulo)
+        ws.cell(row=row, column=3,
+                value=t.responsavel.get_full_name() if t.responsavel else "—")
+        ws.cell(row=row, column=4, value=t.get_status_display())
+        ws.cell(row=row, column=5, value=t.get_prioridade_display())
+        ws.cell(row=row, column=6,
+                value=str(t.projeto) if t.projeto else "—")
+        ws.cell(row=row, column=7,
+                value=t.data_criacao.strftime("%d/%m/%Y") if t.data_criacao else "—")
+        ws.cell(row=row, column=8,
+                value=t.prazo.strftime("%d/%m/%Y") if t.prazo else "—")
+
+    aplicar_estilo_tabela(
+        ws,
+        header_row=start_row,
+        total_rows=len(tarefas),
+        total_cols=len(headers),
+    )
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="relatorio_tarefas_{timezone.now():%Y%m%d_%H%M}.xlsx"'
+    )
+    wb.save(response)
+    return response
 
 
 # =============================================================================
