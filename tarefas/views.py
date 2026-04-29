@@ -129,7 +129,10 @@ class TarefaListView(TarefasBaseMixin, ListView):
 
         # Usa o mesmo queryset base COM filtro de visibilidade
         base_qs = self._get_base_queryset()
-
+        context['responsaveis'] = User.objects.filter(
+            tarefas_responsavel__in=base_qs
+        ).distinct()
+        context['responsavel_atual'] = self.request.GET.get('responsavel', '')
         context['total_tarefas']      = base_qs.count()
         context['tarefas_concluidas'] = base_qs.filter(status='concluida').count()
         context['tarefas_pendentes']  = base_qs.exclude(

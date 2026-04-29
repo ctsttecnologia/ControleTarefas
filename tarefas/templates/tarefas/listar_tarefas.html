@@ -227,9 +227,9 @@ FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
                         </label>
                         <select name="responsavel" id="filtroResponsavel" class="form-select form-select-sm">
                             <option value="">Todos os responsáveis</option>
-                            {% for u in responsaveis %}
-                            <option value="{{ u.pk }}" {% if responsavel_atual == u.pk|stringformat:"d" %}selected{% endif %}>
-                                {{ u.get_full_name|default:u.username }}
+                            {% for user in responsaveis %}
+                            <option value="{{ user.pk }}" {% if responsavel_atual == user.pk|stringformat:"d" %}selected{% endif %}>
+                                {{ user.get_full_name|default:user.username }}
                             </option>
                             {% endfor %}
                         </select>
