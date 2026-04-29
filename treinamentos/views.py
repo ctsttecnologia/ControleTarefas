@@ -16,6 +16,7 @@ import io
 import json
 import traceback
 from datetime import datetime, timedelta
+from py_serializable import logger
 from requests import request
 from treinamentos import treinamento_generators
 from treinamentos.forms import ParticipanteFormSet, TipoCursoForm, TreinamentoForm
@@ -36,8 +37,9 @@ from num2words import num2words # Biblioteca para converter números em extenso
 import qrcode
 import qrcode.image.svg
 from base64 import b64encode
+from django.core.cache import cache
 
-    # ... demais impor
+
 try:
     from weasyprint import HTML, CSS
     WEASYPRINT_DISPONIVEL = True
@@ -45,6 +47,28 @@ except ImportError:
     WEASYPRINT_DISPONIVEL = False
     print("AVISO: WeasyPrint não instalado. Geração de PDF falhará.")
     # TODO: Adicione aqui a importação do xhtml2pdf como fallback se desejar
+
+
+
+
+class _RateLimitPublicMixin:
+    """Rate-limit por IP para endpoints públicos (anti-scraping)."""
+    RATE_LIMIT_KEY_PREFIX = "ratelimit:cert"
+    RATE_LIMIT_MAX = 30          # 30 requests
+    RATE_LIMIT_WINDOW = 60       # por minuto
+    
+    def dispatch(self, request, *args, **kwargs):
+        ip = (
+            request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+            or request.META.get("REMOTE_ADDR", "unknown")
+        )
+        key = f"{self.RATE_LIMIT_KEY_PREFIX}:{ip}"
+        count = cache.get(key, 0)
+        if count >= self.RATE_LIMIT_MAX:
+            logger.warning("Rate-limit cert validation: IP=%s", ip)
+            return HttpResponse("Rate-limit excedido", status=429)
+        cache.set(key, count + 1, timeout=self.RATE_LIMIT_WINDOW)
+        return super().dispatch(request, *args, **kwargs)
 
 
 # ==========================================================================
@@ -578,7 +602,7 @@ class DashboardView(LoginRequiredMixin, PermissionRequiredMixin, TecnicoScopeMix
         return context
 
 
-class VerificarCertificadoView(View):
+class VerificarCertificadoView(_RateLimitPublicMixin, View):
     """
     Página PÚBLICA para validar um certificado através do protocolo (QR Code).
     Não requer login.
@@ -1397,7 +1421,7 @@ class EADResultadoView(LoginRequiredMixin, DetailView):
 # CERTIFICADO EAD (visualização pública por UUID)
 # =============================================================================
 
-class EADCertificadoView(DetailView):
+class EADCertificadoView(_RateLimitPublicMixin, DetailView):
     """Página pública de verificação do certificado EAD."""
     model = CertificadoEAD
     template_name = "treinamentos/ead/certificado.html"

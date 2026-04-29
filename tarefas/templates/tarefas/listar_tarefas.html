@@ -105,10 +105,9 @@
     .list-table tbody td:last-child { padding-top: 0.5rem; }
     .list-actions .btn span { display: none; }
 }
-
 /* ═══════════════════════════════════════════════════════════
-   FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
-   ═══════════════════════════════════════════════════════════ */
+FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
+═══════════════════════════════════════════════════════════ */
 .list-card-body .form-select-sm {
     background-color: var(--list-card-bg);
     border-color: var(--list-card-border);
@@ -166,9 +165,6 @@
 {% endblock %}
 
 {% block content %}
-
-
-
 <div class="list-wrapper">
 
     <!-- Header -->
@@ -231,9 +227,9 @@
                         </label>
                         <select name="responsavel" id="filtroResponsavel" class="form-select form-select-sm">
                             <option value="">Todos os responsáveis</option>
-                            {% for u in responsaveis %}
-                            <option value="{{ u.pk }}" {% if responsavel_atual == u.pk|stringformat:"d" %}selected{% endif %}>
-                                {{ u.get_full_name|default:u.username }}
+                            {% for user in responsaveis %}
+                            <option value="{{ user.pk }}" {% if responsavel_atual == user.pk|stringformat:"d" %}selected{% endif %}>
+                                {{ user.get_full_name|default:user.username }}
                             </option>
                             {% endfor %}
                         </select>
