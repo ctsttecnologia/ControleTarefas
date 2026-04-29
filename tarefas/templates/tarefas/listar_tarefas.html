@@ -105,6 +105,63 @@
     .list-table tbody td:last-child { padding-top: 0.5rem; }
     .list-actions .btn span { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   FILTROS — Aprimoramento dark mode (form-select do Bootstrap)
+   ═══════════════════════════════════════════════════════════ */
+.list-card-body .form-select-sm {
+    background-color: var(--list-card-bg);
+    border-color: var(--list-card-border);
+    color: var(--list-text);
+    font-size: 0.82rem;
+    padding: 0.4rem 2rem 0.4rem 0.75rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.list-card-body .form-select-sm:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.18);
+    outline: none;
+}
+
+.list-card-body .form-select-sm:hover {
+    border-color: var(--list-text-muted);
+}
+
+/* Seta do select no dark mode (SVG branca) */
+[data-bs-theme="dark"] .list-card-body .form-select-sm {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%238b8ea8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+/* Options no dark mode */
+[data-bs-theme="dark"] .list-card-body .form-select-sm option {
+    background-color: var(--list-card-bg);
+    color: var(--list-text);
+}
+
+/* Label dos filtros - melhor alinhamento */
+.filter-label {
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+/* Botões de filtro alinhados na altura dos selects */
+.list-card-body .row.align-items-end .col-md-2 {
+    padding-top: 1.45rem; /* alinha com os selects que tem label acima */
+}
+
+@media (max-width: 767.98px) {
+    .list-card-body .row.align-items-end .col-md-2 {
+        padding-top: 0;
+    }
+}
+
+/* Badge do contador "40 total" - melhor visibilidade */
+.list-card-header .task-badge {
+    font-size: 0.7rem;
+    padding: 0.3em 0.7em;
+}
+
 </style>
 {% endblock %}
 
@@ -142,43 +199,58 @@
             </h6>
         </div>
         <div class="list-card-body">
-            <form method="get">
+            <form method="get" id="filtrosTarefasForm">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="filter-label">Status</label>
-                        <select name="status" class="form-select form-select-sm">
+
+                    <!-- STATUS -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label class="filter-label" for="filtroStatus">Status</label>
+                        <select name="status" id="filtroStatus" class="form-select form-select-sm">
                             <option value="">Todos</option>
                             {% for val, label in status_options %}
                             <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-3">
-                        <label class="filter-label">Prioridade</label>
-                        <select name="prioridade" class="form-select form-select-sm">
+
+                    <!-- PRIORIDADE -->
+                    <div class="col-12 col-sm-6 col-md-3">
+                        <label class="filter-label" for="filtroPrioridade">Prioridade</label>
+                        <select name="prioridade" id="filtroPrioridade" class="form-select form-select-sm">
                             <option value="">Todas</option>
                             {% for val, label in prioridade_options %}
                             <option value="{{ val }}" {% if request.GET.prioridade == val %}selected{% endif %}>{{ label }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="filter-label">Buscar</label>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" name="q" class="form-control"
-                                   placeholder="Título, descrição, Responsável/Participantes, Projeto..."
-                                   value="{{ request.GET.q|default:'' }}">
-                        </div>
+
+                    <!-- RESPONSÁVEL -->
+                    <div class="col-12 col-md-4">
+                        <label class="filter-label" for="filtroResponsavel">
+                            <i class="bi bi-person me-1"></i>Responsável
+                        </label>
+                        <select name="responsavel" id="filtroResponsavel" class="form-select form-select-sm">
+                            <option value="">Todos os responsáveis</option>
+                            {% for u in responsaveis %}
+                            <option value="{{ u.pk }}" {% if responsavel_atual == u.pk|stringformat:"d" %}selected{% endif %}>
+                                {{ u.get_full_name|default:u.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="col-md-2 d-flex gap-2">
+
+                    <!-- BOTÕES -->
+                    <div class="col-12 col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-sm btn-primary flex-fill">
                             <i class="bi bi-funnel me-1"></i> Filtrar
                         </button>
-                        <a href="{% url 'tarefas:listar_tarefas' %}" class="btn btn-sm btn-outline-secondary" title="Limpar">
+                        <a href="{% url 'tarefas:listar_tarefas' %}"
+                        class="btn btn-sm btn-outline-secondary"
+                        title="Limpar filtros">
                             <i class="bi bi-x-lg"></i>
                         </a>
                     </div>
+
                 </div>
             </form>
         </div>
