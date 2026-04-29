@@ -34,8 +34,7 @@ urlpatterns = [
 
     # --- Relatórios ---
     path('relatorio/', views.RelatorioTarefasView.as_view(), name='relatorio_tarefas'),
-    path('relatorio/gerar/', views.GerarRelatorioView.as_view(), name='gerar_relatorio'),
-    path('relatorio/resultado/', views.RelatorioDisplayView.as_view(), name='relatorio_display'),
+    path('relatorio/gerar/', views.RelatorioTarefasView.as_view(), name='gerar_relatorio'),
     path('relatorio/exportar/', views.ExportarRelatorioView.as_view(), name='exportar_relatorio'),
 
     # --- Admin ---
@@ -44,6 +43,7 @@ urlpatterns = [
     # --- API ---
     path('api/', include(router.urls)),
     path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='api_update_task_status'),
+    
 ]
 
 

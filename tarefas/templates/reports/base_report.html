@@ -1,0 +1,259 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block titulo %}Relatório{% endblock %}</title>
+
+    <style>
+        /* ==========================================================
+           BASE REPORT — Identidade visual unificada (PDF/WeasyPrint)
+           Paleta sincronizada com a tela web
+           ========================================================== */
+
+        @page {
+            size: A4 landscape;          /* ✅ era só "A4" — agora paisagem */
+            margin: 1.2cm 1.5cm 1.5cm 1.5cm;
+
+            @bottom-center {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: 'Helvetica', sans-serif;
+                font-size: 8pt;
+                color: #6b7280;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-size: 9pt;              /* pode reduzir um pouco mais */
+            color: #1a1a2e;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ===== CABEÇALHO ===== */
+        .report-header {
+            border-bottom: 3px solid #0D6EFD;
+            padding-bottom: 10px;
+            margin-bottom: 18px;
+            display: table;
+            width: 100%;
+        }
+        .report-header-left  { display: table-cell; vertical-align: middle; width: 70%; }
+        .report-header-right {
+            display: table-cell; vertical-align: middle; text-align: right;
+            font-size: 8pt; color: #6b7280; width: 30%;
+        }
+        .report-title {
+            font-size: 18pt; font-weight: bold; color: #0D6EFD;
+            margin: 0 0 3px 0;
+        }
+        .report-subtitle {
+            font-size: 9.5pt; color: #6b7280; margin: 0;
+        }
+        .report-meta {
+            font-size: 8pt; color: #6b7280; margin-top: 8px;
+        }
+
+        /* ===== KPI CARDS ===== */
+        .kpi-grid {
+            display: table;
+            width: 100%;
+            border-spacing: 8px 0;
+            margin: 0 -8px 18px -8px;
+        }
+        .kpi-card {
+            display: table-cell;
+            width: 25%;
+            background: #f8f9fc;
+            border-left: 4px solid #6b7280;
+            border-radius: 4px;
+            padding: 10px 12px;
+            vertical-align: middle;
+        }
+        .kpi-card.info    { border-left-color: #0D6EFD; }
+        .kpi-card.success { border-left-color: #22c55e; }
+        .kpi-card.warning { border-left-color: #f59e0b; }
+        .kpi-card.danger  { border-left-color: #ef4444; }
+
+        .kpi-label {
+            font-size: 7.5pt;
+            font-weight: bold;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin: 0 0 4px 0;
+        }
+        .kpi-value {
+            font-size: 20pt;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin: 0;
+            line-height: 1;
+        }
+
+        /* ===== SEÇÕES ===== */
+        .section {
+            margin-bottom: 18px;
+            page-break-inside: avoid;
+        }
+        .section-title {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #0D6EFD;
+            margin: 0 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        /* ===== TABELA PADRÃO ===== */
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;            /* tabela mais compacta */
+        }
+
+        .report-table thead th {
+            background: #0D6EFD;
+            color: #fff;
+            font-weight: bold;
+            font-size: 8pt;
+            text-align: left;
+            padding: 6px 7px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .report-table tbody td {
+            padding: 5px 7px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+        .report-table tbody tr:nth-child(even) td {
+            background: #f8f9fc;
+        }
+
+        /* Alinhamentos auxiliares */
+        .text-center { text-align: center !important; }
+        .text-right  { text-align: right  !important; }
+        .text-muted  { color: #6b7280; }
+        .fw-bold     { font-weight: bold; }
+
+        /* Coluna numérica */
+        .num-col {
+            width: 4%;
+            text-align: center;
+            color: #6b7280;
+            font-weight: bold;
+        }
+
+        /* ===== BARRA DE PROGRESSO ===== */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 8px;
+            background: #0D6EFD;   /* azul padrão */
+            border-radius: 4px;
+            display: block;
+        }
+
+        /* ===== BADGES (paleta sincronizada com tela web) ===== */
+        .badge {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 10px;
+            font-size: 7.5pt;
+            font-weight: bold;
+            line-height: 1.4;
+            text-align: center;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            color: #fff;
+        }
+
+        /* Status */
+        .badge-pendente   { background: #f59e0b; }   /* laranja */
+        .badge-andamento  { background: #3b82f6; }   /* azul */
+        .badge-concluida,
+        .badge-concluido  { background: #22c55e; }   /* verde */
+        .badge-atrasada   { background: #ef4444; }   /* vermelho */
+        .badge-cancelada  { background: #64748b; }   /* cinza */
+        .badge-pausada    { background: #8b5cf6; }   /* roxo */
+
+        /* Prioridade */
+        .badge-alta       { background: #ef4444; }   /* vermelho */
+        .badge-media      { background: #f59e0b; }   /* laranja */
+        .badge-baixa      { background: #22c55e; }   /* verde */
+        .badge-urgente    { background: #dc2626; }   /* vermelho escuro */
+        .progress-pendente   { background: #f59e0b; }
+        .progress-andamento  { background: #3b82f6; }
+        .progress-concluida  { background: #22c55e; }
+        .progress-atrasada   { background: #ef4444; }
+        .progress-cancelada  { background: #64748b; }
+        .progress-alta       { background: #ef4444; }
+        .progress-media      { background: #f59e0b; }
+        .progress-baixa      { background: #22c55e; }
+
+
+        /* ===== ESTADO VAZIO ===== */
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        /* ===== UTILITÁRIOS ===== */
+        .page-break { page-break-after: always; }
+
+        .rel-table-scroll {
+            max-height: 480px;
+            overflow-y: auto;
+            /* Sombra no rodapé indicando scroll */
+            background:
+                linear-gradient(var(--rel-card-bg) 30%, transparent),
+                linear-gradient(transparent, var(--rel-card-bg) 70%) 0 100%,
+                radial-gradient(farthest-side at 50% 0, rgba(0,0,0,0.1), transparent),
+                radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,0.1), transparent) 0 100%;
+            background-repeat: no-repeat;
+            background-size: 100% 20px, 100% 20px, 100% 8px, 100% 8px;
+            background-attachment: local, local, scroll, scroll;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    {# ================ CABEÇALHO ================ #}
+    <div class="report-header">
+        <div class="report-header-left">
+            <h1 class="report-title">{% block report_title %}Relatório{% endblock %}</h1>
+            <p class="report-subtitle">{% block report_subtitle %}{% endblock %}</p>
+        </div>
+        <div class="report-header-right">
+            {% block header_right %}{% endblock %}<br>
+            Emitido em: {% now "d/m/Y H:i" %}
+        </div>
+    </div>
+
+    {# ================ META EXTRA (filtros etc) ================ #}
+    <div class="report-meta">
+        {% block report_meta_extra %}{% endblock %}
+    </div>
+
+    {# ================ CONTEÚDO ================ #}
+    {% block content %}{% endblock %}
+
+</body>
+</html>

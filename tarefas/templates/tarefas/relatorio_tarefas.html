@@ -217,12 +217,10 @@
         position: relative;
     }
 
-    /* Esconde canvas original (não imprime) */
     .rel-chart-container canvas {
         display: none !important;
     }
 
-    /* Mostra a imagem gerada pelo JS */
     .rel-chart-container .print-chart-img {
         display: block !important;
         width: 100% !important;
@@ -231,20 +229,70 @@
         object-fit: contain;
     }
 
-    /* Ajuste de padding */
-    .rel-card-body {
-        padding: 0.5rem !important;
-    }
+    .rel-card-body { padding: 0.5rem !important; }
 
-    /* Fundo branco forçado */
     body, .rel-wrapper {
         background: #fff !important;
         color: #000 !important;
     }
 
-    .rel-card-header, .rel-card-title {
-        color: #000 !important;
+    .rel-card-header, .rel-card-title { color: #000 !important; }
+
+    /* Sem scroll na impressão — mostra tudo */
+    .rel-table-scroll {
+        max-height: none !important;
+        overflow: visible !important;
     }
+    .rel-table-sticky thead th {
+        position: static !important;
+    }
+}
+
+/* ============================================================ */
+/* ⬇️ FORA do @media print — este CSS roda na TELA NORMAL ⬇️    */
+/* ============================================================ */
+
+/* ===== Scroll vertical da tabela ===== */
+.rel-table-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rel-text-muted) transparent;
+}
+
+.rel-table-scroll::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.rel-table-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.rel-table-scroll::-webkit-scrollbar-thumb {
+    background: var(--rel-card-border);
+    border-radius: 5px;
+}
+.rel-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--rel-text-muted);
+}
+
+/* Cabeçalho fixo enquanto rola */
+.rel-table-sticky thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--rel-table-header-bg);
+    box-shadow: 0 1px 0 var(--rel-divider);
+}
+
+/* Mobile: sem altura limite */
+@media (max-width: 767.98px) {
+    .rel-table-scroll {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
 }
 </style>
 {% endblock %}
@@ -307,8 +355,9 @@
             <h6 class="rel-card-title"><i class="bi bi-table me-2"></i>Resultados</h6>
             <span class="rel-count">{{ total_tarefas|default:0 }}</span>
         </div>
-        <div class="table-responsive">
-            <table class="rel-table">
+
+        <div class="rel-table-scroll">
+            <table class="rel-table rel-table-sticky">
                 <thead>
                     <tr>
                         <th>Título</th>
@@ -357,17 +406,17 @@
         {% if tarefas %}
         <div class="rel-quick-export">
             <span class="rel-quick-export-label"><i class="bi bi-download me-1"></i>Exportar:</span>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rel-quick-btn rel-quick-btn--pdf">
-                <i class="bi bi-file-earmark-pdf"></i> PDF
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}" class="btn btn-danger">
+                <i class="bi bi-file-pdf"></i> PDF
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rel-quick-btn rel-quick-btn--docx">
-                <i class="bi bi-file-earmark-word"></i> Word
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}" class="btn btn-success">
+                <i class="bi bi-file-excel"></i> Excel
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rel-quick-btn rel-quick-btn--csv">
-                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}" class="btn btn-primary">
+                <i class="bi bi-file-word"></i> Word
+            </a>
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}" class="btn btn-secondary">
+                <i class="bi bi-filetype-csv"></i> CSV
             </a>
         </div>
         {% endif %}
@@ -452,26 +501,34 @@
         <!-- Exportação -->
         <div class="rel-section-label"><i class="bi bi-download me-1"></i> Exportar</div>
         <div class="d-grid gap-2">
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rel-export-btn rel-export-pdf">
-                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}"
+            class="btn btn-danger">
+                <i class="bi bi-file-pdf"></i> PDF
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rel-export-btn rel-export-docx">
-                <i class="bi bi-file-earmark-word"></i> Exportar Word
+
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}"
+            class="btn btn-success">
+                <i class="bi bi-file-excel"></i> Excel
             </a>
-            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.responsavel %}&responsavel={{ current_filters.responsavel }}{% endif %}"
-               class="rel-export-btn rel-export-csv">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}"
+            class="btn btn-primary">
+                <i class="bi bi-file-word"></i> Word
+            </a>
+
+            <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}"
+            class="btn btn-secondary">
+                <i class="bi bi-filetype-csv"></i> CSV
             </a>
         </div>
 
         <hr>
 
-        <!-- Link para Gerador -->
+        <!-- Link para Gerador 
         <a href="{% url 'tarefas:gerar_relatorio' %}" class="btn btn-sm btn-outline-secondary w-100">
             <i class="bi bi-file-earmark-plus me-1"></i> Gerador Avançado
         </a>
+        -->
     </div>
 </div>
 {% endblock %}

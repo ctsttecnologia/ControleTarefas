@@ -208,12 +208,25 @@
                     <button type="submit" name="export_format" value="html" class="gen-export-btn gen-btn-screen">
                         <i class="bi bi-display"></i> Ver na Tela
                     </button>
-                    <button type="submit" name="export_format" value="pdf" class="gen-export-btn gen-btn-pdf">
-                        <i class="bi bi-file-earmark-pdf"></i> PDF
-                    </button>
-                    <button type="submit" name="export_format" value="csv" class="gen-export-btn gen-btn-csv">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-                    </button>
+                    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=pdf&{{ request.GET.urlencode }}"
+                    class="btn btn-danger">
+                        <i class="bi bi-file-pdf"></i> PDF
+                    </a>
+
+                    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=xlsx&{{ request.GET.urlencode }}"
+                    class="btn btn-success">
+                        <i class="bi bi-file-excel"></i> Excel
+                    </a>
+
+                    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=docx&{{ request.GET.urlencode }}"
+                    class="btn btn-primary">
+                        <i class="bi bi-file-word"></i> Word
+                    </a>
+
+                    <a href="{% url 'tarefas:exportar_relatorio' %}?formato=csv&{{ request.GET.urlencode }}"
+                    class="btn btn-secondary">
+                        <i class="bi bi-filetype-csv"></i> CSV
+                    </a>
                 </div>
             </form>
         </div>

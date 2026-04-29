@@ -104,14 +104,14 @@ def gerar_pdf_relatorio(context):
     try:
         from weasyprint import HTML
 
-        html_string = render_to_string('tarefas/relatorios/relatorio_pdf.html', context)
+        html_string = render_to_string('reports/relatorio_tarefas.html', context)
         pdf_file = HTML(string=html_string).write_pdf()
 
     except ImportError:
         try:
             from xhtml2pdf import pisa
 
-            html_string = render_to_string('tarefas/relatorios/relatorio_pdf.html', context)
+            html_string = render_to_string('reports/relatorio_tarefas.html', context)
             result = io.BytesIO()
             pisa_status = pisa.CreatePDF(io.StringIO(html_string), dest=result)
             if pisa_status.err:
