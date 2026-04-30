@@ -8,12 +8,18 @@
 {% block content %}
 {% include 'usuario/includes/submenu.html' %}
 <div class="container mt-5">
-    <h1 class="mb-4">Gerenciar Permissões de Cards por Grupo</h1>
-    <p>Selecione os cards que cada grupo de usuários poderá visualizar no perfil.</p>
-
+    <div class="card-header bg-white d-flex justify-content-between ">
+        <h5 class="mb-0">
+            <i class="bi bi-shield-lock-fill me-2 text-primary"></i>Gerenciar Permissões de Cards
+        </h5>
+    </div>
+    <div class="card-body">
+         <span class="text-muted">Aqui você pode configurar quais cards cada grupo de usuários tem permissão para visualizar no perfil. Marque ou desmarque os cards para cada grupo e clique em "Salvar Permissões" para aplicar as mudanças.</span>
+         <br>
+    </div>
     <form method="post">
         {% csrf_token %}
-        <div class="accordion" id="accordionGroups">
+        <div class="accordion" id="accrdionGroups">
             {% for grupo in grupos %}
             <div class="accordion-item">
                 <h2 class="accordion-header" id="heading{{ grupo.id }}">

@@ -68,8 +68,9 @@ class TarefasBaseMixin(
     TarefaAccessMixin,
 ):
     """Mixin base para todas as views de Tarefas."""
-    app_name = 'tarefas'
+    app_label_required = 'tarefas'
     modulo_nome = 'Tarefas'
+
 
 # =============================================================================
 # CRUD

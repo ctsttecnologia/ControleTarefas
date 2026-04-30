@@ -149,7 +149,7 @@ class Tarefas(models.Model):
         permissions = [
             ('view_dashboard',  'Pode ver o dashboard de tarefas'),
             ('view_relatorio',  'Pode ver relatórios de tarefas'),
-            ('view_kanban',     'Pode ver o quadro Kanban'),
+            ('view_kamban',     'Pode ver o quadro Kamban'),
             ('view_calendario', 'Pode ver o calendário de tarefas'),
             ('view_all_tarefas', 'Pode visualizar todas as tarefas'),
         ]
