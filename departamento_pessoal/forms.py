@@ -2,7 +2,8 @@
 
 from django import forms
 from django.contrib.auth import get_user_model
-
+from streamlit import user
+from cliente.models import Cliente
 from seguranca_trabalho.models import Funcao
 from .models import Funcionario, Documento, Cargo, Departamento
 from django.utils.translation import gettext_lazy as _
@@ -40,6 +41,11 @@ class CargoForm(forms.ModelForm):
 
 # --- Formulário Principal de Funcionário ---
 
+class ClienteChoiceField(forms.ModelChoiceField):
+    """Select que mostra 'Nome Fantasia — Filial' nas opções."""
+    def label_from_instance(self, obj):
+        return obj.nome_com_filial
+
 class FuncionarioForm(forms.ModelForm):
 
     funcao = forms.ModelChoiceField(
@@ -47,6 +53,12 @@ class FuncionarioForm(forms.ModelForm):
         required=False, # Torna o campo não obrigatório
         label="Função (SST)",
         help_text="Função desempenhada para fins de SST e Matriz de EPI."
+    )
+    cliente = ClienteChoiceField(
+        queryset=Cliente.objects.select_related('filial').order_by('nome'),
+        label='Cliente / Filial',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        empty_label='Selecione um cliente...',
     )
 
     class Meta:
@@ -56,7 +68,7 @@ class FuncionarioForm(forms.ModelForm):
             'foto_3x4', 'nome_completo', 'data_nascimento', 'email_pessoal', 
             'telefone', 'sexo', 'usuario', 'matricula', 'departamento', 
             'cargo', 'funcao', 'cliente', 'data_admissao', 'salario', 
-            'status', 'data_demissao'
+            'status', 'data_demissao', 'cliente',
         ]
         # Aplica widgets para usar as classes do Bootstrap e tipos de input corretos
         widgets = {
@@ -78,6 +90,14 @@ class FuncionarioForm(forms.ModelForm):
 
         request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+
+        # Se usuário tem permissão global, mostra todos
+        if user and user.has_perm('cliente.view_all_cliente'):
+            qs = Cliente.objects.all_filiais().select_related('filial')  # bypass do manager
+        else:
+            qs = Cliente.objects.select_related('filial')
+        
+        self.fields['cliente'].queryset = qs.order_by('filial__nome', 'nome')
 
         if request and hasattr(request, 'user') and hasattr(request.user, 'filial_ativa'):
             filial_ativa = request.user.filial_ativa
