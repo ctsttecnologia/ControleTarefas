@@ -180,14 +180,7 @@ class Cliente(models.Model):
             ("view_all_cliente", "Pode ver todos os clientes da filial"),
         ]
 
-    # =========================================================================
-    # STRING REPRESENTATION
-    # =========================================================================
-
-    def __str__(self):
-        return self.razao_social
-
-    # =========================================================================
+    
     # URLS
     # =========================================================================
 
@@ -239,3 +232,12 @@ class Cliente(models.Model):
         if self.nome and self.nome != self.razao_social:
             return f"{self.razao_social} ({self.nome})"
         return self.razao_social
+
+    @property
+    def nome_com_filial(self):
+        if self.filial:
+            return f"{self.nome} — {self.filial}"
+        return self.nome
+
+    def __str__(self):
+        return self.nome

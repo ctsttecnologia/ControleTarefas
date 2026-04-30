@@ -5,7 +5,7 @@ import uuid
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.mixins import AccessMixin, PermissionRequiredMixin
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied, ValidationError
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
 from django.db.models import Q, QuerySet
@@ -174,7 +174,11 @@ class AppPermissionMixin(PermissionRequiredMixin):
                 for perm in all_perms
             )
 
-        return False
+        # Defensive: alerta dev sobre configuração incompleta
+        raise ImproperlyConfigured(
+            f"{self.__class__.__name__} precisa definir "
+            f"'app_label_required' ou 'permission_required'."
+        )
 
     def handle_no_permission(self):
         """

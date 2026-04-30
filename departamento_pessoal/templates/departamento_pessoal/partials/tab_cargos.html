@@ -34,7 +34,11 @@
                         <span class="text-muted">-</span>
                     {% endif %}
                 </td>
-                <td>R$ {{ cargo.salario_base|floatformat:2|default:"0,00" }}</td>
+                <td>
+                    {% if perm.view_salario.Pode ver salario %}
+                        R$ {{ cargo.salario_base|floatformat:2|default:"0,00" }}
+                    {% endif %}
+                </td>
                 <td>
                     {% if cargo.ativo %}
                         <span class="badge text-bg-success">Ativo</span>

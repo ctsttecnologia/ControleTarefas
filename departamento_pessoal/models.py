@@ -253,6 +253,7 @@ class Funcionario(models.Model):
         ordering = ["nome_completo"]
         permissions = [
             ("view_all_departamento_pessoal", "Pode ver todos os dados do DP (global)"),
+            ("view_salario", "Pode ver salario"),
         ]
 
     def __str__(self):
