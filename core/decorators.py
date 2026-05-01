@@ -8,12 +8,29 @@ from django.urls import NoReverseMatch, reverse
 
 
 def _is_ajax(request):
-    """Detecta se eh uma requisicao AJAX/JSON."""
-    return (
-        request.headers.get('x-requested-with') == 'XMLHttpRequest'
-        or 'application/json' in request.headers.get('accept', '')
-        or request.content_type == 'application/json'
-    )
+    """
+    Detecta se a requisicao espera resposta JSON.
+    
+    Retorna True se:
+    - Header X-Requested-With: XMLHttpRequest (jQuery, axios configurado)
+    - Content-Type: application/json (POST/PUT com body JSON)
+    - Accept: application/json (sem text/html no mesmo header)
+    - Path contem /api/ (convencao do projeto)
+    """
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return True
+    
+    if request.content_type == 'application/json':
+        return True
+    
+    accept = request.headers.get('accept', '')
+    if 'application/json' in accept and 'text/html' not in accept:
+        return True
+    
+    if '/api/' in request.path:
+        return True
+    
+    return False
 
 
 # =============================================================================
@@ -22,15 +39,12 @@ def _is_ajax(request):
 
 def app_permission_required(app_label):
     """
-    Decorator para function-based views que verifica se o usuario
-    tem pelo menos uma permissao do app especificado.
-
-    - Responde JSON 403 para requisicoes AJAX
-    - Renderiza HTML 403 para requisicoes normais
-    - Redireciona para login se nao autenticado
-
+    Decorator para FBVs: exige login + pelo menos uma permissao do app.
+    
+    - Responde JSON 401/403 para AJAX
+    - Renderiza HTML 403 ou redireciona pro login
+    
     Uso:
-        @login_required
         @app_permission_required('ata_reuniao')
         def minha_view(request):
             ...
@@ -40,7 +54,8 @@ def app_permission_required(app_label):
         def _wrapped_view(request, *args, **kwargs):
             user = request.user
 
-            if not user.is_authenticated:
+            # 1. Autenticacao + ativo
+            if not user.is_authenticated or not user.is_active:
                 if _is_ajax(request):
                     return JsonResponse({
                         'status': 'error',
@@ -48,13 +63,12 @@ def app_permission_required(app_label):
                     }, status=401)
                 return redirect_to_login(request.get_full_path())
 
+            # 2. Superuser bypass
             if user.is_superuser:
                 return view_func(request, *args, **kwargs)
 
-            all_perms = user.get_all_permissions()
-            has_perm = any(p.startswith(f'{app_label}.') for p in all_perms)
-
-            if not has_perm:
+            # 3. Permissao do app
+            if not user.has_module_perms(app_label):
                 if _is_ajax(request):
                     return JsonResponse({
                         'status': 'error',
@@ -76,29 +90,17 @@ def app_permission_required(app_label):
 
 def funcionario_required(view_func):
     """
-    Decorator que exige login + vinculo com Funcionario ativo.
+    Decorator: exige login + vinculo com Funcionario ativo.
     Equivalente ao FuncionarioRequiredMixin para FBVs.
-
-    Comportamento (espelhado do mixin):
-      - Nao autenticado          -> redirect_to_login (ou JSON 401 se AJAX)
-      - Superuser                -> passa direto (nao precisa de Funcionario)
-      - Sem Funcionario vinculado -> redireciona para 'core:sem_funcionario'
-                                     (ou JSON 403 se AJAX)
-      - Funcionario inativo       -> mesmo tratamento
-      - Sucesso                   -> injeta request.funcionario e prossegue
-
-    Uso:
-        @funcionario_required
-        def minha_view(request):
-            funcionario = request.funcionario
-            ...
+    
+    Injeta request.funcionario quando bem-sucedido.
     """
     @wraps(view_func)
     def wrapped(request, *args, **kwargs):
         user = request.user
 
-        # 1. Nao autenticado
-        if not user.is_authenticated:
+        # 1. Autenticacao + ativo
+        if not user.is_authenticated or not user.is_active:
             if _is_ajax(request):
                 return JsonResponse(
                     {"status": "error", "error": "Autenticacao necessaria."},
@@ -106,14 +108,14 @@ def funcionario_required(view_func):
                 )
             return redirect_to_login(request.get_full_path())
 
-        # 2. Superuser bypass (consistente com o mixin)
+        # 2. Superuser bypass
         if user.is_superuser:
             request.funcionario = getattr(user, "funcionario", None)
             return view_func(request, *args, **kwargs)
 
-        # 3. Validacao do vinculo Funcionario
+        # 3. Vinculo Funcionario (fail-safe: default False)
         funcionario = getattr(user, "funcionario", None)
-        if not funcionario or not getattr(funcionario, "ativo", True):
+        if not funcionario or not getattr(funcionario, "ativo", False):
             if _is_ajax(request):
                 return JsonResponse(
                     {
@@ -135,9 +137,8 @@ def funcionario_required(view_func):
                     status=403,
                 )
 
-        # 4. Sucesso: injeta funcionario e prossegue
+        # 4. Sucesso
         request.funcionario = funcionario
         return view_func(request, *args, **kwargs)
 
     return wrapped
-

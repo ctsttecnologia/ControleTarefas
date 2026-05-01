@@ -101,92 +101,18 @@
                             {% endif %}
                         </a>
 
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg"
-                            style="min-width: 360px; max-height: 480px; overflow-y: auto;">
+                        <!-- Header do dropdown -->
+                           
+                        <li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
 
-                            <!-- Header do dropdown -->
-                            <li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
-                                <strong><i class="bi bi-bell me-1"></i> Notificações</strong>
-                                {% if notification_count > 0 %}
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
-                                    <form method="post" action="{% url 'notifications:marcar_todas_como_lidas' %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-link btn-sm text-muted p-0"
-                                                title="Marcar todas como lidas" style="font-size: 0.75rem;">
-                                            <i class="bi bi-check2-all"></i> Limpar
-                                        </button>
-                                    </form>
-                                </div>
-                                {% endif %}
-                            </li>
-                            <li><hr class="dropdown-divider my-0"></li>
-
-                            <!-- Lista de notificações (CORRIGIDO: notification_list) -->
-                            {% if notification_list %}
-                                {% for notif in notification_list %}
-                                <li>
-                                    <form method="post" action="{% url 'notifications:marcar_como_lida' notif.pk %}" class="d-inline w-100">
-                                        {% csrf_token %}
-                                        <button type="submit"
-                                                class="dropdown-item py-2 border-0 bg-transparent w-100 text-start
-                                                    {% if not notif.lida %}bg-light{% endif %}">
-                                            <div class="d-flex align-items-start gap-2">
-                                                <!-- Ícone -->
-                                                <div class="mt-1">
-                                                    <i class="bi {{ notif.icone }}
-                                                        {% if notif.prioridade == 'critica' %}text-danger
-                                                        {% elif notif.prioridade == 'alta' %}text-warning
-                                                        {% elif notif.prioridade == 'media' %}text-info
-                                                        {% else %}text-secondary{% endif %}">
-                                                    </i>
-                                                </div>
-                                                <!-- Conteúdo -->
-                                                <div class="flex-grow-1 me-1" style="min-width: 0;">
-                                                    <div class="small fw-semibold text-truncate">
-                                                        {{ notif.titulo }}
-                                                    </div>
-                                                    {% if notif.mensagem %}
-                                                    <div class="text-muted" style="font-size: 0.75rem;">
-                                                        {{ notif.mensagem|truncatechars:50 }}
-                                                    </div>
-                                                    {% endif %}
-                                                    <div class="text-muted" style="font-size: 0.7rem;">
-                                                        {{ notif.tempo_relativo }}
-                                                    </div>
-                                                </div>
-                                                <!-- Badge de categoria -->
-                                                <span class="badge {{ notif.badge_class }}"
-                                                      style="font-size: 0.65rem; white-space: nowrap;">
-                                                    {{ notif.get_categoria_display }}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    </form>
-                                </li>
-                                {% endfor %}
-
-                                {% if notification_count > 8 %}
-                                <li><hr class="dropdown-divider my-0"></li>
-                                <li>
-                                    <a class="dropdown-item text-center small text-primary py-2"
-                                       href="{% url 'notifications:notificacao_list' %}">
-                                        Ver todas ({{ notification_count }}) →
-                                    </a>
-                                </li>
-                                {% endif %}
-
-                            {% else %}
-                            <li>
-                                <div class="text-center py-4 text-muted">
-                                    <i class="bi bi-bell-slash fs-3 d-block mb-2 opacity-50"></i>
-                                    <small>Nenhuma notificação</small>
-                                </div>
-                            </li>
-                            {% endif %}
-                        </ul>
-                    </div>
-
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg"
+                                id="notification-dropdown-list"
+                                style="min-width: 360px; max-height: 480px; overflow-y: auto;">
+                                {% include 'notifications/_dropdown_items.html' %}
+                            </ul>
+                        
+                        </li>
+                    </div>                      
                     <!-- ════════════════════════════════════════════ -->
                     <!-- Usuário                                      -->
                     <!-- ════════════════════════════════════════════ -->
@@ -254,43 +180,130 @@
     </nav>
 </header>
 
-<!-- Script: Polling automático do contador (a cada 60s) -->
+<!-- Script: Polling + Re-render do dropdown via WebSocket -->
 <script>
 (function() {
+    'use strict';
+
     const INTERVALO_MS = 60000;
-    const badge = document.getElementById('notification-badge');
-    const bell  = document.getElementById('header-notification-bell');
+    const ENDPOINT_CONTAGEM = "{% url 'notifications:api_contagem' %}";
+    const ENDPOINT_DROPDOWN = "{% url 'notifications:dropdown_html' %}";
 
-    async function atualizarContador() {
-        try {
-            const resp = await fetch("{% url 'notifications:api_contagem' %}", {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (!resp.ok) return;
-            const data = await resp.json();
+    let pollingId = null;
+    let pollingPaused = false;
 
-            if (data.count > 0) {
-                if (badge) {
-                    badge.textContent = data.count;
-                    badge.style.display = '';
-                } else {
-                    const newBadge = document.createElement('span');
-                    newBadge.id = 'notification-badge';
-                    newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
-                    newBadge.style.fontSize = '0.6em';
-                    newBadge.textContent = data.count;
-                    bell.appendChild(newBadge);
-                }
-            } else if (badge) {
-                badge.style.display = 'none';
+    function getElements() {
+        return {
+            badge: document.getElementById('notification-badge'),
+            bell: document.getElementById('header-notification-bell'),
+            dropdown: document.getElementById('notification-dropdown-list'),
+        };
+    }
+
+    function atualizarBadge(count) {
+        const { badge, bell } = getElements();
+
+        if (count > 0) {
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = '';
+            } else if (bell) {
+                const newBadge = document.createElement('span');
+                newBadge.id = 'notification-badge';
+                newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                newBadge.style.fontSize = '0.6em';
+                newBadge.textContent = count;
+                bell.appendChild(newBadge);
             }
-        } catch (e) {
-            // Silencioso — não interrompe a UX
+        } else if (badge) {
+            badge.style.display = 'none';
         }
     }
 
-    setInterval(atualizarContador, INTERVALO_MS);
+    async function atualizarContador() {
+        if (pollingPaused) return;
+
+        try {
+            const resp = await fetch(ENDPOINT_CONTAGEM, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+
+            if (resp.status === 401) {
+                console.warn('[Notif] Sessão expirada — interrompendo polling');
+                pararPolling();
+                return;
+            }
+
+            if (!resp.ok) return;
+
+            const data = await resp.json();
+            atualizarBadge(data.count ?? 0);
+        } catch (e) {
+            // silencioso
+        }
+    }
+
+    /**
+     * Re-renderiza o dropdown completo (header + lista de notificações).
+     * Chamado pelo WebSocket quando chega uma nova notificação.
+     */
+    async function recarregarDropdown() {
+        const { dropdown } = getElements();
+        if (!dropdown) {
+            console.warn('[Notif] #notification-dropdown-list não encontrado');
+            return;
+        }
+
+        try {
+            const resp = await fetch(ENDPOINT_DROPDOWN, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+
+            if (!resp.ok) {
+                console.warn('[Notif] Falha ao recarregar dropdown:', resp.status);
+                return;
+            }
+
+            const html = await resp.text();
+            dropdown.innerHTML = html;
+            console.log('[Notif] Dropdown atualizado');
+        } catch (e) {
+            console.error('[Notif] Erro ao recarregar dropdown:', e);
+        }
+    }
+
+    function iniciarPolling() {
+        if (pollingId) return;
+        pollingId = setInterval(atualizarContador, INTERVALO_MS);
+    }
+
+    function pararPolling() {
+        if (pollingId) {
+            clearInterval(pollingId);
+            pollingId = null;
+        }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        pollingPaused = document.hidden;
+        if (!document.hidden) {
+            atualizarContador();
+            recarregarDropdown();  // atualiza dropdown ao voltar à aba
+        }
+    });
+
+    // API global usada pelo WebSocket
+    window.NotificacoesAPI = {
+        atualizarBadge: atualizarBadge,
+        forcarAtualizacao: atualizarContador,
+        recarregarDropdown: recarregarDropdown,  
+        pararPolling: pararPolling,
+        iniciarPolling: iniciarPolling,
+    };
+
+    iniciarPolling();
 })();
 </script>
-
 

@@ -1,0 +1,77 @@
+
+<!-- Header do dropdown -->
+<li class="dropdown-header d-flex justify-content-between align-items-center px-3 py-2">
+    <strong><i class="bi bi-bell me-1"></i> Notificações</strong>
+    {% if notification_count > 0 %}
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger rounded-pill">{{ notification_count }}</span>
+        <form method="post" action="{% url 'notifications:marcar_todas_como_lidas' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-link btn-sm text-muted p-0"
+                    title="Marcar todas como lidas" style="font-size: 0.75rem;">
+                <i class="bi bi-check2-all"></i> Limpar
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</li>
+<li><hr class="dropdown-divider my-0"></li>
+
+<!-- Lista de notificações -->
+{% if notification_list %}
+    {% for notif in notification_list %}
+    <li>
+        <form method="post" action="{% url 'notifications:marcar_como_lida' notif.pk %}" class="d-inline w-100">
+            {% csrf_token %}
+            <button type="submit"
+                    class="dropdown-item py-2 border-0 bg-transparent w-100 text-start
+                        {% if not notif.lida %}bg-light{% endif %}">
+                <div class="d-flex align-items-start gap-2">
+                    <div class="mt-1">
+                        <i class="bi {{ notif.icone }}
+                            {% if notif.prioridade == 'critica' %}text-danger
+                            {% elif notif.prioridade == 'alta' %}text-warning
+                            {% elif notif.prioridade == 'media' %}text-info
+                            {% else %}text-secondary{% endif %}">
+                        </i>
+                    </div>
+                    <div class="flex-grow-1 me-1" style="min-width: 0;">
+                        <div class="small fw-semibold text-truncate">
+                            {{ notif.titulo }}
+                        </div>
+                        {% if notif.mensagem %}
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            {{ notif.mensagem|truncatechars:50 }}
+                        </div>
+                        {% endif %}
+                        <div class="text-muted" style="font-size: 0.7rem;">
+                            {{ notif.tempo_relativo }}
+                        </div>
+                    </div>
+                    <span class="badge {{ notif.badge_class }}"
+                          style="font-size: 0.65rem; white-space: nowrap;">
+                        {{ notif.get_categoria_display }}
+                    </span>
+                </div>
+            </button>
+        </form>
+    </li>
+    {% endfor %}
+
+    {% if notification_count > 8 %}
+    <li><hr class="dropdown-divider my-0"></li>
+    <li>
+        <a class="dropdown-item text-center small text-primary py-2"
+           href="{% url 'notifications:notificacao_list' %}">
+            Ver todas ({{ notification_count }}) →
+        </a>
+    </li>
+    {% endif %}
+{% else %}
+<li>
+    <div class="text-center py-4 text-muted">
+        <i class="bi bi-bell-slash fs-3 d-block mb-2 opacity-50"></i>
+        <small>Nenhuma notificação</small>
+    </div>
+</li>
+{% endif %}

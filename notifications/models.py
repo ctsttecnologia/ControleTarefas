@@ -75,7 +75,6 @@ class Notificacao(models.Model):
     mensagem = models.TextField('Mensagem', blank=True)
     lida = models.BooleanField('Lida', default=False, db_index=True)
     enviada_email = models.BooleanField(default=False)
-    criada_em = models.DateTimeField(auto_now_add=True)
 
     url_destino = models.CharField(
         'URL de Destino', max_length=500,

@@ -44,7 +44,7 @@ def _get_room_for_user(user, room_id):
 # LISTA DE USUÁRIOS
 # =============================================================================
 
-@login_required                     # 3º — checa login primeiro (mais externo)
+                  # 3º — checa login primeiro (mais externo)
 @app_permission_required('chat')    # 2º — checa permissão do app
 @require_GET                        # 1º — valida método HTTP (mais interno)
 def get_user_list(request):
@@ -80,7 +80,6 @@ def get_user_list(request):
 # HISTÓRICO DE MENSAGENS
 # =============================================================================
 
-@login_required
 @app_permission_required('chat')
 @require_GET
 def get_chat_history(request, room_id):
@@ -147,7 +146,6 @@ def get_chat_history(request, room_id):
 # LISTA DE TAREFAS
 # =============================================================================
 
-@login_required
 @app_permission_required('chat')
 @require_GET
 def get_task_list(request):
@@ -190,7 +188,7 @@ def get_task_list(request):
 # LISTA DE SALAS ATIVAS
 # =============================================================================
 
-@login_required
+
 @app_permission_required('chat')
 @require_GET
 def get_active_room_list(request):
@@ -228,7 +226,7 @@ def get_active_room_list(request):
 # DM
 # =============================================================================
 
-@login_required
+
 @app_permission_required('chat')
 @require_GET
 def start_or_get_dm_chat(request, user_id):
@@ -302,7 +300,6 @@ def start_or_get_dm_chat(request, user_id):
 # GRUPO
 # =============================================================================
 
-@login_required
 @app_permission_required('chat')
 @require_POST
 def create_group_chat(request):
@@ -353,7 +350,6 @@ def create_group_chat(request):
 # TAREFA
 # =============================================================================
 
-@login_required
 @app_permission_required('chat')
 def get_or_create_task_chat(request, task_id):
     """Chat de tarefa."""
@@ -436,7 +432,7 @@ class ChatImageUploadView(FuncionarioRequiredMixin, AppPermissionMixin, View):
 # UPLOAD — Arquivos (FBV)
 # =============================================================================
 
-@login_required
+
 @app_permission_required('chat')
 @require_POST
 def chat_file_upload(request):
