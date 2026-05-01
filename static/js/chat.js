@@ -79,7 +79,7 @@ class ChatManager {
         this.dragData = { isDragging: false, offsetX: 0, offsetY: 0 };
 
         // Inicia os processos DEPOIS de tudo configurado.
-        this.connectNotificationSocket(); // ADICIONE A ÚNICA CHAMADA AQUI!
+        // this.connectNotificationSocket();
         this.initialize();
     }
 
@@ -88,6 +88,9 @@ class ChatManager {
     async initialize() {
         try {
             await this.waitForDOM();
+
+            // Pede permissão de notificação nativa (uma vez)
+            this.requestNotificationPermission();
             
             // Verifica elementos críticos do template
             const criticalElements = ['chat-draggable-container', 'chat-log', 'chat-message-input'];
@@ -95,7 +98,6 @@ class ChatManager {
             
             if (missingElements.length > 0) {
                 this.log.warn(`Elementos críticos faltando: ${missingElements.join(', ')}`);
-                // Não injetamos dinamicamente pois o template já existe
             }
             
             // Configura elementos específicos do template
@@ -1031,13 +1033,13 @@ class ChatManager {
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const ws_url = `${protocol}://${window.location.host}${ws_path}`;
         
-        this.log.info(`🔄 Conectando WebSocket: ${ws_url} (Tentativa ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+        this.log.info(`Conectando WebSocket: ${ws_url} (Tentativa ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
         
         try {
             this.websocket = new WebSocket(ws_url);
             
             this.websocket.onopen = (e) => {
-                this.log.success('✅ WebSocket conectado com sucesso!');
+                this.log.success('WebSocket conectado com sucesso!');
                 this.isConnected = true;
                 this.isConnecting = false;
                 this.reconnectAttempts = 0; 
@@ -1059,7 +1061,7 @@ class ChatManager {
                 this.isConnecting = false;
                 this.updateConnectionStatus('offline');
                 
-                this.log.warn(`⚠️ WebSocket desconectado: ${e.code} - ${e.reason || 'Sem razão'}`);
+                this.log.warn(`WebSocket desconectado: ${e.code} - ${e.reason || 'Sem razão'}`);
 
                 // **EVITA RECONEXÃO AUTOMÁTICA SE:**
                 // 1. Código 1000 = fechamento normal
@@ -1072,7 +1074,7 @@ class ChatManager {
                 }
 
                 if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-                    this.log.error(`❌ Máximo de ${this.maxReconnectAttempts} tentativas atingido. Parando reconexões.`);
+                    this.log.error(`Máximo de ${this.maxReconnectAttempts} tentativas atingido. Parando reconexões.`);
                     this.showConnectionError('Falha de conexão. Clique para tentar novamente.');
                     this.updateConnectionStatus('error');
                     return;
@@ -1088,7 +1090,7 @@ class ChatManager {
                 this.reconnectAttempts++;
                 const delay = Math.min(Math.pow(2, this.reconnectAttempts) * 1000, 30000); // Max 30s
                 
-                this.log.warn(`🔄 Reagendando reconexão em ${delay / 1000}s... (tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                this.log.warn(`Reagendando reconexão em ${delay / 1000}s... (tentativa ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
                 this.showConnectionError(`Reconectando em ${delay / 1000}s...`);
                 
                 // Cancela timeout anterior se existir
@@ -1114,21 +1116,21 @@ class ChatManager {
             
             this.websocket.onerror = (e) => {
                 this.isConnecting = false;
-                this.log.error('❌ Erro WebSocket:', e);
+                this.log.error('Erro WebSocket:', e);
                 this.updateConnectionStatus('error');
             };
 
             // **TIMEOUT DE SEGURANÇA PARA CONEXÃO**
             setTimeout(() => {
                 if (this.websocket && this.websocket.readyState === WebSocket.CONNECTING) {
-                    this.log.warn('⏰ Timeout na conexão WebSocket');
+                    this.log.warn('Timeout na conexão WebSocket');
                     this.websocket.close();
                 }
             }, 10000); // 10 segundos
 
         } catch (error) {
             this.isConnecting = false;
-            this.log.error('❌ Erro ao criar WebSocket:', error);
+            this.log.error('Erro ao criar WebSocket:', error);
             this.updateConnectionStatus('error');
         }
     }
@@ -1136,13 +1138,13 @@ class ChatManager {
     // ==================== WEBSOCKET DE NOTIFICAÇÕES ====================
 
     connectNotificationSocket() {
-        // **EVITA MÚLTIPLAS CONEXÕES**
+        // EVITA MÚLTIPLAS CONEXÕES
         if (this.notificationSocket && this.notificationSocket.readyState === WebSocket.OPEN) {
             this.log.info('WebSocket de notificações já conectado.');
             return;
         }
 
-        // **EVITA SPAM DE TENTATIVAS**
+        // EVITA SPAM DE TENTATIVAS
         if (this.notificationConnecting) {
             this.log.warn('Conexão de notificações já em andamento.');
             return;
@@ -1154,13 +1156,13 @@ class ChatManager {
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const ws_url = `${protocol}://${window.location.host}/ws/notifications/`;
 
-        this.log.info(`🔔 Conectando WebSocket de Notificações: ${ws_url} (Tentativa ${this.notificationReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
-        
+        this.log.info(`Conectando WebSocket de Notificações: ${ws_url} (Tentativa ${this.notificationReconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+
         try {
             this.notificationSocket = new WebSocket(ws_url);
 
             this.notificationSocket.onopen = (e) => {
-                this.log.success('✅ WebSocket de Notificações conectado');
+                this.log.success('WebSocket de Notificações conectado');
                 this.notificationConnecting = false;
                 this.notificationReconnectAttempts = 0;
             };
@@ -1168,50 +1170,105 @@ class ChatManager {
             this.notificationSocket.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
-                    this.log.info('🔔 Notificação Recebida:', data);
 
                     switch (data.type) {
+                        // Nova conversa criada
                         case 'new_chat_notification':
                             this.log.info(`Nova conversa de ${data.room_name}`);
                             this.handleNewChatRoomUI(data);
                             this.playNotificationSound('connect');
                             break;
+
+                        // Atualização do badge (contador) + dropdown
+                        case 'notification_count_update':
+                            this.log.info(`Badge atualizado: ${data.count}`);
+                            if (window.NotificacoesAPI) {
+                                window.NotificacoesAPI.atualizarBadge(data.count);
+                                window.NotificacoesAPI.recarregarDropdown();  // 🆕 atualiza lista do sino
+                            }
+                            break;
+                            
+                        // Nova notificação (toast + badge automático)
+                        case 'new_notification': {
+                            const notif = data.notification || {};
+                            this.log.info(`Nova notificação: ${notif.titulo}`);
+
+                            // Toca som conforme prioridade
+                            if (notif.prioridade === 'critica' || notif.prioridade === 'alta') {
+                                this.playNotificationSound('alert');
+                            } else {
+                                this.playNotificationSound('message');
+                            }
+
+                            // Toast in-app
+                            if (typeof this.showNotification === 'function') {
+                                this.showNotification(
+                                    `${notif.titulo}${notif.mensagem ? ': ' + notif.mensagem : ''}`,
+                                    notif.prioridade === 'critica' ? 'error' : 'info'
+                                );
+                            }
+
+                            // Notificação nativa do navegador
+                            this.showBrowserNotification(notif);
+
+                            // Recarrega o dropdown do sino com a notificação nova
+                            if (window.NotificacoesAPI) {
+                                window.NotificacoesAPI.recarregarDropdown();
+                            }
+                            break;
+                        }
+
+                        // Notificação marcada como lida (sincroniza abas)
+                        case 'notification_read':
+                            this.log.info(`Notificação ${data.notification_id} lida`);
+                            // O badge já é atualizado pelo notification_count_update
+                            if (window.NotificacoesAPI) {
+                                window.NotificacoesAPI.recarregarDropdown();  // 🆕 sincroniza lista entre abas
+                            }
+                            break;
+
+                        // Legado — mensagem de chat (compatibilidade)
+                        case 'new_message_notification':
+                            this.log.info('Nova mensagem (legado):', data);
+                            this.playNotificationSound('message');
+                            break;
+
                         default:
-                            this.log.debug('Notificação não tratada:', data.type);
+                            this.log.warn(`Tipo desconhecido: ${data.type}`);
                     }
-                } catch (error) {
-                    this.log.error('Erro ao processar notificação:', error);
+                } catch (err) {
+                    this.log.error('Erro processando notificação:', err);
                 }
             };
 
             this.notificationSocket.onclose = (e) => {
                 this.notificationConnecting = false;
-                this.log.warn(`⚠️ WebSocket de Notificações fechado: ${e.code}`);
+                this.log.warn(`WebSocket de Notificações fechado: ${e.code}`);
 
-                // **EVITA LOOP INFINITO**
+                // EVITA LOOP INFINITO
                 if (e.code === 1000 || e.code === 1001) {
                     this.log.info('Notificações fechadas normalmente.');
                     return;
                 }
 
                 if (this.notificationReconnectAttempts >= this.maxReconnectAttempts) {
-                    this.log.error('❌ Máximo de tentativas para notificações atingido.');
+                    this.log.error('Máximo de tentativas para notificações atingido.');
                     return;
                 }
 
-                // **RECONEXÃO CONTROLADA**
+                // RECONEXÃO CONTROLADA
                 this.notificationReconnectAttempts++;
-                const delay = Math.min(this.notificationReconnectAttempts * 5000, 30000); // Max 30s
-                
-                this.log.warn(`⏰ Reagendando reconexão de notificações em ${delay / 1000}s...`);
-                
+                const delay = Math.min(this.notificationReconnectAttempts * 5000, 30000);
+
+                this.log.warn(`Reagendando reconexão de notificações em ${delay / 1000}s...`);
+
                 if (this.notificationReconnectTimeout) {
                     clearTimeout(this.notificationReconnectTimeout);
                 }
-                
+
                 this.notificationReconnectTimeout = setTimeout(() => {
                     if (this.pauseReconnections) {
-                        this.log.info('⏸️ Reconexão de notificações pausada');
+                        this.log.info('Reconexão de notificações pausada');
                         return;
                     }
                     if (!this.notificationSocket || this.notificationSocket.readyState === WebSocket.CLOSED) {
@@ -1222,12 +1279,76 @@ class ChatManager {
 
             this.notificationSocket.onerror = (e) => {
                 this.notificationConnecting = false;
-                this.log.error('❌ Erro no WebSocket de Notificações:', e);
+                this.log.error('Erro no WebSocket de Notificações:', e);
             };
 
         } catch (error) {
             this.notificationConnecting = false;
-            this.log.error('❌ Erro ao criar WebSocket de notificações:', error);
+            this.log.error('Erro ao criar WebSocket de notificações:', error);
+        }
+    }
+
+    // ==================== NOTIFICAÇÕES NATIVAS DO BROWSER ====================
+
+    /**
+     * Pede permissão para mostrar notificações nativas do navegador.
+     * Só pede uma vez (se ainda for 'default'). Idempotente.
+     */
+    requestNotificationPermission() {
+        if (!('Notification' in window)) {
+            this.log.warn('Browser não suporta notificações nativas');
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                this.log.info(`Permissão de notificação: ${permission}`);
+            });
+        } else {
+            this.log.debug(`Permissão de notificação já definida: ${Notification.permission}`);
+        }
+    }
+
+    /**
+     * Mostra uma notificação nativa do navegador.
+     * Só dispara se: API suportada + permissão concedida + aba não focada.
+     * 
+     * @param {Object} notif - Objeto serializado de Notificacao
+     * @param {number} notif.id
+     * @param {string} notif.titulo
+     * @param {string} notif.mensagem
+     * @param {string} notif.prioridade - baixa | media | alta | critica
+     * @param {string} notif.url_destino - URL relativa para redirect ao clicar
+     */
+    showBrowserNotification(notif) {
+        if (!notif) return;
+        if (!('Notification' in window)) return;
+        if (Notification.permission !== 'granted') return;
+        if (document.hasFocus()) return; // não notifica se a aba já está ativa
+
+        try {
+            const browserNotif = new Notification(notif.titulo || 'Nova notificação', {
+                body: notif.mensagem || '',
+                icon: '/static/images/logocetest.png',
+                tag: `notif-${notif.id}`,
+                requireInteraction: notif.prioridade === 'critica',
+            });
+
+            // Ao clicar, leva pra URL de destino
+            browserNotif.onclick = () => {
+                window.focus();
+                if (notif.url_destino) {
+                    window.location.href = notif.url_destino;
+                }
+                browserNotif.close();
+            };
+
+            // Auto-fecha em 8s (exceto críticas, que ficam até clique)
+            if (notif.prioridade !== 'critica') {
+                setTimeout(() => browserNotif.close(), 8000);
+            }
+        } catch (err) {
+            this.log.warn('Erro ao mostrar notificação nativa:', err);
         }
     }
 
@@ -1243,7 +1364,7 @@ class ChatManager {
             return;
         }
 
-        this.log.success(`🎨 Renderizando nova sala na UI: ${roomData.room_name}`);
+        this.log.success(`Renderizando nova sala na UI: ${roomData.room_name}`);
 
         // Encontra o container da lista de conversas
         // **IMPORTANTE**: Verifique se o ID 'active-chat-list-container' corresponde ao seu HTML.
@@ -1289,7 +1410,7 @@ class ChatManager {
     }
     
     handleWebSocketMessage(data) {
-        console.log('📨 WebSocket message received:', data);
+        console.log('WebSocket message received:', data);
     
         switch (data.type) {
             case 'new_message':
@@ -1331,7 +1452,7 @@ class ChatManager {
     }
 
     handleNewMessage(data) {
-        console.log('💬 Nova mensagem recebida:', data);
+        console.log('Nova mensagem recebida:', data);
         
         // Verifica se a mensagem é para a sala atual
         if (data.room_id && data.room_id !== this.currentRoom) {
@@ -1340,7 +1461,7 @@ class ChatManager {
             return;
         }
         
-        // ✅ Prepara dados da mensagem com fallbacks
+        // Prepara dados da mensagem com fallbacks
         const messageData = {
             id: data.message_id || data.id,
             message: data.message || data.content || '',
@@ -1583,11 +1704,11 @@ class ChatManager {
     displayMessage(data) {
         const chatLog = document.getElementById('chat-log');
         if (!chatLog) {
-            console.error('❌ chat-log não encontrado');
+            console.error('chat-log não encontrado');
             return;
         }
         
-        console.log('🖼️ Exibindo mensagem:', data);
+        console.log('Exibindo mensagem:', data);
         
         // Remove estados vazios
         chatLog.querySelectorAll('.welcome-state, .loading-state').forEach(el => el.remove());
@@ -1598,7 +1719,7 @@ class ChatManager {
         messageDiv.className = `message ${isOwn ? 'own-message' : 'other-message'}`;
         messageDiv.dataset.messageId = data.id || data.message_id;
         
-        // ✅ CORREÇÃO: Trata timestamp inválido
+        // CORREÇÃO: Trata timestamp inválido
         let timestamp = 'Agora';
         if (data.timestamp) {
             const date = new Date(data.timestamp);
@@ -1610,10 +1731,10 @@ class ChatManager {
             }
         }
         
-        // ✅ CORREÇÃO: Garante que username nunca seja vazio
+        // CORREÇÃO: Garante que username nunca seja vazio
         const username = data.username || 'Usuário';
         
-        // ✅ CORREÇÃO: Detecta tipo de mensagem e renderiza corretamente
+        // CORREÇÃO: Detecta tipo de mensagem e renderiza corretamente
         let contentHtml = '';
         
         if (data.message_type === 'file' && data.file_data) {
@@ -1647,7 +1768,7 @@ class ChatManager {
         chatLog.appendChild(messageDiv);
         this.scrollToBottom();
         
-        console.log('✅ Mensagem exibida com sucesso');
+        console.log('Mensagem exibida com sucesso');
     }
 
     // ==================== BUSCA NO CHAT ====================
@@ -2693,7 +2814,7 @@ class ChatManager {
         this.currentRoomName = null;
         this.isConnected = false;
         
-        this.log.info('💥 Chat fechado e recursos limpos');
+        this.log.info('Chat fechado e recursos limpos');
     }
 
     cleanupWebSockets() {
@@ -2732,7 +2853,7 @@ class ChatManager {
             return;
         }
         
-        this.log.info('🔄 Reconexão manual solicitada');
+        this.log.info('Reconexão manual solicitada');
         
         // **RESETA CONTADORES**
         this.reconnectAttempts = 0;
@@ -2966,12 +3087,12 @@ class ChatManager {
             <div style="position: fixed; top: 20px; right: 20px; z-index: 999999; 
                         background: #dc3545; color: white; padding: 15px; border-radius: 8px; 
                         max-width: 300px; font-family: system-ui;">
-                <strong>❌ Erro no Chat</strong>
+                <strong> Erro no Chat</strong>
                 <p style="margin: 8px 0; font-size: 13px;">${message}</p>
                 <button onclick="location.reload()" style="background: rgba(255,255,255,0.2); 
                         border: 1px solid rgba(255,255,255,0.3); color: white; 
                         padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                    🔄 Recarregar
+                        Recarregar
                 </button>
             </div>
         `;
@@ -3116,7 +3237,7 @@ window.addEventListener('beforeunload', () => {
 
 // Pausa reconexões quando a aba perde o foco
 document.addEventListener('visibilitychange', () => {
-    // ✅ Verifica se chatManager existe E é um objeto antes de atribuir
+    // Verifica se chatManager existe E é um objeto antes de atribuir
     if (!window.chatManager || typeof window.chatManager !== 'object') {
         return;
     }
@@ -3124,8 +3245,8 @@ document.addEventListener('visibilitychange', () => {
     window.chatManager.pauseReconnections = document.hidden;
 });
 
-console.log('✅ Sistema de chat com controle de loop inicializado');
-console.log('✅ ChatManager v4.3 - Refatorado para template Django');
+console.log('Sistema de chat com controle de loop inicializado');
+console.log('ChatManager v4.3 - Refatorado para template Django');
 
 // Exporta o ChatManager para o objeto global (window)
 window.ChatManager = ChatManager;

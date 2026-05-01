@@ -11,6 +11,13 @@ import logging
 from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
+from django.db.models.signals import post_delete  # post_save já importado
+from .models import Notificacao
+from .realtime import (
+    push_notification_count,
+    push_new_notification,
+)
+
 from tarefas.models import HistoricoTarefa, Tarefas
 
 logger = logging.getLogger(__name__)
@@ -98,4 +105,48 @@ def registrar_e_notificar_participantes(sender, instance, action, pk_set, **kwar
                 exc_info=True,
             )
 
+# =============================================================================
+# SIGNAL: Notificacao criada/atualizada → Push WebSocket (badge em tempo real)
+# =============================================================================
+
+@receiver(post_save, sender=Notificacao)
+def push_notificacao_websocket(sender, instance, created, **kwargs):
+    """
+    Push em tempo real via WebSocket sempre que uma Notificacao
+    é criada ou atualizada.
+    
+    - Nova notificação → push_new_notification (toast + badge)
+    - Atualização (ex: marcar como lida) → push_notification_count (só badge)
+    """
+    user = instance.usuario
+    if not user:
+        return
+
+    try:
+        if created:
+            push_new_notification(user, instance)
+        else:
+            # Update (ex: lida=True) → atualiza só o badge
+            push_notification_count(user)
+    except Exception as e:
+        logger.error(
+            'Erro no push WebSocket para Notificacao %s: %s',
+            instance.pk, e, exc_info=True,
+        )
+
+
+@receiver(post_delete, sender=Notificacao)
+def push_notificacao_deletada(sender, instance, **kwargs):
+    """Atualiza o badge quando uma notificação é deletada."""
+    user = getattr(instance, 'usuario', None)
+    if not user:
+        return
+
+    try:
+        push_notification_count(user)
+    except Exception as e:
+        logger.error(
+            'Erro no push após delete de Notificacao %s: %s',
+            instance.pk, e, exc_info=True,
+        )
 

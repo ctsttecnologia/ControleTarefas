@@ -448,8 +448,11 @@ CELERY_BEAT_SCHEDULE = {
 if IS_DEVELOPMENT:
     CHANNEL_LAYERS = {
         'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6380)],
         },
+    },
     }
     logger.debug("Usando InMemory para WebSockets (Desenvolvimento)")
 else:
@@ -506,34 +509,26 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
+            'propagate': False,           # evita propagação para o root
         },
         'django.request': {
             'handlers': ['console'],
             'level': 'WARNING',
+            'propagate': False,           # ESTA É A CORREÇÃO PRINCIPAL!
+        },
+        'django.server': {                # ADICIONADO explicitamente
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,           # não propaga para 'django'
         },
         'fontTools': {
             'handlers': ['console'],
             'level': 'WARNING',
+            'propagate': False,           # boa prática
         },
-        'fontTools.subset': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-        },
-        'weasyprint': {
-            'handlers': ['console'],
-            'level': 'WARNING',
-        },
-        'suprimentos': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
+        # ... seus outros loggers — adiciona propagate: False em todos
     },
 }
-
 
 if IS_PRE_PRODUCTION and LOGS_DIR.exists():
     try:

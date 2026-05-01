@@ -767,7 +767,6 @@ class AtaReuniaoExcelExportView(AtaReuniaoBaseMixin, AtaQuerysetMixin, View):
 # UPLOAD / DOWNLOAD
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@login_required
 @app_permission_required('ata_reuniao')
 def download_ata_reuniao_template(request):
     """Gera planilha Excel modelo para importação em massa."""
@@ -980,7 +979,7 @@ class UploadAtaReuniaoView(AtaReuniaoBaseMixin, View):
         return redirect(request.path)
 
 
-@login_required
+
 @app_permission_required('ata_reuniao')
 def download_error_report(request):
     """Gera arquivo Excel com linhas que falharam durante upload."""
