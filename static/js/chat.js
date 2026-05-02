@@ -429,11 +429,15 @@ class ChatManager {
             } else {
                 throw new Error(data.error || 'Erro desconhecido');
             }
+
+            // Marca todas como lidas após carregar histórico
+            this.markRoomAsRead(roomId);
             
         } catch (error) {
             this.log.error('❌ Erro ao carregar histórico:', error);
             this.renderErrorChatState(error.message);
         }
+        
     }
     renderMessages(messages) {
         const chatLog = document.getElementById('chat-log');
@@ -646,21 +650,7 @@ class ChatManager {
         `;
     }
 
-    markRoomAsRead(roomId) {
-        // Atualiza na lista de conversas
-        const roomElements = document.querySelectorAll('.chat-list-item');
-        roomElements.forEach(element => {
-            if (element.getAttribute('data-room-id') === roomId || 
-                element.getAttribute('onclick')?.includes(roomId)) {
-                element.classList.remove('has-unread');
-                const unreadBadge = element.querySelector('.chat-list-unread');
-                if (unreadBadge) {
-                    unreadBadge.remove();
-                }
-            }
-        });
-    }
-
+    
     // ==================== EVENT LISTENERS ====================
     
     setupEventListeners() {
@@ -1045,12 +1035,26 @@ class ChatManager {
                 this.reconnectAttempts = 0; 
                 this.hideConnectionError();
                 this.updateConnectionStatus('online');
+                if (this._pendingReadRoom) {
+                    const roomId = this._pendingReadRoom;
+                    this._pendingReadRoom = null;
+                    
+                    // Pequeno delay pra garantir que o WS está 100% pronto
+                    setTimeout(() => {
+                        this.markRoomAsRead(roomId);
+                    }, 100);
+                }
             };
             
             this.websocket.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
                     this.handleWebSocketMessage(data);
+                    console.log('WebSocket message received:', data);
+                    if (data.type === 'read_receipt') {
+                        this.handleReadReceipt(data);
+                        return;
+                    }
                 } catch (error) {
                     this.log.error('Erro ao processar mensagem WebSocket:', error);
                 }
@@ -1530,6 +1534,48 @@ class ChatManager {
         
         // Remove da interface
         this.removeMessageFromUI(data.message_id);
+    }
+
+    /** Atualiza a UI quando o servidor confirma leitura. **/
+    handleReadReceipt(data) {
+        const roomId = data.room_id;
+        if (!roomId) return;
+        
+        console.log(`🧹 Limpando badges da sala ${roomId} (${data.marked} marcadas)`);
+        
+        // 1️⃣ Remove badges DENTRO do item de conversa
+        const selectors = [
+            `[data-room-id="${roomId}"] .unread-badge`,
+            `[data-room-id="${roomId}"] .badge`,
+            `[data-room-id="${roomId}"] .conversation-unread-count`,
+            `[data-room="${roomId}"] .unread-badge`,
+            `#room-${roomId} .unread-badge`,
+            `#room-${roomId} .badge`,
+        ];
+        
+        selectors.forEach(sel => {
+            document.querySelectorAll(sel).forEach(el => {
+                el.style.display = 'none';
+                el.textContent = '0';
+                el.remove();
+            });
+        });
+        
+        // 2️⃣ Remove classes "has-unread" / "unread"
+        const items = document.querySelectorAll(
+            `[data-room-id="${roomId}"], [data-room="${roomId}"], #room-${roomId}`
+        );
+        items.forEach(item => {
+            item.classList.remove('has-unread', 'unread', 'is-unread', 'new-message');
+        });
+        
+        // 3️⃣ Atualiza estado interno (se existir)
+        if (this.rooms && Array.isArray(this.rooms)) {
+            const room = this.rooms.find(r => String(r.id) === String(roomId));
+            if (room) {
+                room.unread_count = 0;
+            }
+        }
     }
 
     updateMessageInUI(messageId, newContent) {
@@ -3209,7 +3255,37 @@ class ChatManager {
         this.log.debug(`Status de conexão atualizado: ${status}`);
     }
 
-
+    /**
+     * Marca todas as mensagens da sala como lidas via WebSocket.
+     */
+    markRoomAsRead(roomId) {
+        if (!roomId) return;
+        
+        const ws = this.websocket;
+        
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            // Marca pendente — o onopen vai pegar
+            this._pendingReadRoom = roomId;
+            console.log('⏳ WS não está OPEN — mark_as_read pendente para quando conectar');
+            return;
+        }
+        
+        try {
+            ws.send(JSON.stringify({
+                type: 'mark_as_read',
+                all: true,
+                room_id: roomId,
+            }));
+            console.log('✅ mark_as_read enviado para sala:', roomId);
+            this._pendingReadRoom = null;
+            
+            // Remove badge da UI localmente
+            const badge = document.querySelector(`[data-room-id="${roomId}"] .unread-badge`);
+            if (badge) badge.remove();
+        } catch (e) {
+            console.error('❌ Erro ao enviar mark_as_read:', e);
+        }
+    }
 }
 
 // ==================== GLOBAL SETUP ====================
@@ -3245,8 +3321,24 @@ document.addEventListener('visibilitychange', () => {
     window.chatManager.pauseReconnections = document.hidden;
 });
 
+// 🆕 Quando o usuário volta pra aba, marca a sala atual como lida
+window.addEventListener('focus', () => {
+    if (this.currentRoom) {
+        this.markRoomAsRead(this.currentRoom);
+    }
+});
+// 🆕 Quando o usuário volta pra aba, marca a sala atual como lida
+window.addEventListener('focus', () => {
+    if (this.currentRoom) {
+        this.markRoomAsRead(this.currentRoom);
+        //window.chatManager.markRoomAsRead(window.chatManager.currentRoom);
+    }
+});
+
 console.log('Sistema de chat com controle de loop inicializado');
 console.log('ChatManager v4.3 - Refatorado para template Django');
 
 // Exporta o ChatManager para o objeto global (window)
 window.ChatManager = ChatManager;
+
+

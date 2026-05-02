@@ -43,6 +43,7 @@ urlpatterns = [
     # --- API ---
     path('api/', include(router.urls)),
     path('api/update-status/', views.UpdateTaskStatusView.as_view(), name='api_update_task_status'),
+
     
 ]
 

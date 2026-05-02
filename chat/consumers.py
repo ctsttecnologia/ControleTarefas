@@ -322,7 +322,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def handle_mark_as_read(self, data):
-        """Marca mensagem como lida."""
+        """
+        Marca mensagem(ns) como lida(s).
+        
+        Aceita 2 modos:
+        - message_id: marca uma mensagem específica
+        - all: True → marca TODAS as mensagens da sala como lidas (bulk)
+        """
+        if data.get('all'):
+            count = await self.mark_all_room_messages_as_read()
+            # Atualiza badge no NotificationConsumer do próprio user
+            await self.channel_layer.group_send(
+                f"notifications_{self.user.id}",
+                {'type': 'notification_count_update', 'count': 0}
+            )
+            await self.send(text_data=json.dumps({
+                'type': 'read_receipt',
+                'room_id': str(self.room_id),
+                'marked': count,
+            }))
+            return
+
         message_id = data.get('message_id')
         if message_id:
             await self.mark_message_as_read(message_id)
@@ -458,6 +478,36 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
         except Exception as e:
             logger.exception("Erro ao marcar como lida: %s", e)
+
+    @database_sync_to_async
+    def mark_all_room_messages_as_read(self):
+        """Marca TODAS as mensagens da sala como lidas pelo usuário (bulk)."""
+        try:
+            from .models import ChatRoom, Message, MessageRead
+            
+            # Pega só mensagens NÃO lidas e que NÃO são do próprio user
+            nao_lidas = Message.objects.filter(
+                room_id=self.room_id,
+            ).exclude(
+                message_reads__user=self.user,
+            ).exclude(
+                user=self.user,
+            )
+            
+            # Bulk create com ignore_conflicts (idempotente)
+            reads = [MessageRead(message=m, user=self.user) for m in nao_lidas]
+            if reads:
+                MessageRead.objects.bulk_create(reads, ignore_conflicts=True)
+            
+            logger.info(
+                "✅ Bulk read: room=%s user=%s marcadas=%s",
+                self.room_id, self.user.username, len(reads),
+            )
+            return len(reads)
+        except Exception as e:
+            logger.exception("Erro mark_all_room_messages_as_read: %s", e)
+            return 0
+
 
     @database_sync_to_async
     def check_rate_limit(self):
