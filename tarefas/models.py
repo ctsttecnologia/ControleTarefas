@@ -411,6 +411,7 @@ class HistoricoTarefa(models.Model):
 # =============================================================================
 class Comentario(models.Model):
 
+    TAMANHO_MAXIMO_ANEXO = 5 * 1024 * 1024  # 5 MB em bytes
     tarefa = models.ForeignKey(
         Tarefas, on_delete=models.CASCADE,
         related_name='comentarios', verbose_name=_('Tarefa')
@@ -428,7 +429,7 @@ class Comentario(models.Model):
         blank=True,
         null=True,
         validators=[SecureFileValidator('tarefas')],
-        help_text=_('PDF, imagens ou documentos Office. Máximo: 15MB.'),
+        help_text=_('PDF, imagens ou documentos Office. Máximo: 5MB.'),
     )
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -463,17 +464,39 @@ class Comentario(models.Model):
     # ── Properties de conveniência (mantidas para templates existentes) ───────
     @property
     def nome_anexo(self):
-        return os.path.basename(self.anexo.name) if self.anexo else None
-
+        """Retorna apenas o nome do arquivo (sem o caminho)."""
+        if self.anexo:
+            import os
+            return os.path.basename(self.anexo.name)
+        return ''
+    
     @property
     def extensao_anexo(self):
+        """Retorna a extensão do arquivo (ex: 'pdf', 'jpg')."""
         if self.anexo:
-            return os.path.splitext(self.anexo.name)[1][1:].lower()
-        return None
-
+            import os
+            return os.path.splitext(self.anexo.name)[1].lower().lstrip('.')
+        return ''
+    
     @property
     def tamanho_anexo_mb(self):
         return round(self.anexo.size / (1024 * 1024), 2) if self.anexo else 0
+    
+    @property
+    def tamanho_anexo_legivel(self):
+        """Retorna o tamanho do arquivo em formato legível (KB/MB)."""
+        if not self.anexo:
+            return ''
+        try:
+            size = self.anexo.size
+            if size < 1024:
+                return f'{size} B'
+            elif size < 1024 * 1024:
+                return f'{size / 1024:.1f} KB'
+            else:
+                return f'{size / (1024 * 1024):.1f} MB'
+        except (FileNotFoundError, OSError):
+            return ''
 
 
 
