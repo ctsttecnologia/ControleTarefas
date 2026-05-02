@@ -282,11 +282,14 @@
                         {{ form.texto }}
                         <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
                             <div class="small">{{ form.anexo }}</div>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-send me-1"></i> Enviar
+                            <button type="submit" class="btn btn-sm btn-primary" title="Adicionar comentário">
+                                <i class="bi bi-send me-1"></i> 
                             </button>
                         </div>
                     </form>
+                    <div class="small text-muted mt-1">
+                        📎 Máximo: {{ form.instance.TAMANHO_MAXIMO_ANEXO|filesizeformat|default:"5,0 MB" }}
+                    </div>
 
                     <hr style="border-color: var(--detail-divider);">
 
