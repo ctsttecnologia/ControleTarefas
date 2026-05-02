@@ -31,7 +31,7 @@
                         Conversas
                     </h2>
                     <div class="header-actions">
-                        <!-- 🆕 Botão de busca global -->
+                        <!-- Botão de busca global -->
                         <button type="button" class="btn btn-link text-white" id="global-search-btn" 
                                 title="Busca global de mensagens">
                             <i class="bi bi-search"></i>
@@ -43,7 +43,7 @@
                     </div>
                 </header>
 
-                <!-- 🆕 Container de busca global (inicialmente escondido) -->
+                <!-- Container de busca global (inicialmente escondido) -->
                 <div id="global-search-container" class="global-search-container" style="display: none;">
                     <div class="search-input-group">
                         <input type="text" id="global-search-input" placeholder="Buscar em todas as conversas..." class="form-control">
@@ -68,7 +68,7 @@
                     <!-- Lista de Conversas Ativas -->
                     <div id="active-chats-list">
                 
-                        <!-- 🔄 Esta seção será carregada dinamicamente via JavaScript -->
+                        <!-- Esta seção será carregada dinamicamente via JavaScript -->
                         <div id="dynamic-content-section" class="dynamic-content-section">
                             <div class="loading-placeholder">
                                 <div class="spinner-border spinner-border-sm text-muted"></div>
@@ -216,7 +216,7 @@
                 <div id="chat-dialog-header-bar" class="chat-dialog-header-bar">
                     <div class="header-info">
                         <span id="chat-dialog-header-title" class="chat-title">Chat</span>
-                        <!-- 🆕 Status do usuário -->
+                        <!-- Status do usuário -->
                         <div class="header-status">
                             <span class="status-indicator offline"></span>
                             <span class="last-seen">Último acesso: agora</span>
@@ -224,14 +224,16 @@
                     </div>
                     
                     <div class="header-buttons">
-                        <!-- 🆕 Botão de busca no chat será adicionado aqui pelo JavaScript -->
-                        <!--<div id="chat-search-button-container" class="chat-search-button-container">
+                        <!-- Botão de busca no chat será adicionado aqui pelo JavaScript -->
+                        <!--
+                        <div id="chat-search-button-container" class="chat-search-button-container">
                             <button type="button" class="btn btn-sm btn-outline-secondary" 
                                     id="toggle-chat-search-btn" title="Buscar mensagens">
                                 <i class="bi bi-search"></i>
                             </button>
-                        </div>-->
-                        <!-- 🆕 Botão de informações da conversa -->
+                        </div>
+                        -->
+                        <!-- Botão de informações da conversa -->
                         <button id="chat-info-btn" class="btn btn-link text-white" title="Informações da conversa">
                             <i class="bi bi-info-circle"></i>
                         </button>
@@ -251,7 +253,7 @@
                     </div>
                 </div>
                 
-                <!-- 🆕 Container de busca no chat será inserido aqui pelo JavaScript -->
+                <!-- Container de busca no chat será inserido aqui pelo JavaScript -->
                 <div id="chat-search-container" class="chat-search-container" style="display: none;">
                     <div class="chat-search-header">
                         <i class="bi bi-search"></i>
@@ -284,10 +286,10 @@
                     </div>
                 </div>
                 
-                <!-- 🆕 Indicadores de digitação -->
+                <!-- Indicadores de digitação -->
                 <div id="typing-indicators" class="typing-indicators"></div>
                 
-                <!-- 🆕 Preview de resposta será inserido aqui pelo JavaScript -->
+                <!-- Preview de resposta será inserido aqui pelo JavaScript -->
                 <div id="response-preview-container" class="response-preview-container" style="display: none;">
                     <div class="response-preview-header">
                         <i class="bi bi-eye"></i>
@@ -308,10 +310,10 @@
                         </button>
                     </div>
                 </div>
-                            <!-- Área de Input -->
+                <!-- Área de Input -->
                 <div class="chat-input-section" id="chat-input-area">
                     <div class="input-group">
-                        <!-- 🆕 Botão de anexar arquivo (atualizado) -->
+                        <!-- Botão de anexar arquivo (atualizado) -->
                         <button id="attach-image-btn" class="btn btn-outline-light" type="button" title="Anexar arquivo">
                             <i class="bi bi-paperclip"></i>
                         </button>
@@ -322,7 +324,8 @@
                                 placeholder="Digite sua mensagem..." 
                                 aria-label="Campo de mensagem do chat" 
                                 rows="1"
-                                style="resize: none; overflow: hidden;"></textarea>
+                                style="resize: none; overflow: hidden;">
+                        </textarea>
                         
                         <!-- Botão de enviar -->
                         <button type="button" id="chat-message-submit" class="btn btn-primary" aria-label="Enviar Mensagem">
@@ -526,22 +529,14 @@
         text-overflow: ellipsis;
     }
 
-    /* Chat List Items com contador */
     .chat-list-item.has-unread {
-        background: rgba(74, 171, 247, 0.1);
-        border-left: 3px solid #4dabf7;
+        /* Sem destaque visual no item da lista */
+        background: transparent;
+        border-left: none;
     }
 
     .chat-list-unread {
-        background: #ff6b6b;
-        color: white;
-        font-size: 0.75em;
-        font-weight: 600;
-        padding: 2px 6px;
-        border-radius: 10px;
-        min-width: 18px;
-        text-align: center;
-        margin-left: auto;
+        display: none !important;
     }
 
     /* Status Indicators */
@@ -630,7 +625,5 @@
         background: rgba(255, 255, 255, 0.1);
     }
     </style>
-
-
 
 

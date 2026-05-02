@@ -17,6 +17,7 @@ urlpatterns = [
 
     # Upload
     path('api/upload/', views.chat_file_upload, name='chat_image_upload'),
+    path('api/room/<uuid:room_id>/mark-read/', views.mark_room_as_read, name='mark_room_read'),
 ]
 
 # URL condicional para tarefas

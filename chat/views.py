@@ -19,7 +19,7 @@ from django.views.decorators.http import require_GET, require_POST
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from core.decorators import app_permission_required
-from .models import ChatRoom, Message
+from .models import ChatRoom, Message, MessageRead
 
 logger = logging.getLogger(__name__)
 
@@ -504,3 +504,24 @@ def chat_file_upload(request):
         }, status=500)
 
 
+@login_required
+@require_POST
+def mark_room_as_read(request, room_id):
+    """Marca todas as mensagens da sala como lidas pelo usuário atual."""
+    room = get_object_or_404(ChatRoom, id=room_id, participants=request.user)
+    
+    # Pega só mensagens AINDA não lidas (otimização)
+    mensagens_nao_lidas = room.messages.exclude(
+        message_reads__user=request.user
+    ).exclude(
+        sender=request.user  # ignora as próprias mensagens
+    )
+    
+    # Cria registros de leitura em massa (bulk_create + ignore_conflicts)
+    reads = [
+        MessageRead(message=msg, user=request.user)
+        for msg in mensagens_nao_lidas
+    ]
+    MessageRead.objects.bulk_create(reads, ignore_conflicts=True)
+    
+    return JsonResponse({'status': 'ok', 'marked': len(reads)})
